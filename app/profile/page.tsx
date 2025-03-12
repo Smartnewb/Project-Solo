@@ -1,273 +1,332 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
-interface ProfileForm {
-  height: string;
-  personalities: string[];
-  personalityNote: string;
-  datingStyles: string[];
-  lifestyles: string[];
-  drinking: string;
-  smoking: string;
-  tattoo: string;
-}
-
-export default function Profile() {
+export default function ProfilePage() {
+  const [nickname, setNickname] = useState('');
+  const [bio, setBio] = useState('');
+  const [university, setUniversity] = useState('');
+  const [major, setMajor] = useState('');
+  const [age, setAge] = useState('');
+  const [gender, setGender] = useState<'male' | 'female'>('male');
+  const [height, setHeight] = useState('');
+  const [mbti, setMbti] = useState('');
+  const [interests, setInterests] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  
   const router = useRouter();
-  const [formData, setFormData] = useState<ProfileForm>({
-    height: '',
-    personalities: [],
-    personalityNote: '',
-    datingStyles: [],
-    lifestyles: [],
-    drinking: '',
-    smoking: '',
-    tattoo: '',
-  });
+  const { user, profile, updateProfile } = useAuth();
+
+  useEffect(() => {
+    if (!user) {
+      router.push('/auth/login');
+      return;
+    }
+
+    if (profile) {
+      setNickname(profile.nickname || '');
+      setBio(profile.bio || '');
+      setUniversity(profile.university || '');
+      setMajor(profile.major || '');
+      setAge(profile.age?.toString() || '');
+      setGender(profile.gender || 'male');
+      setHeight(profile.height || '');
+      setMbti(profile.mbti || '');
+      setInterests(profile.interests || []);
+    }
+  }, [user, profile, router]);
+
+  const interestOptions = [
+    '영화', '음악', '독서', '게임', '운동', 
+    '요리', '여행', '사진', '패션', '카페',
+    '공연', '전시', '반려동물', '등산', '자전거'
+  ];
 
   const heightOptions = [
-    '155cm 이하',
-    '156~160cm',
-    '161~165cm',
-    '166~170cm',
-    '171~175cm',
-    '176cm 이상',
+    '~155cm', '156~160cm', '161~165cm', '166~170cm',
+    '171~175cm', '176~180cm', '181~185cm', '186cm~'
   ];
 
-  const personalityOptions = [
-    '활발한 성격',
-    '조용한 성격',
-    '배려심 많은 사람',
-    '리더십 있는 사람',
-    '유머 감각 있는 사람',
-    '감성적인 사람',
-    '모험을 즐기는 사람',
-    '계획적인 스타일',
-    '즉흥적인 스타일',
+  const mbtiTypes = [
+    'ISTJ', 'ISFJ', 'INFJ', 'INTJ',
+    'ISTP', 'ISFP', 'INFP', 'INTP',
+    'ESTP', 'ESFP', 'ENFP', 'ENTP',
+    'ESTJ', 'ESFJ', 'ENFJ', 'ENTJ'
   ];
 
-  const datingStyleOptions = [
-    '적극적인 스타일',
-    '다정다감한 스타일',
-    '친구처럼 지내는 스타일',
-    '츤데레 스타일',
-    '표현을 잘 안 하지만 속은 다정한 스타일',
-    '자유로운 연애를 선호하는 스타일',
-  ];
-
-  const lifestyleOptions = [
-    '아침형 인간',
-    '밤형 인간',
-    '집순이 / 집돌이',
-    '여행을 자주 다니는 편',
-    '운동을 즐기는 편',
-    '게임을 자주 하는 편',
-    '카페에서 노는 걸 좋아함',
-    '액티비티 활동을 좋아함',
-  ];
-
-  const drinkingOptions = [
-    '자주 마시는 편',
-    '가끔 마시는 편',
-    '거의 안 마시는 편',
-    '전혀 마시지 않음',
-  ];
-
-  const smokingOptions = [
-    '네, 흡연자입니다',
-    '금연 중입니다',
-    '비흡연자입니다',
-  ];
-
-  const tattooOptions = [
-    '네, 있습니다',
-    '작은 문신이 있습니다',
-    '없습니다',
-  ];
+  const handleInterestToggle = (interest: string) => {
+    setInterests(prev => 
+      prev.includes(interest) 
+        ? prev.filter(i => i !== interest)
+        : [...prev, interest]
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    setLoading(true);
+    setSuccess(false);
+
+    if (!nickname || !university || !major || !age || !height || !mbti) {
+      setError('모든 필수 항목을 입력해주세요.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      // TODO: 프로필 정보 저장 로직 구현
-      localStorage.setItem('profile', JSON.stringify(formData));
-      router.push('/home');
+      const { error } = await updateProfile({
+        nickname,
+        bio,
+        university,
+        major,
+        age: parseInt(age),
+        gender,
+        height,
+        mbti,
+        interests
+      });
+
+      if (error) throw error;
+      setSuccess(true);
     } catch (error) {
-      console.error('프로필 저장 에러:', error);
-      alert('프로필 정보 저장 중 오류가 발생했습니다. 다시 시도해주세요.');
+      setError('프로필 업데이트에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const toggleSelection = (field: keyof ProfileForm, value: string, maxCount: number) => {
-    if (Array.isArray(formData[field])) {
-      const currentValues = formData[field] as string[];
-      if (currentValues.includes(value)) {
-        setFormData({
-          ...formData,
-          [field]: currentValues.filter(v => v !== value)
-        });
-      } else if (currentValues.length < maxCount) {
-        setFormData({
-          ...formData,
-          [field]: [...currentValues, value]
-        });
-      }
-    }
-  };
+  if (!user) {
+    return null;
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* 상단 헤더 */}
-      <div className="bg-white border-b">
-        <div className="max-w-lg mx-auto px-4 py-4 flex items-center">
-          <button
-            onClick={() => router.back()}
-            className="text-gray-600"
-          >
-            ← 뒤로
-          </button>
-          <h1 className="text-h2 flex-1 text-center">프로필 작성</h1>
-          <div className="w-10"></div>
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md mx-auto">
+        <div className="text-center">
+          <h2 className="text-3xl font-extrabold text-gray-900">
+            프로필 설정
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            매칭에 사용될 정보를 입력해주세요
+          </p>
         </div>
-      </div>
 
-      {/* 메인 컨텐츠 */}
-      <div className="max-w-lg mx-auto p-4">
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* 키 */}
-          <div className="card space-y-4">
-            <h2 className="text-h2">1. 본인의 키</h2>
-            <div className="grid grid-cols-2 gap-2">
-              {heightOptions.map(option => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, height: option })}
-                  className={`btn-select ${formData.height === option ? 'selected' : ''}`}
-                >
-                  {option}
-                </button>
-              ))}
+        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="nickname" className="block text-sm font-medium text-gray-700">
+                닉네임 *
+              </label>
+              <input
+                id="nickname"
+                type="text"
+                required
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="university" className="block text-sm font-medium text-gray-700">
+                대학교 *
+              </label>
+              <input
+                id="university"
+                type="text"
+                required
+                value={university}
+                onChange={(e) => setUniversity(e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="서울대학교"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="major" className="block text-sm font-medium text-gray-700">
+                전공 *
+              </label>
+              <input
+                id="major"
+                type="text"
+                required
+                value={major}
+                onChange={(e) => setMajor(e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="컴퓨터공학과"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="age" className="block text-sm font-medium text-gray-700">
+                  나이 *
+                </label>
+                <input
+                  id="age"
+                  type="number"
+                  required
+                  min="19"
+                  max="29"
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  성별 *
+                </label>
+                <div className="mt-1 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setGender('male')}
+                    className={`py-2 px-3 text-sm font-medium rounded-md ${
+                      gender === 'male'
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-white text-gray-700 border border-gray-300'
+                    }`}
+                  >
+                    남성
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setGender('female')}
+                    className={`py-2 px-3 text-sm font-medium rounded-md ${
+                      gender === 'female'
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-white text-gray-700 border border-gray-300'
+                    }`}
+                  >
+                    여성
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                키 *
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {heightOptions.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setHeight(option)}
+                    className={`py-2 px-3 text-sm font-medium rounded-md ${
+                      height === option
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-white text-gray-700 border border-gray-300'
+                    }`}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                MBTI *
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {mbtiTypes.map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setMbti(type)}
+                    className={`py-2 px-3 text-sm font-medium rounded-md ${
+                      mbti === type
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-white text-gray-700 border border-gray-300'
+                    }`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="bio" className="block text-sm font-medium text-gray-700">
+                자기소개
+              </label>
+              <textarea
+                id="bio"
+                rows={3}
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                placeholder="자신을 소개해주세요"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                관심사 (최대 5개)
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {interestOptions.map((interest) => (
+                  <button
+                    key={interest}
+                    type="button"
+                    onClick={() => handleInterestToggle(interest)}
+                    disabled={!interests.includes(interest) && interests.length >= 5}
+                    className={`py-2 px-3 text-sm font-medium rounded-md ${
+                      interests.includes(interest)
+                        ? 'bg-indigo-600 text-white'
+                        : interests.length >= 5
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-white text-gray-700 border border-gray-300'
+                    }`}
+                  >
+                    {interest}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* 성격 */}
-          <div className="card space-y-4">
-            <h2 className="text-h2">2. 본인의 성격 (최대 3개)</h2>
-            <div className="grid grid-cols-2 gap-2">
-              {personalityOptions.map(option => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => toggleSelection('personalities', option, 3)}
-                  className={`btn-select ${formData.personalities.includes(option) ? 'selected' : ''}`}
-                >
-                  {option}
-                </button>
-              ))}
+          {error && (
+            <div className="rounded-md bg-red-50 p-4">
+              <div className="flex">
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">{error}</h3>
+                </div>
+              </div>
             </div>
-            <textarea
-              value={formData.personalityNote}
-              onChange={(e) => setFormData({ ...formData, personalityNote: e.target.value })}
-              placeholder="추가 설명을 입력해주세요 (예: '처음엔 낯가리지만 친해지면 장난도 잘 쳐요!')"
-              className="input-field"
-              rows={2}
-            />
-          </div>
+          )}
 
-          {/* 연애 스타일 */}
-          <div className="card space-y-4">
-            <h2 className="text-h2">3. 본인의 연애 스타일 (최대 2개)</h2>
-            <div className="grid grid-cols-2 gap-2">
-              {datingStyleOptions.map(option => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => toggleSelection('datingStyles', option, 2)}
-                  className={`btn-select ${formData.datingStyles.includes(option) ? 'selected' : ''}`}
-                >
-                  {option}
-                </button>
-              ))}
+          {success && (
+            <div className="rounded-md bg-green-50 p-4">
+              <div className="flex">
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-green-800">
+                    프로필이 성공적으로 업데이트되었습니다.
+                  </h3>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* 라이프스타일 */}
-          <div className="card space-y-4">
-            <h2 className="text-h2">4. 라이프스타일 (최대 3개)</h2>
-            <div className="grid grid-cols-2 gap-2">
-              {lifestyleOptions.map(option => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => toggleSelection('lifestyles', option, 3)}
-                  className={`btn-select ${formData.lifestyles.includes(option) ? 'selected' : ''}`}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
+          <div>
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${
+                loading ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              {loading ? '저장 중...' : '저장하기'}
+            </button>
           </div>
-
-          {/* 음주 */}
-          <div className="card space-y-4">
-            <h2 className="text-h2">술을 즐기는 편인가요?</h2>
-            <div className="grid grid-cols-2 gap-2">
-              {drinkingOptions.map(option => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, drinking: option })}
-                  className={`btn-select ${formData.drinking === option ? 'selected' : ''}`}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 흡연 */}
-          <div className="card space-y-4">
-            <h2 className="text-h2">담배를 피우시나요?</h2>
-            <div className="grid grid-cols-2 gap-2">
-              {smokingOptions.map(option => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, smoking: option })}
-                  className={`btn-select ${formData.smoking === option ? 'selected' : ''}`}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 문신 */}
-          <div className="card space-y-4">
-            <h2 className="text-h2">문신이 있나요?</h2>
-            <div className="grid grid-cols-2 gap-2">
-              {tattooOptions.map(option => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, tattoo: option })}
-                  className={`btn-select ${formData.tattoo === option ? 'selected' : ''}`}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 저장 버튼 */}
-          <button
-            type="submit"
-            className="btn-primary w-full"
-          >
-            저장하기
-          </button>
         </form>
       </div>
     </div>

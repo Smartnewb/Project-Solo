@@ -1,0 +1,52 @@
+export interface Profile {
+  id: string;
+  user_id: string;
+  nickname: string;
+  bio: string;
+  university: string;
+  major: string;
+  age: number;
+  gender: 'male' | 'female';
+  height: string;
+  mbti: string;
+  interests: string[];
+  photos: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserPreferences {
+  id: string;
+  user_id: string;
+  preferred_age_min: number;
+  preferred_age_max: number;
+  preferred_height_min: string;
+  preferred_height_max: string;
+  preferred_universities: string[];
+  preferred_mbti: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MatchingRequest {
+  id: string;
+  user_id: string;
+  status: 'pending' | 'matched' | 'cancelled';
+  preferred_date: string;
+  preferred_time: string;
+  location_preference: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Match {
+  id: string;
+  user1_id: string;
+  user2_id: string;
+  match_date: string;
+  match_time: string;
+  location: string;
+  status: 'pending' | 'accepted' | 'rejected' | 'completed';
+  created_at: string;
+  updated_at: string;
+} 

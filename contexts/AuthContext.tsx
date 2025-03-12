@@ -1,14 +1,16 @@
+'use client';
+
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/utils/supabase';
-import { Profile } from '@/utils/supabase';
+import { Profile } from '@/types';
 
 type AuthContextType = {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-  signUp: (email: string, password: string) => Promise<{ error: AuthError | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   updateProfile: (profile: Partial<Profile>) => Promise<{ error: Error | null }>;
 };
@@ -66,25 +68,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // 로그인
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    return { error };
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      return { error };
+    } catch (error) {
+      return { error: error as Error };
+    }
   };
 
   // 회원가입
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-
-    return { error };
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+      return { error };
+    } catch (error) {
+      return { error: error as Error };
+    }
   };
 
   // 로그아웃
@@ -93,19 +98,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // 프로필 업데이트
-  const updateProfile = async (updates: Partial<Profile>) => {
+  const updateProfile = async (profileData: Partial<Profile>) => {
     try {
-      if (!user) throw new Error('No user logged in');
+      if (!user) throw new Error('No user');
 
       const { error } = await supabase
         .from('profiles')
-        .update(updates)
-        .eq('user_id', user.id);
+        .upsert({
+          user_id: user.id,
+          ...profileData,
+          updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
-      // 프로필 상태 업데이트
-      setProfile(prev => prev ? { ...prev, ...updates } : null);
+      // 프로필 새로고침
+      await fetchProfile(user.id);
 
       return { error: null };
     } catch (error) {
