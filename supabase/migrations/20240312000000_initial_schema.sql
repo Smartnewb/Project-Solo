@@ -1,3 +1,9 @@
+-- Drop existing tables if they exist
+DROP TABLE IF EXISTS public.matches;
+DROP TABLE IF EXISTS public.matching_requests;
+DROP TABLE IF EXISTS public.user_preferences;
+DROP TABLE IF EXISTS public.profiles;
+
 -- Enable necessary extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
@@ -49,7 +55,7 @@ CREATE TABLE public.matches (
 );
 
 -- Create functions and triggers
-CREATE OR REPLACE FUNCTION update_updated_at_column()
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
@@ -58,25 +64,29 @@ END;
 $$ language 'plpgsql';
 
 -- Add triggers for updated_at
+DROP TRIGGER IF EXISTS update_profiles_updated_at ON public.profiles;
 CREATE TRIGGER update_profiles_updated_at
     BEFORE UPDATE ON public.profiles
     FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+    EXECUTE FUNCTION public.update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_user_preferences_updated_at ON public.user_preferences;
 CREATE TRIGGER update_user_preferences_updated_at
     BEFORE UPDATE ON public.user_preferences
     FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+    EXECUTE FUNCTION public.update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_matching_requests_updated_at ON public.matching_requests;
 CREATE TRIGGER update_matching_requests_updated_at
     BEFORE UPDATE ON public.matching_requests
     FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+    EXECUTE FUNCTION public.update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_matches_updated_at ON public.matches;
 CREATE TRIGGER update_matches_updated_at
     BEFORE UPDATE ON public.matches
     FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+    EXECUTE FUNCTION public.update_updated_at_column();
 
 -- Enable RLS
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
@@ -85,22 +95,26 @@ ALTER TABLE public.matching_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.matches ENABLE ROW LEVEL SECURITY;
 
 -- Create policies
+DROP POLICY IF EXISTS "Public profiles are viewable by everyone" ON public.profiles;
 CREATE POLICY "Public profiles are viewable by everyone"
 ON public.profiles FOR SELECT
 TO authenticated
 USING (true);
 
+DROP POLICY IF EXISTS "Users can insert their own profile" ON public.profiles;
 CREATE POLICY "Users can insert their own profile"
 ON public.profiles FOR INSERT
 TO authenticated
 WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile"
 ON public.profiles FOR UPDATE
 TO authenticated
 USING (auth.uid() = user_id);
 
 -- User preferences policies
+DROP POLICY IF EXISTS "Users can view own preferences" ON public.user_preferences;
 CREATE POLICY "Users can view own preferences"
 ON public.user_preferences FOR SELECT
 TO authenticated
@@ -110,6 +124,7 @@ USING (EXISTS (
     AND profiles.user_id = auth.uid()
 ));
 
+DROP POLICY IF EXISTS "Users can insert own preferences" ON public.user_preferences;
 CREATE POLICY "Users can insert own preferences"
 ON public.user_preferences FOR INSERT
 TO authenticated
@@ -119,6 +134,7 @@ WITH CHECK (EXISTS (
     AND profiles.user_id = auth.uid()
 ));
 
+DROP POLICY IF EXISTS "Users can update own preferences" ON public.user_preferences;
 CREATE POLICY "Users can update own preferences"
 ON public.user_preferences FOR UPDATE
 TO authenticated
@@ -129,6 +145,7 @@ USING (EXISTS (
 ));
 
 -- Matching requests policies
+DROP POLICY IF EXISTS "Users can view own matching requests" ON public.matching_requests;
 CREATE POLICY "Users can view own matching requests"
 ON public.matching_requests FOR SELECT
 TO authenticated
@@ -138,6 +155,7 @@ USING (EXISTS (
     AND profiles.user_id = auth.uid()
 ));
 
+DROP POLICY IF EXISTS "Users can insert own matching requests" ON public.matching_requests;
 CREATE POLICY "Users can insert own matching requests"
 ON public.matching_requests FOR INSERT
 TO authenticated
@@ -147,6 +165,7 @@ WITH CHECK (EXISTS (
     AND profiles.user_id = auth.uid()
 ));
 
+DROP POLICY IF EXISTS "Users can update own matching requests" ON public.matching_requests;
 CREATE POLICY "Users can update own matching requests"
 ON public.matching_requests FOR UPDATE
 TO authenticated
@@ -157,6 +176,7 @@ USING (EXISTS (
 ));
 
 -- Matches policies
+DROP POLICY IF EXISTS "Users can view their own matches" ON public.matches;
 CREATE POLICY "Users can view their own matches"
 ON public.matches FOR SELECT
 TO authenticated

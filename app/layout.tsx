@@ -1,12 +1,13 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import { AuthProvider } from '@/contexts/AuthContext'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: '소개팅 앱',
-  description: '대학생을 위한 실시간 소개팅 서비스',
+  title: 'Project Solo',
+  description: 'Find your perfect movie buddy',
 }
 
 export default function RootLayout({
@@ -17,9 +18,11 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className={inter.className}>
-        <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
-          {children}
-        </main>
+        <AuthProvider>
+          <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+            {children}
+          </main>
+        </AuthProvider>
       </body>
     </html>
   )
