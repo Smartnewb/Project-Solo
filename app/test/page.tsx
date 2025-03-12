@@ -47,33 +47,41 @@ export default function TestPage() {
     );
   }
 
+  const isSuccess = result?.status === 'success';
+  const isAuthWorking = result?.auth && result.auth.includes('working');
+  const isStorageWorking = result?.storage && result.storage.includes('working');
+
   return (
     <div className="min-h-screen p-8">
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">Supabase 연결 테스트 결과</h1>
         
         <div className="bg-white shadow rounded-lg p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">상태: {result?.status}</h2>
+          <h2 className="text-xl font-semibold mb-4">
+            상태: <span className={isSuccess ? 'text-green-600' : 'text-red-600'}>
+              {result?.status || 'Unknown'}
+            </span>
+          </h2>
           
           <div className="space-y-4">
             <div className="p-4 rounded-lg bg-gray-50">
               <h3 className="font-medium mb-2">데이터베이스 연결</h3>
-              <p className={result?.status === 'success' ? 'text-green-600' : 'text-red-600'}>
-                {result?.message}
+              <p className={isSuccess ? 'text-green-600' : 'text-red-600'}>
+                {result?.message || 'Connection status unknown'}
               </p>
             </div>
 
             <div className="p-4 rounded-lg bg-gray-50">
               <h3 className="font-medium mb-2">인증 서비스</h3>
-              <p className={result?.auth.includes('working') ? 'text-green-600' : 'text-red-600'}>
-                {result?.auth}
+              <p className={isAuthWorking ? 'text-green-600' : 'text-red-600'}>
+                {result?.auth || 'Auth status unknown'}
               </p>
             </div>
 
             <div className="p-4 rounded-lg bg-gray-50">
               <h3 className="font-medium mb-2">스토리지 서비스</h3>
-              <p className={result?.storage.includes('working') ? 'text-green-600' : 'text-red-600'}>
-                {result?.storage}
+              <p className={isStorageWorking ? 'text-green-600' : 'text-red-600'}>
+                {result?.storage || 'Storage status unknown'}
               </p>
             </div>
 
