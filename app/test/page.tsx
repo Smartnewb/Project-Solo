@@ -8,11 +8,19 @@ interface TestResult {
   auth: string;
   storage: string;
   error?: string;
+  debug?: {
+    databaseError?: string;
+    authError?: string;
+    storageError?: string;
+    url?: string;
+    anonKey?: string;
+  };
 }
 
 export default function TestPage() {
   const [result, setResult] = useState<TestResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showDebug, setShowDebug] = useState(false);
 
   useEffect(() => {
     const testConnection = async () => {
@@ -91,10 +99,30 @@ export default function TestPage() {
                 <p className="text-red-600">{result.error}</p>
               </div>
             )}
+
+            {result?.debug && (
+              <div className="mt-8">
+                <button
+                  onClick={() => setShowDebug(!showDebug)}
+                  className="text-sm text-gray-600 underline mb-2"
+                >
+                  {showDebug ? '디버그 정보 숨기기' : '디버그 정보 보기'}
+                </button>
+                
+                {showDebug && (
+                  <div className="p-4 rounded-lg bg-gray-100 text-sm font-mono">
+                    <h4 className="font-medium mb-2">환경 변수 상태:</h4>
+                    <pre className="whitespace-pre-wrap">
+                      {JSON.stringify(result.debug, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="text-center">
+        <div className="text-center space-y-4">
           <button
             onClick={() => window.location.reload()}
             className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors"
