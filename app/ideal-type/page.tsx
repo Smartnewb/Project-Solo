@@ -14,6 +14,7 @@ interface IdealTypeForm {
   drinking: string;
   smoking: string;
   tattoo: string;
+  interests: string[];
 }
 
 export default function IdealType() {
@@ -29,6 +30,7 @@ export default function IdealType() {
     drinking: '',
     smoking: '',
     tattoo: '',
+    interests: [],
   });
 
   const heightOptions = [
@@ -95,6 +97,12 @@ export default function IdealType() {
     '작은 문신 정도는 괜찮음',
     '문신이 없는 사람이었으면 좋겠음',
     '상관없음',
+  ];
+
+  const interestOptions = [
+    '영화', '음악', '독서', '게임', '운동', 
+    '요리', '여행', '사진', '패션', '카페',
+    '공연', '전시', '반려동물', '등산', '자전거'
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -222,6 +230,30 @@ export default function IdealType() {
                       ? 'bg-white text-gray-700 border-[#4A90E2]'
                       : 'bg-white text-gray-700 border-gray-300 hover:border-[#4A90E2]'
                     }`}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 관심사 */}
+          <div className="card space-y-4">
+            <h2 className="text-h2">5. 이상형의 관심사 (최대 5개)</h2>
+            <div className="grid grid-cols-3 gap-2">
+              {interestOptions.map(option => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => toggleSelection('interests', option, 5)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium border-2 transition-colors
+                    ${formData.interests.includes(option)
+                      ? 'bg-white text-gray-700 border-[#4A90E2]'
+                      : formData.interests.length >= 5 && !formData.interests.includes(option)
+                      ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                      : 'bg-white text-gray-700 border-gray-300 hover:border-[#4A90E2]'
+                    }`}
+                  disabled={formData.interests.length >= 5 && !formData.interests.includes(option)}
                 >
                   {option}
                 </button>

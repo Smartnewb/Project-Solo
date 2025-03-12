@@ -63,8 +63,7 @@ export default function SignUp() {
             name: formData.name,
             age: parseInt(formData.age),
             gender: formData.gender
-          },
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          }
         }
       });
 
@@ -113,12 +112,8 @@ export default function SignUp() {
           // 프로필 저장 실패해도 계속 진행
         }
 
-        // 4. 이메일 확인 안내 또는 온보딩으로 이동
-        if (signUpData.user.identities?.length === 0) {
-          setError('이메일 주소로 인증 링크가 발송되었습니다. 이메일을 확인해주세요.');
-        } else {
-          router.push('/onboarding');
-        }
+        // 4. 이메일 인증 안내 메시지 제거 및 온보딩 페이지로 바로 이동
+        router.push('/onboarding');
       } catch (storageError) {
         console.error('로컬 스토리지 에러:', storageError);
         setError('프로필 정보 저장 중 오류가 발생했습니다.');

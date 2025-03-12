@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/utils/supabase/client';
 import {
   UsersIcon,
   HeartIcon,
@@ -10,152 +12,187 @@ import {
   ArrowTrendingDownIcon,
 } from '@heroicons/react/24/outline';
 
-interface DashboardStats {
+interface AdminStats {
   totalUsers: number;
-  newUsers: {
-    today: number;
-    weekly: number;
-    monthly: number;
-  };
-  activeMatching: number;
-  matchingSuccess: number;
-  communityStats: {
-    posts: number;
-    comments: number;
-    reports: number;
-  };
+  totalMatches: number;
   reportedUsers: number;
+  totalPosts: number;
+  totalComments: number;
+  reportedPosts: number;
+  activeUsers: number;
+  newUsersToday: number;
+  matchesThisWeek: number;
+  reportsThisWeek: number;
 }
 
-export default function AdminDashboard() {
-  const [stats, setStats] = useState<DashboardStats>({
-    totalUsers: 12345,
-    newUsers: {
-      today: 245,
-      weekly: 1234,
-      monthly: 5678,
-    },
-    activeMatching: 342,
-    matchingSuccess: 78,
-    communityStats: {
-      posts: 58,
-      comments: 234,
-      reports: 5,
-    },
-    reportedUsers: 12,
-  });
+interface StatCardProps {
+  title: string;
+  value: number;
+  trend?: 'up' | 'down';
+  trendValue?: number;
+}
 
-  const StatCard = ({
-    title,
-    value,
-    icon: Icon,
-    change,
-    changeType = 'up',
-  }: {
-    title: string;
-    value: number | string;
-    icon: any;
-    change?: number;
-    changeType?: 'up' | 'down';
-  }) => (
-    <div className="bg-white rounded-lg p-6 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
-        <div className="bg-primary-50 p-3 rounded-lg">
-          <Icon className="w-6 h-6 text-primary-DEFAULT" />
-        </div>
-        {change !== undefined && (
-          <div
-            className={`flex items-center gap-1 text-sm ${
-              changeType === 'up' ? 'text-green-500' : 'text-red-500'
-            }`}
-          >
-            {changeType === 'up' ? (
-              <ArrowTrendingUpIcon className="w-4 h-4" />
-            ) : (
-              <ArrowTrendingDownIcon className="w-4 h-4" />
-            )}
-            <span>{change}%</span>
-          </div>
-        )}
-      </div>
-      <h3 className="text-gray-500 text-sm mb-2">{title}</h3>
-      <p className="text-2xl font-bold">{value.toLocaleString()}</p>
+const StatCard = ({ title, value, trend, trendValue }: StatCardProps) => (
+  <div className="bg-white p-6 rounded-xl shadow-sm">
+    <h3 className="text-gray-500 text-sm font-medium">{title}</h3>
+    <div className="mt-2 flex items-baseline">
+      <p className="text-2xl font-semibold text-gray-900">{value}</p>
+      {trend && trendValue && (
+        <span className={`ml-2 text-sm font-medium ${trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
+          {trend === 'up' ? '+' : '-'}{trendValue}%
+        </span>
+      )}
     </div>
-  );
+  </div>
+);
+
+interface ContentCardProps {
+  title: string;
+  value: number;
+  description: string;
+}
+
+const ContentCard = ({ title, value, description }: ContentCardProps) => (
+  <div className="bg-white p-6 rounded-xl shadow-sm">
+    <h3 className="text-gray-500 text-sm font-medium">{title}</h3>
+    <p className="mt-2 text-3xl font-bold text-gray-900">{value}</p>
+    <p className="mt-1 text-sm text-gray-500">{description}</p>
+  </div>
+);
+
+export default function AdminDashboard() {
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const supabase = createClient();
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.push('/login');
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profile?.role !== 'admin') {
+        router.push('/');
+        return;
+      }
+    };
+
+    checkAdmin();
+  }, [router, supabase]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('/api/admin/stats');
+        if (!response.ok) {
+          throw new Error('Failed to fetch stats');
+        }
+        const data = await response.json();
+        setStats(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 p-8">
+        <div className="max-w-7xl mx-auto">
+          <p className="text-center text-gray-500">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-100 p-8">
+        <div className="max-w-7xl mx-auto">
+          <p className="text-center text-red-500">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return null;
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">대시보드</h1>
-        <p className="text-sm text-gray-500">
-          최근 업데이트: {new Date().toLocaleString()}
-        </p>
-      </div>
-
-      {/* 통계 카드 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="총 가입자 수"
-          value={stats.totalUsers}
-          icon={UsersIcon}
-          change={5}
-          changeType="up"
-        />
-        <StatCard
-          title="진행 중인 매칭"
-          value={stats.activeMatching}
-          icon={HeartIcon}
-          change={2}
-          changeType="up"
-        />
-        <StatCard
-          title="매칭 성공률"
-          value={`${stats.matchingSuccess}%`}
-          icon={HeartIcon}
-          change={3}
-          changeType="up"
-        />
-        <StatCard
-          title="신고된 유저"
-          value={stats.reportedUsers}
-          icon={ExclamationTriangleIcon}
-          change={1}
-          changeType="down"
-        />
-      </div>
-
-      {/* 신규 가입자 통계 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg p-6 shadow-sm">
-          <h3 className="text-gray-500 text-sm mb-4">오늘의 신규 가입자</h3>
-          <p className="text-2xl font-bold">{stats.newUsers.today.toLocaleString()}명</p>
+    <div className="min-h-screen bg-gray-100 p-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-gray-900">관리자 대시보드</h1>
+          <p className="mt-1 text-sm text-gray-500">실시간 서비스 통계를 확인하세요.</p>
         </div>
-        <div className="bg-white rounded-lg p-6 shadow-sm">
-          <h3 className="text-gray-500 text-sm mb-4">이번 주 신규 가입자</h3>
-          <p className="text-2xl font-bold">{stats.newUsers.weekly.toLocaleString()}명</p>
-        </div>
-        <div className="bg-white rounded-lg p-6 shadow-sm">
-          <h3 className="text-gray-500 text-sm mb-4">이번 달 신규 가입자</h3>
-          <p className="text-2xl font-bold">{stats.newUsers.monthly.toLocaleString()}명</p>
-        </div>
-      </div>
 
-      {/* 커뮤니티 통계 */}
-      <div className="bg-white rounded-lg p-6 shadow-sm">
-        <h2 className="text-lg font-bold mb-4">커뮤니티 현황</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <h3 className="text-gray-500 text-sm mb-2">오늘의 게시글</h3>
-            <p className="text-2xl font-bold">{stats.communityStats.posts.toLocaleString()}개</p>
-          </div>
-          <div>
-            <h3 className="text-gray-500 text-sm mb-2">오늘의 댓글</h3>
-            <p className="text-2xl font-bold">{stats.communityStats.comments.toLocaleString()}개</p>
-          </div>
-          <div>
-            <h3 className="text-gray-500 text-sm mb-2">신고된 게시물</h3>
-            <p className="text-2xl font-bold">{stats.communityStats.reports.toLocaleString()}개</p>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <StatCard
+            title="전체 사용자"
+            value={stats.totalUsers}
+            trend="up"
+            trendValue={5}
+          />
+          <StatCard
+            title="오늘의 신규 가입"
+            value={stats.newUsersToday}
+          />
+          <StatCard
+            title="활성 사용자"
+            value={stats.activeUsers}
+          />
+          <StatCard
+            title="이번 주 매칭"
+            value={stats.matchesThisWeek}
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <ContentCard
+            title="총 매칭"
+            value={stats.totalMatches}
+            description="지금까지 성사된 총 매칭 수"
+          />
+          <ContentCard
+            title="신고된 사용자"
+            value={stats.reportedUsers}
+            description="누적 신고된 사용자 수"
+          />
+          <ContentCard
+            title="이번 주 신고"
+            value={stats.reportsThisWeek}
+            description="최근 7일간 접수된 신고"
+          />
+          <ContentCard
+            title="게시글"
+            value={stats.totalPosts}
+            description="전체 게시글 수"
+          />
+          <ContentCard
+            title="댓글"
+            value={stats.totalComments}
+            description="전체 댓글 수"
+          />
+          <ContentCard
+            title="신고된 게시글"
+            value={stats.reportedPosts}
+            description="누적 신고된 게시글 수"
+          />
         </div>
       </div>
     </div>
