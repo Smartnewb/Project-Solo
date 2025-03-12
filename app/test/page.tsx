@@ -18,117 +18,103 @@ interface TestResult {
 }
 
 export default function TestPage() {
-  const [result, setResult] = useState<TestResult | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<any>(null);
+  const [schemaStatus, setSchemaStatus] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [showDebug, setShowDebug] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const testConnection = async () => {
-      try {
-        const response = await fetch('/api/test-connection');
-        const data = await response.json();
-        setResult(data);
-      } catch (error) {
-        setResult({
-          status: 'error',
-          message: 'Failed to fetch test results',
-          auth: 'Failed',
-          storage: 'Failed',
-          error: error instanceof Error ? error.message : 'Unknown error'
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    testConnection();
+    checkConnection();
   }, []);
+
+  const checkConnection = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // 기본 연결 테스트
+      const connRes = await fetch('/api/test-connection');
+      const connData = await connRes.json();
+
+      // 스키마 테스트
+      const schemaRes = await fetch('/api/test-schema');
+      const schemaData = await schemaRes.json();
+
+      setConnectionStatus(connData);
+      setSchemaStatus(schemaData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Supabase 연결 테스트 중...</h1>
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+      <div className="min-h-screen bg-gray-100 p-8">
+        <div className="max-w-2xl mx-auto bg-white rounded-lg shadow p-6">
+          <h1 className="text-2xl font-bold mb-4">Supabase 연결 테스트</h1>
+          <p>로딩 중...</p>
         </div>
       </div>
     );
   }
 
-  const isSuccess = result?.status === 'success';
-  const isAuthWorking = result?.auth && result.auth.includes('working');
-  const isStorageWorking = result?.storage && result.storage.includes('working');
-
   return (
-    <div className="min-h-screen p-8">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Supabase 연결 테스트 결과</h1>
+    <div className="min-h-screen bg-gray-100 p-8">
+      <div className="max-w-2xl mx-auto bg-white rounded-lg shadow p-6">
+        <h1 className="text-2xl font-bold mb-4">Supabase 연결 테스트</h1>
         
-        <div className="bg-white shadow rounded-lg p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">
-            상태: <span className={isSuccess ? 'text-green-600' : 'text-red-600'}>
-              {result?.status || 'Unknown'}
-            </span>
-          </h2>
-          
-          <div className="space-y-4">
-            <div className="p-4 rounded-lg bg-gray-50">
-              <h3 className="font-medium mb-2">데이터베이스 연결</h3>
-              <p className={isSuccess ? 'text-green-600' : 'text-red-600'}>
-                {result?.message || 'Connection status unknown'}
-              </p>
-            </div>
-
-            <div className="p-4 rounded-lg bg-gray-50">
-              <h3 className="font-medium mb-2">인증 서비스</h3>
-              <p className={isAuthWorking ? 'text-green-600' : 'text-red-600'}>
-                {result?.auth || 'Auth status unknown'}
-              </p>
-            </div>
-
-            <div className="p-4 rounded-lg bg-gray-50">
-              <h3 className="font-medium mb-2">스토리지 서비스</h3>
-              <p className={isStorageWorking ? 'text-green-600' : 'text-red-600'}>
-                {result?.storage || 'Storage status unknown'}
-              </p>
-            </div>
-
-            {result?.error && (
-              <div className="p-4 rounded-lg bg-red-50">
-                <h3 className="font-medium mb-2">에러</h3>
-                <p className="text-red-600">{result.error}</p>
-              </div>
-            )}
-
-            {result?.debug && (
-              <div className="mt-8">
-                <button
-                  onClick={() => setShowDebug(!showDebug)}
-                  className="text-sm text-gray-600 underline mb-2"
-                >
-                  {showDebug ? '디버그 정보 숨기기' : '디버그 정보 보기'}
-                </button>
-                
-                {showDebug && (
-                  <div className="p-4 rounded-lg bg-gray-100 text-sm font-mono">
-                    <h4 className="font-medium mb-2">환경 변수 상태:</h4>
-                    <pre className="whitespace-pre-wrap">
-                      {JSON.stringify(result.debug, null, 2)}
-                    </pre>
-                  </div>
-                )}
-              </div>
-            )}
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
           </div>
-        </div>
+        )}
 
-        <div className="text-center space-y-4">
-          <button
-            onClick={() => window.location.reload()}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors"
-          >
-            다시 테스트하기
-          </button>
+        <div className="space-y-6">
+          {/* 기본 연결 상태 */}
+          <div>
+            <h2 className="text-xl font-semibold mb-2">기본 연결 상태</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div className={`p-4 rounded ${connectionStatus?.connectionStatus === 'Connected' ? 'bg-green-100' : 'bg-red-100'}`}>
+                <p className="font-medium">연결 상태</p>
+                <p>{connectionStatus?.connectionStatus || '알 수 없음'}</p>
+              </div>
+              <div className={`p-4 rounded ${connectionStatus?.authService === 'Working' ? 'bg-green-100' : 'bg-red-100'}`}>
+                <p className="font-medium">인증 서비스</p>
+                <p>{connectionStatus?.authService || '알 수 없음'}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* 스키마 상태 */}
+          {schemaStatus && (
+            <div>
+              <h2 className="text-xl font-semibold mb-2">스키마 상태</h2>
+              <div className="space-y-4">
+                {schemaStatus.tables?.map((table: any) => (
+                  <div key={table.table} className={`p-4 rounded ${table.exists ? 'bg-green-100' : 'bg-red-100'}`}>
+                    <p className="font-medium">{table.table}</p>
+                    <p>{table.exists ? '테이블 존재함' : '테이블 없음'}</p>
+                    {table.error && <p className="text-red-600 text-sm">{table.error}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="mt-4">
+            <button
+              onClick={checkConnection}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+            >
+              다시 테스트
+            </button>
+          </div>
+
+          <div className="text-sm text-gray-500">
+            마지막 업데이트: {new Date(schemaStatus?.timestamp || connectionStatus?.timestamp).toLocaleString()}
+          </div>
         </div>
       </div>
     </div>
