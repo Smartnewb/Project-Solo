@@ -13,6 +13,11 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // 관리자 계정 검증
+    if (user.email !== 'admin@smartnewbie.com') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     // 관리자 권한 확인
     const { data: profile } = await supabase
       .from('profiles')

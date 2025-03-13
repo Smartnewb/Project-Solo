@@ -75,6 +75,12 @@ export default function AdminDashboard() {
         return;
       }
 
+      // 관리자 계정 검증
+      if (session.user.email !== 'admin@smartnewbie.com') {
+        router.push('/');
+        return;
+      }
+
       const { data: profile } = await supabase
         .from('profiles')
         .select('role')

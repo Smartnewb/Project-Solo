@@ -13,35 +13,78 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
 
+    // 관리자 계정인 경우에만 처리
+    if (email === 'admin@smartnewbie.com') {
+      try {
+        console.log('관리자 로그인 시도...');
+        
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (signInError) {
+          console.error('관리자 로그인 에러:', signInError);
+          throw signInError;
+        }
+
+        if (!data.user) {
+          console.error('관리자 사용자 데이터 없음');
+          throw new Error('로그인에 실패했습니다.');
+        }
+
+        console.log('관리자 로그인 성공:', data.user);
+
+        // 관리자 권한 확인
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', data.user.id)
+          .single();
+
+        if (profileError) {
+          console.error('관리자 프로필 조회 에러:', profileError);
+          throw profileError;
+        }
+
+        if (!profile || profile.role !== 'admin') {
+          console.error('관리자 권한 없음:', profile);
+          throw new Error('관리자 권한이 없습니다.');
+        }
+
+        console.log('관리자 권한 확인 완료:', profile);
+        router.push('/admin');
+        return;
+      } catch (error) {
+        console.error('관리자 로그인 처리 중 에러:', error);
+        setError('관리자 로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.');
+        return;
+      }
+    }
+
+    // 일반 사용자 로그인 처리
     try {
+      console.log('일반 사용자 로그인 시도...');
+      
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (signInError) {
+        console.error('일반 사용자 로그인 에러:', signInError);
         throw signInError;
       }
 
-      if (data.user) {
-        // 관리자 계정 검증
-        if (email === 'admin@smartnewb.com' && password === 'SmartNewbie!0705') {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', data.user.id)
-            .single();
-
-          if (profile?.role === 'admin') {
-            router.push('/admin');
-            return;
-          }
-        }
-
-        // 일반 사용자인 경우
-        router.push('/');
+      if (!data.user) {
+        console.error('일반 사용자 데이터 없음');
+        throw new Error('로그인에 실패했습니다.');
       }
+
+      console.log('일반 사용자 로그인 성공:', data.user);
+      router.push('/');
     } catch (error) {
+      console.error('일반 사용자 로그인 처리 중 에러:', error);
       setError('로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.');
     }
   };
