@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { Profiles } from '../types/supabase'; // 경로를 맞게 수정하세요
+import { getProfiles } from '../api/getProfiles';
 
 // 대학별 학과 정보 타입 정의
 type University = string;
@@ -16,6 +19,8 @@ interface OnboardingForm {
   studentId: string;
   grade: string;
   image: string;
+  age: string;
+  gender: string;
 }
 
 interface ValidationErrors {
@@ -25,10 +30,13 @@ interface ValidationErrors {
   studentId: boolean;
   grade: boolean;
   image: boolean;
+  age: boolean;
+  gender: boolean;
 }
 
 export default function Onboarding() {
   const router = useRouter();
+  const supabase = createClientComponentClient();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<OnboardingForm>({
     name: '',
@@ -37,6 +45,8 @@ export default function Onboarding() {
     studentId: '',
     grade: '',
     image: '',
+    age: '',
+    gender: '',
   });
 
   const [errors, setErrors] = useState<ValidationErrors>({
@@ -46,6 +56,8 @@ export default function Onboarding() {
     studentId: false,
     grade: false,
     image: false,
+    age: false,
+    gender: false,
   });
 
   const [showModal, setShowModal] = useState(false);
@@ -198,6 +210,15 @@ export default function Onboarding() {
     ]
   };
 
+  const [profiles, setProfiles] = useState<Profiles[]>([]); // Profiles 타입 사용
+
+  const fetchProfiles = async () => {
+    const data = await getProfiles();
+    if (data) {
+      setProfiles(data);
+    }
+  };
+
   const handleUniversityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedUni = e.target.value;
     setSelectedUniversity(selectedUni);
@@ -233,6 +254,8 @@ export default function Onboarding() {
       studentId: !formData.studentId,
       grade: !formData.grade,
       image: !formData.image,
+      age: !formData.age,
+      gender: !formData.gender,
     };
 
     setErrors(newErrors);
@@ -256,6 +279,30 @@ export default function Onboarding() {
     }
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('사용자가 인증되지 않았습니다.');
+        showTemporaryModal('사용자가 인증되지 않았습니다. 잠시 후 다시 시도해주세요.');
+        return;
+      }
+      console.log({ user });
+
+      // 프로필 정보 업데이트
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          name: formData.name,
+          age: parseInt(formData.age),
+          gender: formData.gender
+        })
+        .eq('user_id', user.id); // user_id로 프로필을 찾기
+
+      if (updateError) {
+        console.error('프로필 업데이트 에러:', updateError);
+        showTemporaryModal('프로필 업데이트 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        return;
+      }
+
       // 온보딩 데이터 저장
       const onboardingData = {
         ...formData,
@@ -268,14 +315,15 @@ export default function Onboarding() {
       // 프로필 페이지로 이동
       router.push('/profile');
     } catch (error) {
-      console.error('프로필 저장 에러:', error);
-      showTemporaryModal('프로필 정보 저장 중 오류가 발생했습니다.');
+      console.error('프로필 업데이트 중 오류가 발생했습니다:', error);
+      showTemporaryModal('프로필 업데이트 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-lg mx-auto p-4">
+        <h1 className="text-h2">온보딩</h1>
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* 프로필 사진 */}
           <div className={`card space-y-4 ${errors.image ? 'border-2 border-red-500' : ''}`}>
@@ -428,9 +476,43 @@ export default function Onboarding() {
             </div>
           </div>
 
+          {/* 나이 */}
+          <div className={`card space-y-4 ${errors.age ? 'border-2 border-red-500' : ''}`}>
+            <h2 className="text-h2">나이</h2>
+            <input
+              type="number"
+              value={formData.age}
+              onChange={(e) => {
+                setFormData({ ...formData, age: e.target.value });
+                setErrors({ ...errors, age: false });
+              }}
+              placeholder="나이를 입력해주세요"
+              className="input-field"
+              required
+            />
+          </div>
+
+          {/* 성별 */}
+          <div className={`card space-y-4 ${errors.gender ? 'border-2 border-red-500' : ''}`}>
+            <h2 className="text-h2">성별</h2>
+            <select
+              value={formData.gender}
+              onChange={(e) => {
+                setFormData({ ...formData, gender: e.target.value });
+                setErrors({ ...errors, gender: false });
+              }}
+              className="input-field"
+              required
+            >
+              <option value="">선택해주세요</option>
+              <option value="male">남성</option>
+              <option value="female">여성</option>
+            </select>
+          </div>
+
           {/* 다음 버튼 */}
           <button type="submit" className="btn-primary w-full">
-            다음
+            업데이트하기
           </button>
         </form>
       </div>
