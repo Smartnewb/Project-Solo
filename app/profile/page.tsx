@@ -3,76 +3,53 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import Image from 'next/image';
 
 // 대학별 학과 정보 타입 정의
 type University = string;
 type Department = string;
 type DepartmentsByUniversity = Record<University, Department[]>;
 
-export default function ProfilePage() {
-  const [nickname, setNickname] = useState('');
-  const [bio, setBio] = useState('');
-  const [university, setUniversity] = useState('');
-  const [major, setMajor] = useState('');
-  const [age, setAge] = useState('');
-  const [gender, setGender] = useState<'male' | 'female'>('male');
-  const [height, setHeight] = useState('');
-  const [mbti, setMbti] = useState('');
-  const [interests, setInterests] = useState<string[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [drinking, setDrinking] = useState('');
-  const [smoking, setSmoking] = useState('');
-  const [tattoo, setTattoo] = useState('');
-  const [personalities, setPersonalities] = useState<string[]>([]);
-  const [datingStyles, setDatingStyles] = useState<string[]>([]);
-  const [lifestyles, setLifestyles] = useState<string[]>([]);
-  
+interface ProfileForm {
+  height: string;
+  personalities: string[];
+  personalityDescription: string;
+  datingStyles: string[];
+  datingStyleDescription: string;
+  idealLifestyles: string[];
+  lifestyleDescription: string;
+  drinking: string;
+  smoking: string;
+  tattoo: string;
+}
+
+export default function Profile() {
   const router = useRouter();
   const { user, profile, updateProfile } = useAuth();
+  const [formData, setFormData] = useState<ProfileForm>({
+    height: '',
+    personalities: [],
+    personalityDescription: '',
+    datingStyles: [],
+    datingStyleDescription: '',
+    idealLifestyles: [],
+    lifestyleDescription: '',
+    drinking: '',
+    smoking: '',
+    tattoo: '',
+  });
 
-  useEffect(() => {
-    if (!user) {
-      router.push('/auth/login');
-      return;
-    }
+  const [showModal, setShowModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
 
-    if (profile) {
-      setNickname(profile.nickname || '');
-      setBio(profile.bio || '');
-      setUniversity(profile.university || '');
-      setMajor(profile.major || '');
-      setAge(profile.age?.toString() || '');
-      setGender(profile.gender || 'male');
-      setHeight(profile.height || '');
-      setMbti(profile.mbti || '');
-      setInterests(profile.interests || []);
-      setDrinking(profile.drinking || '');
-      setSmoking(profile.smoking || '');
-      setTattoo(profile.tattoo || '');
-      setPersonalities(profile.personalities || []);
-      setDatingStyles(profile.datingStyles || []);
-      setLifestyles(profile.lifestyles || []);
-    }
-  }, [user, profile, router]);
-
-  const interestOptions = [
-    '영화', '음악', '독서', '게임', '운동', 
-    '요리', '여행', '사진', '패션', '카페',
-    '공연', '전시', '반려동물', '등산', '자전거'
-  ];
-
+  // 선택 옵션들
   const heightOptions = [
-    '~155cm', '156~160cm', '161~165cm', '166~170cm',
-    '171~175cm', '176~180cm', '181~185cm', '186cm~'
-  ];
-
-  const mbtiTypes = [
-    'ISTJ', 'ISFJ', 'INFJ', 'INTJ',
-    'ISTP', 'ISFP', 'INFP', 'INTP',
-    'ESTP', 'ESFP', 'ENFP', 'ENTP',
-    'ESTJ', 'ESFJ', 'ENFJ', 'ENTJ'
+    '155cm 이하',
+    '156~160cm',
+    '161~165cm',
+    '166~170cm',
+    '171~175cm',
+    '176cm 이상'
   ];
 
   const personalityOptions = [
@@ -84,7 +61,7 @@ export default function ProfilePage() {
     '감성적인 사람',
     '모험을 즐기는 사람',
     '계획적인 스타일',
-    '즉흥적인 스타일',
+    '즉흥적인 스타일'
   ];
 
   const datingStyleOptions = [
@@ -93,7 +70,7 @@ export default function ProfilePage() {
     '친구처럼 지내는 스타일',
     '츤데레 스타일',
     '표현을 잘 안 하지만 속은 다정한 스타일',
-    '자유로운 연애를 선호하는 스타일',
+    '자유로운 연애를 선호하는 스타일'
   ];
 
   const lifestyleOptions = [
@@ -104,97 +81,77 @@ export default function ProfilePage() {
     '운동을 즐기는 편',
     '게임을 자주 하는 편',
     '카페에서 노는 걸 좋아함',
-    '액티비티 활동을 좋아함',
+    '액티비티 활동을 좋아함'
   ];
 
   const drinkingOptions = [
     '자주 마시는 편',
     '가끔 마시는 편',
     '거의 안 마시는 편',
-    '전혀 마시지 않음',
+    '전혀 마시지 않음'
   ];
 
   const smokingOptions = [
     '네, 흡연자입니다',
     '금연 중입니다',
-    '비흡연자입니다',
+    '비흡연자입니다'
   ];
 
   const tattooOptions = [
     '네, 있습니다',
     '작은 문신이 있습니다',
-    '없습니다',
+    '없습니다'
   ];
 
-  const handleInterestToggle = (interest: string) => {
-    setInterests(prev => 
-      prev.includes(interest) 
-        ? prev.filter(i => i !== interest)
-        : [...prev, interest]
-    );
+  const handleMultiSelect = (category: keyof ProfileForm, value: string, maxCount: number) => {
+    setFormData(prev => {
+      const currentArray = prev[category] as string[];
+      if (currentArray.includes(value)) {
+        return {
+          ...prev,
+          [category]: currentArray.filter(item => item !== value)
+        };
+      }
+      if (currentArray.length >= maxCount) {
+        showTemporaryModal(`최대 ${maxCount}개까지 선택 가능합니다`);
+        return prev;
+      }
+      return {
+        ...prev,
+        [category]: [...currentArray, value]
+      };
+    });
   };
 
-  const handlePersonalityToggle = (personality: string) => {
-    setPersonalities(prev => 
-      prev.includes(personality)
-        ? prev.filter(p => p !== personality)
-        : prev.length < 3 ? [...prev, personality] : prev
-    );
+  const handleSingleSelect = (category: keyof ProfileForm, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [category]: value
+    }));
   };
 
-  const handleDatingStyleToggle = (style: string) => {
-    setDatingStyles(prev => 
-      prev.includes(style)
-        ? prev.filter(s => s !== style)
-        : prev.length < 2 ? [...prev, style] : prev
-    );
-  };
-
-  const handleLifestyleToggle = (lifestyle: string) => {
-    setLifestyles(prev => 
-      prev.includes(lifestyle)
-        ? prev.filter(l => l !== lifestyle)
-        : prev.length < 3 ? [...prev, lifestyle] : prev
-    );
+  const showTemporaryModal = (message: string) => {
+    setModalMessage(message);
+    setShowModal(true);
+    setTimeout(() => {
+      setShowModal(false);
+    }, 2000);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
-    setSuccess(false);
-
-    if (!nickname || !university || !major || !height || !mbti) {
-      setError('모든 필수 항목을 입력해주세요.');
-      setLoading(false);
+    
+    if (!formData.height) {
+      showTemporaryModal('키를 선택해주세요');
       return;
     }
 
     try {
-      const { error } = await updateProfile({
-        nickname,
-        bio,
-        university,
-        major,
-        age: parseInt(age),
-        gender,
-        height,
-        mbti,
-        interests,
-        personalities,
-        datingStyles,
-        lifestyles,
-        drinking,
-        smoking,
-        tattoo
-      });
-
-      if (error) throw error;
-      setSuccess(true);
+      localStorage.setItem('profileData', JSON.stringify(formData));
+      router.push('/home');
     } catch (error) {
-      setError('프로필 업데이트에 실패했습니다. 다시 시도해주세요.');
-    } finally {
-      setLoading(false);
+      console.error('프로필 저장 에러:', error);
+      showTemporaryModal('프로필 정보 저장 중 오류가 발생했습니다.');
     }
   };
 
@@ -325,13 +282,19 @@ export default function ProfilePage() {
     // 나머지 대학들도 추가...
   };
 
-  // 전공 검색 기능 수정
-  const [selectedUniversity, setSelectedUniversity] = useState<University>('');
+  // 대학 선택 시 학과 변경 처리
+  const [selectedUniversity, setSelectedUniversity] = useState('');
   const [departmentSearch, setDepartmentSearch] = useState('');
 
   const handleUniversityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedUniversity(e.target.value);
-    setMajor('');
+    const selectedUni = e.target.value;
+    setSelectedUniversity(selectedUni);
+    setFormData(prev => ({
+      ...prev,
+      university: selectedUni,
+      department: '',
+      departmentSearch: ''
+    }));
   };
 
   const filteredDepartments = selectedUniversity
@@ -345,101 +308,19 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F6F8FF]">
-      {/* 헤더 */}
-      <div className="bg-white border-b">
-        <div className="max-w-lg mx-auto px-4 py-4 flex items-center">
-          <button
-            onClick={() => router.back()}
-            className="text-gray-600 hover:text-gray-800 transition-colors"
-          >
-            ← 뒤로
-          </button>
-          <h1 className="text-xl font-bold flex-1 text-center text-gray-900">프로필 설정</h1>
-          <div className="w-10"></div>
-        </div>
-      </div>
-
-      {/* 메인 컨텐츠 */}
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-lg mx-auto p-4">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* 닉네임 */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">닉네임 *</h2>
-            <input
-              id="nickname"
-              type="text"
-              required
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#4A90E2] focus:ring-2 focus:ring-[#4A90E2] focus:ring-opacity-20 transition-colors"
-              placeholder="닉네임을 입력하세요"
-            />
-          </div>
-
-          {/* 대학교 */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">대학교 *</h2>
-            <select
-              value={selectedUniversity}
-              onChange={handleUniversityChange}
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#4A90E2] focus:ring-2 focus:ring-[#4A90E2] focus:ring-opacity-20 transition-colors"
-            >
-              <option value="">대학교 선택</option>
-              {universityOptions.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* 학과 */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">학과 *</h2>
-            {selectedUniversity ? (
-              <>
-                <input
-                  type="text"
-                  value={departmentSearch}
-                  onChange={(e) => setDepartmentSearch(e.target.value)}
-                  placeholder="학과 검색"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#4A90E2] focus:ring-2 focus:ring-[#4A90E2] focus:ring-opacity-20 transition-colors mb-4"
-                />
-                <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
-                  {filteredDepartments.map((dept: Department) => (
-                    <button
-                      key={dept}
-                      type="button"
-                      onClick={() => setMajor(dept)}
-                      className={`px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-                        major === dept
-                          ? 'bg-[#4A90E2] text-white border-2 border-[#4A90E2]'
-                          : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-[#4A90E2]'
-                      }`}
-                    >
-                      {dept}
-                    </button>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <p className="text-sm text-gray-500">대학교를 먼저 선택해주세요.</p>
-            )}
-          </div>
-
-          {/* 키 */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">키 *</h2>
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* 키 선택 */}
+          <div className="card space-y-4">
+            <h2 className="text-h2">본인의 키</h2>
             <div className="grid grid-cols-2 gap-2">
               {heightOptions.map((option) => (
                 <button
                   key={option}
                   type="button"
-                  onClick={() => setHeight(option)}
-                  className={`px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-                    height === option
-                      ? 'bg-[#4A90E2] text-white border-2 border-[#4A90E2]'
-                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-[#4A90E2]'
-                  }`}
+                  onClick={() => handleSingleSelect('height', option)}
+                  className={`btn-select ${formData.height === option ? 'btn-selected' : ''}`}
                 >
                   {option}
                 </button>
@@ -447,224 +328,147 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* MBTI */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">MBTI *</h2>
-            <div className="grid grid-cols-4 gap-2">
-              {mbtiTypes.map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => setMbti(type)}
-                  className={`px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-                    mbti === type
-                      ? 'bg-[#4A90E2] text-white border-2 border-[#4A90E2]'
-                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-[#4A90E2]'
-                  }`}
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 자기소개 */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">자기소개</h2>
-            <textarea
-              id="bio"
-              rows={3}
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-[#4A90E2] focus:ring-2 focus:ring-[#4A90E2] focus:ring-opacity-20 transition-colors"
-              placeholder="자신을 소개해주세요"
-            />
-          </div>
-
-          {/* 관심사 */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">관심사 (최대 5개)</h2>
-            <div className="grid grid-cols-3 gap-2">
-              {interestOptions.map((interest) => (
-                <button
-                  key={interest}
-                  type="button"
-                  onClick={() => handleInterestToggle(interest)}
-                  disabled={!interests.includes(interest) && interests.length >= 5}
-                  className={`px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-                    interests.includes(interest)
-                      ? 'bg-[#4A90E2] text-white border-2 border-[#4A90E2]'
-                      : interests.length >= 5
-                      ? 'bg-gray-100 text-gray-400 border-2 border-gray-200 cursor-not-allowed'
-                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-[#4A90E2]'
-                  }`}
-                >
-                  {interest}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 성격 */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">성격 (최대 3개)</h2>
+          {/* 성격 선택 */}
+          <div className="card space-y-4">
+            <h2 className="text-h2">본인의 성격 (최대 3개)</h2>
             <div className="grid grid-cols-2 gap-2">
               {personalityOptions.map((option) => (
                 <button
                   key={option}
                   type="button"
-                  onClick={() => handlePersonalityToggle(option)}
-                  className={`px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-                    personalities.includes(option)
-                      ? 'bg-[#4A90E2] text-white border-2 border-[#4A90E2]'
-                      : personalities.length >= 3
-                      ? 'bg-gray-100 text-gray-400 border-2 border-gray-200 cursor-not-allowed'
-                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-[#4A90E2]'
-                  }`}
+                  onClick={() => handleMultiSelect('personalities', option, 3)}
+                  className={`btn-select ${formData.personalities.includes(option) ? 'btn-selected' : ''}`}
                 >
                   {option}
                 </button>
               ))}
             </div>
+            <textarea
+              value={formData.personalityDescription}
+              onChange={(e) => setFormData(prev => ({ ...prev, personalityDescription: e.target.value }))}
+              placeholder="추가 설명 (선택 사항) (예: '처음엔 낯가리지만 친해지면 장난도 잘 쳐요!')"
+              className="input-field h-24"
+              maxLength={200}
+            />
           </div>
 
-          {/* 연애 스타일 */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">연애 스타일 (최대 2개)</h2>
+          {/* 연애 스타일 선택 */}
+          <div className="card space-y-4">
+            <h2 className="text-h2">본인의 연애 스타일 (최대 2개)</h2>
             <div className="grid grid-cols-2 gap-2">
               {datingStyleOptions.map((option) => (
                 <button
                   key={option}
                   type="button"
-                  onClick={() => handleDatingStyleToggle(option)}
-                  className={`px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-                    datingStyles.includes(option)
-                      ? 'bg-[#4A90E2] text-white border-2 border-[#4A90E2]'
-                      : datingStyles.length >= 2
-                      ? 'bg-gray-100 text-gray-400 border-2 border-gray-200 cursor-not-allowed'
-                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-[#4A90E2]'
-                  }`}
+                  onClick={() => handleMultiSelect('datingStyles', option, 2)}
+                  className={`btn-select ${formData.datingStyles.includes(option) ? 'btn-selected' : ''}`}
                 >
                   {option}
                 </button>
               ))}
             </div>
+            <textarea
+              value={formData.datingStyleDescription}
+              onChange={(e) => setFormData(prev => ({ ...prev, datingStyleDescription: e.target.value }))}
+              placeholder="추가 설명 (선택 사항)"
+              className="input-field h-24"
+              maxLength={200}
+            />
           </div>
 
-          {/* 라이프스타일 */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">라이프스타일 (최대 3개)</h2>
+          {/* 이상형 라이프스타일 선택 */}
+          <div className="card space-y-4">
+            <h2 className="text-h2">이상형의 라이프스타일 (최대 3개)</h2>
             <div className="grid grid-cols-2 gap-2">
               {lifestyleOptions.map((option) => (
                 <button
                   key={option}
                   type="button"
-                  onClick={() => handleLifestyleToggle(option)}
-                  className={`px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-                    lifestyles.includes(option)
-                      ? 'bg-[#4A90E2] text-white border-2 border-[#4A90E2]'
-                      : lifestyles.length >= 3
-                      ? 'bg-gray-100 text-gray-400 border-2 border-gray-200 cursor-not-allowed'
-                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-[#4A90E2]'
-                  }`}
+                  onClick={() => handleMultiSelect('idealLifestyles', option, 3)}
+                  className={`btn-select ${formData.idealLifestyles.includes(option) ? 'btn-selected' : ''}`}
                 >
                   {option}
                 </button>
               ))}
             </div>
+            <textarea
+              value={formData.lifestyleDescription}
+              onChange={(e) => setFormData(prev => ({ ...prev, lifestyleDescription: e.target.value }))}
+              placeholder="추가 설명 (선택 사항)"
+              className="input-field h-24"
+              maxLength={200}
+            />
           </div>
 
-          {/* 음주 */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">음주</h2>
-            <div className="grid grid-cols-2 gap-2">
-              {drinkingOptions.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setDrinking(option)}
-                  className={`px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-                    drinking === option
-                      ? 'bg-[#4A90E2] text-white border-2 border-[#4A90E2]'
-                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-[#4A90E2]'
-                  }`}
-                >
-                  {option}
-                </button>
-              ))}
+          {/* 술, 담배, 문신 여부 */}
+          <div className="card space-y-6">
+            <h2 className="text-h2">추가 정보</h2>
+            
+            <div className="space-y-4">
+              <h3 className="text-h3">술을 즐기는 편인가요?</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {drinkingOptions.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => handleSingleSelect('drinking', option)}
+                    className={`btn-select ${formData.drinking === option ? 'btn-selected' : ''}`}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* 흡연 */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">흡연</h2>
-            <div className="grid grid-cols-2 gap-2">
-              {smokingOptions.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setSmoking(option)}
-                  className={`px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-                    smoking === option
-                      ? 'bg-[#4A90E2] text-white border-2 border-[#4A90E2]'
-                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-[#4A90E2]'
-                  }`}
-                >
-                  {option}
-                </button>
-              ))}
+            <div className="space-y-4">
+              <h3 className="text-h3">담배를 피우시나요?</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {smokingOptions.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => handleSingleSelect('smoking', option)}
+                    className={`btn-select ${formData.smoking === option ? 'btn-selected' : ''}`}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* 문신 */}
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">문신</h2>
-            <div className="grid grid-cols-2 gap-2">
-              {tattooOptions.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setTattoo(option)}
-                  className={`px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-                    tattoo === option
-                      ? 'bg-[#4A90E2] text-white border-2 border-[#4A90E2]'
-                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-[#4A90E2]'
-                  }`}
-                >
-                  {option}
-                </button>
-              ))}
+            <div className="space-y-4">
+              <h3 className="text-h3">문신이 있나요?</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {tattooOptions.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => handleSingleSelect('tattoo', option)}
+                    className={`btn-select ${formData.tattoo === option ? 'btn-selected' : ''}`}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* 에러 메시지 */}
-          {error && (
-            <div className="bg-red-50 rounded-xl p-4">
-              <p className="text-sm font-medium text-red-800">{error}</p>
-            </div>
-          )}
-
-          {/* 성공 메시지 */}
-          {success && (
-            <div className="bg-green-50 rounded-xl p-4">
-              <p className="text-sm font-medium text-green-800">
-                프로필이 성공적으로 업데이트되었습니다.
-              </p>
-            </div>
-          )}
-
-          {/* 저장 버튼 */}
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full px-4 py-3 text-sm font-medium text-white bg-[#4A90E2] rounded-xl hover:bg-[#357ABD] focus:outline-none focus:ring-2 focus:ring-[#4A90E2] focus:ring-opacity-50 transition-colors ${
-              loading ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-          >
-            {loading ? '저장 중...' : '저장하기'}
+          {/* 다음 버튼 */}
+          <button type="submit" className="btn-primary w-full">
+            완료
           </button>
         </form>
       </div>
+
+      {/* 알림 모달 */}
+      {showModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="bg-black bg-opacity-50 absolute inset-0"></div>
+          <div className="bg-white rounded-lg p-6 shadow-xl z-10 transform transition-all">
+            <p className="text-center">{modalMessage}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

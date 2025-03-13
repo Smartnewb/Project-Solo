@@ -26,11 +26,9 @@
 @layer components {
   /* 버튼 스타일 */
   .btn-primary {
-    @apply bg-[#FF4F93] text-white font-bold py-3 px-6 rounded-full;
-    @apply hover:bg-[#FF6B81] hover:shadow-lg transform hover:scale-[0.95];
-    @apply transition-all duration-200;
-    @apply disabled:bg-gray-300 disabled:text-gray-600 disabled:cursor-not-allowed;
-    @apply disabled:hover:scale-100 disabled:hover:shadow-none;
+    @apply px-4 py-3 text-sm font-medium text-white bg-[#4A90E2] rounded-xl 
+    hover:bg-[#357ABD] focus:outline-none focus:ring-2 focus:ring-[#4A90E2] 
+    focus:ring-opacity-50 transition-colors;
   }
 
   .btn-secondary {
@@ -42,30 +40,24 @@
 
   /* 선택 버튼 스타일 */
   .btn-select {
-    @apply w-full px-4 py-3 rounded-full text-base font-medium border-2 transition-all duration-200;
-    @apply text-gray-700 border-gray-300 bg-white;
-    @apply hover:border-[#FF4F93] hover:text-[#FF4F93];
+    @apply px-4 py-2 text-sm font-medium rounded-xl transition-colors
+    bg-white text-gray-700 border-2 border-gray-300 hover:border-[#4A90E2];
   }
 
-  .btn-select.selected {
-    @apply bg-[#FF4F93] text-black border-[#FF4F93];
-    @apply font-extrabold text-base;
-    @apply shadow-md;
-    @apply hover:bg-[#FF4F93] hover:border-[#FF4F93] hover:text-black;
+  .btn-selected {
+    @apply bg-[#4A90E2] text-white border-2 border-[#4A90E2];
   }
 
   /* 카드 스타일 */
   .card {
-    @apply bg-white rounded-2xl shadow-md p-5;
-    @apply hover:shadow-lg transition-shadow duration-200;
+    @apply bg-white rounded-2xl p-6 shadow-sm;
   }
 
   /* 입력 필드 스타일 */
   .input-field {
-    @apply w-full px-4 py-3 rounded-xl border border-gray-200;
-    @apply focus:outline-none focus:ring-2 focus:ring-[#FF4F93];
-    @apply focus:border-transparent transition-all duration-200;
-    @apply placeholder:text-gray-400;
+    @apply w-full px-4 py-3 rounded-xl border border-gray-300 
+    focus:border-[#4A90E2] focus:ring-2 focus:ring-[#4A90E2] focus:ring-opacity-20 
+    transition-colors resize-none;
   }
 
   /* 애니메이션 */
@@ -91,7 +83,11 @@
   }
 
   .text-h2 {
-    @apply text-[22px] font-medium leading-snug;
+    @apply text-lg font-semibold text-gray-900 mb-4;
+  }
+
+  .text-h3 {
+    @apply text-base font-medium text-gray-800 mb-2;
   }
 
   .text-body {

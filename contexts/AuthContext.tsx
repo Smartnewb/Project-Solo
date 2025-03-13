@@ -52,10 +52,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // 프로필 정보 가져오기
   const fetchProfile = async (userId: string) => {
+    console.log('Fetching profile for user ID:', userId);
+    
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('user_id', userId)
+      .eq('id', userId)
       .single();
 
     if (error) {
@@ -63,6 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    console.log('Fetched profile data:', data);
     setProfile(data);
   };
 
@@ -102,23 +105,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       if (!user) throw new Error('No user');
 
+      console.log('Updating profile with data:', profileData);
+      console.log('User ID:', user.id);
+
       const { error } = await supabase
         .from('profiles')
         .upsert({
-          user_id: user.id,
+          id: user.id,
           ...profileData,
           updated_at: new Date().toISOString(),
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Profile update error:', error);
+        throw error;
+      }
 
       // 프로필 새로고침
       await fetchProfile(user.id);
 
       return { error: null };
     } catch (error) {
+      console.error('Profile update exception:', error);
       return { error: error as Error };
     }
   };

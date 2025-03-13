@@ -1,18 +1,25 @@
 export interface Profile {
   id: string;
-  user_id: string;
+  role?: string;
   nickname: string;
-  bio: string;
+  bio?: string;
   university: string;
-  major: string;
-  age: number;
-  gender: 'male' | 'female';
-  height: string;
+  department?: string;
+  major?: string;
+  age?: number;
+  gender?: 'male' | 'female';
+  height: string | number;
   mbti: string;
-  interests: string[];
-  photos: string[];
-  created_at: string;
-  updated_at: string;
+  interests?: string[];
+  personalities?: string[];
+  datingStyles?: string[];
+  lifestyles?: string[];
+  drinking?: string;
+  smoking?: string;
+  tattoo?: string;
+  photos?: string[];
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface UserPreferences {
