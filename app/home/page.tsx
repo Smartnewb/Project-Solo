@@ -10,32 +10,87 @@ import DateSpotRecommendation from '../components/DateSpotRecommendation';
 import PopularQuestions from '../components/PopularQuestions';
 import SuccessStories from '../components/SuccessStories';
 import { HomeIcon, ChatBubbleLeftRightIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Home() {
   const router = useRouter();
+  const { user } = useAuth();
   const [hasProfile, setHasProfile] = useState(false);
   const [hasIdealType, setHasIdealType] = useState(false);
-  const [userName, setUserName] = useState('');
+  const [userName, setUserName] = useState('게스트');
+  const [showOnboardingModal, setShowOnboardingModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   useEffect(() => {
+    if (!user) return;
+
     // localStorage에서 프로필과 이상형 설정 상태 확인
     const profile = localStorage.getItem('profile');
     const idealType = localStorage.getItem('idealType');
+    const onboardingProfile = localStorage.getItem('onboardingProfile');
+    
+    if (!onboardingProfile) {
+      setShowOnboardingModal(true);
+      return;
+    }
+
+    const { name } = JSON.parse(onboardingProfile);
+    setUserName(name);
+    
+    if (!profile) {
+      setShowProfileModal(true);
+    }
     
     setHasProfile(!!profile);
     setHasIdealType(!!idealType);
-
-    // 유저 이름 가져오기
-    if (profile) {
-      const profileData = JSON.parse(profile);
-      setUserName(profileData.name || '게스트');
-    } else {
-      setUserName('게스트');
-    }
-  }, []);
+  }, [user]);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
+      {/* 온보딩 모달 */}
+      {showOnboardingModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm mx-4 space-y-4">
+            <h2 className="text-h2 text-center">환영합니다! 👋</h2>
+            <p className="text-gray-600 text-center">
+              매칭 서비스를 이용하기 위해서는<br />
+              먼저 기본 정보를 입력해주세요.
+            </p>
+            <button
+              onClick={() => {
+                setShowOnboardingModal(false);
+                router.push('/onboarding');
+              }}
+              className="btn-primary w-full"
+            >
+              시작하기
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 프로필 설정 모달 */}
+      {showProfileModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm mx-4 space-y-4">
+            <h2 className="text-h2 text-center">프로필을 설정해주세요 ✨</h2>
+            <p className="text-gray-600 text-center">
+              나를 더 잘 표현할 수 있는<br />
+              프로필을 작성하고 매칭을 시작해보세요!
+            </p>
+            <button
+              onClick={() => {
+                setShowProfileModal(false);
+                router.push('/profile');
+              }}
+              className="btn-primary w-full"
+            >
+              프로필 설정하기
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 상단 헤더 */}
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-lg mx-auto px-4 py-3">
@@ -125,22 +180,28 @@ export default function Home() {
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t py-2">
         <div className="max-w-lg mx-auto px-4 flex justify-around items-center">
           <button
-            onClick={() => router.push('/home')}
+            onClick={() => {
+              router.push('/home');
+            }}
             className="flex flex-col items-center text-primary-DEFAULT"
           >
             <HomeIcon className="w-6 h-6" />
             <span className="text-sm mt-1">홈</span>
           </button>
           <button
-            onClick={() => router.push('/community')}
-            className="flex flex-col items-center text-gray-400"
+            onClick={() => {
+              router.push('/community');
+            }}
+            className="flex flex-col items-center text-gray-400 hover:text-primary-DEFAULT"
           >
             <ChatBubbleLeftRightIcon className="w-6 h-6" />
             <span className="text-sm mt-1">커뮤니티</span>
           </button>
           <button
-            onClick={() => router.push('/settings')}
-            className="flex flex-col items-center text-gray-400"
+            onClick={() => {
+              router.push('/settings');
+            }}
+            className="flex flex-col items-center text-gray-400 hover:text-primary-DEFAULT"
           >
             <Cog6ToothIcon className="w-6 h-6" />
             <span className="text-sm mt-1">설정</span>

@@ -256,7 +256,16 @@ export default function Onboarding() {
     }
 
     try {
-      localStorage.setItem('onboardingProfile', JSON.stringify(formData));
+      // 온보딩 데이터 저장
+      const onboardingData = {
+        ...formData,
+        timestamp: new Date().toISOString()
+      };
+      
+      localStorage.setItem('onboardingProfile', JSON.stringify(onboardingData));
+      console.log('온보딩 데이터 저장됨:', onboardingData);
+      
+      // 프로필 페이지로 이동
       router.push('/profile');
     } catch (error) {
       console.error('프로필 저장 에러:', error);

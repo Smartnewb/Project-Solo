@@ -8,9 +8,11 @@ import { HeartIcon, ChatBubbleOvalLeftIcon } from '@heroicons/react/24/solid';
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Post {
   id: string;
+  userId: string;
   nickname: string;
   studentId: string;
   content: string;
@@ -22,6 +24,7 @@ interface Post {
   reports: string[];
   comments: {
     id: string;
+    userId: string;
     nickname: string;
     studentId: string;
     content: string;
@@ -60,15 +63,17 @@ function generateRandomEmoji(): string {
 
 export default function Community() {
   const router = useRouter();
+  const { user } = useAuth();
   const sliderRef = useRef<Slider>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [popularPosts, setPopularPosts] = useState<Post[]>([]);
   const [newPost, setNewPost] = useState('');
   const [userInfo, setUserInfo] = useState<{ 
+    userId: string;
     studentId: string;
     nickname?: string;
     emoji?: string;
-  }>({ studentId: '' });
+  }>({ userId: '', studentId: '' });
   const [editingPost, setEditingPost] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const [showAllComments, setShowAllComments] = useState<string | null>(null);
@@ -95,56 +100,62 @@ export default function Community() {
   ];
 
   useEffect(() => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
     // 로컬 스토리지에서 사용자 정보 가져오기
     const profileData = localStorage.getItem('onboardingProfile');
     if (profileData) {
       const { studentId } = JSON.parse(profileData);
       
       // 저장된 사용자 닉네임 정보 가져오기
-      const userNickname = localStorage.getItem(`userNickname_${studentId}`);
+      const userNickname = localStorage.getItem(`userNickname_${user.id}`);
       if (userNickname) {
         const { nickname, emoji } = JSON.parse(userNickname);
-        setUserInfo({ studentId, nickname, emoji });
+        setUserInfo({ userId: user.id, studentId, nickname, emoji });
       } else {
         // 새로운 닉네임 생성 및 저장
         const nickname = generateRandomNickname();
         const emoji = generateRandomEmoji();
-        localStorage.setItem(`userNickname_${studentId}`, JSON.stringify({ nickname, emoji }));
-        setUserInfo({ studentId, nickname, emoji });
+        localStorage.setItem(`userNickname_${user.id}`, JSON.stringify({ nickname, emoji }));
+        setUserInfo({ userId: user.id, studentId, nickname, emoji });
       }
     }
 
     // 로컬 스토리지에서 게시물 가져오기
     const savedPosts = localStorage.getItem('communityPosts');
-
-    // 인기 게시물 필터링
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const getPopularPosts = (posts: Post[]) => {
-      return posts
-        .filter(post => !post.isDeleted && new Date(post.timestamp) >= today)
-        .sort((a, b) => {
-          const aScore = (a.likes?.length || 0) + (a.comments?.length || 0);
-          const bScore = (b.likes?.length || 0) + (b.comments?.length || 0);
-          return bScore - aScore;
-        })
-        .slice(0, 5);
-    };
-
     if (savedPosts) {
       const parsedPosts = JSON.parse(savedPosts);
       setPosts(parsedPosts);
-      setPopularPosts(getPopularPosts(parsedPosts));
     }
-  }, []);
+  }, [user, router]);
+
+  // 게시물이 변경될 때마다 인기 게시물 업데이트
+  useEffect(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const popularPosts = posts
+      .filter(post => !post.isDeleted && new Date(post.timestamp) >= today)
+      .sort((a, b) => {
+        const aScore = (a.likes?.length || 0) + (a.comments?.length || 0);
+        const bScore = (b.likes?.length || 0) + (b.comments?.length || 0);
+        return bScore - aScore;
+      })
+      .slice(0, 5);
+
+    setPopularPosts(popularPosts);
+  }, [posts]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPost.trim()) return;
+    if (!newPost.trim() || !user) return;
 
     const post: Post = {
       id: Date.now().toString(),
+      userId: user.id,
       nickname: userInfo.nickname!,
       studentId: userInfo.studentId,
       content: newPost,
@@ -218,6 +229,7 @@ export default function Community() {
 
     const comment = {
       id: Date.now().toString(),
+      userId: userInfo.userId,
       nickname: userInfo.nickname!,
       studentId: userInfo.studentId,
       content: newComment,

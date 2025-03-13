@@ -3,21 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import Image from 'next/image';
-
-// 대학별 학과 정보 타입 정의
-type University = string;
-type Department = string;
-type DepartmentsByUniversity = Record<University, Department[]>;
 
 interface ProfileForm {
   height: string;
   personalities: string[];
-  personalityDescription: string;
   datingStyles: string[];
-  datingStyleDescription: string;
   idealLifestyles: string[];
-  lifestyleDescription: string;
+  interests: string[];
   drinking: string;
   smoking: string;
   tattoo: string;
@@ -29,11 +21,9 @@ export default function Profile() {
   const [formData, setFormData] = useState<ProfileForm>({
     height: '',
     personalities: [],
-    personalityDescription: '',
     datingStyles: [],
-    datingStyleDescription: '',
     idealLifestyles: [],
-    lifestyleDescription: '',
+    interests: [],
     drinking: '',
     smoking: '',
     tattoo: '',
@@ -41,6 +31,40 @@ export default function Profile() {
 
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
+
+  useEffect(() => {
+    if (!user) {
+      router.push('/onboarding');
+    }
+  }, [user, router]);
+
+  useEffect(() => {
+    // 온보딩 데이터 확인
+    const onboardingData = localStorage.getItem('onboardingProfile');
+    if (!onboardingData) {
+      console.log('온보딩 데이터 없음, 온보딩 페이지로 이동');
+      router.push('/onboarding');
+      return;
+    }
+
+    // 수정 모드인 경우 기존 데이터 불러오기
+    const editData = localStorage.getItem('editProfileData');
+    if (editData) {
+      const parsedData = JSON.parse(editData);
+      setFormData({
+        height: parsedData.height || '',
+        personalities: parsedData.personalities || [],
+        datingStyles: parsedData.datingStyles || [],
+        idealLifestyles: parsedData.idealLifestyles || [],
+        interests: parsedData.interests || [],
+        drinking: parsedData.drinking || '',
+        smoking: parsedData.smoking || '',
+        tattoo: parsedData.tattoo || '',
+      });
+      // 수정이 완료되면 editProfileData 삭제
+      localStorage.removeItem('editProfileData');
+    }
+  }, [router]);
 
   // 선택 옵션들
   const heightOptions = [
@@ -103,6 +127,27 @@ export default function Profile() {
     '없습니다'
   ];
 
+  const interestOptions = [
+    '영화/드라마',
+    '음악',
+    '독서',
+    '게임',
+    '요리',
+    '여행',
+    '운동',
+    '패션',
+    '사진/영상',
+    '그림',
+    '댄스',
+    '반려동물',
+    '카페',
+    '맛집 탐방',
+    '공연/전시',
+    '재테크',
+    '자기계발',
+    '봉사활동'
+  ];
+
   const handleMultiSelect = (category: keyof ProfileForm, value: string, maxCount: number) => {
     setFormData(prev => {
       const currentArray = prev[category] as string[];
@@ -140,168 +185,38 @@ export default function Profile() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.height) {
       showTemporaryModal('키를 선택해주세요');
       return;
     }
 
     try {
-      localStorage.setItem('profileData', JSON.stringify(formData));
+      // 온보딩 데이터 확인
+      const onboardingData = localStorage.getItem('onboardingProfile');
+      if (!onboardingData) {
+        console.log('온보딩 데이터 없음, 온보딩 페이지로 이동');
+        showTemporaryModal('온보딩 정보가 없습니다. 처음부터 다시 시작해주세요.');
+        router.push('/onboarding');
+        return;
+      }
+
+      // 프로필 데이터 저장
+      const profileData = {
+        ...formData,
+        timestamp: new Date().toISOString()
+      };
+      
+      localStorage.setItem('profile', JSON.stringify(profileData));
+      console.log('프로필 데이터 저장됨:', profileData);
+
+      // 홈 페이지로 이동
       router.push('/home');
     } catch (error) {
       console.error('프로필 저장 에러:', error);
       showTemporaryModal('프로필 정보 저장 중 오류가 발생했습니다.');
     }
   };
-
-  // 대전광역시 대학교 목록
-  const universityOptions = [
-    '충남대학교', '한남대학교', '배재대학교', '우송대학교', '대전대학교', 
-    '목원대학교', '침례신학대학교', '대전가톨릭대학교', '대전신학대학교',
-    '을지대학교', '대전보건대학교', '대전과학기술대학교', '대전문화예술대학교',
-    '대전여자대학교', 'KC대학교', '대전폴리텍대학', '한국영상대학교',
-    '한밭대학교', '우송정보대학', '대덕대학교', '한국과학기술원(KAIST)'
-  ];
-
-  // 대학별 학과 정보
-  const departmentsByUniversity: DepartmentsByUniversity = {
-    '충남대학교': [
-      '신소재공학과',
-      '화학생명공학',
-      '기계공학과',
-      '설비공학과',
-      '산업경영공학과',
-      '창의융합학과',
-      '전기공학과',
-      '전자공학과',
-      '컴퓨터공학과',
-      '정보통신공학과',
-      '지능미디어공학과',
-      '모바일융합공학과',
-      '인공지능소프트웨어학과',
-      '건축학과',
-      '도시공학과',
-      '산업디자인학과',
-      '시각·영상디자인학과',
-      '국어국문학과', '영어영문학과', '수학과', '물리학과', '화학과', '생물학과',
-      '경영학과', '경제학과', '심리학과', '행정학과', '의학과', '간호학과'
-    ],
-    '한남대학교': [
-      '신소재공학과',
-      '화학생명공학',
-      '기계공학과',
-      '설비공학과',
-      '산업경영공학과',
-      '창의융합학과',
-      '전기공학과',
-      '전자공학과',
-      '컴퓨터공학과',
-      '정보통신공학과',
-      '지능미디어공학과',
-      '모바일융합공학과',
-      '인공지능소프트웨어학과',
-      '건축학과',
-      '도시공학과',
-      '산업디자인학과',
-      '시각·영상디자인학과',
-      '국어국문학과', '영어영문학과', '경영학과', '회계학과', '무역학과',
-      '미디어영상학과'
-    ],
-    '배재대학교': [
-      '신소재공학과',
-      '화학생명공학',
-      '기계공학과',
-      '설비공학과',
-      '산업경영공학과',
-      '창의융합학과',
-      '전기공학과',
-      '전자공학과',
-      '컴퓨터공학과',
-      '정보통신공학과',
-      '지능미디어공학과',
-      '모바일융합공학과',
-      '인공지능소프트웨어학과',
-      '건축학과',
-      '도시공학과',
-      '산업디자인학과',
-      '시각·영상디자인학과',
-      '경영학과', '게임공학과', '영어영문학과',
-      '한국어문학과', '심리상담학과', '미디어콘텐츠학과'
-    ],
-    '우송대학교': [
-      '신소재공학과',
-      '화학생명공학',
-      '기계공학과',
-      '설비공학과',
-      '산업경영공학과',
-      '창의융합학과',
-      '전기공학과',
-      '전자공학과',
-      '컴퓨터공학과',
-      '정보통신공학과',
-      '지능미디어공학과',
-      '모바일융합공학과',
-      '인공지능소프트웨어학과',
-      '건축학과',
-      '도시공학과',
-      '산업디자인학과',
-      '시각·영상디자인학과',
-      '글로벌미디어영상학과', '글로벌조리학과', '간호학과', '물리치료학과',
-      '사회복지학과', '글로벌호텔매니지먼트학과', 'AI빅데이터학과'
-    ],
-    '대전대학교': [
-      '한의예과', '간호학과', '물리치료학과', '경영학과', '컴퓨터공학과',
-      '정보보안학과', '영미언어문화학과', '건축공학과'
-    ],
-    '한밭대학교': [
-      '신소재공학과',
-      '화학생명공학',
-      '기계공학과',
-      '설비공학과',
-      '산업경영공학과',
-      '창의융합학과',
-      '전기공학과',
-      '전자공학과',
-      '컴퓨터공학과',
-      '정보통신공학과',
-      '지능미디어공학과',
-      '모바일융합공학과',
-      '인공지능소프트웨어학과',
-      '건축학과',
-      '도시공학과',
-      '산업디자인학과',
-      '시각·영상디자인학과',
-      '건설환경공학과',
-      '공공행정학과'
-    ],
-    '한국과학기술원(KAIST)': [
-      '물리학과', '수리과학과', '화학과', '생명과학과',
-      '항공우주공학과', '전기및전자공학부', '전산학부', '산업및시스템공학과'
-    ]
-    // 나머지 대학들도 추가...
-  };
-
-  // 대학 선택 시 학과 변경 처리
-  const [selectedUniversity, setSelectedUniversity] = useState('');
-  const [departmentSearch, setDepartmentSearch] = useState('');
-
-  const handleUniversityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedUni = e.target.value;
-    setSelectedUniversity(selectedUni);
-    setFormData(prev => ({
-      ...prev,
-      university: selectedUni,
-      department: '',
-      departmentSearch: ''
-    }));
-  };
-
-  const filteredDepartments = selectedUniversity
-    ? departmentsByUniversity[selectedUniversity]?.filter(dept =>
-        dept.toLowerCase().includes(departmentSearch.toLowerCase())
-      ) || []
-    : [];
 
   if (!user) {
     return null;
@@ -343,13 +258,6 @@ export default function Profile() {
                 </button>
               ))}
             </div>
-            <textarea
-              value={formData.personalityDescription}
-              onChange={(e) => setFormData(prev => ({ ...prev, personalityDescription: e.target.value }))}
-              placeholder="추가 설명 (선택 사항) (예: '처음엔 낯가리지만 친해지면 장난도 잘 쳐요!')"
-              className="input-field h-24"
-              maxLength={200}
-            />
           </div>
 
           {/* 연애 스타일 선택 */}
@@ -367,13 +275,23 @@ export default function Profile() {
                 </button>
               ))}
             </div>
-            <textarea
-              value={formData.datingStyleDescription}
-              onChange={(e) => setFormData(prev => ({ ...prev, datingStyleDescription: e.target.value }))}
-              placeholder="추가 설명 (선택 사항)"
-              className="input-field h-24"
-              maxLength={200}
-            />
+          </div>
+
+          {/* 관심사 선택 */}
+          <div className="card space-y-4">
+            <h2 className="text-h2">관심사 (최대 5개)</h2>
+            <div className="grid grid-cols-4 gap-2">
+              {interestOptions.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => handleMultiSelect('interests', option, 5)}
+                  className={`btn-select text-sm ${formData.interests.includes(option) ? 'btn-selected' : ''}`}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* 이상형 라이프스타일 선택 */}
@@ -391,13 +309,6 @@ export default function Profile() {
                 </button>
               ))}
             </div>
-            <textarea
-              value={formData.lifestyleDescription}
-              onChange={(e) => setFormData(prev => ({ ...prev, lifestyleDescription: e.target.value }))}
-              placeholder="추가 설명 (선택 사항)"
-              className="input-field h-24"
-              maxLength={200}
-            />
           </div>
 
           {/* 술, 담배, 문신 여부 */}

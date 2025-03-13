@@ -97,6 +97,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // 로그아웃
   const signOut = async () => {
+    // 로컬 스토리지의 사용자 관련 데이터 삭제
+    localStorage.removeItem('onboardingProfile');
+    localStorage.removeItem('profile');
+    localStorage.removeItem('idealType');
+    localStorage.removeItem('communityPosts');
+    
+    // 사용자별 닉네임 정보 삭제
+    if (user?.id) {
+      localStorage.removeItem(`userNickname_${user.id}`);
+    }
+    
+    // Supabase 로그아웃
     await supabase.auth.signOut();
   };
 
