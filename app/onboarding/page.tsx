@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { Profiles } from '../types/supabase'; // 경로를 맞게 수정하세요
 import { getProfiles } from '../api/getProfiles';
 
 // 대학별 학과 정보 타입 정의
@@ -210,7 +209,7 @@ export default function Onboarding() {
     ]
   };
 
-  const [profiles, setProfiles] = useState<Profiles[]>([]); // Profiles 타입 사용
+  const [profiles, setProfiles] = useState<any[]>([]); // Profiles 타입 사용
 
   const fetchProfiles = async () => {
     const data = await getProfiles();

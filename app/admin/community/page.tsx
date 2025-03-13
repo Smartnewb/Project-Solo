@@ -236,7 +236,7 @@ export default function CommunityManagement() {
                           {post.author}
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900">{post.title}</div>
+                          <div className="text-sm text-gray-900">{(post as any).title}</div>
                           <div className="text-sm text-gray-500 truncate max-w-xs">
                             {post.content}
                           </div>

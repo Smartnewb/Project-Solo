@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { HomeIcon, ChatBubbleLeftRightIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 import { HeartIcon, ChatBubbleOvalLeftIcon } from '@heroicons/react/24/solid';
 import Slider from 'react-slick';
@@ -642,18 +641,18 @@ export default function Community() {
               )}
 
               {/* 댓글 목록 */}
-              {!post.isDeleted && renderComments(post, showAllComments === post.id).map((comment) => (
+              {!post.isDeleted && renderComments(post, showAllComments === post.id).map((comment: any) => (
                 <div className="flex items-center gap-2">
-                  {comment.studentId === userInfo.studentId ? (
+                  {(comment as any).studentId === userInfo.studentId ? (
                     <div className="flex gap-2">
                       <button
-                        onClick={() => handleEditComment(post.id, comment.id, comment.content)}
+                        onClick={() => handleEditComment(post.id, (comment as any).id, (comment as any).content)}
                         className="text-xs text-blue-500 hover:text-blue-600"
                       >
                         수정
                       </button>
                       <button
-                        onClick={() => handleDeleteComment(post.id, comment.id)}
+                        onClick={() => handleDeleteComment(post.id, (comment as any).id)}
                         className="text-xs text-red-500 hover:text-red-600"
                       >
                         삭제
@@ -661,7 +660,7 @@ export default function Community() {
                     </div>
                   ) : (
                     <button
-                      onClick={() => handleOpenReport('comment', post.id, comment.id)}
+                      onClick={() => handleOpenReport('comment', post.id, (comment as any).id)}
                       className="text-xs text-gray-500 hover:text-gray-600"
                     >
                       신고
