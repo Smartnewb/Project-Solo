@@ -1,8 +1,8 @@
 -- Drop existing tables if they exist
-DROP TABLE IF EXISTS public.matches;
-DROP TABLE IF EXISTS public.matching_requests;
-DROP TABLE IF EXISTS public.user_preferences;
-DROP TABLE IF EXISTS public.profiles;
+DROP TABLE IF EXISTS public.matches CASCADE;
+DROP TABLE IF EXISTS public.matching_requests CASCADE;
+DROP TABLE IF EXISTS public.user_preferences CASCADE;
+DROP TABLE IF EXISTS public.profiles CASCADE;
 
 -- Enable necessary extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -14,6 +14,8 @@ CREATE TABLE public.profiles (
     username TEXT UNIQUE,
     full_name TEXT,
     avatar_url TEXT,
+    age INTEGER,
+    gender TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -187,4 +189,38 @@ USING (EXISTS (
         profiles.id = matches.user1_id
         OR profiles.id = matches.user2_id
     )
-)); 
+));
+
+-- profiles 테이블에 age 컬럼 추가
+alter table profiles add column if not exists age integer;
+
+-- 마지막 부분에 추가
+CREATE OR REPLACE FUNCTION alter_profiles_table()
+RETURNS void AS $$
+BEGIN
+    -- 기존 테이블 백업
+    CREATE TABLE IF NOT EXISTS profiles_backup AS SELECT * FROM profiles;
+    
+    -- 의존성이 있는 테이블들을 먼저 삭제
+    DROP TABLE IF EXISTS matches CASCADE;
+    DROP TABLE IF EXISTS matching_requests CASCADE;
+    DROP TABLE IF EXISTS user_preferences CASCADE;
+    DROP TABLE IF EXISTS profiles CASCADE;
+    
+    -- 테이블 재생성
+    CREATE TABLE profiles (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+        name TEXT,
+        age INTEGER,
+        gender TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+    );
+
+    -- 데이터 복원
+    INSERT INTO profiles (id, user_id, name, created_at, updated_at)
+    SELECT id, user_id, name, created_at, updated_at
+    FROM profiles_backup;
+END;
+$$ LANGUAGE plpgsql; 

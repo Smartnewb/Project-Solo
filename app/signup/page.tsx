@@ -28,6 +28,7 @@ export default function SignUp() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('회원가입 시도:', { email: formData.email });
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -52,7 +53,14 @@ export default function SignUp() {
     }
 
     try {
-      console.log('회원가입 시도:', { email: formData.email });
+      // 네트워크 연결 확인
+      if (!navigator.onLine) {
+        setError('인터넷 연결을 확인해주세요.');
+        setLoading(false);
+        return;
+      }
+
+      console.log({ profile: formData });
       
       // 1. 회원가입 시도
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
@@ -86,8 +94,9 @@ export default function SignUp() {
         return;
       }
 
-      // 2. 프로필 정보 저장
+      // 2. 프로필 정보 저장 및 Supabase 저장 부분
       try {
+        // 로컬 스토리지 저장
         localStorage.setItem(`onboarding_profile_${signUpData.user.id}`, JSON.stringify({
           name: formData.name,
           age: parseInt(formData.age),
@@ -95,7 +104,7 @@ export default function SignUp() {
           interests: []
         }));
 
-        // 3. 프로필 정보를 Supabase에도 저장
+        // 3. 프로필 정보를 Supabase에 저장
         const { error: profileError } = await supabase
           .from('profiles')
           .insert([
@@ -109,19 +118,29 @@ export default function SignUp() {
 
         if (profileError) {
           console.error('프로필 저장 에러:', profileError);
-          // 프로필 저장 실패해도 계속 진행
+          setError('프로필 정보 저장에 실패했습니다. 다시 시도해주세요.');
+          setLoading(false);
+          return;
         }
 
-        // 4. 이메일 인증 안내 메시지 제거 및 온보딩 페이지로 바로 이동
+        // 모든 과정이 성공적으로 완료된 경우에만 다음 페이지로 이동
         router.push('/onboarding');
       } catch (storageError) {
         console.error('로컬 스토리지 에러:', storageError);
-        setError('프로필 정보 저장 중 오류가 발생했습니다.');
+        setError('프로필 정보 저장 중 오류가 발생했습니다. 다시 시도해주세요.');
+        setLoading(false);
       }
     } catch (err) {
       console.error('예상치 못한 에러:', err);
-      setError('회원가입 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-    } finally {
+      if (err instanceof Error) {
+        if ('message' in err) {
+          setError(`회원가입 중 오류가 발생했습니다: ${err.message}`);
+        } else {
+          setError('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        }
+      } else {
+        setError('네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      }
       setLoading(false);
     }
   };
@@ -245,4 +264,4 @@ export default function SignUp() {
       </div>
     </div>
   );
-} 
+}
