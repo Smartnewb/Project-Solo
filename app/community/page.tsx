@@ -8,6 +8,7 @@ import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/utils/supabase';
 
 interface Post {
   id: string;
@@ -88,6 +89,8 @@ export default function Community() {
     commentId?: string;
   } | null>(null);
   const [reportReason, setReportReason] = useState('');
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // 신고 사유 목록
   const reportReasons = [
@@ -98,13 +101,36 @@ export default function Community() {
     '기타'
   ];
 
+  // 게시글 불러오기
+  const fetchPosts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .select(`
+          *,
+          comments (*)
+        `)
+        .order('timestamp', { ascending: false });
+
+      if (error) throw error;
+      setPosts(data || []);
+    } catch (error) {
+      console.error('게시글을 불러오는 중 오류가 발생했습니다:', error);
+      setErrorMessage('게시글을 불러오는 중 오류가 발생했습니다.');
+      setShowErrorModal(true);
+    }
+  };
+
+  // 컴포넌트 마운트 시 게시글 불러오기
   useEffect(() => {
     if (!user) {
       router.push('/login');
       return;
     }
 
-    // 로컬 스토리지에서 사용자 정보 가져오기
+    fetchPosts();
+
+    // 프로필 정보 설정 부분은 유지
     const profileData = localStorage.getItem('onboardingProfile');
     if (profileData) {
       const { studentId } = JSON.parse(profileData);
@@ -121,13 +147,6 @@ export default function Community() {
         localStorage.setItem(`userNickname_${user.id}`, JSON.stringify({ nickname, emoji }));
         setUserInfo({ userId: user.id, studentId, nickname, emoji });
       }
-    }
-
-    // 로컬 스토리지에서 게시물 가져오기
-    const savedPosts = localStorage.getItem('communityPosts');
-    if (savedPosts) {
-      const parsedPosts = JSON.parse(savedPosts);
-      setPosts(parsedPosts);
     }
   }, [user, router]);
 
@@ -148,109 +167,144 @@ export default function Community() {
     setPopularPosts(popularPosts);
   }, [posts]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // 게시글 작성 처리
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPost.trim() || !user) return;
 
-    const post: Post = {
-      id: Date.now().toString(),
-      userId: user.id,
-      nickname: userInfo.nickname!,
-      studentId: userInfo.studentId,
-      content: newPost,
-      timestamp: Date.now(),
-      emoji: userInfo.emoji!,
-      likes: [],
-      isEdited: false,
-      isDeleted: false,
-      reports: [],
-      comments: [],
-    };
+    try {
+      const post = {
+        userId: user.id,
+        nickname: userInfo.nickname!,
+        studentId: userInfo.studentId,
+        content: newPost,
+        timestamp: new Date().toISOString(),
+        emoji: userInfo.emoji!,
+        likes: [],
+        isEdited: false,
+        isDeleted: false,
+        reports: [],
+      };
 
-    const updatedPosts = [post, ...posts];
-    setPosts(updatedPosts);
-    localStorage.setItem('communityPosts', JSON.stringify(updatedPosts));
-    setNewPost('');
+      const { error } = await supabase
+        .from('posts')
+        .insert([post]);
+
+      if (error) throw error;
+
+      setNewPost('');
+      fetchPosts(); // 게시글 목록 새로고침
+    } catch (error) {
+      console.error('게시글 작성 중 오류가 발생했습니다:', error);
+      setErrorMessage('게시글 작성 중 오류가 발생했습니다. 다시 시도해주세요.');
+      setShowErrorModal(true);
+    }
   };
 
-  const handleLike = (postId: string) => {
-    const updatedPosts = posts.map(post => {
-      if (post.id === postId) {
-        const likes = post.likes || [];
-        const hasLiked = likes.includes(userInfo.studentId);
-        
-        return {
-          ...post,
-          likes: hasLiked 
-            ? likes.filter(id => id !== userInfo.studentId)
-            : [...likes, userInfo.studentId]
-        };
-      }
-      return post;
-    });
+  // 좋아요 처리
+  const handleLike = async (postId: string) => {
+    try {
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
 
-    setPosts(updatedPosts);
-    localStorage.setItem('communityPosts', JSON.stringify(updatedPosts));
+      const likes = post.likes || [];
+      const hasLiked = likes.includes(userInfo.studentId);
+      
+      const updatedLikes = hasLiked
+        ? likes.filter(id => id !== userInfo.studentId)
+        : [...likes, userInfo.studentId];
+
+      const { error } = await supabase
+        .from('posts')
+        .update({ likes: updatedLikes })
+        .eq('id', postId);
+
+      if (error) throw error;
+      fetchPosts();
+    } catch (error) {
+      console.error('좋아요 처리 중 오류가 발생했습니다:', error);
+      setErrorMessage('좋아요 처리 중 오류가 발생했습니다.');
+      setShowErrorModal(true);
+    }
+  };
+
+  // 게시글 수정
+  const handleSaveEdit = async (postId: string) => {
+    if (!editContent.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .update({
+          content: editContent,
+          isEdited: true
+        })
+        .eq('id', postId);
+
+      if (error) throw error;
+
+      setEditingPost(null);
+      setEditContent('');
+      fetchPosts();
+    } catch (error) {
+      console.error('게시글 수정 중 오류가 발생했습니다:', error);
+      setErrorMessage('게시글 수정 중 오류가 발생했습니다.');
+      setShowErrorModal(true);
+    }
+  };
+
+  // 게시글 삭제
+  const handleDelete = async (postId: string) => {
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .update({ isDeleted: true })
+        .eq('id', postId);
+
+      if (error) throw error;
+      fetchPosts();
+    } catch (error) {
+      console.error('게시글 삭제 중 오류가 발생했습니다:', error);
+      setErrorMessage('게시글 삭제 중 오류가 발생했습니다.');
+      setShowErrorModal(true);
+    }
+  };
+
+  // 댓글 작성
+  const handleAddComment = async (postId: string) => {
+    if (!newComment.trim()) return;
+
+    try {
+      const comment = {
+        postId,
+        userId: userInfo.userId,
+        nickname: userInfo.nickname!,
+        studentId: userInfo.studentId,
+        content: newComment,
+        timestamp: new Date().toISOString(),
+        isEdited: false,
+        isDeleted: false,
+        reports: [],
+      };
+
+      const { error } = await supabase
+        .from('comments')
+        .insert([comment]);
+
+      if (error) throw error;
+
+      setNewComment('');
+      fetchPosts();
+    } catch (error) {
+      console.error('댓글 작성 중 오류가 발생했습니다:', error);
+      setErrorMessage('댓글 작성 중 오류가 발생했습니다.');
+      setShowErrorModal(true);
+    }
   };
 
   const handleEdit = (post: Post) => {
     setEditingPost(post.id);
     setEditContent(post.content);
-  };
-
-  const handleDelete = (postId: string) => {
-    const updatedPosts = posts.map(post => 
-      post.id === postId ? { ...post, isDeleted: true } : post
-    );
-    setPosts(updatedPosts);
-    localStorage.setItem('communityPosts', JSON.stringify(updatedPosts));
-  };
-
-  const handleSaveEdit = (postId: string) => {
-    if (!editContent.trim()) return;
-
-    const updatedPosts = posts.map(post => 
-      post.id === postId ? {
-        ...post,
-        content: editContent,
-        isEdited: true
-      } : post
-    );
-
-    setPosts(updatedPosts);
-    localStorage.setItem('communityPosts', JSON.stringify(updatedPosts));
-    setEditingPost(null);
-    setEditContent('');
-  };
-
-  const handleAddComment = (postId: string) => {
-    if (!newComment.trim()) return;
-
-    const comment = {
-      id: Date.now().toString(),
-      userId: userInfo.userId,
-      nickname: userInfo.nickname!,
-      studentId: userInfo.studentId,
-      content: newComment,
-      timestamp: Date.now(),
-      isEdited: false,
-      isDeleted: false,
-      reports: [],
-    };
-
-    const updatedPosts = posts.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          comments: [...(post.comments || []), comment]
-        };
-      }
-      return post;
-    });
-
-    setPosts(updatedPosts);
-    localStorage.setItem('communityPosts', JSON.stringify(updatedPosts));
-    setNewComment('');
   };
 
   const handleEditComment = (postId: string, commentId: string, content: string) => {
@@ -455,6 +509,37 @@ export default function Community() {
     setReportReason('');
     alert('신고가 접수되었습니다.');
   };
+
+  useEffect(() => {
+    // 실시간 구독 설정
+    const postsSubscription = supabase
+      .channel('public:posts')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'posts' 
+      }, () => {
+        fetchPosts();
+      })
+      .subscribe();
+
+    const commentsSubscription = supabase
+      .channel('public:comments')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'comments' 
+      }, () => {
+        fetchPosts();
+      })
+      .subscribe();
+
+    // 컴포넌트 언마운트 시 구독 해제
+    return () => {
+      postsSubscription.unsubscribe();
+      commentsSubscription.unsubscribe();
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
