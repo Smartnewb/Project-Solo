@@ -8,31 +8,36 @@ import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/utils/supabase';
+import { createClientSupabaseClient } from '@/utils/supabase';
+
+interface Comment {
+  id: string;
+  post_id: string;
+  author_id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  nickname: string;
+  studentid: string;
+  isEdited: boolean;
+  isdeleted: boolean;
+  reports: string[];
+}
 
 interface Post {
   id: string;
-  userId: string;
-  nickname: string;
-  studentId: string;
+  author_id: string;
   content: string;
-  timestamp: number;
-  emoji: string;
+  created_at: string;
+  updated_at: string;
   likes: string[];
   isEdited: boolean;
-  isDeleted: boolean;
+  isdeleted: boolean;
   reports: string[];
-  comments: {
-    id: string;
-    userId: string;
-    nickname: string;
-    studentId: string;
-    content: string;
-    timestamp: number;
-    isEdited: boolean;
-    isDeleted: boolean;
-    reports: string[];
-  }[];
+  nickname: string;
+  studentid: string;
+  emoji: string;
+  comments: Comment[];
 }
 
 // 랜덤 닉네임 생성을 위한 데이터
@@ -68,6 +73,7 @@ export default function Community() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [popularPosts, setPopularPosts] = useState<Post[]>([]);
   const [newPost, setNewPost] = useState('');
+  const supabase = createClientSupabaseClient();
   const [userInfo, setUserInfo] = useState<{ 
     userId: string;
     studentId: string;
@@ -156,7 +162,7 @@ export default function Community() {
     today.setHours(0, 0, 0, 0);
 
     const popularPosts = posts
-      .filter(post => !post.isDeleted && new Date(post.timestamp) >= today)
+      .filter(post => !post.isdeleted && new Date(post.created_at) >= today)
       .sort((a, b) => {
         const aScore = (a.likes?.length || 0) + (a.comments?.length || 0);
         const bScore = (b.likes?.length || 0) + (b.comments?.length || 0);
@@ -174,16 +180,13 @@ export default function Community() {
 
     try {
       const post = {
-        userId: user.id,
-        nickname: userInfo.nickname!,
-        studentId: userInfo.studentId,
+        author_id: user.id,
         content: newPost,
-        timestamp: new Date().toISOString(),
-        emoji: userInfo.emoji!,
-        likes: [],
-        isEdited: false,
-        isDeleted: false,
-        reports: [],
+        nickname: userInfo.nickname || '',
+        studentid: userInfo.studentId,
+        emoji: userInfo.emoji || '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
 
       const { error } = await supabase
@@ -258,7 +261,7 @@ export default function Community() {
     try {
       const { error } = await supabase
         .from('posts')
-        .update({ isDeleted: true })
+        .update({ isdeleted: true })
         .eq('id', postId);
 
       if (error) throw error;
@@ -276,15 +279,11 @@ export default function Community() {
 
     try {
       const comment = {
-        postId,
-        userId: userInfo.userId,
-        nickname: userInfo.nickname!,
-        studentId: userInfo.studentId,
+        post_id: postId,
+        author_id: userInfo.userId,
         content: newComment,
-        timestamp: new Date().toISOString(),
-        isEdited: false,
-        isDeleted: false,
-        reports: [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
 
       const { error } = await supabase
@@ -321,7 +320,7 @@ export default function Community() {
           comment.id === commentId ? {
             ...comment,
             content: editCommentContent,
-            isEdited: true
+            updated_at: new Date().toISOString()
           } : comment
         );
         return { ...post, comments: updatedComments };
@@ -339,7 +338,7 @@ export default function Community() {
     const updatedPosts = posts.map(post => {
       if (post.id === postId) {
         const updatedComments = post.comments.map(comment =>
-          comment.id === commentId ? { ...comment, isDeleted: true } : comment
+          comment.id === commentId ? { ...comment, isdeleted: true } : comment
         );
         return { ...post, comments: updatedComments };
       }
@@ -367,24 +366,24 @@ export default function Community() {
     const displayComments = showAll ? comments : comments.slice(0, 2);
     const hasMoreComments = comments.length > 2;
 
-    return displayComments.map((comment) => !comment.isDeleted ? (
+    return displayComments.map((comment) => !comment.isdeleted ? (
       <div key={comment.id} className="bg-gray-50 p-3 rounded-lg">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <span className="text-xl">{post.emoji}</span>
             <div>
               <p className="font-medium text-sm">{comment.nickname}</p>
-              <p className="text-xs text-gray-500">{comment.studentId}</p>
+              <p className="text-xs text-gray-500">{comment.studentid}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-500">
-              {new Date(comment.timestamp).toLocaleString()}
+              {new Date(comment.created_at).toLocaleString()}
             </span>
             {comment.isEdited && (
               <span className="text-xs text-gray-500">(수정됨)</span>
             )}
-            {comment.studentId === userInfo.studentId && (
+            {comment.author_id === userInfo.userId && (
               <div className="flex gap-2">
                 <button
                   onClick={() => handleEditComment(post.id, comment.id, comment.content)}
@@ -618,14 +617,14 @@ export default function Community() {
                     <span className="text-2xl">{post.emoji}</span>
                     <p className="font-medium text-gray-900">{post.nickname}</p>
                   </div>
-                  <p className="text-sm text-gray-500">{post.studentId}</p>
+                  <p className="text-sm text-gray-500">{post.studentid}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-500">
-                    {new Date(post.timestamp).toLocaleString()}
+                    {new Date(post.created_at).toLocaleString()}
                   </span>
                   {post.isEdited && <span className="text-sm text-gray-500">(수정됨)</span>}
-                  {post.studentId === userInfo.studentId && !post.isDeleted ? (
+                  {post.author_id === userInfo.userId && !post.isdeleted ? (
                     <div className="flex gap-2">
                       <button 
                         onClick={() => handleEdit(post)}
@@ -640,7 +639,7 @@ export default function Community() {
                         삭제
                       </button>
                     </div>
-                  ) : !post.isDeleted && (
+                  ) : !post.isdeleted && (
                     <button
                       onClick={() => handleOpenReport('post', post.id)}
                       className="text-sm text-gray-500 hover:text-gray-600"
@@ -676,7 +675,7 @@ export default function Community() {
                 </div>
               ) : (
                 <>
-                  {post.isDeleted ? (
+                  {post.isdeleted ? (
                     <p className="text-gray-500 text-center mb-3">삭제된 게시물입니다.</p>
                   ) : (
                     <p className="text-gray-700 whitespace-pre-wrap mb-3">{post.content}</p>
@@ -705,7 +704,7 @@ export default function Community() {
               )}
 
               {/* 댓글 입력창 */}
-              {!post.isDeleted && showCommentInput === post.id && (
+              {!post.isdeleted && showCommentInput === post.id && (
                 <div className="mt-4 space-y-4 border-t pt-4">
                   <div className="flex gap-2">
                     <input
@@ -726,9 +725,9 @@ export default function Community() {
               )}
 
               {/* 댓글 목록 */}
-              {!post.isDeleted && renderComments(post, showAllComments === post.id).map((comment: any) => (
+              {!post.isdeleted && renderComments(post, showAllComments === post.id).map((comment: any) => (
                 <div className="flex items-center gap-2">
-                  {(comment as any).studentId === userInfo.studentId ? (
+                  {(comment as any).author_id === userInfo.userId ? (
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleEditComment(post.id, (comment as any).id, (comment as any).content)}

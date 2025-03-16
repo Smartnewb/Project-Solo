@@ -1,9 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { Database } from '@/types/supabase';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// 단일 Supabase 클라이언트 인스턴스 생성
+const supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = supabaseInstance;
+
+// SSR용 브라우저 클라이언트 (기존 클라이언트 재사용)
+export const createBrowserSupabaseClient = () => supabaseInstance;
+
+// 클라이언트 컴포넌트용 클라이언트 (기존 클라이언트 재사용)
+export const createClientSupabaseClient = () => supabaseInstance;
 
 // 사용자 프로필 타입 정의
 export type Profile = {

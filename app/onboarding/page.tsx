@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClientSupabaseClient } from '@/utils/supabase';
 import { getProfiles } from '../api/getProfiles';
 
 // 대학별 학과 정보 타입 정의
@@ -35,7 +35,7 @@ interface ValidationErrors {
 
 export default function Onboarding() {
   const router = useRouter();
-  const supabase = createClientComponentClient();
+  const supabase = createClientSupabaseClient();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<OnboardingForm>({
     name: '',

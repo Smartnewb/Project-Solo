@@ -11,68 +11,95 @@ import {
 
 interface Post {
   id: string;
-  author: string;
-  title: string;
+  author_id: string;
   content: string;
-  date: string;
-  comments: number;
-  reports: number;
-  status: 'active' | 'reported' | 'deleted';
+  created_at: string;
+  updated_at: string;
+  likes: string[];
+  isEdited: boolean;
+  isdeleted: boolean;
+  reports: string[];
+  nickname: string;
+  studentid: string;
+  emoji: string;
+  comments: Comment[];
 }
 
 interface Comment {
   id: string;
-  author: string;
+  post_id: string;
+  author_id: string;
   content: string;
-  date: string;
-  postTitle: string;
-  reports: number;
-  status: 'active' | 'reported' | 'deleted';
+  created_at: string;
+  updated_at: string;
+  nickname: string;
+  studentid: string;
+  isEdited: boolean;
+  isdeleted: boolean;
+  reports: string[];
 }
 
 export default function CommunityManagement() {
   const [posts, setPosts] = useState<Post[]>([
     {
       id: '1',
-      author: '김철수',
-      title: '첫 만남에서 피해야 할 행동',
+      author_id: 'user1',
       content: '첫 만남에서 절대 하면 안 되는 행동들을 정리해보았습니다...',
-      date: '2024-03-11',
-      comments: 12,
-      reports: 0,
-      status: 'active',
+      created_at: '2024-03-11',
+      updated_at: '2024-03-11',
+      likes: [],
+      isEdited: false,
+      isdeleted: false,
+      reports: [],
+      nickname: '김철수',
+      studentid: '20240001',
+      emoji: '😊',
+      comments: []
     },
     {
       id: '2',
-      author: '이영희',
-      title: '매칭 후 대화가 잘 안 이어질 때?',
+      author_id: 'user2',
       content: '매칭 후 대화가 잘 안 이어질 때 시도해볼 만한 주제들...',
-      date: '2024-03-10',
-      comments: 25,
-      reports: 3,
-      status: 'reported',
-    },
+      created_at: '2024-03-10',
+      updated_at: '2024-03-10',
+      likes: [],
+      isEdited: false,
+      isdeleted: false,
+      reports: ['user3', 'user4', 'user5'],
+      nickname: '이영희',
+      studentid: '20240002',
+      emoji: '🤗',
+      comments: []
+    }
   ]);
 
   const [comments, setComments] = useState<Comment[]>([
     {
       id: '1',
-      author: '박민수',
+      post_id: '1',
+      author_id: 'user3',
       content: '정말 도움이 되는 글이네요!',
-      date: '2024-03-11',
-      postTitle: '첫 만남에서 피해야 할 행동',
-      reports: 0,
-      status: 'active',
+      created_at: '2024-03-11',
+      updated_at: '2024-03-11',
+      nickname: '박민수',
+      studentid: '20240003',
+      isEdited: false,
+      isdeleted: false,
+      reports: []
     },
     {
       id: '2',
-      author: '정다희',
+      post_id: '2',
+      author_id: 'user4',
       content: '부적절한 내용의 댓글입니다.',
-      date: '2024-03-10',
-      postTitle: '매칭 후 대화가 잘 안 이어질 때?',
-      reports: 5,
-      status: 'reported',
-    },
+      created_at: '2024-03-10',
+      updated_at: '2024-03-10',
+      nickname: '정다희',
+      studentid: '20240004',
+      isEdited: false,
+      isdeleted: false,
+      reports: ['user1', 'user2', 'user3', 'user4', 'user5']
+    }
   ]);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -81,11 +108,11 @@ export default function CommunityManagement() {
   const handleDelete = (type: 'post' | 'comment', id: string) => {
     if (type === 'post') {
       setPosts(posts.map(post => 
-        post.id === id ? { ...post, status: 'deleted' } : post
+        post.id === id ? { ...post, isdeleted: true } : post
       ));
     } else {
       setComments(comments.map(comment =>
-        comment.id === id ? { ...comment, status: 'deleted' } : comment
+        comment.id === id ? { ...comment, isdeleted: true } : comment
       ));
     }
   };
@@ -93,30 +120,30 @@ export default function CommunityManagement() {
   const handleRestore = (type: 'post' | 'comment', id: string) => {
     if (type === 'post') {
       setPosts(posts.map(post =>
-        post.id === id ? { ...post, status: 'active' } : post
+        post.id === id ? { ...post, isdeleted: false } : post
       ));
     } else {
       setComments(comments.map(comment =>
-        comment.id === id ? { ...comment, status: 'active' } : comment
+        comment.id === id ? { ...comment, isdeleted: false } : comment
       ));
     }
   };
 
   const isPost = (item: Post | Comment): item is Post => {
-    return 'title' in item;
+    return 'nickname' in item;
   };
 
   const filterItems = (items: Post[] | Comment[], filter: string) => {
     return items.filter(item => {
       const searchMatch = 
         isPost(item)
-          ? item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          ? item.nickname.toLowerCase().includes(searchTerm.toLowerCase()) ||
             item.content.toLowerCase().includes(searchTerm.toLowerCase())
           : item.content.toLowerCase().includes(searchTerm.toLowerCase());
 
       if (filter === 'all') return searchMatch;
-      if (filter === 'reported') return item.status === 'reported' && searchMatch;
-      if (filter === 'deleted') return item.status === 'deleted' && searchMatch;
+      if (filter === 'reported') return item.reports.length > 0 && searchMatch;
+      if (filter === 'deleted') return item.isdeleted && searchMatch;
       return false;
     });
   };
@@ -233,46 +260,40 @@ export default function CommunityManagement() {
                     {filterItems(posts, ['all', 'reported', 'deleted'][selectedTab]).map((post) => (
                       <tr key={post.id}>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {post.author}
+                          {post.nickname}
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900">{(post as any).title}</div>
+                          <div className="text-sm text-gray-900">{(post as any).nickname}</div>
                           <div className="text-sm text-gray-500 truncate max-w-xs">
                             {post.content}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {post.date}
+                          {post.created_at}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {'comments' in post && post.comments}
+                          {'comments' in post && post.comments.length}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {post.reports > 0 && (
+                          {post.reports.length > 0 && (
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              {post.reports}
+                              {post.reports.length}
                             </span>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              post.status === 'active'
+                              !post.isdeleted
                                 ? 'bg-green-100 text-green-800'
-                                : post.status === 'reported'
-                                ? 'bg-yellow-100 text-yellow-800'
                                 : 'bg-red-100 text-red-800'
                             }`}
                           >
-                            {post.status === 'active'
-                              ? '정상'
-                              : post.status === 'reported'
-                              ? '신고됨'
-                              : '삭제됨'}
+                            {post.isdeleted ? '삭제됨' : '정상'}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          {post.status === 'deleted' ? (
+                          {post.isdeleted ? (
                             <button
                               onClick={() => handleRestore('post', post.id)}
                               className="text-primary-DEFAULT hover:text-primary-dark"
@@ -363,7 +384,7 @@ export default function CommunityManagement() {
                     {filterItems(comments, ['all', 'reported', 'deleted'][selectedTab]).map((comment) => (
                       <tr key={comment.id}>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {comment.author}
+                          {comment.nickname}
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-900 truncate max-w-xs">
@@ -372,38 +393,32 @@ export default function CommunityManagement() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-500 truncate max-w-xs">
-                            {'postTitle' in comment && comment.postTitle}
+                            {!isPost(comment) && comment.post_id}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {comment.date}
+                          {comment.created_at}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {comment.reports > 0 && (
+                          {comment.reports.length > 0 && (
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              {comment.reports}
+                              {comment.reports.length}
                             </span>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              comment.status === 'active'
+                              !comment.isdeleted
                                 ? 'bg-green-100 text-green-800'
-                                : comment.status === 'reported'
-                                ? 'bg-yellow-100 text-yellow-800'
                                 : 'bg-red-100 text-red-800'
                             }`}
                           >
-                            {comment.status === 'active'
-                              ? '정상'
-                              : comment.status === 'reported'
-                              ? '신고됨'
-                              : '삭제됨'}
+                            {comment.isdeleted ? '삭제됨' : '정상'}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          {comment.status === 'deleted' ? (
+                          {comment.isdeleted ? (
                             <button
                               onClick={() => handleRestore('comment', comment.id)}
                               className="text-primary-DEFAULT hover:text-primary-dark"
