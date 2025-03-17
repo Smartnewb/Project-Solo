@@ -13,6 +13,8 @@ interface ProfileForm {
   drinking: string;
   smoking: string;
   tattoo: string;
+  mbti: string;
+  instagramId?: string;
 }
 
 export default function Profile() {
@@ -27,6 +29,7 @@ export default function Profile() {
     drinking: '',
     smoking: '',
     tattoo: '',
+    mbti: '',
   });
 
   const [showModal, setShowModal] = useState(false);
@@ -60,6 +63,8 @@ export default function Profile() {
         drinking: parsedData.drinking || '',
         smoking: parsedData.smoking || '',
         tattoo: parsedData.tattoo || '',
+        mbti: parsedData.mbti || '',
+        instagramId: parsedData.instagramId || '',
       });
       // 수정이 완료되면 editProfileData 삭제
       localStorage.removeItem('editProfileData');
@@ -146,6 +151,13 @@ export default function Profile() {
     '재테크',
     '자기계발',
     '봉사활동'
+  ];
+
+  const mbtiOptions = [
+    'INTJ', 'INTP', 'ENTJ', 'ENTP',
+    'INFJ', 'INFP', 'ENFJ', 'ENFP',
+    'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ',
+    'ISTP', 'ISFP', 'ESTP', 'ESFP'
   ];
 
   const handleMultiSelect = (category: keyof ProfileForm, value: string, maxCount: number) => {
@@ -363,6 +375,38 @@ export default function Profile() {
               </div>
             </div>
           </div>
+
+          {/* MBTI 설정 */}
+          <div className="card space-y-4">
+            <h2 className="text-h2">MBTI 설정</h2>
+            <div className="grid grid-cols-4 gap-2">
+              {mbtiOptions.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => handleSingleSelect('mbti', option)}
+                  className={`btn-select ${formData.mbti === option ? 'btn-selected' : ''}`}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 인스타그램 ID 표시 */}
+          {formData.instagramId && (
+            <div className="card space-y-4">
+              <h2 className="text-h2">인스타그램</h2>
+              <a
+                href={`https://www.instagram.com/${formData.instagramId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-500 hover:underline"
+              >
+                {formData.instagramId}
+              </a>
+            </div>
+          )}
 
           {/* 다음 버튼 */}
           <button type="submit" className="btn-primary w-full">

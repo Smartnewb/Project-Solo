@@ -6,15 +6,14 @@ import { useRouter } from 'next/navigation';
 interface IdealTypeForm {
   height: string;
   personalities: string[];
-  personalityNote: string;
   datingStyles: string[];
-  datingStyleNote: string;
   lifestyles: string[];
-  lifestyleNote: string;
   drinking: string;
   smoking: string;
   tattoo: string;
   interests: string[];
+  likedMbti: string;
+  dislikedMbti: string;
 }
 
 export default function IdealType() {
@@ -22,15 +21,14 @@ export default function IdealType() {
   const [formData, setFormData] = useState<IdealTypeForm>({
     height: '',
     personalities: [],
-    personalityNote: '',
     datingStyles: [],
-    datingStyleNote: '',
     lifestyles: [],
-    lifestyleNote: '',
     drinking: '',
     smoking: '',
     tattoo: '',
     interests: [],
+    likedMbti: '',
+    dislikedMbti: '',
   });
 
   const heightOptions = [
@@ -105,6 +103,13 @@ export default function IdealType() {
     '공연', '전시', '반려동물', '등산', '자전거'
   ];
 
+  const mbtiOptions = [
+    'INTJ', 'INTP', 'ENTJ', 'ENTP',
+    'INFJ', 'INFP', 'ENFJ', 'ENFP',
+    'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ',
+    'ISTP', 'ISFP', 'ESTP', 'ESFP'
+  ];
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -132,6 +137,13 @@ export default function IdealType() {
         });
       }
     }
+  };
+
+  const handleSingleSelect = (field: keyof IdealTypeForm, value: string) => {
+    setFormData({
+      ...formData,
+      [field]: value
+    });
   };
 
   return (
@@ -317,6 +329,40 @@ export default function IdealType() {
                       ? 'bg-white text-gray-700 border-[#4A90E2]'
                       : 'bg-white text-gray-700 border-gray-300 hover:border-[#4A90E2]'
                     }`}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 좋아하는 MBTI */}
+          <div className="card space-y-4">
+            <h2 className="text-h2">좋아하는 MBTI</h2>
+            <div className="grid grid-cols-4 gap-2">
+              {mbtiOptions.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => handleSingleSelect('likedMbti', option)}
+                  className={`btn-select ${formData.likedMbti === option ? 'btn-selected' : ''}`}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 싫어하는 MBTI */}
+          <div className="card space-y-4">
+            <h2 className="text-h2">싫어하는 MBTI</h2>
+            <div className="grid grid-cols-4 gap-2">
+              {mbtiOptions.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => handleSingleSelect('dislikedMbti', option)}
+                  className={`btn-select ${formData.dislikedMbti === option ? 'btn-selected' : ''}`}
                 >
                   {option}
                 </button>

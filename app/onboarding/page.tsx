@@ -20,6 +20,7 @@ interface OnboardingForm {
   image: string;
   age: string;
   gender: string;
+  instagramId: string;
 }
 
 interface ValidationErrors {
@@ -46,6 +47,7 @@ export default function Onboarding() {
     image: '',
     age: '',
     gender: '',
+    instagramId: '',
   });
 
   const [errors, setErrors] = useState<ValidationErrors>({
@@ -292,7 +294,11 @@ export default function Onboarding() {
         .update({
           name: formData.name,
           age: parseInt(formData.age),
-          gender: formData.gender
+          gender: formData.gender,
+          student_id: formData.studentId,
+          grade: formData.grade,
+          university: formData.university,
+          department: formData.department
         })
         .eq('user_id', user.id); // user_id로 프로필을 찾기
 
@@ -507,6 +513,19 @@ export default function Onboarding() {
               <option value="male">남성</option>
               <option value="female">여성</option>
             </select>
+          </div>
+
+          {/* 인스타그램 ID 입력 */}
+          <div className="card space-y-4">
+            <h2 className="text-h2">인스타그램 ID</h2>
+            <input
+              type="text"
+              value={formData.instagramId}
+              onChange={(e) => setFormData({ ...formData, instagramId: e.target.value.replace('@', '') })}
+              placeholder="인스타그램 ID를 입력하세요 (예: username)"
+              className="input"
+            />
+            <p className="text-sm text-gray-500">@를 빼고 입력하세요. 인스타그램에 꼭 사진을 넣어주세요! 공개 계정으로 바꾸지 않으면 매칭 후 연락이 어려울 수 있습니다.</p>
           </div>
 
           {/* 다음 버튼 */}
