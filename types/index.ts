@@ -56,4 +56,12 @@ export interface Match {
   status: 'pending' | 'accepted' | 'rejected' | 'completed';
   created_at: string;
   updated_at: string;
+}
+
+export interface SystemSettings {
+  id: string;
+  signup_enabled: boolean;
+  matching_datetime: string | null;
+  updated_at: string;
+  created_at: string;
 } 

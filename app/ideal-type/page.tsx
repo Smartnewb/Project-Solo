@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@supabase/supabase-js';
+import { findBestMatch } from './matchingAlgorithm';
 
 interface IdealTypeForm {
   height: string;
@@ -15,6 +17,8 @@ interface IdealTypeForm {
   likedMbti: string;
   dislikedMbti: string;
 }
+
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 export default function IdealType() {
   const router = useRouter();
@@ -144,6 +148,55 @@ export default function IdealType() {
       ...formData,
       [field]: value
     });
+  };
+
+  const handleMatchmaking = async () => {
+    try {
+      const { data: user, error: userError } = await supabase.auth.getUser();
+      const { data: candidates, error: candidatesError } = await supabase
+        .from('profiles')
+        .select('*');
+
+      if (userError || candidatesError) {
+        console.error('유저 정보 로드 에러:', userError || candidatesError);
+        return;
+      }
+
+      const { data: matchCache, error: matchCacheError } = await supabase
+        .from('match_cache')
+        .select('*')
+        .eq('user_id', user.user.id);
+
+      if (matchCacheError) {
+        console.error('매칭 캐시 로드 에러:', matchCacheError);
+        return;
+      }
+
+      if (!matchCache) {
+        const match = findBestMatch(user.user, candidates);
+        await supabase.from('match_cache').insert({ user_id: user.user.id, match });
+      }
+
+      console.log('매칭 결과:', matchCache);
+      // 매칭 결과를 사용하여 추가적인 작업 수행
+
+      fetch('https://your-supabase-url/functions/v1/matchmaking', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ userId: user.user.id })
+      })
+      .then(response => response.json())
+      .then(data => {
+        console.log('매칭 결과:', data);
+      })
+      .catch(error => {
+        console.error('매칭 오류:', error);
+      });
+    } catch (error) {
+      console.error('매칭 오류:', error);
+    }
   };
 
   return (

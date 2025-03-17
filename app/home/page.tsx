@@ -151,6 +151,15 @@ export default function Home() {
           <MatchingCountdown />
         </div>
 
+        {/* 매칭 상태 */}
+        <div className="card bg-white p-4 space-y-4">
+          <h2 className="text-h2">매칭 상태</h2>
+          <p className="text-gray-600">아직 매칭이 시작되지 않았어요.</p>
+          <button className="btn-secondary w-full">
+            재매칭 신청하기
+          </button>
+        </div>
+
         {/* 실시간 인기 질문 */}
         <PopularQuestions />
 
@@ -165,15 +174,6 @@ export default function Home() {
 
         {/* 데이트 장소 추천 */}
         <DateSpotRecommendation />
-
-        {/* 매칭 상태 */}
-        <div className="card bg-white p-4 space-y-4">
-          <h2 className="text-h2">매칭 상태</h2>
-          <p className="text-gray-600">아직 매칭이 시작되지 않았어요.</p>
-          <button className="btn-secondary w-full">
-            재매칭 신청하기
-          </button>
-        </div>
       </div>
 
       {/* 하단 네비게이션 */}

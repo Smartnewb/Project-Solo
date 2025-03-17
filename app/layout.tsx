@@ -7,11 +7,10 @@ import { AuthProvider } from '../contexts/AuthContext'
 // import Navbar from '@/components/Navbar'
 
 const inter = Inter({ subsets: ['latin'] })
-
-export const metadata: Metadata = {
-  title: 'Project-Solo',
-  description: '나의 이상형을 찾아서',
-}
+// export const metadata: Metadata = {
+//   title: 'Project-Solo',
+//   description: '나의 이상형을 찾아서',
+// }
 
 export default function RootLayout({
   children,

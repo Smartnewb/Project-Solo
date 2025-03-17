@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClientSupabaseClient } from '@/utils/supabase';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
@@ -19,6 +19,23 @@ export default function SignUp() {
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isSignupEnabled, setIsSignupEnabled] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    // 회원가입 상태 확인
+    const checkSignupStatus = async () => {
+      try {
+        const response = await fetch('/api/admin/signup-control');
+        const data = await response.json();
+        setIsSignupEnabled(data.isSignupEnabled);
+      } catch (error) {
+        console.error('회원가입 상태 확인 실패:', error);
+        setIsSignupEnabled(false);
+      }
+    };
+
+    checkSignupStatus();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData(prev => ({
@@ -28,8 +45,15 @@ export default function SignUp() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log('회원가입 시도:', { data: formData });
     e.preventDefault();
+    
+    // 회원가입이 비활성화된 경우
+    if (!isSignupEnabled) {
+      setError('현재 매칭이 진행 중이라 신규 회원가입을 받지 않고 있습니다. 다음 매칭 시간에 다시 시도해주세요.');
+      return;
+    }
+
+    console.log('회원가입 시도:', { data: formData });
     setError(null);
     setLoading(true);
 
@@ -115,6 +139,49 @@ export default function SignUp() {
       setLoading(false);
     }
   };
+
+  // 회원가입 상태 로딩 중
+  if (isSignupEnabled === null) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-DEFAULT mx-auto"></div>
+          <p className="mt-4 text-gray-600">로딩 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 회원가입이 비활성화된 경우
+  if (!isSignupEnabled) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-white border-b sticky top-0 z-10">
+          <div className="max-w-lg mx-auto px-4 py-4">
+            <div className="flex items-center">
+              <Link href="/" className="p-2 -ml-2 hover:bg-gray-100 rounded-lg">
+                <ArrowLeftIcon className="w-6 h-6" />
+              </Link>
+              <h1 className="text-h2 ml-2">회원가입</h1>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-lg mx-auto p-4">
+          <div className="card p-6 text-center space-y-4">
+            <h2 className="text-xl font-bold text-red-600">회원가입 일시 중단</h2>
+            <p className="text-gray-600">
+              현재 매칭이 진행 중이라 신규 회원가입을 받지 않고 있습니다.<br />
+              다음 매칭 시간에 다시 시도해주세요.
+            </p>
+            <Link href="/" className="btn-primary inline-block">
+              홈으로 돌아가기
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

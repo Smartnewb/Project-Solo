@@ -106,3 +106,28 @@ USING (EXISTS (
     WHERE profiles.id = posts.author_id 
     AND profiles.user_id = auth.uid()
 ));
+
+-- Create separate tables for male and female users
+CREATE TABLE IF NOT EXISTS public.male_profiles (
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id uuid NOT NULL,
+    name text,
+    age integer,
+    gender text CHECK (gender = 'male'),
+    instagramId text,
+    classification text CHECK (classification IN ('S', 'A', 'B', 'C')),
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.female_profiles (
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id uuid NOT NULL,
+    name text,
+    age integer,
+    gender text CHECK (gender = 'female'),
+    instagramId text,
+    classification text CHECK (classification IN ('S', 'A', 'B', 'C')),
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);

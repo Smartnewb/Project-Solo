@@ -86,6 +86,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </Link>
             </li>
             <li>
+              <Link href="/admin/matching" className="block py-2 px-4 hover:bg-gray-100">
+                매칭 설정
+              </Link>
+            </li>
+            <li>
               <button 
                 onClick={handleLogout}
                 className="w-full text-left py-2 px-4 text-red-500 hover:bg-gray-100"

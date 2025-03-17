@@ -16,6 +16,8 @@ type User = {
   reports_count?: number;
   matches_count?: number;
   last_active?: string;
+  instagramId?: string;
+  classification?: string; // 'S', 'A', 'B', 'C'
 };
 
 export default function UsersAdmin() {
@@ -238,6 +240,20 @@ export default function UsersAdmin() {
       )
     : users;
 
+  const handleClassificationChange = async (userId: string, classification: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ classification })
+        .eq('user_id', userId);
+      if (error) throw error;
+      fetchUsers();
+    } catch (error) {
+      console.error('분류 업데이트 에러:', error);
+      setError('분류 업데이트 중 오류가 발생했습니다.');
+    }
+  };
+
   if (loading && users.length === 0) {
     return (
       <div className="py-8 text-center">
@@ -320,6 +336,8 @@ export default function UsersAdmin() {
               <thead>
                 <tr className="bg-gray-100 border-b">
                   <th className="py-3 px-4 text-left">이름</th>
+                  <th className="py-3 px-4 text-left">인스타그램</th>
+                  <th className="py-3 px-4 text-left">분류</th>
                   <th className="py-3 px-4 text-left">나이/성별</th>
                   <th className="py-3 px-4 text-left">가입일</th>
                   <th className="py-3 px-4 text-left">상태</th>
@@ -344,6 +362,31 @@ export default function UsersAdmin() {
                             <div className="text-sm text-gray-500 truncate max-w-xs">{user.email}</div>
                           </div>
                         </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        {user.instagramId && (
+                          <a
+                            href={`https://www.instagram.com/${user.instagramId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-500 hover:underline"
+                          >
+                            {user.instagramId}
+                          </a>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        <select
+                          value={user.classification || ''}
+                          onChange={(e) => handleClassificationChange(user.user_id, e.target.value)}
+                          className="input-field"
+                        >
+                          <option value="">선택</option>
+                          <option value="S">S</option>
+                          <option value="A">A</option>
+                          <option value="B">B</option>
+                          <option value="C">C</option>
+                        </select>
                       </td>
                       <td className="py-3 px-4">
                         {user.age ? `${user.age}세` : '-'} / {' '}
