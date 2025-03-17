@@ -27,9 +27,9 @@ export interface UserPreferences {
   user_id: string;
   preferred_age_min: number;
   preferred_age_max: number;
+  preferred_age_type: 'older' | 'younger' | 'same' | 'any';
   preferred_height_min: string;
   preferred_height_max: string;
-  preferred_universities: string[];
   preferred_mbti: string[];
   created_at: string;
   updated_at: string;

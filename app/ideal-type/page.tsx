@@ -3,10 +3,14 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
-import { findBestMatch } from './matchingAlgorithm';
+import { findBestMatch } from '@/app/matchingAlgorithm';
 
 interface IdealTypeForm {
-  height: string;
+  heightRange: {
+    min: number;
+    max: number;
+  };
+  ageType: 'older' | 'younger' | 'same' | 'any';
   personalities: string[];
   datingStyles: string[];
   lifestyles: string[];
@@ -18,12 +22,31 @@ interface IdealTypeForm {
   dislikedMbti: string;
 }
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+interface ValidationErrors {
+  heightMin: boolean;
+  heightMax: boolean;
+  personalities: boolean;
+  datingStyles: boolean;
+  lifestyles: boolean;
+  interests: boolean;
+  drinking: boolean;
+  smoking: boolean;
+}
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables');
+}
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default function IdealType() {
   const router = useRouter();
   const [formData, setFormData] = useState<IdealTypeForm>({
-    height: '',
+    heightRange: { min: 140, max: 200 },
+    ageType: 'any',
     personalities: [],
     datingStyles: [],
     lifestyles: [],
@@ -34,6 +57,19 @@ export default function IdealType() {
     likedMbti: '',
     dislikedMbti: '',
   });
+
+  const [errors, setErrors] = useState<ValidationErrors>({
+    heightMin: false,
+    heightMax: false,
+    personalities: false,
+    datingStyles: false,
+    lifestyles: false,
+    interests: false,
+    drinking: false,
+    smoking: false,
+  });
+
+  const [showModal, setShowModal] = useState(false);
 
   const heightOptions = [
     '155cm 이하',
@@ -114,11 +150,88 @@ export default function IdealType() {
     'ISTP', 'ISFP', 'ESTP', 'ESFP'
   ];
 
+  const ageTypeOptions = [
+    { value: 'older', label: '연상' },
+    { value: 'younger', label: '연하' },
+    { value: 'same', label: '동갑' },
+    { value: 'any', label: '상관없음' }
+  ] as const;
+
+  const validateForm = (): boolean => {
+    const newErrors = {
+      heightMin: !formData.heightRange.min || formData.heightRange.min < 140 || formData.heightRange.min > 200,
+      heightMax: !formData.heightRange.max || formData.heightRange.max < 140 || formData.heightRange.max > 200,
+      personalities: formData.personalities.length === 0,
+      datingStyles: formData.datingStyles.length === 0,
+      lifestyles: formData.lifestyles.length === 0,
+      interests: formData.interests.length === 0,
+      drinking: !formData.drinking,
+      smoking: !formData.smoking,
+    };
+
+    setErrors(newErrors);
+
+    const hasErrors = Object.values(newErrors).some(error => error);
+    if (hasErrors) {
+      setShowModal(true);
+    }
+    return !hasErrors;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
     try {
-      // 이상형 정보를 localStorage에 저장
+      const { data: authUser, error: userError } = await supabase.auth.getUser();
+      
+      if (!authUser?.user?.id) {
+        console.error('사용자 인증 에러');
+        return;
+      }
+
+      // Supabase에 이상형 정보 저장
+      const { error: upsertError } = await supabase
+        .from('user_preferences')
+        .upsert({
+          user_id: authUser.user.id,
+          preferred_age_type: formData.ageType,
+          preferred_height_min: formData.heightRange.min.toString(),
+          preferred_height_max: formData.heightRange.max.toString(),
+          preferred_mbti: [formData.likedMbti],
+          updated_at: new Date().toISOString()
+        });
+
+      if (upsertError) {
+        throw new Error('이상형 정보 저장 실패');
+      }
+
+      // 프로필 정보 업데이트
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          personalities: formData.personalities,
+          datingStyles: formData.datingStyles,
+          lifestyles: formData.lifestyles,
+          interests: formData.interests,
+          drinking: formData.drinking,
+          smoking: formData.smoking,
+          tattoo: formData.tattoo,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', authUser.user.id);
+
+      if (profileError) {
+        throw new Error('프로필 정보 업데이트 실패');
+      }
+
+      // localStorage에도 저장
       localStorage.setItem('idealType', JSON.stringify(formData));
+      localStorage.setItem('hasSetIdealType', 'true');
+
       router.push('/home');
     } catch (error) {
       console.error('이상형 저장 에러:', error);
@@ -152,20 +265,32 @@ export default function IdealType() {
 
   const handleMatchmaking = async () => {
     try {
-      const { data: user, error: userError } = await supabase.auth.getUser();
+      const { data: authUser, error: userError } = await supabase.auth.getUser();
+      
+      if (!authUser?.user?.id) {
+        console.error('사용자 인증 에러');
+        return;
+      }
+
+      const { data: userProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authUser.user.id)
+        .single();
+
       const { data: candidates, error: candidatesError } = await supabase
         .from('profiles')
         .select('*');
 
-      if (userError || candidatesError) {
-        console.error('유저 정보 로드 에러:', userError || candidatesError);
+      if (profileError || candidatesError || !userProfile) {
+        console.error('프로필 로드 에러:', profileError || candidatesError);
         return;
       }
 
       const { data: matchCache, error: matchCacheError } = await supabase
         .from('match_cache')
         .select('*')
-        .eq('user_id', user.user.id);
+        .eq('user_id', authUser.user.id);
 
       if (matchCacheError) {
         console.error('매칭 캐시 로드 에러:', matchCacheError);
@@ -173,19 +298,30 @@ export default function IdealType() {
       }
 
       if (!matchCache) {
-        const match = findBestMatch(user.user, candidates);
-        await supabase.from('match_cache').insert({ user_id: user.user.id, match });
+        const { data: userPreferences } = await supabase
+          .from('user_preferences')
+          .select('*')
+          .eq('user_id', authUser.user.id)
+          .single();
+
+        const { data: candidatePreferences } = await supabase
+          .from('user_preferences')
+          .select('*');
+
+        if (userPreferences && candidatePreferences) {
+          const match = findBestMatch(userProfile, userPreferences, candidates, candidatePreferences);
+          await supabase.from('match_cache').insert({ user_id: authUser.user.id, match });
+        }
       }
 
       console.log('매칭 결과:', matchCache);
-      // 매칭 결과를 사용하여 추가적인 작업 수행
 
       fetch('https://your-supabase-url/functions/v1/matchmaking', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ userId: user.user.id })
+        body: JSON.stringify({ userId: authUser.user.id })
       })
       .then(response => response.json())
       .then(data => {
@@ -200,37 +336,73 @@ export default function IdealType() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-pink-50">
       {/* 상단 헤더 */}
-      <div className="bg-white border-b">
+      <div className="bg-white shadow-sm">
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center">
           <button
             onClick={() => router.back()}
-            className="text-gray-600"
+            className="text-gray-600 hover:text-gray-900 transition-colors"
           >
             ← 뒤로
           </button>
-          <h1 className="text-h2 flex-1 text-center">이상형 설정</h1>
+          <h1 className="text-xl font-semibold flex-1 text-center text-gray-900">이상형 설정</h1>
           <div className="w-10"></div>
         </div>
       </div>
 
       {/* 메인 컨텐츠 */}
       <div className="max-w-lg mx-auto p-4">
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* 나이 선호도 */}
+          <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">1. 이상형의 나이</h2>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  선호하는 나이 유형
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {ageTypeOptions.map(option => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, ageType: option.value })}
+                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
+                        ${formData.ageType === option.value
+                          ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+                          : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
+                        }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* 키 */}
-          <div className="card space-y-4">
-            <h2 className="text-h2">1. 이상형의 키</h2>
+          <div className={`bg-white rounded-2xl shadow-sm p-6 space-y-4 ${errors.heightMin || errors.heightMax ? 'ring-2 ring-red-500' : ''}`}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">2. 이상형의 키</h2>
+              {errors.heightMin && (
+                <span className="text-sm text-red-500">최소 키는 140cm 이상이어야 합니다</span>
+              )}
+              {errors.heightMax && (
+                <span className="text-sm text-red-500">최대 키는 200cm 이하여야 합니다</span>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-2">
               {heightOptions.map(option => (
                 <button
                   key={option}
                   type="button"
-                  onClick={() => setFormData({ ...formData, height: option })}
-                  className={`px-4 py-2 rounded-full text-sm font-medium border-2 transition-colors
-                    ${formData.height === option
-                      ? 'bg-white text-gray-700 border-[#4A90E2]'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-[#4A90E2]'
+                  onClick={() => setFormData({ ...formData, heightRange: { min: 140, max: 200 } })}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
+                    ${formData.heightRange.min === 140 && formData.heightRange.max === 200
+                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
                     }`}
                 >
                   {option}
@@ -240,19 +412,27 @@ export default function IdealType() {
           </div>
 
           {/* 성격 */}
-          <div className="card space-y-4">
-            <h2 className="text-h2">2. 이상형의 성격 (최대 3개)</h2>
+          <div className={`bg-white rounded-2xl shadow-sm p-6 space-y-4 ${errors.personalities ? 'ring-2 ring-red-500' : ''}`}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">3. 이상형의 성격 (최대 3개)</h2>
+              {errors.personalities && (
+                <span className="text-sm text-red-500">1개 이상 선택해주세요</span>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-2">
               {personalityOptions.map(option => (
                 <button
                   key={option}
                   type="button"
                   onClick={() => toggleSelection('personalities', option, 3)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium border-2 transition-colors
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
                     ${formData.personalities.includes(option)
-                      ? 'bg-white text-gray-700 border-[#4A90E2]'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-[#4A90E2]'
+                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+                      : formData.personalities.length >= 3 && !formData.personalities.includes(option)
+                      ? 'bg-gray-50 text-gray-400 border-2 border-gray-200 cursor-not-allowed'
+                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
                     }`}
+                  disabled={formData.personalities.length >= 3 && !formData.personalities.includes(option)}
                 >
                   {option}
                 </button>
@@ -261,19 +441,27 @@ export default function IdealType() {
           </div>
 
           {/* 연애 스타일 */}
-          <div className="card space-y-4">
-            <h2 className="text-h2">3. 이상형의 연애 스타일 (최대 2개)</h2>
+          <div className={`bg-white rounded-2xl shadow-sm p-6 space-y-4 ${errors.datingStyles ? 'ring-2 ring-red-500' : ''}`}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">4. 이상형의 연애 스타일 (최대 2개)</h2>
+              {errors.datingStyles && (
+                <span className="text-sm text-red-500">1개 이상 선택해주세요</span>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-2">
               {datingStyleOptions.map(option => (
                 <button
                   key={option}
                   type="button"
                   onClick={() => toggleSelection('datingStyles', option, 2)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium border-2 transition-colors
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
                     ${formData.datingStyles.includes(option)
-                      ? 'bg-white text-gray-700 border-[#4A90E2]'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-[#4A90E2]'
+                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+                      : formData.datingStyles.length >= 2 && !formData.datingStyles.includes(option)
+                      ? 'bg-gray-50 text-gray-400 border-2 border-gray-200 cursor-not-allowed'
+                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
                     }`}
+                  disabled={formData.datingStyles.length >= 2 && !formData.datingStyles.includes(option)}
                 >
                   {option}
                 </button>
@@ -282,19 +470,27 @@ export default function IdealType() {
           </div>
 
           {/* 라이프스타일 */}
-          <div className="card space-y-4">
-            <h2 className="text-h2">4. 이상형의 라이프스타일 (최대 3개)</h2>
+          <div className={`bg-white rounded-2xl shadow-sm p-6 space-y-4 ${errors.lifestyles ? 'ring-2 ring-red-500' : ''}`}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">5. 이상형의 라이프스타일 (최대 3개)</h2>
+              {errors.lifestyles && (
+                <span className="text-sm text-red-500">1개 이상 선택해주세요</span>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-2">
               {lifestyleOptions.map(option => (
                 <button
                   key={option}
                   type="button"
                   onClick={() => toggleSelection('lifestyles', option, 3)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium border-2 transition-colors
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
                     ${formData.lifestyles.includes(option)
-                      ? 'bg-white text-gray-700 border-[#4A90E2]'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-[#4A90E2]'
+                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+                      : formData.lifestyles.length >= 3 && !formData.lifestyles.includes(option)
+                      ? 'bg-gray-50 text-gray-400 border-2 border-gray-200 cursor-not-allowed'
+                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
                     }`}
+                  disabled={formData.lifestyles.length >= 3 && !formData.lifestyles.includes(option)}
                 >
                   {option}
                 </button>
@@ -303,20 +499,25 @@ export default function IdealType() {
           </div>
 
           {/* 관심사 */}
-          <div className="card space-y-4">
-            <h2 className="text-h2">5. 이상형의 관심사 (최대 5개)</h2>
+          <div className={`bg-white rounded-2xl shadow-sm p-6 space-y-4 ${errors.interests ? 'ring-2 ring-red-500' : ''}`}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">6. 이상형의 관심사 (최대 5개)</h2>
+              {errors.interests && (
+                <span className="text-sm text-red-500">1개 이상 선택해주세요</span>
+              )}
+            </div>
             <div className="grid grid-cols-3 gap-2">
               {interestOptions.map(option => (
                 <button
                   key={option}
                   type="button"
                   onClick={() => toggleSelection('interests', option, 5)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium border-2 transition-colors
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
                     ${formData.interests.includes(option)
-                      ? 'bg-white text-gray-700 border-[#4A90E2]'
+                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
                       : formData.interests.length >= 5 && !formData.interests.includes(option)
-                      ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-[#4A90E2]'
+                      ? 'bg-gray-50 text-gray-400 border-2 border-gray-200 cursor-not-allowed'
+                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
                     }`}
                   disabled={formData.interests.length >= 5 && !formData.interests.includes(option)}
                 >
@@ -327,18 +528,23 @@ export default function IdealType() {
           </div>
 
           {/* 음주 */}
-          <div className="card space-y-4">
-            <h2 className="text-h2">음주</h2>
+          <div className={`bg-white rounded-2xl shadow-sm p-6 space-y-4 ${errors.drinking ? 'ring-2 ring-red-500' : ''}`}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">음주</h2>
+              {errors.drinking && (
+                <span className="text-sm text-red-500">필수 입력 항목입니다</span>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-2">
               {drinkingOptions.map(option => (
                 <button
                   key={option}
                   type="button"
                   onClick={() => setFormData({ ...formData, drinking: option })}
-                  className={`px-4 py-2 rounded-full text-sm font-medium border-2 transition-colors
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
                     ${formData.drinking === option
-                      ? 'bg-white text-gray-700 border-[#4A90E2]'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-[#4A90E2]'
+                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
                     }`}
                 >
                   {option}
@@ -348,18 +554,23 @@ export default function IdealType() {
           </div>
 
           {/* 흡연 */}
-          <div className="card space-y-4">
-            <h2 className="text-h2">흡연</h2>
+          <div className={`bg-white rounded-2xl shadow-sm p-6 space-y-4 ${errors.smoking ? 'ring-2 ring-red-500' : ''}`}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">흡연</h2>
+              {errors.smoking && (
+                <span className="text-sm text-red-500">필수 입력 항목입니다</span>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-2">
               {smokingOptions.map(option => (
                 <button
                   key={option}
                   type="button"
                   onClick={() => setFormData({ ...formData, smoking: option })}
-                  className={`px-4 py-2 rounded-full text-sm font-medium border-2 transition-colors
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
                     ${formData.smoking === option
-                      ? 'bg-white text-gray-700 border-[#4A90E2]'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-[#4A90E2]'
+                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
                     }`}
                 >
                   {option}
@@ -369,18 +580,18 @@ export default function IdealType() {
           </div>
 
           {/* 문신 */}
-          <div className="card space-y-4">
-            <h2 className="text-h2">문신</h2>
+          <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">문신</h2>
             <div className="grid grid-cols-2 gap-2">
               {tattooOptions.map(option => (
                 <button
                   key={option}
                   type="button"
                   onClick={() => setFormData({ ...formData, tattoo: option })}
-                  className={`px-4 py-2 rounded-full text-sm font-medium border-2 transition-colors
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
                     ${formData.tattoo === option
-                      ? 'bg-white text-gray-700 border-[#4A90E2]'
-                      : 'bg-white text-gray-700 border-gray-300 hover:border-[#4A90E2]'
+                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
                     }`}
                 >
                   {option}
@@ -390,15 +601,19 @@ export default function IdealType() {
           </div>
 
           {/* 좋아하는 MBTI */}
-          <div className="card space-y-4">
-            <h2 className="text-h2">좋아하는 MBTI</h2>
+          <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">좋아하는 MBTI</h2>
             <div className="grid grid-cols-4 gap-2">
               {mbtiOptions.map((option) => (
                 <button
                   key={option}
                   type="button"
                   onClick={() => handleSingleSelect('likedMbti', option)}
-                  className={`btn-select ${formData.likedMbti === option ? 'btn-selected' : ''}`}
+                  className={`px-3 py-2 rounded-xl text-sm font-medium transition-all
+                    ${formData.likedMbti === option
+                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
+                    }`}
                 >
                   {option}
                 </button>
@@ -407,15 +622,19 @@ export default function IdealType() {
           </div>
 
           {/* 싫어하는 MBTI */}
-          <div className="card space-y-4">
-            <h2 className="text-h2">싫어하는 MBTI</h2>
+          <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">싫어하는 MBTI</h2>
             <div className="grid grid-cols-4 gap-2">
               {mbtiOptions.map((option) => (
                 <button
                   key={option}
                   type="button"
                   onClick={() => handleSingleSelect('dislikedMbti', option)}
-                  className={`btn-select ${formData.dislikedMbti === option ? 'btn-selected' : ''}`}
+                  className={`px-3 py-2 rounded-xl text-sm font-medium transition-all
+                    ${formData.dislikedMbti === option
+                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
+                    }`}
                 >
                   {option}
                 </button>
@@ -426,12 +645,55 @@ export default function IdealType() {
           {/* 저장 버튼 */}
           <button
             type="submit"
-            className="btn-primary w-full"
+            className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl shadow-sm hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all"
           >
             저장하기
           </button>
         </form>
       </div>
+
+      {/* 에러 모달 */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              필수 입력 항목을 확인해주세요
+            </h3>
+            <div className="space-y-2 mb-6">
+              {errors.heightMin && (
+                <p className="text-red-500">• 키 범위의 최소값을 입력해주세요 (140cm~200cm)</p>
+              )}
+              {errors.heightMax && (
+                <p className="text-red-500">• 키 범위의 최대값을 입력해주세요 (140cm~200cm)</p>
+              )}
+              {errors.personalities && (
+                <p className="text-red-500">• 성격을 1개 이상 선택해주세요</p>
+              )}
+              {errors.datingStyles && (
+                <p className="text-red-500">• 연애 스타일을 1개 이상 선택해주세요</p>
+              )}
+              {errors.lifestyles && (
+                <p className="text-red-500">• 라이프스타일을 1개 이상 선택해주세요</p>
+              )}
+              {errors.interests && (
+                <p className="text-red-500">• 관심사를 1개 이상 선택해주세요</p>
+              )}
+              {errors.drinking && (
+                <p className="text-red-500">• 음주 여부를 선택해주세요</p>
+              )}
+              {errors.smoking && (
+                <p className="text-red-500">• 흡연 여부를 선택해주세요</p>
+              )}
+            </div>
+            <button
+              onClick={() => setShowModal(false)}
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-2 px-4 rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 transition-all"
+            >
+              확인
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
