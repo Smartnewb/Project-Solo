@@ -58,7 +58,14 @@ export default function CommunityAdmin() {
       // 1. 게시글 데이터 가져오기
       let query = supabase
         .from('posts')
-        .select('*, profiles(name, student_id)')
+        .select(`
+          *,
+          author:author_id (
+            id,
+            name,
+            student_id
+          )
+        `)
         .order('created_at', { ascending: false });
       
       // 필터 적용
@@ -71,6 +78,7 @@ export default function CommunityAdmin() {
       const { data: postsData, error: postsError } = await query;
           
       if (postsError) {
+        console.error('게시글 조회 오류:', postsError);
         throw postsError;
       }
 
@@ -82,19 +90,46 @@ export default function CommunityAdmin() {
       
       console.log('게시글 데이터:', postsData);
       
-      // 게시글 데이터 변환
-      const processedPosts = postsData.map(post => {
-        // @ts-ignore
-        const profile = post.profiles;
-        const studentId = profile?.student_id || generateStudentId(post.author_id);
+      // 게시글 데이터 처리
+      const processedPosts = await Promise.all(postsData.map(async post => {
+        // 저자 정보가 없는 경우 직접 조회
+        let userName = post.nickname || '알 수 없음';
+        let studentId = '';
+        
+        if (post.author_id && (!post.author || Object.keys(post.author).length === 0)) {
+          try {
+            // 프로필 직접 조회
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('name, student_id')
+              .eq('user_id', post.author_id)
+              .single();
+              
+            if (profileData) {
+              userName = profileData.name || userName;
+              studentId = profileData.student_id || generateStudentId(post.author_id);
+            } else {
+              studentId = generateStudentId(post.author_id);
+            }
+          } catch (err) {
+            console.error('프로필 조회 오류:', err);
+            studentId = generateStudentId(post.author_id);
+          }
+        } else if (post.author) {
+          // author 필드에서 정보 추출
+          userName = post.author.name || userName;
+          studentId = post.author.student_id || generateStudentId(post.author_id);
+        } else {
+          studentId = generateStudentId(post.author_id);
+        }
         
         return {
           ...post,
-          user_name: profile?.name || post.nickname || '알 수 없음',
+          user_name: userName,
           student_id: studentId,
-          profiles: undefined // 중첩된 profiles 데이터 제거
+          author: undefined // 중첩된 author 데이터 제거
         };
-      });
+      }));
       
       setPosts(processedPosts);
     } catch (err: any) {

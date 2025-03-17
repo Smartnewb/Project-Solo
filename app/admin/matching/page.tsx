@@ -18,24 +18,55 @@ export default function AdminMatching() {
 
   const fetchMatchingTime = async () => {
     try {
+      console.log('매칭 시간 정보 가져오기 시작');
+      setIsLoading(true);
+      
       const response = await fetch('/api/admin/matching-time');
+      console.log('매칭 시간 API 응답 상태:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`API 응답 오류: ${response.status}`);
+      }
+      
       const data = await response.json();
+      console.log('받은 매칭 시간 데이터:', data);
       
       if (data.matchingDateTime) {
         setMatchingDateTime(data.matchingDateTime);
+        console.log('매칭 시간 설정됨:', data.matchingDateTime);
+      } else {
+        console.log('매칭 시간이 설정되지 않았거나 null입니다');
+        setMatchingDateTime('');
       }
     } catch (error) {
-      setMessage({ type: 'error', content: '매칭 시간 조회에 실패했습니다.' });
+      console.error('매칭 시간 조회 실패:', error);
+      setMessage({ 
+        type: 'error', 
+        content: '매칭 시간 조회에 실패했습니다. 다시 시도해 주세요.' 
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const fetchSignupStatus = async () => {
     try {
+      console.log('회원가입 상태 정보 가져오기 시작');
       const response = await fetch('/api/admin/signup-control');
+      
+      if (!response.ok) {
+        throw new Error(`API 응답 오류: ${response.status}`);
+      }
+      
       const data = await response.json();
+      console.log('회원가입 상태 정보:', data);
       setIsSignupEnabled(data.isSignupEnabled);
     } catch (error) {
       console.error('회원가입 상태 조회 실패:', error);
+      setMessage({ 
+        type: 'error', 
+        content: '회원가입 상태 조회에 실패했습니다.' 
+      });
     }
   };
 
@@ -45,6 +76,8 @@ export default function AdminMatching() {
     setMessage({ type: '', content: '' });
 
     try {
+      console.log('매칭 시간 저장 요청 시작:', matchingDateTime);
+      
       const response = await fetch('/api/admin/matching-time', {
         method: 'POST',
         headers: {
@@ -53,15 +86,21 @@ export default function AdminMatching() {
         body: JSON.stringify({ matchingDateTime }),
       });
 
+      console.log('매칭 시간 저장 응답 상태:', response.status);
       const data = await response.json();
+      console.log('매칭 시간 저장 응답 데이터:', data);
 
       if (response.ok) {
         setMessage({ type: 'success', content: '매칭 시간이 성공적으로 설정되었습니다.' });
       } else {
-        setMessage({ type: 'error', content: data.error || '매칭 시간 설정에 실패했습니다.' });
+        throw new Error(data.error || '매칭 시간 설정에 실패했습니다.');
       }
     } catch (error) {
-      setMessage({ type: 'error', content: '매칭 시간 설정에 실패했습니다.' });
+      console.error('매칭 시간 설정 중 오류 발생:', error);
+      setMessage({ 
+        type: 'error', 
+        content: error instanceof Error ? error.message : '매칭 시간 설정에 실패했습니다.' 
+      });
     } finally {
       setIsLoading(false);
     }
@@ -70,6 +109,8 @@ export default function AdminMatching() {
   const toggleSignup = async () => {
     try {
       setIsLoading(true);
+      console.log(`회원가입 상태 변경 요청: ${isSignupEnabled ? '비활성화' : '활성화'}`);
+      
       const response = await fetch('/api/admin/signup-control', {
         method: 'POST',
         headers: {
@@ -78,7 +119,9 @@ export default function AdminMatching() {
         body: JSON.stringify({ isSignupEnabled: !isSignupEnabled }),
       });
 
+      console.log('회원가입 상태 변경 응답 상태:', response.status);
       const data = await response.json();
+      console.log('회원가입 상태 변경 응답 데이터:', data);
 
       if (response.ok) {
         setIsSignupEnabled(!isSignupEnabled);
@@ -87,15 +130,13 @@ export default function AdminMatching() {
           content: `회원가입이 ${!isSignupEnabled ? '활성화' : '비활성화'}되었습니다.`
         });
       } else {
-        setMessage({
-          type: 'error',
-          content: data.error || '회원가입 상태 변경에 실패했습니다.'
-        });
+        throw new Error(data.error || '회원가입 상태 변경에 실패했습니다.');
       }
     } catch (error) {
+      console.error('회원가입 상태 변경 중 오류 발생:', error);
       setMessage({
         type: 'error',
-        content: '회원가입 상태 변경에 실패했습니다.'
+        content: error instanceof Error ? error.message : '회원가입 상태 변경에 실패했습니다.'
       });
     } finally {
       setIsLoading(false);

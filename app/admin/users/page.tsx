@@ -79,26 +79,41 @@ export default function UsersAdmin() {
       
       if (currentUser?.email === 'notify@smartnewb.com') {
         // 관리자인 경우 사용자 이메일 정보 조회
-        const userIds = uniqueProfiles.map(profile => profile.user_id);
-        
-        // 이메일 정보 가져오기
-        const { data: authUsers, error: authError } = await supabase
-          .rpc('get_users_email', { user_ids: userIds });
-        
-        if (!authError && authUsers) {
-          // 프로필 정보와 이메일 정보 합치기
-          const usersWithEmail = uniqueProfiles.map(profile => {
-            const userEmail = authUsers.find((user: any) => user.id === profile.user_id);
-            return {
-              ...profile,
-              email: userEmail?.email || '이메일 없음'
-            };
-          });
+        try {
+          const userIds = uniqueProfiles.map(profile => profile.user_id);
+          
+          // Supabase RPC 대신 Auth API 직접 사용
+          const usersWithEmail = await Promise.all(
+            uniqueProfiles.map(async (profile) => {
+              try {
+                // 이메일 정보를 가져오는 대체 방법
+                const { data: userData, error: userError } = await supabase.auth.admin.getUserById(profile.user_id);
+                
+                if (userError || !userData) {
+                  console.warn(`사용자 ${profile.user_id}의 이메일 정보를 가져오지 못했습니다:`, userError);
+                  return {
+                    ...profile,
+                    email: '이메일 정보 없음'
+                  };
+                }
+                
+                return {
+                  ...profile,
+                  email: userData.user.email || '이메일 없음'
+                };
+              } catch (error) {
+                console.warn(`사용자 ${profile.user_id}의 이메일 정보를 가져오지 못했습니다:`, error);
+                return {
+                  ...profile,
+                  email: '이메일 정보 없음'
+                };
+              }
+            })
+          );
           
           setUsers(usersWithEmail);
-        } else {
-          // 이메일 정보를 가져오지 못한 경우
-          console.warn('이메일 정보를 가져오지 못했습니다:', authError);
+        } catch (error) {
+          console.error('이메일 정보를 가져오는 중 오류가 발생했습니다:', error);
           setUsers(uniqueProfiles);
         }
       } else {

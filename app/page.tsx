@@ -17,22 +17,33 @@ export default function Login() {
     e.preventDefault();
     setError(null);
     setLoading(true);
+    console.log('로그인 시도 중...');
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
+        console.error('로그인 오류:', error);
         setError('이메일 또는 비밀번호가 올바르지 않습니다.');
         setLoading(false);
         return;
       }
 
-      // 로그인 성공 - 리다이렉션은 미들웨어에서 처리
-      console.log('로그인 성공');
+      // 로그인 성공
+      console.log('로그인 성공. 세션 정보:', data.session);
+      
+      // 명시적으로 홈 페이지로 리다이렉션
+      console.log('홈 페이지로 리다이렉션 중...');
+      
+      // 로컬 스토리지에 데이터 저장을 위한 지연
+      setTimeout(() => {
+        router.push('/home');
+      }, 500);
     } catch (err) {
+      console.error('로그인 중 예외 발생:', err);
       setError('로그인 중 오류가 발생했습니다.');
       setLoading(false);
     }

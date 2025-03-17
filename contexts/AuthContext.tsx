@@ -53,21 +53,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // 프로필 정보 가져오기
   const fetchProfile = async (userId: string) => {
-    console.log('Fetching profile for user ID:', userId);
+    console.log('AuthContext: 사용자 ID로 프로필 조회 시작:', userId);
     
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    try {
+      // 콘솔에 쿼리 정보 출력
+      console.log('프로필 쿼리 정보:', {
+        테이블: 'profiles',
+        검색필드: 'user_id',
+        검색값: userId
+      });
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
 
-    if (error) {
-      console.error('Error fetching profile:', error);
-      return;
+      if (error) {
+        console.error('프로필 조회 오류 발생. 에러 내용:', error);
+        
+        // PGRST116은 row not found 에러로, 프로필이 없는 정상적인 상황일 수 있음
+        if (error.code === 'PGRST116') {
+          console.log('프로필이 존재하지 않습니다. 새 사용자일 수 있습니다.');
+          setProfile(null);
+          return;
+        }
+        
+        // 그 외 다른 에러의 경우
+        console.error('프로필 조회 중 DB 오류:', error.message);
+        setProfile(null);
+        return;
+      }
+
+      if (!data) {
+        console.log('프로필 데이터가 없습니다');
+        setProfile(null);
+        return;
+      }
+
+      console.log('프로필 조회 성공. 데이터:', data);
+      setProfile(data);
+    } catch (err) {
+      console.error('프로필 조회 중 예외 발생:', err);
+      setProfile(null);
     }
-
-    console.log('Fetched profile data:', data);
-    setProfile(data);
   };
 
   // 로그인
@@ -124,7 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { error } = await supabase
         .from('profiles')
         .upsert({
-          id: user.id,
+          user_id: user.id,
           ...profileData,
           updated_at: new Date().toISOString(),
         })
