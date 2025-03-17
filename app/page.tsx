@@ -2,13 +2,12 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClientSupabaseClient } from '@/utils/supabase';
-import Image from 'next/image';
 import Link from 'next/link';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 export default function Login() {
   const router = useRouter();
-  const supabase = createClientSupabaseClient();
+  const supabase = createClientComponentClient();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -27,13 +26,14 @@ export default function Login() {
 
       if (error) {
         setError('이메일 또는 비밀번호가 올바르지 않습니다.');
+        setLoading(false);
         return;
       }
 
-      router.push('/home');
+      // 로그인 성공 - 리다이렉션은 미들웨어에서 처리
+      console.log('로그인 성공');
     } catch (err) {
       setError('로그인 중 오류가 발생했습니다.');
-    } finally {
       setLoading(false);
     }
   };

@@ -1,129 +1,111 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import {
-  ChartPieIcon,
-  UsersIcon,
-  HeartIcon,
-  ChatBubbleLeftRightIcon,
-  ChartBarIcon,
-  QuestionMarkCircleIcon,
-  ArrowLeftOnRectangleIcon,
-} from '@heroicons/react/24/outline';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
-const menuItems = [
-  {
-    name: '대시보드',
-    href: '/admin',
-    icon: ChartPieIcon,
-  },
-  {
-    name: '유저 관리',
-    href: '/admin/users',
-    icon: UsersIcon,
-  },
-  {
-    name: '매칭 관리',
-    href: '/admin/matching',
-    icon: HeartIcon,
-  },
-  {
-    name: '커뮤니티 관리',
-    href: '/admin/community',
-    icon: ChatBubbleLeftRightIcon,
-  },
-  {
-    name: '통계/분석',
-    href: '/admin/statistics',
-    icon: ChartBarIcon,
-  },
-  {
-    name: '고객 문의',
-    href: '/admin/inquiries',
-    icon: QuestionMarkCircleIcon,
-  },
-];
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const supabase = createClientComponentClient();
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const pathname = usePathname();
-  const [isMenuOpen, setIsMenuOpen] = useState(true);
+  useEffect(() => {
+    async function checkAdminAccess() {
+      try {
+        setLoading(true);
+        
+        // 세션 가져오기
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error || !session) {
+          console.error('Admin access failed: No session');
+          router.push('/');
+          return;
+        }
+
+        // 어드민 권한 체크
+        if (session.user.email !== 'notify@smartnewb.com') {
+          console.error('Admin access failed: Not an admin');
+          router.push('/home');
+          return;
+        }
+
+        console.log('Admin access granted');
+        setUser(session.user);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error checking admin access:', error);
+        router.push('/');
+      }
+    }
+
+    checkAdminAccess();
+  }, [router, supabase]);
+
+  // 로그아웃 처리
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      router.push('/');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-DEFAULT mx-auto"></div>
+          <p className="mt-4 text-gray-600">로딩 중...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-100">
       {/* 사이드바 */}
-      <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white border-r transform transition-transform duration-200 ease-in-out ${
-          isMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        {/* 로고 */}
-        <div className="h-16 flex items-center justify-between px-4 border-b">
-          <h1 className="text-xl font-bold text-primary-DEFAULT">
-            Project-Solo Admin
-          </h1>
-          <button
-            onClick={() => setIsMenuOpen(false)}
-            className="p-2 rounded-lg hover:bg-gray-100 lg:hidden"
-          >
-            ×
-          </button>
+      <div className="w-64 bg-white shadow-md">
+        <div className="p-6">
+          <h1 className="text-xl font-bold text-primary-DEFAULT">관리자 페이지</h1>
+          <p className="text-sm text-gray-500 mt-1">{user?.email}</p>
         </div>
-
-        {/* 메뉴 아이템 */}
-        <nav className="mt-4 px-2">
-          {menuItems.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-1 ${
-                  isActive
-                    ? 'bg-primary-50 text-primary-DEFAULT'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <item.icon className="w-6 h-6" />
-                <span>{item.name}</span>
+        <nav className="mt-6">
+          <ul>
+            <li>
+              <Link href="/admin/community" className="block py-2 px-4 hover:bg-gray-100">
+                커뮤니티 관리
               </Link>
-            );
-          })}
-
-          {/* 로그아웃 */}
-          <button className="flex items-center gap-3 px-4 py-3 rounded-lg mb-1 text-gray-700 hover:bg-gray-50 w-full mt-8">
-            <ArrowLeftOnRectangleIcon className="w-6 h-6" />
-            <span>로그아웃</span>
-          </button>
+            </li>
+            <li>
+              <Link href="/admin/users" className="block py-2 px-4 hover:bg-gray-100">
+                사용자 관리
+              </Link>
+            </li>
+            <li>
+              <button 
+                onClick={handleLogout}
+                className="w-full text-left py-2 px-4 text-red-500 hover:bg-gray-100"
+              >
+                로그아웃
+              </button>
+            </li>
+          </ul>
         </nav>
       </div>
 
-      {/* 메인 컨텐츠 */}
-      <div
-        className={`transition-all duration-200 ${
-          isMenuOpen ? 'ml-64' : 'ml-0'
-        }`}
-      >
-        {/* 상단 헤더 */}
-        <div className="h-16 bg-white border-b px-4 flex items-center">
-          <button
-            onClick={() => setIsMenuOpen(true)}
-            className={`p-2 rounded-lg hover:bg-gray-100 lg:hidden ${
-              isMenuOpen ? 'hidden' : 'block'
-            }`}
-          >
-            ☰
-          </button>
-        </div>
-
-        {/* 페이지 컨텐츠 */}
-        <div className="p-6">{children}</div>
+      {/* 메인 콘텐츠 */}
+      <div className="flex-1 overflow-auto">
+        <header className="bg-white shadow-sm p-4">
+          <h2 className="text-lg font-semibold">관리자 대시보드</h2>
+        </header>
+        <main className="p-6">
+          {children}
+        </main>
       </div>
     </div>
   );
-} 
+}

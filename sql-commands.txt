@@ -1,0 +1,103 @@
+-- Supabase 관리 콘솔에서 실행할 SQL 명령어
+-- Supabase > SQL 편집기 메뉴에서 이 쿼리들을 실행하세요
+
+-- 1. 사용자 이메일을 가져오는 함수 생성
+CREATE OR REPLACE FUNCTION public.get_users_email(user_ids UUID[])
+RETURNS TABLE (id UUID, email TEXT)
+LANGUAGE SQL
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT id, email
+  FROM auth.users
+  WHERE id = ANY(user_ids);
+$$;
+
+-- 함수 실행 권한 설정
+GRANT EXECUTE ON FUNCTION public.get_users_email(UUID[]) TO authenticated;
+
+-- 2. posts 테이블이 없는 경우 생성
+CREATE TABLE IF NOT EXISTS public.posts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  userId UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- RLS 정책 설정
+ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
+
+-- 모든 사용자가 게시글을 볼 수 있음
+DROP POLICY IF EXISTS "모든 사용자가 게시글을 볼 수 있음" ON public.posts;
+CREATE POLICY "모든 사용자가 게시글을 볼 수 있음" ON public.posts
+  FOR SELECT USING (true);
+  
+-- 로그인한 사용자만 게시글 생성 가능
+DROP POLICY IF EXISTS "로그인한 사용자만 게시글 생성 가능" ON public.posts;
+CREATE POLICY "로그인한 사용자만 게시글 생성 가능" ON public.posts
+  FOR INSERT WITH CHECK (auth.uid() = userId);
+  
+-- 자신의 게시글만 수정 가능
+DROP POLICY IF EXISTS "자신의 게시글만 수정 가능" ON public.posts;
+CREATE POLICY "자신의 게시글만 수정 가능" ON public.posts
+  FOR UPDATE USING (auth.uid() = userId);
+  
+-- 자신의 게시글만 삭제 가능
+DROP POLICY IF EXISTS "자신의 게시글만 삭제 가능" ON public.posts;
+CREATE POLICY "자신의 게시글만 삭제 가능" ON public.posts
+  FOR DELETE USING (auth.uid() = userId);
+
+-- 3. profiles 테이블이 없는 경우 생성
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  userId UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  name TEXT,
+  age INTEGER,
+  gender TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- RLS 정책 설정
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+-- 모든 사용자가 프로필을 볼 수 있음
+DROP POLICY IF EXISTS "모든 사용자가 프로필을 볼 수 있음" ON public.profiles;
+CREATE POLICY "모든 사용자가 프로필을 볼 수 있음" ON public.profiles
+  FOR SELECT USING (true);
+  
+-- 자신의 프로필만 생성 가능
+DROP POLICY IF EXISTS "자신의 프로필만 생성 가능" ON public.profiles;
+CREATE POLICY "자신의 프로필만 생성 가능" ON public.profiles
+  FOR INSERT WITH CHECK (auth.uid() = userId);
+  
+-- 자신의 프로필만 수정 가능
+DROP POLICY IF EXISTS "자신의 프로필만 수정 가능" ON public.profiles;
+CREATE POLICY "자신의 프로필만 수정 가능" ON public.profiles
+  FOR UPDATE USING (auth.uid() = userId);
+  
+-- 자신의 프로필만 삭제 가능
+DROP POLICY IF EXISTS "자신의 프로필만 삭제 가능" ON public.profiles;
+CREATE POLICY "자신의 프로필만 삭제 가능" ON public.profiles
+  FOR DELETE USING (auth.uid() = userId);
+
+-- 4. 샘플 데이터 추가 (선택사항)
+-- 관리자 ID를 찾아서 변수에 저장
+DO $$
+DECLARE
+  admin_id UUID;
+BEGIN
+  SELECT id INTO admin_id FROM auth.users WHERE email = 'notify@smartnewb.com' LIMIT 1;
+  
+  IF admin_id IS NOT NULL THEN
+    -- 샘플 게시글 추가
+    INSERT INTO public.posts (title, content, userId)
+    VALUES 
+      ('관리자 공지사항', '안녕하세요, 관리자입니다. 이 게시판을 통해 중요한 공지사항을 전달드리겠습니다.', admin_id),
+      ('사이트 이용 가이드', '이 사이트는 이상형을 찾는 프로젝트입니다. 다양한 기능을 활용해보세요!', admin_id)
+    ON CONFLICT (id) DO NOTHING;
+  END IF;
+END
+$$; 

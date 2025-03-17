@@ -1,448 +1,245 @@
 'use client';
 
-import { useState } from 'react';
-import { Tab } from '@headlessui/react';
-import {
-  MagnifyingGlassIcon,
-  ExclamationTriangleIcon,
-  TrashIcon,
-  CheckCircleIcon,
-} from '@heroicons/react/24/outline';
+import { useState, useEffect } from 'react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
-interface Post {
-  id: string;
-  author_id: string;
-  content: string;
-  created_at: string;
-  updated_at: string;
-  likes: string[];
-  isEdited: boolean;
-  isdeleted: boolean;
-  reports: string[];
-  nickname: string;
-  studentid: string;
-  emoji: string;
-  comments: Comment[];
-}
+type Post = {
+  userid?: string;
+  title?: string;
+  content?: string;
+  created_at?: string;
+  updated_at?: string;
+  user_name?: string;
+  author_id?: string;
+};
 
-interface Comment {
-  id: string;
-  post_id: string;
-  author_id: string;
-  content: string;
-  created_at: string;
-  updated_at: string;
-  nickname: string;
-  studentid: string;
-  isEdited: boolean;
-  isdeleted: boolean;
-  reports: string[];
-}
+export default function CommunityAdmin() {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const supabase = createClientComponentClient();
 
-export default function CommunityManagement() {
-  const [posts, setPosts] = useState<Post[]>([
-    {
-      id: '1',
-      author_id: 'user1',
-      content: '첫 만남에서 절대 하면 안 되는 행동들을 정리해보았습니다...',
-      created_at: '2024-03-11',
-      updated_at: '2024-03-11',
-      likes: [],
-      isEdited: false,
-      isdeleted: false,
-      reports: [],
-      nickname: '김철수',
-      studentid: '20240001',
-      emoji: '😊',
-      comments: []
-    },
-    {
-      id: '2',
-      author_id: 'user2',
-      content: '매칭 후 대화가 잘 안 이어질 때 시도해볼 만한 주제들...',
-      created_at: '2024-03-10',
-      updated_at: '2024-03-10',
-      likes: [],
-      isEdited: false,
-      isdeleted: false,
-      reports: ['user3', 'user4', 'user5'],
-      nickname: '이영희',
-      studentid: '20240002',
-      emoji: '🤗',
-      comments: []
+  useEffect(() => {
+    async function fetchPosts() {
+      try {
+        setLoading(true);
+        
+        // 1. 게시글 데이터만 가져오기
+        const { data: postsData, error: postsError } = await supabase
+          .from('posts')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        if (postsError) {
+          throw postsError;
+        }
+
+        if (!postsData || postsData.length === 0) {
+          setPosts([]);
+          setLoading(false);
+          return;
+        }
+        
+        console.log('게시글 데이터:', postsData);
+        
+        // 2. 모든 게시글의 작성자 ID 수집 (userid 또는 author_id 사용)
+        const userIds = [...new Set(postsData.map(post => post.userid || post.author_id).filter(Boolean))];
+        
+        // 3. 프로필 데이터 가져오기
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('user_id, name')
+          .in('user_id', userIds);
+        
+        if (profilesError) {
+          console.warn('프로필 데이터 조회 중 오류:', profilesError);
+          // 프로필 조회에 실패해도 게시글은 표시
+        }
+        
+        // 4. 게시글 데이터와 프로필 데이터 합치기
+        const postsWithUserNames = postsData.map(post => {
+          const userId = post.userid || post.author_id;
+          const userProfile = userId ? profilesData?.find(profile => profile.user_id === userId) : null;
+          return {
+            ...post,
+            user_name: userProfile?.name || '알 수 없음'
+          };
+        });
+        
+        setPosts(postsWithUserNames);
+      } catch (err: any) {
+        console.error('게시글 불러오기 오류:', err);
+        setError(err.message || '게시글을 불러오는 중 오류가 발생했습니다.');
+      } finally {
+        setLoading(false);
+      }
     }
-  ]);
+    
+    fetchPosts();
+  }, [supabase]);
 
-  const [comments, setComments] = useState<Comment[]>([
-    {
-      id: '1',
-      post_id: '1',
-      author_id: 'user3',
-      content: '정말 도움이 되는 글이네요!',
-      created_at: '2024-03-11',
-      updated_at: '2024-03-11',
-      nickname: '박민수',
-      studentid: '20240003',
-      isEdited: false,
-      isdeleted: false,
-      reports: []
-    },
-    {
-      id: '2',
-      post_id: '2',
-      author_id: 'user4',
-      content: '부적절한 내용의 댓글입니다.',
-      created_at: '2024-03-10',
-      updated_at: '2024-03-10',
-      nickname: '정다희',
-      studentid: '20240004',
-      isEdited: false,
-      isdeleted: false,
-      reports: ['user1', 'user2', 'user3', 'user4', 'user5']
+  const handleDeletePost = async (postId: string) => {
+    if (!confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
+      return;
     }
-  ]);
-
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTab, setSelectedTab] = useState(0);
-
-  const handleDelete = (type: 'post' | 'comment', id: string) => {
-    if (type === 'post') {
-      setPosts(posts.map(post => 
-        post.id === id ? { ...post, isdeleted: true } : post
-      ));
-    } else {
-      setComments(comments.map(comment =>
-        comment.id === id ? { ...comment, isdeleted: true } : comment
-      ));
-    }
-  };
-
-  const handleRestore = (type: 'post' | 'comment', id: string) => {
-    if (type === 'post') {
-      setPosts(posts.map(post =>
-        post.id === id ? { ...post, isdeleted: false } : post
-      ));
-    } else {
-      setComments(comments.map(comment =>
-        comment.id === id ? { ...comment, isdeleted: false } : comment
-      ));
+    
+    try {
+      setLoading(true);
+      
+      // userid 또는 author_id로 삭제 시도
+      let error;
+      
+      // 먼저 userid로 시도
+      const result = await supabase
+        .from('posts')
+        .delete()
+        .eq('userid', postId);
+        
+      error = result.error;
+      
+      // userid로 실패하면 author_id로 시도
+      if (error) {
+        const result2 = await supabase
+          .from('posts')
+          .delete()
+          .eq('author_id', postId);
+          
+        error = result2.error;
+      }
+      
+      if (error) {
+        throw error;
+      }
+      
+      // 삭제 후 목록 업데이트
+      setPosts(posts.filter(post => (post.userid !== postId && post.author_id !== postId)));
+      
+    } catch (err: any) {
+      console.error('게시글 삭제 오류:', err);
+      alert('게시글 삭제 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const isPost = (item: Post | Comment): item is Post => {
-    return 'nickname' in item;
+  const handleCreateSamplePost = async () => {
+    try {
+      setLoading(true);
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        alert('로그인이 필요합니다.');
+        return;
+      }
+      
+      const newPost = {
+        title: `샘플 게시글 ${new Date().toLocaleTimeString()}`,
+        content: '이것은 관리자가 생성한 샘플 게시글입니다.',
+        author_id: user.id
+      };
+      
+      const { data, error } = await supabase
+        .from('posts')
+        .insert([newPost])
+        .select();
+        
+      if (error) {
+        throw error;
+      }
+      
+      // 새 게시글 추가 후 목록 새로고침
+      if (data && data.length > 0) {
+        setPosts([
+          {
+            ...data[0],
+            user_name: '관리자'
+          },
+          ...posts
+        ]);
+      }
+      
+    } catch (err: any) {
+      console.error('게시글 생성 오류:', err);
+      alert('게시글 생성 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const filterItems = (items: Post[] | Comment[], filter: string) => {
-    return items.filter(item => {
-      const searchMatch = 
-        isPost(item)
-          ? item.nickname.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.content.toLowerCase().includes(searchTerm.toLowerCase())
-          : item.content.toLowerCase().includes(searchTerm.toLowerCase());
+  if (loading && posts.length === 0) {
+    return (
+      <div className="py-8 text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-DEFAULT mx-auto"></div>
+        <p className="mt-4 text-gray-600">게시글 로딩 중...</p>
+      </div>
+    );
+  }
 
-      if (filter === 'all') return searchMatch;
-      if (filter === 'reported') return item.reports.length > 0 && searchMatch;
-      if (filter === 'deleted') return item.isdeleted && searchMatch;
-      return false;
-    });
-  };
+  if (error) {
+    return (
+      <div className="py-8 text-center">
+        <p className="text-red-500">{error}</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div>
+      <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">커뮤니티 관리</h1>
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="검색어를 입력하세요"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="input-field pl-10"
-          />
-          <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-        </div>
+        <button 
+          onClick={handleCreateSamplePost}
+          className="bg-primary-DEFAULT hover:bg-primary-dark text-white py-2 px-4 rounded"
+          disabled={loading}
+        >
+          샘플 게시글 생성
+        </button>
       </div>
-
-      <Tab.Group selectedIndex={selectedTab} onChange={setSelectedTab}>
-        <Tab.List className="flex space-x-1 rounded-xl bg-primary-50 p-1">
-          <Tab
-            className={({ selected }) =>
-              `w-full rounded-lg py-2.5 text-sm font-medium leading-5
-              ${
-                selected
-                  ? 'bg-white text-primary-DEFAULT shadow'
-                  : 'text-gray-700 hover:bg-white/[0.12]'
-              }`
-            }
-          >
-            게시글 관리
-          </Tab>
-          <Tab
-            className={({ selected }) =>
-              `w-full rounded-lg py-2.5 text-sm font-medium leading-5
-              ${
-                selected
-                  ? 'bg-white text-primary-DEFAULT shadow'
-                  : 'text-gray-700 hover:bg-white/[0.12]'
-              }`
-            }
-          >
-            댓글 관리
-          </Tab>
-        </Tab.List>
-
-        <Tab.Panels>
-          {/* 게시글 관리 패널 */}
-          <Tab.Panel>
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setSelectedTab(0)}
-                  className={`px-4 py-2 rounded-lg ${
-                    selectedTab === 0
-                      ? 'bg-primary-DEFAULT text-white'
-                      : 'bg-gray-100 text-gray-700'
-                  }`}
-                >
-                  전체
-                </button>
-                <button
-                  onClick={() => setSelectedTab(1)}
-                  className={`px-4 py-2 rounded-lg ${
-                    selectedTab === 1
-                      ? 'bg-primary-DEFAULT text-white'
-                      : 'bg-gray-100 text-gray-700'
-                  }`}
-                >
-                  신고됨
-                </button>
-                <button
-                  onClick={() => setSelectedTab(2)}
-                  className={`px-4 py-2 rounded-lg ${
-                    selectedTab === 2
-                      ? 'bg-primary-DEFAULT text-white'
-                      : 'bg-gray-100 text-gray-700'
-                  }`}
-                >
-                  삭제됨
-                </button>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                <table className="min-w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        작성자
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        제목
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        작성일
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        댓글
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        신고
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        상태
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        관리
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filterItems(posts, ['all', 'reported', 'deleted'][selectedTab]).map((post) => (
-                      <tr key={post.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {post.nickname}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900">{(post as any).nickname}</div>
-                          <div className="text-sm text-gray-500 truncate max-w-xs">
-                            {post.content}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {post.created_at}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {'comments' in post && post.comments.length}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {post.reports.length > 0 && (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              {post.reports.length}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              !post.isdeleted
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}
-                          >
-                            {post.isdeleted ? '삭제됨' : '정상'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          {post.isdeleted ? (
-                            <button
-                              onClick={() => handleRestore('post', post.id)}
-                              className="text-primary-DEFAULT hover:text-primary-dark"
-                            >
-                              복구
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleDelete('post', post.id)}
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              삭제
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </Tab.Panel>
-
-          {/* 댓글 관리 패널 */}
-          <Tab.Panel>
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setSelectedTab(0)}
-                  className={`px-4 py-2 rounded-lg ${
-                    selectedTab === 0
-                      ? 'bg-primary-DEFAULT text-white'
-                      : 'bg-gray-100 text-gray-700'
-                  }`}
-                >
-                  전체
-                </button>
-                <button
-                  onClick={() => setSelectedTab(1)}
-                  className={`px-4 py-2 rounded-lg ${
-                    selectedTab === 1
-                      ? 'bg-primary-DEFAULT text-white'
-                      : 'bg-gray-100 text-gray-700'
-                  }`}
-                >
-                  신고됨
-                </button>
-                <button
-                  onClick={() => setSelectedTab(2)}
-                  className={`px-4 py-2 rounded-lg ${
-                    selectedTab === 2
-                      ? 'bg-primary-DEFAULT text-white'
-                      : 'bg-gray-100 text-gray-700'
-                  }`}
-                >
-                  삭제됨
-                </button>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                <table className="min-w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        작성자
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        내용
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        게시글
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        작성일
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        신고
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        상태
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        관리
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filterItems(comments, ['all', 'reported', 'deleted'][selectedTab]).map((comment) => (
-                      <tr key={comment.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {comment.nickname}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900 truncate max-w-xs">
-                            {comment.content}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-500 truncate max-w-xs">
-                            {!isPost(comment) && comment.post_id}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {comment.created_at}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {comment.reports.length > 0 && (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              {comment.reports.length}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              !comment.isdeleted
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-red-100 text-red-800'
-                            }`}
-                          >
-                            {comment.isdeleted ? '삭제됨' : '정상'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          {comment.isdeleted ? (
-                            <button
-                              onClick={() => handleRestore('comment', comment.id)}
-                              className="text-primary-DEFAULT hover:text-primary-dark"
-                            >
-                              복구
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleDelete('comment', comment.id)}
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              삭제
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </Tab.Panel>
-        </Tab.Panels>
-      </Tab.Group>
+      
+      {posts.length === 0 ? (
+        <p className="text-center text-gray-500 py-8">게시글이 없습니다.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full bg-white border border-gray-200">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="py-2 px-4 border">ID</th>
+                <th className="py-2 px-4 border">제목</th>
+                <th className="py-2 px-4 border">작성자</th>
+                <th className="py-2 px-4 border">작성일</th>
+                <th className="py-2 px-4 border">관리</th>
+              </tr>
+            </thead>
+            <tbody>
+              {posts.map((post, index) => {
+                const postId = post.userid || post.author_id || `unknown-${index}`;
+                return (
+                  <tr key={postId} className="hover:bg-gray-50">
+                    <td className="py-2 px-4 border">
+                      {postId && typeof postId === 'string' ? postId.slice(0, 8) + '...' : '알 수 없음'}
+                    </td>
+                    <td className="py-2 px-4 border">{post.title || '제목 없음'}</td>
+                    <td className="py-2 px-4 border">{post.user_name || '알 수 없음'}</td>
+                    <td className="py-2 px-4 border">
+                      {post.created_at ? new Date(post.created_at).toLocaleDateString('ko-KR') : '날짜 없음'}
+                    </td>
+                    <td className="py-2 px-4 border">
+                      <button
+                        onClick={() => handleDeletePost(postId)}
+                        className="text-red-500 hover:text-red-700"
+                        disabled={loading || !postId || postId.startsWith('unknown-')}
+                      >
+                        삭제
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 } 
