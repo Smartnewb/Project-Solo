@@ -79,6 +79,7 @@ export default function Community() {
     studentId: string;
     nickname?: string;
     emoji?: string;
+    profileId?: string;
   }>({ userId: '', studentId: '' });
   const [editingPost, setEditingPost] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
@@ -110,19 +111,133 @@ export default function Community() {
   // 게시글 불러오기
   const fetchPosts = async () => {
     try {
-      const { data, error } = await supabase
+      // 게시글 먼저 불러오기
+      const { data: postsData, error: postsError } = await supabase
         .from('posts')
-        .select(`
-          *,
-          comments (*)
-        `)
-        .order('timestamp', { ascending: false });
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setPosts(data || []);
+      if (postsError) throw postsError;
+      
+      if (!postsData || postsData.length === 0) {
+        setPosts([]);
+        return;
+      }
+      
+      // 각 게시글에 대한 댓글 불러오기
+      const postsWithComments = await Promise.all(
+        postsData.map(async (post) => {
+          try {
+            const { data: commentsData, error: commentsError } = await supabase
+              .from('comments')
+              .select('*')
+              .eq('post_id', post.id)
+              .order('created_at', { ascending: true });
+              
+            if (commentsError) {
+              console.error('댓글을 불러오는 중 오류가 발생했습니다:', commentsError);
+              return { ...post, comments: [] };
+            }
+            
+            return { ...post, comments: commentsData || [] };
+          } catch (error) {
+            console.error('댓글을 불러오는 중 오류가 발생했습니다:', error);
+            return { ...post, comments: [] };
+          }
+        })
+      );
+      
+      setPosts(postsWithComments);
     } catch (error) {
       console.error('게시글을 불러오는 중 오류가 발생했습니다:', error);
       setErrorMessage('게시글을 불러오는 중 오류가 발생했습니다.');
+      setShowErrorModal(true);
+    }
+  };
+
+  // 프로필 정보 가져오기
+  const fetchProfileInfo = async (userId: string) => {
+    try {
+      // 프로필 정보 조회
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('id, student_id')
+        .eq('user_id', userId)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {  // 데이터가 없는 경우
+          // 프로필 생성
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .insert([
+              {
+                user_id: userId,
+                student_id: 'temp_' + userId.slice(0, 8),  // 임시 학번
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              }
+            ])
+            .select()
+            .single();
+
+          if (createError) {
+            console.error('프로필 생성 중 오류가 발생했습니다:', createError);
+            setErrorMessage('프로필을 생성할 수 없습니다.');
+            setShowErrorModal(true);
+            return;
+          }
+
+          if (newProfile) {
+            // 새로 생성된 프로필로 userInfo 설정
+            const nickname = generateRandomNickname();
+            const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+            localStorage.setItem(`userNickname_${userId}`, JSON.stringify({ nickname, emoji }));
+            setUserInfo({ 
+              userId, 
+              studentId: newProfile.student_id, 
+              nickname, 
+              emoji,
+              profileId: newProfile.id
+            });
+          }
+        } else {
+          console.error('프로필 정보를 가져오는 중 오류가 발생했습니다:', error);
+          setErrorMessage('프로필 정보를 가져오는 중 오류가 발생했습니다.');
+          setShowErrorModal(true);
+        }
+        return;
+      }
+      
+      if (profile) {
+        // 저장된 사용자 닉네임 정보 가져오기
+        const userNickname = localStorage.getItem(`userNickname_${userId}`);
+        if (userNickname) {
+          const { nickname, emoji } = JSON.parse(userNickname);
+          setUserInfo({ 
+            userId, 
+            studentId: profile.student_id, 
+            nickname, 
+            emoji,
+            profileId: profile.id
+          });
+        } else {
+          // 새로운 닉네임 생성 및 저장
+          const nickname = generateRandomNickname();
+          const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+          localStorage.setItem(`userNickname_${userId}`, JSON.stringify({ nickname, emoji }));
+          setUserInfo({ 
+            userId, 
+            studentId: profile.student_id, 
+            nickname, 
+            emoji,
+            profileId: profile.id
+          });
+        }
+      }
+    } catch (error) {
+      console.error('프로필 정보를 가져오는 중 오류가 발생했습니다:', error);
+      setErrorMessage('프로필 정보를 가져오는 중 오류가 발생했습니다.');
       setShowErrorModal(true);
     }
   };
@@ -135,25 +250,7 @@ export default function Community() {
     }
 
     fetchPosts();
-
-    // 프로필 정보 설정 부분은 유지
-    const profileData = localStorage.getItem('onboardingProfile');
-    if (profileData) {
-      const { studentId } = JSON.parse(profileData);
-      
-      // 저장된 사용자 닉네임 정보 가져오기
-      const userNickname = localStorage.getItem(`userNickname_${user.id}`);
-      if (userNickname) {
-        const { nickname, emoji } = JSON.parse(userNickname);
-        setUserInfo({ userId: user.id, studentId, nickname, emoji });
-      } else {
-        // 새로운 닉네임 생성 및 저장
-        const nickname = generateRandomNickname();
-        const emoji = generateRandomEmoji();
-        localStorage.setItem(`userNickname_${user.id}`, JSON.stringify({ nickname, emoji }));
-        setUserInfo({ userId: user.id, studentId, nickname, emoji });
-      }
-    }
+    fetchProfileInfo(user.id);  // 프로필 정보 가져오기
   }, [user, router]);
 
   // 게시물이 변경될 때마다 인기 게시물 업데이트
@@ -176,25 +273,62 @@ export default function Community() {
   // 게시글 작성 처리
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPost.trim() || !user) return;
+    if (!newPost.trim() || !user || !userInfo.profileId) {
+      console.log('게시글 작성 실패: 필수 정보 누락', {
+        hasContent: !!newPost.trim(),
+        hasUser: !!user,
+        profileId: userInfo.profileId
+      });
+      setErrorMessage('게시글을 작성할 수 없습니다. 필수 정보가 누락되었습니다.');
+      setShowErrorModal(true);
+      return;
+    }
 
     try {
+      // 먼저 올바른 프로필 ID가 있는지 다시 한번 확인
+      const { data: profileCheck, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, student_id')
+        .eq('id', userInfo.profileId)
+        .single();
+        
+      if (profileError || !profileCheck) {
+        console.error('프로필 정보를 확인할 수 없습니다:', {
+          error: profileError,
+          profileId: userInfo.profileId
+        });
+        // 프로필이 없는 경우 다시 생성 시도
+        await fetchProfileInfo(user.id);
+        setErrorMessage('프로필 정보를 다시 확인 중입니다. 잠시 후 다시 시도해주세요.');
+        setShowErrorModal(true);
+        return;
+      }
+
       const post = {
-        author_id: user.id,
+        author_id: profileCheck.id,  // 확인된 프로필 ID 사용
         content: newPost,
         nickname: userInfo.nickname || '',
-        studentid: userInfo.studentId,
+        studentid: profileCheck.student_id,  // 확인된 학번 사용
         emoji: userInfo.emoji || '',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        timestamp: new Date().toISOString()
       };
+
+      console.log('게시글 작성 시도:', post);  // 요청 데이터 로깅
 
       const { error } = await supabase
         .from('posts')
         .insert([post]);
 
-      if (error) throw error;
+      if (error) {
+        console.error('게시글 작성 중 오류가 발생했습니다:', error);
+        setErrorMessage(`게시글 작성 중 오류가 발생했습니다: ${error.message}`);
+        setShowErrorModal(true);
+        return;
+      }
 
+      console.log('게시글 작성 성공');
       setNewPost('');
       fetchPosts(); // 게시글 목록 새로고침
     } catch (error) {
@@ -275,22 +409,60 @@ export default function Community() {
 
   // 댓글 작성
   const handleAddComment = async (postId: string) => {
-    if (!newComment.trim()) return;
+    if (!newComment.trim() || !userInfo.profileId) return;
 
     try {
+      // 먼저 올바른 프로필 ID가 있는지 다시 한번 확인
+      const { data: profileCheck, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', userInfo.profileId)
+        .single();
+        
+      if (profileError || !profileCheck) {
+        console.error('프로필 정보를 확인할 수 없습니다:', profileError);
+        setErrorMessage('댓글을 작성할 수 없습니다. 프로필 정보를 확인해주세요.');
+        setShowErrorModal(true);
+        return;
+      }
+      
+      // 게시글이 존재하는지 확인
+      const { data: postCheck, error: postError } = await supabase
+        .from('posts')
+        .select('id')
+        .eq('id', postId)
+        .single();
+        
+      if (postError || !postCheck) {
+        console.error('게시글을 확인할 수 없습니다:', postError);
+        setErrorMessage('댓글을 작성할 수 없습니다. 게시글이 존재하지 않습니다.');
+        setShowErrorModal(true);
+        return;
+      }
+
       const comment = {
         post_id: postId,
-        author_id: userInfo.userId,
+        author_id: userInfo.profileId,
         content: newComment,
+        nickname: userInfo.nickname || '',
+        studentid: userInfo.studentId,
+        emoji: userInfo.emoji || '',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
+
+      console.log('댓글 작성:', comment);  // 요청 데이터 로깅
 
       const { error } = await supabase
         .from('comments')
         .insert([comment]);
 
-      if (error) throw error;
+      if (error) {
+        console.error('댓글 작성 중 오류가 발생했습니다:', error);
+        setErrorMessage(`댓글 작성 중 오류가 발생했습니다: ${error.message}`);
+        setShowErrorModal(true);
+        return;
+      }
 
       setNewComment('');
       fetchPosts();
@@ -603,157 +775,164 @@ export default function Community() {
 
         {/* 게시글 목록 */}
         <div className="space-y-4">
-          {posts.map((post) => (
-            <div 
-              key={post.id} 
-              id={`post-${post.id}`}
-              className={`card transition-all duration-300 ${
-                selectedPost === post.id ? 'ring-2 ring-primary-DEFAULT' : ''
-              }`}
-            >
-              <div className="flex items-center mb-3">
-                <div className="flex-1">
+          {posts.length > 0 ? (
+            posts.map((post) => (
+              <div 
+                key={post.id} 
+                id={`post-${post.id}`}
+                className={`card transition-all duration-300 ${
+                  selectedPost === post.id ? 'ring-2 ring-primary-DEFAULT' : ''
+                }`}
+              >
+                <div className="flex items-center mb-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">{post.emoji}</span>
+                      <p className="font-medium text-gray-900">{post.nickname}</p>
+                    </div>
+                    <p className="text-sm text-gray-500">{post.studentid}</p>
+                  </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">{post.emoji}</span>
-                    <p className="font-medium text-gray-900">{post.nickname}</p>
-                  </div>
-                  <p className="text-sm text-gray-500">{post.studentid}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">
-                    {new Date(post.created_at).toLocaleString()}
-                  </span>
-                  {post.isEdited && <span className="text-sm text-gray-500">(수정됨)</span>}
-                  {post.author_id === userInfo.userId && !post.isdeleted ? (
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => handleEdit(post)}
-                        className="text-sm text-blue-500 hover:text-blue-600"
+                    <span className="text-sm text-gray-500">
+                      {new Date(post.created_at).toLocaleString()}
+                    </span>
+                    {post.isEdited && <span className="text-sm text-gray-500">(수정됨)</span>}
+                    {post.author_id === userInfo.userId && !post.isdeleted ? (
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => handleEdit(post)}
+                          className="text-sm text-blue-500 hover:text-blue-600"
+                        >
+                          수정
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(post.id)}
+                          className="text-sm text-red-500 hover:text-red-600"
+                        >
+                          삭제
+                        </button>
+                      </div>
+                    ) : !post.isdeleted && (
+                      <button
+                        onClick={() => handleOpenReport('post', post.id)}
+                        className="text-sm text-gray-500 hover:text-gray-600"
                       >
-                        수정
+                        신고
                       </button>
-                      <button 
-                        onClick={() => handleDelete(post.id)}
-                        className="text-sm text-red-500 hover:text-red-600"
-                      >
-                        삭제
-                      </button>
-                    </div>
-                  ) : !post.isdeleted && (
-                    <button
-                      onClick={() => handleOpenReport('post', post.id)}
-                      className="text-sm text-gray-500 hover:text-gray-600"
-                    >
-                      신고
-                    </button>
-                  )}
-                </div>
-              </div>
-              
-              {editingPost === post.id ? (
-                <div className="space-y-2">
-                  <textarea
-                    value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
-                    className="input-field"
-                    rows={4}
-                  />
-                  <div className="flex gap-2 justify-end">
-                    <button
-                      onClick={() => setEditingPost(null)}
-                      className="btn-secondary"
-                    >
-                      취소
-                    </button>
-                    <button
-                      onClick={() => handleSaveEdit(post.id)}
-                      className="btn-primary"
-                    >
-                      저장
-                    </button>
+                    )}
                   </div>
                 </div>
-              ) : (
-                <>
-                  {post.isdeleted ? (
-                    <p className="text-gray-500 text-center mb-3">삭제된 게시물입니다.</p>
-                  ) : (
-                    <p className="text-gray-700 whitespace-pre-wrap mb-3">{post.content}</p>
-                  )}
-                  <div className="flex items-center gap-4">
-                    <button
-                      onClick={() => handleLike(post.id)}
-                      className={`flex items-center gap-1 ${
-                        post.likes?.includes(userInfo.studentId)
-                          ? 'text-red-500'
-                          : 'text-gray-500'
-                      }`}
-                    >
-                      <HeartIcon className="w-5 h-5" />
-                      <span>{post.likes?.length || 0}</span>
-                    </button>
-                    <button 
-                      onClick={() => setShowCommentInput(showCommentInput === post.id ? null : post.id)}
-                      className="flex items-center gap-1 text-gray-500"
-                    >
-                      <ChatBubbleOvalLeftIcon className="w-5 h-5" />
-                      <span>{post.comments?.length || 0}</span>
-                    </button>
-                  </div>
-                </>
-              )}
-
-              {/* 댓글 입력창 */}
-              {!post.isdeleted && showCommentInput === post.id && (
-                <div className="mt-4 space-y-4 border-t pt-4">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      placeholder="댓글을 입력하세요"
-                      className="input-field flex-1"
+                
+                {editingPost === post.id ? (
+                  <div className="space-y-2">
+                    <textarea
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      className="input-field"
+                      rows={4}
                     />
-                    <button
-                      onClick={() => handleAddComment(post.id)}
-                      className="btn-primary px-4"
-                    >
-                      작성
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* 댓글 목록 */}
-              {!post.isdeleted && renderComments(post, showAllComments === post.id).map((comment: any) => (
-                <div className="flex items-center gap-2">
-                  {(comment as any).author_id === userInfo.userId ? (
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 justify-end">
                       <button
-                        onClick={() => handleEditComment(post.id, (comment as any).id, (comment as any).content)}
-                        className="text-xs text-blue-500 hover:text-blue-600"
+                        onClick={() => setEditingPost(null)}
+                        className="btn-secondary"
                       >
-                        수정
+                        취소
                       </button>
                       <button
-                        onClick={() => handleDeleteComment(post.id, (comment as any).id)}
-                        className="text-xs text-red-500 hover:text-red-600"
+                        onClick={() => handleSaveEdit(post.id)}
+                        className="btn-primary"
                       >
-                        삭제
+                        저장
                       </button>
                     </div>
-                  ) : (
-                    <button
-                      onClick={() => handleOpenReport('comment', post.id, (comment as any).id)}
-                      className="text-xs text-gray-500 hover:text-gray-600"
-                    >
-                      신고
-                    </button>
-                  )}
-                </div>
-              ))}
+                  </div>
+                ) : (
+                  <>
+                    {post.isdeleted ? (
+                      <p className="text-gray-500 text-center mb-3">삭제된 게시물입니다.</p>
+                    ) : (
+                      <p className="text-gray-700 whitespace-pre-wrap mb-3">{post.content}</p>
+                    )}
+                    <div className="flex items-center gap-4">
+                      <button
+                        onClick={() => handleLike(post.id)}
+                        className={`flex items-center gap-1 ${
+                          post.likes?.includes(userInfo.studentId)
+                            ? 'text-red-500'
+                            : 'text-gray-500'
+                        }`}
+                      >
+                        <HeartIcon className="w-5 h-5" />
+                        <span>{post.likes?.length || 0}</span>
+                      </button>
+                      <button 
+                        onClick={() => setShowCommentInput(showCommentInput === post.id ? null : post.id)}
+                        className="flex items-center gap-1 text-gray-500"
+                      >
+                        <ChatBubbleOvalLeftIcon className="w-5 h-5" />
+                        <span>{post.comments?.length || 0}</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {/* 댓글 입력창 */}
+                {!post.isdeleted && showCommentInput === post.id && (
+                  <div className="mt-4 space-y-4 border-t pt-4">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        placeholder="댓글을 입력하세요"
+                        className="input-field flex-1"
+                      />
+                      <button
+                        onClick={() => handleAddComment(post.id)}
+                        className="btn-primary px-4"
+                      >
+                        작성
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* 댓글 목록 */}
+                {!post.isdeleted && renderComments(post, showAllComments === post.id).map((comment: any) => (
+                  <div className="flex items-center gap-2">
+                    {(comment as any).author_id === userInfo.userId ? (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditComment(post.id, (comment as any).id, (comment as any).content)}
+                          className="text-xs text-blue-500 hover:text-blue-600"
+                        >
+                          수정
+                        </button>
+                        <button
+                          onClick={() => handleDeleteComment(post.id, (comment as any).id)}
+                          className="text-xs text-red-500 hover:text-red-600"
+                        >
+                          삭제
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleOpenReport('comment', post.id, (comment as any).id)}
+                        className="text-xs text-gray-500 hover:text-gray-600"
+                      >
+                        신고
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ))
+          ) : (
+            <div className="card p-8 text-center">
+              <p className="text-gray-500 text-lg mb-4">아직 게시글이 없습니다.</p>
+              <p className="text-gray-400">첫 번째 게시글을 작성해보세요!</p>
             </div>
-          ))}
+          )}
         </div>
       </div>
 

@@ -1,56 +1,95 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import Link from 'next/link';
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+const ADMIN_EMAIL = 'notify@smartnewb.com';
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
   const supabase = createClientComponentClient();
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function checkAdminAccess() {
+    async function checkAdmin() {
       try {
-        setLoading(true);
+        console.log('관리자 권한 확인 시작');
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        // 세션 가져오기
-        const { data: { session }, error } = await supabase.auth.getSession();
+        if (sessionError) {
+          console.error('세션 조회 오류:', sessionError);
+          return false;
+        }
         
-        if (error || !session) {
-          console.error('Admin access failed: No session');
-          router.push('/');
-          return;
+        if (!session || !session.user) {
+          console.warn('인증된 세션이 없음 - 관리자 페이지 접근 거부');
+          return false;
         }
-
-        // 어드민 권한 체크
-        if (session.user.email !== 'notify@smartnewb.com') {
-          console.error('Admin access failed: Not an admin');
-          router.push('/home');
-          return;
+        
+        console.log('로그인 사용자:', session.user.email);
+        
+        // 개발 환경에서는 모든 인증된 사용자를 관리자로 허용
+        if (process.env.NODE_ENV === 'development') {
+          console.log('개발 환경 - 모든 인증된 사용자를 관리자로 허용');
+          return true;
         }
-
-        console.log('Admin access granted');
-        setUser(session.user);
-        setLoading(false);
+        
+        // 관리자 확인 (이메일 기반)
+        if (session.user.email === ADMIN_EMAIL) {
+          console.log('관리자 권한 확인됨');
+          return true;
+        }
+        
+        console.warn('관리자가 아닌 사용자의 접근 시도:', session.user.email);
+        return false;
       } catch (error) {
-        console.error('Error checking admin access:', error);
-        router.push('/');
+        console.error('관리자 권한 확인 중 오류 발생:', error);
+        return false;
       }
     }
-
-    checkAdminAccess();
+    
+    async function init() {
+      try {
+        setLoading(true);
+        const isAdminUser = await checkAdmin();
+        setIsAdmin(isAdminUser);
+        
+        if (!isAdminUser) {
+          console.log('관리자 아님 - 홈페이지로 리디렉션');
+          router.push('/');
+        }
+      } catch (error) {
+        console.error('관리자 확인 중 오류:', error);
+        router.push('/');
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    init();
   }, [router, supabase]);
-
-  // 로그아웃 처리
+  
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
+      console.log('로그아웃 시도');
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('로그아웃 중 오류 발생:', error);
+        return;
+      }
+      
+      console.log('로그아웃 성공 - 로그인 페이지로 리디렉션');
       router.push('/');
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error('로그아웃 처리 중 예외 발생:', error);
     }
   };
 
@@ -58,42 +97,45 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-DEFAULT mx-auto"></div>
-          <p className="mt-4 text-gray-600">로딩 중...</p>
+          <div className="w-16 h-16 border-4 border-primary-DEFAULT border-t-transparent border-solid rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">관리자 권한 확인 중...</p>
         </div>
       </div>
     );
+  }
+
+  if (!isAdmin) {
+    return null; // 리디렉션 중에는 아무것도 표시하지 않음
   }
 
   return (
     <div className="flex h-screen bg-gray-100">
       {/* 사이드바 */}
       <div className="w-64 bg-white shadow-md">
-        <div className="p-6">
-          <h1 className="text-xl font-bold text-primary-DEFAULT">관리자 페이지</h1>
-          <p className="text-sm text-gray-500 mt-1">{user?.email}</p>
+        <div className="p-4 border-b">
+          <h2 className="text-xl font-bold text-primary-DEFAULT">관리자 대시보드</h2>
         </div>
-        <nav className="mt-6">
+        <nav className="mt-4">
           <ul>
             <li>
-              <Link href="/admin/community" className="block py-2 px-4 hover:bg-gray-100">
+              <Link href="/admin/community" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white">
                 커뮤니티 관리
               </Link>
             </li>
             <li>
-              <Link href="/admin/users" className="block py-2 px-4 hover:bg-gray-100">
+              <Link href="/admin/users" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white">
                 사용자 관리
               </Link>
             </li>
             <li>
-              <Link href="/admin/matching" className="block py-2 px-4 hover:bg-gray-100">
+              <Link href="/admin/matching" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white">
                 매칭 설정
               </Link>
             </li>
             <li>
               <button 
-                onClick={handleLogout}
-                className="w-full text-left py-2 px-4 text-red-500 hover:bg-gray-100"
+                onClick={handleLogout} 
+                className="w-full text-left px-4 py-2 text-red-500 hover:bg-red-50"
               >
                 로그아웃
               </button>
@@ -104,9 +146,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* 메인 콘텐츠 */}
       <div className="flex-1 overflow-auto">
-        <header className="bg-white shadow-sm p-4">
-          <h2 className="text-lg font-semibold">관리자 대시보드</h2>
-        </header>
         <main className="p-6">
           {children}
         </main>

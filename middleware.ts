@@ -2,6 +2,8 @@ import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+const ADMIN_EMAIL = 'notify@smartnewb.com';
+
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
   const supabase = createMiddlewareClient({ req, res });
@@ -18,7 +20,7 @@ export async function middleware(req: NextRequest) {
     }
     
     // 어드민 권한 체크 - 특정 이메일만 허용
-    if (session.user.email !== 'notify@smartnewb.com') {
+    if (session.user.email !== ADMIN_EMAIL) {
       console.log('Admin access failed: Not an admin');
       return NextResponse.redirect(new URL('/home', req.url));
     }
@@ -42,7 +44,7 @@ export async function middleware(req: NextRequest) {
   // 로그인 페이지에 대한 체크 (이미 로그인된 경우 리다이렉션)
   if (req.nextUrl.pathname === '/') {
     if (session) {
-      if (session.user.email === 'notify@smartnewb.com') {
+      if (session.user.email === ADMIN_EMAIL) {
         console.log('Already logged in as admin, redirecting to admin page');
         return NextResponse.redirect(new URL('/admin/community', req.url));
       } else {
