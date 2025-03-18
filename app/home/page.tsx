@@ -12,6 +12,7 @@ import SuccessStories from '../components/SuccessStories';
 import { HomeIcon, ChatBubbleLeftRightIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { ADMIN_EMAIL } from '@/utils/config';
 
 export default function Home() {
   const router = useRouter();
@@ -48,6 +49,13 @@ export default function Home() {
 
         console.log('세션 확인 완료:', session.user.id);
 
+        // ✅ Admin이면 /admin/community로 리다이렉트
+        if (session.user.email === ADMIN_EMAIL) {
+          console.log('✅ Admin 계정 로그인, /admin/community로 이동');
+          router.replace('/admin/community'); // ✅ Admin 계정이면 즉시 이동
+          return;
+        }
+
         // 프로필 조회
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
@@ -56,19 +64,19 @@ export default function Home() {
           .single();
 
         // 프로필 에러 처리
-        if (profileError) {
-          // PGRST116은 row not found 에러로, 프로필이 없는 정상적인 상황
-          if (profileError.code === 'PGRST116') {
-            console.log('프로필이 없습니다. 온보딩 모달을 표시합니다.');
-            setShowOnboardingModal(true);
+          if (profileError) {
+            // PGRST116은 row not found 에러로, 프로필이 없는 정상적인 상황
+            if (profileError.code === 'PGRST116') {
+              console.log('프로필이 없습니다. 온보딩 모달을 표시합니다.');
+              setShowOnboardingModal(true);
+              setIsLoading(false);
+              return;
+            }
+            
+            console.error('프로필 조회 오류:', profileError);
             setIsLoading(false);
             return;
           }
-          
-          console.error('프로필 조회 오류:', profileError);
-          setIsLoading(false);
-          return;
-        }
 
         // 프로필이 있는 경우 상태 업데이트
         if (profile) {
@@ -122,7 +130,7 @@ export default function Home() {
                 <button
                   onClick={() => {
                     setShowOnboardingModal(false);
-                    router.push('/onboarding');
+                    router.replace('/onboarding');
                   }}
                   className="btn-primary w-full"
                 >

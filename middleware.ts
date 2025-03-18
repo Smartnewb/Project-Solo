@@ -29,34 +29,46 @@ export async function middleware(req: NextRequest) {
     return res;
   }
   
-  // 로그인 후 접근 가능한 경로(/home 등)에 대한 체크
-  if (req.nextUrl.pathname.startsWith('/home') || 
-      req.nextUrl.pathname.startsWith('/onboarding')) {
-    if (error || !session) {
-      // 로그인되지 않은 경우 로그인 페이지로 리다이렉션
-      console.log('Protected route access failed: No session');
-      return NextResponse.redirect(new URL('/', req.url));
-    }
-    
-    return res;
+    // 로그인 후 접근 가능한 경로(/home 등)에 대한 체크
+    if (req.nextUrl.pathname.startsWith('/home') || 
+    req.nextUrl.pathname.startsWith('/onboarding')) {
+  if (error || !session) {
+    // 로그인되지 않은 경우 로그인 페이지로 리다이렉션
+    console.log('Protected route access failed: No session');
+    return NextResponse.redirect(new URL('/', req.url));
   }
   
-  // 로그인 페이지에 대한 체크 (이미 로그인된 경우 리다이렉션)
-  if (req.nextUrl.pathname === '/') {
-    if (session) {
-      if (session.user.email === ADMIN_EMAIL) {
-        console.log('Already logged in as admin, redirecting to admin page');
-        return NextResponse.redirect(new URL('/admin/community', req.url));
+  return res;
+}
+
+// 로그인 페이지에 대한 체크 (이미 로그인된 경우 리다이렉션)
+if (req.nextUrl.pathname === '/') {
+  if (session) {
+    if (session.user.email === ADMIN_EMAIL) {
+      console.log('Already logged in as admin, redirecting to admin page');
+      return NextResponse.redirect(new URL('/admin/community', req.url));
+    } else {
+      // 프로필 확인 후 리다이렉트
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (!profile) {
+        console.log('No profile found, redirecting to onboarding');
+        return NextResponse.redirect(new URL('/onboarding', req.url));
       } else {
         console.log('Already logged in, redirecting to home page');
         return NextResponse.redirect(new URL('/home', req.url));
       }
     }
   }
+}
 
-  return res;
+return res;
 }
 
 export const config = {
-  matcher: ['/', '/admin/:path*', '/home/:path*', '/onboarding/:path*'],
+matcher: ['/', '/admin/:path*', '/home/:path*', '/onboarding/:path*'],
 }; 

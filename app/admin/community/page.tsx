@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClientSupabaseClient } from '@/utils/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { HomeIcon, ChatBubbleLeftRightIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { ADMIN_EMAIL } from '@/utils/config';
 
 interface Post {
   id: string;
@@ -45,37 +46,10 @@ export default function AdminCommunity() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // 관리자 권한 확인
+  // 관리자 권한 확인 - 단순화된 버전
   const checkAdminStatus = async () => {
-    if (!user) return false;
-
-    try {
-      console.log('관리자 권한 확인 시작:', user.id);
-      
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (error) {
-        console.error('프로필 조회 오류:', error);
-        return false;
-      }
-      
-      console.log('조회된 프로필:', profile);
-
-      if (profile?.role === 'admin') {
-        console.log('관리자 권한 확인됨');
-        return true;
-      } else {
-        console.log('관리자 권한 없음');
-        return false;
-      }
-    } catch (error) {
-      console.error('관리자 권한 확인 중 오류:', error);
-      return false;
-    }
+    if (!user?.email) return false;
+    return user.email === ADMIN_EMAIL;
   };
 
   // 게시글 불러오기
@@ -167,21 +141,14 @@ export default function AdminCommunity() {
   useEffect(() => {
     const initializeAdmin = async () => {
       if (!user) {
-        router.push('/login');
+        router.push('/');
         return;
       }
 
-      try {
-        const isAdminUser = await checkAdminStatus();
-        setIsAdmin(isAdminUser);
-        
-        if (isAdminUser) {
-          router.push('/admin/dashboard');
-        } else {
-          router.push('/home');
-        }
-      } catch (error) {
-        console.error('관리자 초기화 중 오류:', error);
+      const isAdminUser = await checkAdminStatus();
+      setIsAdmin(isAdminUser);
+      
+      if (!isAdminUser) {
         router.push('/home');
       }
     };
