@@ -1,423 +1,369 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useRouter } from 'next/navigation';
+import { createClientSupabaseClient } from '@/utils/supabase';
+import { useAuth } from '@/contexts/AuthContext';
+import { HomeIcon, ChatBubbleLeftRightIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 
-type Post = {
-  id?: string;
-  title?: string;
-  content?: string;
-  author_id?: string;
-  created_at?: string;
-  updated_at?: string;
-  user_name?: string;
-  student_id?: string;
-  nickname?: string;
-  emoji?: string;
-  reports?: string[];
-  isDeleted?: boolean;
-};
+interface Post {
+  id: string;
+  author_id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  likes: string[];
+  isEdited: boolean;
+  isdeleted: boolean;
+  reports: string[];
+  nickname: string;
+  studentid: string;
+  emoji: string;
+  comments: Comment[];
+}
 
-export default function CommunityAdmin() {
+interface Comment {
+  id: string;
+  post_id: string;
+  author_id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  nickname: string;
+  studentid: string;
+  isEdited: boolean;
+  isdeleted: boolean;
+  reports: string[];
+}
+
+export default function AdminCommunity() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const supabase = createClientSupabaseClient();
   const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<string>('all'); // 'all', 'reported', 'deleted'
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const supabase = createClientComponentClient();
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  useEffect(() => {
-    fetchPosts();
-  }, [filter]);
+  // 관리자 권한 확인
+  const checkAdminStatus = async () => {
+    if (!user) return false;
 
-  // 사용자 ID를 기반으로 학번 생성 (17학번~25학번 사이)
-  const generateStudentId = (userId: string | undefined) => {
-    if (!userId) return '학번 없음';
-    
     try {
-      // userId에서 숫자 값 추출
-      const numericValue = parseInt(userId.replace(/[^0-9]/g, '').substring(0, 4));
+      console.log('관리자 권한 확인 시작:', user.id);
       
-      // 17~25 사이의 학번 년도 생성
-      const year = (numericValue % 9) + 17;
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error) {
+        console.error('프로필 조회 오류:', error);
+        return false;
+      }
       
-      // 0001~9999 사이의 학번 생성
-      const number = (numericValue % 9999) + 1;
-      
-      return `${year}${number.toString().padStart(4, '0')}`;
+      console.log('조회된 프로필:', profile);
+
+      if (profile?.role === 'admin') {
+        console.log('관리자 권한 확인됨');
+        return true;
+      } else {
+        console.log('관리자 권한 없음');
+        return false;
+      }
     } catch (error) {
-      console.error('학번 생성 오류:', error);
-      return '학번 오류';
+      console.error('관리자 권한 확인 중 오류:', error);
+      return false;
     }
   };
 
-  async function fetchPosts() {
+  // 게시글 불러오기
+  const fetchPosts = async () => {
     try {
-      setLoading(true);
-      
-      // 1. 게시글 데이터 가져오기
-      let query = supabase
+      const { data: postsData, error: postsError } = await supabase
         .from('posts')
-        .select(`
-          *,
-          author:author_id (
-            id,
-            name,
-            student_id
-          )
-        `)
+        .select('*, comments(*)')
         .order('created_at', { ascending: false });
-      
-      // 필터 적용
-      if (filter === 'reported') {
-        query = query.not('reports', 'is', null).not('reports', 'eq', '{}');
-      } else if (filter === 'deleted') {
-        query = query.eq('isDeleted', true);
-      }
-      
-      const { data: postsData, error: postsError } = await query;
-          
-      if (postsError) {
-        console.error('게시글 조회 오류:', postsError);
-        throw postsError;
-      }
 
-      if (!postsData || postsData.length === 0) {
+      if (postsError) throw postsError;
+      
+      if (!postsData) {
         setPosts([]);
-        setLoading(false);
         return;
       }
-      
-      console.log('게시글 데이터:', postsData);
-      
-      // 게시글 데이터 처리
-      const processedPosts = await Promise.all(postsData.map(async post => {
-        // 저자 정보가 없는 경우 직접 조회
-        let userName = post.nickname || '알 수 없음';
-        let studentId = '';
-        
-        if (post.author_id && (!post.author || Object.keys(post.author).length === 0)) {
-          try {
-            // 프로필 직접 조회
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('name, student_id')
-              .eq('user_id', post.author_id)
-              .single();
-              
-            if (profileData) {
-              userName = profileData.name || userName;
-              studentId = profileData.student_id || generateStudentId(post.author_id);
-            } else {
-              studentId = generateStudentId(post.author_id);
-            }
-          } catch (err) {
-            console.error('프로필 조회 오류:', err);
-            studentId = generateStudentId(post.author_id);
-          }
-        } else if (post.author) {
-          // author 필드에서 정보 추출
-          userName = post.author.name || userName;
-          studentId = post.author.student_id || generateStudentId(post.author_id);
-        } else {
-          studentId = generateStudentId(post.author_id);
-        }
-        
-        return {
-          ...post,
-          user_name: userName,
-          student_id: studentId,
-          author: undefined // 중첩된 author 데이터 제거
-        };
-      }));
-      
-      setPosts(processedPosts);
-    } catch (err: any) {
-      console.error('게시글 불러오기 오류:', err);
-      setError(err.message || '게시글을 불러오는 중 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  }
 
+      setPosts(postsData);
+    } catch (error) {
+      console.error('게시글을 불러오는 중 오류가 발생했습니다:', error);
+      setErrorMessage('게시글을 불러오는 중 오류가 발생했습니다.');
+      setShowErrorModal(true);
+    }
+  };
+
+  // 게시글 삭제
   const handleDeletePost = async (postId: string) => {
-    if (!confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
-      return;
-    }
-    
+    if (!confirm('정말로 이 게시글을 삭제하시겠습니까?')) return;
+
     try {
-      setLoading(true);
-      
-      // 소프트 삭제 - isDeleted 플래그만 설정
       const { error } = await supabase
         .from('posts')
-        .update({ isDeleted: true })
+        .update({ isdeleted: true })
         .eq('id', postId);
-        
-      if (error) {
-        throw error;
-      }
+
+      if (error) throw error;
       
-      // 목록 업데이트
-      setPosts(posts.map(post => 
-        post.id === postId ? { ...post, isDeleted: true } : post
-      ));
-      
-      alert('게시글이 삭제되었습니다.');
-      
-    } catch (err: any) {
-      console.error('게시글 삭제 오류:', err);
-      alert('게시글 삭제 중 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
+      fetchPosts();
+    } catch (error) {
+      console.error('게시글 삭제 중 오류가 발생했습니다:', error);
+      setErrorMessage('게시글 삭제 중 오류가 발생했습니다.');
+      setShowErrorModal(true);
     }
   };
 
-  const handleRestorePost = async (postId: string) => {
-    if (!confirm('이 게시글을 복구하시겠습니까?')) {
-      return;
-    }
-    
+  // 댓글 삭제
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm('정말로 이 댓글을 삭제하시겠습니까?')) return;
+
     try {
-      setLoading(true);
-      
       const { error } = await supabase
-        .from('posts')
-        .update({ isDeleted: false })
-        .eq('id', postId);
-        
-      if (error) {
-        throw error;
-      }
+        .from('comments')
+        .update({ isdeleted: true })
+        .eq('id', commentId);
+
+      if (error) throw error;
       
-      // 목록 업데이트
-      setPosts(posts.map(post => 
-        post.id === postId ? { ...post, isDeleted: false } : post
-      ));
-      
-      alert('게시글이 복구되었습니다.');
-      
-    } catch (err: any) {
-      console.error('게시글 복구 오류:', err);
-      alert('게시글 복구 중 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
+      fetchPosts();
+    } catch (error) {
+      console.error('댓글 삭제 중 오류가 발생했습니다:', error);
+      setErrorMessage('댓글 삭제 중 오류가 발생했습니다.');
+      setShowErrorModal(true);
     }
   };
 
-  const handleClearReports = async (postId: string) => {
-    if (!confirm('이 게시글의 신고 내역을 모두 삭제하시겠습니까?')) {
-      return;
-    }
-    
+  // 신고된 게시글/댓글 복구
+  const handleRestoreContent = async (type: 'post' | 'comment', id: string) => {
+    if (!confirm('이 컨텐츠를 복구하시겠습니까?')) return;
+
     try {
-      setLoading(true);
-      
       const { error } = await supabase
-        .from('posts')
-        .update({ reports: [] })
-        .eq('id', postId);
-        
-      if (error) {
-        throw error;
-      }
+        .from(type === 'post' ? 'posts' : 'comments')
+        .update({ 
+          isdeleted: false,
+          reports: []
+        })
+        .eq('id', id);
+
+      if (error) throw error;
       
-      // 목록 업데이트
-      setPosts(posts.map(post => 
-        post.id === postId ? { ...post, reports: [] } : post
-      ));
-      
-      alert('신고 내역이 삭제되었습니다.');
-      
-    } catch (err: any) {
-      console.error('신고 내역 삭제 오류:', err);
-      alert('신고 내역 삭제 중 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
+      fetchPosts();
+    } catch (error) {
+      console.error('컨텐츠 복구 중 오류가 발생했습니다:', error);
+      setErrorMessage('컨텐츠 복구 중 오류가 발생했습니다.');
+      setShowErrorModal(true);
     }
   };
 
-  // 검색어로 필터링된 게시글 목록
-  const filteredPosts = searchTerm 
-    ? posts.filter(post => 
-        post.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        post.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        post.user_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        post.student_id?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    : posts;
+  useEffect(() => {
+    const initializeAdmin = async () => {
+      if (!user) {
+        router.push('/login');
+        return;
+      }
 
-  if (loading && posts.length === 0) {
+      try {
+        const isAdminUser = await checkAdminStatus();
+        setIsAdmin(isAdminUser);
+        
+        if (isAdminUser) {
+          router.push('/admin/dashboard');
+        } else {
+          router.push('/home');
+        }
+      } catch (error) {
+        console.error('관리자 초기화 중 오류:', error);
+        router.push('/home');
+      }
+    };
+
+    initializeAdmin();
+  }, [user]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchPosts();
+    }
+  }, [isAdmin]);
+
+  if (!isAdmin) {
     return (
-      <div className="py-8 text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-DEFAULT mx-auto"></div>
-        <p className="mt-4 text-gray-600">게시글 로딩 중...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="py-8 text-center">
-        <p className="text-red-500">{error}</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-500">권한을 확인하는 중입니다...</p>
       </div>
     );
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold mb-6">커뮤니티 관리</h1>
-      
-      <div className="bg-white p-4 rounded shadow mb-6">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center space-x-4">
-            <select 
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-DEFAULT"
-            >
-              <option value="all">모든 게시글</option>
-              <option value="reported">신고된 게시글</option>
-              <option value="deleted">삭제된 게시글</option>
-            </select>
-            
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="게시글 검색..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="border rounded pl-10 pr-4 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-primary-DEFAULT"
-              />
-              <svg 
-                className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24" 
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-              </svg>
+    <div className="min-h-screen bg-gray-50 pb-16">
+      {/* 상단 헤더 */}
+      <div className="bg-white border-b sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <h1 className="text-h2 text-center">커뮤니티 관리</h1>
+        </div>
+      </div>
+
+      {/* 게시글 목록 */}
+      <div className="max-w-4xl mx-auto p-4">
+        <div className="space-y-4">
+          {posts.map((post) => (
+            <div key={post.id} className="bg-white rounded-lg shadow p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{post.emoji}</span>
+                  <div>
+                    <p className="font-medium">{post.nickname}</p>
+                    <p className="text-sm text-gray-500">{post.studentid}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-gray-500">
+                    {new Date(post.created_at).toLocaleString()}
+                  </span>
+                  {post.isEdited && (
+                    <span className="text-sm text-gray-500">(수정됨)</span>
+                  )}
+                  <div className="flex gap-2">
+                    {post.isdeleted ? (
+                      <button
+                        onClick={() => handleRestoreContent('post', post.id)}
+                        className="text-sm text-blue-500 hover:text-blue-600"
+                      >
+                        복구
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleDeletePost(post.id)}
+                        className="text-sm text-red-500 hover:text-red-600"
+                      >
+                        삭제
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {post.isdeleted ? (
+                <p className="text-gray-500 text-center mb-2">삭제된 게시물입니다.</p>
+              ) : (
+                <>
+                  <p className="text-gray-700 whitespace-pre-wrap mb-2">{post.content}</p>
+                  {post.reports && post.reports.length > 0 && (
+                    <div className="bg-red-50 text-red-700 px-4 py-2 rounded-lg mb-2">
+                      <p className="font-medium">신고 {post.reports.length}건</p>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* 댓글 목록 */}
+              {post.comments && post.comments.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <h3 className="font-medium text-gray-900">댓글</h3>
+                  {post.comments.map((comment: Comment) => (
+                    <div key={comment.id} className="bg-gray-50 p-3 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div>
+                            <p className="font-medium text-sm">{comment.nickname}</p>
+                            <p className="text-xs text-gray-500">{comment.studentid}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500">
+                            {new Date(comment.created_at).toLocaleString()}
+                          </span>
+                          {comment.isEdited && (
+                            <span className="text-xs text-gray-500">(수정됨)</span>
+                          )}
+                          <div className="flex gap-2">
+                            {comment.isdeleted ? (
+                              <button
+                                onClick={() => handleRestoreContent('comment', comment.id)}
+                                className="text-xs text-blue-500 hover:text-blue-600"
+                              >
+                                복구
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleDeleteComment(comment.id)}
+                                className="text-xs text-red-500 hover:text-red-600"
+                              >
+                                삭제
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {comment.isdeleted ? (
+                        <p className="text-gray-500 text-center">삭제된 댓글입니다.</p>
+                      ) : (
+                        <>
+                          <p className="text-sm text-gray-700">{comment.content}</p>
+                          {comment.reports && comment.reports.length > 0 && (
+                            <div className="bg-red-50 text-red-700 px-3 py-1 rounded-lg mt-2 text-sm">
+                              <p className="font-medium">신고 {comment.reports.length}건</p>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-          
-          <button 
-            onClick={fetchPosts}
-            className="bg-primary-DEFAULT hover:bg-primary-dark text-white py-2 px-4 rounded"
-            disabled={loading}
+          ))}
+        </div>
+      </div>
+
+      {/* 하단 네비게이션 */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t py-2">
+        <div className="max-w-lg mx-auto px-4 flex justify-around items-center">
+          <button
+            onClick={() => router.push('/home')}
+            className="flex flex-col items-center text-gray-400"
           >
-            새로고침
+            <HomeIcon className="w-6 h-6" />
+            <span className="text-sm mt-1">홈</span>
+          </button>
+          <button
+            onClick={() => router.push('/community')}
+            className="flex flex-col items-center text-gray-400"
+          >
+            <ChatBubbleLeftRightIcon className="w-6 h-6" />
+            <span className="text-sm mt-1">커뮤니티</span>
+          </button>
+          <button
+            onClick={() => router.push('/settings')}
+            className="flex flex-col items-center text-gray-400"
+          >
+            <Cog6ToothIcon className="w-6 h-6" />
+            <span className="text-sm mt-1">설정</span>
           </button>
         </div>
       </div>
-      
-      {filteredPosts.length === 0 ? (
-        <div className="bg-white p-8 rounded shadow text-center">
-          <p className="text-gray-500">게시글이 없습니다.</p>
-        </div>
-      ) : (
-        <div className="bg-white rounded shadow overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead>
-                <tr className="bg-gray-100 border-b">
-                  <th className="py-3 px-4 text-left">이름</th>
-                  <th className="py-3 px-4 text-left">학번</th>
-                  <th className="py-3 px-4 text-left">제목</th>
-                  <th className="py-3 px-4 text-left">내용</th>
-                  <th className="py-3 px-4 text-left">작성일</th>
-                  <th className="py-3 px-4 text-left">상태</th>
-                  <th className="py-3 px-4 text-left">관리</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {filteredPosts.map((post) => {
-                  const postId = post.id || '';
-                  const isReported = post.reports && post.reports.length > 0;
-                  const isDeleted = post.isDeleted;
-                  
-                  return (
-                    <tr key={postId} className={`hover:bg-gray-50 ${isDeleted ? 'bg-red-50' : isReported ? 'bg-yellow-50' : ''}`}>
-                      <td className="py-3 px-4">
-                        {post.user_name || '알 수 없음'}
-                      </td>
-                      <td className="py-3 px-4 font-mono">
-                        {post.student_id}
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center">
-                          {post.emoji && <span className="mr-2">{post.emoji}</span>}
-                          <span className={isDeleted ? 'line-through text-gray-500' : ''}>
-                            {post.title || '제목 없음'}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="max-w-xs truncate">
-                          {post.content || '내용 없음'}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        {post.created_at ? new Date(post.created_at).toLocaleDateString('ko-KR') : '날짜 없음'}
-                      </td>
-                      <td className="py-3 px-4">
-                        {isDeleted ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                            삭제됨
-                          </span>
-                        ) : isReported ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                            신고 {post.reports?.length}건
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            정상
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex space-x-2">
-                          {isDeleted ? (
-                            <button
-                              onClick={() => handleRestorePost(postId)}
-                              className="text-blue-500 hover:text-blue-700"
-                              disabled={loading}
-                            >
-                              복구
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleDeletePost(postId)}
-                              className="text-red-500 hover:text-red-700"
-                              disabled={loading}
-                            >
-                              삭제
-                            </button>
-                          )}
-                          
-                          {isReported && (
-                            <button
-                              onClick={() => handleClearReports(postId)}
-                              className="text-yellow-500 hover:text-yellow-700"
-                              disabled={loading}
-                            >
-                              신고해제
-                            </button>
-                          )}
-                          
-                          <button
-                            onClick={() => window.open(`/community/post/${postId}`, '_blank')}
-                            className="text-gray-500 hover:text-gray-700"
-                          >
-                            보기
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+
+      {/* 에러 모달 */}
+      {showErrorModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm mx-4">
+            <p className="text-gray-700">{errorMessage}</p>
+            <button
+              onClick={() => setShowErrorModal(false)}
+              className="mt-4 w-full bg-primary-DEFAULT text-white py-2 rounded-lg hover:bg-primary-dark transition-colors"
+            >
+              확인
+            </button>
           </div>
         </div>
       )}

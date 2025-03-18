@@ -9,6 +9,9 @@ DROP TABLE IF EXISTS comments CASCADE;
 DROP TABLE IF EXISTS posts CASCADE;
 DROP TABLE IF EXISTS reports CASCADE;
 DROP TABLE IF EXISTS profiles CASCADE;
+DROP TABLE IF EXISTS system_settings CASCADE;
+DROP TABLE IF EXISTS male_profiles CASCADE;
+DROP TABLE IF EXISTS female_profiles CASCADE;
 
 -- Create profiles table
 CREATE TABLE profiles (
@@ -17,6 +20,8 @@ CREATE TABLE profiles (
     name TEXT,
     age INTEGER,
     gender TEXT,
+    role TEXT DEFAULT 'user' CHECK (role IN ('user', 'admin')),
+    classification varchar(1) CHECK (classification IN ('S', 'A', 'B', 'C')) DEFAULT 'C',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -64,11 +69,48 @@ CREATE TABLE reports (
     updated_at TIMESTAMPTZ DEFAULT timezone('utc', now())
 );
 
+-- Create system_settings table
+CREATE TABLE system_settings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    key TEXT UNIQUE NOT NULL,
+    value JSONB,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Create gender-specific profile tables
+CREATE TABLE male_profiles (
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    name text,
+    age integer,
+    gender text CHECK (gender = 'male'),
+    instagramId text,
+    classification varchar(1) CHECK (classification IN ('S', 'A', 'B', 'C')) DEFAULT 'C',
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+CREATE TABLE female_profiles (
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    name text,
+    age integer,
+    gender text CHECK (gender = 'female'),
+    instagramId text,
+    classification varchar(1) CHECK (classification IN ('S', 'A', 'B', 'C')) DEFAULT 'C',
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
 -- Enable Row Level Security
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE system_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE male_profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE female_profiles ENABLE ROW LEVEL SECURITY;
 
 -- Create RLS policies
 -- Profiles
@@ -134,3 +176,77 @@ USING (EXISTS (
     WHERE profiles.id = comments.author_id 
     AND profiles.user_id = auth.uid()
 ));
+
+-- System Settings policies
+CREATE POLICY "System settings are viewable by admins" 
+ON system_settings FOR SELECT 
+TO authenticated 
+USING (
+    EXISTS (
+        SELECT 1 FROM profiles 
+        WHERE profiles.user_id = auth.uid() 
+        AND profiles.role = 'admin'
+    )
+);
+
+CREATE POLICY "System settings are modifiable by admins" 
+ON system_settings FOR ALL 
+TO authenticated 
+USING (
+    EXISTS (
+        SELECT 1 FROM profiles 
+        WHERE profiles.user_id = auth.uid() 
+        AND profiles.role = 'admin'
+    )
+);
+
+-- Gender-specific profile policies
+CREATE POLICY "Male profiles are viewable by admins" 
+ON male_profiles FOR SELECT 
+TO authenticated 
+USING (
+    EXISTS (
+        SELECT 1 FROM profiles 
+        WHERE profiles.user_id = auth.uid() 
+        AND profiles.role = 'admin'
+    )
+);
+
+CREATE POLICY "Users can insert their own male profile" 
+ON male_profiles FOR INSERT 
+TO authenticated 
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own male profile" 
+ON male_profiles FOR UPDATE 
+TO authenticated 
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Female profiles are viewable by admins" 
+ON female_profiles FOR SELECT 
+TO authenticated 
+USING (
+    EXISTS (
+        SELECT 1 FROM profiles 
+        WHERE profiles.user_id = auth.uid() 
+        AND profiles.role = 'admin'
+    )
+);
+
+CREATE POLICY "Users can insert their own female profile" 
+ON female_profiles FOR INSERT 
+TO authenticated 
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own female profile" 
+ON female_profiles FOR UPDATE 
+TO authenticated 
+USING (auth.uid() = user_id);
+
+-- Set initial admin
+UPDATE profiles 
+SET role = 'admin' 
+WHERE user_id IN (
+    SELECT id FROM auth.users 
+    WHERE email = 'notify@smartnewb.com'
+); 
