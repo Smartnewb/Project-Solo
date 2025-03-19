@@ -245,7 +245,7 @@ export default function Community() {
   // 컴포넌트 마운트 시 게시글 불러오기
   useEffect(() => {
     if (!user) {
-      router.push('/login');
+      router.push('/');
       return;
     }
 

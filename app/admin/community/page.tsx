@@ -50,12 +50,62 @@ export default function AdminCommunity() {
   const [selectedPosts, setSelectedPosts] = useState<string[]>([]);
   const [showReportDetails, setShowReportDetails] = useState<string | null>(null);
   
-  // 하드코딩된 관리자 권한 체크
-  const isAdmin = user?.email === process.env.NEXT_PUBLIC_DEFAULT_ADMIN_EMAIL;
+  // 상태와 설정 관련 로그 추가
+  console.log('현재 환경 변수:', {
+    DEFAULT_ADMIN_EMAIL: process.env.NEXT_PUBLIC_DEFAULT_ADMIN_EMAIL,
+    ADMIN_EMAIL: ADMIN_EMAIL,
+  });
+  
+  useEffect(() => {
+    if (loading) {
+      console.log('로딩 중...');
+      return;
+    }
+
+    if (!user) {
+      console.log('사용자 인증 정보 없음, 루트 페이지로 리다이렉트');
+      router.push('/');
+      return;
+    }
+
+    // 로그인 사용자 정보 로깅
+    console.log('로그인 사용자 정보:', {
+      id: user.id,
+      email: user.email,
+      defaultAdminEmail: process.env.NEXT_PUBLIC_DEFAULT_ADMIN_EMAIL,
+      matchesDefault: user.email === process.env.NEXT_PUBLIC_DEFAULT_ADMIN_EMAIL,
+      adminEmail: ADMIN_EMAIL,
+      matchesAdmin: user.email === ADMIN_EMAIL,
+    });
+
+    // 관리자 메일 주소인지 확인
+    const isAdminUser = user.email === process.env.NEXT_PUBLIC_DEFAULT_ADMIN_EMAIL || 
+                         user.email === ADMIN_EMAIL;
+                         
+    if (!isAdminUser) {
+      console.log('관리자 아님, 홈으로 리다이렉트');
+      router.push('/');
+      return;
+    }
+
+    console.log('관리자 확인됨:', user.email);
+    // 이미 관리자임이 확인되었으므로 게시글 로드
+    fetchPosts();
+  }, [user, loading]);
+
+  // 필터 변경 시에만 게시글 다시 불러오기
+  useEffect(() => {
+    if (user && (user.email === process.env.NEXT_PUBLIC_DEFAULT_ADMIN_EMAIL || 
+                 user.email === ADMIN_EMAIL)) {
+      console.log('필터 변경으로 게시글 다시 로드:', filterType);
+      fetchPosts();
+    }
+  }, [filterType]);
 
   // 게시글 불러오기
   const fetchPosts = async () => {
     try {
+      // 기본 쿼리 설정
       let query = supabase
         .from('posts')
         .select('*, comments(*)')
@@ -63,25 +113,91 @@ export default function AdminCommunity() {
 
       // 필터 적용
       if (filterType === 'reported') {
-        query = query.not('reports', 'eq', '[]');
+        try {
+          // 단순히 reports 필드 확인
+          const { data, error } = await supabase
+            .from('posts')
+            .select('*, comments(*)')
+            .not('reports', 'is', null)
+            .order('created_at', { ascending: false });
+            
+          if (error) {
+            console.error('신고된 게시글 조회 에러:', error);
+            throw error;
+          }
+          
+          // 실제로 내용이 있는 reports 필드만 필터링
+          const filteredPosts = data?.filter(post => 
+            post.reports && 
+            Array.isArray(post.reports) && 
+            post.reports.length > 0
+          ) || [];
+          
+          console.log('신고된 게시글 수:', filteredPosts.length);
+          setPosts(filteredPosts);
+          return;
+        } catch (reportedError) {
+          console.error('신고된 게시글 조회 에러:', reportedError);
+          // 에러 발생 시 모든 게시글 불러옴
+          const { data: allPosts, error: postsError } = await query;
+          if (postsError) throw postsError;
+          setPosts(allPosts || []);
+          return;
+        }
       } else if (filterType === 'blinded') {
-        query = query.eq('isBlinded', true);
+        try {
+          // isBlinded 필드로 필터링 시도
+          const { data, error } = await supabase
+            .from('posts')
+            .select('*, comments(*)')
+            .eq('isBlinded', true)
+            .order('created_at', { ascending: false });
+            
+          if (error) {
+            // 필드가 없는 경우나 다른 에러
+            console.error('블라인드 게시글 조회 에러:', error);
+            
+            // 빈 배열 반환 (필드가 없는 경우 블라인드 게시글은 없음)
+            setPosts([]);
+            return;
+          }
+          
+          console.log('블라인드 게시글 수:', data?.length || 0);
+          setPosts(data || []);
+          return;
+        } catch (blindedError) {
+          console.error('블라인드 필드가 없거나 필터링 에러:', blindedError);
+          // 에러 발생 시 빈 배열 반환 (일반적으로 블라인드 필드가 없는 경우)
+          setPosts([]);
+          return;
+        }
       }
 
+      // 모든 게시글 조회
       const { data: postsData, error: postsError } = await query;
-
-      if (postsError) throw postsError;
-      
-      if (!postsData) {
-        setPosts([]);
-        return;
+      if (postsError) {
+        console.error('전체 게시글 조회 에러:', postsError);
+        throw postsError;
       }
-
-      setPosts(postsData);
+      
+      console.log('로드된 게시글 수:', postsData?.length || 0);
+      setPosts(postsData || []);
     } catch (error) {
       console.error('게시글을 불러오는 중 오류가 발생했습니다:', error);
-      setErrorMessage('게시글을 불러오는 중 오류가 발생했습니다.');
+      setErrorMessage('게시글을 불러오는 중 오류가 발생했습니다. 모든 게시글을 불러옵니다.');
       setShowErrorModal(true);
+      
+      try {
+        // 안전한 쿼리로 모든 게시글 불러오기
+        const { data } = await supabase
+          .from('posts')
+          .select('*, comments(*)')
+          .order('created_at', { ascending: false });
+        setPosts(data || []);
+      } catch (fallbackError) {
+        console.error('최종 게시글 불러오기 실패:', fallbackError);
+        setPosts([]);
+      }
     }
   };
 
@@ -108,31 +224,6 @@ export default function AdminCommunity() {
     }
   };
 
-  useEffect(() => {
-    if (loading) return;
-
-    if (!user) {
-      router.push('/login');
-      return;
-    }
-
-    // 관리자 메일 주소인지 확인
-    if (user.email !== process.env.NEXT_PUBLIC_DEFAULT_ADMIN_EMAIL) {
-      router.push('/');
-      return;
-    }
-
-    console.log('관리자 확인됨:', user.email);
-    fetchPosts();
-  }, [user, loading]);
-
-  // 필터 변경 시에만 게시글 다시 불러오기
-  useEffect(() => {
-    if (isAdmin) {
-      fetchPosts();
-    }
-  }, [filterType]);
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -141,6 +232,18 @@ export default function AdminCommunity() {
     );
   }
 
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-500">로그인이 필요합니다. 메인 페이지로 이동합니다...</p>
+      </div>
+    );
+  }
+
+  // 관리자 권한 확인
+  const isAdmin = user.email === process.env.NEXT_PUBLIC_DEFAULT_ADMIN_EMAIL || 
+                  user.email === ADMIN_EMAIL;
+  
   if (!isAdmin) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -331,180 +434,192 @@ export default function AdminCommunity() {
       {/* 게시글 목록 */}
       <div className="max-w-6xl mx-auto p-4">
         <div className="space-y-4">
-          {posts.map((post) => (
-            <div key={post.id} className="bg-white rounded-lg shadow p-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedPosts.includes(post.id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedPosts([...selectedPosts, post.id]);
-                      } else {
-                        setSelectedPosts(selectedPosts.filter(id => id !== post.id));
-                      }
-                    }}
-                    className="w-4 h-4"
-                  />
-                  <span className="text-2xl">{post.emoji}</span>
-                  <div>
-                    <p className="font-medium">{post.nickname}</p>
-                    <p className="text-sm text-gray-500">{post.studentid}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-gray-500">
-                    {new Date(post.created_at).toLocaleString()}
-                  </span>
-                  {post.isEdited && (
-                    <span className="text-sm text-gray-500">(수정됨)</span>
-                  )}
-                  <div className="flex gap-2">
-                    {post.isdeleted || post.isBlinded ? (
-                      <button
-                        onClick={() => handleRestoreContent('post', post.id)}
-                        className="text-sm text-blue-500 hover:text-blue-600"
-                      >
-                        복구
-                      </button>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => handleBlindPost(post.id)}
-                          className="text-sm text-yellow-500 hover:text-yellow-600"
-                        >
-                          블라인드
-                        </button>
-                        <button
-                          onClick={() => handleDeletePost(post.id)}
-                          className="text-sm text-red-500 hover:text-red-600"
-                        >
-                          삭제
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {post.isdeleted ? (
-                <p className="text-gray-500 text-center mb-2">삭제된 게시물입니다.</p>
-              ) : post.isBlinded ? (
-                <p className="text-gray-500 text-center mb-2">블라인드 처리된 게시물입니다.</p>
-              ) : (
-                <>
-                  <p className="text-gray-700 whitespace-pre-wrap mb-2">{post.content}</p>
-                  {post.reports && post.reports.length > 0 && (
-                    <div className="bg-red-50 text-red-700 px-4 py-2 rounded-lg mb-2">
-                      <div className="flex items-center justify-between">
-                        <p className="font-medium">신고 {post.reports.length}건</p>
-                        <button
-                          onClick={() => setShowReportDetails(showReportDetails === post.id ? null : post.id)}
-                          className="text-sm underline"
-                        >
-                          {showReportDetails === post.id ? '접기' : '자세히 보기'}
-                        </button>
-                      </div>
-                      {showReportDetails === post.id && (
-                        <div className="mt-2 space-y-1">
-                          {post.reports.map((report, index) => (
-                            <p key={index} className="text-sm">
-                              신고자: {report}
-                            </p>
-                          ))}
-                        </div>
-                      )}
+          {posts.length > 0 ? (
+            posts.map((post) => (
+              <div key={post.id} className="bg-white rounded-lg shadow p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedPosts.includes(post.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedPosts([...selectedPosts, post.id]);
+                        } else {
+                          setSelectedPosts(selectedPosts.filter(id => id !== post.id));
+                        }
+                      }}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-2xl">{post.emoji}</span>
+                    <div>
+                      <p className="font-medium">{post.nickname}</p>
+                      <p className="text-sm text-gray-500">{post.studentid}</p>
                     </div>
-                  )}
-                </>
-              )}
-
-              {/* 댓글 목록 */}
-              {post.comments && post.comments.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  <h3 className="font-medium text-gray-900">댓글 ({post.comments.length})</h3>
-                  {post.comments.map((comment: Comment) => (
-                    <div key={comment.id} className="bg-gray-50 p-3 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <div>
-                            <p className="font-medium text-sm">{comment.nickname}</p>
-                            <p className="text-xs text-gray-500">{comment.studentid}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-500">
-                            {new Date(comment.created_at).toLocaleString()}
-                          </span>
-                          {comment.isEdited && (
-                            <span className="text-xs text-gray-500">(수정됨)</span>
-                          )}
-                          <div className="flex gap-2">
-                            {comment.isdeleted || comment.isBlinded ? (
-                              <button
-                                onClick={() => handleRestoreContent('comment', comment.id)}
-                                className="text-xs text-blue-500 hover:text-blue-600"
-                              >
-                                복구
-                              </button>
-                            ) : (
-                              <>
-                                <button
-                                  onClick={() => handleBlindComment(comment.id)}
-                                  className="text-xs text-yellow-500 hover:text-yellow-600"
-                                >
-                                  블라인드
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteComment(comment.id)}
-                                  className="text-xs text-red-500 hover:text-red-600"
-                                >
-                                  삭제
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {comment.isdeleted ? (
-                        <p className="text-gray-500 text-center">삭제된 댓글입니다.</p>
-                      ) : comment.isBlinded ? (
-                        <p className="text-gray-500 text-center">블라인드 처리된 댓글입니다.</p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm text-gray-500">
+                      {new Date(post.created_at).toLocaleString()}
+                    </span>
+                    {post.isEdited && (
+                      <span className="text-sm text-gray-500">(수정됨)</span>
+                    )}
+                    <div className="flex gap-2">
+                      {post.isdeleted || post.isBlinded ? (
+                        <button
+                          onClick={() => handleRestoreContent('post', post.id)}
+                          className="text-sm text-blue-500 hover:text-blue-600"
+                        >
+                          복구
+                        </button>
                       ) : (
                         <>
-                          <p className="text-sm text-gray-700">{comment.content}</p>
-                          {comment.reports && comment.reports.length > 0 && (
-                            <div className="bg-red-50 text-red-700 px-3 py-1 rounded-lg mt-2 text-sm">
-                              <div className="flex items-center justify-between">
-                                <p className="font-medium">신고 {comment.reports.length}건</p>
-                                <button
-                                  onClick={() => setShowReportDetails(showReportDetails === comment.id ? null : comment.id)}
-                                  className="text-xs underline"
-                                >
-                                  {showReportDetails === comment.id ? '접기' : '자세히 보기'}
-                                </button>
-                              </div>
-                              {showReportDetails === comment.id && (
-                                <div className="mt-1 space-y-1">
-                                  {comment.reports.map((report, index) => (
-                                    <p key={index} className="text-xs">
-                                      신고자: {report}
-                                    </p>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          )}
+                          <button
+                            onClick={() => handleBlindPost(post.id)}
+                            className="text-sm text-yellow-500 hover:text-yellow-600"
+                          >
+                            블라인드
+                          </button>
+                          <button
+                            onClick={() => handleDeletePost(post.id)}
+                            className="text-sm text-red-500 hover:text-red-600"
+                          >
+                            삭제
+                          </button>
                         </>
                       )}
                     </div>
-                  ))}
+                  </div>
                 </div>
+
+                {post.isdeleted ? (
+                  <p className="text-gray-500 text-center mb-2">삭제된 게시물입니다.</p>
+                ) : post.isBlinded ? (
+                  <p className="text-gray-500 text-center mb-2">블라인드 처리된 게시물입니다.</p>
+                ) : (
+                  <>
+                    <p className="text-gray-700 whitespace-pre-wrap mb-2">{post.content}</p>
+                    {post.reports && post.reports.length > 0 && (
+                      <div className="bg-red-50 text-red-700 px-4 py-2 rounded-lg mb-2">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium">신고 {post.reports.length}건</p>
+                          <button
+                            onClick={() => setShowReportDetails(showReportDetails === post.id ? null : post.id)}
+                            className="text-sm underline"
+                          >
+                            {showReportDetails === post.id ? '접기' : '자세히 보기'}
+                          </button>
+                        </div>
+                        {showReportDetails === post.id && (
+                          <div className="mt-2 space-y-1">
+                            {post.reports.map((report, index) => (
+                              <p key={index} className="text-sm">
+                                신고자: {report}
+                              </p>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* 댓글 목록 */}
+                {post.comments && post.comments.length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    <h3 className="font-medium text-gray-900">댓글 ({post.comments.length})</h3>
+                    {post.comments.map((comment: Comment) => (
+                      <div key={comment.id} className="bg-gray-50 p-3 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <div>
+                              <p className="font-medium text-sm">{comment.nickname}</p>
+                              <p className="text-xs text-gray-500">{comment.studentid}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500">
+                              {new Date(comment.created_at).toLocaleString()}
+                            </span>
+                            {comment.isEdited && (
+                              <span className="text-xs text-gray-500">(수정됨)</span>
+                            )}
+                            <div className="flex gap-2">
+                              {comment.isdeleted || comment.isBlinded ? (
+                                <button
+                                  onClick={() => handleRestoreContent('comment', comment.id)}
+                                  className="text-xs text-blue-500 hover:text-blue-600"
+                                >
+                                  복구
+                                </button>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => handleBlindComment(comment.id)}
+                                    className="text-xs text-yellow-500 hover:text-yellow-600"
+                                  >
+                                    블라인드
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteComment(comment.id)}
+                                    className="text-xs text-red-500 hover:text-red-600"
+                                  >
+                                    삭제
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {comment.isdeleted ? (
+                          <p className="text-gray-500 text-center">삭제된 댓글입니다.</p>
+                        ) : comment.isBlinded ? (
+                          <p className="text-gray-500 text-center">블라인드 처리된 댓글입니다.</p>
+                        ) : (
+                          <>
+                            <p className="text-sm text-gray-700">{comment.content}</p>
+                            {comment.reports && comment.reports.length > 0 && (
+                              <div className="bg-red-50 text-red-700 px-3 py-1 rounded-lg mt-2 text-sm">
+                                <div className="flex items-center justify-between">
+                                  <p className="font-medium">신고 {comment.reports.length}건</p>
+                                  <button
+                                    onClick={() => setShowReportDetails(showReportDetails === comment.id ? null : comment.id)}
+                                    className="text-xs underline"
+                                  >
+                                    {showReportDetails === comment.id ? '접기' : '자세히 보기'}
+                                  </button>
+                                </div>
+                                {showReportDetails === comment.id && (
+                                  <div className="mt-1 space-y-1">
+                                    {comment.reports.map((report, index) => (
+                                      <p key={index} className="text-xs">
+                                        신고자: {report}
+                                      </p>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="bg-white rounded-lg shadow p-8 text-center">
+              {filterType === 'all' ? (
+                <p className="text-gray-700 text-lg">게시글이 없습니다.</p>
+              ) : filterType === 'reported' ? (
+                <p className="text-gray-700 text-lg">신고된 게시글이 없습니다.</p>
+              ) : (
+                <p className="text-gray-700 text-lg">블라인드 처리된 게시글이 없습니다.</p>
               )}
             </div>
-          ))}
+          )}
         </div>
       </div>
 

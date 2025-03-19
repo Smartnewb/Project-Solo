@@ -44,7 +44,7 @@ export async function middleware(req: NextRequest) {
   const { data: { session } } = await supabase.auth.getSession()
 
   // 공개 경로는 세션 체크 없이 통과
-  if (['/login', '/signup', '/'].includes(req.nextUrl.pathname)) {
+  if (['/signup', '/'].includes(req.nextUrl.pathname)) {
     return response
   }
 

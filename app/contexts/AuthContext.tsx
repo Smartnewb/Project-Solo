@@ -141,6 +141,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const redirectToLogin = () => {
+    // 로그인 페이지가 루트에 있으므로 / 경로로 리다이렉트
+    window.location.href = '/';
+  };
+
   return (
     <AuthContext.Provider value={{ user, profile, isAdmin, loading }}>
       {children}
