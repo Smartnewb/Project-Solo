@@ -35,10 +35,56 @@ export const createClientSupabaseClient = () => {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-        flowType: 'pkce'
+        detectSessionInUrl: false,
+        flowType: 'implicit',
+        storage: {
+          getItem: (key) => {
+            try {
+              const item = localStorage.getItem(key);
+              console.log(`Storage getItem: ${key} = ${item ? '값 있음' : '값 없음'}`);
+              return item;
+            } catch (error) {
+              console.error('Storage getItem error:', error);
+              return null;
+            }
+          },
+          setItem: (key, value) => {
+            try {
+              console.log(`Storage setItem: ${key}`);
+              localStorage.setItem(key, value);
+            } catch (error) {
+              console.error('Storage setItem error:', error);
+            }
+          },
+          removeItem: (key) => {
+            try {
+              console.log(`Storage removeItem: ${key}`);
+              localStorage.removeItem(key);
+            } catch (error) {
+              console.error('Storage removeItem error:', error);
+            }
+          }
+        }
       },
       global: {
-        fetch: (...args) => fetch(...args)
+        fetch: (...args) => {
+          const [url, options] = args;
+          return fetch(url, {
+            ...options,
+            headers: {
+              ...options?.headers,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            // 네트워크 타임아웃 증가
+            signal: AbortSignal.timeout(30000)
+          });
+        }
+      },
+      realtime: {
+        params: {
+          eventsPerSecond: 1
+        }
       }
     }
   );

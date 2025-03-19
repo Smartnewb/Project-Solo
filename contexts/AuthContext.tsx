@@ -127,19 +127,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // 로그아웃
   const signOut = async () => {
-    // 로컬 스토리지의 사용자 관련 데이터 삭제
-    localStorage.removeItem('onboardingProfile');
-    localStorage.removeItem('profile');
-    localStorage.removeItem('idealType');
-    localStorage.removeItem('communityPosts');
-    
-    // 사용자별 닉네임 정보 삭제
-    if (user?.id) {
-      localStorage.removeItem(`userNickname_${user.id}`);
+    try {
+      console.log('로그아웃 시작: 로컬 스토리지 정리');
+      
+      // 로컬 스토리지의 사용자 관련 데이터 삭제
+      localStorage.removeItem('onboardingProfile');
+      localStorage.removeItem('profile');
+      localStorage.removeItem('idealType');
+      localStorage.removeItem('communityPosts');
+      localStorage.removeItem('supabase.auth.token');
+      
+      // 사용자별 닉네임 정보 삭제
+      if (user?.id) {
+        localStorage.removeItem(`userNickname_${user.id}`);
+      }
+      
+      // 모든 supabase 관련 항목 삭제
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('supabase.') || key.includes('supabase'))) {
+          console.log('삭제 중인 localStorage 항목:', key);
+          localStorage.removeItem(key);
+        }
+      }
+      
+      console.log('로컬 스토리지 정리 완료, Supabase 로그아웃 시작');
+      
+      // Supabase 로그아웃
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Supabase 로그아웃 오류:', error);
+        throw error;
+      }
+      
+      console.log('로그아웃 완료');
+    } catch (error) {
+      console.error('로그아웃 중 오류 발생:', error);
+      // 실패하더라도 사용자 상태는 정리
+      setUser(null);
+      setProfile(null);
     }
-    
-    // Supabase 로그아웃
-    await supabase.auth.signOut();
   };
 
   // 프로필 업데이트

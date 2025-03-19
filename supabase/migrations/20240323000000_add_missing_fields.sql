@@ -1,1 +1,11 @@
- 
+-- Add missing fields for profiles table
+ALTER TABLE profiles
+  ADD COLUMN IF NOT EXISTS personalities JSONB,
+  ADD COLUMN IF NOT EXISTS dating_styles JSONB,
+  ADD COLUMN IF NOT EXISTS ideal_lifestyles JSONB,
+  ADD COLUMN IF NOT EXISTS interests JSONB,
+  ADD COLUMN IF NOT EXISTS height INTEGER,
+  ADD COLUMN IF NOT EXISTS drinking TEXT,
+  ADD COLUMN IF NOT EXISTS smoking TEXT,
+  ADD COLUMN IF NOT EXISTS tattoo TEXT,
+  ADD COLUMN IF NOT EXISTS mbti TEXT; 

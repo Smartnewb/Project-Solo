@@ -52,6 +52,7 @@ export default function Onboarding() {
   });
 
   const [showModal, setShowModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   
   // 대학 선택 시 학과 변경 처리
@@ -344,15 +345,31 @@ export default function Onboarding() {
   };
 
   const validateForm = () => {
-    console.log('폼 데이터 검증 시작:', formData);
+    console.log('폼 데이터 검증 시작, 전체 폼 데이터:', formData);
+
+    // 데이터 존재 확인 전 trim 처리
+    const universityValue = formData.university?.trim() || '';
+    const departmentValue = formData.department?.trim() || '';
+    const studentIdValue = formData.studentId?.trim() || '';
+    const gradeValue = formData.grade?.trim() || '';
+    const instagramIdValue = formData.instagramId?.trim() || '';
+    
+    console.log('검증 전 데이터 점검:', {
+      university: universityValue.length > 0 ? '있음' : '없음',
+      department: departmentValue.length > 0 ? '있음' : '없음',
+      studentId: studentIdValue.length > 0 ? '있음' : '없음',
+      grade: gradeValue.length > 0 ? '있음' : '없음',
+      image: formData.image ? '있음' : '없음',
+      instagramId: instagramIdValue.length > 0 ? '있음' : '없음'
+    });
 
     const newErrors = {
-      university: !formData.university?.trim(),
-      department: !formData.department?.trim(),
-      studentId: !formData.studentId?.trim(),
-      grade: !formData.grade?.trim(),
+      university: !universityValue,
+      department: !departmentValue,
+      studentId: !studentIdValue,
+      grade: !gradeValue,
       image: !formData.image,
-      instagramId: !formData.instagramId?.trim()
+      instagramId: !instagramIdValue
     };
 
     Object.entries(newErrors).forEach(([field, hasError]) => {
@@ -373,7 +390,7 @@ export default function Onboarding() {
       );
       setShowModal(true);
     } else {
-      console.log('폼 검증 성공');
+      console.log('폼 검증 성공, 모든 필드 검증 통과');
     }
 
     return !hasErrors;
@@ -381,9 +398,9 @@ export default function Onboarding() {
 
   const showTemporaryModal = (message: string) => {
     setModalMessage(message);
-    setShowModal(true);
+    setShowSuccessModal(true);
     setTimeout(() => {
-      setShowModal(false);
+      setShowSuccessModal(false);
     }, 2000);
   };
 
@@ -395,7 +412,7 @@ export default function Onboarding() {
     
     // 모든 폼 데이터 로깅 (디버깅)
     Object.entries(formData).forEach(([field, value]) => {
-      console.log(`${field}: ${value ? '입력됨' : '입력되지 않음'}`);
+      console.log(`${field}: ${value ? '입력됨' : '입력되지 않음'}, 값:`, value);
     });
     
     if (!validateForm()) {
@@ -437,27 +454,111 @@ export default function Onboarding() {
 
       // 4. 프로필 저장
       console.log('프로필 저장 시도...');
-      const { data, error: upsertError } = await supabase
-        .from('profiles')
-        .upsert(profileData, { onConflict: 'user_id' });
-
-      console.log('upsert 응답:', data, upsertError);
-
-      if (upsertError) {
-        console.error('프로필 저장 오류:', upsertError);
-        showTemporaryModal('프로필 저장에 실패했습니다. 잠시 후 다시 시도해주세요.');
+      
+      try {
+        // 먼저 기존 프로필이 있는지 확인
+        const { data: existingProfile, error: checkError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', session.user.id)
+          .single();
+        
+        if (checkError && checkError.code !== 'PGRST116') {
+          console.error('프로필 확인 오류:', checkError);
+          showTemporaryModal('프로필 확인 중 오류가 발생했습니다. 다시 시도해주세요.');
+          return;
+        }
+          
+        console.log('프로필 확인 결과:', existingProfile ? '기존 프로필 있음' : '프로필 없음');
+        
+        // 데이터 저장을 위한 명시적인 API 키 설정 확인
+        console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+        console.log('API 키 유무:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+        
+        // 데이터베이스 저장
+        let saveResult;
+        
+        if (existingProfile) {
+          // 기존 프로필이 있으면 업데이트
+          console.log('기존 프로필 업데이트:', existingProfile.id);
+          saveResult = await supabase
+            .from('profiles')
+            .update(profileData)
+            .eq('user_id', session.user.id)
+            .select();
+        } else {
+          // 새 프로필 생성
+          console.log('새 프로필 생성');
+          saveResult = await supabase
+            .from('profiles')
+            .insert(profileData)
+            .select();
+        }
+        
+        const { data: savedData, error: saveError } = saveResult;
+        
+        console.log('저장 결과:', saveResult);
+        
+        if (saveError) {
+          console.error('프로필 저장 오류:', saveError);
+          console.log('오류 코드:', saveError.code);
+          console.log('오류 메시지:', saveError.message);
+          console.log('오류 상세:', saveError.details);
+          
+          // 외래 키 제약 조건 위반 오류일 경우 (사용자 테이블에 해당 ID가 없는 경우)
+          if (saveError.code === '23503') {
+            console.error('사용자 ID가 인증 테이블에 없습니다. 다시 로그인이 필요합니다.');
+            showTemporaryModal('인증 정보에 문제가 있습니다. 다시 로그인해주세요.');
+            setTimeout(() => {
+              router.push('/');
+            }, 2000);
+            return;
+          }
+          
+          showTemporaryModal('프로필 저장에 실패했습니다. 잠시 후 다시 시도해주세요.');
+          return;
+        }
+        
+        if (!savedData || savedData.length === 0) {
+          console.warn('저장은 성공했으나 반환된 데이터가 없습니다');
+        } else {
+          console.log('저장된 프로필 데이터:', savedData[0]);
+        }
+        
+        // 저장 성공 후 프로필 데이터 조회 (데이터가 반환되지 않았을 경우 대비)
+        const { data: updatedProfile, error: fetchError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', session.user.id)
+          .single();
+          
+        if (fetchError) {
+          console.warn('저장된 프로필 조회 실패:', fetchError);
+        } else {
+          console.log('저장된 프로필:', updatedProfile);
+        }
+        
+        // 온보딩 데이터를 localStorage에 저장 (profile 페이지에서 사용)
+        const finalProfileData = updatedProfile || savedData?.[0] || profileData;
+        localStorage.setItem('onboardingProfile', JSON.stringify(finalProfileData));
+        console.log('온보딩 데이터를 localStorage에 저장:', finalProfileData);
+      } catch (err) {
+        console.error('프로필 저장 중 예외 발생:', err);
+        showTemporaryModal('프로필 저장에 실패했습니다. 네트워크 연결을 확인해주세요.');
         return;
       }
 
-      console.log('프로필 저장 성공');
-      
       // 저장 성공 메시지 표시
       showTemporaryModal('프로필이 성공적으로 저장되었습니다!');
 
-      // 잠시 대기 후 홈페이지로 이동
+      // 모달 닫을 때 홈 페이지로 이동하도록 설정 (타이밍 확실히 하기 위해)
       setTimeout(() => {
-        router.push('/home');
-      }, 1000);
+        setShowSuccessModal(false);
+        // 추가 지연을 두어 모달이 사라진 후 페이지 이동
+        setTimeout(() => {
+          router.push('/home');
+        }, 200);
+      }, 1500);
     } catch (err) {
       console.error('프로필 저장 중 예외 발생:', err);
       showTemporaryModal('프로필 저장 중 오류가 발생했습니다.');
@@ -773,6 +874,27 @@ export default function Onboarding() {
             >
               확인
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* 성공 메시지 모달 */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-xl">
+            <div className="flex justify-center mb-4">
+              <div className="bg-green-100 p-3 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-4 text-center">
+              {modalMessage}
+            </h3>
+            <p className="text-sm text-gray-600 text-center mb-2">
+              홈 화면으로 이동합니다...
+            </p>
           </div>
         </div>
       )}

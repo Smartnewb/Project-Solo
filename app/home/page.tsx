@@ -25,6 +25,12 @@ export default function Home() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // 프로필 설정 페이지로 이동하는 함수
+  const handleGoToProfile = () => {
+    console.log('프로필 설정 페이지로 이동 시도');
+    router.push('/profile');
+  };
+
   useEffect(() => {
     const checkAuthAndProfile = async () => {
       try {
@@ -82,6 +88,22 @@ export default function Home() {
         if (profile) {
           console.log('프로필 조회 성공:', profile);
           setUserName(profile.name || '게스트');
+          
+          // 추가 프로필 필드 확인 (profile 페이지에서 저장하는 정보)
+          // JSON 문자열로 저장된 경우도 고려
+          const hasPersonalities = profile.personalities ? true : false;
+          const hasDatingStyles = profile.dating_styles ? true : false;
+          const hasInterests = profile.interests ? true : false;
+          
+          const hasCompletedProfile = hasPersonalities || hasDatingStyles || hasInterests;
+          
+          if (!hasCompletedProfile) {
+            console.log('추가 프로필 정보가 없습니다. 프로필 페이지로의 이동은 버튼을 통해 진행됩니다.');
+            // 온보딩 데이터를 localStorage에 저장 (profile 페이지에서 사용)
+            localStorage.setItem('onboardingProfile', JSON.stringify(profile));
+            // router.push를 제거하고 필요 시 버튼을 통해 이동하도록 함
+          }
+          
           setHasProfile(true);
           localStorage.setItem('profile', JSON.stringify(profile));
           
@@ -106,7 +128,7 @@ export default function Home() {
     // 상태 초기화
     setIsLoading(true);
     checkAuthAndProfile();
-  }, [supabase, user]);
+  }, [router, supabase, user]);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -150,10 +172,7 @@ export default function Home() {
                   프로필을 작성하고 매칭을 시작해보세요!
                 </p>
                 <button
-                  onClick={() => {
-                    setShowProfileModal(false);
-                    router.push('/profile');
-                  }}
+                  onClick={handleGoToProfile}
                   className="btn-primary w-full"
                 >
                   프로필 설정하기
@@ -187,7 +206,7 @@ export default function Home() {
                   매칭의 정확도를 높일 수 있어요!
                 </p>
                 <button
-                  onClick={() => router.push('/profile')}
+                  onClick={handleGoToProfile}
                   className="btn-primary w-full"
                 >
                   프로필 작성하기

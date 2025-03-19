@@ -56,9 +56,41 @@ export default function Login() {
     
     setError(null);
     setLoading(true);
-    console.log('로그인 시도 중...');
+    console.log('로그인 시도 중...', { email });
+
+    // 먼저 API 접근 권한 확인
+    try {
+      const testResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/token?grant_type=password`,
+        {
+          method: 'GET',
+          headers: {
+            'apiKey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      console.log('API 접근 확인 상태:', testResponse.status);
+      
+      if (testResponse.status === 404) {
+        console.log('API 접근 가능 (404는 정상, 엔드포인트가 존재함을 의미)');
+      } else if (testResponse.status === 401) {
+        console.error('API 키 인증 실패');
+        setError('서버 연결에 문제가 있습니다. 잠시 후 다시 시도해주세요.');
+        setLoading(false);
+        return;
+      }
+    } catch (testErr) {
+      console.error('API 연결 테스트 실패:', testErr);
+      // 테스트 실패해도 로그인 시도는 계속
+    }
 
     try {
+      console.log('로그인 요청 시작');
+      console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+      console.log('API 키 유무:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -66,43 +98,29 @@ export default function Login() {
 
       if (error) {
         console.error('로그인 오류:', error);
+        console.log('오류 세부 정보:', { 
+          message: error.message, 
+          status: error.status, 
+          name: error.name,
+          code: (error as any).code ?? '코드 없음'
+        });
         
-        // 요청 제한 오류 처리
-        if (error.message === 'Request rate limit reached' && retryCount < 3) {
-          setRetryCount(prev => prev + 1);
-          const delay = getRetryDelay();
-          setError(`요청 제한에 도달했습니다. ${delay/1000}초 후 자동으로 재시도합니다...`);
-          
-          setTimeout(() => {
-            console.log(`${delay/1000}초 후 로그인 재시도...`);
-            setLoading(false);
-            handleLogin(e);
-          }, delay);
-          return;
-        }
-
-        // 다른 오류 처리
-        if (error.message === 'Request rate limit reached') {
-          setError('요청 횟수가 너무 많습니다. 잠시 후 다시 시도해주세요.');
-        } else {
-          setError('이메일 또는 비밀번호가 올바르지 않습니다.');
-        }
+        setError(`로그인 실패: ${error.message}`);
         setLoading(false);
         return;
       }
 
       // 로그인 성공
-      console.log('로그인 성공');
-      setRetryCount(0); // 성공 시 재시도 카운트 초기화
+      console.log('로그인 성공:', { user: data?.user?.id });
       
-      // 명시적으로 홈 페이지로 리다이렉션
-      console.log('홈 페이지로 리다이렉션 중...');
-      
-      // 지연없이 바로 리다이렉션
-      router.push('/home');
+      // 페이지 이동 전 짧은 지연을 두어 세션이 저장되도록 함
+      setTimeout(() => {
+        console.log('홈 페이지로 리다이렉션 중...');
+        router.push('/home');
+      }, 500); // 지연 시간 증가
     } catch (err) {
       console.error('로그인 중 예외 발생:', err);
-      setError('로그인 중 오류가 발생했습니다.');
+      setError('로그인 중 오류가 발생했습니다. 네트워크 연결을 확인해주세요.');
       setLoading(false);
     }
   };
