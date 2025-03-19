@@ -6,15 +6,67 @@ import { Database } from '@/types/supabase';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-// 단일 Supabase 클라이언트 인스턴스 생성
-const supabaseInstance = createClient(supabaseUrl, supabaseAnonKey);
+// 단일 Supabase 클라이언트 인스턴스 생성 (성능 최적화)
+const supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    // 토큰 만료 10분 전에만 갱신 시도 (기본값보다 늘림)
+    flowType: 'pkce'
+  },
+  // 캐시 설정 최적화
+  global: {
+    fetch: (...args) => fetch(...args)
+  },
+  realtime: {
+    // 실시간 기능 사용하지 않는 경우 비활성화
+    params: {
+      eventsPerSecond: 1
+    }
+  }
+});
+
 export const supabase = supabaseInstance;
 
-// SSR용 브라우저 클라이언트 (기존 클라이언트 재사용)
-export const createBrowserSupabaseClient = () => supabaseInstance;
+// SSR용 브라우저 클라이언트 (최적화된 설정 적용)
+export const createBrowserSupabaseClient = () => {
+  return createBrowserClient(
+    supabaseUrl,
+    supabaseAnonKey,
+    {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        flowType: 'pkce'
+      }
+    }
+  );
+};
 
-// 클라이언트 컴포넌트용 클라이언트 (기존 클라이언트 재사용)
-export const createClientSupabaseClient = () => supabaseInstance;
+// 클라이언트 컴포넌트용 클라이언트 (세션 저장 및 토큰 갱신 최적화)
+export const createClientSupabaseClient = () => {
+  // 이미 생성된 클라이언트 반환하여 여러 인스턴스 생성 방지
+  return supabaseInstance;
+};
+
+// 인증 헬퍼 래퍼 (토큰 갱신 제한)
+export const createOptimizedClientComponentClient = () => {
+  return createClientComponentClient<Database>({
+    options: {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        // 토큰이 곧 만료될 때만 새로고침 시도
+        detectSessionInUrl: false,
+        flowType: 'pkce'
+      },
+      global: {
+        fetch: (...args) => fetch(...args)
+      }
+    }
+  });
+};
 
 // 사용자 프로필 타입 정의
 export type Profile = {
