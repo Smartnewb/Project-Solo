@@ -3,12 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { createOptimizedClientComponentClient } from '@/utils/supabase';
+import { createClientSupabaseClient } from '@/utils/supabase';
 
 export default function Login() {
   const router = useRouter();
-  const supabase = createOptimizedClientComponentClient();
+  const supabase = createClientSupabaseClient();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);

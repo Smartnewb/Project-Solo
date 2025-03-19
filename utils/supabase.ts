@@ -1,13 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { createBrowserClient } from '@supabase/ssr';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Database } from '@/types/supabase';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 // 단일 Supabase 클라이언트 인스턴스 생성 (성능 최적화)
-const supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
@@ -27,45 +26,20 @@ const supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
-export const supabase = supabaseInstance;
-
-// SSR용 브라우저 클라이언트 (최적화된 설정 적용)
-export const createBrowserSupabaseClient = () => {
+// 클라이언트 컴포넌트용 클라이언트
+export const createClientSupabaseClient = () => {
   return createBrowserClient(
     supabaseUrl,
-    supabaseAnonKey,
-    {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        flowType: 'pkce'
-      }
-    }
+    supabaseAnonKey
   );
 };
 
-// 클라이언트 컴포넌트용 클라이언트 (세션 저장 및 토큰 갱신 최적화)
-export const createClientSupabaseClient = () => {
-  // 이미 생성된 클라이언트 반환하여 여러 인스턴스 생성 방지
-  return supabaseInstance;
-};
-
-// 인증 헬퍼 래퍼 (토큰 갱신 제한)
-export const createOptimizedClientComponentClient = () => {
-  return createClientComponentClient<Database>({
-    options: {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        // 토큰이 곧 만료될 때만 새로고침 시도
-        detectSessionInUrl: false,
-        flowType: 'pkce'
-      },
-      global: {
-        fetch: (...args) => fetch(...args)
-      }
-    }
-  });
+// SSR용 브라우저 클라이언트
+export const createBrowserSupabaseClient = () => {
+  return createBrowserClient(
+    supabaseUrl,
+    supabaseAnonKey
+  );
 };
 
 // 사용자 프로필 타입 정의

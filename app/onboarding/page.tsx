@@ -459,6 +459,7 @@ export default function Onboarding() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        console.log('온보딩 페이지: 인증 상태 확인 중...');
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
@@ -473,22 +474,36 @@ export default function Onboarding() {
           return;
         }
 
+        console.log('세션 유저 ID:', session.user.id);
+
         // 이미 프로필이 있는지 확인
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .single();
+        try {
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('id, name')
+            .eq('user_id', session.user.id)
+            .single();
 
-        if (profile) {
-          console.log('이미 프로필이 존재합니다. 홈으로 이동합니다.');
-          router.push('/home');
-          return;
+          if (profileError) {
+            if (profileError.code === 'PGRST116') {
+              console.log('프로필이 없습니다. 온보딩을 계속합니다.');
+              setIsLoading(false);
+            } else {
+              console.error('프로필 조회 중 오류 발생:', profileError);
+              setIsLoading(false);
+            }
+          } else if (profile) {
+            console.log('이미 프로필이 존재합니다. 홈으로 이동합니다.', profile);
+            router.push('/home');
+          } else {
+            // 프로필이 없는 경우 온보딩 페이지에 머무름
+            console.log('온보딩을 시작합니다.');
+            setIsLoading(false);
+          }
+        } catch (err) {
+          console.error('프로필 확인 중 예외 발생:', err);
+          setIsLoading(false);
         }
-
-        // 프로필이 없는 경우 온보딩 페이지에 머무름
-        console.log('온보딩을 시작합니다.');
-        setIsLoading(false);
       } catch (error) {
         console.error('인증 확인 중 오류 발생:', error);
         router.push('/');

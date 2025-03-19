@@ -2,20 +2,18 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { ADMIN_EMAIL } from '@/utils/config'
 
-export async function middleware(req: NextRequest) {
+export async function middleware(request: NextRequest) {
   // 정적 리소스 및 API 요청은 즉시 패스스루
   if (
-    req.nextUrl.pathname.startsWith('/_next') ||
-    req.nextUrl.pathname.startsWith('/api') ||
-    req.nextUrl.pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js)$/)
+    request.nextUrl.pathname.startsWith('/_next') ||
+    request.nextUrl.pathname.startsWith('/api') ||
+    request.nextUrl.pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js)$/)
   ) {
     return NextResponse.next()
   }
 
-  let response = NextResponse.next({
-    request: {
-      headers: req.headers,
-    },
+  let supabaseResponse = NextResponse.next({
+    request,
   })
 
   const supabase = createServerClient(
@@ -24,43 +22,49 @@ export async function middleware(req: NextRequest) {
     {
       cookies: {
         getAll() {
-          return req.cookies.getAll()
+          return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            req.cookies.set(name, value)
-            response = NextResponse.next({
-              request: {
-                headers: req.headers,
-              },
-            })
-            response.cookies.set(name, value, options)
+          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({
+            request,
           })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          )
         },
       },
     }
   )
 
-  const { data: { session } } = await supabase.auth.getSession()
+  // Do not run code between createServerClient and
+  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
+  // issues with users being randomly logged out.
+
+  // IMPORTANT: DO NOT REMOVE auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   // 공개 경로는 세션 체크 없이 통과
-  if (['/signup', '/'].includes(req.nextUrl.pathname)) {
-    return response
+  if (['/signup', '/'].includes(request.nextUrl.pathname)) {
+    return supabaseResponse
   }
 
   // 인증이 필요한 경로에 대한 체크
-  if (!session) {
-    return NextResponse.redirect(new URL('/', req.url))
+  if (!user) {
+    return NextResponse.redirect(new URL('/', request.url))
   }
 
   // 관리자 전용 경로 체크
-  if (req.nextUrl.pathname.startsWith('/admin')) {
-    if (session.user.email !== ADMIN_EMAIL) {
-      return NextResponse.redirect(new URL('/home', req.url))
+  if (request.nextUrl.pathname.startsWith('/admin')) {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.user.email !== ADMIN_EMAIL) {
+      return NextResponse.redirect(new URL('/home', request.url))
     }
   }
 
-  return response
+  return supabaseResponse
 }
 
 export const config = {
