@@ -30,7 +30,17 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 export const createClientSupabaseClient = () => {
   return createBrowserClient(
     supabaseUrl,
-    supabaseAnonKey
+    supabaseAnonKey,
+    {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        flowType: 'pkce'
+      },
+      global: {
+        fetch: (...args) => fetch(...args)
+      }
+    }
   );
 };
 
@@ -38,7 +48,17 @@ export const createClientSupabaseClient = () => {
 export const createBrowserSupabaseClient = () => {
   return createBrowserClient(
     supabaseUrl,
-    supabaseAnonKey
+    supabaseAnonKey,
+    {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        flowType: 'pkce'
+      },
+      global: {
+        fetch: (...args) => fetch(...args)
+      }
+    }
   );
 };
 

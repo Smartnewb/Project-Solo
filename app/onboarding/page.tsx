@@ -393,14 +393,21 @@ export default function Onboarding() {
     console.log('폼 제출 시작');
     console.log('제출된 폼 데이터:', formData);
     
+    // 모든 폼 데이터 로깅 (디버깅)
+    Object.entries(formData).forEach(([field, value]) => {
+      console.log(`${field}: ${value ? '입력됨' : '입력되지 않음'}`);
+    });
+    
     if (!validateForm()) {
       console.log('폼 검증 실패로 제출 중단');
       return;
     }
 
     try {
+      console.log('세션 정보 가져오는 중...');
       // 1. 사용자 세션 확인
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log('세션 정보:', session ? '존재' : '없음', sessionError ? `오류: ${sessionError.message}` : '오류 없음');
       
       if (sessionError || !session?.user) {
         console.error('세션 확인 오류:', sessionError);
@@ -411,6 +418,7 @@ export default function Onboarding() {
 
       // 2. 사용자 메타데이터에서 이름 가져오기
       const userName = session.user.user_metadata?.name || '사용자';
+      console.log('사용자 이름:', userName);
 
       // 3. 프로필 데이터 준비
       const profileData = {
@@ -428,9 +436,12 @@ export default function Onboarding() {
       console.log('저장할 프로필 데이터:', profileData);
 
       // 4. 프로필 저장
-      const { error: upsertError } = await supabase
+      console.log('프로필 저장 시도...');
+      const { data, error: upsertError } = await supabase
         .from('profiles')
         .upsert(profileData, { onConflict: 'user_id' });
+
+      console.log('upsert 응답:', data, upsertError);
 
       if (upsertError) {
         console.error('프로필 저장 오류:', upsertError);
@@ -716,7 +727,12 @@ export default function Onboarding() {
 
           {/* 저장 버튼 */}
           <button
-            type="submit"
+            type="button" 
+            onClick={(e) => {
+              e.preventDefault();
+              console.log('저장 버튼 직접 클릭 이벤트');
+              handleSubmit(e as any);
+            }}
             className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl shadow-sm hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all"
           >
             저장하기
