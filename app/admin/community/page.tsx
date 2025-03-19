@@ -63,9 +63,13 @@ export default function AdminCommunity() {
     }
 
     if (!user) {
-      console.log('사용자 인증 정보 없음, 루트 페이지로 리다이렉트');
-      router.push('/');
-      return;
+      console.log('사용자 인증 정보 없음, 3초 후 리다이렉트');
+      const timer = setTimeout(() => {
+        console.log('리다이렉트 실행');
+        router.push('/');
+      }, 3000);
+      
+      return () => clearTimeout(timer);
     }
 
     // 로그인 사용자 정보 로깅
@@ -91,7 +95,7 @@ export default function AdminCommunity() {
     console.log('관리자 확인됨:', user.email);
     // 이미 관리자임이 확인되었으므로 게시글 로드
     fetchPosts();
-  }, [user, loading]);
+  }, [user, loading, router]);
 
   // 필터 변경 시에만 게시글 다시 불러오기
   useEffect(() => {
@@ -235,7 +239,10 @@ export default function AdminCommunity() {
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500">로그인이 필요합니다. 메인 페이지로 이동합니다...</p>
+        <div className="text-center">
+          <p className="text-gray-500 mb-2">로그인이 필요합니다.</p>
+          <p className="text-gray-400 text-sm">3초 후 메인 페이지로 이동합니다...</p>
+        </div>
       </div>
     );
   }
@@ -362,6 +369,7 @@ export default function AdminCommunity() {
     }하시겠습니까?`)) return;
 
     try {
+      console.log('Bulk action on posts:', selectedPosts);
       const updates = {
         delete: { isdeleted: true },
         blind: { isBlinded: true },
@@ -373,7 +381,10 @@ export default function AdminCommunity() {
         .update(updates)
         .in('id', selectedPosts);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Bulk action error:', error);
+        throw error;
+      }
       
       setSelectedPosts([]);
       fetchPosts();
@@ -443,11 +454,12 @@ export default function AdminCommunity() {
                       type="checkbox"
                       checked={selectedPosts.includes(post.id)}
                       onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedPosts([...selectedPosts, post.id]);
-                        } else {
-                          setSelectedPosts(selectedPosts.filter(id => id !== post.id));
-                        }
+                        const newSelectedPosts = e.target.checked
+                          ? [...selectedPosts, post.id]
+                          : selectedPosts.filter(id => id !== post.id);
+                        console.log('Selected post:', post.id);
+                        console.log('New selected posts:', newSelectedPosts);
+                        setSelectedPosts(newSelectedPosts);
                       }}
                       className="w-4 h-4"
                     />
