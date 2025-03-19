@@ -2,8 +2,15 @@ import { createClient } from '@supabase/supabase-js';
 import { createBrowserClient } from '@supabase/ssr';
 import { Database } from '@/types/supabase';
 
+// 환경 변수가 올바르게 로드되었는지 확인
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+// 전체 환경 변수 출력 (디버깅 목적)
+console.log('=== 환경 변수 확인 ===');
+console.log('Supabase URL (전체값):', supabaseUrl);
+console.log('Supabase Anon Key (시작 부분):', supabaseAnonKey ? supabaseAnonKey.substring(0, 10) + '...' : '없음');
+console.log('========================');
 
 // 단일 Supabase 클라이언트 인스턴스 생성 (성능 최적화)
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -26,8 +33,15 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 });
 
+// 환경 변수 디버깅
+console.log('Supabase URL (마스킹됨):', supabaseUrl ? supabaseUrl.substring(0, 8) + '...' : '없음');
+console.log('Supabase Anon Key 존재 여부:', !!supabaseAnonKey);
+
 // 클라이언트 컴포넌트용 클라이언트
 export const createClientSupabaseClient = () => {
+  console.log('[Supabase] 클라이언트 생성 - URL:', supabaseUrl ? supabaseUrl.substring(0, 8) + '...' : '없음');
+  console.log('[Supabase] 클라이언트 생성 - Anon Key 존재:', !!supabaseAnonKey);
+  
   return createBrowserClient(
     supabaseUrl,
     supabaseAnonKey,
@@ -71,16 +85,21 @@ export const createClientSupabaseClient = () => {
           const [url, options] = args;
           console.log(`Fetch request to: ${url}`);
           
+          const headers = {
+            ...options?.headers,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            'apikey': supabaseAnonKey // API 키를 명시적으로 추가
+          };
+          
+          console.log('Request headers:', Object.keys(headers).join(', '));
+          
           const fetchOptions = {
             ...options,
-            headers: {
-              ...options?.headers,
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'Cache-Control': 'no-cache',
-              'Pragma': 'no-cache'
-            },
-            credentials: 'include',
+            headers,
+            // credentials: 'include', // CORS 오류 발생의 원인, 제거
             // 네트워크 타임아웃 증가
             signal: AbortSignal.timeout(30000)
           };

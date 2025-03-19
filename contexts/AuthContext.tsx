@@ -27,25 +27,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // 초기 사용자 세션 확인
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
+    const initializeAuth = async () => {
+      try {
+        console.log('AuthContext: 초기화 시작');
+        setLoading(true);
+        
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log('Session check result:', session ? 'Session exists' : 'No session');
+        
+        if (session?.user) {
+          console.log('세션에서 사용자 발견:', session.user.id);
+          setUser(session.user);
+          await fetchProfile(session.user.id);
+        } else {
+          console.log('사용자 세션이 없음');
+          setUser(null);
+          setProfile(null);
+          setHasCompletedOnboarding(false);
+        }
+      } catch (error) {
+        console.error('인증 초기화 오류:', error);
+        setUser(null);
+        setProfile(null);
+        setHasCompletedOnboarding(false);
+      } finally {
+        setLoading(false);
+        console.log('AuthContext: 초기화 완료');
       }
-      setLoading(false);
-    });
+    };
+
+    initializeAuth();
 
     // 인증 상태 변경 구독
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setUser(session?.user ?? null);
+      console.log('Auth state changed:', event, session ? 'session exists' : 'no session');
+      
       if (session?.user) {
+        console.log('새 세션 사용자:', session.user.id);
+        setUser(session.user);
         await fetchProfile(session.user.id);
       } else {
+        console.log('세션 종료됨');
+        setUser(null);
         setProfile(null);
+        setHasCompletedOnboarding(false);
       }
-      setLoading(false);
     });
 
     return () => {
@@ -58,7 +86,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log('AuthContext: 사용자 ID로 프로필 조회 시작:', userId);
     
     try {
-      // 콘솔에 쿼리 정보 출력
       console.log('프로필 쿼리 정보:', {
         테이블: 'profiles',
         검색필드: 'user_id',
@@ -74,7 +101,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         console.error('프로필 조회 오류 발생. 에러 내용:', error);
         
-        // PGRST116은 row not found 에러로, 프로필이 없는 정상적인 상황일 수 있음
         if (error.code === 'PGRST116') {
           console.log('프로필이 존재하지 않습니다. 새 사용자일 수 있습니다.');
           setProfile(null);
@@ -82,7 +108,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
         
-        // 그 외 다른 에러의 경우
         console.error('프로필 조회 중 DB 오류:', error.message);
         setProfile(null);
         setHasCompletedOnboarding(false);
@@ -96,9 +121,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      // 필수 필드가 모두 있는지 확인
+      const requiredFields = ['student_id', 'grade', 'university', 'department', 'instagram_id', 'avatar_url'];
+      const hasAllRequiredFields = requiredFields.every(field => {
+        const hasField = data[field] !== null && data[field] !== undefined && data[field] !== '';
+        console.log(`필드 체크 - ${field}:`, hasField, '값:', data[field]);
+        return hasField;
+      });
+
       console.log('프로필 조회 성공. 데이터:', data);
+      console.log('필수 필드 모두 존재?', hasAllRequiredFields);
+      
       setProfile(data);
-      setHasCompletedOnboarding(true);
+      setHasCompletedOnboarding(hasAllRequiredFields);
+      
+      if (!hasAllRequiredFields) {
+        console.log('일부 필수 필드가 없어 온보딩이 필요합니다.');
+      }
     } catch (err) {
       console.error('프로필 조회 중 예외 발생:', err);
       setProfile(null);
@@ -181,30 +220,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       if (!user) throw new Error('No user');
 
-      console.log('Updating profile with data:', profileData);
-      console.log('User ID:', user.id);
+      console.log('프로필 업데이트 시작');
+      console.log('업데이트할 데이터:', profileData);
+      console.log('사용자 ID:', user.id);
 
-      const { error } = await supabase
+      // 업데이트할 데이터에서 user_id 필드 제외
+      const updateData = { ...profileData };
+      delete (updateData as any).user_id;
+
+      // upsert 연산 수행
+      const { data: upsertedProfile, error } = await supabase
         .from('profiles')
-        .upsert({
-          user_id: user.id,
-          ...profileData,
-          updated_at: new Date().toISOString(),
-        })
+        .upsert(
+          {
+            user_id: user.id, // upsert의 기준이 되는 필드
+            ...updateData,
+            updated_at: new Date().toISOString(),
+            created_at: new Date().toISOString(), // 새로 생성되는 경우에만 사용됨
+          },
+          {
+            onConflict: 'user_id', // user_id가 충돌하는 경우 업데이트
+            ignoreDuplicates: false, // 중복을 무시하지 않고 업데이트
+          }
+        )
         .select()
         .single();
 
       if (error) {
-        console.error('Profile update error:', error);
+        console.error('프로필 upsert 실패:', error);
         throw error;
       }
 
+      console.log('프로필 upsert 성공:', upsertedProfile);
+      
       // 프로필 새로고침
       await fetchProfile(user.id);
 
       return { error: null };
     } catch (error) {
-      console.error('Profile update exception:', error);
+      console.error('프로필 업데이트 중 예외 발생:', error);
       return { error: error as Error };
     }
   };
