@@ -41,7 +41,7 @@ export const createClientSupabaseClient = () => {
           getItem: (key) => {
             try {
               const item = localStorage.getItem(key);
-              console.log(`Storage getItem: ${key} = ${item ? '값 있음' : '값 없음'}`);
+              console.log(`Storage getItem: ${key} = ${item ? '값 있음' : '값 없음'} (길이: ${item?.length || 0})`);
               return item;
             } catch (error) {
               console.error('Storage getItem error:', error);
@@ -50,7 +50,7 @@ export const createClientSupabaseClient = () => {
           },
           setItem: (key, value) => {
             try {
-              console.log(`Storage setItem: ${key}`);
+              console.log(`Storage setItem: ${key} (길이: ${value?.length || 0})`);
               localStorage.setItem(key, value);
             } catch (error) {
               console.error('Storage setItem error:', error);
@@ -69,16 +69,23 @@ export const createClientSupabaseClient = () => {
       global: {
         fetch: (...args) => {
           const [url, options] = args;
-          return fetch(url, {
+          console.log(`Fetch request to: ${url}`);
+          
+          const fetchOptions = {
             ...options,
             headers: {
               ...options?.headers,
               'Content-Type': 'application/json',
-              'Accept': 'application/json'
+              'Accept': 'application/json',
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache'
             },
+            credentials: 'include',
             // 네트워크 타임아웃 증가
             signal: AbortSignal.timeout(30000)
-          });
+          };
+          
+          return fetch(url, fetchOptions as RequestInit);
         }
       },
       realtime: {

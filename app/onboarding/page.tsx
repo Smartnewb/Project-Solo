@@ -430,37 +430,99 @@ export default function Onboarding() {
         return;
       }
 
-      // 프로필 데이터 준비
-      const profileData = {
-        user_id: user.id,
-        name: user.user_metadata?.name || '사용자',
-        student_id: formData.studentId.trim(),
-        grade: formData.grade.trim(),
-        university: formData.university.trim(),
-        department: formData.department.trim(),
-        instagram_id: formData.instagramId.trim(),
-        avatar_url: formData.image,
-        updated_at: new Date().toISOString()
-      };
-
-      console.log('저장할 프로필 데이터:', profileData);
-
-      // AuthContext를 통해 프로필 업데이트
-      const { error } = await updateAuthProfile(profileData);
+      // 직접 Supabase 클라이언트를 사용하여 프로필 저장 시도
+      const supabaseClient = createClientSupabaseClient();
       
-      if (error) {
-        console.error('프로필 저장 오류:', error);
-        showTemporaryModal('프로필 저장에 실패했습니다. 잠시 후 다시 시도해주세요.');
+      // 먼저 세션 검증
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      
+      if (!session) {
+        console.error('유효한 세션이 없습니다.');
+        showTemporaryModal('인증 세션이 만료되었습니다. 다시 로그인해주세요.');
         return;
       }
-
-      // 저장 성공 메시지 표시
-      showTemporaryModal('프로필이 성공적으로 저장되었습니다!');
-
-      // 모달 닫을 때 홈 페이지로 이동하도록 설정 (타이밍 확실히 하기 위해)
+      
+      console.log('인증된 세션 확인:', !!session);
+      
+      // 테이블 구조 확인
+      console.log('테이블 구조 확인 중...');
+      
+      try {
+        const { error: descError } = await supabaseClient.rpc('exec_sql', {
+          sql_query: `
+            ALTER TABLE IF EXISTS public.profiles 
+            ADD COLUMN IF NOT EXISTS student_id TEXT,
+            ADD COLUMN IF NOT EXISTS grade TEXT,
+            ADD COLUMN IF NOT EXISTS university TEXT,
+            ADD COLUMN IF NOT EXISTS department TEXT,
+            ADD COLUMN IF NOT EXISTS instagram_id TEXT,
+            ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+          `
+        });
+        
+        if (descError) {
+          console.error('테이블 구조 수정 오류:', descError);
+        }
+      } catch (schemaError) {
+        console.error('스키마 수정 중 오류:', schemaError);
+      }
+      
+      console.log('프로필 저장 시도...');
+      
+      // 프로필 저장
+      const { data, error } = await supabaseClient
+        .from('profiles')
+        .upsert({
+          user_id: user.id,
+          name: user.user_metadata?.name || '사용자',
+          student_id: formData.studentId.trim(),
+          grade: formData.grade.trim(),
+          university: formData.university.trim(),
+          department: formData.department.trim(),
+          instagram_id: formData.instagramId.trim(),
+          avatar_url: formData.image,
+          updated_at: new Date().toISOString()
+        })
+        .select();
+      
+      if (error) {
+        console.error('Supabase 직접 호출 프로필 저장 오류:', error);
+        console.error('오류 코드:', error.code);
+        console.error('오류 메시지:', error.message);
+        console.error('오류 상세:', error.details);
+        
+        // 간단하게 필수 필드만 먼저 저장 시도
+        if (error.code === '42703') { // 필드가 존재하지 않는 경우
+          console.log('필수 필드만 저장 시도...');
+          const { data: basicData, error: basicError } = await supabaseClient
+            .from('profiles')
+            .upsert({
+              user_id: user.id,
+              name: user.user_metadata?.name || '사용자',
+              updated_at: new Date().toISOString()
+            })
+            .select();
+            
+          if (basicError) {
+            console.error('기본 필드만 저장 시도 오류:', basicError);
+            showTemporaryModal(`프로필 저장에 실패했습니다 (${basicError.code}). 다시 로그인 후 시도해주세요.`);
+            return;
+          }
+          
+          console.log('기본 프로필이 저장되었습니다:', basicData);
+          showTemporaryModal('기본 프로필이 저장되었습니다. 추가 정보는 프로필 설정에서 입력해주세요.');
+        } else {
+          showTemporaryModal(`프로필 저장에 실패했습니다 (${error.code}). 잠시 후 다시 시도해주세요.`);
+          return;
+        }
+      } else {
+        console.log('프로필이 성공적으로 저장되었습니다:', data);
+        showTemporaryModal('프로필이 성공적으로 저장되었습니다!');
+      }
+      
+      // 모달 닫을 때 홈 페이지로 이동하도록 설정
       setTimeout(() => {
         setShowSuccessModal(false);
-        // 추가 지연을 두어 모달이 사라진 후 페이지 이동
         setTimeout(() => {
           router.push('/home');
         }, 200);
