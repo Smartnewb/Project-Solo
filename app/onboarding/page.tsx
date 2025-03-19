@@ -440,12 +440,13 @@ export default function Onboarding() {
 
       console.log('프로필 저장 성공');
       
-      // 5. 로컬 스토리지 업데이트
-      localStorage.setItem('profile', JSON.stringify(profileData));
-      localStorage.setItem('shouldRefreshProfile', 'true');
-      
-      // 6. 홈페이지로 이동
-      router.push('/home');
+      // 저장 성공 메시지 표시
+      showTemporaryModal('프로필이 성공적으로 저장되었습니다!');
+
+      // 잠시 대기 후 홈페이지로 이동
+      setTimeout(() => {
+        router.push('/home');
+      }, 1000);
     } catch (err) {
       console.error('프로필 저장 중 예외 발생:', err);
       showTemporaryModal('프로필 저장 중 오류가 발생했습니다.');
