@@ -88,8 +88,41 @@ export async function middleware(request: NextRequest) {
     
     // 로그인 상태에서 루트 페이지 접근 시 홈으로 리디렉션
     if (pathname === '/' && isLoggedIn) {
-      console.log('로그인 사용자의 루트 페이지 접근, 홈으로 리디렉션');
+      console.log('로그인 사용자의 루트 페이지 접근, 프로필 확인 필요');
+      
+      // 프로필이 있는지 확인
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (profileError && profileError.code === 'PGRST116') {
+        console.log('프로필이 없습니다. 온보딩으로 리디렉션합니다.');
+        return NextResponse.redirect(new URL('/onboarding', request.url));
+      } else if (profileError) {
+        console.error('프로필 확인 오류:', profileError);
+      }
+      
+      console.log('프로필이 있습니다. 홈으로 리디렉션합니다.');
       return NextResponse.redirect(new URL('/home', request.url));
+    }
+    
+    // 로그인된 사용자가 프로필 없이 홈 또는 프로필 페이지 접근 시 온보딩으로 리디렉션
+    if ((pathname.startsWith('/home') || pathname.startsWith('/profile')) && isLoggedIn && !pathname.startsWith('/onboarding')) {
+      // 프로필이 있는지 확인
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (profileError && profileError.code === 'PGRST116') {
+        console.log('프로필이 없는 사용자의 홈/프로필 접근, 온보딩으로 리디렉션합니다.');
+        return NextResponse.redirect(new URL('/onboarding', request.url));
+      } else if (profileError) {
+        console.error('프로필 확인 오류:', profileError);
+      }
     }
     
     return response;

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { createClientSupabaseClient } from '@/utils/supabase';
 import { getProfiles } from '../api/getProfiles';
+import { useAuth } from '@/contexts/AuthContext';
 
 // 대학별 학과 정보 타입 정의
 type University = string;
@@ -32,6 +33,7 @@ interface ValidationErrors {
 export default function Onboarding() {
   const router = useRouter();
   const supabase = createClientSupabaseClient();
+  const { user, profile, hasCompletedOnboarding, loading: authLoading, updateProfile: updateAuthProfile } = useAuth();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<OnboardingForm>({
     university: '',
@@ -421,26 +423,17 @@ export default function Onboarding() {
     }
 
     try {
-      console.log('세션 정보 가져오는 중...');
-      // 1. 사용자 세션 확인
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      console.log('세션 정보:', session ? '존재' : '없음', sessionError ? `오류: ${sessionError.message}` : '오류 없음');
-      
-      if (sessionError || !session?.user) {
-        console.error('세션 확인 오류:', sessionError);
+      if (!user) {
+        console.error('인증된 사용자가 없습니다.');
         showTemporaryModal('인증 상태를 확인할 수 없습니다. 다시 로그인해주세요.');
         router.push('/');
         return;
       }
 
-      // 2. 사용자 메타데이터에서 이름 가져오기
-      const userName = session.user.user_metadata?.name || '사용자';
-      console.log('사용자 이름:', userName);
-
-      // 3. 프로필 데이터 준비
+      // 프로필 데이터 준비
       const profileData = {
-        user_id: session.user.id,
-        name: userName,
+        user_id: user.id,
+        name: user.user_metadata?.name || '사용자',
         student_id: formData.studentId.trim(),
         grade: formData.grade.trim(),
         university: formData.university.trim(),
@@ -452,99 +445,12 @@ export default function Onboarding() {
 
       console.log('저장할 프로필 데이터:', profileData);
 
-      // 4. 프로필 저장
-      console.log('프로필 저장 시도...');
+      // AuthContext를 통해 프로필 업데이트
+      const { error } = await updateAuthProfile(profileData);
       
-      try {
-        // 먼저 기존 프로필이 있는지 확인
-        const { data: existingProfile, error: checkError } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('user_id', session.user.id)
-          .single();
-        
-        if (checkError && checkError.code !== 'PGRST116') {
-          console.error('프로필 확인 오류:', checkError);
-          showTemporaryModal('프로필 확인 중 오류가 발생했습니다. 다시 시도해주세요.');
-          return;
-        }
-          
-        console.log('프로필 확인 결과:', existingProfile ? '기존 프로필 있음' : '프로필 없음');
-        
-        // 데이터 저장을 위한 명시적인 API 키 설정 확인
-        console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
-        console.log('API 키 유무:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-        
-        // 데이터베이스 저장
-        let saveResult;
-        
-        if (existingProfile) {
-          // 기존 프로필이 있으면 업데이트
-          console.log('기존 프로필 업데이트:', existingProfile.id);
-          saveResult = await supabase
-            .from('profiles')
-            .update(profileData)
-            .eq('user_id', session.user.id)
-            .select();
-        } else {
-          // 새 프로필 생성
-          console.log('새 프로필 생성');
-          saveResult = await supabase
-            .from('profiles')
-            .insert(profileData)
-            .select();
-        }
-        
-        const { data: savedData, error: saveError } = saveResult;
-        
-        console.log('저장 결과:', saveResult);
-        
-        if (saveError) {
-          console.error('프로필 저장 오류:', saveError);
-          console.log('오류 코드:', saveError.code);
-          console.log('오류 메시지:', saveError.message);
-          console.log('오류 상세:', saveError.details);
-          
-          // 외래 키 제약 조건 위반 오류일 경우 (사용자 테이블에 해당 ID가 없는 경우)
-          if (saveError.code === '23503') {
-            console.error('사용자 ID가 인증 테이블에 없습니다. 다시 로그인이 필요합니다.');
-            showTemporaryModal('인증 정보에 문제가 있습니다. 다시 로그인해주세요.');
-            setTimeout(() => {
-              router.push('/');
-            }, 2000);
-            return;
-          }
-          
-          showTemporaryModal('프로필 저장에 실패했습니다. 잠시 후 다시 시도해주세요.');
-          return;
-        }
-        
-        if (!savedData || savedData.length === 0) {
-          console.warn('저장은 성공했으나 반환된 데이터가 없습니다');
-        } else {
-          console.log('저장된 프로필 데이터:', savedData[0]);
-        }
-        
-        // 저장 성공 후 프로필 데이터 조회 (데이터가 반환되지 않았을 경우 대비)
-        const { data: updatedProfile, error: fetchError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .single();
-          
-        if (fetchError) {
-          console.warn('저장된 프로필 조회 실패:', fetchError);
-        } else {
-          console.log('저장된 프로필:', updatedProfile);
-        }
-        
-        // 온보딩 데이터를 localStorage에 저장 (profile 페이지에서 사용)
-        const finalProfileData = updatedProfile || savedData?.[0] || profileData;
-        localStorage.setItem('onboardingProfile', JSON.stringify(finalProfileData));
-        console.log('온보딩 데이터를 localStorage에 저장:', finalProfileData);
-      } catch (err) {
-        console.error('프로필 저장 중 예외 발생:', err);
-        showTemporaryModal('프로필 저장에 실패했습니다. 네트워크 연결을 확인해주세요.');
+      if (error) {
+        console.error('프로필 저장 오류:', error);
+        showTemporaryModal('프로필 저장에 실패했습니다. 잠시 후 다시 시도해주세요.');
         return;
       }
 
@@ -571,51 +477,31 @@ export default function Onboarding() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        console.log('온보딩 페이지: 인증 상태 확인 중...');
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error('세션 확인 오류:', sessionError);
-          router.push('/');
+        console.log('온보딩 페이지: 인증 상태 확인 중...', { 
+          isAuthenticated: !!user,
+          hasProfile: !!profile,
+          hasCompletedOnboarding
+        });
+
+        if (authLoading) {
+          // 인증 상태 로딩 중인 경우 대기
           return;
         }
-
-        if (!session) {
+        
+        if (!user) {
           console.log('로그인이 필요합니다.');
           router.push('/');
           return;
         }
 
-        console.log('세션 유저 ID:', session.user.id);
-
-        // 이미 프로필이 있는지 확인
-        try {
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('id, name')
-            .eq('user_id', session.user.id)
-            .single();
-
-          if (profileError) {
-            if (profileError.code === 'PGRST116') {
-              console.log('프로필이 없습니다. 온보딩을 계속합니다.');
-              setIsLoading(false);
-            } else {
-              console.error('프로필 조회 중 오류 발생:', profileError);
-              setIsLoading(false);
-            }
-          } else if (profile) {
-            console.log('이미 프로필이 존재합니다. 홈으로 이동합니다.', profile);
-            router.push('/home');
-          } else {
-            // 프로필이 없는 경우 온보딩 페이지에 머무름
-            console.log('온보딩을 시작합니다.');
-            setIsLoading(false);
-          }
-        } catch (err) {
-          console.error('프로필 확인 중 예외 발생:', err);
-          setIsLoading(false);
+        // 이미 온보딩을 완료한 경우 홈으로 리디렉션
+        if (hasCompletedOnboarding) {
+          console.log('이미 온보딩을 완료했습니다. 홈으로 이동합니다.');
+          router.push('/home');
+          return;
         }
+
+        setIsLoading(false);
       } catch (error) {
         console.error('인증 확인 중 오류 발생:', error);
         router.push('/');
@@ -623,7 +509,7 @@ export default function Onboarding() {
     };
 
     checkAuth();
-  }, [router, supabase]);
+  }, [router, user, profile, hasCompletedOnboarding, authLoading]);
 
   if (isLoading) {
     return (

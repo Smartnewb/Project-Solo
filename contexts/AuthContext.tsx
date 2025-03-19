@@ -9,6 +9,7 @@ type AuthContextType = {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
+  hasCompletedOnboarding: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -21,6 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const supabase = createClientSupabaseClient();
 
   useEffect(() => {
@@ -76,26 +78,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (error.code === 'PGRST116') {
           console.log('프로필이 존재하지 않습니다. 새 사용자일 수 있습니다.');
           setProfile(null);
+          setHasCompletedOnboarding(false);
           return;
         }
         
         // 그 외 다른 에러의 경우
         console.error('프로필 조회 중 DB 오류:', error.message);
         setProfile(null);
+        setHasCompletedOnboarding(false);
         return;
       }
 
       if (!data) {
         console.log('프로필 데이터가 없습니다');
         setProfile(null);
+        setHasCompletedOnboarding(false);
         return;
       }
 
       console.log('프로필 조회 성공. 데이터:', data);
       setProfile(data);
+      setHasCompletedOnboarding(true);
     } catch (err) {
       console.error('프로필 조회 중 예외 발생:', err);
       setProfile(null);
+      setHasCompletedOnboarding(false);
     }
   };
 
@@ -206,6 +213,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     profile,
     loading,
+    hasCompletedOnboarding,
     signIn,
     signUp,
     signOut,
