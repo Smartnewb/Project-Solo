@@ -1,78 +1,66 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
+import { ADMIN_EMAIL } from '@/utils/config'
 
 export async function middleware(req: NextRequest) {
-  console.log('미들웨어 시작:', req.nextUrl.pathname);
-  
-  // 현재 URL 확인
-  const { pathname } = req.nextUrl;
-  
-  // 무시할 경로 (API 경로 등)
-  const ignorePaths = [
-    '/api/', 
-    '/_next/', 
-    '/static/',
-    '/favicon.ico',
-    '.js',
-    '.css',
-    '.png',
-    '.jpg',
-    '.svg',
-    '.ico'
-  ];
-  
-  // 무시할 경로인 경우 바로 진행
-  if (ignorePaths.some(path => pathname.includes(path))) {
-    return NextResponse.next();
-  }
-  
-  const res = NextResponse.next();
-  const supabase = createMiddlewareClient({ req, res });
-  
-  // 세션 확인
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  // 디버깅용 로그
-  console.log(`미들웨어 실행: 경로=${pathname}, 세션=${session ? '있음' : '없음'}`);
-
-  // 인증이 필요한 경로 설정
-  const authRequired = [
-    '/home', 
-    '/profile', 
-    '/settings', 
-    '/community',
-    '/ideal-type'
-  ];
-  
-  // 온보딩이 필요한 경로
-  const setupPaths = [
-    '/onboarding'
-  ];
-  
-  // 인증 필요 없는 경로 설정
-  const publicPaths = ['/', '/signup', '/login'];
-
-  // 인증 필요한 페이지에 접근하는데 인증이 안 된 경우
-  if (authRequired.some(path => pathname.startsWith(path)) && !session) {
-    console.log('🚫 인증이 필요한 페이지에 인증되지 않은 접근:', pathname);
-    const redirectUrl = new URL('/', req.url);
-    console.log('리다이렉션 경로:', redirectUrl.href);
-    return NextResponse.redirect(redirectUrl);
+  // 정적 리소스 및 API 요청은 즉시 패스스루
+  if (
+    req.nextUrl.pathname.startsWith('/_next') ||
+    req.nextUrl.pathname.startsWith('/api') ||
+    req.nextUrl.pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js)$/)
+  ) {
+    return NextResponse.next()
   }
 
-  // 인증된 상태에서 로그인/회원가입 페이지 접근 시
-  if (publicPaths.includes(pathname) && session) {
-    console.log('🔄 이미 인증된 사용자가 인증 페이지에 접근:', pathname);
-    const redirectUrl = new URL('/home', req.url);
-    console.log('리다이렉션 경로:', redirectUrl.href);
-    return NextResponse.redirect(redirectUrl);
+  let response = NextResponse.next({
+    request: {
+      headers: req.headers,
+    },
+  })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return req.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            req.cookies.set(name, value)
+            response = NextResponse.next({
+              request: {
+                headers: req.headers,
+              },
+            })
+            response.cookies.set(name, value, options)
+          })
+        },
+      },
+    }
+  )
+
+  const { data: { session } } = await supabase.auth.getSession()
+
+  // 공개 경로는 세션 체크 없이 통과
+  if (['/login', '/signup', '/'].includes(req.nextUrl.pathname)) {
+    return response
   }
 
-  console.log('미들웨어 정상 통과:', pathname);
-  return res;
+  // 인증이 필요한 경로에 대한 체크
+  if (!session) {
+    return NextResponse.redirect(new URL('/', req.url))
+  }
+
+  // 관리자 전용 경로 체크
+  if (req.nextUrl.pathname.startsWith('/admin')) {
+    if (session.user.email !== ADMIN_EMAIL) {
+      return NextResponse.redirect(new URL('/home', req.url))
+    }
+  }
+
+  return response
 }
 
 export const config = {
