@@ -12,26 +12,20 @@ type Department = string;
 type DepartmentsByUniversity = Record<University, Department[]>;
 
 interface OnboardingForm {
-  name: string;
   university: string;
   department: string;
   studentId: string;
   grade: string;
   image: string;
-  age: string;
-  gender: string;
   instagramId: string;
 }
 
 interface ValidationErrors {
-  name: boolean;
   university: boolean;
   department: boolean;
   studentId: boolean;
   grade: boolean;
   image: boolean;
-  age: boolean;
-  gender: boolean;
   instagramId: boolean;
 }
 
@@ -40,26 +34,20 @@ export default function Onboarding() {
   const supabase = createClientSupabaseClient();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<OnboardingForm>({
-    name: '',
     university: '',
     department: '',
     studentId: '',
     grade: '',
     image: '',
-    age: '',
-    gender: '',
     instagramId: '',
   });
 
   const [errors, setErrors] = useState<ValidationErrors>({
-    name: false,
     university: false,
     department: false,
     studentId: false,
     grade: false,
     image: false,
-    age: false,
-    gender: false,
     instagramId: false,
   });
 
@@ -356,22 +344,17 @@ export default function Onboarding() {
   };
 
   const validateForm = () => {
-    // 디버깅을 위한 초기 로그
     console.log('폼 데이터 검증 시작:', formData);
 
     const newErrors = {
-      name: !formData.name?.trim(),
       university: !formData.university?.trim(),
       department: !formData.department?.trim(),
       studentId: !formData.studentId?.trim(),
       grade: !formData.grade?.trim(),
       image: !formData.image,
-      age: !formData.age || formData.age === '0' || parseInt(formData.age) < 18 || parseInt(formData.age) > 29,
-      gender: !formData.gender?.trim(),
       instagramId: !formData.instagramId?.trim()
     };
 
-    // 각 필드별 상세 검증 결과 로깅
     Object.entries(newErrors).forEach(([field, hasError]) => {
       console.log(`${field} 검증 결과:`, {
         값: formData[field as keyof OnboardingForm],
@@ -426,12 +409,13 @@ export default function Onboarding() {
         return;
       }
 
-      // 2. 프로필 데이터 준비
+      // 2. 사용자 메타데이터에서 이름 가져오기
+      const userName = session.user.user_metadata?.name || '사용자';
+
+      // 3. 프로필 데이터 준비
       const profileData = {
         user_id: session.user.id,
-        name: formData.name.trim(),
-        age: parseInt(formData.age),
-        gender: formData.gender.trim(),
+        name: userName,
         student_id: formData.studentId.trim(),
         grade: formData.grade.trim(),
         university: formData.university.trim(),
@@ -443,7 +427,7 @@ export default function Onboarding() {
 
       console.log('저장할 프로필 데이터:', profileData);
 
-      // 3. 프로필 저장
+      // 4. 프로필 저장
       const { error: upsertError } = await supabase
         .from('profiles')
         .upsert(profileData, { onConflict: 'user_id' });
@@ -456,15 +440,15 @@ export default function Onboarding() {
 
       console.log('프로필 저장 성공');
       
-      // 4. 로컬 스토리지 업데이트
+      // 5. 로컬 스토리지 업데이트
       localStorage.setItem('profile', JSON.stringify(profileData));
       localStorage.setItem('shouldRefreshProfile', 'true');
       
-      // 5. 홈페이지로 이동
+      // 6. 홈페이지로 이동
       router.push('/home');
-    } catch (error) {
-      console.error('프로필 저장 중 오류 발생:', error);
-      showTemporaryModal('프로필 저장 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+    } catch (err) {
+      console.error('프로필 저장 중 예외 발생:', err);
+      showTemporaryModal('프로필 저장 중 오류가 발생했습니다.');
     }
   };
 
@@ -528,26 +512,6 @@ export default function Onboarding() {
       <div className="max-w-lg mx-auto p-4">
         <h1 className="text-h2">온보딩</h1>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* 이름 입력 */}
-          <div className={`bg-white rounded-2xl shadow-sm p-6 space-y-4 ${errors.name ? 'ring-2 ring-red-500' : ''}`}>
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">이름</h2>
-              {errors.name && (
-                <span className="text-sm text-red-500">필수 입력 항목입니다</span>
-              )}
-            </div>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => {
-                setFormData({ ...formData, name: e.target.value });
-                setErrors({ ...errors, name: false });
-              }}
-              className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-300 focus:outline-none transition-all"
-              placeholder="이름을 입력하세요"
-            />
-          </div>
-
           {/* 대학교 선택 */}
           <div className={`bg-white rounded-2xl shadow-sm p-6 space-y-4 ${errors.university ? 'ring-2 ring-red-500' : ''}`}>
             <div className="flex items-center justify-between">
@@ -706,57 +670,6 @@ export default function Onboarding() {
             </p>
           </div>
 
-          {/* 나이 입력 */}
-          <div className={`bg-white rounded-2xl shadow-sm p-6 space-y-4 ${errors.age ? 'ring-2 ring-red-500' : ''}`}>
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">나이</h2>
-              {errors.age && (
-                <span className="text-sm text-red-500">필수 입력 항목입니다</span>
-              )}
-            </div>
-            <input
-              type="number"
-              value={formData.age}
-              onChange={(e) => {
-                setFormData({ ...formData, age: e.target.value });
-                setErrors({ ...errors, age: false });
-              }}
-              className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-300 focus:outline-none transition-all"
-              placeholder="나이를 입력하세요"
-              min="18"
-              max="29"
-            />
-          </div>
-
-          {/* 성별 선택 */}
-          <div className={`bg-white rounded-2xl shadow-sm p-6 space-y-4 ${errors.gender ? 'ring-2 ring-red-500' : ''}`}>
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">성별</h2>
-              {errors.gender && (
-                <span className="text-sm text-red-500">필수 입력 항목입니다</span>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {['남성', '여성'].map((gender) => (
-                <button
-                  key={gender}
-                  type="button"
-                  onClick={() => {
-                    setFormData({ ...formData, gender });
-                    setErrors({ ...errors, gender: false });
-                  }}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
-                    ${formData.gender === gender
-                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
-                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
-                    }`}
-                >
-                  {gender}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* 인스타그램 아이디 입력 */}
           <div className={`bg-white rounded-2xl shadow-sm p-6 space-y-4 ${errors.instagramId ? 'ring-2 ring-red-500' : ''}`}>
             <div className="flex items-center justify-between">
@@ -803,9 +716,6 @@ export default function Onboarding() {
               필수 입력 항목을 확인해주세요
             </h3>
             <div className="space-y-2 mb-6">
-              {errors.name && (
-                <p className="text-red-500">• 이름을 입력해주세요</p>
-              )}
               {errors.university && (
                 <p className="text-red-500">• 대학교를 선택해주세요</p>
               )}
@@ -820,12 +730,6 @@ export default function Onboarding() {
               )}
               {errors.image && (
                 <p className="text-red-500">• 프로필 사진을 업로드해주세요</p>
-              )}
-              {errors.age && (
-                <p className="text-red-500">• 나이를 입력해주세요</p>
-              )}
-              {errors.gender && (
-                <p className="text-red-500">• 성별을 선택해주세요</p>
               )}
               {errors.instagramId && (
                 <p className="text-red-500">• 인스타그램 아이디를 입력해주세요</p>
