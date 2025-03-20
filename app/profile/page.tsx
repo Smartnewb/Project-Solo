@@ -289,44 +289,12 @@ export default function Profile() {
         return;
       }
 
-      console.log('세션 정보:', session);
-      
-      // 온보딩 데이터 확인 - localStorage에 없을 경우 직접 DB에서 가져옴
-      let userData = null;
-      const onboardingData = localStorage.getItem('onboardingProfile');
-      
-      if (onboardingData) {
-        userData = JSON.parse(onboardingData);
-        console.log('localStorage에서 온보딩 데이터 로드:', userData);
-      } else {
-        // localStorage에 없으면 DB에서 직접 가져오기
-        console.log('localStorage에 온보딩 데이터 없음, DB에서 조회');
-        const { data: existingProfile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .single();
-        
-        if (profileError && profileError.code !== 'PGRST116') {
-          console.error('프로필 조회 오류:', profileError);
-          showTemporaryModal('프로필 정보를 확인할 수 없습니다. 다시 시도해주세요.');
-          return;
-        }
-        
-        if (existingProfile) {
-          userData = existingProfile;
-          console.log('DB에서 프로필 데이터 로드:', userData);
-          // localStorage에도 저장
-          localStorage.setItem('onboardingProfile', JSON.stringify(userData));
-        } else {
-          console.log('DB에도 프로필 데이터 없음, 기본 정보 생성');
-          // 기본 정보만 사용
-          userData = {
-            user_id: session.user.id,
-            name: session.user.user_metadata?.name || '사용자'
-          };
-        }
-      }
+      // 먼저 기존 프로필이 있는지 확인
+      const { data: existingProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .single();
 
       // height 값에서 숫자만 추출 (예: "171~175cm"에서 173)
       const extractHeight = (heightStr: string): number => {
@@ -368,122 +336,99 @@ export default function Profile() {
       };
       
       console.log('추가 프로필 데이터:', additionalProfileData);
-      console.log('기존 사용자 데이터:', userData);
+      console.log('기존 사용자 데이터:', existingProfile);
       console.log('user_id:', session.user.id);
 
-      try {
-        let saveResult;
+      let saveResult;
+      
+      if (existingProfile) {
+        // 프로필이 이미 있으면 업데이트
+        console.log('기존 프로필 업데이트...');
+        saveResult = await supabase
+          .from('profiles')
+          .update(additionalProfileData)
+          .eq('user_id', session.user.id);
+      } else {
+        // 프로필이 없으면 새로 생성
+        console.log('새 프로필 생성...');
+        const insertData = {
+          ...additionalProfileData,
+          user_id: session.user.id,
+          name: session.user.user_metadata?.name || '사용자',
+        };
         
-        if (userData.id) {
-          // 프로필이 이미 있으면 업데이트
-          console.log('기존 프로필 업데이트...');
-          
-          // 업데이트할 데이터 준비
-          const updateData = {
-            ...additionalProfileData
-          };
-          
-          console.log('업데이트할 데이터:', updateData);
-          
-          saveResult = await supabase
-            .from('profiles')
-            .update(updateData)
-            .eq('user_id', session.user.id);
-        } else {
-          // 프로필이 없으면 새로 생성
-          console.log('새 프로필 생성...');
-          
-          // 삽입할 데이터 준비
-          const insertData = {
-            ...additionalProfileData,
-            user_id: session.user.id,
-            name: userData.name || session.user.user_metadata?.name || '사용자',
-            university: userData.university || '',
-            department: userData.department || '',
-            grade: userData.grade || '',
-            student_id: userData.student_id || '',
-            instagram_id: userData.instagram_id || '',
-            avatar_url: userData.avatar_url || ''
-          };
-          
-          console.log('삽입할 데이터:', insertData);
-          
-          saveResult = await supabase
-            .from('profiles')
-            .insert(insertData);
-        }
+        saveResult = await supabase
+          .from('profiles')
+          .insert(insertData);
+      }
+      
+      const { error: saveError } = saveResult;
+      console.log('저장 결과:', saveResult);
+      
+      if (saveError) {
+        console.error('프로필 저장 오류:', saveError);
         
-        const { error: saveError } = saveResult;
-        console.log('저장 결과:', saveResult);
+        // 더 자세한 오류 정보 로깅
+        console.log('오류 코드:', saveError.code);
+        console.log('오류 메시지:', saveError.message);
+        console.log('오류 상세:', saveError.details);
         
-        if (saveError) {
-          console.error('프로필 저장 오류:', saveError);
-          
-          // 더 자세한 오류 정보 로깅
-          console.log('오류 코드:', saveError.code);
-          console.log('오류 메시지:', saveError.message);
-          console.log('오류 상세:', saveError.details);
-          
-          // 외래 키 제약 조건 위반 오류인 경우 특별 처리
-          if (saveError.code === '23503') {
-            console.log('외래 키 제약 조건 위반, auth.users 테이블에 사용자 생성 확인 필요');
-            showTemporaryModal('사용자 인증 정보에 문제가 있습니다. 다시 로그인해주세요.');
-            router.push('/');
-            return;
-          }
-          
-          showTemporaryModal('프로필 정보 저장에 실패했습니다. 잠시 후 다시 시도해주세요.');
+        // 외래 키 제약 조건 위반 오류인 경우 특별 처리
+        if (saveError.code === '23503') {
+          console.log('외래 키 제약 조건 위반, auth.users 테이블에 사용자 생성 확인 필요');
+          showTemporaryModal('사용자 인증 정보에 문제가 있습니다. 다시 로그인해주세요.');
+          router.push('/');
           return;
         }
         
-        console.log('프로필 저장 성공');
-        
-        // 저장 후 프로필 데이터 다시 조회하여 확인
-        const { data: updatedProfile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .single();
-          
-        console.log('업데이트된 프로필:', updatedProfile);
-        
-        // 프로필 데이터도 localStorage에 저장
-        if (updatedProfile) {
-          localStorage.setItem('profile', JSON.stringify({
-            ...updatedProfile,
-            personalities: formData.personalities, // 원래 배열 형태로 저장
-            dating_styles: formData.datingStyles,
-            ideal_lifestyles: formData.idealLifestyles,
-            interests: formData.interests
-          }));
-          localStorage.setItem('onboardingProfile', JSON.stringify(updatedProfile));
-        } else {
-          console.warn('업데이트된 프로필을 조회할 수 없음');
-          localStorage.setItem('profile', JSON.stringify({
-            ...userData,
-            ...additionalProfileData,
-            personalities: formData.personalities,
-            dating_styles: formData.datingStyles,
-            ideal_lifestyles: formData.idealLifestyles,
-            interests: formData.interests
-          }));
-        }
-        
-        console.log('프로필 데이터 localStorage에 저장됨');
-        
-        // 성공 메시지
-        showTemporaryModal('프로필이 성공적으로 저장되었습니다!');
-        
-        // 잠시 후 홈 페이지로 이동
-        setTimeout(() => {
-          router.push('/home');
-        }, 2000);
-      } catch (error) {
-        console.error('프로필 저장 중 예외 발생:', error);
-        showTemporaryModal('프로필 정보 저장 중 오류가 발생했습니다.');
+        showTemporaryModal('프로필 정보 저장에 실패했습니다. 잠시 후 다시 시도해주세요.');
+        return;
       }
+      
+      console.log('프로필 저장 성공');
+      
+      // 저장 후 프로필 데이터 다시 조회하여 확인
+      const { data: updatedProfile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .single();
+        
+      console.log('업데이트된 프로필:', updatedProfile);
+      
+      // 프로필 데이터도 localStorage에 저장
+      if (updatedProfile) {
+        localStorage.setItem('profile', JSON.stringify({
+          ...updatedProfile,
+          personalities: formData.personalities, // 원래 배열 형태로 저장
+          dating_styles: formData.datingStyles,
+          ideal_lifestyles: formData.idealLifestyles,
+          interests: formData.interests
+        }));
+        localStorage.setItem('onboardingProfile', JSON.stringify(updatedProfile));
+      } else {
+        console.warn('업데이트된 프로필을 조회할 수 없음');
+        localStorage.setItem('profile', JSON.stringify({
+          ...existingProfile,
+          ...additionalProfileData,
+          personalities: formData.personalities,
+          dating_styles: formData.datingStyles,
+          ideal_lifestyles: formData.idealLifestyles,
+          interests: formData.interests
+        }));
+      }
+      
+      console.log('프로필 데이터 localStorage에 저장됨');
+      
+      // 성공 메시지
+      showTemporaryModal('프로필이 성공적으로 저장되었습니다!');
+      
+      // 잠시 후 홈 페이지로 이동
+      setTimeout(() => {
+        router.push('/home');
+      }, 2000);
     } catch (error) {
-      console.error('프로필 저장 에러:', error);
+      console.error('프로필 저장 중 예외 발생:', error);
       showTemporaryModal('프로필 정보 저장 중 오류가 발생했습니다.');
     }
   };

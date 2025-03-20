@@ -70,6 +70,7 @@ export default function IdealType() {
   });
 
   const [showModal, setShowModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState<string>('');
 
   const heightOptions = [
     '155cm 이하',
@@ -186,56 +187,76 @@ export default function IdealType() {
     }
 
     try {
-      const { data: authUser, error: userError } = await supabase.auth.getUser();
+      // 세션 확인 및 새로고침
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (!authUser?.user?.id) {
-        console.error('사용자 인증 에러');
+      if (sessionError) {
+        console.error('세션 확인 오류:', sessionError);
+        showTemporaryModal('로그인이 만료되었습니다. 다시 로그인해주세요.');
+        router.push('/login');
         return;
       }
 
-      // Supabase에 이상형 정보 저장
+      if (!session) {
+        // 세션이 없으면 새로고침 시도
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        
+        if (refreshError || !refreshData.session) {
+          console.error('세션 새로고침 오류:', refreshError);
+          showTemporaryModal('로그인이 만료되었습니다. 다시 로그인해주세요.');
+          router.push('/login');
+          return;
+        }
+      }
+
+      const userId = session?.user.id;
+      console.log('현재 사용자 ID:', userId);
+
+      // 이상형 정보 데이터 준비
+      const preferenceData = {
+        user_id: userId,
+        preferred_age_type: formData.ageType,
+        preferred_height_min: formData.heightRange.min,
+        preferred_height_max: formData.heightRange.max,
+        preferred_personalities: formData.personalities,
+        preferred_dating_styles: formData.datingStyles,
+        preferred_lifestyles: formData.lifestyles,
+        preferred_interests: formData.interests,
+        preferred_drinking: formData.drinking,
+        preferred_smoking: formData.smoking,
+        preferred_tattoo: formData.tattoo,
+        preferred_mbti: formData.likedMbti,
+        disliked_mbti: formData.dislikedMbti,
+        updated_at: new Date().toISOString()
+      };
+
+      // upsert를 사용하여 새로운 데이터 삽입 또는 기존 데이터 업데이트
       const { error: upsertError } = await supabase
         .from('user_preferences')
-        .upsert({
-          user_id: authUser.user.id,
-          preferred_age_type: formData.ageType,
-          preferred_height_min: formData.heightRange.min.toString(),
-          preferred_height_max: formData.heightRange.max.toString(),
-          preferred_mbti: [formData.likedMbti],
-          updated_at: new Date().toISOString()
+        .upsert(preferenceData, {
+          onConflict: 'user_id',
+          ignoreDuplicates: false
         });
 
       if (upsertError) {
-        throw new Error('이상형 정보 저장 실패');
+        console.error('이상형 정보 저장 오류:', upsertError);
+        throw upsertError;
       }
 
-      // 프로필 정보 업데이트
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          personalities: formData.personalities,
-          datingStyles: formData.datingStyles,
-          lifestyles: formData.lifestyles,
-          interests: formData.interests,
-          drinking: formData.drinking,
-          smoking: formData.smoking,
-          tattoo: formData.tattoo,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', authUser.user.id);
-
-      if (profileError) {
-        throw new Error('프로필 정보 업데이트 실패');
-      }
-
-      // localStorage에도 저장
-      localStorage.setItem('idealType', JSON.stringify(formData));
+      // localStorage에 이상형 설정 완료 상태 저장
       localStorage.setItem('hasSetIdealType', 'true');
+      localStorage.setItem('idealType', JSON.stringify(formData));
 
-      router.push('/home');
+      showTemporaryModal('이상형 정보가 성공적으로 저장되었습니다!');
+      
+      // 성공 후 홈으로 이동
+      setTimeout(() => {
+        router.push('/home');
+      }, 2000);
+
     } catch (error) {
-      console.error('이상형 저장 에러:', error);
-      alert('이상형 정보 저장 중 오류가 발생했습니다. 다시 시도해주세요.');
+      console.error('이상형 정보 저장 중 오류 발생:', error);
+      showTemporaryModal('이상형 정보 저장에 실패했습니다. 다시 시도해주세요.');
     }
   };
 
@@ -333,6 +354,12 @@ export default function IdealType() {
     } catch (error) {
       console.error('매칭 오류:', error);
     }
+  };
+
+  const showTemporaryModal = (message: string) => {
+    setModalMessage(message);
+    setShowModal(true);
+    setTimeout(() => setShowModal(false), 2000);
   };
 
   return (
@@ -657,7 +684,7 @@ export default function IdealType() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              필수 입력 항목을 확인해주세요
+              {modalMessage || '필수 입력 항목을 확인해주세요'}
             </h3>
             <div className="space-y-2 mb-6">
               {errors.heightMin && (

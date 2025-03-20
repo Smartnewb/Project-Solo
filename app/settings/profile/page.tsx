@@ -3,6 +3,17 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { createClient } from '@supabase/supabase-js';
+
+// Supabase 클라이언트 설정
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables');
+}
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 interface ProfileData {
   university: string;
@@ -22,39 +33,101 @@ export default function SettingsProfile() {
   const router = useRouter();
   const { user } = useAuth();
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 온보딩 데이터 가져오기
-    const onboardingData = localStorage.getItem('onboardingProfile');
-    // 프로필 데이터 가져오기
-    const profileInfo = localStorage.getItem('profile');
+    async function fetchProfileData() {
+      try {
+        if (!user?.id) {
+          console.error('사용자 인증 정보가 없습니다.');
+          router.push('/login');
+          return;
+        }
 
-    if (onboardingData && profileInfo) {
-      const onboarding = JSON.parse(onboardingData);
-      const profile = JSON.parse(profileInfo);
-      
-      setProfileData({
-        university: onboarding.university || '',
-        department: onboarding.department || '',
-        studentId: onboarding.studentId || '',
-        height: profile.height || '',
-        personalities: profile.personalities || [],
-        datingStyles: profile.datingStyles || [],
-        idealLifestyles: profile.idealLifestyles || [],
-        interests: profile.interests || [],
-        drinking: profile.drinking || '',
-        smoking: profile.smoking || '',
-        tattoo: profile.tattoo || '',
-      });
+        // Supabase에서 프로필 데이터 가져오기
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (profileError) {
+          console.error('프로필 데이터 로드 오류:', profileError);
+          setLoading(false);
+          return;
+        }
+
+        if (!profileData) {
+          setLoading(false);
+          return;
+        }
+
+        // 이상형 정보 가져오기
+        const { data: preferencesData, error: preferencesError } = await supabase
+          .from('user_preferences')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (preferencesError && preferencesError.code !== 'PGRST116') {
+          console.error('이상형 데이터 로드 오류:', preferencesError);
+        }
+
+        setProfileData({
+          university: profileData?.university || '',
+          department: profileData?.department || '',
+          studentId: profileData?.student_id || '',
+          height: profileData?.height || '',
+          personalities: typeof profileData?.personalities === 'string' 
+            ? JSON.parse(profileData.personalities) 
+            : profileData?.personalities || [],
+          datingStyles: typeof profileData?.dating_styles === 'string'
+            ? JSON.parse(profileData.dating_styles)
+            : profileData?.dating_styles || [],
+          idealLifestyles: typeof preferencesData?.preferred_lifestyles === 'string'
+            ? JSON.parse(preferencesData.preferred_lifestyles)
+            : preferencesData?.preferred_lifestyles || [],
+          interests: typeof profileData?.interests === 'string'
+            ? JSON.parse(profileData.interests)
+            : profileData?.interests || [],
+          drinking: profileData?.drinking || '',
+          smoking: profileData?.smoking || '',
+          tattoo: profileData?.tattoo || '',
+        });
+      } catch (error) {
+        console.error('데이터 로드 중 오류 발생:', error);
+      } finally {
+        setLoading(false);
+      }
     }
-  }, []);
+
+    fetchProfileData();
+  }, [user, router]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        <div className="max-w-lg mx-auto">
+          <div className="card">
+            <p className="text-center text-gray-600">프로필 정보를 불러오는 중...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!profileData) {
     return (
       <div className="min-h-screen bg-gray-50 p-4">
         <div className="max-w-lg mx-auto">
           <div className="card">
-            <p className="text-center text-gray-600">프로필 정보를 불러오는 중...</p>
+            <p className="text-center text-gray-600">등록된 프로필 정보가 없습니다.</p>
+            <button
+              onClick={() => router.push('/profile')}
+              className="mt-4 w-full py-2 px-4 bg-purple-600 text-white rounded-xl hover:bg-purple-700"
+            >
+              프로필 등록하기
+            </button>
           </div>
         </div>
       </div>
