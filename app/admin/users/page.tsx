@@ -219,6 +219,39 @@ export default function UsersAdmin() {
     }
   };
 
+  const handleClassificationChange = async (userId: string, classification: string, gender: string) => {
+    try {
+      setLoading(true);
+      
+      console.log('등급 변경 시작:', userId, classification);
+      
+      // 프로필 테이블 업데이트
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ classification })
+        .eq('user_id', userId)
+        .select();
+        
+      if (error) {
+        console.error('등급 변경 중 오류:', error);
+        throw error;
+      }
+      
+      console.log('등급 변경 성공:', data);
+      
+      // 사용자 목록 업데이트
+      setUsers(users.map(user => 
+        user.user_id === userId ? { ...user, classification } : user
+      ));
+      
+    } catch (err: any) {
+      console.error('등급 변경 중 오류 발생:', err);
+      alert('등급 변경 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   /* 필터링된 사용자 목록 가져오기 */
   const getFilteredProfiles = () => {
     if (!users || users.length === 0) {
@@ -338,15 +371,25 @@ export default function UsersAdmin() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs rounded-full font-medium ${
-                        user.classification === 'S' ? 'bg-purple-100 text-purple-800' :
-                        user.classification === 'A' ? 'bg-blue-100 text-blue-800' :
-                        user.classification === 'B' ? 'bg-green-100 text-green-800' :
-                        user.classification === 'C' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {user.classification || '미분류'}
-                      </span>
+                      <div className="relative">
+                        <select
+                          value={user.classification || ''}
+                          onChange={(e) => handleClassificationChange(user.user_id, e.target.value, user.gender || '')}
+                          className="appearance-none bg-transparent border border-gray-300 rounded-md py-1 px-3 pr-8 focus:outline-none focus:ring-primary-DEFAULT focus:border-primary-DEFAULT text-sm"
+                          disabled={loading || isBlocked}
+                        >
+                          <option value="">미분류</option>
+                          <option value="S">S급</option>
+                          <option value="A">A급</option>
+                          <option value="B">B급</option>
+                          <option value="C">C급</option>
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {user.age ? `${user.age}세` : '-'} / {' '}

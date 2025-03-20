@@ -8,7 +8,7 @@ import { HomeIcon, ChatBubbleLeftRightIcon, Cog6ToothIcon } from '@heroicons/rea
 import { ADMIN_EMAIL } from '@/utils/config';
 
 interface Post {
-  id: string;
+  userId: string;
   author_id: string;
   content: string;
   created_at: string;
@@ -16,7 +16,7 @@ interface Post {
   likes: string[];
   isEdited: boolean;
   isdeleted: boolean;
-  isBlinded: boolean;
+  isBlinded?: boolean;
   reports: string[];
   nickname: string;
   studentid: string;
@@ -109,6 +109,8 @@ export default function AdminCommunity() {
   // 게시글 불러오기
   const fetchPosts = async () => {
     try {
+      console.log('게시글 조회 시작');
+      
       // 기본 쿼리 설정
       let query = supabase
         .from('posts')
@@ -150,24 +152,41 @@ export default function AdminCommunity() {
         }
       } else if (filterType === 'blinded') {
         try {
-          // isBlinded 필드로 필터링 시도
-          const { data, error } = await supabase
-            .from('posts')
-            .select('*, comments(*)')
-            .eq('isBlinded', true)
-            .order('created_at', { ascending: false });
-            
-          if (error) {
-            // 필드가 없는 경우나 다른 에러
-            console.error('블라인드 게시글 조회 에러:', error);
-            
-            // 빈 배열 반환 (필드가 없는 경우 블라인드 게시글은 없음)
+          // Check if isBlinded column exists first
+          const { data: checkBlindedField, error: checkError } = await supabase.rpc(
+            'check_column_exists',
+            { table_name: 'posts', column_name: 'isBlinded' }
+          );
+          
+          if (checkError) {
+            console.error('isBlinded 필드 확인 에러:', checkError);
             setPosts([]);
             return;
           }
           
-          console.log('블라인드 게시글 수:', data?.length || 0);
-          setPosts(data || []);
+          if (checkBlindedField) {
+            // isBlinded 필드로 필터링 시도
+            const { data, error } = await supabase
+              .from('posts')
+              .select('*, comments(*)')
+              .eq('isBlinded', true)
+              .order('created_at', { ascending: false });
+                
+            if (error) {
+              // 필드가 없는 경우나 다른 에러
+              console.error('블라인드 게시글 조회 에러:', error);
+              
+              // 빈 배열 반환 (필드가 없는 경우 블라인드 게시글은 없음)
+              setPosts([]);
+              return;
+            }
+            
+            console.log('블라인드 게시글 수:', data?.length || 0);
+            setPosts(data || []);
+          } else {
+            console.log('isBlinded 필드가 없습니다.');
+            setPosts([]);
+          }
           return;
         } catch (blindedError) {
           console.error('블라인드 필드가 없거나 필터링 에러:', blindedError);
@@ -267,9 +286,12 @@ export default function AdminCommunity() {
       const { error } = await supabase
         .from('posts')
         .update({ isdeleted: true })
-        .eq('id', postId);
+        .eq('userId', postId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('게시글 삭제 에러:', error);
+        throw error;
+      }
       
       fetchPosts();
     } catch (error) {
@@ -282,12 +304,35 @@ export default function AdminCommunity() {
   // 게시글 블라인드 처리
   const handleBlindPost = async (postId: string) => {
     try {
-      const { error } = await supabase
+      console.log('블라인드 처리 시작:', postId);
+      
+      // 직접 isBlinded 컬럼 업데이트 시도 (RPC 함수 의존성 제거)
+      const { data, error } = await supabase
         .from('posts')
         .update({ isBlinded: true })
-        .eq('id', postId);
+        .eq('userId', postId)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('블라인드 처리 에러 (direct update):', error);
+        
+        // isBlinded 필드가 없는 경우 isdeleted로 대체
+        console.log('isdeleted로 대체 시도');
+        const { error: fallbackError } = await supabase
+          .from('posts')
+          .update({ isdeleted: true })
+          .eq('userId', postId);
+
+        if (fallbackError) {
+          console.error('대체 처리 에러:', fallbackError);
+          throw fallbackError;
+        }
+        
+        setErrorMessage('isBlinded 필드를 사용할 수 없어 isdeleted로 처리되었습니다.');
+        setShowErrorModal(true);
+      } else {
+        console.log('블라인드 처리 성공:', data);
+      }
       
       fetchPosts();
     } catch (error) {
@@ -320,12 +365,35 @@ export default function AdminCommunity() {
   // 댓글 블라인드 처리
   const handleBlindComment = async (commentId: string) => {
     try {
-      const { error } = await supabase
+      console.log('댓글 블라인드 처리 시작:', commentId);
+      
+      // 직접 isBlinded 컬럼 업데이트 시도 (RPC 함수 의존성 제거)
+      const { data, error } = await supabase
         .from('comments')
         .update({ isBlinded: true })
-        .eq('id', commentId);
+        .eq('id', commentId)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('댓글 블라인드 처리 에러 (direct update):', error);
+        
+        // isBlinded 필드가 없는 경우 isdeleted로 대체
+        console.log('isdeleted로 대체 시도');
+        const { error: fallbackError } = await supabase
+          .from('comments')
+          .update({ isdeleted: true })
+          .eq('id', commentId);
+
+        if (fallbackError) {
+          console.error('대체 처리 에러:', fallbackError);
+          throw fallbackError;
+        }
+        
+        setErrorMessage('isBlinded 필드를 사용할 수 없어 isdeleted로 처리되었습니다.');
+        setShowErrorModal(true);
+      } else {
+        console.log('댓글 블라인드 처리 성공:', data);
+      }
       
       fetchPosts();
     } catch (error) {
@@ -340,16 +408,47 @@ export default function AdminCommunity() {
     if (!confirm('이 컨텐츠를 복구하시겠습니까?')) return;
 
     try {
-      const { error } = await supabase
-        .from(type === 'post' ? 'posts' : 'comments')
-        .update({ 
-          isdeleted: false,
-          isBlinded: false,
-          reports: []
-        })
-        .eq('id', id);
+      const table = type === 'post' ? 'posts' : 'comments';
+      const idField = type === 'post' ? 'userId' : 'id';
+      
+      console.log('컨텐츠 복구 시작:', {type, id});
+      
+      // 기본 복구 데이터 설정
+      const updateData: any = { 
+        isdeleted: false,
+        reports: []
+      };
+      
+      // 테이블에 따른 업데이트 실행
+      const { data, error } = await supabase
+        .from(table)
+        .update(updateData)
+        .eq(idField, id)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('컨텐츠 복구 에러:', error);
+        throw error;
+      }
+      
+      console.log('기본 데이터 복구 성공:', data);
+      
+      // isBlinded 필드에 대한 별도 업데이트 시도 (있으면 설정, 없으면 에러 무시)
+      try {
+        const { data: blindUpdateData, error: blindUpdateError } = await supabase
+          .from(table)
+          .update({ isBlinded: false })
+          .eq(idField, id)
+          .select();
+        
+        if (blindUpdateError) {
+          console.log('isBlinded 필드 업데이트 실패 (무시됨):', blindUpdateError);
+        } else {
+          console.log('isBlinded 필드 업데이트 성공:', blindUpdateData);
+        }
+      } catch (e) {
+        console.log('isBlinded 필드 처리 중 오류 (무시됨):', e);
+      }
       
       fetchPosts();
     } catch (error) {
@@ -370,20 +469,65 @@ export default function AdminCommunity() {
 
     try {
       console.log('Bulk action on posts:', selectedPosts);
-      const updates = {
-        delete: { isdeleted: true },
-        blind: { isBlinded: true },
-        restore: { isdeleted: false, isBlinded: false, reports: [] }
-      }[action];
+      
+      let updates: any = {};
+      
+      if (action === 'delete') {
+        updates = { isdeleted: true };
+      } else if (action === 'blind') {
+        // 먼저 isBlinded로 시도
+        updates = { isBlinded: true };
+      } else if (action === 'restore') {
+        updates = { 
+          isdeleted: false,
+          reports: []
+        };
+        
+        // restore에서는 isBlinded 도 시도 (있으면 false로 설정, 없으면 오류 무시)
+        try {
+          const { error } = await supabase
+            .from('posts')
+            .update({ isBlinded: false })
+            .in('userId', selectedPosts);
+          
+          if (error) {
+            console.log('isBlinded 필드 업데이트 실패 (무시됨):', error);
+          }
+        } catch (e) {
+          console.log('isBlinded 필드 처리 중 오류 (무시됨):', e);
+        }
+      }
 
-      const { error } = await supabase
+      console.log('업데이트 적용:', updates);
+      const { data, error } = await supabase
         .from('posts')
         .update(updates)
-        .in('id', selectedPosts);
+        .in('userId', selectedPosts)
+        .select();
 
       if (error) {
-        console.error('Bulk action error:', error);
-        throw error;
+        console.error('일괄 처리 에러:', error);
+        
+        // blind 작업이 실패한 경우 isdeleted로 대체 시도
+        if (action === 'blind') {
+          console.log('isdeleted로 대체 시도');
+          const { error: fallbackError } = await supabase
+            .from('posts')
+            .update({ isdeleted: true })
+            .in('userId', selectedPosts);
+
+          if (fallbackError) {
+            console.error('대체 처리 에러:', fallbackError);
+            throw fallbackError;
+          }
+          
+          setErrorMessage('isBlinded 필드를 사용할 수 없어 isdeleted로 처리되었습니다.');
+          setShowErrorModal(true);
+        } else {
+          throw error;
+        }
+      } else {
+        console.log('일괄 처리 성공:', data);
       }
       
       setSelectedPosts([]);
@@ -447,17 +591,17 @@ export default function AdminCommunity() {
         <div className="space-y-4">
           {posts.length > 0 ? (
             posts.map((post) => (
-              <div key={post.id} className="bg-white rounded-lg shadow p-4">
+              <div key={post.userId} className="bg-white rounded-lg shadow p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
-                      checked={selectedPosts.includes(post.id)}
+                      checked={selectedPosts.includes(post.userId)}
                       onChange={(e) => {
                         const newSelectedPosts = e.target.checked
-                          ? [...selectedPosts, post.id]
-                          : selectedPosts.filter(id => id !== post.id);
-                        console.log('Selected post:', post.id);
+                          ? [...selectedPosts, post.userId]
+                          : selectedPosts.filter(id => id !== post.userId);
+                        console.log('Selected post:', post.userId);
                         console.log('New selected posts:', newSelectedPosts);
                         setSelectedPosts(newSelectedPosts);
                       }}
@@ -479,7 +623,7 @@ export default function AdminCommunity() {
                     <div className="flex gap-2">
                       {post.isdeleted || post.isBlinded ? (
                         <button
-                          onClick={() => handleRestoreContent('post', post.id)}
+                          onClick={() => handleRestoreContent('post', post.userId)}
                           className="text-sm text-blue-500 hover:text-blue-600"
                         >
                           복구
@@ -487,13 +631,13 @@ export default function AdminCommunity() {
                       ) : (
                         <>
                           <button
-                            onClick={() => handleBlindPost(post.id)}
+                            onClick={() => handleBlindPost(post.userId)}
                             className="text-sm text-yellow-500 hover:text-yellow-600"
                           >
                             블라인드
                           </button>
                           <button
-                            onClick={() => handleDeletePost(post.id)}
+                            onClick={() => handleDeletePost(post.userId)}
                             className="text-sm text-red-500 hover:text-red-600"
                           >
                             삭제
@@ -516,13 +660,13 @@ export default function AdminCommunity() {
                         <div className="flex items-center justify-between">
                           <p className="font-medium">신고 {post.reports.length}건</p>
                           <button
-                            onClick={() => setShowReportDetails(showReportDetails === post.id ? null : post.id)}
+                            onClick={() => setShowReportDetails(showReportDetails === post.userId ? null : post.userId)}
                             className="text-sm underline"
                           >
-                            {showReportDetails === post.id ? '접기' : '자세히 보기'}
+                            {showReportDetails === post.userId ? '접기' : '자세히 보기'}
                           </button>
                         </div>
-                        {showReportDetails === post.id && (
+                        {showReportDetails === post.userId && (
                           <div className="mt-2 space-y-1">
                             {post.reports.map((report, index) => (
                               <p key={index} className="text-sm">
