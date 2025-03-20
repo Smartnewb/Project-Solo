@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { createClientSupabaseClient } from '@/utils/supabase';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 interface ProfileForm {
   height: string;
@@ -20,8 +20,12 @@ interface ProfileForm {
 
 export default function Profile() {
   const router = useRouter();
-  const { user, profile, updateProfile } = useAuth();
-  const supabase = createClientSupabaseClient();
+  const { user, profile, loading, refreshProfile, needsOnboarding } = useAuth();
+  const supabase = createClientComponentClient();
+  const [isSaving, setIsSaving] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+  const [modalType, setModalType] = useState<'success' | 'error'>('success');
   const [formData, setFormData] = useState<ProfileForm>({
     height: '',
     personalities: [],
@@ -34,205 +38,163 @@ export default function Profile() {
     mbti: '',
   });
 
-  const [showModal, setShowModal] = useState(false);
-  const [modalMessage, setModalMessage] = useState('');
-
   useEffect(() => {
-    // 세션과 프로필 정보 확인
-    const checkProfileCompletion = async () => {
-      try {
-        // 온보딩 데이터가 이미 localStorage에 있는지 먼저 확인
-        const onboardingData = localStorage.getItem('onboardingProfile');
-        
-        // 세션 확인
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError || !session?.user) {
-          console.error('세션 확인 오류:', sessionError);
-          router.push('/');
-          return;
-        }
-        
-        // 프로필 데이터 확인
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .single();
-          
-        if (profileError) {
-          if (profileError.code === 'PGRST116') {
-            // 프로필이 없으면 온보딩으로 이동
-            console.log('프로필이 없습니다. 온보딩 페이지로 이동합니다.');
-            router.push('/onboarding');
-            return;
-          } else {
-            console.error('프로필 조회 오류:', profileError);
-            return;
-          }
-        }
-        
-        // 추가 프로필 정보가 이미 존재하는지 확인
-        // personalities가 문자열이라면 JSON으로 파싱 시도
-        let hasPersonalitiesData = false;
-        if (profileData.personalities) {
-          if (typeof profileData.personalities === 'string') {
-            try {
-              const parsed = JSON.parse(profileData.personalities);
-              hasPersonalitiesData = Array.isArray(parsed) && parsed.length > 0;
-            } catch (e) {
-              hasPersonalitiesData = false;
-            }
-          } else {
-            hasPersonalitiesData = true;
-          }
-        }
-        
-        // 이미 추가 프로필 정보가 있으면 홈으로 이동
-        if (hasPersonalitiesData || profileData.dating_styles || profileData.interests) {
-          console.log('이미 추가 프로필 정보가 있습니다. 홈 페이지로 이동합니다.');
-          router.push('/home');
-          return;
-        }
-        
-        // 온보딩 데이터가 없으면 localStorage에 저장
-        if (!onboardingData) {
-          console.log('온보딩 데이터를 localStorage에 저장합니다.');
-          localStorage.setItem('onboardingProfile', JSON.stringify(profileData));
-        }
-      } catch (error) {
-        console.error('프로필 확인 중 오류:', error);
-      }
-    };
-    
-    if (user) {
-      checkProfileCompletion();
-    }
-  }, [user, router, supabase]);
+    if (loading) return;
 
-  useEffect(() => {
     if (!user) {
+      console.log('인증된 사용자가 없습니다. 로그인 페이지로 이동합니다.');
       router.push('/');
       return;
     }
-    
-    // 온보딩 데이터 확인
-    const onboardingData = localStorage.getItem('onboardingProfile');
-    if (!onboardingData) {
-      // 이미 첫 번째 useEffect에서 프로필 데이터를 확인하고 있으므로,
-      // 여기서는 onboarding으로 리다이렉트하지 않고 기다립니다.
-      console.log('온보딩 데이터가 localStorage에 없습니다. 첫 번째 useEffect에서 확인 중...');
+
+    if (needsOnboarding) {
+      console.log('필수 프로필 정보가 없습니다. 온보딩 페이지로 이동합니다.');
+      router.push('/onboarding');
       return;
     }
 
-    // 수정 모드인 경우 기존 데이터 불러오기
-    const editData = localStorage.getItem('editProfileData');
-    if (editData) {
-      const parsedData = JSON.parse(editData);
+    if (profile) {
+      console.log('기존 프로필 데이터 로드:', profile);
+      
       setFormData({
-        height: parsedData.height || '',
-        personalities: parsedData.personalities || [],
-        datingStyles: parsedData.datingStyles || [],
-        idealLifestyles: parsedData.idealLifestyles || [],
-        interests: parsedData.interests || [],
-        drinking: parsedData.drinking || '',
-        smoking: parsedData.smoking || '',
-        tattoo: parsedData.tattoo || '',
-        mbti: parsedData.mbti || '',
-        instagramId: parsedData.instagramId || '',
+        height: profile.height ? String(profile.height) : '',
+        personalities: profile.personalities || [],
+        datingStyles: profile.dating_styles || [],
+        idealLifestyles: profile.ideal_lifestyles || [],
+        interests: profile.interests || [],
+        drinking: profile.drinking || '',
+        smoking: profile.smoking || '',
+        tattoo: profile.tattoo || '',
+        mbti: profile.mbti || '',
       });
-      // 수정이 완료되면 editProfileData 삭제
-      localStorage.removeItem('editProfileData');
     }
-  }, [user, router]);
+  }, [user, profile, loading, router, needsOnboarding]);
 
-  // 선택 옵션들
-  const heightOptions = [
-    '155cm 이하',
-    '156~160cm',
-    '161~165cm',
-    '166~170cm',
-    '171~175cm',
-    '176cm 이상'
-  ];
+  const showTemporaryModal = (message: string, type: 'success' | 'error' = 'success') => {
+    setModalMessage(message);
+    setModalType(type);
+    setShowModal(true);
+    setTimeout(() => {
+      setShowModal(false);
+    }, 3000);
+  };
 
-  const personalityOptions = [
-    '활발한 성격',
-    '조용한 성격',
-    '배려심 많은 사람',
-    '리더십 있는 사람',
-    '유머 감각 있는 사람',
-    '감성적인 사람',
-    '모험을 즐기는 사람',
-    '계획적인 스타일',
-    '즉흥적인 스타일'
-  ];
+  const extractHeight = (heightStr: string): number | null => {
+    if (!heightStr) return null;
+    
+    const numbers = heightStr.match(/\d+/g);
+    if (!numbers || numbers.length === 0) return null;
+    
+    if (heightStr.includes('~') && numbers.length >= 2) {
+      return parseInt(numbers[1], 10);
+    }
+    
+    if (heightStr.includes('이상') || heightStr.includes('+')) {
+      return parseInt(numbers[0], 10);
+    }
+    
+    if (heightStr.includes('이하') || heightStr.includes('-')) {
+      return parseInt(numbers[0], 10);
+    }
+    
+    return parseInt(numbers[0], 10);
+  };
 
-  const datingStyleOptions = [
-    '적극적인 스타일',
-    '다정다감한 스타일',
-    '친구처럼 지내는 스타일',
-    '츤데레 스타일',
-    '표현을 잘 안 하지만 속은 다정한 스타일',
-    '자유로운 연애를 선호하는 스타일'
-  ];
-
-  const lifestyleOptions = [
-    '아침형 인간',
-    '밤형 인간',
-    '집순이 / 집돌이',
-    '여행을 자주 다니는 편',
-    '운동을 즐기는 편',
-    '게임을 자주 하는 편',
-    '카페에서 노는 걸 좋아함',
-    '액티비티 활동을 좋아함'
-  ];
-
-  const drinkingOptions = [
-    '자주 마시는 편',
-    '가끔 마시는 편',
-    '거의 안 마시는 편',
-    '전혀 마시지 않음'
-  ];
-
-  const smokingOptions = [
-    '네, 흡연자입니다',
-    '금연 중입니다',
-    '비흡연자입니다'
-  ];
-
-  const tattooOptions = [
-    '네, 있습니다',
-    '작은 문신이 있습니다',
-    '없습니다'
-  ];
-
-  const interestOptions = [
-    '영화/드라마',
-    '음악',
-    '독서',
-    '게임',
-    '요리',
-    '여행',
-    '운동',
-    '패션',
-    '사진/영상',
-    '그림',
-    '댄스',
-    '반려동물',
-    '카페',
-    '맛집 탐방',
-    '공연/전시',
-    '재테크',
-    '자기계발',
-    '봉사활동'
-  ];
-
-  const mbtiOptions = [
-    'INTJ', 'INTP', 'ENTJ', 'ENTP',
-    'INFJ', 'INFP', 'ENFJ', 'ENFP',
-    'ISTJ', 'ISFJ', 'ESTJ', 'ESFJ',
-    'ISTP', 'ISFP', 'ESTP', 'ESFP'
-  ];
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!user) {
+      showTemporaryModal('로그인이 필요합니다.', 'error');
+      return;
+    }
+    
+    if (!formData.height) {
+      showTemporaryModal('키를 선택해주세요.', 'error');
+      return;
+    }
+    
+    if (formData.personalities.length === 0) {
+      showTemporaryModal('성격을 하나 이상 선택해주세요.', 'error');
+      return;
+    }
+    
+    try {
+      setIsSaving(true);
+      
+      const height = extractHeight(formData.height);
+      
+      const additionalProfileData = {
+        height,
+        personalities: formData.personalities,
+        dating_styles: formData.datingStyles,
+        ideal_lifestyles: formData.idealLifestyles,
+        interests: formData.interests,
+        drinking: formData.drinking,
+        smoking: formData.smoking,
+        tattoo: formData.tattoo,
+        mbti: formData.mbti,
+      };
+      
+      console.log('저장할 프로필 데이터:', additionalProfileData);
+      
+      const { data: existingProfile, error: checkError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      
+      let result;
+      
+      if (checkError && checkError.code === 'PGRST116') {
+        console.log('프로필이 없습니다. 새로 생성합니다.');
+        
+        result = await supabase
+          .from('profiles')
+          .insert({
+            user_id: user.id,
+            ...additionalProfileData,
+          });
+          
+      } else if (!checkError) {
+        console.log('기존 프로필을 업데이트합니다.');
+        
+        result = await supabase
+          .from('profiles')
+          .update(additionalProfileData)
+          .eq('user_id', user.id);
+      } else {
+        throw checkError;
+      }
+      
+      if (result.error) {
+        console.error('프로필 저장 오류:', result.error);
+        
+        if (result.error.code === '23503') {
+          showTemporaryModal('사용자 정보가 유효하지 않습니다. 다시 로그인해주세요.', 'error');
+          return;
+        }
+        
+        showTemporaryModal('프로필 저장 중 오류가 발생했습니다.', 'error');
+        return;
+      }
+      
+      console.log('프로필 저장 성공');
+      
+      await refreshProfile();
+      
+      showTemporaryModal('프로필이 저장되었습니다!', 'success');
+      
+      setTimeout(() => {
+        router.push('/home');
+      }, 3000);
+      
+    } catch (error) {
+      console.error('프로필 저장 중 예외 발생:', error);
+      showTemporaryModal('프로필 저장 중 오류가 발생했습니다.', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleMultiSelect = (category: keyof ProfileForm, value: string, maxCount: number) => {
     setFormData(prev => {
@@ -261,369 +223,231 @@ export default function Profile() {
     }));
   };
 
-  const showTemporaryModal = (message: string) => {
-    setModalMessage(message);
-    setShowModal(true);
-    setTimeout(() => {
-      setShowModal(false);
-    }, 2000);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.height) {
-      showTemporaryModal('키를 선택해주세요');
-      return;
-    }
-
-    try {
-      console.log('프로필 저장 시작');
-      
-      // 세션 확인
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session?.user) {
-        console.error('세션 확인 오류:', sessionError);
-        showTemporaryModal('인증 상태를 확인할 수 없습니다. 다시 로그인해주세요.');
-        router.push('/');
-        return;
-      }
-
-      // 먼저 기존 프로필이 있는지 확인
-      const { data: existingProfile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .single();
-
-      // height 값에서 숫자만 추출 (예: "171~175cm"에서 173)
-      const extractHeight = (heightStr: string): number => {
-        // 범위인 경우 중간값 사용
-        if (heightStr.includes('~')) {
-          const [min, max] = heightStr.replace(/[^0-9~]/g, '').split('~').map(Number);
-          return Math.floor((min + max) / 2);
-        }
-        // 이하/이상인 경우
-        if (heightStr.includes('이하')) {
-          return 150; // 155cm 이하는 150으로 기본값
-        }
-        if (heightStr.includes('이상')) {
-          return 180; // 176cm 이상은 180으로 기본값
-        }
-        // 숫자만 추출
-        const match = heightStr.match(/\d+/);
-        return match ? parseInt(match[0]) : 170; // 기본값 170
-      };
-
-      // personality 배열이 비어있는지 확인
-      if (formData.personalities.length === 0) {
-        showTemporaryModal('성격을 하나 이상 선택해주세요');
-        return;
-      }
-
-      // 추가 프로필 데이터 준비
-      const additionalProfileData = {
-        height: extractHeight(formData.height),
-        personalities: JSON.stringify(formData.personalities),
-        dating_styles: JSON.stringify(formData.datingStyles),
-        ideal_lifestyles: JSON.stringify(formData.idealLifestyles),
-        interests: JSON.stringify(formData.interests),
-        drinking: formData.drinking,
-        smoking: formData.smoking,
-        tattoo: formData.tattoo,
-        mbti: formData.mbti,
-        updated_at: new Date().toISOString()
-      };
-      
-      console.log('추가 프로필 데이터:', additionalProfileData);
-      console.log('기존 사용자 데이터:', existingProfile);
-      console.log('user_id:', session.user.id);
-
-      let saveResult;
-      
-      if (existingProfile) {
-        // 프로필이 이미 있으면 업데이트
-        console.log('기존 프로필 업데이트...');
-        saveResult = await supabase
-          .from('profiles')
-          .update(additionalProfileData)
-          .eq('user_id', session.user.id);
-      } else {
-        // 프로필이 없으면 새로 생성
-        console.log('새 프로필 생성...');
-        const insertData = {
-          ...additionalProfileData,
-          user_id: session.user.id,
-          name: session.user.user_metadata?.name || '사용자',
-        };
-        
-        saveResult = await supabase
-          .from('profiles')
-          .insert(insertData);
-      }
-      
-      const { error: saveError } = saveResult;
-      console.log('저장 결과:', saveResult);
-      
-      if (saveError) {
-        console.error('프로필 저장 오류:', saveError);
-        
-        // 더 자세한 오류 정보 로깅
-        console.log('오류 코드:', saveError.code);
-        console.log('오류 메시지:', saveError.message);
-        console.log('오류 상세:', saveError.details);
-        
-        // 외래 키 제약 조건 위반 오류인 경우 특별 처리
-        if (saveError.code === '23503') {
-          console.log('외래 키 제약 조건 위반, auth.users 테이블에 사용자 생성 확인 필요');
-          showTemporaryModal('사용자 인증 정보에 문제가 있습니다. 다시 로그인해주세요.');
-          router.push('/');
-          return;
-        }
-        
-        showTemporaryModal('프로필 정보 저장에 실패했습니다. 잠시 후 다시 시도해주세요.');
-        return;
-      }
-      
-      console.log('프로필 저장 성공');
-      
-      // 저장 후 프로필 데이터 다시 조회하여 확인
-      const { data: updatedProfile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .single();
-        
-      console.log('업데이트된 프로필:', updatedProfile);
-      
-      // 프로필 데이터도 localStorage에 저장
-      if (updatedProfile) {
-        localStorage.setItem('profile', JSON.stringify({
-          ...updatedProfile,
-          personalities: formData.personalities, // 원래 배열 형태로 저장
-          dating_styles: formData.datingStyles,
-          ideal_lifestyles: formData.idealLifestyles,
-          interests: formData.interests
-        }));
-        localStorage.setItem('onboardingProfile', JSON.stringify(updatedProfile));
-      } else {
-        console.warn('업데이트된 프로필을 조회할 수 없음');
-        localStorage.setItem('profile', JSON.stringify({
-          ...existingProfile,
-          ...additionalProfileData,
-          personalities: formData.personalities,
-          dating_styles: formData.datingStyles,
-          ideal_lifestyles: formData.idealLifestyles,
-          interests: formData.interests
-        }));
-      }
-      
-      console.log('프로필 데이터 localStorage에 저장됨');
-      
-      // 성공 메시지
-      showTemporaryModal('프로필이 성공적으로 저장되었습니다!');
-      
-      // 잠시 후 홈 페이지로 이동
-      setTimeout(() => {
-        router.push('/home');
-      }, 2000);
-    } catch (error) {
-      console.error('프로필 저장 중 예외 발생:', error);
-      showTemporaryModal('프로필 정보 저장 중 오류가 발생했습니다.');
-    }
-  };
-
-  if (!user) {
-    return null;
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-lg mx-auto p-4">
-        <form onSubmit={handleSubmit} className="space-y-8">
+    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-pink-50">
+      <div className="container mx-auto px-4 py-8 max-w-lg">
+        <h1 className="text-h2 mb-6">프로필 설정</h1>
+        
+        <form onSubmit={handleSubmit} className="space-y-6">
           {/* 키 선택 */}
-          <div className="card space-y-4">
-            <h2 className="text-h2">본인의 키</h2>
-            <div className="grid grid-cols-2 gap-2">
-              {heightOptions.map((option) => (
+          <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">키</h2>
+            <div className="grid grid-cols-2 gap-3">
+              {['160cm 이하', '160cm~165cm', '165cm~170cm', '170cm~175cm', 
+                '175cm~180cm', '180cm~185cm', '185cm~190cm', '190cm 이상'].map(height => (
                 <button
-                  key={option}
+                  key={height}
                   type="button"
-                  onClick={() => handleSingleSelect('height', option)}
-                  className={`btn-select ${formData.height === option ? 'btn-selected' : ''}`}
+                  onClick={() => handleSingleSelect('height', height)}
+                  className={`px-3 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap
+                    ${formData.height === height
+                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
+                    }`}
                 >
-                  {option}
+                  {height}
                 </button>
               ))}
             </div>
           </div>
-
+          
           {/* 성격 선택 */}
-          <div className="card space-y-4">
-            <h2 className="text-h2">본인의 성격 (최대 3개)</h2>
-            <div className="grid grid-cols-2 gap-2">
-              {personalityOptions.map((option) => (
+          <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">성격 (복수 선택 가능)</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {['활발한', '차분한', '다정한', '감성적인', '이성적인', '웃긴', '진지한', 
+                '열정적인', '낙천적인', '솔직한', '섬세한', '긍정적인'].map(personality => (
+                <button
+                  key={personality}
+                  type="button"
+                  onClick={() => handleMultiSelect('personalities', personality, 3)}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
+                    ${formData.personalities.includes(personality)
+                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
+                    }`}
+                >
+                  {personality}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          {/* 연애 스타일 */}
+          <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">연애 스타일 (복수 선택 가능)</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {['연락 자주하는', '데이트 많이 하는', '취미 공유하는', '선물 좋아하는', 
+                '집순인', '스킨십 많은', '이벤트 챙기는', '돈 잘 쓰는', '아껴쓰는'].map(style => (
+                <button
+                  key={style}
+                  type="button"
+                  onClick={() => handleMultiSelect('datingStyles', style, 2)}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
+                    ${formData.datingStyles.includes(style)
+                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
+                    }`}
+                >
+                  {style}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          {/* 이상적인 라이프스타일 */}
+          <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">이상적인 라이프스타일 (복수 선택 가능)</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {['여행 가능한', '맛집 탐방하는', '운동하는', '영화/넷플 보는', 
+                '게임하는', '문화생활 즐기는', '집에서 쉬는', '야외활동 좋아하는'].map(lifestyle => (
+                <button
+                  key={lifestyle}
+                  type="button"
+                  onClick={() => handleMultiSelect('idealLifestyles', lifestyle, 3)}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
+                    ${formData.idealLifestyles.includes(lifestyle)
+                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
+                    }`}
+                >
+                  {lifestyle}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          {/* 관심사 */}
+          <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">관심사 (복수 선택 가능)</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {['음악', '여행', '영화/드라마', '독서', '패션', '요리', 
+                '카페', '운동', '게임', '반려동물', '사진', '미술/그림'].map(interest => (
+                <button
+                  key={interest}
+                  type="button"
+                  onClick={() => handleMultiSelect('interests', interest, 5)}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
+                    ${formData.interests.includes(interest)
+                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
+                    }`}
+                >
+                  {interest}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          {/* 음주 여부 */}
+          <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">음주</h2>
+            <div className="grid grid-cols-3 gap-3">
+              {['안 마심', '가끔 마심', '자주 마심'].map(option => (
                 <button
                   key={option}
                   type="button"
-                  onClick={() => handleMultiSelect('personalities', option, 3)}
-                  className={`btn-select ${formData.personalities.includes(option) ? 'btn-selected' : ''}`}
+                  onClick={() => handleSingleSelect('drinking', option)}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
+                    ${formData.drinking === option
+                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
+                    }`}
                 >
                   {option}
                 </button>
               ))}
             </div>
           </div>
-
-          {/* 연애 스타일 선택 */}
-          <div className="card space-y-4">
-            <h2 className="text-h2">본인의 연애 스타일 (최대 2개)</h2>
-            <div className="grid grid-cols-2 gap-2">
-              {datingStyleOptions.map((option) => (
+          
+          {/* 흡연 여부 */}
+          <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">흡연</h2>
+            <div className="grid grid-cols-3 gap-3">
+              {['비흡연', '가끔 흡연', '흡연'].map(option => (
                 <button
                   key={option}
                   type="button"
-                  onClick={() => handleMultiSelect('datingStyles', option, 2)}
-                  className={`btn-select ${formData.datingStyles.includes(option) ? 'btn-selected' : ''}`}
+                  onClick={() => handleSingleSelect('smoking', option)}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
+                    ${formData.smoking === option
+                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
+                    }`}
                 >
                   {option}
                 </button>
               ))}
             </div>
           </div>
-
-          {/* 관심사 선택 */}
-          <div className="card space-y-4">
-            <h2 className="text-h2">관심사 (최대 5개)</h2>
-            <div className="grid grid-cols-4 gap-2">
-              {interestOptions.map((option) => (
+          
+          {/* 타투 여부 */}
+          <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">타투</h2>
+            <div className="grid grid-cols-3 gap-3">
+              {['없음', '있음', '비공개'].map(option => (
                 <button
                   key={option}
                   type="button"
-                  onClick={() => handleMultiSelect('interests', option, 5)}
-                  className={`btn-select text-sm ${formData.interests.includes(option) ? 'btn-selected' : ''}`}
+                  onClick={() => handleSingleSelect('tattoo', option)}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
+                    ${formData.tattoo === option
+                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
+                    }`}
                 >
                   {option}
                 </button>
               ))}
             </div>
           </div>
-
-          {/* 이상형 라이프스타일 선택 */}
-          <div className="card space-y-4">
-            <h2 className="text-h2">이상형의 라이프스타일 (최대 3개)</h2>
-            <div className="grid grid-cols-2 gap-2">
-              {lifestyleOptions.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => handleMultiSelect('idealLifestyles', option, 3)}
-                  className={`btn-select ${formData.idealLifestyles.includes(option) ? 'btn-selected' : ''}`}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 술, 담배, 문신 여부 */}
-          <div className="card space-y-6">
-            <h2 className="text-h2">추가 정보</h2>
-            
-            <div className="space-y-4">
-              <h3 className="text-h3">술을 즐기는 편인가요?</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {drinkingOptions.map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => handleSingleSelect('drinking', option)}
-                    className={`btn-select ${formData.drinking === option ? 'btn-selected' : ''}`}
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-h3">담배를 피우시나요?</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {smokingOptions.map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => handleSingleSelect('smoking', option)}
-                    className={`btn-select ${formData.smoking === option ? 'btn-selected' : ''}`}
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-h3">문신이 있나요?</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {tattooOptions.map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => handleSingleSelect('tattoo', option)}
-                    className={`btn-select ${formData.tattoo === option ? 'btn-selected' : ''}`}
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* MBTI 설정 */}
-          <div className="card space-y-4">
-            <h2 className="text-h2">MBTI 설정</h2>
-            <div className="grid grid-cols-4 gap-2">
-              {mbtiOptions.map((option) => (
+          
+          {/* MBTI */}
+          <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-gray-900">MBTI</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {['ISTJ', 'ISFJ', 'INFJ', 'INTJ', 'ISTP', 'ISFP', 'INFP', 'INTP', 
+                'ESTP', 'ESFP', 'ENFP', 'ENTP', 'ESTJ', 'ESFJ', 'ENFJ', 'ENTJ'].map(option => (
                 <button
                   key={option}
                   type="button"
                   onClick={() => handleSingleSelect('mbti', option)}
-                  className={`btn-select ${formData.mbti === option ? 'btn-selected' : ''}`}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
+                    ${formData.mbti === option
+                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
+                    }`}
                 >
                   {option}
                 </button>
               ))}
             </div>
           </div>
-
-          {/* 인스타그램 ID 표시 */}
-          {formData.instagramId && (
-            <div className="card space-y-4">
-              <h2 className="text-h2">인스타그램</h2>
-              <a
-                href={`https://www.instagram.com/${formData.instagramId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-500 hover:underline"
-              >
-                {formData.instagramId}
-              </a>
-            </div>
-          )}
-
-          {/* 다음 버튼 */}
-          <button type="submit" className="btn-primary w-full">
-            완료
+          
+          {/* 저장 버튼 */}
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl shadow-sm hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all"
+          >
+            {isSaving ? '저장 중...' : '변경사항 저장'}
           </button>
         </form>
       </div>
-
+      
       {/* 알림 모달 */}
       {showModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="bg-black bg-opacity-50 absolute inset-0"></div>
-          <div className="bg-white rounded-lg p-6 shadow-xl z-10 transform transition-all">
-            <p className="text-center">{modalMessage}</p>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-sm mx-4">
+            <p className="text-center text-gray-800">{modalMessage}</p>
           </div>
         </div>
       )}
