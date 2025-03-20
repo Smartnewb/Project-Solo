@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { createClientSupabaseClient } from '@/utils/supabase';
 import { Profile } from '@/types';
@@ -23,12 +23,104 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 const ADMIN_EMAIL = 'notify@smartnewb.com';
 
+// 디바운스 함수 타입 정의
+type DebouncedFunction<T extends (...args: any[]) => Promise<any>> = 
+  (...args: Parameters<T>) => Promise<ReturnType<T>>;
+
+// 디바운스 유틸리티 함수
+function debounce<T extends (...args: any[]) => Promise<any>>(
+  func: T, 
+  wait: number
+): DebouncedFunction<T> {
+  let timeout: NodeJS.Timeout | null = null;
+  let pendingPromise: Promise<ReturnType<T>> | null = null;
+  
+  return async function(...args: Parameters<T>): Promise<ReturnType<T>> {
+    // 이미 진행 중인 요청이 있으면 그 결과를 반환
+    if (pendingPromise) {
+      return pendingPromise;
+    }
+    
+    // 새 요청 생성
+    const executeFunction = async (): Promise<ReturnType<T>> => {
+      try {
+        const result = await func(...args);
+        return result;
+      } finally {
+        // 완료 후 초기화
+        pendingPromise = null;
+      }
+    };
+
+    // 이전 타이머가 있으면 취소
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+
+    // 디바운스 적용
+    return new Promise((resolve) => {
+      pendingPromise = executeFunction();
+      
+      timeout = setTimeout(() => {
+        resolve(pendingPromise as ReturnType<T>);
+        timeout = null;
+      }, wait);
+    });
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  
+  // 세션 캐싱
+  const sessionCache = useRef<{
+    session: Session | null;
+    timestamp: number;
+    expiresIn: number;
+  }>({
+    session: null,
+    timestamp: 0,
+    expiresIn: 30000 // 30초 캐시
+  });
+  
+  // 디바운스된 프로필 조회 함수
+  const debouncedFetchProfile = useRef(debounce(fetchProfile, 300));
+
+  // 세션 조회 함수 (캐싱 적용)
+  const getSession = async () => {
+    const now = Date.now();
+    // 캐시가 유효하면 캐시된 세션 반환
+    if (
+      sessionCache.current.session && 
+      now - sessionCache.current.timestamp < sessionCache.current.expiresIn
+    ) {
+      console.log('✅ 캐시된 세션 사용 (남은 시간:', 
+        ((sessionCache.current.expiresIn - (now - sessionCache.current.timestamp)) / 1000).toFixed(1), '초)');
+      return { 
+        data: { session: sessionCache.current.session }, 
+        error: null 
+      };
+    }
+    
+    // 캐시가 만료되었거나 없으면 새로 조회
+    console.log('🔄 세션 새로 조회 (캐시 만료 또는 없음)');
+    const { data, error } = await supabase.auth.getSession();
+    
+    // 성공 시 캐시 업데이트
+    if (!error && data.session) {
+      sessionCache.current = {
+        session: data.session,
+        timestamp: now,
+        expiresIn: 30000 // 30초
+      };
+    }
+    
+    return { data, error };
+  };
 
   useEffect(() => {
     const initializeAuth = async () => {
@@ -36,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(true);
         console.log('AuthContext: 인증 상태 초기화 시작');
         
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session }, error } = await getSession();
         
         if (error) {
           console.error('세션 확인 오류:', error);
@@ -54,7 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           // 관리자가 아닌 경우에만 프로필 확인
           if (!isUserAdmin) {
-            await fetchProfile(session.user.id);
+            await debouncedFetchProfile.current(session.user.id);
           } else {
             // 관리자는 온보딩이 필요없음
             setHasCompletedOnboarding(true);
@@ -78,6 +170,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } = supabase.auth.onAuthStateChange(async (event: string, session: Session | null) => {
       console.log('Auth state changed:', event, session ? 'session exists' : 'no session');
       
+      // 세션 캐시 업데이트
+      if (session) {
+        sessionCache.current = {
+          session,
+          timestamp: Date.now(),
+          expiresIn: 30000
+        };
+      } else {
+        sessionCache.current = {
+          session: null,
+          timestamp: 0,
+          expiresIn: 30000
+        };
+      }
+      
       if (session?.user) {
         console.log('새 세션 사용자:', session.user.id);
         setUser(session.user);
@@ -89,7 +196,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         // 관리자가 아닌 경우에만 프로필 확인
         if (!isUserAdmin) {
-          await fetchProfile(session.user.id);
+          await debouncedFetchProfile.current(session.user.id);
         } else {
           // 관리자는 온보딩이 필요없음
           setHasCompletedOnboarding(true);
@@ -109,7 +216,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // 프로필 정보 가져오기
-  const fetchProfile = async (userId: string) => {
+  async function fetchProfile(userId: string) {
     console.log('AuthContext: 사용자 ID로 프로필 조회 시작:', userId);
     
     try {
@@ -170,7 +277,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(null);
       setHasCompletedOnboarding(false);
     }
-  };
+  }
 
   // 로그인
   const signIn = async (email: string, password: string) => {
@@ -226,6 +333,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       console.log('로컬 스토리지 정리 완료, Supabase 로그아웃 시작');
       
+      // 세션 캐시 초기화
+      sessionCache.current = {
+        session: null,
+        timestamp: 0,
+        expiresIn: 30000
+      };
+      
       // Supabase 로그아웃
       const { error } = await supabase.auth.signOut();
       if (error) {
@@ -248,44 +362,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!user) throw new Error('No user');
 
       console.log('프로필 업데이트 시작');
-      console.log('업데이트할 데이터:', profileData);
-      console.log('사용자 ID:', user.id);
-
-      // 업데이트할 데이터에서 user_id 필드 제외
-      const updateData = { ...profileData };
-      delete (updateData as any).user_id;
-
-      // upsert 연산 수행
-      const { data: upsertedProfile, error } = await supabase
+      
+      const { error } = await supabase
         .from('profiles')
         .upsert(
-          {
-            user_id: user.id, // upsert의 기준이 되는 필드
-            ...updateData,
-            updated_at: new Date().toISOString(),
-            created_at: new Date().toISOString(), // 새로 생성되는 경우에만 사용됨
+          { 
+            ...profileData,
+            user_id: user.id, 
+            updated_at: new Date().toISOString() 
           },
-          {
-            onConflict: 'user_id', // user_id가 충돌하는 경우 업데이트
-            ignoreDuplicates: false, // 중복을 무시하지 않고 업데이트
+          { 
+            onConflict: 'user_id',
+            ignoreDuplicates: false
           }
-        )
-        .select()
-        .single();
+        );
 
       if (error) {
-        console.error('프로필 upsert 실패:', error);
-        throw error;
+        console.error('프로필 업데이트 오류:', error);
+        return { error };
       }
 
-      console.log('프로필 upsert 성공:', upsertedProfile);
+      // 프로필 상태 업데이트
+      await debouncedFetchProfile.current(user.id);
       
-      // 프로필 새로고침
-      await fetchProfile(user.id);
-
+      console.log('프로필 업데이트 성공');
       return { error: null };
     } catch (error) {
-      console.error('프로필 업데이트 중 예외 발생:', error);
+      console.error('프로필 업데이트 오류:', error);
       return { error: error as Error };
     }
   };

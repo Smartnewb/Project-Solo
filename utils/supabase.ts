@@ -12,6 +12,32 @@ console.log('Supabase URL (전체값):', supabaseUrl);
 console.log('Supabase Anon Key (시작 부분):', supabaseAnonKey ? supabaseAnonKey.substring(0, 10) + '...' : '없음');
 console.log('========================');
 
+// API 요청 중복 방지를 위한 캐시
+const requestCache = new Map();
+const pendingRequests = new Map();
+
+// 주기적으로 캐시 정리 (60초마다)
+if (typeof window !== 'undefined') {
+  setInterval(() => {
+    const now = Date.now();
+    let expiredCount = 0;
+    
+    // 만료된 캐시 항목 제거
+    requestCache.forEach((entry, key) => {
+      const { timestamp } = entry;
+      // 60초 이상 된 캐시는 제거
+      if (now - timestamp > 60000) {
+        requestCache.delete(key);
+        expiredCount++;
+      }
+    });
+    
+    if (expiredCount > 0) {
+      console.log(`🧹 캐시 정리 완료: ${expiredCount}개 항목 제거됨`);
+    }
+  }, 60000);
+}
+
 // 단일 Supabase 클라이언트 인스턴스 생성 (성능 최적화)
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -36,6 +62,88 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 // 환경 변수 디버깅
 console.log('Supabase URL (마스킹됨):', supabaseUrl ? supabaseUrl.substring(0, 8) + '...' : '없음');
 console.log('Supabase Anon Key 존재 여부:', !!supabaseAnonKey);
+
+// 중복 요청 방지 로직
+function createCachedFetch(originalFetch: (url: RequestInfo | URL, options?: RequestInit) => Promise<Response>) {
+  return async (...args: [RequestInfo | URL, RequestInit?]) => {
+    const [url, options] = args;
+    
+    // URL을 문자열로 변환
+    const urlStr = url.toString();
+    
+    // 특정 엔드포인트에 대한 캐시 시간을 더 길게 설정 (30초)
+    const LONG_CACHE_PATTERNS = [
+      'system_settings',
+      '/auth/v1/user',
+      '/rest/v1/profiles'
+    ];
+    
+    // GET 요청만 캐싱 (다른 요청은 항상 실행)
+    const method = options?.method || 'GET';
+    
+    if (method !== 'GET') {
+      console.log(`non-GET request to ${urlStr} (${method}), bypassing cache`);
+      return originalFetch(...args);
+    }
+    
+    // 요청 URL과 헤더를 기반으로 캐시 키 생성
+    const headers = options?.headers || {};
+    const cacheKey = `${urlStr}:${JSON.stringify(headers)}`;
+    
+    // 기본 캐시 만료 시간 (5초)
+    let CACHE_TTL = 5000;
+    
+    // 특정 자주 호출되는 엔드포인트는 더 오래 캐싱
+    if (LONG_CACHE_PATTERNS.some(pattern => urlStr.includes(pattern))) {
+      CACHE_TTL = 30000; // 30초
+      console.log(`🕒 연장된 캐시 TTL 적용 (30초): ${urlStr}`);
+    }
+    
+    // 진행 중인 동일 요청이 있는지 확인
+    if (pendingRequests.has(cacheKey)) {
+      console.log(`🔄 중복 요청 감지 및 통합: ${urlStr}`);
+      return pendingRequests.get(cacheKey);
+    }
+    
+    // 최근 캐시된 응답이 있는지 확인
+    const cachedResponse = requestCache.get(cacheKey);
+    if (cachedResponse) {
+      const { timestamp, response } = cachedResponse;
+      if (Date.now() - timestamp < CACHE_TTL) {
+        console.log(`🟢 캐시 사용 (유효기간: ${((CACHE_TTL - (Date.now() - timestamp))/1000).toFixed(1)}초): ${urlStr}`);
+        return Promise.resolve(response.clone());
+      }
+      console.log(`🟠 캐시 만료: ${urlStr}`);
+      requestCache.delete(cacheKey);
+    }
+    
+    // 새 요청 시작
+    console.log(`🔵 새 요청: ${urlStr}`);
+    const fetchPromise = originalFetch(...args).then((response: Response) => {
+      // 성공한 응답만 캐싱
+      if (response.ok) {
+        requestCache.set(cacheKey, {
+          timestamp: Date.now(),
+          response: response.clone()
+        });
+      }
+      
+      // 진행 중인 요청 목록에서 제거
+      pendingRequests.delete(cacheKey);
+      
+      return response;
+    }).catch((error: Error) => {
+      // 오류 발생 시 진행 중인 요청 목록에서 제거
+      pendingRequests.delete(cacheKey);
+      throw error;
+    });
+    
+    // 진행 중인 요청 등록
+    pendingRequests.set(cacheKey, fetchPromise);
+    
+    return fetchPromise;
+  };
+}
 
 // 클라이언트 컴포넌트용 클라이언트
 export const createClientSupabaseClient = () => {
@@ -81,7 +189,7 @@ export const createClientSupabaseClient = () => {
         }
       },
       global: {
-        fetch: (...args) => {
+        fetch: createCachedFetch((...args: [RequestInfo | URL, RequestInit?]) => {
           const [url, options] = args;
           console.log(`Fetch request to: ${url}`);
           
@@ -99,13 +207,12 @@ export const createClientSupabaseClient = () => {
           const fetchOptions = {
             ...options,
             headers,
-            // credentials: 'include', // CORS 오류 발생의 원인, 제거
             // 네트워크 타임아웃 증가
             signal: AbortSignal.timeout(30000)
           };
           
           return fetch(url, fetchOptions as RequestInit);
-        }
+        })
       },
       realtime: {
         params: {
@@ -128,7 +235,7 @@ export const createBrowserSupabaseClient = () => {
         flowType: 'pkce'
       },
       global: {
-        fetch: (...args) => fetch(...args)
+        fetch: createCachedFetch((...args: [RequestInfo | URL, RequestInit?]) => fetch(...args))
       }
     }
   );
@@ -177,4 +284,4 @@ export type Match = {
   status: 'pending' | 'accepted' | 'rejected' | 'completed';
   created_at: string;
   updated_at: string;
-}; 
+};
