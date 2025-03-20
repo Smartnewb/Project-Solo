@@ -86,42 +86,73 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/', request.url));
     }
     
-    // 로그인 상태에서 루트 페이지 접근 시 홈으로 리디렉션
-    if (pathname === '/' && isLoggedIn) {
-      console.log('로그인 사용자의 루트 페이지 접근, 프로필 확인 필요');
-      
-      // 프로필이 있는지 확인
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (profileError && profileError.code === 'PGRST116') {
-        console.log('프로필이 없습니다. 온보딩으로 리디렉션합니다.');
-        return NextResponse.redirect(new URL('/onboarding', request.url));
-      } else if (profileError) {
-        console.error('프로필 확인 오류:', profileError);
-      }
-      
-      console.log('프로필이 있습니다. 홈으로 리디렉션합니다.');
-      return NextResponse.redirect(new URL('/home', request.url));
+    // 어드민 페이지 접근 제어
+    if (pathname.startsWith('/admin') && !isLoggedIn) {
+      console.log('비로그인 상태에서 어드민 페이지 접근 시도');
+      return NextResponse.redirect(new URL('/', request.url));
     }
     
-    // 로그인된 사용자가 프로필 없이 홈 또는 프로필 페이지 접근 시 온보딩으로 리디렉션
-    if ((pathname.startsWith('/home') || pathname.startsWith('/profile')) && isLoggedIn && !pathname.startsWith('/onboarding')) {
-      // 프로필이 있는지 확인
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (profileError && profileError.code === 'PGRST116') {
-        console.log('프로필이 없는 사용자의 홈/프로필 접근, 온보딩으로 리디렉션합니다.');
-        return NextResponse.redirect(new URL('/onboarding', request.url));
-      } else if (profileError) {
-        console.error('프로필 확인 오류:', profileError);
+    // 로그인 상태인 경우
+    if (isLoggedIn) {
+      // 관리자 여부 확인
+      if (user.email === ADMIN_EMAIL) {
+        console.log('관리자 사용자 확인됨:', user.email);
+        
+        // 관리자가 루트 페이지, 온보딩 또는 일반 사용자 페이지 접근 시 관리자 대시보드로 리디렉션
+        if (pathname === '/' || pathname.startsWith('/onboarding') || pathname.startsWith('/home')) {
+          console.log('관리자가 일반 페이지 접근, 관리자 대시보드로 리디렉션');
+          return NextResponse.redirect(new URL('/admin', request.url));
+        }
+        
+        // 관리자 페이지 접근은 허용
+        if (pathname.startsWith('/admin')) {
+          return response;
+        }
+      } else {
+        // 일반 사용자는 관리자 페이지 접근 불가
+        if (pathname.startsWith('/admin')) {
+          console.log('일반 사용자의 관리자 페이지 접근 시도');
+          return NextResponse.redirect(new URL('/home', request.url));
+        }
+        
+        // 일반 사용자의 루트 페이지 접근
+        if (pathname === '/') {
+          console.log('로그인 사용자의 루트 페이지 접근, 프로필 확인 필요');
+          
+          // 프로필이 있는지 확인
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('user_id', user.id)
+            .single();
+          
+          if (profileError && profileError.code === 'PGRST116') {
+            console.log('프로필이 없습니다. 온보딩으로 리디렉션합니다.');
+            return NextResponse.redirect(new URL('/onboarding', request.url));
+          } else if (profileError) {
+            console.error('프로필 확인 오류:', profileError);
+          }
+          
+          console.log('프로필이 있습니다. 홈으로 리디렉션합니다.');
+          return NextResponse.redirect(new URL('/home', request.url));
+        }
+        
+        // 로그인된 일반 사용자가 프로필 없이 홈 또는 프로필 페이지 접근 시 온보딩으로 리디렉션
+        if ((pathname.startsWith('/home') || pathname.startsWith('/profile')) && !pathname.startsWith('/onboarding')) {
+          // 프로필이 있는지 확인
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('user_id', user.id)
+            .single();
+          
+          if (profileError && profileError.code === 'PGRST116') {
+            console.log('프로필이 없는 사용자의 홈/프로필 접근, 온보딩으로 리디렉션합니다.');
+            return NextResponse.redirect(new URL('/onboarding', request.url));
+          } else if (profileError) {
+            console.error('프로필 확인 오류:', profileError);
+          }
+        }
       }
     }
     
@@ -138,8 +169,11 @@ export const config = {
     '/',
     '/home',
     '/home/:path*',
+    '/admin',
     '/admin/:path*',
     '/onboarding',
     '/onboarding/:path*',
+    '/profile',
+    '/profile/:path*'
   ],
 }; 

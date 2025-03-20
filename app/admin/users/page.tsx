@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClientSupabaseClient } from '@/utils/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ADMIN_EMAIL = 'notify@smartnewb.com';
 
@@ -52,27 +53,34 @@ export default function UsersAdmin() {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedGender, setSelectedGender] = useState<'all' | 'male' | 'female'>('all');
   const [selectedClass, setSelectedClass] = useState<'all' | 'S' | 'A' | 'B' | 'C'>('all');
-  const supabase = createClientComponentClient();
+  const { isAdmin } = useAuth();
+  const supabase = createClientSupabaseClient();
 
   useEffect(() => {
-    fetchUsers();
-  }, [filter]);
+    if (isAdmin) {
+      fetchUsers();
+    }
+  }, [filter, isAdmin]);
 
   async function fetchUsers() {
     try {
       setLoading(true);
       setError(null); // 오류 상태 초기화
       
-      // 기본 프로필 정보 조회 (캐싱 비활성화)
+      console.log('사용자 데이터 불러오기 시작');
+      
+      // 기본 프로필 정보 조회
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
-        .order('created_at', { ascending: false })
-        .throwOnError();
+        .order('created_at', { ascending: false });
         
       if (profilesError) {
+        console.error('프로필 데이터 조회 오류:', profilesError);
         throw profilesError;
       }
+      
+      console.log('프로필 데이터 불러오기 성공:', profilesData?.length || 0, '개의 프로필');
       
       if (!profilesData || profilesData.length === 0) {
         setUsers([]);
@@ -80,62 +88,10 @@ export default function UsersAdmin() {
         return;
       }
 
-      // 이메일 정보 가져오기 (관리자만)
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      // 사용자 목록 설정
+      setUsers(profilesData);
+      console.log('사용자 목록 설정 완료');
       
-      if (currentUser?.email === ADMIN_EMAIL) {
-        try {
-          const userIds = profilesData.map(profile => profile.user_id);
-          
-          // auth.users 테이블에서 실제 존재하는 사용자만 필터링
-          const { data: authUsers, error: authError } = await supabase
-            .from('auth.users')
-            .select('id, email')
-            .in('id', userIds)
-            .throwOnError();
-
-          if (authError) {
-            console.error('이메일 정보 조회 오류:', authError);
-            setUsers(profilesData);
-            return;
-          }
-
-          // 실제 존재하는 사용자 ID 목록
-          const validUserIds = authUsers?.map(user => user.id) || [];
-          
-          // 유효한 사용자 ID를 갖는 프로필만 필터링
-          const validProfiles = profilesData.filter(profile => 
-            validUserIds.includes(profile.user_id)
-          );
-          
-          const usersWithEmail = validProfiles.map(profile => {
-            const authUser = authUsers?.find(u => u.id === profile.user_id);
-            return {
-              ...profile,
-              email: authUser?.email || '이메일 정보 없음'
-            };
-          });
-          
-          setUsers(usersWithEmail);
-          
-          // 개발 정보: 유효하지 않은 프로필 수 로깅
-          const invalidProfilesCount = profilesData.length - validProfiles.length;
-          if (invalidProfilesCount > 0) {
-            console.warn(`${invalidProfilesCount}개의 유효하지 않은 프로필이 필터링되었습니다.`);
-          }
-        } catch (error) {
-          console.error('이메일 정보를 가져오는 중 오류가 발생했습니다:', error);
-          // 데이터 정합성을 위해 auth.users에 존재하는 사용자 ID만 표시
-          const { data: validUsers } = await supabase
-            .from('profiles')
-            .select('*')
-            .order('created_at', { ascending: false });
-            
-          setUsers(validUsers || []);
-        }
-      } else {
-        setUsers(profilesData);
-      }
     } catch (err: any) {
       console.error('사용자 목록 불러오기 오류:', err);
       setError(err.message || '사용자 목록을 불러오는 중 오류가 발생했습니다.');
@@ -263,79 +219,216 @@ export default function UsersAdmin() {
     }
   };
 
-  // 검색어로 필터링된 사용자 목록
-  const filteredUsers = searchTerm 
-    ? users.filter(user => 
-        user.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        user.email?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    : users;
-
-  const handleClassificationChange = async (userId: string, classification: string, gender: string) => {
-    try {
-      setLoading(true);
-      
-      // 1. profiles 테이블 업데이트
-      const { error: mainProfileError } = await supabase
-        .from('profiles')
-        .update({ classification })
-        .eq('user_id', userId);
-      
-      if (mainProfileError) {
-        throw mainProfileError;
-      }
-
-      // 2. 성별에 따른 프로필 테이블 업데이트
-      const genderTable = gender === 'male' ? 'male_profiles' : 'female_profiles';
-      const { error: genderProfileError } = await supabase
-        .from(genderTable)
-        .update({ classification })
-        .eq('user_id', userId);
-      
-      if (genderProfileError) {
-        console.error(`${genderTable} 업데이트 오류:`, genderProfileError);
-        // 성별 테이블 업데이트 실패 시에도 계속 진행
-      }
-
-      // 성공적으로 업데이트된 경우 목록 새로고침
-      await fetchUsers();
-      
-      // 성공 메시지 표시
-      const message = document.createElement('div');
-      message.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded shadow-lg z-50';
-      message.textContent = '등급이 성공적으로 업데이트되었습니다.';
-      document.body.appendChild(message);
-      setTimeout(() => message.remove(), 3000);
-
-    } catch (error: any) {
-      console.error('분류 업데이트 에러:', error);
-      
-      // 에러 메시지 표시
-      const errorMessage = document.createElement('div');
-      errorMessage.className = 'fixed bottom-4 right-4 bg-red-500 text-white px-6 py-3 rounded shadow-lg z-50';
-      errorMessage.textContent = '등급 업데이트 중 오류가 발생했습니다.';
-      document.body.appendChild(errorMessage);
-      setTimeout(() => errorMessage.remove(), 3000);
-    } finally {
-      setLoading(false);
+  /* 필터링된 사용자 목록 가져오기 */
+  const getFilteredProfiles = () => {
+    if (!users || users.length === 0) {
+      console.log('사용자 목록 없음');
+      return [];
     }
+    
+    console.log(`전체 사용자 수: ${users.length}명, 필터링 전`);
+    
+    // 검색 필터링
+    let filtered = [...users];
+    
+    // 성별 필터
+    if (selectedGender !== 'all') {
+      filtered = filtered.filter(user => user.gender === selectedGender);
+    }
+    
+    // 등급 필터
+    if (selectedClass !== 'all') {
+      filtered = filtered.filter(user => user.classification === selectedClass);
+    }
+    
+    // 검색어 필터
+    if (searchTerm.trim() !== '') {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(user => 
+        (user.name && user.name.toLowerCase().includes(searchLower)) ||
+        (user.email && user.email.toLowerCase().includes(searchLower)) ||
+        (user.user_id && user.user_id.toLowerCase().includes(searchLower))
+      );
+    }
+    
+    // 상태 필터
+    if (filter === 'blocked') {
+      filtered = filtered.filter(user => user.is_blocked === true);
+    } else if (filter === 'reported') {
+      filtered = filtered.filter(user => user.reports_count && user.reports_count > 0);
+    } else if (filter === 'active') {
+      // 최근 30일 이내에 활동한 사용자
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      filtered = filtered.filter(user => {
+        if (!user.last_active) return false;
+        const lastActive = new Date(user.last_active);
+        return lastActive > thirtyDaysAgo;
+      });
+    }
+    
+    console.log(`필터링 후 사용자 수: ${filtered.length}명`);
+    
+    return filtered;
   };
 
-  const getFilteredProfiles = () => {
-    let profiles: User[] = [];
+  // 사용자 목록 렌더링 부분
+  const renderUsersList = () => {
+    const filteredUsers = getFilteredProfiles();
     
-    if (selectedGender === 'all' || selectedGender === 'male') {
-      profiles = [...profiles, ...users.filter(user => user.gender === 'male')];
+    if (filteredUsers.length === 0) {
+      console.log('필터링된 사용자가 없음');
+      return (
+        <div className="py-8 text-center">
+          <p className="text-gray-500">조건에 맞는 사용자가 없습니다</p>
+        </div>
+      );
     }
-    if (selectedGender === 'all' || selectedGender === 'female') {
-      profiles = [...profiles, ...users.filter(user => user.gender === 'female')];
-    }
-
-    if (selectedClass !== 'all') {
-      profiles = profiles.filter(profile => profile.classification === selectedClass);
-    }
-
-    return profiles;
+    
+    console.log('사용자 목록 렌더링:', filteredUsers.length);
+    
+    return (
+      <div className="bg-white rounded shadow overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  이름
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  분류
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  나이/성별
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  인스타그램
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  가입일
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  상태
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  관리
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredUsers.map(user => {
+                const isBlocked = user.is_blocked;
+                const hasReports = user.reports_count && user.reports_count > 0;
+                
+                return (
+                  <tr 
+                    key={user.id} 
+                    className={`hover:bg-gray-50 ${isBlocked ? 'bg-red-50' : hasReports ? 'bg-yellow-50' : ''}`}
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 mr-3">
+                          {user.name ? user.name.charAt(0).toUpperCase() : '?'}
+                        </div>
+                        <div>
+                          <div className="font-medium">{user.name || '이름 없음'}</div>
+                          <div className="text-sm text-gray-500">{user.email || '-'}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs rounded-full font-medium ${
+                        user.classification === 'S' ? 'bg-purple-100 text-purple-800' :
+                        user.classification === 'A' ? 'bg-blue-100 text-blue-800' :
+                        user.classification === 'B' ? 'bg-green-100 text-green-800' :
+                        user.classification === 'C' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {user.classification || '미분류'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {user.age ? `${user.age}세` : '-'} / {' '}
+                      {user.gender === 'male' ? '남성' : 
+                       user.gender === 'female' ? '여성' : '기타'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {user.instagramId ? (
+                        <a
+                          href={`https://www.instagram.com/${user.instagramId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500 hover:underline"
+                        >
+                          @{user.instagramId}
+                        </a>
+                      ) : '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {formatDateKorean(user.created_at)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {isBlocked ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          차단됨
+                        </span>
+                      ) : hasReports ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          신고 {user.reports_count}건
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          정상
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleUserSelect(user)}
+                          className="text-blue-500 hover:text-blue-700"
+                        >
+                          상세정보
+                        </button>
+                        
+                        {isBlocked ? (
+                          <button
+                            onClick={() => handleUnblockUser(user.user_id)}
+                            className="text-green-500 hover:text-green-700"
+                            disabled={loading}
+                          >
+                            차단해제
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleBlockUser(user.user_id)}
+                            className="text-red-500 hover:text-red-700"
+                            disabled={loading}
+                          >
+                            차단
+                          </button>
+                        )}
+                        
+                        {hasReports && (
+                          <button
+                            onClick={() => handleClearReports(user.user_id)}
+                            className="text-yellow-500 hover:text-yellow-700"
+                            disabled={loading}
+                          >
+                            신고해제
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
   };
 
   if (loading && users.length === 0) {
@@ -479,155 +572,10 @@ export default function UsersAdmin() {
       </div>
       
       <div className="bg-white p-4 rounded shadow mb-6">
-        <p className="text-gray-700">총 {filteredUsers.length}명의 사용자가 등록되어 있습니다.</p>
+        <p className="text-gray-700">총 {getFilteredProfiles().length}명의 사용자가 등록되어 있습니다.</p>
       </div>
       
-      {filteredUsers.length === 0 ? (
-        <div className="bg-white p-8 rounded shadow text-center">
-          <p className="text-gray-500">등록된 사용자가 없습니다.</p>
-        </div>
-      ) : (
-        <div className="bg-white rounded shadow overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead>
-                <tr className="bg-gray-100 border-b">
-                  <th className="py-3 px-4 text-left">이름</th>
-                  <th className="py-3 px-4 text-left">인스타그램</th>
-                  <th className="py-3 px-4 text-left">분류</th>
-                  <th className="py-3 px-4 text-left">나이/성별</th>
-                  <th className="py-3 px-4 text-left">가입일</th>
-                  <th className="py-3 px-4 text-left">상태</th>
-                  <th className="py-3 px-4 text-left">매칭</th>
-                  <th className="py-3 px-4 text-left">관리</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {getFilteredProfiles().map((user) => {
-                  const isBlocked = user.is_blocked;
-                  const isReported = user.reports_count && user.reports_count > 0;
-                  
-                  return (
-                    <tr key={user.id} className={`hover:bg-gray-50 ${isBlocked ? 'bg-red-50' : isReported ? 'bg-yellow-50' : ''}`}>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center">
-                          <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 mr-3">
-                            {user.name ? user.name.charAt(0).toUpperCase() : '?'}
-                          </div>
-                          <div>
-                            <div className="font-medium">{user.name || '이름 없음'}</div>
-                            <div className="text-sm text-gray-500 truncate max-w-xs">{user.email}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        {user.instagramId && (
-                          <a
-                            href={`https://www.instagram.com/${user.instagramId}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-500 hover:underline"
-                          >
-                            {user.instagramId}
-                          </a>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="dropdown relative">
-                          <select
-                            value={user.classification || ''}
-                            onChange={(e) => handleClassificationChange(user.user_id, e.target.value, user.gender || '')}
-                            className="input-field w-full py-1 px-2 appearance-none border rounded"
-                            disabled={loading}
-                            style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none' }}
-                          >
-                            <option value="">선택</option>
-                            <option value="S">S</option>
-                            <option value="A">A</option>
-                            <option value="B">B</option>
-                            <option value="C">C</option>
-                          </select>
-                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                              <path d="M7 10l5 5 5-5H7z" />
-                            </svg>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        {user.age ? `${user.age}세` : '-'} / {' '}
-                        {user.gender === 'male' ? '남성' : 
-                         user.gender === 'female' ? '여성' : '기타'}
-                      </td>
-                      <td className="py-3 px-4">
-                        {formatDateKorean(user.created_at)}
-                      </td>
-                      <td className="py-3 px-4">
-                        {isBlocked ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                            차단됨
-                          </span>
-                        ) : isReported ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                            신고 {user.reports_count}건
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            정상
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        <span className="text-gray-700">
-                          {user.matches_count || 0}회
-                        </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleUserSelect(user)}
-                            className="text-blue-500 hover:text-blue-700"
-                          >
-                            상세정보
-                          </button>
-                          
-                          {isBlocked ? (
-                            <button
-                              onClick={() => handleUnblockUser(user.user_id)}
-                              className="text-green-500 hover:text-green-700"
-                              disabled={loading}
-                            >
-                              차단해제
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleBlockUser(user.user_id)}
-                              className="text-red-500 hover:text-red-700"
-                              disabled={loading}
-                            >
-                              차단
-                            </button>
-                          )}
-                          
-                          {isReported && (
-                            <button
-                              onClick={() => handleClearReports(user.user_id)}
-                              className="text-yellow-500 hover:text-yellow-700"
-                              disabled={loading}
-                            >
-                              신고해제
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      {renderUsersList()}
       
       {/* 사용자 상세 정보 모달 */}
       {selectedUser && (

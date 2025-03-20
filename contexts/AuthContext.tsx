@@ -1,55 +1,69 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
-import { User, AuthError } from '@supabase/supabase-js';
+import { User, Session, AuthError } from '@supabase/supabase-js';
 import { createClientSupabaseClient } from '@/utils/supabase';
 import { Profile } from '@/types';
+
+const supabase = createClientSupabaseClient();
 
 type AuthContextType = {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
   hasCompletedOnboarding: boolean;
+  isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   updateProfile: (profile: Partial<Profile>) => Promise<{ error: Error | null }>;
 };
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | null>(null);
+
+const ADMIN_EMAIL = 'notify@smartnewb.com';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
-  const supabase = createClientSupabaseClient();
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    // 초기 사용자 세션 확인
     const initializeAuth = async () => {
       try {
-        console.log('AuthContext: 초기화 시작');
         setLoading(true);
+        console.log('AuthContext: 인증 상태 초기화 시작');
         
-        const { data: { session } } = await supabase.auth.getSession();
-        console.log('Session check result:', session ? 'Session exists' : 'No session');
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('세션 확인 오류:', error);
+          return;
+        }
         
         if (session?.user) {
-          console.log('세션에서 사용자 발견:', session.user.id);
+          console.log('기존 세션 발견, 사용자 정보 설정');
           setUser(session.user);
-          await fetchProfile(session.user.id);
+          
+          // 관리자 여부 확인
+          const isUserAdmin = session.user.email === ADMIN_EMAIL;
+          setIsAdmin(isUserAdmin);
+          console.log('관리자 여부:', isUserAdmin);
+          
+          // 관리자가 아닌 경우에만 프로필 확인
+          if (!isUserAdmin) {
+            await fetchProfile(session.user.id);
+          } else {
+            // 관리자는 온보딩이 필요없음
+            setHasCompletedOnboarding(true);
+          }
         } else {
-          console.log('사용자 세션이 없음');
-          setUser(null);
-          setProfile(null);
-          setHasCompletedOnboarding(false);
+          console.log('세션 없음, 로그인 필요');
         }
-      } catch (error) {
-        console.error('인증 초기화 오류:', error);
-        setUser(null);
-        setProfile(null);
-        setHasCompletedOnboarding(false);
+      } catch (err) {
+        console.error('AuthContext 초기화 오류:', err);
       } finally {
         setLoading(false);
         console.log('AuthContext: 초기화 완료');
@@ -61,18 +75,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // 인증 상태 변경 구독
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event: string, session: Session | null) => {
       console.log('Auth state changed:', event, session ? 'session exists' : 'no session');
       
       if (session?.user) {
         console.log('새 세션 사용자:', session.user.id);
         setUser(session.user);
-        await fetchProfile(session.user.id);
+        
+        // 관리자 여부 확인
+        const isUserAdmin = session.user.email === ADMIN_EMAIL;
+        setIsAdmin(isUserAdmin);
+        console.log('관리자 여부:', isUserAdmin);
+        
+        // 관리자가 아닌 경우에만 프로필 확인
+        if (!isUserAdmin) {
+          await fetchProfile(session.user.id);
+        } else {
+          // 관리자는 온보딩이 필요없음
+          setHasCompletedOnboarding(true);
+        }
       } else {
         console.log('세션 종료됨');
         setUser(null);
         setProfile(null);
         setHasCompletedOnboarding(false);
+        setIsAdmin(false);
       }
     });
 
@@ -268,6 +295,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     profile,
     loading,
     hasCompletedOnboarding,
+    isAdmin,
     signIn,
     signUp,
     signOut,
@@ -279,7 +307,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
