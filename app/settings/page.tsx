@@ -40,7 +40,7 @@ export default function Settings() {
             onClick={() => router.push('/settings/profile')}
             className="btn-primary w-full"
           >
-            프로필 수정
+            프로필 조회
           </button>
         </div>
 

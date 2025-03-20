@@ -255,11 +255,11 @@ export default function SettingsProfile() {
           onClick={() => {
             // 온보딩 데이터 저장
             localStorage.setItem('editProfileData', JSON.stringify(profileData));
-            router.push('/profile');
+            router.back(); // 이전 페이지로 이동
           }}
           className="btn-primary w-full"
         >
-          프로필 수정하기
+          되돌아가기
         </button>
       </div>
     </div>
