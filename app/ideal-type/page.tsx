@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
+import { useAuth } from '@/contexts/AuthContext';
+import { createClientSupabaseClient } from '@/utils/supabase';
 import { findBestMatch } from '@/app/matchingAlgorithm';
 
 interface IdealTypeForm {
@@ -40,10 +41,11 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClientSupabaseClient();
 
 export default function IdealType() {
   const router = useRouter();
+  const { user } = useAuth();
   const [formData, setFormData] = useState<IdealTypeForm>({
     heightRange: { min: 140, max: 200 },
     ageType: 'any',
@@ -187,34 +189,16 @@ export default function IdealType() {
     }
 
     try {
-      // 세션 확인 및 새로고침
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error('세션 확인 오류:', sessionError);
-        showTemporaryModal('로그인이 만료되었습니다. 다시 로그인해주세요.');
-        router.push('/login');
+      if (!user) {
+        console.error('사용자 인증 정보가 없습니다.');
+        setModalMessage('로그인이 필요합니다.');
+        setShowModal(true);
         return;
       }
 
-      if (!session) {
-        // 세션이 없으면 새로고침 시도
-        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-        
-        if (refreshError || !refreshData.session) {
-          console.error('세션 새로고침 오류:', refreshError);
-          showTemporaryModal('로그인이 만료되었습니다. 다시 로그인해주세요.');
-          router.push('/login');
-          return;
-        }
-      }
-
-      const userId = session?.user.id;
-      console.log('현재 사용자 ID:', userId);
-
-      // 이상형 정보 데이터 준비
+      // 저장할 데이터 준비
       const preferenceData = {
-        user_id: userId,
+        user_id: user.id,
         preferred_age_type: formData.ageType,
         preferred_height_min: formData.heightRange.min,
         preferred_height_max: formData.heightRange.max,
@@ -230,33 +214,33 @@ export default function IdealType() {
         updated_at: new Date().toISOString()
       };
 
-      // upsert를 사용하여 새로운 데이터 삽입 또는 기존 데이터 업데이트
-      const { error: upsertError } = await supabase
+      console.log('이상형 정보 저장 시작:', preferenceData);
+
+      // 새로운 데이터 삽입 또는 업데이트
+      const { error } = await supabase
         .from('user_preferences')
         .upsert(preferenceData, {
           onConflict: 'user_id',
           ignoreDuplicates: false
         });
 
-      if (upsertError) {
-        console.error('이상형 정보 저장 오류:', upsertError);
-        throw upsertError;
-      }
+        if (error) {
+          console.error('🛑 이상형 정보 저장 오류 발생:', error);
+          console.log('📌 오류 코드:', error.code);
+          console.log('📌 오류 메시지:', error.message);
+          console.log('📌 오류 상세 정보:', error.details);
+        }
 
-      // localStorage에 이상형 설정 완료 상태 저장
-      localStorage.setItem('hasSetIdealType', 'true');
-      localStorage.setItem('idealType', JSON.stringify(formData));
-
-      showTemporaryModal('이상형 정보가 성공적으로 저장되었습니다!');
+      console.log('이상형 정보 저장 성공');
+      setModalMessage('이상형 정보가 저장되었습니다.');
+      setShowModal(true);
       
-      // 성공 후 홈으로 이동
-      setTimeout(() => {
-        router.push('/home');
-      }, 2000);
-
+      // 성공 시 홈으로 이동
+      setTimeout(() => router.push('/home'), 2000);
     } catch (error) {
-      console.error('이상형 정보 저장 중 오류 발생:', error);
-      showTemporaryModal('이상형 정보 저장에 실패했습니다. 다시 시도해주세요.');
+      console.error('이상형 정보 저장 중 오류:', error);
+      setModalMessage('저장 중 오류가 발생했습니다. 다시 시도해주세요.');
+      setShowModal(true);
     }
   };
 

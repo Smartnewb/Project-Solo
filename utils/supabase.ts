@@ -145,14 +145,23 @@ export type Profile = {
   updated_at: string;
 };
 
-// 사용자 선호도 타입 정의
+// 사용자 선호도 타입 정의 수정
 export type UserPreferences = {
-  id: string;
+  id?: string;
   user_id: string;
-  preferred_genres: string[];
-  preferred_days: string[];
-  preferred_times: string[];
-  created_at: string;
+  preferred_age_type: string;
+  preferred_height_min: number;
+  preferred_height_max: number;
+  preferred_personalities: string[];
+  preferred_dating_styles: string[];
+  preferred_lifestyles: string[];
+  preferred_interests: string[];
+  preferred_drinking: string;
+  preferred_smoking: string;
+  preferred_tattoo: string;
+  preferred_mbti: string;
+  disliked_mbti: string;
+  created_at?: string;
   updated_at: string;
 };
 

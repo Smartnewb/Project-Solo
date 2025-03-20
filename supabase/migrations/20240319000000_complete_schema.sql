@@ -249,4 +249,42 @@ SET role = 'admin'
 WHERE user_id IN (
     SELECT id FROM auth.users 
     WHERE email = 'notify@smartnewb.com'
-); 
+);
+
+-- user_preferences 테이블 재생성
+DROP TABLE IF EXISTS user_preferences;
+
+CREATE TABLE user_preferences (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id UUID NOT NULL,
+  preferred_age_type TEXT,
+  preferred_height_min INTEGER,
+  preferred_height_max INTEGER,
+  preferred_personalities TEXT[],
+  preferred_dating_styles TEXT[],
+  preferred_lifestyles TEXT[],
+  preferred_interests TEXT[],
+  preferred_drinking TEXT,
+  preferred_smoking TEXT,
+  preferred_tattoo TEXT,
+  preferred_mbti TEXT,
+  disliked_mbti TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT user_preferences_user_id_fkey 
+    FOREIGN KEY (user_id) 
+    REFERENCES auth.users(id) 
+    ON DELETE CASCADE
+);
+
+-- RLS 정책 설정
+ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "사용자는 자신의 선호도를 관리할 수 있음"
+  ON user_preferences
+  FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+-- 인덱스 생성
+CREATE INDEX user_preferences_user_id_idx ON user_preferences(user_id); 
