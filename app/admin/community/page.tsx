@@ -49,6 +49,7 @@ export default function AdminCommunity() {
   const [filterType, setFilterType] = useState<'all' | 'reported' | 'blinded'>('all');
   const [selectedPosts, setSelectedPosts] = useState<string[]>([]);
   const [showReportDetails, setShowReportDetails] = useState<string | null>(null);
+  const [message, setMessage] = useState({ type: '', content: '' });
   
   // 상태와 설정 관련 로그 추가
   console.log('현재 환경 변수:', {
@@ -141,9 +142,21 @@ export default function AdminCommunity() {
           
           console.log('신고된 게시글 수:', filteredPosts.length);
           setPosts(filteredPosts);
+          
+          // 게시글이 없는 경우 메시지 표시
+          if (filteredPosts.length === 0) {
+            setMessage({
+              type: 'info',
+              content: '신고된 게시글이 없습니다.'
+            });
+          }
           return;
         } catch (reportedError) {
           console.error('신고된 게시글 조회 에러:', reportedError);
+          setMessage({
+            type: 'error',
+            content: '신고된 게시글을 불러오는 중 오류가 발생했습니다.'
+          });
           // 에러 발생 시 모든 게시글 불러옴
           const { data: allPosts, error: postsError } = await query;
           if (postsError) throw postsError;
@@ -151,76 +164,40 @@ export default function AdminCommunity() {
           return;
         }
       } else if (filterType === 'blinded') {
-        try {
-          // Check if isBlinded column exists first
-          const { data: checkBlindedField, error: checkError } = await supabase.rpc(
-            'check_column_exists',
-            { table_name: 'posts', column_name: 'isBlinded' }
-          );
-          
-          if (checkError) {
-            console.error('isBlinded 필드 확인 에러:', checkError);
-            setPosts([]);
-            return;
-          }
-          
-          if (checkBlindedField) {
-            // isBlinded 필드로 필터링 시도
-            const { data, error } = await supabase
-              .from('posts')
-              .select('*, comments(*)')
-              .eq('isBlinded', true)
-              .order('created_at', { ascending: false });
-                
-            if (error) {
-              // 필드가 없는 경우나 다른 에러
-              console.error('블라인드 게시글 조회 에러:', error);
-              
-              // 빈 배열 반환 (필드가 없는 경우 블라인드 게시글은 없음)
-              setPosts([]);
-              return;
-            }
-            
-            console.log('블라인드 게시글 수:', data?.length || 0);
-            setPosts(data || []);
-          } else {
-            console.log('isBlinded 필드가 없습니다.');
-            setPosts([]);
-          }
-          return;
-        } catch (blindedError) {
-          console.error('블라인드 필드가 없거나 필터링 에러:', blindedError);
-          // 에러 발생 시 빈 배열 반환 (일반적으로 블라인드 필드가 없는 경우)
-          setPosts([]);
-          return;
-        }
+        query = query.eq('isBlinded', true);
       }
 
-      // 모든 게시글 조회
-      const { data: postsData, error: postsError } = await query;
-      if (postsError) {
-        console.error('전체 게시글 조회 에러:', postsError);
-        throw postsError;
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('게시글 조회 에러:', error);
+        throw error;
       }
       
-      console.log('로드된 게시글 수:', postsData?.length || 0);
-      setPosts(postsData || []);
+      console.log('조회된 게시글 수:', data?.length || 0);
+      setPosts(data || []);
+      
+      // 게시글이 없는 경우 메시지 표시
+      if (!data || data.length === 0) {
+        setMessage({
+          type: 'info',
+          content: filterType === 'all' 
+            ? '등록된 게시글이 없습니다.' 
+            : filterType === 'blinded' 
+              ? '블라인드 처리된 게시글이 없습니다.'
+              : '게시글이 없습니다.'
+        });
+      } else {
+        // 게시글이 있는 경우 메시지 초기화
+        setMessage({ type: '', content: '' });
+      }
     } catch (error) {
-      console.error('게시글을 불러오는 중 오류가 발생했습니다:', error);
-      setErrorMessage('게시글을 불러오는 중 오류가 발생했습니다. 모든 게시글을 불러옵니다.');
-      setShowErrorModal(true);
-      
-      try {
-        // 안전한 쿼리로 모든 게시글 불러오기
-        const { data } = await supabase
-          .from('posts')
-          .select('*, comments(*)')
-          .order('created_at', { ascending: false });
-        setPosts(data || []);
-      } catch (fallbackError) {
-        console.error('최종 게시글 불러오기 실패:', fallbackError);
-        setPosts([]);
-      }
+      console.error('게시글 조회 중 오류 발생:', error);
+      setMessage({
+        type: 'error',
+        content: '게시글을 불러오는 중 오류가 발생했습니다.'
+      });
+      setPosts([]);
     }
   };
 
@@ -586,48 +563,50 @@ export default function AdminCommunity() {
         </div>
       </div>
 
+      {/* 메시지 표시 영역 */}
+      {message.content && (
+        <div className={`max-w-6xl mx-auto px-4 py-4 mt-4 rounded-lg ${
+          message.type === 'error' ? 'bg-red-100 text-red-700' :
+          message.type === 'success' ? 'bg-green-100 text-green-700' :
+          'bg-blue-100 text-blue-700'
+        }`}>
+          {message.content}
+        </div>
+      )}
+
       {/* 게시글 목록 */}
-      <div className="max-w-6xl mx-auto p-4">
-        <div className="space-y-4">
-          {posts.length > 0 ? (
-            posts.map((post) => (
-              <div key={post.userId} className="bg-white rounded-lg shadow p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedPosts.includes(post.userId)}
-                      onChange={(e) => {
-                        const newSelectedPosts = e.target.checked
-                          ? [...selectedPosts, post.userId]
-                          : selectedPosts.filter(id => id !== post.userId);
-                        console.log('Selected post:', post.userId);
-                        console.log('New selected posts:', newSelectedPosts);
-                        setSelectedPosts(newSelectedPosts);
-                      }}
-                      className="w-4 h-4"
-                    />
-                    <span className="text-2xl">{post.emoji}</span>
-                    <div>
-                      <p className="font-medium">{post.nickname}</p>
-                      <p className="text-sm text-gray-500">{post.studentid}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm text-gray-500">
+      {posts.length > 0 ? (
+        <div className="max-w-6xl mx-auto px-4 mt-6">
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-200">
+                {posts.map((post) => (
+                  <tr key={post.userId}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10">
+                          <img className="h-10 w-10 rounded-full" src={post.emoji} alt={post.nickname} />
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">{post.nickname}</div>
+                          <div className="text-sm text-gray-500">{post.studentid}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{post.content}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(post.created_at).toLocaleString()}
-                    </span>
-                    {post.isEdited && (
-                      <span className="text-sm text-gray-500">(수정됨)</span>
-                    )}
-                    <div className="flex gap-2">
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      {post.isEdited && (
+                        <span className="text-gray-500">수정됨</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       {post.isdeleted || post.isBlinded ? (
-                        <button
-                          onClick={() => handleRestoreContent('post', post.userId)}
-                          className="text-sm text-blue-500 hover:text-blue-600"
-                        >
-                          복구
-                        </button>
+                        <span className="text-gray-500">삭제됨</span>
                       ) : (
                         <>
                           <button
@@ -644,140 +623,18 @@ export default function AdminCommunity() {
                           </button>
                         </>
                       )}
-                    </div>
-                  </div>
-                </div>
-
-                {post.isdeleted ? (
-                  <p className="text-gray-500 text-center mb-2">삭제된 게시물입니다.</p>
-                ) : post.isBlinded ? (
-                  <p className="text-gray-500 text-center mb-2">블라인드 처리된 게시물입니다.</p>
-                ) : (
-                  <>
-                    <p className="text-gray-700 whitespace-pre-wrap mb-2">{post.content}</p>
-                    {post.reports && post.reports.length > 0 && (
-                      <div className="bg-red-50 text-red-700 px-4 py-2 rounded-lg mb-2">
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium">신고 {post.reports.length}건</p>
-                          <button
-                            onClick={() => setShowReportDetails(showReportDetails === post.userId ? null : post.userId)}
-                            className="text-sm underline"
-                          >
-                            {showReportDetails === post.userId ? '접기' : '자세히 보기'}
-                          </button>
-                        </div>
-                        {showReportDetails === post.userId && (
-                          <div className="mt-2 space-y-1">
-                            {post.reports.map((report, index) => (
-                              <p key={index} className="text-sm">
-                                신고자: {report}
-                              </p>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {/* 댓글 목록 */}
-                {post.comments && post.comments.length > 0 && (
-                  <div className="mt-4 space-y-2">
-                    <h3 className="font-medium text-gray-900">댓글 ({post.comments.length})</h3>
-                    {post.comments.map((comment: Comment) => (
-                      <div key={comment.id} className="bg-gray-50 p-3 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <div>
-                              <p className="font-medium text-sm">{comment.nickname}</p>
-                              <p className="text-xs text-gray-500">{comment.studentid}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500">
-                              {new Date(comment.created_at).toLocaleString()}
-                            </span>
-                            {comment.isEdited && (
-                              <span className="text-xs text-gray-500">(수정됨)</span>
-                            )}
-                            <div className="flex gap-2">
-                              {comment.isdeleted || comment.isBlinded ? (
-                                <button
-                                  onClick={() => handleRestoreContent('comment', comment.id)}
-                                  className="text-xs text-blue-500 hover:text-blue-600"
-                                >
-                                  복구
-                                </button>
-                              ) : (
-                                <>
-                                  <button
-                                    onClick={() => handleBlindComment(comment.id)}
-                                    className="text-xs text-yellow-500 hover:text-yellow-600"
-                                  >
-                                    블라인드
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteComment(comment.id)}
-                                    className="text-xs text-red-500 hover:text-red-600"
-                                  >
-                                    삭제
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {comment.isdeleted ? (
-                          <p className="text-gray-500 text-center">삭제된 댓글입니다.</p>
-                        ) : comment.isBlinded ? (
-                          <p className="text-gray-500 text-center">블라인드 처리된 댓글입니다.</p>
-                        ) : (
-                          <>
-                            <p className="text-sm text-gray-700">{comment.content}</p>
-                            {comment.reports && comment.reports.length > 0 && (
-                              <div className="bg-red-50 text-red-700 px-3 py-1 rounded-lg mt-2 text-sm">
-                                <div className="flex items-center justify-between">
-                                  <p className="font-medium">신고 {comment.reports.length}건</p>
-                                  <button
-                                    onClick={() => setShowReportDetails(showReportDetails === comment.id ? null : comment.id)}
-                                    className="text-xs underline"
-                                  >
-                                    {showReportDetails === comment.id ? '접기' : '자세히 보기'}
-                                  </button>
-                                </div>
-                                {showReportDetails === comment.id && (
-                                  <div className="mt-1 space-y-1">
-                                    {comment.reports.map((report, index) => (
-                                      <p key={index} className="text-xs">
-                                        신고자: {report}
-                                      </p>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))
-          ) : (
-            <div className="bg-white rounded-lg shadow p-8 text-center">
-              {filterType === 'all' ? (
-                <p className="text-gray-700 text-lg">게시글이 없습니다.</p>
-              ) : filterType === 'reported' ? (
-                <p className="text-gray-700 text-lg">신고된 게시글이 없습니다.</p>
-              ) : (
-                <p className="text-gray-700 text-lg">블라인드 처리된 게시글이 없습니다.</p>
-              )}
-            </div>
-          )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      ) : !message.type && (
+        <div className="flex items-center justify-center h-64">
+          <p className="text-gray-500">게시글을 불러오는 중...</p>
+        </div>
+      )}
 
       {/* 하단 네비게이션 */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t py-2">

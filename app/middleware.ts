@@ -1,19 +1,18 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { ADMIN_EMAIL } from '@/utils/config'
 
 export async function middleware(request: NextRequest) {
-  // 정적 리소스 및 API 요청은 즉시 패스스루
-  if (
-    request.nextUrl.pathname.startsWith('/_next') ||
-    request.nextUrl.pathname.startsWith('/api') ||
-    request.nextUrl.pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js)$/)
-  ) {
+  // 정적 자산에 대한 요청은 바로 통과
+  if (request.nextUrl.pathname.startsWith('/_next') || 
+      request.nextUrl.pathname.startsWith('/static') ||
+      request.nextUrl.pathname.match(/\.(?:jpg|jpeg|gif|png|svg|ico)$/)) {
     return NextResponse.next()
   }
 
-  let supabaseResponse = NextResponse.next({
-    request,
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
   })
 
   const supabase = createServerClient(
@@ -25,57 +24,47 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({
-            request,
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options)
           })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
         },
       },
     }
   )
 
-  // Do not run code between createServerClient and
-  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-  // issues with users being randomly logged out.
+  const { data: { user } } = await supabase.auth.getUser()
 
-  // IMPORTANT: DO NOT REMOVE auth.getUser()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // 공개 경로 정의
+  const publicPaths = ['/login', '/auth', '/api/auth', '/ideal-type']
+  const isPublicPath = publicPaths.some(path => 
+    request.nextUrl.pathname.startsWith(path)
+  )
 
-  // 공개 경로는 세션 체크 없이 통과
-  if (['/signup', '/'].includes(request.nextUrl.pathname)) {
-    return supabaseResponse
+  // 인증이 필요한 경로에 대한 처리
+  if (!user && !isPublicPath) {
+    const redirectUrl = new URL('/login', request.url)
+    return NextResponse.redirect(redirectUrl)
   }
 
-  // 인증이 필요한 경로에 대한 체크
-  if (!user) {
-    return NextResponse.redirect(new URL('/', request.url))
-  }
-
-  // 관리자 전용 경로 체크
+  // 관리자 경로에 대한 추가 검증
   if (request.nextUrl.pathname.startsWith('/admin')) {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session?.user.email !== ADMIN_EMAIL) {
-      return NextResponse.redirect(new URL('/home', request.url))
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user?.id)
+      .single()
+
+    if (!profile?.is_admin) {
+      const redirectUrl = new URL('/', request.url)
+      return NextResponse.redirect(redirectUrl)
     }
   }
 
-  return supabaseResponse
+  return response
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
-     */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 } 

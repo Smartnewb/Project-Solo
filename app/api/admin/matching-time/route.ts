@@ -1,41 +1,39 @@
 import { NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { SupabaseClient } from '@supabase/supabase-js';
 
-export async function POST(request: Request) {
+export async function GET() {
   try {
-    console.log('매칭 시간 설정 요청 시작');
-    const { matchingDateTime } = await request.json();
-    console.log('요청 데이터:', { matchingDateTime });
+    console.log('매칭 시간 조회 요청 시작');
     
-    // 관리자 권한 확인
     const cookieStore = cookies();
-    console.log('쿠키 가져오기 성공');
-    
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
-    console.log('Supabase 클라이언트 생성 성공');
-    
-    // 테이블 존재 여부 확인
-    try {
-      // 간단한 쿼리로 테이블 존재 여부 확인
-      const { error: tableCheckError } = await supabase
-        .from('system_settings')
-        .select('id')
-        .limit(1);
-        
-      if (tableCheckError) {
-        console.error('테이블 확인 오류:', tableCheckError);
-        // 테이블이 없거나 권한이 없는 경우 테이블 생성 시도
-        await createSystemSettingsTable(supabase);
-      } else {
-        console.log('system_settings 테이블 존재 확인됨');
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+          set(name: string, value: string, options: any) {
+            try {
+              cookieStore.set(name, value, options);
+            } catch (error) {
+              // Handle error if needed
+            }
+          },
+          remove(name: string, options: any) {
+            try {
+              cookieStore.set(name, '', { ...options, maxAge: 0 });
+            } catch (error) {
+              // Handle error if needed
+            }
+          },
+        },
       }
-    } catch (tableCheckErr) {
-      console.error('테이블 확인 중 오류:', tableCheckErr);
-      await createSystemSettingsTable(supabase);
-    }
-    
+    );
+
+    // 세션 확인
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
     if (sessionError) {
@@ -49,7 +47,6 @@ export async function POST(request: Request) {
     }
     
     console.log('사용자 이메일:', session.user.email);
-    // 이메일 주소로 관리자 확인 (개발 환경에서는 모든 사용자 허용)
     const isAdmin = process.env.NODE_ENV === 'development' || session.user.email === 'notify@smartnewb.com';
     
     if (!isAdmin) {
@@ -57,137 +54,118 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '관리자 권한이 없습니다.' }, { status: 403 });
     }
 
-    // system_settings 테이블에 매칭 시간 업데이트
-    console.log('system_settings 테이블 업데이트 시작');
-    
-    try {
-      const { error: upsertError } = await supabase
-        .from('system_settings')
-        .upsert({ 
-          id: 'matching_time',
-          matching_datetime: matchingDateTime,
-          updated_at: new Date().toISOString()
-        });
+    // 매칭 시간 조회
+    const { data: settings, error: settingsError } = await supabase
+      .from('system_settings')
+      .select('matching_time')
+      .eq('id', 'matching_control')
+      .single();
 
-      if (upsertError) {
-        console.error('system_settings 업데이트 오류:', upsertError);
-        return NextResponse.json({ 
-          error: '데이터베이스 업데이트 오류', 
-          details: upsertError.message 
-        }, { status: 500 });
-      }
-    } catch (dbError) {
-      console.error('데이터베이스 오류:', dbError);
-      
-      // 테이블이 없는 경우를 위한 오류 처리
-      return NextResponse.json({ 
-        error: '데이터베이스 오류가 발생했습니다.', 
-        details: dbError instanceof Error ? dbError.message : '알 수 없는 오류' 
-      }, { status: 500 });
+    if (settingsError) {
+      console.error('매칭 시간 조회 오류:', settingsError);
+      return NextResponse.json({ error: '매칭 시간 조회에 실패했습니다.' }, { status: 500 });
     }
 
-    console.log('매칭 시간 업데이트 성공');
-    return NextResponse.json({ success: true, matchingDateTime });
+    console.log('매칭 시간 조회 성공:', settings?.matching_time);
+    return NextResponse.json({ matchingTime: settings?.matching_time || null });
   } catch (error) {
-    console.error('매칭 시간 설정 오류:', error);
+    console.error('매칭 시간 조회 중 오류 발생:', error);
     return NextResponse.json({ 
-      error: '매칭 시간 설정에 실패했습니다.', 
+      error: '매칭 시간 조회에 실패했습니다.', 
       details: error instanceof Error ? error.message : '알 수 없는 오류' 
     }, { status: 500 });
   }
 }
 
-// 테이블 생성 함수
-async function createSystemSettingsTable(supabase: SupabaseClient) {
-  console.log('system_settings 테이블 생성 시도');
-  
+export async function POST(request: Request) {
   try {
-    // SQL 쿼리를 사용하여 테이블 생성
-    const { error } = await supabase.rpc('create_system_settings_table');
+    console.log('매칭 시간 설정 요청 시작');
+    const { matchingTime } = await request.json();
+    console.log('요청 데이터:', { matchingTime });
     
-    if (error) {
-      console.error('테이블 생성 RPC 오류:', error);
-      // RPC가 없는 경우 기본값 반환
-      return;
-    }
-    
-    console.log('system_settings 테이블 생성 성공');
-  } catch (createError) {
-    console.error('테이블 생성 중 오류:', createError);
-  }
-}
-
-export async function GET() {
-  try {
-    console.log('매칭 시간 조회 요청 시작');
     const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
-    
-    try {
-      // 간단한 쿼리로 테이블 존재 여부 확인
-      const { error: tableCheckError } = await supabase
-        .from('system_settings')
-        .select('id')
-        .limit(1);
-        
-      if (tableCheckError) {
-        console.error('테이블 확인 오류:', tableCheckError);
-        // 테이블이 없거나 권한이 없는 경우 기본값 반환
-        return NextResponse.json({ matchingDateTime: null });
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+          set(name: string, value: string, options: any) {
+            try {
+              cookieStore.set(name, value, options);
+            } catch (error) {
+              // Handle error if needed
+            }
+          },
+          remove(name: string, options: any) {
+            try {
+              cookieStore.set(name, '', { ...options, maxAge: 0 });
+            } catch (error) {
+              // Handle error if needed
+            }
+          },
+        },
       }
-    } catch (tableCheckErr) {
-      console.error('테이블 확인 중 오류:', tableCheckErr);
-      return NextResponse.json({ matchingDateTime: null });
-    }
-    
-    // 관리자 권한 확인 (선택적)
+    );
+
+    // 세션 확인
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
     if (sessionError) {
-      console.warn('세션 확인 중 오류 발생:', sessionError);
-      // 조회는 권한 검사 없이 계속 진행
-    } else {
-      console.log('요청 사용자:', session?.user?.email || '인증되지 않음');
+      console.error('세션 조회 오류:', sessionError);
+      return NextResponse.json({ error: '인증 세션 오류가 발생했습니다.' }, { status: 401 });
     }
     
-    // system_settings 테이블에서 매칭 시간 조회
-    console.log('system_settings 테이블 조회 시작');
-    
-    try {
-      const { data, error: queryError } = await supabase
-        .from('system_settings')
-        .select('matching_datetime')
-        .eq('id', 'matching_time')
-        .single();
-
-      if (queryError) {
-        console.error('매칭 시간 조회 쿼리 오류:', queryError);
-        
-        // PGRST116 오류는 일치하는 행이 없음을 의미
-        if (queryError.code === 'PGRST116') {
-          console.log('매칭 시간 설정이 없습니다. 기본값 반환');
-          return NextResponse.json({ matchingDateTime: null });
-        }
-        
-        return NextResponse.json({ 
-          matchingDateTime: null,
-          error: queryError.message
-        });
-      }
-
-      console.log('매칭 시간 조회 성공:', data?.matching_datetime);
-      return NextResponse.json({ matchingDateTime: data?.matching_datetime });
-    } catch (dbError) {
-      console.error('데이터베이스 조회 오류:', dbError);
-      
-      // 테이블이 없는 경우를 위한 오류 처리
-      return NextResponse.json({ matchingDateTime: null });
+    if (!session || !session.user) {
+      console.warn('세션 없음 - 인증되지 않은 요청');
+      return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
     }
+    
+    console.log('사용자 이메일:', session.user.email);
+    const isAdmin = process.env.NODE_ENV === 'development' || session.user.email === 'notify@smartnewb.com';
+    
+    if (!isAdmin) {
+      console.warn('관리자 아님:', session.user.email);
+      return NextResponse.json({ error: '관리자 권한이 없습니다.' }, { status: 403 });
+    }
+
+    // 매칭 시간 유효성 검사
+    const matchingDate = new Date(matchingTime);
+    if (isNaN(matchingDate.getTime())) {
+      return NextResponse.json({ error: '유효하지 않은 날짜 형식입니다.' }, { status: 400 });
+    }
+
+    // 매칭 시간이 현재 시간보다 이후인지 확인
+    if (matchingDate < new Date()) {
+      return NextResponse.json({ error: '매칭 시간은 현재 시간 이후로 설정해야 합니다.' }, { status: 400 });
+    }
+
+    // 매칭 시간 설정
+    const { error: upsertError } = await supabase
+      .from('system_settings')
+      .upsert({ 
+        id: 'matching_control',
+        matching_time: matchingTime,
+        updated_at: new Date().toISOString()
+      });
+
+    if (upsertError) {
+      console.error('매칭 시간 설정 오류:', upsertError);
+      return NextResponse.json({ 
+        error: '매칭 시간 설정에 실패했습니다.', 
+        details: upsertError.message 
+      }, { status: 500 });
+    }
+
+    console.log('매칭 시간 설정 성공:', matchingTime);
+    return NextResponse.json({ success: true, matchingTime });
   } catch (error) {
-    console.error('매칭 시간 조회 오류:', error);
+    console.error('매칭 시간 설정 중 오류 발생:', error);
     return NextResponse.json({ 
-      error: '매칭 시간 조회에 실패했습니다.', 
-      details: error instanceof Error ? error.message : '알 수 없는 오류',
-      matchingDateTime: null
+      error: '매칭 시간 설정에 실패했습니다.', 
+      details: error instanceof Error ? error.message : '알 수 없는 오류' 
     }, { status: 500 });
   }
 } 

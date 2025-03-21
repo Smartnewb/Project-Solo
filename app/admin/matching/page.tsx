@@ -5,11 +5,12 @@ import { useRouter } from 'next/navigation';
 
 export default function AdminMatching() {
   const [matchingDate, setMatchingDate] = useState('');
-  const [matchingTime, setMatchingTime] = useState('');
-  const [isSignupEnabled, setIsSignupEnabled] = useState(true);
+  const [isSignupEnabled, setIsSignupEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState({ type: '', content: '' });
-  const router = useRouter();
+  const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; content: string }>({
+    type: 'info',
+    content: ''
+  });
 
   useEffect(() => {
     fetchMatchingTime();
@@ -18,32 +19,30 @@ export default function AdminMatching() {
 
   const fetchMatchingTime = async () => {
     try {
-      console.log('매칭 시간 정보 가져오기 시작');
       setIsLoading(true);
+      console.log('매칭 시간 조회 시작');
       
       const response = await fetch('/api/admin/matching-time');
-      console.log('매칭 시간 API 응답 상태:', response.status);
       
       if (!response.ok) {
         throw new Error(`API 응답 오류: ${response.status}`);
       }
       
       const data = await response.json();
-      console.log('받은 매칭 시간 데이터:', data);
+      console.log('매칭 시간 데이터:', data);
       
-      if (data.matchingDateTime) {
-        const date = new Date(data.matchingDateTime);
-        const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
-        setMatchingDate(localDate.toISOString().split('T')[0]);
-        setMatchingTime(localDate.toTimeString().slice(0, 5));
-        console.log('매칭 시간 설정됨:', localDate.toLocaleString());
+      if (data.matchingTime) {
+        setMatchingDate(data.matchingTime);
+        setMessage({
+          type: 'info',
+          content: '현재 설정된 매칭 시간을 불러왔습니다.'
+        });
       } else {
-        console.log('매칭 시간이 설정되지 않았거나 null입니다');
-        // 기본 날짜 설정 (내일)
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        setMatchingDate(tomorrow.toISOString().split('T')[0]);
-        setMatchingTime('18:00'); // 기본 시간을 오후 6시로 설정
+        setMatchingDate('');
+        setMessage({
+          type: 'info',
+          content: '설정된 매칭 시간이 없습니다.'
+        });
       }
     } catch (error) {
       console.error('매칭 시간 조회 실패:', error);
@@ -67,7 +66,19 @@ export default function AdminMatching() {
       
       const data = await response.json();
       console.log('회원가입 상태 정보:', data);
-      setIsSignupEnabled(data.isSignupEnabled);
+      
+      if (data.isSignupEnabled !== undefined) {
+        setIsSignupEnabled(data.isSignupEnabled);
+        setMessage({
+          type: 'info',
+          content: `현재 회원가입이 ${data.isSignupEnabled ? '활성화' : '비활성화'} 상태입니다.`
+        });
+      } else {
+        setMessage({
+          type: 'error',
+          content: '회원가입 상태 정보를 불러올 수 없습니다.'
+        });
+      }
     } catch (error) {
       console.error('회원가입 상태 조회 실패:', error);
       setMessage({ 
@@ -79,38 +90,35 @@ export default function AdminMatching() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setMessage({ type: '', content: '' });
-
+    
     try {
-      const localDate = new Date(`${matchingDate}T${matchingTime}`);
-      const utcDate = new Date(localDate.getTime() + (localDate.getTimezoneOffset() * 60000));
-      const matchingDateTime = utcDate.toISOString();
-      
-      console.log('매칭 시간 저장 요청 시작:', matchingDateTime);
+      setIsLoading(true);
+      console.log('매칭 시간 설정 요청:', matchingDate);
       
       const response = await fetch('/api/admin/matching-time', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ matchingDateTime }),
+        body: JSON.stringify({ matchingTime: matchingDate }),
       });
 
-      console.log('매칭 시간 저장 응답 상태:', response.status);
-      const data = await response.json();
-      console.log('매칭 시간 저장 응답 데이터:', data);
-
-      if (response.ok) {
-        setMessage({ type: 'success', content: '매칭 시간이 성공적으로 설정되었습니다.' });
-      } else {
-        throw new Error(data.error || '매칭 시간 설정에 실패했습니다.');
+      if (!response.ok) {
+        throw new Error(`API 응답 오류: ${response.status}`);
       }
+
+      const data = await response.json();
+      console.log('매칭 시간 설정 응답:', data);
+
+      setMessage({
+        type: 'success',
+        content: '매칭 시간이 성공적으로 설정되었습니다.'
+      });
     } catch (error) {
-      console.error('매칭 시간 설정 중 오류 발생:', error);
-      setMessage({ 
-        type: 'error', 
-        content: error instanceof Error ? error.message : '매칭 시간 설정에 실패했습니다.' 
+      console.error('매칭 시간 설정 실패:', error);
+      setMessage({
+        type: 'error',
+        content: '매칭 시간 설정에 실패했습니다. 다시 시도해 주세요.'
       });
     } finally {
       setIsLoading(false);
@@ -130,18 +138,22 @@ export default function AdminMatching() {
         body: JSON.stringify({ isSignupEnabled: !isSignupEnabled }),
       });
 
-      console.log('회원가입 상태 변경 응답 상태:', response.status);
-      const data = await response.json();
-      console.log('회원가입 상태 변경 응답 데이터:', data);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `API 응답 오류: ${response.status}`);
+      }
 
-      if (response.ok) {
+      const data = await response.json();
+      console.log('회원가입 상태 변경 응답:', data);
+
+      if (data.success) {
         setIsSignupEnabled(!isSignupEnabled);
         setMessage({
           type: 'success',
           content: `회원가입이 ${!isSignupEnabled ? '활성화' : '비활성화'}되었습니다.`
         });
       } else {
-        throw new Error(data.error || '회원가입 상태 변경에 실패했습니다.');
+        throw new Error('회원가입 상태 변경에 실패했습니다.');
       }
     } catch (error) {
       console.error('회원가입 상태 변경 중 오류 발생:', error);
@@ -155,56 +167,30 @@ export default function AdminMatching() {
   };
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold mb-6">매칭 시간 설정</h1>
-        
+        <h2 className="text-xl font-bold mb-4">매칭 시간 설정</h2>
         <form onSubmit={handleSubmit} className="max-w-md space-y-4">
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="matchingDate" className="block text-sm font-medium text-gray-700 mb-2">
-                매칭 날짜
-              </label>
-              <input
-                type="date"
-                id="matchingDate"
-                value={matchingDate}
-                onChange={(e) => setMatchingDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                required
-                min={new Date().toISOString().split('T')[0]} // 오늘 이후 날짜만 선택 가능
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="matchingTime" className="block text-sm font-medium text-gray-700 mb-2">
-                매칭 시간
-              </label>
-              <input
-                type="time"
-                id="matchingTime"
-                value={matchingTime}
-                onChange={(e) => setMatchingTime(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-                required
-              />
-            </div>
+          <div className="bg-white p-4 rounded-lg shadow">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              매칭 시간
+            </label>
+            <input
+              type="datetime-local"
+              value={matchingDate}
+              onChange={(e) => setMatchingDate(e.target.value)}
+              className="w-full p-2 border rounded focus:ring-2 focus:ring-primary-DEFAULT focus:border-transparent"
+              required
+            />
           </div>
-
+          
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full flex justify-center items-center bg-blue-500 text-white font-bold py-3 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition-colors"
-            style={{ backgroundColor: '#4f46e5' }}
+            className="w-full bg-primary-DEFAULT text-white py-2 px-4 rounded-md hover:bg-primary-dark transition-colors disabled:opacity-50"
           >
-            {isLoading ? '저장 중...' : '저장하기'}
+            {isLoading ? '처리 중...' : '매칭 시간 설정'}
           </button>
-          
-          {message.content && message.type === 'success' && (
-            <div className="mt-3 p-3 rounded bg-green-100 text-green-700">
-              {message.content}
-            </div>
-          )}
         </form>
       </div>
 
@@ -227,17 +213,22 @@ export default function AdminMatching() {
                   : 'bg-green-500 hover:bg-green-600 text-white'
               } disabled:opacity-50`}
             >
-              {isSignupEnabled ? '비활성화하기' : '활성화하기'}
+              {isLoading ? '처리 중...' : isSignupEnabled ? '비활성화하기' : '활성화하기'}
             </button>
           </div>
-          
-          {message.content && message.type === 'error' && (
-            <div className="p-3 rounded bg-red-100 text-red-700">
-              {message.content}
-            </div>
-          )}
         </div>
       </div>
+
+      {/* 메시지 표시 */}
+      {message.content && (
+        <div className={`max-w-md p-4 rounded-lg ${
+          message.type === 'error' ? 'bg-red-100 text-red-700' :
+          message.type === 'success' ? 'bg-green-100 text-green-700' :
+          'bg-blue-100 text-blue-700'
+        }`}>
+          {message.content}
+        </div>
+      )}
     </div>
   );
 } 

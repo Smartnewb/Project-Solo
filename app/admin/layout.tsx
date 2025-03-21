@@ -18,39 +18,53 @@ export default function AdminLayout({
   const { user, isAdmin } = useAuth();
 
   useEffect(() => {
+    let mounted = true;
+
     async function checkAccess() {
       try {
-        setLoading(true);
+        if (!mounted) return;
+        
         console.log('관리자 권한 확인 시작');
         
-        // AuthContext에서 제공하는 isAdmin 값 확인
-        if (!user) {
-          console.warn('인증된 세션이 없음 - 관리자 페이지 접근 거부');
-          router.push('/');
-          return;
+        // 로딩 중이 아닐 때만 상태 체크
+        if (!loading) {
+          // 인증되지 않은 경우
+          if (!user) {
+            console.warn('인증된 세션이 없음 - 관리자 페이지 접근 거부');
+            router.replace('/');
+            return;
+          }
+          
+          console.log('로그인 사용자:', user.email);
+          console.log('관리자 여부:', isAdmin);
+          
+          // 관리자가 아닌 경우
+          if (!isAdmin) {
+            console.warn('관리자가 아닌 사용자의 접근 시도:', user.email);
+            router.replace('/');
+            return;
+          }
+          
+          console.log('관리자 권한 확인됨');
         }
-        
-        console.log('로그인 사용자:', user.email);
-        console.log('관리자 여부:', isAdmin);
-        
-        // 관리자가 아니면 홈으로 리디렉션
-        if (!isAdmin) {
-          console.warn('관리자가 아닌 사용자의 접근 시도:', user.email);
-          router.push('/');
-          return;
-        }
-        
-        console.log('관리자 권한 확인됨');
       } catch (error) {
         console.error('관리자 확인 중 오류:', error);
-        router.push('/');
+        if (mounted) {
+          router.replace('/');
+        }
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     }
     
     checkAccess();
-  }, [router, user, isAdmin]);
+
+    return () => {
+      mounted = false;
+    };
+  }, [router, user, isAdmin, loading]);
   
   const handleLogout = async () => {
     try {
@@ -69,9 +83,10 @@ export default function AdminLayout({
     }
   };
 
+  // 로딩 중일 때의 UI
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-primary-DEFAULT border-t-transparent border-solid rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">관리자 권한 확인 중...</p>
@@ -80,14 +95,15 @@ export default function AdminLayout({
     );
   }
 
+  // 관리자가 아닐 때의 UI
   if (!isAdmin) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-red-600 font-bold text-xl">관리자 권한이 필요합니다</p>
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="text-center bg-white p-8 rounded-lg shadow-md">
+          <p className="text-red-600 font-bold text-xl mb-4">관리자 권한이 필요합니다</p>
           <button 
             onClick={() => router.push('/')}
-            className="mt-4 px-4 py-2 bg-primary-DEFAULT text-white rounded-md hover:bg-primary-dark"
+            className="px-6 py-2 bg-primary-DEFAULT text-white rounded-md hover:bg-primary-dark transition-colors"
           >
             홈으로 돌아가기
           </button>
@@ -96,6 +112,7 @@ export default function AdminLayout({
     );
   }
 
+  // 관리자 UI
   return (
     <div className="flex h-screen bg-gray-100">
       {/* 사이드바 */}
@@ -107,24 +124,24 @@ export default function AdminLayout({
         <nav className="mt-4">
           <ul>
             <li>
-              <Link href="/admin/community" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white">
+              <Link href="/admin/community" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
                 커뮤니티 관리
               </Link>
             </li>
             <li>
-              <Link href="/admin/users" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white">
+              <Link href="/admin/users" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
                 사용자 관리
               </Link>
             </li>
             <li>
-              <Link href="/admin/matching" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white">
+              <Link href="/admin/matching" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
                 매칭 설정
               </Link>
             </li>
             <li>
               <button 
                 onClick={handleLogout} 
-                className="w-full text-left px-4 py-2 text-red-500 hover:bg-red-50"
+                className="w-full text-left px-4 py-2 text-red-500 hover:bg-red-50 transition-colors"
               >
                 로그아웃
               </button>
