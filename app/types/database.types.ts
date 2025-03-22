@@ -21,10 +21,10 @@ export interface Database {
           ideal_lifestyles?: string[]
           interests?: string[]
           height?: number
-          drinking?: string
-          smoking?: string
-          tattoo?: string
-          mbti?: string
+          drinking?: string[]
+          smoking?: string[]
+          tattoo?: string[]
+          mbti?: string[]
           university?: string
           department?: string
           grade?: string
@@ -43,10 +43,10 @@ export interface Database {
           ideal_lifestyles?: string[]
           interests?: string[]
           height?: number
-          drinking?: string
-          smoking?: string
-          tattoo?: string
-          mbti?: string
+          drinking?: string[]
+          smoking?: string[]
+          tattoo?: string[]
+          mbti?: string[]
           university?: string
           department?: string
           grade?: string
@@ -65,10 +65,10 @@ export interface Database {
           ideal_lifestyles?: string[]
           interests?: string[]
           height?: number
-          drinking?: string
-          smoking?: string
-          tattoo?: string
-          mbti?: string
+          drinking?: string[]
+          smoking?: string[]
+          tattoo?: string[]
+          mbti?: string[]
           university?: string
           department?: string
           grade?: string

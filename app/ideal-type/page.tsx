@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect  } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClientSupabaseClient } from '@/utils/supabase';
@@ -11,14 +11,14 @@ interface IdealTypeForm {
     min: number | null;
     max: number | null;
   };
-  ageType: 'older' | 'younger' | 'same' | 'any' | null;
+  ageType: string | null;
   personalities: string[];
   datingStyles: string[];
   lifestyles: string[];
+  interests: string[];
   drinking: string | null;
   smoking: string | null;
   tattoo: string | null;
-  interests: string[];
   likedMbti: string | null;
   dislikedMbti: string | null;
 }
@@ -41,21 +41,20 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-const supabase = createClientSupabaseClient();
-
 export default function IdealType() {
   const router = useRouter();
   const { user } = useAuth();
+  const supabase = createClientSupabaseClient();
   const [formData, setFormData] = useState<IdealTypeForm>({
     heightRange: { min: null, max: null },
     ageType: null,
     personalities: [],
     datingStyles: [],
     lifestyles: [],
+    interests: [],
     drinking: null,
     smoking: null,
     tattoo: null,
-    interests: [],
     likedMbti: null,
     dislikedMbti: null,
   });
@@ -73,16 +72,6 @@ export default function IdealType() {
 
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState<string>('');
-
-  const heightOptions = [
-    '155cm 이하',
-    '156~160cm',
-    '161~165cm',
-    '166~170cm',
-    '171~175cm',
-    '176cm 이상',
-    '상관없음',
-  ];
 
   const personalityOptions = [
     '활발한 성격',
@@ -160,10 +149,71 @@ export default function IdealType() {
     { value: 'any', label: '상관없음' }
   ] as const;
 
+  useEffect(() => {
+    async function loadUserPreferences() {
+      if (!user) {
+        console.log('사용자 정보 없음');
+        return;
+      }
+
+      console.log('사용자 ID:', user.id);
+
+      try {
+        // 단일 쿼리로 변경하고 응답을 한 번만 사용
+        const { data, error } = await supabase
+          .from('user_preferences')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        // 에러 처리
+        if (error) {
+          if (error.code === 'PGRST116') {
+            console.log('신규 사용자: 이상형 정보 없음');
+            return;
+          }
+          throw error;
+        }
+
+        // 데이터가 있는 경우에만 폼 업데이트
+        if (data) {
+          console.log('불러온 이상형 정보:', data);
+          setFormData({
+            heightRange: {
+              min: data.preferred_height_min ?? null,
+              max: data.preferred_height_max ?? null
+            },
+            ageType: data.preferred_age_type || null,
+            personalities: data.preferred_personalities || [],
+            datingStyles: data.preferred_dating_styles || [],
+            lifestyles: data.preferred_lifestyles || [],
+            interests: data.preferred_interests || [],
+            drinking: data.preferred_drinking || null,
+            smoking: data.preferred_smoking || null,
+            tattoo: data.preferred_tattoo || null,
+            likedMbti: data.preferred_mbti || null,
+            dislikedMbti: data.disliked_mbti || null
+          });
+          console.log('폼 데이터 업데이트 완료');
+        }
+      } catch (error) {
+        console.error('이상형 정보 로드 중 오류:', error);
+      }
+    }
+
+    loadUserPreferences();
+  }, [user]);
+
   const validateForm = (): boolean => {
     const newErrors = {
-      heightMin: !formData.heightRange.min || formData.heightRange.min < 140 || formData.heightRange.min > 200,
-      heightMax: !formData.heightRange.max || formData.heightRange.max < 140 || formData.heightRange.max > 200,
+      heightMin: !formData.heightRange.min || 
+                 formData.heightRange.min < 140 || 
+                 formData.heightRange.min > 200 ||
+                 (formData.heightRange.max && formData.heightRange.min > formData.heightRange.max),
+      heightMax: !formData.heightRange.max || 
+                 formData.heightRange.max < 140 || 
+                 formData.heightRange.max > 200 ||
+                 (formData.heightRange.min && formData.heightRange.min > formData.heightRange.max),
       personalities: formData.personalities.length === 0,
       datingStyles: formData.datingStyles.length === 0,
       lifestyles: formData.lifestyles.length === 0,
@@ -172,7 +222,7 @@ export default function IdealType() {
       smoking: !formData.smoking,
     };
 
-    setErrors(newErrors);
+    setErrors(newErrors as ValidationErrors);
 
     const hasErrors = Object.values(newErrors).some(error => error);
     if (hasErrors) {
@@ -199,37 +249,32 @@ export default function IdealType() {
       // 저장할 데이터 준비
       const preferenceData = {
         user_id: user.id,
-        preferred_age_type: formData.ageType,
+        preferred_age_type: formData.ageType ? [formData.ageType] : [],
         preferred_height_min: formData.heightRange.min,
         preferred_height_max: formData.heightRange.max,
         preferred_personalities: formData.personalities,
         preferred_dating_styles: formData.datingStyles,
         preferred_lifestyles: formData.lifestyles,
         preferred_interests: formData.interests,
-        preferred_drinking: formData.drinking,
-        preferred_smoking: formData.smoking,
-        preferred_tattoo: formData.tattoo,
-        preferred_mbti: formData.likedMbti,
-        disliked_mbti: formData.dislikedMbti,
+        preferred_drinking: formData.drinking ? [formData.drinking] : [],
+        preferred_smoking: formData.smoking ? [formData.smoking] : [],
+        preferred_tattoo: formData.tattoo ? [formData.tattoo] : [],
+        preferred_mbti: formData.likedMbti ? [formData.likedMbti] : [],
+        disliked_mbti: formData.dislikedMbti ? [formData.dislikedMbti] : [],
         updated_at: new Date().toISOString()
       };
 
       console.log('이상형 정보 저장 시작:', preferenceData);
 
-      // 새로운 데이터 삽입 또는 업데이트
+      // upsert 사용 - 있으면 업데이트, 없으면 삽입
       const { error } = await supabase
         .from('user_preferences')
-        .upsert(preferenceData, {
+        .upsert([preferenceData], {
           onConflict: 'user_id',
           ignoreDuplicates: false
         });
 
-        if (error) {
-          console.error('🛑 이상형 정보 저장 오류 발생:', error);
-          console.log('📌 오류 코드:', error.code);
-          console.log('📌 오류 메시지:', error.message);
-          console.log('📌 오류 상세 정보:', error.details);
-        }
+      if (error) throw error;
 
       console.log('이상형 정보 저장 성공');
       setModalMessage('이상형 정보가 저장되었습니다.');
@@ -245,20 +290,21 @@ export default function IdealType() {
   };
 
   const toggleSelection = (field: keyof IdealTypeForm, value: string, maxCount: number) => {
-    if (Array.isArray(formData[field])) {
-      const currentValues = formData[field] as string[];
+    setFormData(prev => {
+      const currentValues = prev[field] as string[];
       if (currentValues.includes(value)) {
-        setFormData({
-          ...formData,
+        return {
+          ...prev,
           [field]: currentValues.filter(v => v !== value)
-        });
+        };
       } else if (currentValues.length < maxCount) {
-        setFormData({
-          ...formData,
+        return {
+          ...prev,
           [field]: [...currentValues, value]
-        });
+        };
       }
-    }
+      return prev;
+    });
   };
 
   const handleSingleSelect = (field: keyof IdealTypeForm, value: string) => {
@@ -346,6 +392,19 @@ export default function IdealType() {
     setTimeout(() => setShowModal(false), 2000);
   };
 
+  // 버튼 선택 상태를 체크하는 함수 수정
+  const getButtonClassName = (selected: boolean, disabled: boolean = false) => {
+    return `
+      px-4 py-2 rounded-xl text-sm font-medium transition-all
+      ${selected 
+        ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+        : disabled
+          ? 'bg-gray-50 text-gray-400 border-2 border-gray-200 cursor-not-allowed'
+          : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
+      }
+    `.trim();
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-pink-50">
       {/* 상단 헤더 */}
@@ -378,12 +437,8 @@ export default function IdealType() {
                     <button
                       key={option.value}
                       type="button"
-                      onClick={() => setFormData({ ...formData, ageType: option.value })}
-                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
-                        ${formData.ageType === option.value
-                          ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
-                          : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
-                        }`}
+                      onClick={() => setFormData(prev => ({ ...prev, ageType: option.value }))}
+                      className={getButtonClassName(formData.ageType === option.value)}
                     >
                       {option.label}
                     </button>
@@ -397,28 +452,59 @@ export default function IdealType() {
           <div className={`bg-white rounded-2xl shadow-sm p-6 space-y-4 ${errors.heightMin || errors.heightMax ? 'ring-2 ring-red-500' : ''}`}>
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">2. 이상형의 키</h2>
-              {errors.heightMin && (
-                <span className="text-sm text-red-500">최소 키는 140cm 이상이어야 합니다</span>
-              )}
-              {errors.heightMax && (
-                <span className="text-sm text-red-500">최대 키는 200cm 이하여야 합니다</span>
-              )}
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              {heightOptions.map(option => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, heightRange: { min: 140, max: 200 } })}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
-                    ${formData.heightRange.min === 140 && formData.heightRange.max === 200
-                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
-                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
-                    }`}
-                >
-                  {option}
-                </button>
-              ))}
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    최소 키
+                  </label>
+                  <input
+                    type="number"
+                    min="140"
+                    max="200"
+                    value={formData.heightRange.min || ''}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      heightRange: {
+                        ...prev.heightRange,
+                        min: e.target.value ? parseInt(e.target.value) : null
+                      }
+                    }))}
+                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-300 focus:ring focus:ring-purple-200 focus:ring-opacity-50"
+                    placeholder="140~200"
+                  />
+                  {errors.heightMin && (
+                    <p className="mt-1 text-sm text-red-500">140cm~200cm 사이로 입력해주세요</p>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    최대 키
+                  </label>
+                  <input
+                    type="number"
+                    min="140"
+                    max="200"
+                    value={formData.heightRange.max || ''}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      heightRange: {
+                        ...prev.heightRange,
+                        max: e.target.value ? parseInt(e.target.value) : null
+                      }
+                    }))}
+                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-300 focus:ring focus:ring-purple-200 focus:ring-opacity-50"
+                    placeholder="140~200"
+                  />
+                  {errors.heightMax && (
+                    <p className="mt-1 text-sm text-red-500">140cm~200cm 사이로 입력해주세요</p>
+                  )}
+                </div>
+              </div>
+              {formData.heightRange.min && formData.heightRange.max && formData.heightRange.min > formData.heightRange.max && (
+                <p className="text-sm text-red-500">최소 키는 최대 키보다 작아야 합니다</p>
+              )}
             </div>
           </div>
 
@@ -436,13 +522,10 @@ export default function IdealType() {
                   key={option}
                   type="button"
                   onClick={() => toggleSelection('personalities', option, 3)}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
-                    ${formData.personalities.includes(option)
-                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
-                      : formData.personalities.length >= 3 && !formData.personalities.includes(option)
-                      ? 'bg-gray-50 text-gray-400 border-2 border-gray-200 cursor-not-allowed'
-                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
-                    }`}
+                  className={getButtonClassName(
+                    formData.personalities.includes(option),
+                    formData.personalities.length >= 3 && !formData.personalities.includes(option)
+                  )}
                   disabled={formData.personalities.length >= 3 && !formData.personalities.includes(option)}
                 >
                   {option}
@@ -465,13 +548,10 @@ export default function IdealType() {
                   key={option}
                   type="button"
                   onClick={() => toggleSelection('datingStyles', option, 2)}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
-                    ${formData.datingStyles.includes(option)
-                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
-                      : formData.datingStyles.length >= 2 && !formData.datingStyles.includes(option)
-                      ? 'bg-gray-50 text-gray-400 border-2 border-gray-200 cursor-not-allowed'
-                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
-                    }`}
+                  className={getButtonClassName(
+                    formData.datingStyles.includes(option),
+                    formData.datingStyles.length >= 2 && !formData.datingStyles.includes(option)
+                  )}
                   disabled={formData.datingStyles.length >= 2 && !formData.datingStyles.includes(option)}
                 >
                   {option}
@@ -494,13 +574,10 @@ export default function IdealType() {
                   key={option}
                   type="button"
                   onClick={() => toggleSelection('lifestyles', option, 3)}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
-                    ${formData.lifestyles.includes(option)
-                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
-                      : formData.lifestyles.length >= 3 && !formData.lifestyles.includes(option)
-                      ? 'bg-gray-50 text-gray-400 border-2 border-gray-200 cursor-not-allowed'
-                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
-                    }`}
+                  className={getButtonClassName(
+                    formData.lifestyles.includes(option),
+                    formData.lifestyles.length >= 3 && !formData.lifestyles.includes(option)
+                  )}
                   disabled={formData.lifestyles.length >= 3 && !formData.lifestyles.includes(option)}
                 >
                   {option}
@@ -523,13 +600,10 @@ export default function IdealType() {
                   key={option}
                   type="button"
                   onClick={() => toggleSelection('interests', option, 5)}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
-                    ${formData.interests.includes(option)
-                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
-                      : formData.interests.length >= 5 && !formData.interests.includes(option)
-                      ? 'bg-gray-50 text-gray-400 border-2 border-gray-200 cursor-not-allowed'
-                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
-                    }`}
+                  className={getButtonClassName(
+                    formData.interests.includes(option),
+                    formData.interests.length >= 5 && !formData.interests.includes(option)
+                  )}
                   disabled={formData.interests.length >= 5 && !formData.interests.includes(option)}
                 >
                   {option}
@@ -551,12 +625,8 @@ export default function IdealType() {
                 <button
                   key={option}
                   type="button"
-                  onClick={() => setFormData({ ...formData, drinking: option })}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
-                    ${formData.drinking === option
-                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
-                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
-                    }`}
+                  onClick={() => setFormData(prev => ({ ...prev, drinking: option }))}
+                  className={getButtonClassName(formData.drinking === option)}
                 >
                   {option}
                 </button>
@@ -578,11 +648,7 @@ export default function IdealType() {
                   key={option}
                   type="button"
                   onClick={() => setFormData({ ...formData, smoking: option })}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
-                    ${formData.smoking === option
-                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
-                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
-                    }`}
+                  className={getButtonClassName(formData.smoking === option)}
                 >
                   {option}
                 </button>
@@ -599,11 +665,7 @@ export default function IdealType() {
                   key={option}
                   type="button"
                   onClick={() => setFormData({ ...formData, tattoo: option })}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all
-                    ${formData.tattoo === option
-                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
-                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
-                    }`}
+                  className={getButtonClassName(formData.tattoo === option)}
                 >
                   {option}
                 </button>
@@ -620,11 +682,7 @@ export default function IdealType() {
                   key={option}
                   type="button"
                   onClick={() => handleSingleSelect('likedMbti', option)}
-                  className={`px-3 py-2 rounded-xl text-sm font-medium transition-all
-                    ${formData.likedMbti === option
-                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
-                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
-                    }`}
+                  className={getButtonClassName(formData.likedMbti === option)}
                 >
                   {option}
                 </button>
@@ -641,11 +699,7 @@ export default function IdealType() {
                   key={option}
                   type="button"
                   onClick={() => handleSingleSelect('dislikedMbti', option)}
-                  className={`px-3 py-2 rounded-xl text-sm font-medium transition-all
-                    ${formData.dislikedMbti === option
-                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
-                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
-                    }`}
+                  className={getButtonClassName(formData.dislikedMbti === option)}
                 >
                   {option}
                 </button>

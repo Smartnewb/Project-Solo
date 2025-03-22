@@ -256,18 +256,18 @@ export type Profile = {
 export type UserPreferences = {
   id?: string;
   user_id: string;
-  preferred_age_type: string;
+  preferred_age_type: string[];
   preferred_height_min: number;
   preferred_height_max: number;
   preferred_personalities: string[];
   preferred_dating_styles: string[];
   preferred_lifestyles: string[];
   preferred_interests: string[];
-  preferred_drinking: string;
-  preferred_smoking: string;
-  preferred_tattoo: string;
-  preferred_mbti: string;
-  disliked_mbti: string;
+  preferred_drinking: string[];
+  preferred_smoking: string[];
+  preferred_tattoo: string[];
+  preferred_mbti: string[];
+  disliked_mbti: string[];
   created_at?: string;
   updated_at: string;
 };
