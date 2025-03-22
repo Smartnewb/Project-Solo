@@ -24,6 +24,7 @@ export default function Home() {
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showAdditionalInfoModal, setShowAdditionalInfoModal] = useState(false);
 
   // 프로필 설정 페이지로 이동하는 함수
   const handleGoToProfile = () => {
@@ -62,59 +63,37 @@ export default function Home() {
           return;
         }
 
-        // 프로필 조회
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', session.user.id)
-          .single();
+        // 세션이 있는 경우, 프로필 확인
+        if (session) {
+          console.log('세션이 있습니다. 프로필을 확인합니다.');
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .single();
 
-        // 프로필 에러 처리
-          if (profileError) {
-            // PGRST116은 row not found 에러로, 프로필이 없는 정상적인 상황
-            if (profileError.code === 'PGRST116') {
-              console.log('프로필이 없습니다. 온보딩 모달을 표시합니다.');
-              setShowOnboardingModal(true);
-              setIsLoading(false);
-              return;
-            }
+          if (error) {
+            console.error('프로필 조회 에러:', error);
+            setHasProfile(false);
+            setShowOnboardingModal(true);
+          } else if (profile) {
+            console.log('프로필이 있습니다:', profile);
+            setHasProfile(true);
+            setShowOnboardingModal(false);
             
-            console.error('프로필 조회 오류:', profileError);
-            setIsLoading(false);
-            return;
+            // 추가 프로필 정보가 필요한지 확인
+            const requiredFields = ['height', 'personalities'];
+            const needsAdditionalInfo = requiredFields.some(field => !profile[field]);
+            
+            if (needsAdditionalInfo) {
+              console.log('추가 프로필 정보가 필요합니다.');
+              setShowAdditionalInfoModal(true);
+            }
+          } else {
+            console.log('프로필이 없습니다.');
+            setHasProfile(false);
+            setShowOnboardingModal(true);
           }
-
-        // 프로필이 있는 경우 상태 업데이트
-        if (profile) {
-          console.log('프로필 조회 성공:', profile);
-          setUserName(profile.name || '게스트');
-          
-          // 추가 프로필 필드 확인 (profile 페이지에서 저장하는 정보)
-          // JSON 문자열로 저장된 경우도 고려
-          const hasPersonalities = profile.personalities ? true : false;
-          const hasDatingStyles = profile.dating_styles ? true : false;
-          const hasInterests = profile.interests ? true : false;
-          
-          const hasCompletedProfile = hasPersonalities || hasDatingStyles || hasInterests;
-          
-          if (!hasCompletedProfile) {
-            console.log('추가 프로필 정보가 없습니다. 프로필 페이지로의 이동은 버튼을 통해 진행됩니다.');
-            // 온보딩 데이터를 localStorage에 저장 (profile 페이지에서 사용)
-            localStorage.setItem('onboardingProfile', JSON.stringify(profile));
-            // router.push를 제거하고 필요 시 버튼을 통해 이동하도록 함
-          }
-          
-          setHasProfile(true);
-          localStorage.setItem('profile', JSON.stringify(profile));
-          
-          // 이상형 설정 확인
-          const idealType = localStorage.getItem('idealType');
-          setHasIdealType(!!idealType);
-          console.log('이상형 설정 상태:', !!idealType);
-        } else {
-          // 프로필이 없는 경우
-          console.log('프로필 데이터가 없습니다. 온보딩 모달 표시');
-          setShowOnboardingModal(true);
         }
       } catch (error) {
         console.error('프로필 확인 중 오류 발생:', error);
