@@ -51,6 +51,8 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  hasCompletedOnboarding: boolean;
+  updateProfile: (profile: Profile) => Promise<void>;
   signOut: () => Promise<void>;
   isAdmin: boolean;
   needsOnboarding: boolean;
@@ -63,6 +65,8 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   profile: null,
   loading: true,
+  hasCompletedOnboarding: false,
+  updateProfile: async () => {},
   signOut: async () => {},
   isAdmin: false,
   needsOnboarding: false,
@@ -83,6 +87,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
 
   // 프로필 정보 가져오기
   const fetchProfile = async (userId: string): Promise<Profile | null> => {
@@ -273,6 +278,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     session,
     profile,
     loading,
+    hasCompletedOnboarding,
+    updateProfile: async (profile: Profile) => {
+      setProfile(profile);
+      await fetchProfile(profile.id);
+    },
     signOut,
     isAdmin,
     needsOnboarding,

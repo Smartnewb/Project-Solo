@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { ADMIN_EMAIL } from '@/utils/config';
 
 export async function GET() {
   try {
@@ -47,9 +48,7 @@ export async function GET() {
     }
     
     console.log('사용자 이메일:', session.user.email);
-    const isAdmin = process.env.NODE_ENV === 'development' || session.user.email === 'notify@smartnewb.com';
-    
-    if (!isAdmin) {
+    if (session.user.email !== ADMIN_EMAIL) {
       console.warn('관리자 아님:', session.user.email);
       return NextResponse.json({ error: '관리자 권한이 없습니다.' }, { status: 403 });
     }
@@ -124,9 +123,7 @@ export async function POST(request: Request) {
     }
     
     console.log('사용자 이메일:', session.user.email);
-    const isAdmin = process.env.NODE_ENV === 'development' || session.user.email === 'notify@smartnewb.com';
-    
-    if (!isAdmin) {
+    if (session.user.email !== ADMIN_EMAIL) {
       console.warn('관리자 아님:', session.user.email);
       return NextResponse.json({ error: '관리자 권한이 없습니다.' }, { status: 403 });
     }
