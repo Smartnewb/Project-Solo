@@ -80,7 +80,7 @@ export default function TestCommentPage() {
       // 사용자 정보 가져오기
       const { data: userData, error: userError } = await supabase
         .from('profiles')
-        .select('id, nickname, profile_image')
+        .select('*')
         .eq('id', session.user.id)
         .single();
       
@@ -119,8 +119,8 @@ export default function TestCommentPage() {
         id: comment.id,
         user_id: session.user.id,
         content: comment.content,
-        nickname: userData.nickname || '익명',
-        profile_image: userData.profile_image || null,
+        nickname: userData?.nickname || userData?.name || '익명',
+        profile_image: userData?.profile_image || userData?.avatar_url || null,
         created_at: now,
         is_anonymous: false
       };

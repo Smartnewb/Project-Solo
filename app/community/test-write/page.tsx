@@ -3,6 +3,18 @@
 import { useState } from 'react';
 import { createClientSupabaseClient } from '@/utils/supabase';
 
+// Define a type for the profile data
+interface ProfileData {
+  id: string;
+  nickname?: string;
+  name?: string;
+  profile_image?: string | null;
+  avatar_url?: string | null;
+  created_at: string;
+  updated_at: string;
+  [key: string]: any; // Allow for additional properties
+}
+
 export default function TestWritePage() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -29,59 +41,107 @@ export default function TestWritePage() {
         return;
       }
       
-      // Get user profile
-      const { data: userData, error: userError } = await supabase
-        .from('profiles')
-        .select('id, nickname, profile_image')
-        .eq('id', session.user.id)
-        .single();
+      // 사용자 ID 유효성 검사
+      const userId = session.user.id;
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       
-      if (userError) {
-        console.error('사용자 정보 조회 오류:', userError);
-        setError('사용자 정보를 가져올 수 없습니다: ' + userError.message);
+      if (!uuidRegex.test(userId)) {
+        console.error('유효하지 않은 사용자 ID 형식:', userId);
+        setError('사용자 인증에 문제가 있습니다. 로그아웃 후 다시 로그인해주세요.');
         return;
       }
       
-      // Create post
-      const now = new Date().toISOString();
-      const postData = {
-        title: title || '테스트 제목',
-        content: content || '테스트 내용',
-        category: 'questions',
-        user_id: session.user.id,
-        nickname: userData?.nickname || session.user.user_metadata?.nickname || '익명',
-        profile_image: userData?.profile_image || session.user.user_metadata?.avatar_url || null,
-        created_at: now,
-        updated_at: now,
-        isEdited: false,
-        isdeleted: false,
-        isBlinded: false,
-        likes: [],
-        comments: [],
-        reports: []
-      };
+      console.log('사용자 ID:', userId);
       
-      const { data: post, error: postError } = await supabase
-        .from('posts')
-        .insert([postData])
-        .select();
-      
-      if (postError) {
-        console.error('게시글 저장 중 오류 발생:', postError);
-        setError('게시글을 저장하는 데 실패했습니다: ' + postError.message);
-        return;
+      try {
+        // Get user profile - 오류 처리 향상
+        const { data: userData, error: userError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+        
+        // 프로필 데이터를 저장할 변수 선언
+        let userDataToUse: ProfileData;
+        
+        // 프로필이 없는 경우 기본 프로필 생성
+        if (userError) {
+          console.error('사용자 정보 조회 오류:', userError);
+          
+          if (userError.code === 'PGRST116') {
+            console.log('프로필이 없어 새로 생성합니다.');
+            
+            const defaultProfile = {
+              id: userId,
+              nickname: session.user.user_metadata?.nickname || '익명 사용자',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            };
+            
+            const { error: createError } = await supabase
+              .from('profiles')
+              .insert([defaultProfile]);
+              
+            if (createError) {
+              throw new Error('프로필 생성 실패: ' + createError.message);
+            }
+            
+            // 새로 생성된 프로필 사용
+            userDataToUse = defaultProfile;
+          } else {
+            throw new Error('사용자 정보를 가져올 수 없습니다: ' + userError.message);
+          }
+        } else {
+          userDataToUse = userData;
+        }
+        
+        // Create post with direct values
+        const now = new Date().toISOString();
+        const postData = {
+          title: title || '테스트 제목',
+          content: content || '테스트 내용',
+          category: 'questions',
+          user_id: userId,
+          author_id: userId, // Add author_id field
+          nickname: userDataToUse?.nickname || session.user.user_metadata?.nickname || '익명',
+          profile_image: userDataToUse?.profile_image || userDataToUse?.avatar_url || session.user.user_metadata?.avatar_url || null,
+          created_at: now,
+          updated_at: now,
+          isEdited: false,
+          isdeleted: false,
+          isBlinded: false,
+          likes: [],
+          comments: [],
+          reports: []
+        };
+        
+        console.log('게시글 저장 시도:', postData);
+        
+        const { data: post, error: postError } = await supabase
+          .from('posts')
+          .insert([postData])
+          .select();
+        
+        if (postError) {
+          console.error('게시글 저장 중 오류 발생:', postError);
+          throw new Error('게시글을 저장하는 데 실패했습니다: ' + postError.message);
+        }
+        
+        console.log('게시글 저장 성공:', post);
+        setSuccess(true);
+        setResult(post);
+        
+        // Reset form
+        setTitle('');
+        setContent('');
+        
+      } catch (profileError: any) {
+        console.error('프로필 처리 중 오류:', profileError);
+        setError(profileError.message || '프로필 처리 중 오류가 발생했습니다.');
       }
-      
-      console.log('게시글 저장 성공:', post);
-      setSuccess(true);
-      setResult(post);
-      
-      // Reset form
-      setTitle('');
-      setContent('');
     } catch (err: any) {
       console.error('게시글 저장 중 예외 발생:', err);
-      setError('예외가 발생했습니다: ' + err.message);
+      setError('예외가 발생했습니다: ' + (err.message || '알 수 없는 오류'));
     } finally {
       setLoading(false);
     }

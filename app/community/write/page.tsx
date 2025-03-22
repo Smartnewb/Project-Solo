@@ -60,35 +60,67 @@ export default function WritePost() {
         return;
       }
 
+      // UUID 형식 확인 (간단한 검증)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(user.id)) {
+        console.error('유효하지 않은 사용자 ID 형식:', user.id);
+        setError('사용자 인증에 문제가 있습니다. 로그아웃 후 다시 로그인해주세요.');
+        return;
+      }
+
       if (!formData.title || !formData.content || !formData.category) {
         setError('제목, 내용, 카테고리를 모두 입력해주세요.');
         return;
       }
 
-      // 사용자 정보 가져오기
+      // 사용자 정보 가져오기 시도 (오류 처리 강화)
+      console.log('사용자 정보 요청 - 사용자 ID:', user.id);
       const { data: userData, error: userError } = await supabase
         .from('profiles')
-        .select('id, nickname, profile_image')
+        .select('*')
         .eq('id', user.id)
         .single();
 
       if (userError) {
         console.error('사용자 정보를 가져오는 중 오류 발생:', userError);
-        setError('사용자 정보를 가져올 수 없습니다.');
-        return;
+        
+        // 프로필이 없는 경우, 기본 프로필 생성 시도
+        if (userError.code === 'PGRST116') {
+          console.log('프로필이 존재하지 않아 기본 프로필을 생성합니다.');
+          const defaultProfile = {
+            id: user.id,
+            nickname: user.user_metadata?.nickname || '익명 사용자',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          
+          const { error: createError } = await supabase
+            .from('profiles')
+            .insert([defaultProfile]);
+            
+          if (createError) {
+            console.error('기본 프로필 생성 실패:', createError);
+            setError('사용자 프로필을 생성할 수 없습니다. 관리자에게 문의하세요.');
+            return;
+          }
+        } else {
+          setError('사용자 정보를 가져올 수 없습니다: ' + userError.message);
+          return;
+        }
       }
 
       // 현재 시간
       const now = new Date().toISOString();
 
-      // 게시글 데이터 생성
+      // 게시글 데이터 생성 (userData가 없을 경우 대체값 사용)
       const postData = {
         title: formData.title,
         content: formData.content,
         category: formData.category,
         user_id: user.id,
-        nickname: userData.nickname || user.user_metadata?.nickname || '익명',
-        profile_image: userData.profile_image || user.user_metadata?.avatar_url || null,
+        author_id: user.id, // user_id와 동일하게 설정
+        nickname: userData?.nickname || user.user_metadata?.nickname || '익명',
+        profile_image: userData?.profile_image || userData?.avatar_url || user.user_metadata?.avatar_url || null,
         created_at: now,
         updated_at: now,
         isEdited: false,
@@ -99,6 +131,7 @@ export default function WritePost() {
         reports: []
       };
 
+      console.log('게시글 저장 시도:', postData);
       // Supabase에 게시글 저장
       const { data, error } = await supabase
         .from('posts')
@@ -107,7 +140,7 @@ export default function WritePost() {
 
       if (error) {
         console.error('게시글 저장 중 오류 발생:', error);
-        setError('게시글을 저장하는 데 실패했습니다.');
+        setError('게시글을 저장하는 데 실패했습니다: ' + error.message);
         return;
       }
 
@@ -118,7 +151,7 @@ export default function WritePost() {
       router.push('/community');
     } catch (error: any) {
       console.error('게시글 작성 중 오류 발생:', error);
-      setError('게시글 작성 중 오류가 발생했습니다.');
+      setError('게시글 작성 중 오류가 발생했습니다: ' + (error.message || '알 수 없는 오류'));
     } finally {
       setLoading(false);
     }

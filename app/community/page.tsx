@@ -88,17 +88,13 @@ export default function Community() {
   const [popularPosts, setPopularPosts] = useState<Post[]>([]);
   const supabase = createClientSupabaseClient();
   
-  const [userInfo, setUserInfo] = useState<{ 
+  const [userInfo, setUserInfo] = useState<{
     userId: string;
-    studentId: string;
+    profileId?: string;
     nickname?: string;
     emoji?: string;
-    profileId?: string;
-  }>({ 
-    userId: '', 
-    studentId: '', 
-    nickname: '',
-    emoji: ''
+  }>({
+    userId: '',
   });
   
   // 디바운싱을 위한 타이머 참조 저장
@@ -260,7 +256,7 @@ export default function Community() {
       // DB 구조에 맞게 수정 - id를 사용하여 프로필 검색(테이블 구조에 맞게 수정)
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('id, student_id, nickname')
+        .select('id, nickname, profile_image')
         .eq('id', userId) // user_id 대신 id 사용
         .single();
 
@@ -273,18 +269,16 @@ export default function Community() {
         const randomNickname = generateRandomNickname();
         const emoji = emojis[Math.floor(Math.random() * emojis.length)];
         
+        const newProfileData = {
+          id: userId,
+          nickname: `익명_${userId.slice(0, 4)}`,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        
         const { data: newProfile, error: createError } = await supabase
           .from('profiles')
-          .insert([
-            {
-              id: userId, // id를 사용하여 프로필 생성
-              nickname: randomNickname,
-              student_id: 'temp_' + userId.slice(0, 8),  // 임시 학번
-              created_at: new Date().toISOString(),
-              ideal_type: [],
-              interests: []
-            }
-          ])
+          .insert([newProfileData])
           .select()
           .single();
 
@@ -301,7 +295,6 @@ export default function Community() {
           setUserInfo({ 
             userId,
             profileId: newProfile.id,
-            studentId: newProfile.student_id,
             nickname: randomNickname,
             emoji
           });
@@ -327,7 +320,6 @@ export default function Community() {
         setUserInfo({
           userId,
           profileId: profile.id,
-          studentId: profile.student_id,
           nickname: userNickname.nickname,
           emoji: userNickname.emoji
         });
@@ -475,18 +467,19 @@ export default function Community() {
       // 사용자 프로필 정보 가져오기
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('*')
-        .eq('auth_id', user.id);
+        .select('id, nickname, profile_image')
+        .eq('id', user.id)
+        .single();
         
-      if (profileError || !profile || profile.length === 0) {
-        console.error('프로필 정보를 확인할 수 없습니다:', profileError);
+      if (profileError || !profile) {
+        console.error('프로필을 불러오는 중 오류가 발생했습니다:', profileError);
         setErrorMessage('댓글을 작성할 수 없습니다. 프로필 정보를 확인해주세요.');
         setShowErrorModal(true);
         return;
       }
       
       // 프로필 ID 가져오기
-      const profileId = profile[0].id;
+      const profileId = profile.id;
       
       // 게시글이 존재하는지 확인
       const { data: postCheck, error: postError } = await supabase
@@ -510,25 +503,23 @@ export default function Community() {
         });
       };
 
-      const comment = {
+      const commentData = {
         id: generateUUID(), // 고유 ID 생성
-        post_id: postId,
+        postId: postId,
         author_id: profileId, // 위에서 가져온 프로필 ID 사용
         content: newComment,
         nickname: userInfo.nickname || '',
-        studentid: profile[0].student_id, // 프로필에서 가져온 학번 사용
-        emoji: userInfo.emoji || '',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         isEdited: false,
         isdeleted: false
       };
 
-      console.log('댓글 작성:', comment);  // 요청 데이터 로깅
+      console.log('댓글 작성:', commentData);  // 요청 데이터 로깅
 
       const { error } = await supabase
         .from('comments')
-        .insert([comment]);
+        .insert([commentData]);
 
       if (error) {
         console.error('댓글 작성 중 오류가 발생했습니다:', error);
@@ -619,7 +610,6 @@ export default function Community() {
             <span className="text-xl">{post.emoji}</span>
             <div>
               <p className="font-medium text-sm">{comment.nickname}</p>
-              <p className="text-xs text-gray-500">{comment.studentid}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -1043,7 +1033,6 @@ export default function Community() {
                       <span className="text-2xl">{post.emoji}</span>
                       <p className="font-medium text-gray-900">{post.nickname}</p>
                     </div>
-                    <p className="text-sm text-gray-500">{post.studentid}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-500">
@@ -1181,7 +1170,6 @@ export default function Community() {
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{comment.nickname}</span>
-                        <span className="text-xs text-gray-500">{comment.studentid}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         {comment.author_id === userInfo.userId ? (
