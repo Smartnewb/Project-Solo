@@ -13,10 +13,21 @@
 
 ## Development Setup
 - Environment variables for Supabase configuration
-- SSR implementation with @supabase/ssr
-- Middleware for route protection
+  - NEXT_PUBLIC_SUPABASE_URL
+  - NEXT_PUBLIC_SUPABASE_ANON_KEY
+- SSR implementation with @supabase/ssr package
+- Middleware for authentication and route protection
+- Browser and server client separation
+
+## Authentication Implementation
+- Browser client: createBrowserClient from @supabase/ssr
+- Server client: createServerClient from @supabase/ssr
+- Middleware session verification with getUser()
+- Cookie handling with getAll() and setAll() methods
 
 ## Technical Constraints
-- Cookie handling limitations in SSR
-- Session management requirements
-- Base64 cookie parsing considerations 
+- Cookie handling limitations in SSR environment
+- Session token refresh requirements 
+- Consistent response object handling in middleware
+- Authentication state persistence across routes
+- Multiple server instances causing port conflicts 

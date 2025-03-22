@@ -22,7 +22,7 @@ export async function middleware(request: NextRequest) {
   
   try {
     // 응답 객체 생성
-    let response = NextResponse.next({
+    let supabaseResponse = NextResponse.next({
       request,
     });
     
@@ -36,25 +36,13 @@ export async function middleware(request: NextRequest) {
             return request.cookies.getAll();
           },
           setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              request.cookies.set({
-                name, 
-                value,
-                ...options
-              });
-            });
-            
-            response = NextResponse.next({
+            cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value));
+            supabaseResponse = NextResponse.next({
               request,
             });
-            
-            cookiesToSet.forEach(({ name, value, options }) => {
-              response.cookies.set({
-                name, 
-                value,
-                ...options
-              });
-            });
+            cookiesToSet.forEach(({ name, value, options }) =>
+              supabaseResponse.cookies.set(name, value, options)
+            );
           },
         },
       }
@@ -69,7 +57,7 @@ export async function middleware(request: NextRequest) {
     if (userError) {
       console.error('미들웨어 사용자 확인 오류:', userError);
       if (pathname === '/' || pathname === '/signup') {
-        return response;
+        return supabaseResponse;
       } else {
         return NextResponse.redirect(new URL('/', request.url));
       }
@@ -106,7 +94,7 @@ export async function middleware(request: NextRequest) {
         
         // 관리자 페이지 접근은 허용
         if (pathname.startsWith('/admin')) {
-          return response;
+          return supabaseResponse;
         }
       } else {
         // 일반 사용자는 관리자 페이지 접근 불가
@@ -164,7 +152,7 @@ export async function middleware(request: NextRequest) {
       }
     }
     
-    return response;
+    return supabaseResponse;
   } catch (error) {
     console.error('미들웨어 오류:', error);
     // 오류 발생 시 기본 응답 반환

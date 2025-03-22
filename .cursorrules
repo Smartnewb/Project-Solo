@@ -1,0 +1,60 @@
+# Project Intelligence: Supabase Authentication in Next.js
+
+## Critical Implementation Paths
+
+### Authentication Flow
+- Application uses the latest `@supabase/ssr` package (not auth-helpers-nextjs)
+- Cookie management must use getAll/setAll pattern exclusively
+- Middleware is essential for session refresh and route protection
+- Browser/Server client separation follows the current best practices
+
+### Common Issues and Solutions
+
+1. **Multiple Server Instances**
+   - Kill all Node.js processes with `pkill -f "node"` before starting new server
+   - Clear build cache with `rm -rf .next node_modules/.cache`
+   - Issue manifests as ports 3000-3007 being used simultaneously
+
+2. **Cookie Handling**
+   - Must use proper cookie handling in middleware.ts
+   - Always use `supabaseResponse` consistently throughout middleware
+   - Cookie handling requires getAll/setAll methods, never individual get/set/remove
+
+3. **Auth Session Missing Errors**
+   - Clear browser cookies when authentication state seems corrupted
+   - Ensure middleware properly returns supabaseResponse object
+   - Verify browser client implementation is minimal without custom handling
+
+## Project Patterns
+
+1. **Client File Locations**
+   - utils/supabase/client.ts (browser client)
+   - utils/supabase/server.ts (server client)
+   - middleware.ts (authentication middleware)
+
+2. **Authentication Pattern**
+   ```typescript
+   // Key middleware pattern
+   let supabaseResponse = NextResponse.next({ request })
+   const supabase = createServerClient(
+     process.env.NEXT_PUBLIC_SUPABASE_URL!,
+     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+     {
+       cookies: {
+         getAll() { return request.cookies.getAll() },
+         setAll(cookiesToSet) {
+           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+           supabaseResponse = NextResponse.next({ request })
+           cookiesToSet.forEach(({ name, value, options }) =>
+             supabaseResponse.cookies.set(name, value, options)
+           )
+         }
+       }
+     }
+   )
+   ```
+
+3. **Debugging Tips**
+   - Monitor server logs for "Auth session missing" errors
+   - Check browser cookies to ensure proper session state
+   - Verify that all server instances are terminated between restarts 
