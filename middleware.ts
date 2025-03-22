@@ -139,18 +139,26 @@ export async function middleware(request: NextRequest) {
         
         // 로그인된 일반 사용자가 프로필 없이 홈 또는 프로필 페이지 접근 시 온보딩으로 리디렉션
         if ((pathname.startsWith('/home') || pathname.startsWith('/profile')) && !pathname.startsWith('/onboarding')) {
-          // 프로필이 있는지 확인
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('user_id', user.id)
-            .single();
-          
-          if (profileError && profileError.code === 'PGRST116') {
-            console.log('프로필이 없는 사용자의 홈/프로필 접근, 온보딩으로 리디렉션합니다.');
-            return NextResponse.redirect(new URL('/onboarding', request.url));
-          } else if (profileError) {
-            console.error('프로필 확인 오류:', profileError);
+          try {
+            // 프로필이 있는지 확인 - count 방식으로 변경하여 더 안정적으로 확인
+            const { count, error: countError } = await supabase
+              .from('profiles')
+              .select('*', { count: 'exact', head: true })
+              .eq('user_id', user.id);
+            
+            // 명시적으로 count가 0인 경우에만 프로필이 없다고 판단
+            if (countError) {
+              console.error('프로필 카운트 확인 오류:', countError);
+              // 오류가 있더라도 페이지 접근은 허용 (UX 개선)
+            } else if (count === 0) {
+              console.log('프로필이 없는 사용자의 홈/프로필 접근, 온보딩으로 리디렉션합니다.');
+              return NextResponse.redirect(new URL('/onboarding', request.url));
+            } else {
+              console.log('프로필이 확인됨, 계속 진행합니다. 프로필 수:', count);
+            }
+          } catch (profileCheckError) {
+            console.error('프로필 확인 중 예외 발생:', profileCheckError);
+            // 예외가 발생해도 페이지 접근은 허용 (UX 개선)
           }
         }
       }

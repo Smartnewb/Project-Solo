@@ -477,59 +477,37 @@ export default function IdealType() {
           <div className={`bg-white rounded-2xl shadow-sm p-6 space-y-4 ${errors.heightMin || errors.heightMax ? 'ring-2 ring-red-500' : ''}`}>
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">2. 이상형의 키</h2>
-            </div>
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    최소 키
-                  </label>
-                  <input
-                    type="number"
-                    min="140"
-                    max="200"
-                    value={formData.heightRange.min || ''}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      heightRange: {
-                        ...prev.heightRange,
-                        min: e.target.value ? parseInt(e.target.value) : null
-                      }
-                    }))}
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-300 focus:ring focus:ring-purple-200 focus:ring-opacity-50"
-                    placeholder="140~200"
-                  />
-                  {errors.heightMin && (
-                    <p className="mt-1 text-sm text-red-500">140cm~200cm 사이로 입력해주세요</p>
-                  )}
-                </div>
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    최대 키
-                  </label>
-                  <input
-                    type="number"
-                    min="140"
-                    max="200"
-                    value={formData.heightRange.max || ''}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      heightRange: {
-                        ...prev.heightRange,
-                        max: e.target.value ? parseInt(e.target.value) : null
-                      }
-                    }))}
-                    className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-300 focus:ring focus:ring-purple-200 focus:ring-opacity-50"
-                    placeholder="140~200"
-                  />
-                  {errors.heightMax && (
-                    <p className="mt-1 text-sm text-red-500">140cm~200cm 사이로 입력해주세요</p>
-                  )}
-                </div>
-              </div>
-              {formData.heightRange.min && formData.heightRange.max && formData.heightRange.min > formData.heightRange.max && (
-                <p className="text-sm text-red-500">최소 키는 최대 키보다 작아야 합니다</p>
+              {(errors.heightMin || errors.heightMax) && (
+                <span className="text-sm text-red-500">키를 선택해주세요</span>
               )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {['140cm~150cm', '150cm~160cm', '160cm~165cm', '165cm~170cm', 
+                '170cm~175cm', '175cm~180cm', '180cm~185cm', '185cm~190cm', 
+                '190cm~195cm', '195cm~200cm'].map(heightRange => {
+                const [min, max] = heightRange.split('~').map(h => parseInt(h));
+                const isSelected = formData.heightRange.min === min && formData.heightRange.max === max;
+                return (
+                  <button
+                    key={heightRange}
+                    type="button"
+                    onClick={() => setFormData(prev => ({
+                      ...prev,
+                      heightRange: {
+                        min,
+                        max
+                      }
+                    }))}
+                    className={`px-3 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap
+                      ${isSelected
+                        ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+                        : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
+                      }`}
+                  >
+                    {heightRange}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
