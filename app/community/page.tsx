@@ -193,7 +193,6 @@ export default function Community() {
         .from('profiles')
         .select('id, student_id')
         .eq('user_id', userId)
-        .single();
 
       if (error) {
         if (error.code === 'PGRST116') {  // 데이터가 없는 경우
@@ -246,10 +245,10 @@ export default function Community() {
           const { nickname, emoji } = JSON.parse(userNickname);
           setUserInfo({ 
             userId, 
-            studentId: profile.student_id, 
+            studentId: profile[0].student_id, 
             nickname, 
             emoji,
-            profileId: profile.id
+            profileId: profile[0].id
           });
         } else {
           // 새로운 닉네임 생성 및 저장
@@ -258,10 +257,10 @@ export default function Community() {
           localStorage.setItem(`userNickname_${userId}`, JSON.stringify({ nickname, emoji }));
           setUserInfo({ 
             userId, 
-            studentId: profile.student_id, 
+            studentId: profile[0].student_id, 
             nickname, 
             emoji,
-            profileId: profile.id
+            profileId: profile[0].id
           });
         }
       }
@@ -319,9 +318,7 @@ export default function Community() {
       const { data: profileCheck, error: profileError } = await supabase
         .from('profiles')
         .select('id, student_id')
-        .eq('id', userInfo.profileId)
-        .single();
-        
+        .eq('id', userInfo.profileId);
       if (profileError || !profileCheck) {
         console.error('프로필 정보를 확인할 수 없습니다:', {
           error: profileError,
@@ -335,11 +332,11 @@ export default function Community() {
       }
 
       const post = {
-        userId: profileCheck.id,  // 확인된 프로필 ID 사용
-        author_id: profileCheck.id,
+        userId: profileCheck[0].id,  // 확인된 프로필 ID 사용
+        author_id: profileCheck[0].id,
         content: newPost,
         nickname: userInfo.nickname || '',
-        studentid: profileCheck.student_id,  // 확인된 학번 사용
+        studentid: profileCheck[0].student_id,  // 확인된 학번 사용
         emoji: userInfo.emoji || '',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
