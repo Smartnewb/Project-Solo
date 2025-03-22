@@ -1,10 +1,12 @@
 'use client';
 
+
 import { useState, useEffect  } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClientSupabaseClient } from '@/utils/supabase';
 import { findBestMatch } from '@/app/matchingAlgorithm';
+
 
 interface IdealTypeForm {
   heightRange: {
@@ -32,6 +34,24 @@ interface ValidationErrors {
   interests: boolean;
   drinking: boolean;
   smoking: boolean;
+}
+
+interface UserPreference {
+  id?: string;
+  user_id: string;
+  preferred_age_type: string[];
+  preferred_height_min: number | null;
+  preferred_height_max: number | null;
+  preferred_personalities: string[];
+  preferred_dating_styles: string[];
+  preferred_lifestyles: string[];
+  preferred_interests: string[];
+  preferred_drinking: string[];
+  preferred_smoking: string[];
+  preferred_tattoo: string[];
+  preferred_mbti: string[];
+  disliked_mbti: string[];
+  updated_at: string;
 }
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -246,8 +266,7 @@ export default function IdealType() {
         return;
       }
 
-      // 저장할 데이터 준비
-      const preferenceData = {
+      const preferenceData: UserPreference = {
         user_id: user.id,
         preferred_age_type: formData.ageType ? [formData.ageType] : [],
         preferred_height_min: formData.heightRange.min,
@@ -266,15 +285,21 @@ export default function IdealType() {
 
       console.log('이상형 정보 저장 시작:', preferenceData);
 
-      // upsert 사용 - 있으면 업데이트, 없으면 삽입
-      const { error } = await supabase
+      // 먼저 insert 시도
+      const { error: insertError } = await supabase
         .from('user_preferences')
-        .upsert([preferenceData], {
-          onConflict: 'user_id',
-          ignoreDuplicates: false
-        });
+        .insert(preferenceData);
 
-      if (error) throw error;
+      // insert가 실패하면 update 시도
+      if (insertError) {
+        console.log('insert 실패, update 시도');
+        const { error: updateError } = await supabase
+          .from('user_preferences')
+          .update(preferenceData)
+          .eq('user_id', user.id);
+
+        if (updateError) throw updateError;
+      }
 
       console.log('이상형 정보 저장 성공');
       setModalMessage('이상형 정보가 저장되었습니다.');
