@@ -144,7 +144,7 @@ export default function Community() {
       
       // 각 게시글에 댓글 추가
       const postsWithComments = await Promise.all(
-        postsData.map(async (post) => {
+        filteredPosts.map(async (post) => {
           try {
             console.log(`게시글 ID ${post.userId}의 댓글 조회 시작`);
             
