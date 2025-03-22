@@ -301,6 +301,7 @@ export default function Community() {
 
   // 게시글 작성 처리
   const handleSubmit = async (e: React.FormEvent) => {
+    const filter = new Filter();
     e.preventDefault();
     if (!newPost.trim() || !user || !userInfo.profileId) {
       console.log('게시글 작성 실패: 필수 정보 누락', {
@@ -334,7 +335,7 @@ export default function Community() {
       const post = {
         userId: profileCheck[0].id,  // 확인된 프로필 ID 사용
         author_id: profileCheck[0].id,
-        content: newPost,
+        content: filter.clean(newPost),
         nickname: userInfo.nickname || '',
         studentid: profileCheck[0].student_id,  // 확인된 학번 사용
         emoji: userInfo.emoji || '',
