@@ -17,9 +17,20 @@ export default function Login() {
 
   // 페이지 로드 시 세션 확인 (불필요한 로그인 시도 방지)
   useEffect(() => {
+    // 테스트용: 로딩 상태가 지속되는 문제 해결을 위한 타임아웃 추가
+    const timeoutId = setTimeout(() => {
+      if (!sessionChecked) {
+        console.log('세션 확인 타임아웃, 수동으로 세션 확인 완료 처리');
+        setSessionChecked(true);
+      }
+    }, 3000); // 3초 타임아웃
+
     const checkSession = async () => {
       try {
+        console.log('세션 확인 시작...');
         const { data: { session } } = await supabase.auth.getSession();
+        console.log('세션 확인 결과:', session ? '세션 있음' : '세션 없음');
+        
         if (session) {
           // 이미 로그인된 경우 적절한 페이지로 리다이렉트
           console.log('이미 로그인됨, 리다이렉트 중...');
@@ -34,6 +45,10 @@ export default function Login() {
           router.push('/home');
           return;
         }
+        
+        // 테스트용: 직접 홈으로 리다이렉트 (임시 테스트용)
+        // router.push('/home');
+        
         setSessionChecked(true);
       } catch (error) {
         console.error('세션 확인 오류:', error);
@@ -42,7 +57,10 @@ export default function Login() {
     };
     
     checkSession();
-  }, [supabase, router]);
+    
+    // 클린업 함수
+    return () => clearTimeout(timeoutId);
+  }, [supabase, router, sessionChecked]);
 
   // 요청 제한 오류 발생 시 대기 시간
   const getRetryDelay = () => {
@@ -136,6 +154,8 @@ export default function Login() {
     );
   }
 
+  // 테스트 모드 로그인 기능 제거
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-sm">
@@ -144,6 +164,8 @@ export default function Login() {
           <h1 className="text-3xl font-bold text-primary-DEFAULT">Project-Solo</h1>
           <p className="text-gray-600 mt-2">나의 이상형을 찾아서</p>
         </div>
+
+        {/* 테스트 모드 버튼 제거 */}
 
         {/* 로그인 폼 */}
         <div className="card space-y-6">

@@ -15,66 +15,63 @@ export interface Database {
           created_at?: string
           updated_at?: string
           email?: string
-          is_admin: boolean
-          personalities?: string[]
-          dating_styles?: string[]
-          ideal_lifestyles?: string[]
+          student_id?: string
+          name?: string
+          nickname?: string
+          birth_date?: string
+          gender?: string
+          is_admin?: boolean
+          profile_image?: string
+          personality?: string[]
+          dating_style?: string[]
+          age_range_pref?: string
+          lifestyle?: string[]
+          matching_enabled?: boolean
+          bio?: string
           interests?: string[]
-          height?: number
-          drinking?: string[]
-          smoking?: string[]
-          tattoo?: string[]
-          mbti?: string[]
-          university?: string
-          department?: string
-          grade?: string
-          instagram_id?: string
-          username?: string
-          avatar_url?: string
+          verified?: boolean
         }
         Insert: {
           id: string
           created_at?: string
           updated_at?: string
           email?: string
+          student_id?: string
+          name?: string
+          nickname?: string
+          birth_date?: string
+          gender?: string
           is_admin?: boolean
-          personalities?: string[]
-          dating_styles?: string[]
-          ideal_lifestyles?: string[]
+          profile_image?: string
+          personality?: string[]
+          dating_style?: string[]
+          age_range_pref?: string
+          lifestyle?: string[]
+          matching_enabled?: boolean
+          bio?: string
           interests?: string[]
-          height?: number
-          drinking?: string[]
-          smoking?: string[]
-          tattoo?: string[]
-          mbti?: string[]
-          university?: string
-          department?: string
-          grade?: string
-          instagram_id?: string
-          username?: string
-          avatar_url?: string
+          verified?: boolean
         }
         Update: {
           id?: string
           created_at?: string
           updated_at?: string
           email?: string
+          student_id?: string
+          name?: string
+          nickname?: string
+          birth_date?: string
+          gender?: string
           is_admin?: boolean
-          personalities?: string[]
-          dating_styles?: string[]
-          ideal_lifestyles?: string[]
+          profile_image?: string
+          personality?: string[]
+          dating_style?: string[]
+          age_range_pref?: string
+          lifestyle?: string[]
+          matching_enabled?: boolean
+          bio?: string
           interests?: string[]
-          height?: number
-          drinking?: string[]
-          smoking?: string[]
-          tattoo?: string[]
-          mbti?: string[]
-          university?: string
-          department?: string
-          grade?: string
-          instagram_id?: string
-          username?: string
-          avatar_url?: string
+          verified?: boolean
         }
       }
       user_preferences: {
@@ -201,73 +198,88 @@ export interface Database {
         Row: {
           id: string
           created_at: string
+          updated_at?: string
           user_id: string
-          content: string
-          type: 'meeting_invitation' | 'meeting_confirmed' | 'meeting_cancelled' | 'system'
-          related_id: string | null
+          type: string
+          title: string
+          message: string
           is_read: boolean
-          updated_at: string
+          data?: Json
         }
         Insert: {
           id?: string
           created_at?: string
-          user_id: string
-          content: string
-          type: 'meeting_invitation' | 'meeting_confirmed' | 'meeting_cancelled' | 'system'
-          related_id?: string | null
-          is_read?: boolean
           updated_at?: string
+          user_id: string
+          type: string
+          title: string
+          message: string
+          is_read?: boolean
+          data?: Json
         }
         Update: {
           id?: string
           created_at?: string
-          user_id?: string
-          content?: string
-          type?: 'meeting_invitation' | 'meeting_confirmed' | 'meeting_cancelled' | 'system'
-          related_id?: string | null
-          is_read?: boolean
           updated_at?: string
+          user_id?: string
+          type?: string
+          title?: string
+          message?: string
+          is_read?: boolean
+          data?: Json
         }
       }
       posts: {
         Row: {
           id: string
           created_at: string
-          updated_at: string
-          user_id: string
+          updated_at?: string
           title: string
           content: string
+          user_id: string
           category: string
-          is_anonymous: boolean
-          likes_count: number
-          comments_count: number
-          views_count: number
+          nickname: string
+          profile_image?: string
+          likes: string[]
+          comments: Json[]
+          reports: Json[]
+          isEdited: boolean
+          isdeleted: boolean
+          isBlinded: boolean
         }
         Insert: {
           id?: string
           created_at?: string
           updated_at?: string
-          user_id: string
           title: string
           content: string
+          user_id: string
           category: string
-          is_anonymous?: boolean
-          likes_count?: number
-          comments_count?: number
-          views_count?: number
+          nickname: string
+          profile_image?: string
+          likes?: string[]
+          comments?: Json[]
+          reports?: Json[]
+          isEdited?: boolean
+          isdeleted?: boolean
+          isBlinded?: boolean
         }
         Update: {
           id?: string
           created_at?: string
           updated_at?: string
-          user_id?: string
           title?: string
           content?: string
+          user_id?: string
           category?: string
-          is_anonymous?: boolean
-          likes_count?: number
-          comments_count?: number
-          views_count?: number
+          nickname?: string
+          profile_image?: string
+          likes?: string[]
+          comments?: Json[]
+          reports?: Json[]
+          isEdited?: boolean
+          isdeleted?: boolean
+          isBlinded?: boolean
         }
       }
       comments: {
@@ -470,6 +482,9 @@ export interface Database {
         }
       }
     }
+    Views: {
+      [_ in never]: never
+    }
     Functions: {
       increment_vote_count: {
         Args: {
@@ -489,6 +504,9 @@ export interface Database {
         }
         Returns: undefined
       }
+    }
+    Enums: {
+      [_ in never]: never
     }
   }
 } 

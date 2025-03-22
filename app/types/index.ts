@@ -5,7 +5,6 @@ export interface User {
   age: number;
   gender: 'male' | 'female' | 'other';
   university: string;
-  profileImages: string[];
   bio: string;
   hobbies?: string[];
   mbti?: string;

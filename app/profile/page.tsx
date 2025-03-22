@@ -56,8 +56,25 @@ export default function Profile() {
     if (profile) {
       console.log('기존 프로필 데이터 로드:', profile);
       
+      // 키 값 변환 함수
+      const convertHeightToString = (height: number | null | undefined): string => {
+        if (height === null || height === undefined) return '';
+        
+        if (height <= 160) return '160cm 이하';
+        if (height <= 165) return '160cm~165cm';
+        if (height <= 170) return '165cm~170cm';
+        if (height <= 175) return '170cm~175cm';
+        if (height <= 180) return '175cm~180cm';
+        if (height <= 185) return '180cm~185cm';
+        if (height <= 190) return '185cm~190cm';
+        return '190cm 이상';
+      };
+      
+      const heightString = convertHeightToString(profile.height);
+      console.log('변환된 키 문자열:', heightString);
+      
       setFormData({
-        height: profile.height ? String(profile.height) : '',
+        height: heightString,
         personalities: profile.personalities || [],
         datingStyles: profile.dating_styles || [],
         idealLifestyles: profile.ideal_lifestyles || [],
@@ -85,8 +102,22 @@ export default function Profile() {
     const numbers = heightStr.match(/\d+/g);
     if (!numbers || numbers.length === 0) return null;
     
+    // 키 범위의 중간값을 사용하는 방식으로 변경
+    if (heightStr === '160cm 이하') return 160;
+    if (heightStr === '160cm~165cm') return 163;
+    if (heightStr === '165cm~170cm') return 168;
+    if (heightStr === '170cm~175cm') return 173;
+    if (heightStr === '175cm~180cm') return 178;
+    if (heightStr === '180cm~185cm') return 183;
+    if (heightStr === '185cm~190cm') return 188;
+    if (heightStr === '190cm 이상') return 190;
+    
+    // 기본 방식으로 처리
     if (heightStr.includes('~') && numbers.length >= 2) {
-      return parseInt(numbers[1], 10);
+      // 범위의 중간값 사용
+      const min = parseInt(numbers[0], 10);
+      const max = parseInt(numbers[1], 10);
+      return Math.floor((min + max) / 2);
     }
     
     if (heightStr.includes('이상') || heightStr.includes('+')) {
@@ -234,7 +265,18 @@ export default function Profile() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-pink-50">
       <div className="container mx-auto px-4 py-8 max-w-lg">
-        <h1 className="text-h2 mb-6">프로필 설정</h1>
+        <div className="flex items-center mb-6">
+          <button 
+            onClick={() => router.push('/home')} 
+            className="mr-4 p-2 rounded-full hover:bg-gray-100 transition-all"
+            aria-label="뒤로 가기"
+          >
+            <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h1 className="text-h2">프로필 설정</h1>
+        </div>
         
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* 키 선택 */}
@@ -242,20 +284,25 @@ export default function Profile() {
             <h2 className="text-lg font-semibold text-gray-900">키</h2>
             <div className="grid grid-cols-2 gap-3">
               {['160cm 이하', '160cm~165cm', '165cm~170cm', '170cm~175cm', 
-                '175cm~180cm', '180cm~185cm', '185cm~190cm', '190cm 이상'].map(height => (
-                <button
-                  key={height}
-                  type="button"
-                  onClick={() => handleSingleSelect('height', height)}
-                  className={`px-3 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap
-                    ${formData.height === height
-                      ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
-                      : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
-                    }`}
-                >
-                  {height}
-                </button>
-              ))}
+                '175cm~180cm', '180cm~185cm', '185cm~190cm', '190cm 이상'].map(height => {
+                // 디버그 로그를 추가하여 현재 선택값과 비교할 값을 확인
+                console.log(`현재 height 값: ${formData.height}, 비교할 값: ${height}, 일치하는가? ${formData.height === height}`);
+                
+                return (
+                  <button
+                    key={height}
+                    type="button"
+                    onClick={() => handleSingleSelect('height', height)}
+                    className={`px-3 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap
+                      ${formData.height === height
+                        ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+                        : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
+                      }`}
+                  >
+                    {height}
+                  </button>
+                );
+              })}
             </div>
           </div>
           

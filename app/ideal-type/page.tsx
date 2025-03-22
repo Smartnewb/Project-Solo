@@ -198,23 +198,37 @@ export default function IdealType() {
         // 데이터가 있는 경우에만 폼 업데이트
         if (data) {
           console.log('불러온 이상형 정보:', data);
+          
+          // 배열에서 첫 번째 값 추출하는 헬퍼 함수
+          const getFirstValueFromArray = (arr: any[] | null): string | null => {
+            if (!arr || !Array.isArray(arr) || arr.length === 0) return null;
+            return arr[0];
+          };
+          
           setFormData({
             heightRange: {
               min: data.preferred_height_min ?? null,
               max: data.preferred_height_max ?? null
             },
-            ageType: data.preferred_age_type || null,
-            personalities: data.preferred_personalities || [],
-            datingStyles: data.preferred_dating_styles || [],
-            lifestyles: data.preferred_lifestyles || [],
-            interests: data.preferred_interests || [],
-            drinking: data.preferred_drinking || null,
-            smoking: data.preferred_smoking || null,
-            tattoo: data.preferred_tattoo || null,
-            likedMbti: data.preferred_mbti || null,
-            dislikedMbti: data.disliked_mbti || null
+            // 배열에서 첫 번째 값을 추출
+            ageType: getFirstValueFromArray(data.preferred_age_type),
+            personalities: Array.isArray(data.preferred_personalities) ? data.preferred_personalities : [],
+            datingStyles: Array.isArray(data.preferred_dating_styles) ? data.preferred_dating_styles : [],
+            lifestyles: Array.isArray(data.preferred_lifestyles) ? data.preferred_lifestyles : [],
+            interests: Array.isArray(data.preferred_interests) ? data.preferred_interests : [],
+            drinking: getFirstValueFromArray(data.preferred_drinking),
+            smoking: getFirstValueFromArray(data.preferred_smoking),
+            tattoo: getFirstValueFromArray(data.preferred_tattoo),
+            likedMbti: getFirstValueFromArray(data.preferred_mbti),
+            dislikedMbti: getFirstValueFromArray(data.disliked_mbti)
           });
-          console.log('폼 데이터 업데이트 완료');
+          
+          console.log('폼 데이터 업데이트 완료:', {
+            ageType: getFirstValueFromArray(data.preferred_age_type),
+            drinking: getFirstValueFromArray(data.preferred_drinking),
+            smoking: getFirstValueFromArray(data.preferred_smoking),
+            tattoo: getFirstValueFromArray(data.preferred_tattoo)
+          });
         }
       } catch (error) {
         console.error('이상형 정보 로드 중 오류:', error);
@@ -435,11 +449,14 @@ export default function IdealType() {
       {/* 상단 헤더 */}
       <div className="bg-white shadow-sm">
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center">
-          <button
-            onClick={() => router.back()}
-            className="text-gray-600 hover:text-gray-900 transition-colors"
+          <button 
+            onClick={() => router.push('/home')} 
+            className="p-2 rounded-full hover:bg-gray-100 transition-all"
+            aria-label="뒤로 가기"
           >
-            ← 뒤로
+            <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+            </svg>
           </button>
           <h1 className="text-xl font-semibold flex-1 text-center text-gray-900">이상형 설정</h1>
           <div className="w-10"></div>

@@ -5,60 +5,84 @@
 @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@700&display=swap');
 
 :root {
-  /* Color Variables */
-  --color-primary: #FF4F93;     /* 메인 핑크 */
-  --color-primary-dark: #FF6B81; /* 코랄톤 */
-  --color-secondary: #4A90E2;   /* 스카이블루 */
-  --color-accent: #9C27B0;      /* 퍼플톤 */
+  /* Color Variables - Wippy Style */
+  --color-primary: #6C5CE7;      /* 메인 퍼플 */
+  --color-primary-light: #A8A4E3; /* 라이트 퍼플 */
+  --color-secondary: #00B894;    /* 민트 */
+  --color-accent: #FD79A8;       /* 핑크 */
+  --color-background: #F8FAFD;   /* 배경색 */
+  --color-text: #2D3436;         /* 텍스트 */
+  --color-text-light: #636E72;   /* 보조 텍스트 */
+  --color-border: #DFE6E9;       /* 보더 */
   --color-white: #FFFFFF;
-  --color-light-gray: #F5F5F5;
-  --color-dark-gray: #333333;
-  --color-black: #000000;
-  --color-disabled: #CCCCCC;
+  --color-error: #FF7675;        /* 에러 */
+  --color-success: #55EFC4;      /* 성공 */
+  --color-warning: #FFEAA7;      /* 경고 */
+  --box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --box-shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 font-pretendard;
+    @apply bg-[#F8FAFD] text-[#2D3436] font-pretendard antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1 {
+    @apply text-3xl font-bold mb-6;
+  }
+
+  h2 {
+    @apply text-2xl font-bold mb-4;
+  }
+
+  h3 {
+    @apply text-xl font-semibold mb-3;
+  }
+
+  p {
+    @apply text-[#636E72] leading-relaxed;
   }
 }
 
 @layer components {
   /* 버튼 스타일 */
   .btn-primary {
-    @apply bg-[#FF4F93] text-white font-bold py-3 px-6 rounded-full;
-    @apply hover:bg-[#FF6B81] hover:shadow-lg transform hover:scale-[0.95];
-    @apply transition-all duration-200;
-    @apply disabled:bg-gray-300 disabled:text-gray-600 disabled:cursor-not-allowed;
+    @apply bg-[#6C5CE7] text-white font-bold py-3 px-6 rounded-xl;
+    @apply hover:bg-[#A8A4E3] hover:shadow-lg transform hover:scale-[0.98];
+    @apply transition-all duration-300 ease-in-out;
+    @apply disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed;
     @apply disabled:hover:scale-100 disabled:hover:shadow-none;
   }
 
   /* 선택 버튼 스타일 */
   .btn-select {
-    @apply w-full px-4 py-3 rounded-full text-base font-medium border-2 transition-all duration-200;
-    @apply text-gray-700 border-gray-300 bg-white;
-    @apply hover:border-[#FF4F93] hover:text-[#FF4F93];
+    @apply w-full px-4 py-3 rounded-xl text-base font-medium border transition-all duration-300;
+    @apply text-[#2D3436] border-[#DFE6E9] bg-white;
+    @apply hover:border-[#6C5CE7] hover:text-[#6C5CE7] hover:shadow-md;
   }
 
   .btn-selected {
-    @apply bg-[#FF4F93] text-black border-[#FF4F93];
-    @apply font-extrabold text-base;
+    @apply bg-[#6C5CE7] text-white border-[#6C5CE7];
+    @apply font-bold text-base;
     @apply shadow-md;
-    @apply hover:bg-[#FF4F93] hover:border-[#FF4F93] hover:text-black;
+    @apply hover:bg-[#A8A4E3] hover:border-[#A8A4E3] hover:text-white;
   }
 
   /* 카드 스타일 */
   .card {
-    @apply bg-white rounded-2xl shadow-md p-5;
-    @apply hover:shadow-lg transition-shadow duration-200;
+    @apply bg-white rounded-xl border border-[#DFE6E9] p-6;
+    @apply transition-all duration-300 ease-in-out;
+    @apply hover:shadow-lg hover:border-[#6C5CE7]/20;
   }
 
   /* 입력 필드 스타일 */
   .input-field {
-    @apply w-full px-4 py-3 rounded-xl border border-gray-200;
-    @apply focus:outline-none focus:ring-2 focus:ring-[#FF4F93];
-    @apply focus:border-transparent transition-all duration-200;
-    @apply placeholder:text-gray-400;
+    @apply w-full px-4 py-3 rounded-xl border border-[#DFE6E9] bg-white;
+    @apply focus:outline-none focus:ring-2 focus:ring-[#6C5CE7]/30;
+    @apply focus:border-[#6C5CE7] transition-all duration-300;
+    @apply placeholder:text-[#636E72];
   }
 
   /* 애니메이션 */

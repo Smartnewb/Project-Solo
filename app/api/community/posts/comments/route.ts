@@ -204,7 +204,7 @@ export async function POST(request: NextRequest) {
     // 게시물 존재 여부 확인
     const { data: post, error: postError } = await supabase
       .from('posts')
-      .select('id')
+      .select('id, comments')
       .eq('id', post_id)
       .single();
 
@@ -215,6 +215,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 사용자 정보 가져오기
+    const { data: userData, error: userError } = await supabase
+      .from('profiles')
+      .select('nickname, profile_image')
+      .eq('id', userId)
+      .single();
+
+    if (userError) {
+      console.error('사용자 정보 조회 오류:', userError);
+      return NextResponse.json(
+        { error: '사용자 정보를 불러오는 중 오류가 발생했습니다.' },
+        { status: 500 }
+      );
+    }
+
+    // 현재 시간
+    const now = new Date().toISOString();
+
     // 댓글 생성
     const { data: comment, error } = await supabase
       .from('comments')
@@ -222,16 +240,12 @@ export async function POST(request: NextRequest) {
         post_id,
         user_id: userId,
         content,
-        is_anonymous
+        is_anonymous,
+        created_at: now,
+        updated_at: now,
+        likes_count: 0
       })
-      .select(`
-        *,
-        profiles:user_id (
-          id,
-          username,
-          avatar_url
-        )
-      `)
+      .select()
       .single();
 
     if (error) {
@@ -242,27 +256,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 게시물의 댓글 수 업데이트
-    await supabase
+    // 게시물의 comments 배열에 새 댓글 추가
+    const commentData = {
+      id: comment.id,
+      user_id: is_anonymous ? null : userId,
+      content: comment.content,
+      nickname: is_anonymous ? '익명' : userData.nickname || '익명',
+      profile_image: is_anonymous ? null : userData.profile_image,
+      created_at: now,
+      is_anonymous
+    };
+
+    const updatedComments = [...(post.comments || []), commentData];
+
+    // 게시물 업데이트
+    const { error: updateError } = await supabase
       .from('posts')
-      .update({ comments_count: supabase.rpc('increment', { inc: 1 }) })
+      .update({ comments: updatedComments })
       .eq('id', post_id);
 
-    // 익명 댓글인 경우 작성자 정보 숨기기
-    let formattedComment = comment;
-    if (is_anonymous) {
-      formattedComment = {
-        ...comment,
-        user_id: null,
-        profiles: {
-          username: '익명',
-          avatar_url: null
-        }
-      };
+    if (updateError) {
+      console.error('게시물 업데이트 오류:', updateError);
+      // 댓글은 이미 생성되었으므로 경고만 로그로 남김
     }
 
-    // 자신이 작성한 댓글임을 표시
-    formattedComment.is_mine = true;
+    // 댓글 응답에 작성자 정보 포함
+    const formattedComment = {
+      ...comment,
+      author: {
+        id: is_anonymous ? null : userId,
+        nickname: is_anonymous ? '익명' : userData.nickname || '익명',
+        image_url: is_anonymous ? null : userData.profile_image
+      },
+      is_mine: true
+    };
 
     return NextResponse.json({
       message: '댓글이 성공적으로 작성되었습니다.',

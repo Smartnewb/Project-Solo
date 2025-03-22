@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/utils/supabase';
+import { createClientSupabaseClient } from '@/utils/supabase';
 import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js';
 import type { Database } from '@/types/database.types';
 
@@ -25,7 +25,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = createClientSupabaseClient();
 
   useEffect(() => {
     const fetchProfile = async (userId: string) => {

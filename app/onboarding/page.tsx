@@ -17,7 +17,6 @@ interface OnboardingForm {
   department: string;
   studentId: string;
   grade: string;
-  image: string;
   instagramId: string;
 }
 
@@ -26,7 +25,6 @@ interface ValidationErrors {
   department: boolean;
   studentId: boolean;
   grade: boolean;
-  image: boolean;
   instagramId: boolean;
 }
 
@@ -40,7 +38,6 @@ export default function Onboarding() {
     department: '',
     studentId: '',
     grade: '',
-    image: '',
     instagramId: '',
   });
 
@@ -49,7 +46,6 @@ export default function Onboarding() {
     department: false,
     studentId: false,
     grade: false,
-    image: false,
     instagramId: false,
   });
 
@@ -305,46 +301,7 @@ export default function Onboarding() {
       ) || []
     : [];
 
-  // 이미지 크기 줄이기 함수
-  const compressImage = (base64String: string, maxWidth = 800): Promise<string> => {
-    return new Promise((resolve) => {
-      const img = new window.Image();
-      img.src = base64String;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d')!;
-        
-        // 비율 계산
-        const ratio = maxWidth / img.width;
-        const width = maxWidth;
-        const height = img.height * ratio;
 
-        canvas.width = width;
-        canvas.height = height;
-
-        // 이미지 그리기
-        ctx.drawImage(img, 0, 0, width, height);
-
-        // 압축된 이미지 반환
-        resolve(canvas.toDataURL('image/jpeg', 0.7));
-      };
-    });
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64String = reader.result as string;
-        // 이미지 압축
-        const compressedImage = await compressImage(base64String);
-        setFormData({ ...formData, image: compressedImage });
-        setErrors({ ...errors, image: false });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   const validateForm = () => {
     console.log('폼 데이터 검증 시작, 전체 폼 데이터:', formData);
@@ -361,7 +318,7 @@ export default function Onboarding() {
       department: departmentValue.length > 0 ? '있음' : '없음',
       studentId: studentIdValue.length > 0 ? '있음' : '없음',
       grade: gradeValue.length > 0 ? '있음' : '없음',
-      image: formData.image ? '있음' : '없음',
+
       instagramId: instagramIdValue.length > 0 ? '있음' : '없음'
     });
 
@@ -370,7 +327,7 @@ export default function Onboarding() {
       department: !departmentValue,
       studentId: !studentIdValue,
       grade: !gradeValue,
-      image: !formData.image,
+
       instagramId: !instagramIdValue
     };
 
@@ -724,35 +681,6 @@ export default function Onboarding() {
             </div>
           </div>
 
-          {/* 프로필 사진 업로드 */}
-          <div className={`bg-white rounded-2xl shadow-sm p-6 space-y-4 ${errors.image ? 'ring-2 ring-red-500' : ''}`}>
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">프로필 사진</h2>
-              {errors.image && (
-                <span className="text-sm text-red-500">필수 입력 항목입니다</span>
-              )}
-            </div>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="w-full"
-            />
-            {formData.image && (
-              <div className="mt-4">
-                <img
-                  src={formData.image}
-                  alt="프로필 사진"
-                  style={{ width: '200px', height: '200px', objectFit: 'cover' }}
-                  className="rounded-xl"
-                />
-              </div>
-            )}
-            <p className="text-sm text-gray-600 mt-2">
-              자신을 잘 들어내는 사진을 넣어주세요. 어차피 인스타그램에 사진 있으니까 뭘 넣어도 상관은 없습니다. 
-              사진은 매칭 상대에게만 보여집니다.
-            </p>
-          </div>
 
           {/* 인스타그램 아이디 입력 */}
           <div className={`bg-white rounded-2xl shadow-sm p-6 space-y-4 ${errors.instagramId ? 'ring-2 ring-red-500' : ''}`}>
@@ -812,9 +740,7 @@ export default function Onboarding() {
               {errors.grade && (
                 <p className="text-red-500">• 학년을 선택해주세요</p>
               )}
-              {errors.image && (
-                <p className="text-red-500">• 프로필 사진을 업로드해주세요</p>
-              )}
+
               {errors.instagramId && (
                 <p className="text-red-500">• 인스타그램 아이디를 입력해주세요</p>
               )}

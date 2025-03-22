@@ -6,11 +6,9 @@ import { Database } from '@/types/supabase';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-// 전체 환경 변수 출력 (디버깅 목적)
-console.log('=== 환경 변수 확인 ===');
-console.log('Supabase URL (전체값):', supabaseUrl);
-console.log('Supabase Anon Key (시작 부분):', supabaseAnonKey ? supabaseAnonKey.substring(0, 10) + '...' : '없음');
-console.log('========================');
+// 최소한의 정보만 로그
+// API 요청 중복 이슈 해결을 위해 부필요한 로그 제거
+console.log('=== Supabase 초기화 완료 ===');
 
 // API 요청 중복 방지를 위한 캐시
 const requestCache = new Map();
@@ -101,7 +99,7 @@ function createCachedFetch(originalFetch: (url: RequestInfo | URL, options?: Req
     
     // 진행 중인 동일 요청이 있는지 확인
     if (pendingRequests.has(cacheKey)) {
-      console.log(`🔄 중복 요청 감지 및 통합: ${urlStr}`);
+      // 중복 요청 방지 (로그 제거)
       return pendingRequests.get(cacheKey);
     }
     
@@ -110,15 +108,14 @@ function createCachedFetch(originalFetch: (url: RequestInfo | URL, options?: Req
     if (cachedResponse) {
       const { timestamp, response } = cachedResponse;
       if (Date.now() - timestamp < CACHE_TTL) {
-        console.log(`🟢 캐시 사용 (유효기간: ${((CACHE_TTL - (Date.now() - timestamp))/1000).toFixed(1)}초): ${urlStr}`);
+        // 캐시 사용 (로그 제거)
         return Promise.resolve(response.clone());
       }
-      console.log(`🟠 캐시 만료: ${urlStr}`);
+      // 캐시 만료 (로그 제거)
       requestCache.delete(cacheKey);
     }
     
-    // 새 요청 시작
-    console.log(`🔵 새 요청: ${urlStr}`);
+    // 새 요청 시작 (로그 제거)
     const fetchPromise = originalFetch(...args).then((response: Response) => {
       // 성공한 응답만 캐싱
       if (response.ok) {

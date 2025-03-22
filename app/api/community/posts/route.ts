@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   // 요청 본문 파싱
   const body = await request.json();
-  const { title, content, category, is_anonymous } = body;
+  const { title, content, category, nickname, profile_image, is_anonymous } = body;
 
   // 데이터 검증
   if (!title || !content || !category) {
@@ -155,6 +155,28 @@ export async function POST(request: NextRequest) {
   const userId = session.user.id;
 
   try {
+    // 사용자 정보 가져오기 (nickname이 제공되지 않은 경우)
+    let userNickname = nickname;
+    let userProfileImage = profile_image;
+    
+    if (!userNickname || !userProfileImage) {
+      const { data: userData, error: userError } = await supabase
+        .from('profiles')
+        .select('nickname, profile_image')
+        .eq('id', userId)
+        .single();
+
+      if (userError) {
+        console.error('사용자 정보 조회 오류:', userError);
+      } else {
+        if (!userNickname) userNickname = userData.nickname || '익명';
+        if (!userProfileImage) userProfileImage = userData.profile_image;
+      }
+    }
+
+    // 현재 시간
+    const now = new Date().toISOString();
+
     // 게시글 추가
     const { data, error } = await supabase
       .from('posts')
@@ -163,9 +185,16 @@ export async function POST(request: NextRequest) {
         title,
         content,
         category,
-        is_anonymous: is_anonymous || false,
-        likes_count: 0,
-        comments_count: 0,
+        nickname: userNickname || '익명',
+        profile_image: userProfileImage || null,
+        created_at: now,
+        updated_at: now,
+        likes: [],
+        comments: [],
+        reports: [],
+        isEdited: false,
+        isdeleted: false,
+        isBlinded: false
       })
       .select()
       .single();
