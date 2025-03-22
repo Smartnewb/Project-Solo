@@ -134,6 +134,14 @@ export default function Community() {
       // userId를 사용하는지 확인하고 로그
       console.log('게시글 데이터 구조 확인:', postsData.length > 0 ? Object.keys(postsData[0]) : '게시글 없음');
       
+      // 신고 수가 3회 미만인 게시글만 필터링
+      const filteredPosts = postsData.filter(post => {
+        // 신고 횟수가 없거나 3회 미만인 경우만 포함
+        return !post.reports || post.reports.length < 3;
+      });
+      
+      console.log('filteredPosts:', filteredPosts);
+      
       // 각 게시글에 댓글 추가
       const postsWithComments = await Promise.all(
         postsData.map(async (post) => {
