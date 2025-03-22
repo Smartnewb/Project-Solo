@@ -8,19 +8,19 @@ import { findBestMatch } from '@/app/matchingAlgorithm';
 
 interface IdealTypeForm {
   heightRange: {
-    min: number;
-    max: number;
+    min: number | null;
+    max: number | null;
   };
-  ageType: 'older' | 'younger' | 'same' | 'any';
+  ageType: 'older' | 'younger' | 'same' | 'any' | null;
   personalities: string[];
   datingStyles: string[];
   lifestyles: string[];
-  drinking: string;
-  smoking: string;
-  tattoo: string;
+  drinking: string | null;
+  smoking: string | null;
+  tattoo: string | null;
   interests: string[];
-  likedMbti: string;
-  dislikedMbti: string;
+  likedMbti: string | null;
+  dislikedMbti: string | null;
 }
 
 interface ValidationErrors {
@@ -47,17 +47,17 @@ export default function IdealType() {
   const router = useRouter();
   const { user } = useAuth();
   const [formData, setFormData] = useState<IdealTypeForm>({
-    heightRange: { min: 140, max: 200 },
-    ageType: 'any',
+    heightRange: { min: null, max: null },
+    ageType: null,
     personalities: [],
     datingStyles: [],
     lifestyles: [],
-    drinking: '',
-    smoking: '',
-    tattoo: '',
+    drinking: null,
+    smoking: null,
+    tattoo: null,
     interests: [],
-    likedMbti: '',
-    dislikedMbti: '',
+    likedMbti: null,
+    dislikedMbti: null,
   });
 
   const [errors, setErrors] = useState<ValidationErrors>({
