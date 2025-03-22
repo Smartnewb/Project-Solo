@@ -10,8 +10,11 @@
     "matching": "ts-node scripts/matching-cron.ts"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
     "@headlessui/react": "^1.7.18",
     "@heroicons/react": "^2.1.1",
+    "@mui/material": "^6.4.8",
     "@supabase/auth-helpers-nextjs": "^0.8.7",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.49.1",
@@ -26,6 +29,7 @@
     "react": "^18",
     "react-dom": "^18",
     "react-slick": "^0.30.3",
+    "recharts": "^2.15.1",
     "slick-carousel": "^1.8.1"
   },
   "devDependencies": {
