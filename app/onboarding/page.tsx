@@ -18,6 +18,7 @@ interface OnboardingForm {
   studentId: string;
   grade: string;
   instagramId: string;
+  image?: string;
 }
 
 interface ValidationErrors {
@@ -31,7 +32,7 @@ interface ValidationErrors {
 export default function Onboarding() {
   const router = useRouter();
   const supabase = createClientSupabaseClient();
-  const { user, profile, hasCompletedOnboarding, loading: authLoading, updateProfile: updateAuthProfile } = useAuth();
+  const { user, profile, hasCompletedOnboarding, loading: authLoading, updateProfile: updateAuthProfile, refreshProfile } = useAuth();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<OnboardingForm>({
     university: '',
@@ -466,26 +467,27 @@ export default function Onboarding() {
           .select();
         
         if (updateError) {
-          console.warn('추가 정보 저장 중 오류 발생:', updateError);
-          console.warn('일부 정보만 저장되었습니다. 프로필 설정에서 추가 정보를 입력해주세요.');
-        } else {
-          console.log('모든 프로필 정보가 성공적으로 저장되었습니다:', updatedProfile);
+          throw updateError;
         }
+
+        // 여기에 refreshProfile 호출 추가
+        await refreshProfile();  // 이 부분이 중요합니다!
+        
+        console.log('모든 프로필 정보가 성공적으로 저장되었습니다:', updatedProfile);
+        
+        // 저장 성공 메시지 표시
+        showTemporaryModal('프로필이 저장되었습니다!');
+        
+        setTimeout(() => {
+          setShowSuccessModal(false);
+          setTimeout(() => {
+            router.push('/profile');
+          }, 200);
+        }, 1500);
       } catch (additionalError) {
         console.warn('추가 필드 저장 중 예외 발생:', additionalError);
-        console.warn('기본 프로필은 저장되었습니다. 프로필 설정에서 추가 정보를 입력해주세요.');
+        showTemporaryModal('프로필 저장 중 오류가 발생했습니다.');
       }
-      
-      // 저장 성공 메시지 표시
-      showTemporaryModal('프로필이 저장되었습니다!');
-      
-      // 모달 닫을 때 홈 페이지로 이동하도록 설정
-      setTimeout(() => {
-        setShowSuccessModal(false);
-        setTimeout(() => {
-          router.push('/home');
-        }, 200);
-      }, 1500);
     } catch (err) {
       console.error('프로필 저장 중 예외 발생:', err);
       showTemporaryModal('프로필 저장 중 오류가 발생했습니다.');
