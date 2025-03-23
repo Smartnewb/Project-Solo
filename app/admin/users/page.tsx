@@ -90,6 +90,14 @@ export default function UsersAdmin() {
       
       console.log('프로필 데이터 불러오기 성공:', profilesData?.length || 0, '개의 프로필');
       
+      // 디버깅: 첫 번째 프로필의 구조 확인
+      if (profilesData && profilesData.length > 0) {
+        console.log('프로필 데이터 구조:', Object.keys(profilesData[0]));
+        console.log('첫 번째 프로필 샘플:', JSON.stringify(profilesData[0], null, 2));
+        console.log('user_id 필드:', profilesData[0].user_id);
+        console.log('classification 필드:', profilesData[0].classification);
+      }
+      
       if (!profilesData || profilesData.length === 0) {
         setUsers([]);
         setLoading(false);
@@ -267,7 +275,22 @@ export default function UsersAdmin() {
     try {
       setLoading(true);
       
-      console.log('등급 변경 시작:', userId, classification);
+      console.log('등급 변경 시작 - 사용자 ID:', userId);
+      console.log('새 등급:', classification);
+      
+      // 먼저 현재 프로필 정보 확인
+      const { data: currentProfile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+        
+      if (fetchError) {
+        console.error('현재 프로필 조회 오류:', fetchError);
+        throw fetchError;
+      }
+      
+      console.log('현재 프로필 정보:', currentProfile);
       
       // 프로필 테이블 업데이트
       const { data, error } = await supabase
@@ -284,13 +307,18 @@ export default function UsersAdmin() {
       console.log('등급 변경 성공:', data);
       
       // 사용자 목록 업데이트
-      setUsers(users.map(user => 
+      setUsers(prevUsers => prevUsers.map(user => 
         user.user_id === userId ? { ...user, classification } : user
       ));
       
+      // 선택된 사용자가 있고, 그 ID가 현재 업데이트하는 ID와 같다면 선택된 사용자 정보도 업데이트
+      if (selectedUser && selectedUser.user_id === userId) {
+        setSelectedUser(prev => prev ? { ...prev, classification } : null);
+      }
+      
     } catch (err: any) {
       console.error('등급 변경 중 오류 발생:', err);
-      alert('등급 변경 중 오류가 발생했습니다.');
+      alert(`등급 변경 중 오류가 발생했습니다: ${err.message}`);
     } finally {
       setLoading(false);
     }
