@@ -103,7 +103,13 @@ export default function Home() {
             setHasProfile(true);
             setShowOnboardingModal(false);
             
-
+            // 이상형 정보가 있는지 확인 (personalites 등의 필드가 있으면 이상형이 이미 설정됨)
+            const idealTypeFields = ['personalities', 'datingStyles', 'idealLifestyles', 'interests'];
+            const hasIdealTypeInfo = idealTypeFields.some(field => profile[field] && 
+              (Array.isArray(profile[field]) ? profile[field].length > 0 : Boolean(profile[field])));
+            
+            setHasIdealType(hasIdealTypeInfo);
+            console.log('이상형 정보 확인:', hasIdealTypeInfo ? '설정됨' : '미설정');
             
             // 추가 프로필 정보가 필요한지 확인
             const requiredFields = ['height', 'personalities'];
