@@ -378,18 +378,26 @@ export default function Community() {
   useEffect(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
+  
+    // 일요일인 경우 인기 게시물 초기화
+    const isSunday = today.getDay() === 0;
+  
+    if (isSunday) {
+      setPopularPosts([]);
+    }
     const popularPosts = posts
-      .filter(post => !post.isdeleted && new Date(post.created_at) >= today)
+      .filter(post => !post.isdeleted && new Date(post.created_at) && (post.likes?.length || 0) > 0)
       .sort((a, b) => {
         const aScore = (a.likes?.length || 0) + (a.comments?.length || 0);
         const bScore = (b.likes?.length || 0) + (b.comments?.length || 0);
         return bScore - aScore;
       })
       .slice(0, 5);
-
-    setPopularPosts(popularPosts);
+  
+    setPopularPosts(prevPosts => isSunday ? [] : popularPosts);
+  
   }, [posts]);
+  
 
   // 좋아요 처리
   const handleLike = async (PostUerId: string) => {
@@ -1107,7 +1115,7 @@ export default function Community() {
       {popularPosts.length > 0 && (
         <div className="bg-gray-50 border-b mb-4">
           <div className="max-w-lg mx-auto px-4 py-4">
-            <h2 className="text-lg font-bold mb-4">오늘의 인기 게시물</h2>
+            <h2 className="text-lg font-bold mb-4">이번주의 인기 게시물</h2>
             <div className="mb-6">
               <Slider {...sliderSettings} ref={sliderRef}>
                 {popularPosts.map((post, index) => (
