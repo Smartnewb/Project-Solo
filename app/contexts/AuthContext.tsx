@@ -2,9 +2,16 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClientSupabaseClient } from '@/utils/supabase';
 import type { User, AuthChangeEvent, Session } from '@supabase/supabase-js';
-import type { Database } from '@/types/database.types';
 
-type Profile = Database['public']['Tables']['profiles']['Row'];
+type Profile = {
+  id: string;
+  user_id: string;
+  name: string;
+  role: string;
+  classification?: string;
+  [key: string]: any;
+};
+
 type AuthContextType = {
   user: User | null;
   profile: Profile | null;
@@ -33,7 +40,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', userId)
+          .eq('user_id', userId)
           .single();
 
         if (error) {
@@ -56,7 +63,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setUser(user);
           const profile = await fetchProfile(user.id);
           setProfile(profile);
-          setIsAdmin(profile?.is_admin ?? false);
+          setIsAdmin(profile?.role === 'admin' || false);
         }
       } catch (error) {
         console.error('Error in setupUser:', error);
@@ -72,7 +79,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(session.user);
         const profile = await fetchProfile(session.user.id);
         setProfile(profile);
-        setIsAdmin(profile?.is_admin ?? false);
+        setIsAdmin(profile?.role === 'admin' || false);
       } else {
         setUser(null);
         setProfile(null);
