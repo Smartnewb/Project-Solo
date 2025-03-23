@@ -142,99 +142,24 @@ function createCachedFetch(originalFetch: (url: RequestInfo | URL, options?: Req
   };
 }
 
-// 클라이언트 컴포넌트용 클라이언트
+// 클라이언트 컴포넌트용 클라이언트 - 더 이상 직접 사용하지 않음
+// utils/supabase/client.ts를 대신 사용하세요
+// 이 파일은 캐시 관련 유틸리티와 타입을 위해 유지됩니다
 export const createClientSupabaseClient = () => {
-  console.log('[Supabase] 클라이언트 생성 - URL:', supabaseUrl ? supabaseUrl.substring(0, 8) + '...' : '없음');
-  console.log('[Supabase] 클라이언트 생성 - Anon Key 존재:', !!supabaseAnonKey);
-  
+  console.warn('[Deprecated] 이 함수는 더 이상 사용하지 않습니다. utils/supabase/client.ts를 사용하세요.');
   return createBrowserClient(
     supabaseUrl,
-    supabaseAnonKey,
-    {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: false,
-        flowType: 'implicit',
-        storage: {
-          getItem: (key) => {
-            try {
-              const item = localStorage.getItem(key);
-              console.log(`Storage getItem: ${key} = ${item ? '값 있음' : '값 없음'} (길이: ${item?.length || 0})`);
-              return item;
-            } catch (error) {
-              console.error('Storage getItem error:', error);
-              return null;
-            }
-          },
-          setItem: (key, value) => {
-            try {
-              console.log(`Storage setItem: ${key} (길이: ${value?.length || 0})`);
-              localStorage.setItem(key, value);
-            } catch (error) {
-              console.error('Storage setItem error:', error);
-            }
-          },
-          removeItem: (key) => {
-            try {
-              console.log(`Storage removeItem: ${key}`);
-              localStorage.removeItem(key);
-            } catch (error) {
-              console.error('Storage removeItem error:', error);
-            }
-          }
-        }
-      },
-      global: {
-        fetch: createCachedFetch((...args: [RequestInfo | URL, RequestInit?]) => {
-          const [url, options] = args;
-          console.log(`Fetch request to: ${url}`);
-          
-          const headers = {
-            ...options?.headers,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache',
-            'apikey': supabaseAnonKey // API 키를 명시적으로 추가
-          };
-          
-          console.log('Request headers:', Object.keys(headers).join(', '));
-          
-          const fetchOptions = {
-            ...options,
-            headers,
-            // 네트워크 타임아웃 증가
-            signal: AbortSignal.timeout(30000)
-          };
-          
-          return fetch(url, fetchOptions as RequestInit);
-        })
-      },
-      realtime: {
-        params: {
-          eventsPerSecond: 1
-        }
-      }
-    }
+    supabaseAnonKey
   );
 };
 
-// SSR용 브라우저 클라이언트
+// SSR용 브라우저 클라이언트 - 더 이상 직접 사용하지 않음
+// utils/supabase/server.ts를 대신 사용하세요
 export const createBrowserSupabaseClient = () => {
+  console.warn('[Deprecated] 이 함수는 더 이상 사용하지 않습니다. utils/supabase/client.ts를 사용하세요.');
   return createBrowserClient(
     supabaseUrl,
-    supabaseAnonKey,
-    {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        flowType: 'pkce'
-      },
-      global: {
-        fetch: createCachedFetch((...args: [RequestInfo | URL, RequestInit?]) => fetch(...args))
-      }
-    }
+    supabaseAnonKey
   );
 };
 

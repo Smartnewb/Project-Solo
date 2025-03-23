@@ -11,12 +11,12 @@ import PopularQuestions from '../components/PopularQuestions';
 import SuccessStories from '../components/SuccessStories';
 import { HomeIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/utils/supabase/client';
 import { ADMIN_EMAIL } from '@/utils/config';
 import type { Database } from '../types/database.types';
 
 export default function Home() {
-  const supabase = createClientComponentClient<Database>();
+  const supabase = createClient();
   const router = useRouter();
   const { user, profile, refreshProfile } = useAuth();
 
@@ -37,13 +37,13 @@ export default function Home() {
   useEffect(() => {
     console.log('⚡️ 컴포넌트 마운트 - 프로필 새로고침');
     refreshProfile(); // 명시적으로 프로필 데이터 새로고침
-  }, [refreshProfile]); // 컴포넌트 마운트 시 한 번만 실행
+  }, []); // 컴포넌트 마운트 시 한 번만 실행, refreshProfile 의존성 제거
 
   useEffect(() => {
     console.log('AuthContext 상태 변경 감지:', { user, profile });
     
     if (profile) {
-      if (profile.name) {
+      if (profile.name && userName !== profile.name) { // 이름이 다를 때만 업데이트
         setUserName(profile.name);
         console.log('⚡️ 사용자 이름을 설정했습니다:', profile.name);
       } else {
@@ -52,7 +52,7 @@ export default function Home() {
     } else {
       console.log('❌ 프로필 데이터가 없습니다');
     }
-  }, [user, profile]);
+  }, [profile]); // user 의존성 제거, profile만 감시
 
   useEffect(() => {
     const checkAuthAndProfile = async () => {

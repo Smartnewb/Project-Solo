@@ -8,7 +8,7 @@ import React, {
   ReactNode,
 } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createBrowserClient } from '@supabase/ssr';
 import { useRouter } from 'next/navigation';
 
 // 환경 변수에서 관리자 이메일 가져오기
@@ -79,7 +79,10 @@ export const useAuth = () => useContext(AuthContext);
 // 인증 상태를 관리하는 프로바이더 컴포넌트
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);

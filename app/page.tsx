@@ -3,17 +3,19 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createClientSupabaseClient } from '@/utils/supabase';
+import { createClient } from '@/utils/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Login() {
   const router = useRouter();
-  const supabase = createClientSupabaseClient();
+  const supabase = createClient();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [sessionChecked, setSessionChecked] = useState(false);
+  const { user } = useAuth();
 
   // 페이지 로드 시 세션 확인 (불필요한 로그인 시도 방지)
   useEffect(() => {
