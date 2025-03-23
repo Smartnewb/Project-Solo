@@ -149,6 +149,8 @@ export async function middleware(request: NextRequest) {
             // 예외가 발생해도 페이지 접근은 허용 (UX 개선)
           }
         }
+
+        
       }
     }
     

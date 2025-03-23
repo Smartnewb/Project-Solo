@@ -107,9 +107,25 @@ export default function SignUp() {
         return;
       }
 
-      console.log({ signUpData });
+      // 2. profiles 테이블에 사용자 정보 저장
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          user_id: signUpData.user.id,
+          name: formData.name,
+          age: parseInt(formData.age),
+          gender: formData.gender,
+          role: 'user'
+        });
 
-      // 2. 자동 로그인 처리
+      if (profileError) {
+        console.error('프로필 생성 에러:', profileError);
+        setError('프로필 생성 중 오류가 발생했습니다.');
+        setLoading(false);
+        return;
+      }
+
+      // 3. 자동 로그인 처리
       const { error: loginError } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
@@ -122,16 +138,9 @@ export default function SignUp() {
         return;
       }
 
-      // 3. 프로필 정보 저장
-      localStorage.setItem(`onboarding_profile_${signUpData.user.id}`, JSON.stringify({
-        name: formData.name,
-        age: parseInt(formData.age),
-        gender: formData.gender,
-        interests: []
-      }));
-
-      // 4. 이메일 인증 안내 메시지 제거 및 온보딩 페이지로 바로 이동
+      // 4. 온보딩 페이지로 이동
       router.push('/onboarding');
+
     } catch (err) {
       console.error('예상치 못한 에러:', err);
       setError('회원가입 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');

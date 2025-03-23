@@ -302,7 +302,22 @@ export default function Onboarding() {
       ) || []
     : [];
 
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string>('');
 
+  // 이미지 파일 처리 함수
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setAvatarFile(file);
+      // 미리보기 생성
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const validateForm = () => {
     console.log('폼 데이터 검증 시작, 전체 폼 데이터:', formData);
@@ -367,130 +382,65 @@ export default function Onboarding() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('폼 제출 시작');
-    console.log('제출된 폼 데이터:', formData);
-    
-    // 모든 폼 데이터 로깅 (디버깅)
-    Object.entries(formData).forEach(([field, value]) => {
-      console.log(`${field}: ${value ? '입력됨' : '입력되지 않음'}, 값:`, value);
-    });
-    
-    if (!validateForm()) {
-      console.log('폼 검증 실패로 제출 중단');
-      return;
-    }
-
     try {
       if (!user) {
-        console.error('인증된 사용자가 없습니다.');
-        showTemporaryModal('인증 상태를 확인할 수 없습니다. 다시 로그인해주세요.');
-        router.push('/');
+        console.error('사용자 정보가 없습니다.');
         return;
       }
 
-      // 직접 Supabase 클라이언트를 사용하여 프로필 저장 시도
-      const supabaseClient = createClientSupabaseClient();
+      let avatar_url = '';
       
-      // 먼저 세션 검증
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      
-      if (!session) {
-        console.error('유효한 세션이 없습니다.');
-        showTemporaryModal('인증 세션이 만료되었습니다. 다시 로그인해주세요.');
-        return;
-      }
-      
-      console.log('인증된 세션 확인:', !!session);
-      console.log('사용자 ID:', user.id);
-      
-      // 기존 프로필이 있는지 확인
-      console.log('기존 프로필 확인 중...');
-      const { data: existingProfile, error: checkError } = await supabaseClient
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      
-      if (checkError) {
-        console.error('프로필 확인 중 오류:', checkError);
-      } else {
-        console.log('기존 프로필 확인 결과:', existingProfile ? '있음' : '없음');
-      }
-      
-      // 프로필 기본 데이터 준비
-      const profileData = {
-        user_id: user.id,
-        name: user.user_metadata?.name || '사용자',
-        updated_at: new Date().toISOString()
-      };
-      
-      // 저장 시도
-      console.log('프로필 저장 시도... (기본 필드)');
-      console.log('저장할 데이터:', profileData);
-      
-      // 기본 필드만 먼저 저장 시도
-      const { data: savedProfile, error: saveError } = await supabaseClient
-        .from('profiles')
-        .upsert(profileData)
-        .select();
-      
-      if (saveError) {
-        console.error('기본 프로필 저장 오류:', saveError);
-        console.error('오류 코드:', saveError.code);
-        console.error('오류 메시지:', saveError.message);
-        console.error('오류 상세:', saveError.details);
-        
-        showTemporaryModal(`프로필 저장에 실패했습니다 (${saveError.code}). 다시 로그인 후 시도해주세요.`);
-        return;
-      }
-      
-      console.log('기본 프로필 저장 성공:', savedProfile);
-      
-      // 추가 필드 저장 시도
-      console.log('추가 필드 저장 시도...');
-      try {
-        const additionalFields = {
-          student_id: formData.studentId.trim(),
-          grade: formData.grade.trim(),
-          university: formData.university.trim(),
-          department: formData.department.trim(),
-          instagram_id: formData.instagramId.trim(),
-          avatar_url: formData.image,
-        };
-        
-        console.log('저장할 추가 정보:', additionalFields);
-        
-        const { data: updatedProfile, error: updateError } = await supabaseClient
-          .from('profiles')
-          .update(additionalFields)
-          .eq('user_id', user.id)
-          .select();
-        
-        if (updateError) {
-          throw updateError;
+      // 프로필 이미지를 base64로 변환
+      if (avatarFile) {
+        try {
+          console.log('이미지 변환 시작');
+          const reader = new FileReader();
+          const base64Promise = new Promise<string>((resolve, reject) => {
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = (error) => reject(error);
+          });
+          reader.readAsDataURL(avatarFile);
+          avatar_url = await base64Promise;
+          console.log('이미지 base64 변환 성공');
+        } catch (error) {
+          console.error('이미지 변환 실패:', error);
+          setModalMessage('이미지 처리 중 오류가 발생했습니다.');
+          setShowModal(true);
+          return;
         }
-
-        // 여기에 refreshProfile 호출 추가
-        await refreshProfile();  // 이 부분이 중요합니다!
-        
-        console.log('모든 프로필 정보가 성공적으로 저장되었습니다:', updatedProfile);
-        
-        // 저장 성공 메시지 표시
-        showTemporaryModal('프로필이 저장되었습니다!');
-        
-        setTimeout(() => {
-          setShowSuccessModal(false);
-          setTimeout(() => {
-            router.push('/profile');
-          }, 200);
-        }, 1500);
-      } catch (additionalError) {
-        console.warn('추가 필드 저장 중 예외 발생:', additionalError);
-        showTemporaryModal('프로필 저장 중 오류가 발생했습니다.');
       }
-    } catch (err) {
-      console.error('프로필 저장 중 예외 발생:', err);
-      showTemporaryModal('프로필 저장 중 오류가 발생했습니다.');
+
+      // 프로필 정보 업데이트
+      console.log('프로필 정보 업데이트 시작');
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          university: formData.university,
+          department: formData.department,
+          student_id: formData.studentId,
+          grade: formData.grade,
+          instagram_id: formData.instagramId,
+          avatar_url: avatar_url || undefined,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      console.log('프로필 업데이트 성공');
+      setModalMessage('프로필이 저장되었습니다!');
+      setShowSuccessModal(true);
+      setTimeout(() => {
+        // 온보딩 완료 후 프로필 페이지로 이동
+        router.push('/profile');
+      }, 2000);
+
+    } catch (error) {
+      console.error('프로필 저장 중 오류 발생:', error);
+      setModalMessage('프로필 저장 중 오류가 발생했습니다.');
+      setShowModal(true);
     }
   };
 
@@ -502,12 +452,10 @@ export default function Onboarding() {
       try {
         console.log('온보딩 페이지: 인증 상태 확인 중...', { 
           isAuthenticated: !!user,
-          hasProfile: !!profile,
-          hasCompletedOnboarding
+          hasProfile: !!profile
         });
 
         if (authLoading) {
-          // 인증 상태 로딩 중인 경우 대기
           console.log('인증 상태 로딩 중, 대기...');
           return;
         }
@@ -518,17 +466,9 @@ export default function Onboarding() {
           return;
         }
 
-        console.log('사용자 확인됨:', user.id);
-
-        // 온보딩 완료 여부 확인
-        if (hasCompletedOnboarding) {
-          console.log('이미 온보딩을 완료했습니다. 홈으로 이동합니다.');
-          router.push('/home');
-          return;
-        }
-
-        console.log('온보딩 진행 필요. 페이지 로딩 완료.');
+        console.log('온보딩 진행 가능. 페이지 로딩 완료.');
         setIsLoading(false);
+
       } catch (error) {
         console.error('인증 확인 중 오류 발생:', error);
         router.push('/');
@@ -536,7 +476,7 @@ export default function Onboarding() {
     };
 
     checkAuth();
-  }, [router, user, profile, hasCompletedOnboarding, authLoading]);
+  }, [router, user, profile, authLoading]);
 
   if (isLoading) {
     return (
@@ -555,6 +495,43 @@ export default function Onboarding() {
       <div className="max-w-lg mx-auto p-4">
         <h1 className="text-h2">온보딩</h1>
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* 프로필 이미지 업로드 */}
+          <div className="card space-y-4">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                프로필 사진 (선택)
+              </label>
+              <div className="flex items-center space-x-4">
+                {avatarPreview ? (
+                  <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-100">
+                    <img 
+                      src={avatarPreview} 
+                      alt="프로필 미리보기" 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center">
+                    <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                )}
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="input-field w-full"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    프로필 사진을 등록하면 매칭 확률이 높아집니다!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* 대학교 선택 */}
           <div className={`bg-white rounded-2xl shadow-sm p-6 space-y-4 ${errors.university ? 'ring-2 ring-red-500' : ''}`}>
             <div className="flex items-center justify-between">
@@ -682,7 +659,6 @@ export default function Onboarding() {
               ))}
             </div>
           </div>
-
 
           {/* 인스타그램 아이디 입력 */}
           <div className={`bg-white rounded-2xl shadow-sm p-6 space-y-4 ${errors.instagramId ? 'ring-2 ring-red-500' : ''}`}>

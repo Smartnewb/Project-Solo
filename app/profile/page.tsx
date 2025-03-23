@@ -47,11 +47,6 @@ export default function Profile() {
       return;
     }
 
-    if (needsOnboarding) {
-      console.log('필수 프로필 정보가 없습니다. 온보딩 페이지로 이동합니다.');
-      router.push('/onboarding');
-      return;
-    }
 
     if (profile) {
       console.log('기존 프로필 데이터 로드:', profile);
