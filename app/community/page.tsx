@@ -569,20 +569,23 @@ export default function Community() {
     }
   };
 
-  const handleDeleteComment = (postId: string, commentId: string) => {
+  const handleDeleteComment = (PostUserId: string, commentId: string, userId: string) => {
     const updatedPosts = posts.map(post => {
-      if (post.userId === postId) {
-        const updatedComments = post.comments.map(comment =>
-          comment.id === commentId ? { ...comment, isdeleted: true } : comment
-        );
-        return { ...post, comments: updatedComments };
+      if (post.userId === PostUserId) {
+        const updatedComments = post.comments.map(comment => {
+          if (comment.id === commentId && comment.author_id === userId) {
+            return { ...comment, isdeleted: true }; 
+          }
+          return comment; 
+        });
+        return { ...post, comments: updatedComments };  
       }
-      return post;
+      return post; 
     });
-
-    setPosts(updatedPosts);
-    localStorage.setItem('communityPosts', JSON.stringify(updatedPosts));
+    setPosts(updatedPosts); 
+    localStorage.setItem('communityPosts', JSON.stringify(updatedPosts)); 
   };
+  
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -625,7 +628,7 @@ export default function Community() {
                   수정
                 </button>
                 <button
-                  onClick={() => handleDeleteComment(post.userId, comment.id)}
+                  onClick={() => handleDeleteComment(post.userId, comment.id, comment.author_id)}
                   className="text-xs text-red-500 hover:text-red-600"
                 >
                   삭제
@@ -634,7 +637,7 @@ export default function Community() {
             )}
             {user && comment.author_id !== user.id && (
               <button
-                onClick={() => handleOpenReport('comment', post.userId, comment.id)}
+                onClick={() => handleOpenReport('comment', post.userId, userInfo.userId)}
                 className="text-xs text-gray-500 hover:text-gray-600"
               >
                 신고
