@@ -148,7 +148,7 @@ export default function Community() {
     try {
       setIsLoading(true);
       console.log('게시글 조회 시작');
-      
+  
       // 신고 임계값을 3으로 설정 (월드스타일)
       const reportThreshold = 3; // 월드스타일은 3회 신고시 블라인드 처리
       console.log('현재 신고 임계값:', reportThreshold);
@@ -256,7 +256,7 @@ export default function Community() {
       // DB 구조에 맞게 수정 - id를 사용하여 프로필 검색(테이블 구조에 맞게 수정)
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('id, nickname, profile_image')
+        .select('id, name')
         .eq('id', userId) // user_id 대신 id 사용
         .single();
 
@@ -271,7 +271,7 @@ export default function Community() {
         
         const newProfileData = {
           id: userId,
-          nickname: `익명_${userId.slice(0, 4)}`,
+          name: `익명_${userId.slice(0, 4)}`,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
@@ -311,7 +311,7 @@ export default function Community() {
         } else {
           // 로컬스토리지에 닉네임이 없는 경우 새로 생성
           userNickname = {
-            nickname: profile.nickname || generateRandomNickname(),
+            nickname: profile.name || generateRandomNickname(),
             emoji: emojis[Math.floor(Math.random() * emojis.length)]
           };
           localStorage.setItem(`userNickname_${userId}`, JSON.stringify(userNickname));
@@ -467,11 +467,10 @@ export default function Community() {
       // 사용자 프로필 정보 가져오기
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('id, nickname, profile_image')
-        .eq('id', user.id)
-        .single();
-        
-      if (profileError || !profile) {
+        .select('id, name')
+        .eq('id', user.id);
+      
+      if (profileError || !profile[0]) {
         console.error('프로필을 불러오는 중 오류가 발생했습니다:', profileError);
         setErrorMessage('댓글을 작성할 수 없습니다. 프로필 정보를 확인해주세요.');
         setShowErrorModal(true);
@@ -479,8 +478,7 @@ export default function Community() {
       }
       
       // 프로필 ID 가져오기
-      const profileId = profile.id;
-      
+      const profileId = profile[0].id;
       // 게시글이 존재하는지 확인
       const { data: postCheck, error: postError } = await supabase
         .from('posts')
@@ -505,7 +503,7 @@ export default function Community() {
 
       const commentData = {
         id: generateUUID(), // 고유 ID 생성
-        postId: postId,
+        post_id: postId,
         author_id: profileId, // 위에서 가져온 프로필 ID 사용
         content: newComment,
         nickname: userInfo.nickname || '',
@@ -602,7 +600,6 @@ export default function Community() {
     const comments = post.comments || [];
     const displayComments = showAll ? comments : comments.slice(0, 2);
     const hasMoreComments = comments.length > 2;
-
     return displayComments.map((comment) => !comment.isdeleted ? (
       <div key={comment.id} className="bg-gray-50 p-3 rounded-lg">
         <div className="flex items-center justify-between mb-2">
@@ -634,6 +631,14 @@ export default function Community() {
                   삭제
                 </button>
               </div>
+            )}
+            {user && comment.author_id !== user.id && (
+              <button
+                onClick={() => handleOpenReport('comment', post.userId, comment.id)}
+                className="text-xs text-gray-500 hover:text-gray-600"
+              >
+                신고
+              </button>
             )}
           </div>
         </div>
@@ -1162,56 +1167,7 @@ export default function Community() {
                 )}
 
                 {/* 댓글 목록 */}
-                {!post.isdeleted && renderComments(post, showAllComments === post.userId).map((comment: any) => (
-                  <div 
-                    key={comment.id}
-                    className={`mt-3 p-3 border-t ${comment.isBlinded ? 'bg-gray-100 rounded-md' : ''}`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{comment.nickname}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {comment.author_id === userInfo.userId ? (
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleEditComment(post.userId, comment.id, comment.content)}
-                              className="text-xs text-blue-500 hover:text-blue-600"
-                            >
-                              수정
-                            </button>
-                            <button
-                              onClick={() => handleDeleteComment(post.userId, comment.id)}
-                              className="text-xs text-red-500 hover:text-red-600"
-                            >
-                              삭제
-                            </button>
-                          </div>
-                        ) : user && comment.userId !== user.id && (
-                          <button
-                            onClick={() => handleOpenReport('comment', post.userId, comment.id)}
-                            className="text-xs text-gray-500 hover:text-gray-600"
-                          >
-                            신고
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {comment.isdeleted ? (
-                      <p className="text-gray-500 text-center">삭제된 댓글입니다.</p>
-                    ) : comment.isBlinded ? (
-                      <div className="bg-gray-100 p-2 rounded-md">
-                        <p className="text-gray-500 text-center text-sm">
-                          <ExclamationTriangleIcon className="w-4 h-4 inline-block mr-1" />
-                          신고로 인해 블라인드 처리된 댓글입니다.
-                        </p>
-                      </div>
-                    ) : (
-                      <p className="text-gray-700">{comment.content}</p>
-                    )}
-                  </div>
-                ))}
+                {!post.isdeleted && renderComments(post, showAllComments === post.userId)}
               </div>
             ))
           ) : (
