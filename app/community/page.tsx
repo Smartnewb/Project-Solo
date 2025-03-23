@@ -469,7 +469,7 @@ export default function Community() {
   };
 
   // 댓글 작성
-  const handleAddComment = async (postId: string) => {
+  const handleAddComment = async (PostUserId: string) => {
     if (!newComment.trim() || !user) {
       console.log('댓글 작성 실패: 내용 또는 사용자 정보 누락', {
         hasContent: !!newComment.trim(),
@@ -499,11 +499,10 @@ export default function Community() {
       // 게시글이 존재하는지 확인
       const { data: postCheck, error: postError } = await supabase
         .from('posts')
-        .select('id')
-        .eq('user_id', postId)
-        .single();
-        
-      if (postError || !postCheck) {
+        .select('user_id')
+        .eq('user_id', PostUserId)
+      console.log('postCheck:', postCheck)
+      if (postError || !postCheck[0]) {
         console.error('게시글을 확인할 수 없습니다:', postError);
         setErrorMessage('댓글을 작성할 수 없습니다. 게시글이 존재하지 않습니다.');
         setShowErrorModal(true);
@@ -520,7 +519,7 @@ export default function Community() {
 
       const commentData = {
         id: generateUUID(), // 고유 ID 생성
-        post_id: postId,
+        post_id: PostUserId,
         author_id: profileId, // 위에서 가져온 프로필 ID 사용
         content: newComment,
         nickname: userInfo.nickname || '',
