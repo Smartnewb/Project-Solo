@@ -569,7 +569,7 @@ export default function Community() {
     }
   };
 
-  const handleDeleteComment = (PostUserId: string, commentId: string, userId: string) => {
+  const handleDeleteComment = async (PostUserId: string, commentId: string, userId: string) => {
     const updatedPosts = posts.map(post => {
       if (post.userId === PostUserId) {
         const updatedComments = post.comments.map(comment => {
@@ -582,10 +582,26 @@ export default function Community() {
       }
       return post; 
     });
-    setPosts(updatedPosts); 
-    localStorage.setItem('communityPosts', JSON.stringify(updatedPosts)); 
-  };
   
+    console.log('updatedPosts:', updatedPosts);
+    setPosts(updatedPosts);
+    localStorage.setItem('communityPosts', JSON.stringify(updatedPosts));
+  
+    try {
+      const { data, error } = await supabase
+        .from('comments')
+        .update({ isdeleted: true })
+        .match({ id: commentId, author_id: userId});
+  
+      if (error) {
+        throw error;
+      }
+  
+      console.log('댓글 삭제가 DB에 반영되었습니다:', data);
+    } catch (error) {
+      console.error('댓글 삭제 실패:', error.message);
+    }
+  };
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -601,6 +617,7 @@ export default function Community() {
 
   const renderComments = (post: Post, showAll: boolean) => {
     const comments = post.comments || [];
+    console.log(comments)
     const displayComments = showAll ? comments : comments.slice(0, 2);
     const hasMoreComments = comments.length > 2;
     return displayComments.map((comment) => !comment.isdeleted ? (
