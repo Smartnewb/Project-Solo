@@ -125,7 +125,6 @@ export default function WritePost() {
         updated_at: now,
         isEdited: false,
         isdeleted: false,
-        isBlinded: false,
         likes: [],
         comments: [],
         reports: []

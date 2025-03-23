@@ -389,7 +389,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
-          preferred_age_type: string | null
+          preferred_age_type: string[] | null
           preferred_days: string[] | null
           preferred_drinking: string | null
           preferred_genres: string[] | null
@@ -406,7 +406,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
-          preferred_age_type?: string | null
+          preferred_age_type?: string[] | null
           preferred_days?: string[] | null
           preferred_drinking?: string | null
           preferred_genres?: string[] | null
@@ -423,7 +423,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
-          preferred_age_type?: string | null
+          preferred_age_type?: string[] | null
           preferred_days?: string[] | null
           preferred_drinking?: string | null
           preferred_genres?: string[] | null
