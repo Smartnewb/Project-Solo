@@ -379,14 +379,14 @@ export default function Community() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
   
-    // 일요일인 경우 인기 게시물 초기화
-    const isSunday = today.getDay() === 0;
+    const oneWeekAgo = new Date(today);
+    oneWeekAgo.setDate(today.getDate() - 7);
   
-    if (isSunday) {
-      setPopularPosts([]);
-    }
     const popularPosts = posts
-      .filter(post => !post.isdeleted && new Date(post.created_at) && (post.likes?.length || 0) > 0)
+      .filter(post => {
+        const postDate = new Date(post.created_at);
+        return !post.isdeleted && postDate >= oneWeekAgo && (post.likes?.length || 0) > 0;
+      })
       .sort((a, b) => {
         const aScore = (a.likes?.length || 0) + (a.comments?.length || 0);
         const bScore = (b.likes?.length || 0) + (b.comments?.length || 0);
@@ -394,7 +394,7 @@ export default function Community() {
       })
       .slice(0, 5);
   
-    setPopularPosts(prevPosts => isSunday ? [] : popularPosts);
+    setPopularPosts(popularPosts);
   
   }, [posts]);
   
