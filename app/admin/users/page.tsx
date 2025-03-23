@@ -19,29 +19,37 @@ type User = {
   reports_count?: number;
   matches_count?: number;
   last_active?: string;
-  instagramId?: string;
-  classification?: string; // 'S', 'A', 'B', 'C'
-  // 프로필 추가 정보
+  instagram_id?: string;
+  classification?: string;
+  
+  // 프로필 필드
   height?: number;
-  job?: string;
-  education?: string;
-  location?: string;
-  hobby?: string;
-  personality?: string;
-  smoking?: boolean;
+  university?: string;
+  department?: string;
+  student_id?: string;
+  grade?: string;
+  personalities?: string[];
+  dating_styles?: string[];
+  lifestyles?: string[];
+  interests?: string[];
   drinking?: string;
-  religion?: string;
-  introduction?: string;
-  // 이상형 정보
-  ideal_age_min?: number;
-  ideal_age_max?: number;
-  ideal_height_min?: number;
-  ideal_height_max?: number;
-  ideal_location?: string;
-  ideal_education?: string;
-  ideal_smoking?: boolean;
-  ideal_drinking?: string;
-  ideal_religion?: string;
+  smoking?: string;
+  tattoo?: string;
+  mbti?: string;
+  
+  // 이상형 정보 (user_preferences 테이블)
+  preferred_age_type?: string;
+  preferred_height_min?: number;
+  preferred_height_max?: number;
+  preferred_personalities?: string[];
+  preferred_dating_styles?: string[];
+  preferred_lifestyles?: string[];
+  preferred_interests?: string[];
+  preferred_drinking?: string;
+  preferred_smoking?: string;
+  preferred_tattoo?: string;
+  preferred_mbti?: string;
+  disliked_mbti?: string;
 };
 
 export default function UsersAdmin() {
@@ -100,8 +108,44 @@ export default function UsersAdmin() {
     }
   }
 
-  const handleUserSelect = (user: User) => {
-    setSelectedUser(user);
+  const handleUserSelect = async (user: User) => {
+    try {
+      console.log('선택된 사용자 기본 정보:', user);
+
+      // 프로필과 이상형 정보를 함께 조회
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select(`
+          *,
+          user_preferences!inner(*)
+        `)
+        .eq('user_id', user.user_id)
+        .single();
+
+      if (profileError) {
+        console.error('프로필 정보 조회 오류:', profileError);
+        // 프로필 정보만이라도 표시
+        setSelectedUser(user);
+        return;
+      }
+
+      console.log('조회된 프로필 데이터:', profileData);
+
+      // 기본 사용자 정보와 프로필, 이상형 정보를 모두 합쳐서 상태 업데이트
+      const userWithPreferences = {
+        ...user,
+        ...profileData,
+        ...(profileData?.user_preferences?.[0] || {})
+      };
+
+      console.log('최종 병합된 사용자 데이터:', userWithPreferences);
+      setSelectedUser(userWithPreferences);
+      
+    } catch (error) {
+      console.error('사용자 상세 정보 조회 중 오류 발생:', error);
+      // 에러 발생시 기본 정보라도 표시
+      setSelectedUser(user);
+    }
   };
 
   const handleCloseDetails = () => {
@@ -397,14 +441,14 @@ export default function UsersAdmin() {
                        user.gender === 'female' ? '여성' : '기타'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {user.instagramId ? (
+                      {user.instagram_id ? (
                         <a
-                          href={`https://www.instagram.com/${user.instagramId}`}
+                          href={`https://www.instagram.com/${user.instagram_id}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-500 hover:underline"
                         >
-                          @{user.instagramId}
+                          @{user.instagram_id}
                         </a>
                       ) : '-'}
                     </td>
@@ -655,24 +699,42 @@ export default function UsersAdmin() {
                     <div className="space-y-3">
                       <div>
                         <p className="text-sm text-gray-500">이름</p>
-                        <p className="font-medium text-lg">{selectedUser.name || '이름 없음'}</p>
+                        <p className="font-medium">{selectedUser.name || '-'}</p>
                       </div>
                       
                       <div>
-                        <p className="text-sm text-gray-500">이메일 (가입 ID)</p>
-                        <p className="font-medium">{selectedUser.email || '이메일 정보 없음'}</p>
+                        <p className="text-sm text-gray-500">학교</p>
+                        <p className="font-medium">{selectedUser.university || '-'}</p>
                       </div>
                       
                       <div>
-                        <p className="text-sm text-gray-500">나이</p>
-                        <p className="font-medium">{selectedUser.age || '-'}</p>
+                        <p className="text-sm text-gray-500">학과</p>
+                        <p className="font-medium">{selectedUser.department || '-'}</p>
                       </div>
                       
                       <div>
-                        <p className="text-sm text-gray-500">성별</p>
+                        <p className="text-sm text-gray-500">학번</p>
+                        <p className="font-medium">{selectedUser.student_id || '-'}</p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-sm text-gray-500">학년</p>
+                        <p className="font-medium">{selectedUser.grade || '-'}</p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-sm text-gray-500">인스타그램</p>
                         <p className="font-medium">
-                          {selectedUser.gender === 'male' ? '남성' : 
-                           selectedUser.gender === 'female' ? '여성' : '기타'}
+                          {selectedUser.instagram_id ? (
+                            <a
+                              href={`https://www.instagram.com/${selectedUser.instagram_id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-500 hover:underline"
+                            >
+                              @{selectedUser.instagram_id}
+                            </a>
+                          ) : '-'}
                         </p>
                       </div>
                     </div>
@@ -684,22 +746,6 @@ export default function UsersAdmin() {
                       <div>
                         <p className="text-sm text-gray-500">사용자 ID</p>
                         <p className="font-medium break-all">{selectedUser.user_id}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">인스타그램</p>
-                        <p className="font-medium">
-                          {selectedUser.instagramId ? (
-                            <a
-                              href={`https://www.instagram.com/${selectedUser.instagramId}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-500 hover:underline"
-                            >
-                              @{selectedUser.instagramId}
-                            </a>
-                          ) : '-'}
-                        </p>
                       </div>
                       
                       <div>
@@ -761,33 +807,28 @@ export default function UsersAdmin() {
                       </div>
                       
                       <div>
-                        <p className="text-sm text-gray-500">직업</p>
-                        <p className="font-medium">{selectedUser.job || '-'}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">학력</p>
-                        <p className="font-medium">{selectedUser.education || '-'}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">거주지</p>
-                        <p className="font-medium">{selectedUser.location || '-'}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">취미</p>
-                        <p className="font-medium">{selectedUser.hobby || '-'}</p>
-                      </div>
-                      
-                      <div>
                         <p className="text-sm text-gray-500">성격</p>
-                        <p className="font-medium">{selectedUser.personality || '-'}</p>
+                        <p className="font-medium">{selectedUser.personalities?.join(', ') || '-'}</p>
                       </div>
                       
                       <div>
-                        <p className="text-sm text-gray-500">흡연</p>
-                        <p className="font-medium">{selectedUser.smoking ? '흡연' : '비흡연'}</p>
+                        <p className="text-sm text-gray-500">데이트 스타일</p>
+                        <p className="font-medium">{selectedUser.dating_styles?.join(', ') || '-'}</p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-sm text-gray-500">라이프스타일</p>
+                        <p className="font-medium">{selectedUser.lifestyles?.join(', ') || '-'}</p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-sm text-gray-500">관심사</p>
+                        <p className="font-medium">{selectedUser.interests?.join(', ') || '-'}</p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-sm text-gray-500">MBTI</p>
+                        <p className="font-medium">{selectedUser.mbti || '-'}</p>
                       </div>
                       
                       <div>
@@ -796,13 +837,13 @@ export default function UsersAdmin() {
                       </div>
                       
                       <div>
-                        <p className="text-sm text-gray-500">종교</p>
-                        <p className="font-medium">{selectedUser.religion || '-'}</p>
+                        <p className="text-sm text-gray-500">흡연</p>
+                        <p className="font-medium">{selectedUser.smoking || '-'}</p>
                       </div>
                       
                       <div>
-                        <p className="text-sm text-gray-500">자기소개</p>
-                        <p className="font-medium whitespace-pre-wrap">{selectedUser.introduction || '-'}</p>
+                        <p className="text-sm text-gray-500">타투</p>
+                        <p className="font-medium">{selectedUser.tattoo || '-'}</p>
                       </div>
                     </div>
                   </div>
@@ -811,49 +852,62 @@ export default function UsersAdmin() {
                     <h3 className="text-lg font-semibold mb-4">이상형 정보</h3>
                     <div className="space-y-3">
                       <div>
-                        <p className="text-sm text-gray-500">나이</p>
+                        <p className="text-sm text-gray-500">선호 연령대</p>
+                        <p className="font-medium">{selectedUser.preferred_age_type || '-'}</p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-sm text-gray-500">선호 키</p>
                         <p className="font-medium">
-                          {selectedUser.ideal_age_min && selectedUser.ideal_age_max
-                            ? `${selectedUser.ideal_age_min}세 ~ ${selectedUser.ideal_age_max}세`
+                          {selectedUser.preferred_height_min && selectedUser.preferred_height_max
+                            ? `${selectedUser.preferred_height_min}cm ~ ${selectedUser.preferred_height_max}cm`
                             : '-'}
                         </p>
                       </div>
                       
                       <div>
-                        <p className="text-sm text-gray-500">키</p>
-                        <p className="font-medium">
-                          {selectedUser.ideal_height_min && selectedUser.ideal_height_max
-                            ? `${selectedUser.ideal_height_min}cm ~ ${selectedUser.ideal_height_max}cm`
-                            : '-'}
-                        </p>
+                        <p className="text-sm text-gray-500">선호하는 성격</p>
+                        <p className="font-medium">{selectedUser.preferred_personalities?.join(', ') || '-'}</p>
                       </div>
                       
                       <div>
-                        <p className="text-sm text-gray-500">선호 지역</p>
-                        <p className="font-medium">{selectedUser.ideal_location || '-'}</p>
+                        <p className="text-sm text-gray-500">선호하는 데이트 스타일</p>
+                        <p className="font-medium">{selectedUser.preferred_dating_styles?.join(', ') || '-'}</p>
                       </div>
                       
                       <div>
-                        <p className="text-sm text-gray-500">선호 학력</p>
-                        <p className="font-medium">{selectedUser.ideal_education || '-'}</p>
+                        <p className="text-sm text-gray-500">선호하는 라이프스타일</p>
+                        <p className="font-medium">{selectedUser.preferred_lifestyles?.join(', ') || '-'}</p>
                       </div>
                       
                       <div>
-                        <p className="text-sm text-gray-500">흡연 여부</p>
-                        <p className="font-medium">
-                          {selectedUser.ideal_smoking === true ? '흡연자 가능' :
-                           selectedUser.ideal_smoking === false ? '비흡연자만' : '-'}
-                        </p>
+                        <p className="text-sm text-gray-500">선호하는 관심사</p>
+                        <p className="font-medium">{selectedUser.preferred_interests?.join(', ') || '-'}</p>
                       </div>
                       
                       <div>
-                        <p className="text-sm text-gray-500">음주 여부</p>
-                        <p className="font-medium">{selectedUser.ideal_drinking || '-'}</p>
+                        <p className="text-sm text-gray-500">선호하는 MBTI</p>
+                        <p className="font-medium">{selectedUser.preferred_mbti || '-'}</p>
                       </div>
                       
                       <div>
-                        <p className="text-sm text-gray-500">종교</p>
-                        <p className="font-medium">{selectedUser.ideal_religion || '-'}</p>
+                        <p className="text-sm text-gray-500">비선호 MBTI</p>
+                        <p className="font-medium">{selectedUser.disliked_mbti || '-'}</p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-sm text-gray-500">음주 선호</p>
+                        <p className="font-medium">{selectedUser.preferred_drinking || '-'}</p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-sm text-gray-500">흡연 선호</p>
+                        <p className="font-medium">{selectedUser.preferred_smoking || '-'}</p>
+                      </div>
+                      
+                      <div>
+                        <p className="text-sm text-gray-500">타투 선호</p>
+                        <p className="font-medium">{selectedUser.preferred_tattoo || '-'}</p>
                       </div>
                     </div>
                   </div>
