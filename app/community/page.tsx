@@ -26,7 +26,7 @@ interface Comment {
 }
 
 interface Post {
-  userId: string;
+  user_id: string;
   author_id: string;
   content: string;
   created_at: string;
@@ -197,7 +197,7 @@ export default function Community() {
       const postsWithComments = await Promise.all(
         filteredPosts.map(async (post) => {
           try {
-            console.log(`게시글 ID ${post.userId}의 댓글 조회 시작`);
+            console.log(`게시글 ID ${post.user_id}의 댓글 조회 시작`);
             
             // 댓글 조회를 위한 별도의 함수 호출
             let commentsData: any[] = [];
@@ -206,14 +206,14 @@ export default function Community() {
               const commentsResponse = await supabase
                 .from('comments')
                 .select('*')
-                .eq('post_id', post.userId)
+                .eq('post_id', post.user_id)
                 .order('created_at', { ascending: true });
                 
               if (commentsResponse.error) {
-                console.error(`게시글 ID ${post.userId}의 댓글 조회 에러:`, commentsResponse.error);
+                console.error(`게시글 ID ${post.user_id}의 댓글 조회 에러:`, commentsResponse.error);
               } else {
                 commentsData = commentsResponse.data || [];
-                console.log(`게시글 ID ${post.userId}의 댓글 조회 완료:`, commentsData.length, '개');
+                console.log(`게시글 ID ${post.user_id}의 댓글 조회 완료:`, commentsData.length, '개');
                 
                 // 댓글 데이터 구조 확인
                 if (commentsData.length > 0) {
@@ -221,12 +221,12 @@ export default function Community() {
                 }
               }
             } catch (commentError) {
-              console.error(`게시글 ID ${post.userId}의 댓글 조회 중 예외:`, commentError);
+              console.error(`게시글 ID ${post.user_id}의 댓글 조회 중 예외:`, commentError);
             }
             
             return { ...post, comments: commentsData };
           } catch (error) {
-            console.error(`게시글 ID ${post.userId}의 댓글 처리 중 오류:`, error);
+            console.error(`게시글 ID ${post.user_id}의 댓글 처리 중 오류:`, error);
             return { ...post, comments: [] };
           }
         })
@@ -385,7 +385,7 @@ export default function Community() {
   // 좋아요 처리
   const handleLike = async (PostUerId: string) => {
     try {
-      const post = posts.find(p => p.userId === PostUerId);
+      const post = posts.find(p => p.user_id === PostUerId);
       if (!post) return;
 
       const likes = post.likes || [];
@@ -435,12 +435,12 @@ export default function Community() {
   };
 
   // 게시글 삭제
-  const handleDelete = async (postId: string) => {
+  const handleDelete = async (PostUserId: string) => {
     try {
       const { error } = await supabase
         .from('posts')
         .update({ isdeleted: true })
-        .eq('userId', postId);
+        .eq('user_id', PostUserId);
 
       if (error) throw error;
       fetchPosts();
@@ -536,7 +536,7 @@ export default function Community() {
   };
 
   const handleEdit = (post: Post) => {
-    setEditingPost(post.userId);
+    setEditingPost(post.user_id);  
     setEditContent(post.content);
   };
 
@@ -571,7 +571,7 @@ export default function Community() {
 
   const handleDeleteComment = async (PostUserId: string, commentId: string, userId: string) => {
     const updatedPosts = posts.map(post => {
-      if (post.userId === PostUserId) {
+      if (post.user_id === PostUserId) {
         const updatedComments = post.comments.map(comment => {
           if (comment.id === commentId && comment.author_id === userId) {
             return { ...comment, isdeleted: true }; 
@@ -734,7 +734,7 @@ export default function Community() {
     if (type === 'post') {
       // 게시글 작성자 확인
       const post = posts.find(p => p.userId === postId);
-      if (post && post.userId === user.id) {
+      if (post && post.user_id === user.id) {
         setErrorMessage('본인이 작성한 게시글은 신고할 수 없습니다.');
         setShowErrorModal(true);
         return;
@@ -903,7 +903,7 @@ export default function Community() {
     if (!reportTarget || !reportReason) return;
 
     const updatedPosts = posts.map(post => {
-      if (post.userId === reportTarget.postId) {
+      if (post.user_id === reportTarget.postId) {
         if (reportTarget.type === 'post') {
           // 게시글 신고
           const reports = post.reports || [];
@@ -1014,9 +1014,9 @@ export default function Community() {
             <div className="mb-6">
               <Slider {...sliderSettings} ref={sliderRef}>
                 {popularPosts.map((post, index) => (
-                  <div key={post.userId} className="px-2">
+                  <div key={post.user_id} className="px-2">
                     <button
-                      onClick={() => scrollToPost(post.userId)}
+                      onClick={() => scrollToPost(post.user_id)}
                       className="w-full text-left bg-white rounded-lg p-4 hover:bg-gray-50 transition-colors shadow-md"
                     >
                       <div className="flex items-center gap-2 mb-2">
@@ -1057,10 +1057,10 @@ export default function Community() {
           {posts.length > 0 ? (
             posts.map((post) => (
               <div 
-                key={post.userId} 
-                id={`post-${post.userId}`}
+                key={post.user_id} 
+                id={`post-${post.user_id}`}
                 className={`card transition-all duration-300 ${
-                  selectedPost === post.userId ? 'ring-2 ring-primary-DEFAULT' : ''
+                  selectedPost === post.user_id ? 'ring-2 ring-primary-DEFAULT' : ''
                 } ${
                   post.isBlinded ? 'bg-gray-100 border border-gray-300' : ''
                 }`}
@@ -1086,15 +1086,15 @@ export default function Community() {
                           수정
                         </button>
                         <button 
-                          onClick={() => handleDelete(post.userId)}
+                          onClick={() => handleDelete(post.user_id)}
                           className="text-sm text-red-500 hover:text-red-600"
                         >
                           삭제
                         </button>
                       </div>
-                    ) : !post.isdeleted && user && post.userId !== user.id && (
+                    ) : !post.isdeleted && user && post.user_id !== user.id && (
                       <button
-                        onClick={() => handleOpenReport('post', post.userId)}
+                        onClick={() => handleOpenReport('post', post.user_id)}
                         className="text-sm text-gray-500 hover:text-gray-600"
                       >
                         신고
@@ -1103,7 +1103,7 @@ export default function Community() {
                   </div>
                 </div>
                 
-                {editingPost === post.userId ? (
+                {editingPost === post.user_id ? (
                   <div className="space-y-2">
                     <textarea
                       value={editContent}
@@ -1119,7 +1119,7 @@ export default function Community() {
                         취소
                       </button>
                       <button
-                        onClick={() => handleSaveEdit(post.userId)}
+                        onClick={() => handleSaveEdit(post.user_id)}
                         className="btn-primary"
                       >
                         저장
@@ -1142,7 +1142,7 @@ export default function Community() {
                     )}
                     <div className="flex items-center gap-4">
                       <button
-                        onClick={() => handleLike(post.userId)}
+                        onClick={() => handleLike(post.user_id)}
                         className={`flex items-center gap-1 ${
                           post.likes?.includes(userInfo.userId)
                             ? 'text-red-500'
@@ -1163,8 +1163,8 @@ export default function Community() {
                   </>
                 )}
 
-                {/* 댓글 입력창 */}
-                {!post.isdeleted && showCommentInput === post.userId && (
+                {/* 댓글 입력창과 댓글 목록 */}
+                {!post.isdeleted && showCommentInput === post.user_id && (
                   <div className="mt-4 space-y-4 border-t pt-4">
                     <div className="flex gap-2">
                       <input
@@ -1174,6 +1174,7 @@ export default function Community() {
                           // 디바운싱 적용: 타이핑마다 API 요청 방지
                           const newValue = e.target.value;
                           setNewComment(newValue); // 화면 업데이트는 즉시 적용
+                          setNewComment(newValue);
                           
                           // 기존 타이머 취소
                           if (debounceTimerRef.current) {
@@ -1190,7 +1191,7 @@ export default function Community() {
                         className="input-field flex-1"
                       />
                       <button
-                        onClick={() => handleAddComment(post.userId)}
+                        onClick={() => handleAddComment(post.user_id)}
                         className="btn-primary px-4"
                       >
                         작성
