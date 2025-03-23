@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { HomeIcon, ChatBubbleLeftRightIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 
+
+
 export default function Settings() {
   const router = useRouter();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -11,6 +13,10 @@ export default function Settings() {
     matching: true,
     events: true
   });
+    // 페이지 이동 함수들
+    const handleGoToProfile = () => router.push('/profile');
+    const handleGoToHome = () => router.push('/home');
+    const handleGoToSettings = () => router.push('/settings');
 
   const handleLogout = () => {
     // TODO: 로그아웃 로직 구현
@@ -130,31 +136,45 @@ export default function Settings() {
       )}
 
       {/* 하단 네비게이션 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t py-2">
-        <div className="max-w-lg mx-auto px-4 flex justify-around items-center">
-          <button
-            onClick={() => router.push('/home')}
-            className="flex flex-col items-center text-gray-400"
-          >
-            <HomeIcon className="w-6 h-6" />
-            <span className="text-sm mt-1">홈</span>
-          </button>
-          <button
-            onClick={() => router.push('/community')}
-            className="flex flex-col items-center text-gray-400"
-          >
-            <ChatBubbleLeftRightIcon className="w-6 h-6" />
-            <span className="text-sm mt-1">커뮤니티</span>
-          </button>
-          <button
-            onClick={() => router.push('/settings')}
-            className="flex flex-col items-center text-primary-DEFAULT"
-          >
-            <Cog6ToothIcon className="w-6 h-6" />
-            <span className="text-sm mt-1">설정</span>
-          </button>
-        </div>
-      </div>
+      <nav 
+              className="fixed bottom-0 left-0 right-0 bg-white border-t py-3 shadow-lg transition-all duration-200 ease-in-out" 
+              role="navigation" 
+              aria-label="메인 네비게이션"
+            >
+              <div className="max-w-lg mx-auto px-6 flex justify-around items-center">
+                <button
+                  onClick={handleGoToHome}
+                  className="flex flex-col items-center text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
+                  type="button"
+                  aria-label="홈으로 이동"
+                >
+                  <HomeIcon className="w-7 h-7" aria-hidden="true" />
+                  <span className="text-sm font-medium mt-1">홈</span>
+                </button>
+                <button
+                  onClick={() => router.push('/community')}
+                  className="flex flex-col items-center text-[#636E72] hover:text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
+                  type="button"
+                  aria-label="커뮤니티로 이동"
+                >
+                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                  </svg>
+                  <span className="text-sm font-medium mt-1">커뮤니티</span>
+                </button>
+                <button
+                  onClick={handleGoToSettings}
+                  className="flex flex-col items-center text-[#636E72] hover:text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
+                  type="button"
+                  aria-label="설정으로로 이동"
+                >
+                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span className="text-sm font-medium mt-1">설정</span>
+                </button>
+              </div>
+            </nav>
     </div>
   );
 } 

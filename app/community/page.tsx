@@ -981,6 +981,10 @@ export default function Community() {
     router.push('/profile');
   };
 
+  const handleGoToSettings = () => {
+    router.push('/settings');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-16">
       {/* 상단 헤더 */}
@@ -1283,15 +1287,15 @@ export default function Community() {
                   <span className="text-sm font-medium mt-1">커뮤니티</span>
                 </button>
                 <button
-                  onClick={handleGoToProfile}
+                  onClick={handleGoToSettings}
                   className="flex flex-col items-center text-[#636E72] hover:text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
                   type="button"
-                  aria-label="프로필로 이동"
+                  aria-label="설정으로 이동"
                 >
                   <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
-                  <span className="text-sm font-medium mt-1">프로필</span>
+                  <span className="text-sm font-medium mt-1">설정</span>
                 </button>
               </div>
             </nav>
