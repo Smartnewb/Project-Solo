@@ -5,12 +5,15 @@ const ADMIN_EMAIL = 'notify@smartnewb.com';
 
 // 토큰 새로고침이 빈번하게 일어나지 않도록 최적화된 미들웨어
 export async function middleware(request: NextRequest) {
-  // 정적 자원 및 API 요청은 무시
+  // 인증이 필요하지 않은 경로 확인
   if (
     request.nextUrl.pathname.startsWith('/_next') ||
-    request.nextUrl.pathname.startsWith('/api/') ||
-    request.nextUrl.pathname.startsWith('/favicon.ico') ||
-    request.nextUrl.pathname.match(/\.(ico|png|jpg|jpeg|svg|css|js)$/)
+    request.nextUrl.pathname.startsWith('/images') ||
+    request.nextUrl.pathname.startsWith('/api') ||
+    request.nextUrl.pathname.startsWith('/login') ||
+    request.nextUrl.pathname.startsWith('/join') ||
+    request.nextUrl.pathname.startsWith('/auth') ||
+    request.nextUrl.pathname === '/'
   ) {
     return NextResponse.next();
   }
@@ -36,16 +39,12 @@ export async function middleware(request: NextRequest) {
             return request.cookies.getAll();
           },
           setAll(cookiesToSet) {
-            // Don't modify the request cookies, only set them on the response
+            cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
             supabaseResponse = NextResponse.next({
               request,
             });
             cookiesToSet.forEach(({ name, value, options }) =>
-              supabaseResponse.cookies.set({
-                name,
-                value,
-                ...options
-              })
+              supabaseResponse.cookies.set(name, value, options)
             );
           },
         },
@@ -55,16 +54,20 @@ export async function middleware(request: NextRequest) {
     // 중요: CSRF 보호 및 토큰 새로고침
     const {
       data: { user },
-      error: userError
     } = await supabase.auth.getUser();
     
-    if (userError) {
-      console.error('미들웨어 사용자 확인 오류:', userError);
-      if (pathname === '/' || pathname === '/signup') {
-        return supabaseResponse;
-      } else {
-        return NextResponse.redirect(new URL('/', request.url));
-      }
+    // 로그인 필요한 페이지 접근 시 리다이렉트
+    if (
+      !user &&
+      !request.nextUrl.pathname.startsWith('/login') &&
+      !request.nextUrl.pathname.startsWith('/join') &&
+      !request.nextUrl.pathname.startsWith('/auth') &&
+      request.nextUrl.pathname !== '/'
+    ) {
+      console.log('인증되지 않은 사용자가 접근 시도:', request.nextUrl.pathname);
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      return NextResponse.redirect(url);
     }
     
     const isLoggedIn = !!user;
@@ -168,14 +171,12 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/',
-    '/home',
-    '/home/:path*',
-    '/admin',
-    '/admin/:path*',
-    '/onboarding',
-    '/onboarding/:path*',
-    '/profile',
-    '/profile/:path*'
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }; 

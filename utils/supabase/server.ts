@@ -13,7 +13,7 @@ export const createClient = (cookieStore: ReturnType<typeof cookies>) => {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set({ name, value, ...options })
+              cookieStore.set(name, value, options)
             )
           } catch (error) {
             // The `setAll` method was called from a Server Component.
@@ -22,6 +22,12 @@ export const createClient = (cookieStore: ReturnType<typeof cookies>) => {
             console.error('Cookie set error (can be ignored if using middleware):', error)
           }
         }
+      },
+      auth: {
+        flowType: 'pkce',
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: false
       }
     }
   )
