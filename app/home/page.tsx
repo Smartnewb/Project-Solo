@@ -18,7 +18,7 @@ import type { Database } from '../types/database.types';
 export default function Home() {
   const supabase = createClientComponentClient<Database>();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
 
   const [hasProfile, setHasProfile] = useState(false);
   const [hasIdealType, setHasIdealType] = useState(false);
@@ -32,6 +32,27 @@ export default function Home() {
   const handleGoToProfile = () => router.push('/profile');
   const handleGoToHome = () => router.push('/home');
   const handleGoToSettings = () => router.push('/settings');
+
+  // AuthContext에서 profile 데이터가 변경될 때마다 userName 업데이트
+  useEffect(() => {
+    console.log('⚡️ 컴포넌트 마운트 - 프로필 새로고침');
+    refreshProfile(); // 명시적으로 프로필 데이터 새로고침
+  }, [refreshProfile]); // 컴포넌트 마운트 시 한 번만 실행
+
+  useEffect(() => {
+    console.log('AuthContext 상태 변경 감지:', { user, profile });
+    
+    if (profile) {
+      if (profile.name) {
+        setUserName(profile.name);
+        console.log('⚡️ 사용자 이름을 설정했습니다:', profile.name);
+      } else {
+        console.log('⚠️ 프로필에 이름이 없습니다');
+      }
+    } else {
+      console.log('❌ 프로필 데이터가 없습니다');
+    }
+  }, [user, profile]);
 
   useEffect(() => {
     const checkAuthAndProfile = async () => {
@@ -81,6 +102,8 @@ export default function Home() {
             console.log('프로필이 있습니다:', profile);
             setHasProfile(true);
             setShowOnboardingModal(false);
+            
+
             
             // 추가 프로필 정보가 필요한지 확인
             const requiredFields = ['height', 'personalities'];
@@ -203,11 +226,16 @@ export default function Home() {
                 <div className="text-2xl font-bold bg-gradient-to-r from-[#6C5CE7] to-[#A8A4E3] text-transparent bg-clip-text">
                   Project-Solo
                 </div>
-                <div className="text-[#2D3436] font-medium flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-[#6C5CE7] text-white flex items-center justify-center font-bold">
-                    {userName[0]}
+                <div className="text-[#2D3436] font-medium flex items-center gap-2" onClick={() => {
+                    console.log('\u26a1\ufe0f 현재 프로필 데이터:', profile);
+                    console.log('\u26a1\ufe0f 현재 유저 데이터:', user);
+                  }}>
+                  <div className="w-8 h-8 rounded-full bg-[#6C5CE7] text-white flex items-center justify-center font-bold cursor-pointer">
+                    {profile && profile.name && profile.name.length > 0 ? profile.name[0].toUpperCase() : '?'}
                   </div>
-                  <span>{userName}님</span>
+                  <span>
+                    {profile && profile.name ? profile.name : userName}님
+                  </span>
                 </div>
               </div>
             </div>
