@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
+import { ADMIN_EMAIL } from '@/utils/config';
 
 /**
  * POST handler for starting the matching process
@@ -19,14 +20,9 @@ export async function POST() {
       return NextResponse.json({ error: '인증되지 않은 사용자입니다.' }, { status: 401 });
     }
     
-    // 관리자 확인
-    const { data: adminCheck } = await supabase
-      .from('profiles')
-      .select('is_admin')
-      .eq('user_id', user.id)
-      .single();
-    
-    if (!adminCheck || !adminCheck.is_admin) {
+    // 관리자 이메일로 권한 확인
+    if (user.email !== ADMIN_EMAIL) {
+      console.warn('관리자 아님:', user.email);
       return NextResponse.json({ error: '관리자 권한이 없습니다.' }, { status: 403 });
     }
 

@@ -196,46 +196,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       console.log('세션 상태:', currentSession ? '세션 있음' : '세션 없음');
       
-      // 테스트용 임시 사용자 설정 (실제 로그인 없이도 사용자 정보 설정)
-      const testUser = {
-        id: 'test-user-id',
-        email: 'test@example.com',
-        user_metadata: {
-          name: '테스트 사용자'
-        }
-      };
-      
-      console.log('테스트 사용자 정보로 설정:', testUser);
-      setUser(testUser as any);
-      setSession({ user: testUser } as any);
-      setIsAdmin(false);
-      
-      // 테스트용 프로필 정보 설정
-      const testProfile = {
-        id: 'test-profile-id',
-        user_id: testUser.id,
-        email: testUser.email,
-        name: '테스트 사용자',
-        university: '테스트 대학교',
-        department: '컴퓨터공학과',
-        student_id: '20210001',
-        grade: '3',
-        instagram_id: 'test_user',
-        is_admin: false
-      };
-      
-      console.log('테스트 프로필 정보 설정:', testProfile);
-      setProfile(testProfile as any);
-      setNeedsOnboarding(false);
-      setHasCompletedOnboarding(true);
-      
-      try {
-        localStorage.setItem('profile', JSON.stringify(testProfile));
-      } catch (e) {
-        console.error('프로필 localStorage 저장 오류:', e);
-      }
-      
-      /* 실제 인증 로직 (테스트를 위해 주석 처리)
       setSession(currentSession);
       
       if (currentSession) {
@@ -253,19 +213,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsAdmin(false);
         setNeedsOnboarding(false);
         
-        // 로컬 스토리지 클리어
         try {
           localStorage.removeItem('profile');
         } catch (storageError) {
           console.error('로컬 스토리지 클리어 오류:', storageError);
         }
       }
-      */
     } catch (error) {
       console.error('인증 초기화 중 오류:', error);
     } finally {
       setLoading(false);
-      console.log('인증 상태 초기화 완료');
     }
   };
 
@@ -274,14 +231,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     console.log('AuthContext 마운트, 인증 초기화');
     initAuth();
     
-    // 테스트 모드에서는 인증 상태 변경 구독을 사용하지 않음
-    const mockAuthListener = {
-      subscription: {
-        unsubscribe: () => console.log('테스트 모드: 가째 구독 해제')
-      }
-    };
-    
-    /* 실제 인증 상태 변경 구독 (테스트를 위해 주석 처리)
     // 인증 상태 변경 구독
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -303,7 +252,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setIsAdmin(false);
           setNeedsOnboarding(false);
           
-          // 로컬 스토리지 클리어
           try {
             localStorage.removeItem('profile');
           } catch (storageError) {
@@ -314,12 +262,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       }
     );
-    */
     
     return () => {
       console.log('AuthContext 언마운트, 구독 해제');
-      // authListener.subscription.unsubscribe();
-      mockAuthListener.subscription.unsubscribe();
+      authListener.subscription.unsubscribe();
     };
   }, [supabase, router]);
 
