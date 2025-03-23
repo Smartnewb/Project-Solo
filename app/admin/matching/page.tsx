@@ -7,6 +7,8 @@ export default function AdminMatching() {
   const [matchingDate, setMatchingDate] = useState('');
   const [isSignupEnabled, setIsSignupEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isMatchingLoading, setIsMatchingLoading] = useState(false);
+  const [rematchRequests, setRematchRequests] = useState<any[]>([]);
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; content: string }>({
     type: 'info',
     content: ''
@@ -15,6 +17,7 @@ export default function AdminMatching() {
   useEffect(() => {
     fetchMatchingTime();
     fetchSignupStatus();
+    fetchRematchRequests();
   }, []);
 
   const fetchMatchingTime = async () => {
@@ -166,6 +169,100 @@ export default function AdminMatching() {
     }
   };
 
+  const startMatching = async () => {
+    try {
+      setIsMatchingLoading(true);
+      console.log('매칭 프로세스 시작');
+      
+      const response = await fetch('/api/admin/matching', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `API 응답 오류: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('매칭 결과:', data);
+
+      setMessage({
+        type: 'success',
+        content: `매칭이 성공적으로 완료되었습니다. 총 ${data.matchCount || 0}건의 매칭이 이루어졌습니다.`
+      });
+    } catch (error) {
+      console.error('매칭 처리 중 오류 발생:', error);
+      setMessage({
+        type: 'error',
+        content: error instanceof Error ? error.message : '매칭 처리에 실패했습니다.'
+      });
+    } finally {
+      setIsMatchingLoading(false);
+    }
+  };
+
+  const fetchRematchRequests = async () => {
+    try {
+      console.log('재매칭 요청 목록 가져오기');
+      const response = await fetch('/api/admin/rematch-requests');
+      
+      if (!response.ok) {
+        throw new Error(`API 응답 오류: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('재매칭 요청 목록:', data);
+      
+      if (data.requests) {
+        setRematchRequests(data.requests);
+      }
+    } catch (error) {
+      console.error('재매칭 요청 목록 조회 실패:', error);
+      setMessage({ 
+        type: 'error', 
+        content: '재매칭 요청 목록 조회에 실패했습니다.' 
+      });
+    }
+  };
+
+  const processRematch = async (userId: string) => {
+    try {
+      console.log(`사용자 ${userId}의 재매칭 처리 시작`);
+      const response = await fetch('/api/admin/process-rematch', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `API 응답 오류: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('재매칭 처리 결과:', data);
+
+      // 재매칭 요청 목록 새로고침
+      fetchRematchRequests();
+
+      setMessage({
+        type: 'success',
+        content: '재매칭이 성공적으로 처리되었습니다.'
+      });
+    } catch (error) {
+      console.error('재매칭 처리 중 오류 발생:', error);
+      setMessage({
+        type: 'error',
+        content: error instanceof Error ? error.message : '재매칭 처리에 실패했습니다.'
+      });
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div>
@@ -192,6 +289,67 @@ export default function AdminMatching() {
             {isLoading ? '처리 중...' : '매칭 시간 설정'}
           </button>
         </form>
+      </div>
+
+      <div>
+        <h2 className="text-xl font-bold mb-4">회원 매칭</h2>
+        <div className="max-w-md space-y-4">
+          <div className="p-4 bg-white rounded-lg shadow">
+            <p className="text-sm text-gray-700 mb-4">
+              회원가입된 전체 사용자(남/여)를 불러와 알고리즘에 따라 1:1 매칭을 수행합니다. 매칭 결과는 지정된 시간에 사용자에게 공개됩니다.
+            </p>
+            <button
+              onClick={startMatching}
+              disabled={isMatchingLoading}
+              className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 transition-colors disabled:opacity-50"
+            >
+              {isMatchingLoading ? '매칭 진행 중...' : '매칭 시작'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h2 className="text-xl font-bold mb-4">재매칭 요청 관리</h2>
+        <div className="max-w-md space-y-4">
+          {rematchRequests.length > 0 ? (
+            <div className="overflow-hidden bg-white rounded-lg shadow">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">사용자 정보</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">요청 시간</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">액션</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {rematchRequests.map((request) => (
+                    <tr key={request.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {request.userName || '이름 없음'} ({request.gender || '성별 미상'})
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(request.created_at).toLocaleString('ko-KR')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => processRematch(request.user_id)}
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          재매칭 처리
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="p-4 bg-white rounded-lg shadow text-center text-gray-500">
+              현재 재매칭 요청이 없습니다.
+            </div>
+          )}
+        </div>
       </div>
 
       <div>
