@@ -25,7 +25,7 @@ interface Comment {
 }
 
 interface Post {
-  id: string;
+  user_id: string;
   author_id: string;
   content: string;
   created_at: string;
@@ -142,7 +142,6 @@ export default function Community() {
     try {
       setIsLoading(true);
       console.log('게시글 조회 시작');
-  
       // 신고 임계값을 3으로 설정 (월드스타일)
       const reportThreshold = 3; // 월드스타일은 3회 신고시 블라인드 처리
       console.log('현재 신고 임계값:', reportThreshold);
@@ -153,10 +152,10 @@ export default function Community() {
       
       try {
         const response = await supabase
-          .from('posts')
-          .select('*')
-          .eq('isdeleted', false)
-          .order('created_at', { ascending: false });
+        .from('posts')
+        .select('*')
+        .eq('isdeleted', false)
+        .order('created_at', { ascending: false });
         
         if (response.error) {
           postsError = response.error;
@@ -167,6 +166,7 @@ export default function Community() {
         postsError = error;
         console.error('게시글 조회 중 예외 발생:', error);
       }
+      console.log('게시글 데이터 구조:', Object.keys(postsData[0]));
       
       if (postsError) {
         console.error('게시글 조회 에러:', postsError);
@@ -191,23 +191,24 @@ export default function Community() {
       const postsWithComments = await Promise.all(
         filteredPosts.map(async (post) => {
           try {
-            console.log(`게시글 ID ${post.id}의 댓글 조회 시작`);
+            console.log(`게시글 ID ${post.user_id}의 댓글 조회 시작`);
             
             // 댓글 조회를 위한 별도의 함수 호출
             let commentsData: any[] = [];
             
             try {
+              console.log(post)
               const commentsResponse = await supabase
                 .from('comments')
                 .select('*')
-                .eq('post_id', post.id)
+                .eq('post_id', post.user_id)
                 .order('created_at', { ascending: true });
                 
               if (commentsResponse.error) {
-                console.error(`게시글 ID ${post.id}의 댓글 조회 에러:`, commentsResponse.error);
+                console.error(`게시글 ID ${post.user_id}의 댓글 조회 에러:`, commentsResponse.error);
               } else {
                 commentsData = commentsResponse.data || [];
-                console.log(`게시글 ID ${post.id}의 댓글 조회 완료:`, commentsData.length, '개');
+                console.log(`게시글 ID ${post.user_id}의 댓글 조회 완료:`, commentsData.length, '개');
                 
                 // 댓글 데이터 구조 확인
                 if (commentsData.length > 0) {
@@ -215,12 +216,12 @@ export default function Community() {
                 }
               }
             } catch (commentError) {
-              console.error(`게시글 ID ${post.id}의 댓글 조회 중 예외:`, commentError);
+              console.error(`게시글 ID ${post.user_id}의 댓글 조회 중 예외:`, commentError);
             }
             
             return { ...post, comments: commentsData };
           } catch (error) {
-            console.error(`게시글 ID ${post.id}의 댓글 처리 중 오류:`, error);
+            console.error(`게시글 ID ${post.user_id}의 댓글 처리 중 오류:`, error);
             return { ...post, comments: [] };
           }
         })
@@ -393,7 +394,7 @@ export default function Community() {
   // 좋아요 처리
   const handleLike = async (PostUerId: string) => {
     try {
-      const post = posts.find(p => p.id === PostUerId);
+      const post = posts.find(p => p.user_id === PostUerId);
       if (!post) return;
 
       const likes = post.likes || [];
@@ -406,7 +407,7 @@ export default function Community() {
       const { error } = await supabase
         .from('posts')
         .update({ likes: updatedLikes })
-        .eq('id', PostUerId);
+        .eq('user_id', PostUerId);
 
       if (error) throw error;
       fetchPosts();
@@ -428,7 +429,7 @@ export default function Community() {
           content: editContent,
           isEdited: true
         })
-        .eq('id', postId);
+        .eq('user_id', postId);
 
       if (error) throw error;
 
@@ -448,7 +449,7 @@ export default function Community() {
       const { error } = await supabase
         .from('posts')
         .update({ isdeleted: true })
-        .eq('id', postId);
+        .eq('user_id', postId);
 
       if (error) throw error;
       fetchPosts();
@@ -491,7 +492,7 @@ export default function Community() {
       const { data: postCheck, error: postError } = await supabase
         .from('posts')
         .select('id')
-        .eq('id', postId)
+        .eq('user_id', postId)
         .single();
         
       if (postError || !postCheck) {
@@ -544,7 +545,7 @@ export default function Community() {
   };
 
   const handleEdit = (post: Post) => {
-    setEditingPost(post.id);
+    setEditingPost(post.user_id);
     setEditContent(post.content);
   };
 
@@ -579,7 +580,7 @@ export default function Community() {
 
   const handleDeleteComment = async (PostUserId: string, commentId: string, userId: string) => {
     const updatedPosts = posts.map(post => {
-      if (post.id === PostUserId) {
+      if (post.user_id === PostUserId) {
         const updatedComments = post.comments.map(comment => {
           if (comment.id === commentId && comment.author_id === userId) {
             return { ...comment, isdeleted: true }; 
@@ -625,7 +626,6 @@ export default function Community() {
 
   const renderComments = (post: Post, showAll: boolean) => {
     const comments = post.comments || [];
-    console.log(comments)
     const displayComments = showAll ? comments : comments.slice(0, 2);
     const hasMoreComments = comments.length > 2;
     return displayComments.map((comment) => !comment.isdeleted ? (
@@ -647,13 +647,13 @@ export default function Community() {
             {comment.author_id === userInfo.id && (
               <div className="flex gap-2">
                 <button
-                  onClick={() => handleEditComment(post.id, comment.id, comment.content)}
+                  onClick={() => handleEditComment(post.user_id, comment.id, comment.content)}
                   className="text-xs text-blue-500 hover:text-blue-600"
                 >
                   수정
                 </button>
                 <button
-                  onClick={() => handleDeleteComment(post.id, comment.id, comment.author_id)}
+                  onClick={() => handleDeleteComment(post.user_id, comment.id, comment.author_id)}
                   className="text-xs text-red-500 hover:text-red-600"
                 >
                   삭제
@@ -662,7 +662,7 @@ export default function Community() {
             )}
             {user && comment.author_id !== user.id && (
               <button
-                onClick={() => handleOpenReport('comment', post.id, userInfo.id)}
+                onClick={() => handleOpenReport('comment', post.user_id, comment.id)}
                 className="text-xs text-gray-500 hover:text-gray-600"
               >
                 신고
@@ -671,7 +671,7 @@ export default function Community() {
           </div>
         </div>
         
-        {editingComment?.postId === post.id && 
+        {editingComment?.postId === post.user_id && 
          editingComment?.commentId === comment.id ? (
           <div className="flex gap-2">
             <input
@@ -687,7 +687,7 @@ export default function Community() {
               취소
             </button>
             <button
-              onClick={() => handleSaveCommentEdit(post.id, comment.id)}
+              onClick={() => handleSaveCommentEdit(post.user_id, comment.id)}
               className="btn-primary px-3"
             >
               저장
@@ -741,7 +741,7 @@ export default function Community() {
     // 본인 게시글/댓글 신고 방지
     if (type === 'post') {
       // 게시글 작성자 확인
-      const post = posts.find(p => p.id === postId);
+      const post = posts.find(p => p.user_id === postId);
       if (post && post.author_id === user.id) {
         setErrorMessage('본인이 작성한 게시글은 신고할 수 없습니다.');
         setShowErrorModal(true);
@@ -749,7 +749,7 @@ export default function Community() {
       }
     } else if (type === 'comment' && commentId) {
       // 댓글 작성자 확인
-      const post = posts.find(p => p.id === postId);
+      const post = posts.find(p => p.user_id === postId);
       if (post) {
         const comment = post.comments?.find((c: any) => c.id === commentId);
         // any를 사용하여 타입 오류 피하기
@@ -787,7 +787,7 @@ export default function Community() {
         const { data: postData, error: fetchError } = await supabase
           .from('posts')
           .select('reports')
-          .eq('id', postId)
+          .eq('user_id', postId)
           .single();
 
         if (fetchError) throw fetchError;
@@ -831,7 +831,7 @@ export default function Community() {
         const { error: updateError } = await supabase
           .from('posts')
           .update(updateData)
-          .eq('id', postId);
+          .eq('user_id', postId);
 
         if (updateError) throw updateError;
       } else if (type === 'comment' && commentId) {
@@ -955,7 +955,7 @@ export default function Community() {
       // 게시글 데이터 생성
       const postId = generateUUID();
       const postData = {
-        id: postId, // userId 대신 id 사용
+        user_id: postId,
         content: newPostContent,
         author_id: user.id,
         nickname: randomNickname,
@@ -1000,7 +1000,7 @@ export default function Community() {
     if (!reportTarget || !reportReason || !userInfo.id) return;
 
     const updatedPosts = posts.map(post => {
-      if (post.id === reportTarget.postId) {
+      if (post.user_id === reportTarget.postId) {
         if (reportTarget.type === 'post') {
           // 게시글 신고
           const reports = post.reports || [];
@@ -1111,9 +1111,9 @@ export default function Community() {
             <div className="mb-6">
               <Slider {...sliderSettings} ref={sliderRef}>
                 {popularPosts.map((post, index) => (
-                  <div key={post.id} className="px-2">
+                  <div key={post.user_id} className="px-2">
                     <button
-                      onClick={() => scrollToPost(post.id)}
+                      onClick={() => scrollToPost(post.user_id)}
                       className="w-full text-left bg-white rounded-lg p-4 hover:bg-gray-50 transition-colors shadow-md"
                     >
                       <div className="flex items-center gap-2 mb-2">
@@ -1187,10 +1187,10 @@ export default function Community() {
           {posts.length > 0 ? (
             posts.map((post) => (
               <div 
-                key={post.id} 
-                id={`post-${post.id}`}
+                key={post.user_id} 
+                id={`post-${post.user_id}`}
                 className={`card transition-all duration-300 ${
-                  selectedPost === post.id ? 'ring-2 ring-primary-DEFAULT' : ''
+                  selectedPost === post.user_id ? 'ring-2 ring-primary-DEFAULT' : ''
                 } ${
                   post.isBlinded ? 'bg-gray-100 border border-gray-300' : ''
                 }`}
@@ -1216,15 +1216,15 @@ export default function Community() {
                           수정
                         </button>
                         <button 
-                          onClick={() => handleDelete(post.id)}
+                          onClick={() => handleDelete(post.user_id)}
                           className="text-sm text-red-500 hover:text-red-600"
                         >
                           삭제
                         </button>
                       </div>
-                    ) : !post.isdeleted && user && post.id !== user.id && (
+                    ) : !post.isdeleted && user && post.user_id !== user.id && (
                       <button
-                        onClick={() => handleOpenReport('post', post.id)}
+                        onClick={() => handleOpenReport('post', post.user_id)}
                         className="text-sm text-gray-500 hover:text-gray-600"
                       >
                         신고
@@ -1233,7 +1233,7 @@ export default function Community() {
                   </div>
                 </div>
                 
-                {editingPost === post.id ? (
+                {editingPost === post.user_id ? (
                   <div className="space-y-2">
                     <textarea
                       value={editContent}
@@ -1249,7 +1249,7 @@ export default function Community() {
                         취소
                       </button>
                       <button
-                        onClick={() => handleSaveEdit(post.id)}
+                        onClick={() => handleSaveEdit(post.user_id)}
                         className="btn-primary"
                       >
                         저장
@@ -1272,7 +1272,7 @@ export default function Community() {
                     )}
                     <div className="flex items-center gap-4">
                       <button
-                        onClick={() => handleLike(post.id)}
+                        onClick={() => handleLike(post.user_id)}
                         className={`flex items-center gap-1 ${
                           post.likes?.includes(userInfo.id)
                             ? 'text-red-500'
@@ -1283,7 +1283,7 @@ export default function Community() {
                         <span>{post.likes?.length || 0}</span>
                       </button>
                       <button 
-                        onClick={() => setShowCommentInput(showCommentInput === post.id ? null : post.id)}
+                        onClick={() => setShowCommentInput(showCommentInput === post.user_id ? null : post.user_id)}
                         className="flex items-center gap-1 text-gray-500"
                       >
                         <ChatBubbleOvalLeftIcon className="w-5 h-5" />
@@ -1294,7 +1294,7 @@ export default function Community() {
                 )}
 
                 {/* 댓글 입력창 */}
-                {!post.isdeleted && showCommentInput === post.id && (
+                {!post.isdeleted && showCommentInput === post.user_id && (
                   <div className="mt-4 space-y-4 border-t pt-4">
                     <div className="flex gap-2">
                       <input
@@ -1320,7 +1320,7 @@ export default function Community() {
                         className="input-field flex-1"
                       />
                       <button
-                        onClick={() => handleAddComment(post.id)}
+                        onClick={() => handleAddComment(post.user_id)}
                         className="btn-primary px-4"
                       >
                         작성
@@ -1330,7 +1330,7 @@ export default function Community() {
                 )}
 
                 {/* 댓글 목록 */}
-                {!post.isdeleted && renderComments(post, showAllComments === post.id)}
+                {!post.isdeleted && renderComments(post, showAllComments === post.user_id)}
               </div>
             ))
           ) : (
