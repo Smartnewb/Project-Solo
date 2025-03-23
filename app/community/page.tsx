@@ -383,22 +383,22 @@ export default function Community() {
   }, [posts]);
 
   // 좋아요 처리
-  const handleLike = async (postId: string) => {
+  const handleLike = async (PostUerId: string) => {
     try {
-      const post = posts.find(p => p.userId === postId);
+      const post = posts.find(p => p.userId === PostUerId);
       if (!post) return;
 
       const likes = post.likes || [];
-      const hasLiked = likes.includes(userInfo.studentId);
+      const hasLiked = likes.includes(userInfo.userId);
       
       const updatedLikes = hasLiked
-        ? likes.filter(id => id !== userInfo.studentId)
-        : [...likes, userInfo.studentId];
+        ? likes.filter(id => id !== userInfo.userId)
+        : [...likes, userInfo.userId];
 
       const { error } = await supabase
         .from('posts')
         .update({ likes: updatedLikes })
-        .eq('userId', postId);
+        .eq('userId', PostUerId);
 
       if (error) throw error;
       fetchPosts();
@@ -1111,7 +1111,7 @@ export default function Community() {
                       <button
                         onClick={() => handleLike(post.userId)}
                         className={`flex items-center gap-1 ${
-                          post.likes?.includes(userInfo.studentId)
+                          post.likes?.includes(userInfo.userId)
                             ? 'text-red-500'
                             : 'text-gray-500'
                         }`}
