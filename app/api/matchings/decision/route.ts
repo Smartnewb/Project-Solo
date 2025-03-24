@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { MatchStatus } from '@/types/matching';
+import { MatchStatus } from '@/app/types/matching';
 
 export async function POST(request: NextRequest) {
   try {

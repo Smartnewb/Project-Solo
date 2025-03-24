@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { formatRelativeTime } from '@/utils/formatters';
-import { NotificationType } from '@/types/matching';
+import { formatRelativeTime } from '@/app/utils/formatters';
+import { NotificationType } from '@/app/types/matching';
 import Link from 'next/link';
 
 interface Notification {

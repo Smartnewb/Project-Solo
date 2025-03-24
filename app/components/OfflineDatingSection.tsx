@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { OfflineMeeting, MeetingStatus } from '@/types/matching';
-import { formatDate } from '@/utils/formatters';
+import { OfflineMeeting, MeetingStatus } from '@/app/types/matching';
+import { formatDate } from '@/app/utils/formatters';
 
 interface OfflineDatingSectionProps {
   title: string;

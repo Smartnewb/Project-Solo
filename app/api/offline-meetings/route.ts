@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { MeetingStatus } from '@/types/matching';
+import { MeetingStatus } from '@/app/types/matching';
 
 // 오프라인 소개팅 예약 목록 조회
 export async function GET() {

@@ -1,5 +1,5 @@
 import React from 'react';
-import OfflineDatingSection from '@/components/OfflineDatingSection';
+import OfflineDatingSection from '@/app/components/OfflineDatingSection';
 
 export default function OfflineDatingPage() {
   return (

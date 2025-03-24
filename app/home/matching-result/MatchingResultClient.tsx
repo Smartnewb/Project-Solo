@@ -2,9 +2,9 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { formatRelativeTime } from '@/utils/formatters';
-import MeetingInviteForm from '@/components/MeetingInviteForm';
-import { MatchStatus } from '@/types/matching';
+import { formatRelativeTime } from '@/app/utils/formatters';
+import MeetingInviteForm from '@/app/components/MeetingInviteForm';
+import { MatchStatus } from '@/app/types/matching';
 
 interface MatchedUser {
   id: string;

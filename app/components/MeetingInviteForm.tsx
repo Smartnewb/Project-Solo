@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MeetingInvitationRequest } from '@/types/matching';
+import { MeetingInvitationRequest } from '@/app/types/matching';
 
 interface MeetingInviteFormProps {
   matchingId?: string;

@@ -3,9 +3,9 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
-import ProfileSection from '@/components/profile/ProfileSection';
-import PreferencesSection from '@/components/profile/PreferencesSection';
-import NotificationList from '@/components/NotificationList';
+import ProfileSection from '@/app/components/profile/ProfileSection';
+import PreferencesSection from '@/app/components/profile/PreferencesSection';
+import NotificationList from '@/app/components/NotificationList';
 
 type Tab = 'profile' | 'preferences' | 'notifications' | 'offline';
 
