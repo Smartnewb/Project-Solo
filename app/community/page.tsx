@@ -1423,7 +1423,7 @@ export default function Community() {
               <div className="max-w-lg mx-auto px-6 flex justify-around items-center">
                 <button
                   onClick={handleGoToHome}
-                  className="flex flex-col items-center text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
+                  className="flex flex-col items-center text-[#636E72] hover:text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
                   type="button"
                   aria-label="홈으로 이동"
                 >
@@ -1432,7 +1432,7 @@ export default function Community() {
                 </button>
                 <button
                   onClick={() => router.push('/community')}
-                  className="flex flex-col items-center text-[#636E72] hover:text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
+                  className="flex flex-col items-center text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
                   type="button"
                   aria-label="커뮤니티로 이동"
                 >
