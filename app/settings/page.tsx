@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { HomeIcon, ChatBubbleLeftRightIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
-
-
+import { createClient } from '@/utils/supabase/client';
 
 export default function Settings() {
   const router = useRouter();
@@ -18,9 +17,41 @@ export default function Settings() {
     const handleGoToHome = () => router.push('/home');
     const handleGoToSettings = () => router.push('/settings');
 
-  const handleLogout = () => {
-    // TODO: 로그아웃 로직 구현
-    router.push('/');
+  const handleLogout = async () => {
+    try {
+      const supabase = createClient();
+      
+      // 로그아웃 실행
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('로그아웃 중 오류 발생:', error);
+        alert('로그아웃 중 오류가 발생했습니다.');
+        return;
+      }
+
+      // 로컬 스토리지 클리어
+      try {
+        localStorage.clear();
+      } catch (e) {
+        console.error('로컬 스토리지 클리어 중 오류:', e);
+      }
+
+      // 쿠키 클리어 (모든 쿠키 삭제)
+      document.cookie.split(';').forEach(cookie => {
+        document.cookie = cookie
+          .replace(/^ +/, '')
+          .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+      });
+
+      console.log('로그아웃 성공');
+      
+      // 홈페이지로 리디렉션
+      router.push('/');
+    } catch (error) {
+      console.error('로그아웃 처리 중 오류:', error);
+      alert('로그아웃 중 오류가 발생했습니다.');
+    }
   };
 
   const handleDeleteAccount = () => {
