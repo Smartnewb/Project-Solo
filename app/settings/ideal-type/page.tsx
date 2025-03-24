@@ -5,16 +5,27 @@ import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@supabase/ssr';
 
 interface FormData {
-  height: string;
-  personalities: string[];
-  dating_styles: string[];
-  ideal_lifestyles: string[];
-  drinking_preference: string;
-  smoking_preference: string;
-  tattoo: string;
+  preferred_height_min: number;
+  preferred_height_max: number;
+  preferred_personalities: string[];
+  preferred_dating_styles: string[];
+  preferred_lifestyles: string[];
+  preferred_interests: string[];
+  preferred_drinking: string[];
+  preferred_smoking: string[];
+  preferred_tattoo: string[];
+  preferred_mbti: string[];
+  disliked_mbti: string[];
+  preferred_age_type: string[];
 }
 
-const heightOptions = ['150cm 이하', '151-160cm', '161-170cm', '171-180cm', '181cm 이상'];
+const heightOptions = [
+  { label: '150cm 이하', min: 0, max: 150 },
+  { label: '151-160cm', min: 151, max: 160 },
+  { label: '161-170cm', min: 161, max: 170 },
+  { label: '171-180cm', min: 171, max: 180 },
+  { label: '181cm 이상', min: 181, max: 999 }
+];
 const personalityOptions = ['활발한', '차분한', '다정한', '유머러스한', '지적인', '열정적인'];
 const datingStyleOptions = ['적극적인', '로맨틱한', '자상한', '독립적인', '계획적인'];
 const lifestyleOptions = ['운동', '여행', '문화생활', '맛집탐방', '집순이/집돌이', '게임'];
@@ -34,13 +45,18 @@ const IdealTypeSettings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<FormData>({
-    height: '',
-    personalities: [],
-    dating_styles: [],
-    ideal_lifestyles: [],
-    drinking_preference: '',
-    smoking_preference: '',
-    tattoo: '',
+    preferred_height_min: 0,
+    preferred_height_max: 0,
+    preferred_personalities: [],
+    preferred_dating_styles: [],
+    preferred_lifestyles: [],
+    preferred_interests: [],
+    preferred_drinking: [],
+    preferred_smoking: [],
+    preferred_tattoo: [],
+    preferred_mbti: [],
+    disliked_mbti: [],
+    preferred_age_type: []
   });
 
   const supabase = createBrowserClient(
@@ -62,30 +78,58 @@ const IdealTypeSettings = () => {
           router.push('/login');
           return;
         }
+
+        console.log('=== 현재 로그인한 사용자 정보 ===');
+        console.log(user);
+        
+        // 프로필 정보 가져오기
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (profileError) {
+          console.error('프로필 정보 조회 오류:', profileError);
+        } else {
+          console.log('=== 프로필 정보 ===');
+          console.log(profileData);
+        }
         
         // 사용자 선호도 정보 가져오기
-        const { data, error } = await supabase
+        const { data: preferenceData, error: preferenceError } = await supabase
           .from('user_preferences')
           .select('*')
           .eq('user_id', user.id)
           .single();
           
-        if (error && error.code !== 'PGRST116') {
-          console.error('사용자 선호도 정보 조회 오류:', error);
-        } else if (data) {
+        if (preferenceError && preferenceError.code !== 'PGRST116') {
+          console.error('사용자 선호도 정보 조회 오류:', preferenceError);
+        } else if (preferenceData) {
+          console.log('=== 현재 저장된 선호도 정보 ===');
+          console.log(preferenceData);
+
           // 데이터가 있으면 폼 상태 업데이트
           setFormData({
-            height: data.height || '',
-            personalities: data.personalities || [],
-            dating_styles: data.dating_styles || [],
-            ideal_lifestyles: data.ideal_lifestyles || [],
-            drinking_preference: data.drinking_preference || '',
-            smoking_preference: data.smoking_preference || '',
-            tattoo: data.tattoo || '',
+            preferred_height_min: preferenceData.preferred_height_min || 0,
+            preferred_height_max: preferenceData.preferred_height_max || 0,
+            preferred_personalities: preferenceData.preferred_personalities || [],
+            preferred_dating_styles: preferenceData.preferred_dating_styles || [],
+            preferred_lifestyles: preferenceData.preferred_lifestyles || [],
+            preferred_interests: preferenceData.preferred_interests || [],
+            preferred_drinking: preferenceData.preferred_drinking || [],
+            preferred_smoking: preferenceData.preferred_smoking || [],
+            preferred_tattoo: preferenceData.preferred_tattoo || [],
+            preferred_mbti: preferenceData.preferred_mbti || [],
+            disliked_mbti: preferenceData.disliked_mbti || [],
+            preferred_age_type: preferenceData.preferred_age_type || []
           });
+
+          console.log('=== 현재 폼 데이터 상태 ===');
+          console.log(formData);
         }
       } catch (error) {
-        console.error('선호도 데이터 로딩 중 오류 발생:', error);
+        console.error('데이터 로딩 중 오류 발생:', error);
       } finally {
         setLoading(false);
       }
@@ -107,39 +151,66 @@ const IdealTypeSettings = () => {
     setFormData({ ...formData, [field]: newValues });
   };
 
+  const handleHeightRangeSelect = (min: number, max: number) => {
+    setFormData({
+      ...formData,
+      preferred_height_min: min,
+      preferred_height_max: max
+    });
+  };
+
+  const handleSingleOptionSelect = (field: keyof FormData, value: string) => {
+    setFormData({
+      ...formData,
+      [field]: [value]
+    });
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
     try {
       setSaving(true);
-      
-      // 현재 로그인된 사용자의 ID 가져오기
+      console.log('=== 저장 시도 중인 데이터 ===');
+      console.log(formData);
+
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
         console.error('사용자 인증 정보가 없습니다.');
         return;
       }
-      
-      // Supabase에 저장
+
+      // 빈 배열을 null로 변환하여 저장
+      const dataToSave = {
+        user_id: user.id,
+        preferred_height_min: formData.preferred_height_min,
+        preferred_height_max: formData.preferred_height_max,
+        preferred_personalities: formData.preferred_personalities.length > 0 ? formData.preferred_personalities : null,
+        preferred_dating_styles: formData.preferred_dating_styles.length > 0 ? formData.preferred_dating_styles : null,
+        preferred_lifestyles: formData.preferred_lifestyles.length > 0 ? formData.preferred_lifestyles : null,
+        preferred_interests: formData.preferred_interests.length > 0 ? formData.preferred_interests : null,
+        preferred_drinking: formData.preferred_drinking.length > 0 ? formData.preferred_drinking : null,
+        preferred_smoking: formData.preferred_smoking.length > 0 ? formData.preferred_smoking : null,
+        preferred_tattoo: formData.preferred_tattoo.length > 0 ? formData.preferred_tattoo : null,
+        preferred_mbti: formData.preferred_mbti.length > 0 ? formData.preferred_mbti : null,
+        disliked_mbti: formData.disliked_mbti.length > 0 ? formData.disliked_mbti : null,
+        preferred_age_type: formData.preferred_age_type.length > 0 ? formData.preferred_age_type : null,
+        updated_at: new Date()
+      };
+
+      console.log('=== DB에 저장될 데이터 ===');
+      console.log(dataToSave);
+
       const { error } = await supabase
         .from('user_preferences')
-        .upsert({
-          user_id: user.id,
-          height: formData.height,
-          personalities: formData.personalities,
-          dating_styles: formData.dating_styles,
-          ideal_lifestyles: formData.ideal_lifestyles,
-          drinking_preference: formData.drinking_preference,
-          smoking_preference: formData.smoking_preference,
-          tattoo: formData.tattoo,
-          updated_at: new Date(),
-        });
-        
+        .upsert(dataToSave);
+
       if (error) {
+        console.error('저장 중 오류 발생:', error);
         throw error;
       }
-      
+
+      console.log('=== 저장 성공 ===');
       alert('이상형 설정이 저장되었습니다.');
       router.push('/settings');
     } catch (error) {
@@ -175,16 +246,17 @@ const IdealTypeSettings = () => {
           <div className="flex flex-wrap gap-2">
             {heightOptions.map((option) => (
               <button
-                key={option}
+                key={option.label}
                 type="button"
-                onClick={() => setFormData({ ...formData, height: option })}
+                onClick={() => handleHeightRangeSelect(option.min, option.max)}
                 className={`px-4 py-2 rounded-lg border ${
-                  formData.height === option 
+                  formData.preferred_height_min === option.min && 
+                  formData.preferred_height_max === option.max
                     ? 'bg-purple-600 text-white border-purple-600' 
                     : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
                 }`}
               >
-                {option}
+                {option.label}
               </button>
             ))}
           </div>
@@ -198,9 +270,9 @@ const IdealTypeSettings = () => {
               <button
                 key={option}
                 type="button"
-                onClick={() => toggleSelection('personalities', option, 3)}
+                onClick={() => toggleSelection('preferred_personalities', option, 3)}
                 className={`px-4 py-2 rounded-lg border ${
-                  formData.personalities.includes(option) 
+                  formData.preferred_personalities.includes(option) 
                     ? 'bg-purple-600 text-white border-purple-600' 
                     : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
                 }`}
@@ -219,9 +291,9 @@ const IdealTypeSettings = () => {
               <button
                 key={option}
                 type="button"
-                onClick={() => toggleSelection('dating_styles', option, 2)}
+                onClick={() => toggleSelection('preferred_dating_styles', option, 2)}
                 className={`px-4 py-2 rounded-lg border ${
-                  formData.dating_styles.includes(option) 
+                  formData.preferred_dating_styles.includes(option) 
                     ? 'bg-purple-600 text-white border-purple-600' 
                     : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
                 }`}
@@ -240,9 +312,9 @@ const IdealTypeSettings = () => {
               <button
                 key={option}
                 type="button"
-                onClick={() => toggleSelection('ideal_lifestyles', option, 3)}
+                onClick={() => toggleSelection('preferred_lifestyles', option, 3)}
                 className={`px-4 py-2 rounded-lg border ${
-                  formData.ideal_lifestyles.includes(option) 
+                  formData.preferred_lifestyles.includes(option) 
                     ? 'bg-purple-600 text-white border-purple-600' 
                     : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
                 }`}
@@ -261,9 +333,9 @@ const IdealTypeSettings = () => {
               <button
                 key={option}
                 type="button"
-                onClick={() => setFormData({ ...formData, drinking_preference: option })}
+                onClick={() => handleSingleOptionSelect('preferred_drinking', option)}
                 className={`px-4 py-2 rounded-lg border ${
-                  formData.drinking_preference === option 
+                  formData.preferred_drinking.includes(option)
                     ? 'bg-purple-600 text-white border-purple-600' 
                     : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
                 }`}
@@ -282,9 +354,9 @@ const IdealTypeSettings = () => {
               <button
                 key={option}
                 type="button"
-                onClick={() => setFormData({ ...formData, smoking_preference: option })}
+                onClick={() => handleSingleOptionSelect('preferred_smoking', option)}
                 className={`px-4 py-2 rounded-lg border ${
-                  formData.smoking_preference === option 
+                  formData.preferred_smoking.includes(option)
                     ? 'bg-purple-600 text-white border-purple-600' 
                     : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
                 }`}
@@ -303,9 +375,9 @@ const IdealTypeSettings = () => {
               <button
                 key={option}
                 type="button"
-                onClick={() => setFormData({ ...formData, tattoo: option })}
+                onClick={() => handleSingleOptionSelect('preferred_tattoo', option)}
                 className={`px-4 py-2 rounded-lg border ${
-                  formData.tattoo === option 
+                  formData.preferred_tattoo.includes(option)
                     ? 'bg-purple-600 text-white border-purple-600' 
                     : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
                 }`}
