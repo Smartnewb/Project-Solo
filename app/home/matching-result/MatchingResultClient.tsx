@@ -98,7 +98,7 @@ export default function MatchingResultClient({ matchings, userId }: MatchingResu
   const decidedMatchings = matchings.filter(
     m => m.userDecision !== null && 
     (m.status === MatchStatus.PENDING || 
-     m.status === MatchStatus.MATCHED || 
+     m.status === MatchStatus.ACCEPTED || 
      m.status === MatchStatus.REJECTED)
   );
 
@@ -194,7 +194,7 @@ export default function MatchingResultClient({ matchings, userId }: MatchingResu
           <h2 className="text-xl font-semibold mb-4">매칭 내역</h2>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {decidedMatchings.map((matching) => {
-              const isMatched = matching.status === MatchStatus.MATCHED;
+              const isMatched = matching.status === MatchStatus.ACCEPTED;
               const statusColor = isMatched ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
               const statusText = isMatched ? '매칭 성사' : '매칭 불성사';
               

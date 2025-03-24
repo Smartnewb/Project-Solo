@@ -11,7 +11,7 @@ const ProfileSection = () => {
     nickname: '',
     age: '',
     gender: '',
-    bio: '',
+    // bio: '',
     interests: [''],
   });
   const [loading, setLoading] = useState(false);
@@ -22,10 +22,10 @@ const ProfileSection = () => {
   useEffect(() => {
     if (profile) {
       setFormData({
-        nickname: profile.nickname || '',
+        nickname: profile.name || '',
         age: profile.age?.toString() || '',
         gender: profile.gender || '',
-        bio: profile.bio || '',
+        // bio: profile.bio || '',
         interests: profile.interests || [''],
       });
     }
@@ -177,7 +177,7 @@ const ProfileSection = () => {
             </select>
           </div>
 
-          <div>
+          {/* <div>
             <label htmlFor="bio" className="block text-sm font-medium text-gray-700">
               자기소개
             </label>
@@ -189,7 +189,7 @@ const ProfileSection = () => {
               onChange={handleChange}
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
             />
-          </div>
+          </div> */}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -244,9 +244,9 @@ const ProfileSection = () => {
           <div className="flex items-start">
             <div className="mr-4">
               <div className="w-24 h-24 bg-gray-200 rounded-full overflow-hidden">
-                {profile?.image_url ? (
+                {profile?.avatar_url ? (
                   <Image
-                    src={profile.image_url}
+                    src={profile.avatar_url}
                     alt="프로필 이미지"
                     width={96}
                     height={96}
@@ -260,7 +260,7 @@ const ProfileSection = () => {
               </div>
             </div>
             <div className="flex-1">
-              <h3 className="text-xl font-semibold">{profile?.nickname || '닉네임 미설정'}</h3>
+              <h3 className="text-xl font-semibold">{profile?.name || '닉네임 미설정'}</h3>
               <div className="mt-1 text-sm text-gray-500">
                 {profile?.email}
               </div>
@@ -288,12 +288,12 @@ const ProfileSection = () => {
             </div>
           </div>
 
-          {profile?.bio && (
+          {/* {profile?.bio && (
             <div className="mt-4">
               <h4 className="text-sm font-medium text-gray-700 mb-1">자기소개</h4>
               <p className="text-sm">{profile.bio}</p>
             </div>
-          )}
+          )} */}
 
           {profile?.interests && profile.interests.length > 0 && profile.interests[0] !== '' && (
             <div className="mt-4">
