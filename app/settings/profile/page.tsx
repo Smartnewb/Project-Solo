@@ -21,7 +21,7 @@ interface ProfileData {
   email: string;
   nickname: string;
   bio: string;
-  profile_image: string;
+  avatar_url: string;
   phone: string;
   gender: string;
   age: number;
@@ -55,7 +55,7 @@ export default function ProfilePage() {
     email: '',
     nickname: '',
     bio: '',
-    profile_image: '',
+    avatar_url: '',
     phone: '',
     gender: '',
     age: 0,
@@ -125,16 +125,16 @@ export default function ProfilePage() {
           student_id: profileData?.student_id || '',
           height: profileData?.height || 0,
           interests: profileData?.interests || [],
-          name: userData?.name || user.user_metadata?.name || '',
-          email: userData?.email || user.email || '',
+          name: profileData?.name || '',
+          email: user?.email || '',
           nickname: profileData?.nickname || '',
           bio: profileData?.bio || '',
-          profile_image: profileData?.profile_image || '',
-          phone: userData?.phone || user.phone || '',
-          gender: userData?.gender || '',
-          age: userData?.age || 0,
-          creation_date: user.created_at || '',
-          last_login: user.last_sign_in_at || '',
+          avatar_url: profileData?.avatar_url || '',
+          phone: profileData?.phone || '',
+          gender: profileData?.gender || '',
+          age: profileData?.age || 0,
+          creation_date: user?.created_at || '',
+          last_login: user?.last_sign_in_at || '',
           instagram_id: profileData?.instagram_id || '',
           mbti: profileData?.mbti || '',
           personalities: profileData?.personalities || [],
@@ -185,9 +185,9 @@ export default function ProfilePage() {
             {/* 프로필 사진 및 기본 정보 */}
             <div className="flex items-center gap-6 mb-6">
               <div className="w-28 h-28 rounded-full bg-gray-300 overflow-hidden shadow-md">
-                {profileData.profile_image ? (
+                {profileData.avatar_url ? (
                   <img 
-                    src={profileData.profile_image} 
+                    src={profileData.avatar_url} 
                     alt="프로필 사진"
                     className="w-full h-full object-cover" 
                   />
