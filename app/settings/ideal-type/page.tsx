@@ -32,6 +32,13 @@ const lifestyleOptions = ['운동', '여행', '문화생활', '맛집탐방', '�
 const drinkingOptions = ['전혀 안 함', '가끔', '자주'];
 const smokingOptions = ['비흡연', '흡연'];
 const tattooOptions = ['없음', '있음', '상관없음'];
+const mbtiOptions = [
+  'ISTJ', 'ISFJ', 'INFJ', 'INTJ',
+  'ISTP', 'ISFP', 'INFP', 'INTP',
+  'ESTP', 'ESFP', 'ENFP', 'ENTP',
+  'ESTJ', 'ESFJ', 'ENFJ', 'ENTJ'
+];
+const ageTypeOptions = ['동갑', '연상', '연하', '나이 무관'];
 
 // 간단한 로더 컴포넌트
 const Loader = () => (
@@ -378,6 +385,69 @@ const IdealTypeSettings = () => {
                 onClick={() => handleSingleOptionSelect('preferred_tattoo', option)}
                 className={`px-4 py-2 rounded-lg border ${
                   formData.preferred_tattoo.includes(option)
+                    ? 'bg-purple-600 text-white border-purple-600' 
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                }`}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* MBTI 선호도 */}
+        <div className="card p-6 bg-white rounded-xl shadow-md space-y-4">
+          <label className="block text-lg font-medium">선호하는 MBTI (최대 3개)</label>
+          <div className="flex flex-wrap gap-2">
+            {mbtiOptions.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => toggleSelection('preferred_mbti', option, 3)}
+                className={`px-4 py-2 rounded-lg border ${
+                  formData.preferred_mbti.includes(option)
+                    ? 'bg-purple-600 text-white border-purple-600' 
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                }`}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* MBTI 비선호도 */}
+        <div className="card p-6 bg-white rounded-xl shadow-md space-y-4">
+          <label className="block text-lg font-medium">선호하지 않는 MBTI (최대 3개)</label>
+          <div className="flex flex-wrap gap-2">
+            {mbtiOptions.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => toggleSelection('disliked_mbti', option, 3)}
+                className={`px-4 py-2 rounded-lg border ${
+                  formData.disliked_mbti.includes(option)
+                    ? 'bg-red-600 text-white border-red-600' 
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
+                }`}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 선호 나이 타입 */}
+        <div className="card p-6 bg-white rounded-xl shadow-md space-y-4">
+          <label className="block text-lg font-medium">선호하는 나이</label>
+          <div className="flex flex-wrap gap-2">
+            {ageTypeOptions.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => handleSingleOptionSelect('preferred_age_type', option)}
+                className={`px-4 py-2 rounded-lg border ${
+                  formData.preferred_age_type.includes(option)
                     ? 'bg-purple-600 text-white border-purple-600' 
                     : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
                 }`}

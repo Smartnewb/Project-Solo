@@ -89,20 +89,6 @@ export default function ProfilePage() {
           return;
         }
         
-        console.log('인증된 사용자 ID:', user.id);
-        
-        // 기본 사용자 정보 가져오기
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-          
-        if (userError) {
-          console.error('사용자 정보 조회 오류:', userError);
-          // users 테이블이 없을 경우 계속 진행
-        }
-        
         // 프로필 정보 가져오기
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
@@ -110,43 +96,59 @@ export default function ProfilePage() {
           .eq('user_id', user.id)
           .single();
           
-        if (profileError && profileError.code !== 'PGRST116') {
+        if (profileError) {
           console.error('프로필 정보 조회 오류:', profileError);
-          // 오류가 있어도 계속 진행
+        } else {
+          console.log('=== 프로필 데이터 ===');
+          console.log(JSON.stringify(profileData, null, 2));
+          
+          // 프로필 데이터 설정
+          setProfileData({
+            university: profileData?.university || '',
+            department: profileData?.department || '',
+            student_id: profileData?.student_id || '',
+            height: profileData?.height || 0,
+            name: profileData?.name || '',
+            email: user?.email || '',
+            nickname: profileData?.nickname || '',
+            bio: profileData?.bio || '',
+            avatar_url: profileData?.avatar_url || '',
+            phone: profileData?.phone || '',
+            gender: profileData?.gender || '',
+            age: profileData?.age || 0,
+            creation_date: user?.created_at || '',
+            last_login: user?.last_sign_in_at || '',
+            interests: profileData?.interests || [], // Added missing interests field
+            instagram_id: profileData?.instagram_id || '',
+            mbti: profileData?.mbti || '',
+            personalities: profileData?.personalities || [],
+            dating_styles: profileData?.dating_styles || [],
+            ideal_lifestyles: profileData?.ideal_lifestyles || [],
+            drinking: profileData?.drinking || '',
+            smoking: profileData?.smoking || '',
+            tattoo: profileData?.tattoo || '',
+            grade: profileData?.grade || ''
+          });
         }
-        
-        console.log('프로필 데이터:', profileData);
-        console.log('사용자 데이터:', userData);
-        
-        // 데이터 결합하여 상태 업데이트
-        setProfileData({
-          university: profileData?.university || '',
-          department: profileData?.department || '',
-          student_id: profileData?.student_id || '',
-          height: profileData?.height || 0,
-          interests: profileData?.interests || [],
-          name: profileData?.name || '',
-          email: user?.email || '',
-          nickname: profileData?.nickname || '',
-          bio: profileData?.bio || '',
-          avatar_url: profileData?.avatar_url || '',
-          phone: profileData?.phone || '',
-          gender: profileData?.gender || '',
-          age: profileData?.age || 0,
-          creation_date: user?.created_at || '',
-          last_login: user?.last_sign_in_at || '',
-          instagram_id: profileData?.instagram_id || '',
-          mbti: profileData?.mbti || '',
-          personalities: profileData?.personalities || [],
-          dating_styles: profileData?.dating_styles || [],
-          ideal_lifestyles: profileData?.ideal_lifestyles || [],
-          drinking: profileData?.drinking || '',
-          smoking: profileData?.smoking || '',
-          tattoo: profileData?.tattoo || '',
-          grade: profileData?.grade || ''
-        });
+
+        // 이상형 선호도 정보 가져오기
+        const { data: preferenceData, error: preferenceError } = await supabase
+          .from('user_preferences')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+          
+        if (preferenceError && preferenceError.code !== 'PGRST116') {
+          console.error('이상형 선호도 정보 조회 오류:', preferenceError);
+        } else if (preferenceData) {
+          console.log('=== 이상형 선호도 데이터 ===');
+          console.log(JSON.stringify(preferenceData, null, 2));
+        } else {
+          console.log('=== 저장된 이상형 선호도 데이터 없음 ===');
+        }
+
       } catch (error) {
-        console.error('프로필 데이터 로딩 중 오류 발생:', error);
+        console.error('데이터 로딩 중 오류 발생:', error);
       } finally {
         setLoading(false);
       }
