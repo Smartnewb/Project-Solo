@@ -33,25 +33,9 @@ export async function GET() {
         },
       }
     );
-
-    // 세션 확인
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
-    if (sessionError) {
-      console.error('세션 조회 오류:', sessionError);
-      return NextResponse.json({ error: '인증 세션 오류가 발생했습니다.' }, { status: 401 });
-    }
-    
-    if (!session || !session.user) {
-      console.warn('세션 없음 - 인증되지 않은 요청');
-      return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
-    }
-    
-    console.log('사용자 이메일:', session.user.email);
-    if (session.user.email !== ADMIN_EMAIL) {
-      console.warn('관리자 아님:', session.user.email);
-      return NextResponse.json({ error: '관리자 권한이 없습니다.' }, { status: 403 });
-    }
+    // 일반 사용자도 매칭 시간을 확인할 수 있도록 인증 검사 제거
+    // 관리자 포털 POST 요청(설정 변경)에는 인증이 여전히 필요함
 
     // 매칭 시간 조회
     const { data: settings, error: settingsError } = await supabase

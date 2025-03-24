@@ -32,20 +32,38 @@ export default function MatchingCountdown() {
   // 매칭 시간 가져오기 함수를 useCallback으로 메모이제이션
   const fetchMatchingTime = useCallback(async () => {
     try {
+      console.log('매칭 시간 조회 시작');
       const response = await fetch('/api/admin/matching-time');
-      const data = await response.json();
       
-      if (data.matchingDateTime) {
-        const serverTime = new Date(data.matchingDateTime);
+      if (!response.ok) {
+        throw new Error(`API 응답 오류: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('매칭 시간 API 응답:', data);
+      
+      // matchingDateTime 또는 matchingTime 필드 검사
+      const serverTimeString = data.matchingDateTime || data.matchingTime;
+      
+      if (serverTimeString) {
+        console.log('서버에서 받은 시간:', serverTimeString);
+        const serverTime = new Date(serverTimeString);
         const now = new Date();
         const currentMatchingTime = matchingTime ? new Date(matchingTime) : null;
+        
+        console.log(`서버 시간: ${serverTime}, 현재 시간: ${now}`);
         
         // 서버 시간이 현재 시간보다 이후이고,
         // 현재 설정된 매칭 시간이 없거나 서버 시간이 더 미래인 경우에만 업데이트
         if (serverTime > now && (!currentMatchingTime || serverTime > currentMatchingTime)) {
-          localStorage.setItem('matchingTime', data.matchingDateTime);
-          setMatchingTime(data.matchingDateTime);
+          console.log('매칭 시간 업데이트:', serverTimeString);
+          localStorage.setItem('matchingTime', serverTimeString);
+          setMatchingTime(serverTimeString);
+        } else {
+          console.log('매칭 시간 업데이트 안함 - 이미 지나거나 기존 시간보다 이전');
         }
+      } else {
+        console.log('서버에서 매칭 시간을 받지 못함');
       }
     } catch (error) {
       console.error('매칭 시간 조회 실패:', error);
