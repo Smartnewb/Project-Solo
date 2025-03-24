@@ -68,7 +68,7 @@ export async function middleware(request: NextRequest) {
     ) {
       console.log('인증되지 않은 사용자가 접근 시도:', request.nextUrl.pathname);
       const url = request.nextUrl.clone();
-      url.pathname = '/login';
+      url.pathname = '/';
       return NextResponse.redirect(url);
     }
     
