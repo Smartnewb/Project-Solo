@@ -144,7 +144,7 @@ export default function Settings() {
               <div className="max-w-lg mx-auto px-6 flex justify-around items-center">
                 <button
                   onClick={handleGoToHome}
-                  className="flex flex-col items-center text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
+                  className="flex flex-col items-center text-[#636E72] hover:text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
                   type="button"
                   aria-label="홈으로 이동"
                 >
@@ -164,7 +164,7 @@ export default function Settings() {
                 </button>
                 <button
                   onClick={handleGoToSettings}
-                  className="flex flex-col items-center text-[#636E72] hover:text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
+                  className="flex flex-col items-center text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
                   type="button"
                   aria-label="설정으로로 이동"
                 >
