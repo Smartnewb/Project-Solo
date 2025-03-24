@@ -35,10 +35,14 @@ export default function AdminMatching() {
       console.log('매칭 시간 데이터:', data);
       
       if (data.matchingTime) {
-        setMatchingDate(data.matchingTime);
+        // ISO 날짜 문자열을 로컬 시간으로 변환하여 datetime-local 입력창에 표시
+        const date = new Date(data.matchingTime);
+        // YYYY-MM-DDThh:mm 형식으로 변환 (datetime-local 입력창 형식)
+        const localDateTimeString = date.toISOString().slice(0, 16);
+        setMatchingDate(localDateTimeString);
         setMessage({
           type: 'info',
-          content: '현재 설정된 매칭 시간을 불러왔습니다.'
+          content: `현재 설정된 매칭 시간을 불러왔습니다. (${date.toLocaleString('ko-KR')})`
         });
       } else {
         setMatchingDate('');
@@ -270,28 +274,52 @@ export default function AdminMatching() {
     <div className="space-y-8">
       <div>
         <h2 className="text-xl font-bold mb-4">매칭 시간 설정</h2>
-        <form onSubmit={handleSubmit} className="max-w-md space-y-4">
-          <div className="bg-white p-4 rounded-lg shadow">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              매칭 시간
-            </label>
-            <input
-              type="datetime-local"
-              value={matchingDate}
-              onChange={(e) => setMatchingDate(e.target.value)}
-              className="w-full p-2 border rounded focus:ring-2 focus:ring-primary-DEFAULT focus:border-transparent"
-              required
-            />
-          </div>
+        <div className="flex flex-col md:flex-row gap-6 items-start">
+          <form onSubmit={handleSubmit} className="max-w-md space-y-4">
+            <div className="bg-white p-4 rounded-lg shadow">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                매칭 시간
+              </label>
+              <input
+                type="datetime-local"
+                value={matchingDate}
+                onChange={(e) => setMatchingDate(e.target.value)}
+                className="w-full p-2 border rounded focus:ring-2 focus:ring-primary-DEFAULT focus:border-transparent"
+                required
+              />
+            </div>
+            
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-primary-DEFAULT text-white py-2 px-4 rounded-md hover:bg-primary-dark transition-colors disabled:opacity-50"
+            >
+              {isLoading ? '처리 중...' : '매칭 시간 설정'}
+            </button>
+          </form>
           
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full bg-primary-DEFAULT text-white py-2 px-4 rounded-md hover:bg-primary-dark transition-colors disabled:opacity-50"
-          >
-            {isLoading ? '처리 중...' : '매칭 시간 설정'}
-          </button>
-        </form>
+          {/* 현재 설정된 시간 표시 */}
+          {matchingDate && (
+            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg shadow max-w-md">
+              <h3 className="text-sm font-medium text-blue-800 mb-2">현재 설정된 매칭 시간</h3>
+              <div className="text-gray-700">
+                <p className="text-lg font-medium text-blue-700 mb-1">
+                  {new Date(matchingDate).toLocaleString('ko-KR', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                  })}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {new Date(matchingDate).toLocaleString('ko-KR', { weekday: 'long' })}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <div>

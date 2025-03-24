@@ -66,7 +66,11 @@ export async function GET() {
     }
 
     console.log('매칭 시간 조회 성공:', settings?.matching_time);
-    return NextResponse.json({ matchingTime: settings?.matching_time || null });
+    // 프론트엔드에서 예상하는 형식으로 응답 만들기
+    return NextResponse.json({ 
+      matchingTime: settings?.matching_time || null,
+      matchingDateTime: settings?.matching_time || null 
+    });
   } catch (error) {
     console.error('매칭 시간 조회 중 오류 발생:', error);
     return NextResponse.json({ 
@@ -138,13 +142,16 @@ export async function POST(request: Request) {
     if (matchingDate < new Date()) {
       return NextResponse.json({ error: '매칭 시간은 현재 시간 이후로 설정해야 합니다.' }, { status: 400 });
     }
+    
+    // 타임존 일관성을 위해 ISO 문자열로 변환
+    const isoMatchingTime = matchingDate.toISOString();
 
     // 매칭 시간 설정
     const { error: upsertError } = await supabase
       .from('system_settings')
       .upsert({ 
         id: 'matching_control',
-        matching_time: matchingTime,
+        matching_time: isoMatchingTime, // ISO 형식의 시간 저장
         updated_at: new Date().toISOString()
       });
 
@@ -156,8 +163,12 @@ export async function POST(request: Request) {
       }, { status: 500 });
     }
 
-    console.log('매칭 시간 설정 성공:', matchingTime);
-    return NextResponse.json({ success: true, matchingTime });
+    console.log('매칭 시간 설정 성공:', isoMatchingTime);
+    return NextResponse.json({ 
+      success: true, 
+      matchingTime: isoMatchingTime,
+      matchingDateTime: isoMatchingTime 
+    });
   } catch (error) {
     console.error('매칭 시간 설정 중 오류 발생:', error);
     return NextResponse.json({ 
