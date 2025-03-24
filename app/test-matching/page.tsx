@@ -45,9 +45,10 @@ interface TestResult {
   scenario: string;
   userCount: number;
   options: {
-    ageGap: number;
-    includeInterests: boolean;
-    departmentMatch: boolean;
+    ageGap?: number;
+    includeInterests?: boolean;
+    departmentMatch?: boolean;
+    onlyGradeMatching?: boolean;
   };
   message: string;
   matches: any[];
@@ -117,6 +118,7 @@ export default function TestMatchingPage() {
                 onChange={(e) => setScenario(e.target.value)}
               >
                 <MenuItem value="all">모든 시나리오</MenuItem>
+                <MenuItem value="pure_algorithm">순수 등급 기반 매칭</MenuItem>
                 <MenuItem value="basic">기본 매칭 (나이 기반)</MenuItem>
                 <MenuItem value="mbti">MBTI 호환성 고려</MenuItem>
                 <MenuItem value="department">학과 다양성 고려</MenuItem>

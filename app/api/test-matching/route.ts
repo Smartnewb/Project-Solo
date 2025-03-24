@@ -69,11 +69,20 @@ interface MatchAlgorithmResult {
   }[];
 }
 
+// 매칭 알고리즘 옵션 타입
+interface MatchingOptions {
+  onlyGradeMatching?: boolean;
+  ageGap?: number;
+  includeInterests?: boolean;
+  departmentMatch?: boolean;
+  [key: string]: any; // 기타 옵션들
+}
+
 // 테스트 시나리오 결과 타입
 interface TestScenarioResult extends MatchAlgorithmResult {
   scenario: string;
   userCount: number;
-  options: any;
+  options: MatchingOptions;
   stats: {
     totalUsers: number;
     matchedUsers: number;
@@ -154,7 +163,7 @@ function createVirtualUser(props: VirtualUserProps): VirtualUser {
 }
 
 // 매칭 알고리즘 - /app/matchingAlgorithm.ts에서 등급 기반 매칭 알고리즘 사용
-function runMatchingAlgorithm(options = {}): MatchAlgorithmResult {
+function runMatchingAlgorithm(options: MatchingOptions = {}): MatchAlgorithmResult {
   // 매칭 대기 중인 사용자 가져오기
   const users = localDB.profiles.filter(user => user.matchStatus === 'waiting')
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
@@ -181,6 +190,16 @@ function runMatchingAlgorithm(options = {}): MatchAlgorithmResult {
     drinking: user.drinking,
     tattoo: user.tattoo
   }));
+  
+  // 테스트 결과를 더 자세히 보기 위한 로깅 추가
+  if (options.onlyGradeMatching) {
+    console.log('순수 등급 기반 매칭 테스트 실행:');
+    console.log(`- 총 ${profiles.length}명의 사용자 (남성: ${profiles.filter(p => p.gender === 'male').length}, 여성: ${profiles.filter(p => p.gender === 'female').length})`);
+    console.log('- 사용자 등급 분포:', profiles.reduce((acc, p) => {
+      acc[p.classification as string] = (acc[p.classification as string] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>));
+  }
 
   // 사용자 선호도 생성 (테스트용 가상 데이터)
   const preferences: UserPreferences[] = profiles.map(profile => {
@@ -253,7 +272,7 @@ function runMatchingAlgorithm(options = {}): MatchAlgorithmResult {
 }
 
 // 테스트 시나리오 실행
-function runTestScenario(scenarioName: string, userCount: number, options: any): TestScenarioResult {
+function runTestScenario(scenarioName: string, userCount: number, options: MatchingOptions): TestScenarioResult {
   console.log(`\n===== 테스트 시나리오: ${scenarioName} =====`);
   
   // 로컬 DB 초기화
@@ -338,6 +357,13 @@ export async function GET(request: Request) {
     };
     
     // 시나리오에 따라 테스트 실행
+    if (scenario === 'pure_algorithm' || scenario === 'all') {
+      // 순수 matchingAlgorithm.ts 테스트 (등급 기반 매칭만)
+      results.testResults.push(
+        runTestScenario('순수 등급 기반 매칭 알고리즘', size, { onlyGradeMatching: true })
+      );
+    }
+    
     if (scenario === 'basic' || scenario === 'all') {
       // 기본 매칭 알고리즘 (나이 차이 3살 이내)
       results.testResults.push(
