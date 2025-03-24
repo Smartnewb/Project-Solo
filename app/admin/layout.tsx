@@ -139,6 +139,16 @@ export default function AdminLayout({
               </Link>
             </li>
             <li>
+              <Link href="/admin/traffic" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
+                트래픽
+              </Link>
+            </li>
+            <li>
+              <Link href="/admin/rematch" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
+                재매칭 요청 관리
+              </Link>
+            </li>
+            <li>
               <button 
                 onClick={handleLogout} 
                 className="w-full text-left px-4 py-2 text-red-500 hover:bg-red-50 transition-colors"

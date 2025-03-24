@@ -13,21 +13,18 @@ export async function GET() {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
+          getAll() {
+            return cookieStore.getAll();
           },
-          set(name: string, value: string, options: any) {
+          setAll(cookiesToSet) {
             try {
-              cookieStore.set(name, value, options);
-            } catch (error) {
-              // Handle error if needed
-            }
-          },
-          remove(name: string, options: any) {
-            try {
-              cookieStore.set(name, '', { ...options, maxAge: 0 });
-            } catch (error) {
-              // Handle error if needed
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {
+              // The `setAll` method was called from a Server Component.
+              // This can be ignored if you have middleware refreshing
+              // user sessions.
             }
           },
         },
@@ -40,8 +37,8 @@ export async function GET() {
     // 매칭 시간 조회
     const { data: settings, error: settingsError } = await supabase
       .from('system_settings')
-      .select('matching_time')
-      .eq('id', 'matching_control')
+      .select('matching_datetime')
+      .eq('id', 'matching_time')
       .single();
 
     if (settingsError) {
@@ -49,11 +46,11 @@ export async function GET() {
       return NextResponse.json({ error: '매칭 시간 조회에 실패했습니다.' }, { status: 500 });
     }
 
-    console.log('매칭 시간 조회 성공:', settings?.matching_time);
+    console.log('매칭 시간 조회 성공:', settings?.matching_datetime);
     // 프론트엔드에서 예상하는 형식으로 응답 만들기
     return NextResponse.json({ 
-      matchingTime: settings?.matching_time || null,
-      matchingDateTime: settings?.matching_time || null 
+      matchingTime: settings?.matching_datetime || null,
+      matchingDateTime: settings?.matching_datetime || null 
     });
   } catch (error) {
     console.error('매칭 시간 조회 중 오류 발생:', error);
@@ -76,21 +73,18 @@ export async function POST(request: Request) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
+          getAll() {
+            return cookieStore.getAll();
           },
-          set(name: string, value: string, options: any) {
+          setAll(cookiesToSet) {
             try {
-              cookieStore.set(name, value, options);
-            } catch (error) {
-              // Handle error if needed
-            }
-          },
-          remove(name: string, options: any) {
-            try {
-              cookieStore.set(name, '', { ...options, maxAge: 0 });
-            } catch (error) {
-              // Handle error if needed
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {
+              // The `setAll` method was called from a Server Component.
+              // This can be ignored if you have middleware refreshing
+              // user sessions.
             }
           },
         },
@@ -134,8 +128,8 @@ export async function POST(request: Request) {
     const { error: upsertError } = await supabase
       .from('system_settings')
       .upsert({ 
-        id: 'matching_control',
-        matching_time: isoMatchingTime, // ISO 형식의 시간 저장
+        id: 'matching_time',
+        matching_datetime: isoMatchingTime, // ISO 형식의 시간 저장
         updated_at: new Date().toISOString()
       });
 
