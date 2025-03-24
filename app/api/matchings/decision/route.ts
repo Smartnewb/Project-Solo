@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
     if (otherDecision !== null) {
       if (decision && otherDecision) {
         // 양쪽 모두 수락한 경우
-        updateData.status = MatchStatus.MATCHED;
+        updateData.status = MatchStatus.ACCEPTED;
       } else {
         // 한쪽이라도 거절한 경우
         updateData.status = MatchStatus.REJECTED;
@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
       const otherUserId = isUser1 ? matching.user2_id : matching.user1_id;
       
       // 상대방에게 알림 전송
-      const notificationContent = updateData.status === MatchStatus.MATCHED
+      const notificationContent = updateData.status === MatchStatus.ACCEPTED
         ? '매칭이 성사되었습니다! 상대방과 대화를 시작해보세요.'
         : '매칭이 성사되지 않았습니다.';
         

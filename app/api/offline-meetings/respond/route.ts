@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 미팅 상태 업데이트
-    const newStatus = accept ? MeetingStatus.CONFIRMED : MeetingStatus.REJECTED;
+    const newStatus = accept ? MeetingStatus.ACCEPTED : MeetingStatus.REJECTED;
     const { error: updateError } = await supabase
       .from('offline_meetings')
       .update({ status: newStatus })
