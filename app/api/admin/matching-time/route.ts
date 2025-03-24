@@ -8,6 +8,8 @@ export async function GET() {
     console.log('매칭 시간 조회 요청 시작');
     
     const cookieStore = cookies();
+    console.log('쿠키 스토어 생성 성공');
+    
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -31,32 +33,69 @@ export async function GET() {
       }
     );
     
+    console.log('Supabase 클라이언트 생성 성공');
+    
     // 일반 사용자도 매칭 시간을 확인할 수 있도록 인증 검사 제거
     // 관리자 포털 POST 요청(설정 변경)에는 인증이 여전히 필요함
 
+    // 매칭 시간 조회 쿼리 확인
+    console.log('데이터베이스 쿼리 실행 전: matching_control 테이블에서 matching_time 컬럼 조회');
+    
     // 매칭 시간 조회
     const { data: settings, error: settingsError } = await supabase
-      .from('system_settings')
-      .select('matching_datetime')
+      .from('matching_control')
+      .select('matching_time')
       .eq('id', 'matching_time')
       .single();
 
     if (settingsError) {
       console.error('매칭 시간 조회 오류:', settingsError);
-      return NextResponse.json({ error: '매칭 시간 조회에 실패했습니다.' }, { status: 500 });
+      console.error('오류 상세 정보:', JSON.stringify(settingsError));
+      
+      // system_settings 테이블이 있는지 확인
+      console.log('system_settings 테이블 존재 여부 확인');
+      const { data: tables, error: tablesError } = await supabase
+        .from('pg_tables')
+        .select('tablename')
+        .eq('schemaname', 'public')
+        .eq('tablename', 'system_settings');
+      
+      if (tablesError) {
+        console.error('테이블 목록 조회 오류:', tablesError);
+      } else {
+        console.log('테이블 존재 여부 확인 결과:', tables);
+      }
+      
+      return NextResponse.json({ 
+        error: '매칭 시간 조회에 실패했습니다.', 
+        details: settingsError.message,
+        code: settingsError.code
+      }, { status: 500 });
     }
 
-    console.log('매칭 시간 조회 성공:', settings?.matching_datetime);
+    console.log('매칭 시간 조회 성공:', settings?.matching_time);
     // 프론트엔드에서 예상하는 형식으로 응답 만들기
     return NextResponse.json({ 
-      matchingTime: settings?.matching_datetime || null,
-      matchingDateTime: settings?.matching_datetime || null 
+      matchingTime: settings?.matching_time || null,
+      matchingDateTime: settings?.matching_time || null 
     });
   } catch (error) {
     console.error('매칭 시간 조회 중 오류 발생:', error);
+    let errorMessage = '알 수 없는 오류';
+    let errorDetails = {};
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      errorDetails = { 
+        name: error.name, 
+        stack: error.stack 
+      };
+    }
+    
     return NextResponse.json({ 
       error: '매칭 시간 조회에 실패했습니다.', 
-      details: error instanceof Error ? error.message : '알 수 없는 오류' 
+      message: errorMessage,
+      details: errorDetails
     }, { status: 500 });
   }
 }
@@ -124,20 +163,24 @@ export async function POST(request: Request) {
     // 타임존 일관성을 위해 ISO 문자열로 변환
     const isoMatchingTime = matchingDate.toISOString();
 
+    console.log('matching_control 테이블 업데이트 시도');
+    
     // 매칭 시간 설정
     const { error: upsertError } = await supabase
-      .from('system_settings')
+      .from('matching_control')
       .upsert({ 
         id: 'matching_time',
-        matching_datetime: isoMatchingTime, // ISO 형식의 시간 저장
+        matching_time: isoMatchingTime, // ISO 형식의 시간 저장
         updated_at: new Date().toISOString()
       });
 
     if (upsertError) {
       console.error('매칭 시간 설정 오류:', upsertError);
+      console.error('오류 상세 정보:', JSON.stringify(upsertError));
       return NextResponse.json({ 
         error: '매칭 시간 설정에 실패했습니다.', 
-        details: upsertError.message 
+        details: upsertError.message,
+        code: upsertError.code
       }, { status: 500 });
     }
 
@@ -149,9 +192,21 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('매칭 시간 설정 중 오류 발생:', error);
+    let errorMessage = '알 수 없는 오류';
+    let errorDetails = {};
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      errorDetails = { 
+        name: error.name, 
+        stack: error.stack 
+      };
+    }
+    
     return NextResponse.json({ 
       error: '매칭 시간 설정에 실패했습니다.', 
-      details: error instanceof Error ? error.message : '알 수 없는 오류' 
+      message: errorMessage,
+      details: errorDetails
     }, { status: 500 });
   }
 } 

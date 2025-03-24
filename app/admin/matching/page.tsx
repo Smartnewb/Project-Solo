@@ -49,6 +49,7 @@ interface MatchData {
 
 export default function AdminMatching() {
   const [matchingDate, setMatchingDate] = useState('');
+  const [savedMatchingTime, setSavedMatchingTime] = useState<string | null>(null);
   const [isSignupEnabled, setIsSignupEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isMatchingLoading, setIsMatchingLoading] = useState(false);
@@ -79,18 +80,25 @@ export default function AdminMatching() {
       const data = await response.json();
       console.log('매칭 시간 데이터:', data);
       
-      if (data.matchingTime) {
+      // matchingTime 또는 matchingDateTime이 있는 경우 처리
+      const matchingTimeValue = data.matchingTime || data.matchingDateTime;
+      
+      if (matchingTimeValue) {
         // ISO 날짜 문자열을 로컬 시간으로 변환하여 datetime-local 입력창에 표시
-        const date = new Date(data.matchingTime);
+        const date = new Date(matchingTimeValue);
         // YYYY-MM-DDThh:mm 형식으로 변환 (datetime-local 입력창 형식)
         const localDateTimeString = date.toISOString().slice(0, 16);
+        console.log('설정할 매칭 시간:', localDateTimeString);
         setMatchingDate(localDateTimeString);
+        setSavedMatchingTime(matchingTimeValue);
         setMessage({
           type: 'info',
           content: `현재 설정된 매칭 시간을 불러왔습니다. (${date.toLocaleString('ko-KR')})`
         });
       } else {
+        console.log('설정된 매칭 시간 없음');
         setMatchingDate('');
+        setSavedMatchingTime(null);
         setMessage({
           type: 'info',
           content: '설정된 매칭 시간이 없습니다.'
@@ -162,10 +170,21 @@ export default function AdminMatching() {
       const data = await response.json();
       console.log('매칭 시간 설정 응답:', data);
 
-      setMessage({
-        type: 'success',
-        content: '매칭 시간이 성공적으로 설정되었습니다.'
-      });
+      // 설정된 매칭 시간을 상태에 저장
+      if (data.success) {
+        const matchingTimeValue = data.matchingTime || data.matchingDateTime;
+        if (matchingTimeValue) {
+          console.log('새로운 매칭 시간 설정됨:', matchingTimeValue);
+          setSavedMatchingTime(matchingTimeValue);
+          setMessage({
+            type: 'success',
+            content: '매칭 시간이 성공적으로 설정되었습니다.'
+          });
+        }
+      }
+
+      // 매칭 시간 설정 후 자동으로 새로고침
+      await fetchMatchingTime();
     } catch (error) {
       console.error('매칭 시간 설정 실패:', error);
       setMessage({
@@ -316,26 +335,34 @@ export default function AdminMatching() {
                   </form>
                   
                   {/* 현재 설정된 시간 표시 */}
-                  {matchingDate && (
-                    <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg shadow max-w-md">
-                      <h3 className="text-sm font-medium text-blue-800 mb-2">현재 설정된 매칭 시간</h3>
-                      <div className="text-gray-700">
-                        <p className="text-lg font-medium text-blue-700 mb-1">
-                          {new Date(matchingDate).toLocaleString('ko-KR', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            hour12: true
-                          })}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          {new Date(matchingDate).toLocaleString('ko-KR', { weekday: 'long' })}
-                        </p>
-                      </div>
+                  <div className={`bg-blue-50 border border-blue-200 p-4 rounded-lg shadow max-w-md ${!savedMatchingTime ? 'hidden' : ''}`}>
+                    <h3 className="text-sm font-medium text-blue-800 mb-2">현재 설정된 매칭 시간</h3>
+                    <div className="text-gray-700">
+                      {savedMatchingTime ? (
+                        <>
+                          <p className="text-lg font-medium text-blue-700 mb-1">
+                            {new Date(savedMatchingTime).toLocaleString('ko-KR', {
+                              timeZone: 'Asia/Seoul',
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: true
+                            })}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {new Date(savedMatchingTime).toLocaleString('ko-KR', { 
+                              timeZone: 'Asia/Seoul',
+                              weekday: 'long' 
+                            })}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-sm text-gray-500">설정된 매칭 시간이 없습니다.</p>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
