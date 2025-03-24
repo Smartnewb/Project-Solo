@@ -13,6 +13,7 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/login') ||
     request.nextUrl.pathname.startsWith('/join') ||
     request.nextUrl.pathname.startsWith('/auth') ||
+    request.nextUrl.pathname.startsWith('/signup') ||
     request.nextUrl.pathname === '/'
   ) {
     return NextResponse.next();
@@ -62,6 +63,7 @@ export async function middleware(request: NextRequest) {
       !request.nextUrl.pathname.startsWith('/login') &&
       !request.nextUrl.pathname.startsWith('/join') &&
       !request.nextUrl.pathname.startsWith('/auth') &&
+      !request.nextUrl.pathname.startsWith('/signup') &&
       request.nextUrl.pathname !== '/'
     ) {
       console.log('인증되지 않은 사용자가 접근 시도:', request.nextUrl.pathname);

@@ -189,6 +189,9 @@ export default function AdminMatching() {
       const data = await response.json();
       console.log('매칭 결과:', data);
 
+      // 매칭 완료 후 회원가입 상태 다시 확인
+      await fetchSignupStatus();
+
       setMessage({
         type: 'success',
         content: `매칭이 성공적으로 완료되었습니다. 총 ${data.matchCount || 0}건의 매칭이 이루어졌습니다.`

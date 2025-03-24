@@ -16,21 +16,18 @@ export async function POST(request: Request) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
+          getAll() {
+            return cookieStore.getAll();
           },
-          set(name: string, value: string, options: any) {
+          setAll(cookiesToSet) {
             try {
-              cookieStore.set(name, value, options);
-            } catch (error) {
-              // Handle error if needed
-            }
-          },
-          remove(name: string, options: any) {
-            try {
-              cookieStore.set(name, '', { ...options, maxAge: 0 });
-            } catch (error) {
-              // Handle error if needed
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {
+              // The `setAll` method was called from a Server Component.
+              // This can be ignored if you have middleware refreshing
+              // user sessions.
             }
           },
         },
@@ -93,21 +90,18 @@ export async function GET() {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value;
+          getAll() {
+            return cookieStore.getAll();
           },
-          set(name: string, value: string, options: any) {
+          setAll(cookiesToSet) {
             try {
-              cookieStore.set(name, value, options);
-            } catch (error) {
-              // Handle error if needed
-            }
-          },
-          remove(name: string, options: any) {
-            try {
-              cookieStore.set(name, '', { ...options, maxAge: 0 });
-            } catch (error) {
-              // Handle error if needed
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {
+              // The `setAll` method was called from a Server Component.
+              // This can be ignored if you have middleware refreshing
+              // user sessions.
             }
           },
         },
