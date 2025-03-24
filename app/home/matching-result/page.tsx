@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import { redirect } from 'next/navigation';
 
 // 클라이언트 컴포넌트 동적 임포트
 const MatchingResultClient = dynamic(() => import('./MatchingResultClient'), { ssr: false });
@@ -32,83 +33,106 @@ export default async function MatchingResult() {
     }
   );
 
-  // 사용자 세션 확인
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    return (
-      <div className="container mx-auto px-4 py-8 text-center">
-        <h1 className="text-2xl font-bold mb-6">매칭 결과</h1>
-        <p className="mb-4">로그인이 필요한 서비스입니다.</p>
-        <div className="mt-4">
-          <Link 
-            href="/login" 
-            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded"
-          >
-            로그인하기
-          </Link>
-        </div>
-      </div>
-    );
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    redirect('/login');
   }
-
-  // 사용자의 매칭 정보 가져오기
+  
+  // 사용자 프로필 정보 가져오기
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('id, nickname')
+    .eq('user_id', user.id)
+    .single();
+    
+  if (profileError) {
+    console.error('Error fetching profile:', profileError);
+  }
+  
+  // 매칭 정보 가져오기
   const { data: matchings, error } = await supabase
     .from('matchings')
     .select(`
-      *,
-      user1: profiles!matchings_user1_id_fkey(*),
-      user2: profiles!matchings_user2_id_fkey(*)
+      id,
+      user_id,
+      matched_user_id,
+      status,
+      created_at,
+      updated_at,
+      user_decision,
+      score,
+      compatibility_reasons,
+      matched_user:matched_user_id (
+        id,
+        user_id,
+        nickname,
+        age,
+        gender,
+        department,
+        mbti,
+        height,
+        personalities,
+        dating_styles,
+        interests,
+        avatar_url,
+        instagram_id,
+        university,
+        grade,
+        drinking,
+        smoking,
+        tattoo,
+        lifestyles
+      )
     `)
-    .or(`user1_id.eq.${session.user.id},user2_id.eq.${session.user.id}`)
-    .order('created_at', { ascending: false });
-
+    .eq('user_id', user.id);
+    
   if (error) {
-    console.error('매칭 데이터 로드 에러:', error);
-    return (
-      <div className="container mx-auto px-4 py-8 text-center">
-        <h1 className="text-2xl font-bold mb-6">매칭 결과</h1>
-        <p className="text-red-500">매칭 정보를 불러오는 중 오류가 발생했습니다.</p>
-      </div>
-    );
+    console.error('Error fetching matchings:', error);
   }
-
-  // 매칭 데이터 가공
-  const processedMatchings = matchings.map(matching => {
-    const isUser1 = matching.user1_id === session.user.id;
-    const currentUserProfile = isUser1 ? matching.user1 : matching.user2;
-    const matchedUserProfile = isUser1 ? matching.user2 : matching.user1;
-    const userDecision = isUser1 ? matching.user1_decision : matching.user2_decision;
-    const matchedUserDecision = isUser1 ? matching.user2_decision : matching.user1_decision;
-
-    return {
-      id: matching.id,
-      status: matching.status,
-      created_at: matching.created_at,
-      updated_at: matching.updated_at,
-      userDecision,
-      matchedUserDecision,
-      matchedUser: {
-        id: matchedUserProfile.id,
-        user_id: matchedUserProfile.user_id,
-        nickname: matchedUserProfile.nickname || '익명',
-        age: matchedUserProfile.age,
-        gender: matchedUserProfile.gender,
-        department: matchedUserProfile.department,
-        mbti: matchedUserProfile.mbti,
-        height: matchedUserProfile.height,
-        personalities: matchedUserProfile.personalities || [],
-        dating_styles: matchedUserProfile.dating_styles || [],
-        interests: matchedUserProfile.interests || [],
-        avatar_url: matchedUserProfile.avatar_url,
-        instagram_id: matchedUserProfile.instagram_id
-      }
-    };
-  });
-
+  
+  // 매칭 데이터 변환
+  const formattedMatchings = (matchings || []).map(matching => ({
+    id: matching.id,
+    user_id: matching.user_id,
+    matched_user_id: matching.matched_user_id,
+    status: matching.status,
+    created_at: matching.created_at,
+    updated_at: matching.updated_at,
+    userDecision: matching.user_decision,
+    score: matching.score,
+    compatibility_reasons: matching.compatibility_reasons,
+    matchedUser: {
+      id: matching.matched_user?.id,
+      user_id: matching.matched_user?.user_id,
+      nickname: matching.matched_user?.nickname,
+      age: matching.matched_user?.age,
+      gender: matching.matched_user?.gender,
+      department: matching.matched_user?.department,
+      mbti: matching.matched_user?.mbti,
+      height: matching.matched_user?.height,
+      personalities: matching.matched_user?.personalities,
+      dating_styles: matching.matched_user?.dating_styles,
+      interests: matching.matched_user?.interests,
+      avatar_url: matching.matched_user?.avatar_url,
+      instagram_id: matching.matched_user?.instagram_id,
+      university: matching.matched_user?.university,
+      grade: matching.matched_user?.grade,
+      drinking: matching.matched_user?.drinking,
+      smoking: matching.matched_user?.smoking,
+      tattoo: matching.matched_user?.tattoo,
+      lifestyles: matching.matched_user?.lifestyles
+    }
+  }));
+  
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto py-8 px-4">
       <h1 className="text-2xl font-bold mb-6">매칭 결과</h1>
-      <MatchingResultClient matchings={processedMatchings} userId={session.user.id} />
+      <MatchingResultClient 
+        matchings={formattedMatchings}
+        userId={user.id}
+        username={profile?.nickname || user.email?.split('@')[0] || '익명 사용자'} 
+      />
     </div>
   );
 } 

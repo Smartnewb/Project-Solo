@@ -39,6 +39,9 @@ interface Post {
   studentid: string;
   emoji: string;
   comments: Comment[];
+  is_matching_feedback?: boolean;
+  matching_score?: number;
+  matching_reasons?: string[];
 }
 
 // 랜덤 닉네임 생성을 위한 데이터
@@ -1196,148 +1199,82 @@ export default function Community() {
               <div 
                 key={post.user_id} 
                 id={`post-${post.user_id}`}
-                className={`card transition-all duration-300 ${
-                  selectedPost === post.user_id ? 'ring-2 ring-primary-DEFAULT' : ''
-                } ${
-                  post.isBlinded ? 'bg-gray-100 border border-gray-300' : ''
-                }`}
+                className={`bg-white rounded-lg shadow-md p-5 mb-4 ${post.is_matching_feedback ? 'border-l-4 border-pink-500' : ''}`}
               >
-                <div className="flex items-center mb-3">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">{post.emoji}</span>
-                      <p className="font-medium text-gray-900">{post.nickname || '익명 사용자'}</p>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 flex items-center justify-center bg-gray-200 rounded-full mr-3">
+                      <span className="text-xl">{post.emoji}</span>
+                    </div>
+                    <div>
+                      <h3 className="font-medium">{post.nickname}</h3>
+                      <p className="text-xs text-gray-500">{formatTime(post.created_at)}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">
-                      {formatTime(post.created_at)}
-                    </span>
-                    {post.isEdited && <span className="text-sm text-gray-500">(수정됨)</span>}
-                    {post.author_id === userInfo.id && !post.isdeleted ? (
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={() => handleEdit(post)}
-                          className="text-sm text-blue-500 hover:text-blue-600"
-                        >
-                          수정
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(post.user_id)}
-                          className="text-sm text-red-500 hover:text-red-600"
-                        >
-                          삭제
-                        </button>
-                      </div>
-                    ) : !post.isdeleted && user && post.user_id !== user.id && (
-                      <button
-                        onClick={() => handleOpenReport('post', post.user_id)}
-                        className="text-sm text-gray-500 hover:text-gray-600"
-                      >
-                        신고
-                      </button>
-                    )}
-                  </div>
+                  
+                  {/* 더보기 메뉴 */}
+                  {/* ... existing code ... */}
                 </div>
                 
-                {editingPost === post.user_id ? (
-                  <div className="space-y-2">
-                    <textarea
-                      value={editContent}
-                      onChange={(e) => setEditContent(e.target.value)}
-                      className="input-field"
-                      rows={4}
-                    />
-                    <div className="flex gap-2 justify-end">
-                      <button
-                        onClick={() => setEditingPost(null)}
-                        className="btn-secondary"
-                      >
-                        취소
-                      </button>
-                      <button
-                        onClick={() => handleSaveEdit(post.user_id)}
-                        className="btn-primary"
-                      >
-                        저장
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    {post.isdeleted ? (
-                      <p className="text-gray-500 text-center mb-3">삭제된 게시물입니다.</p>
-                    ) : post.isBlinded ? (
-                      <div className="bg-gray-100 p-3 rounded-md mb-3">
-                        <p className="text-gray-500 text-center font-medium">
-                          <ExclamationTriangleIcon className="w-5 h-5 inline-block mr-1" />
-                          신고로 인해 블라인드 처리된 게시글입니다.
-                        </p>
+                {/* 게시물 내용 */}
+                <div className="mb-4">
+                  {post.isEdited ? (
+                    <>
+                      {editingPost === post.user_id ? (
+                        <textarea 
+                          className="w-full border rounded p-2"
+                          value={editContent} 
+                          onChange={(e) => setEditContent(e.target.value)}
+                        />
+                      ) : (
+                        <p className="whitespace-pre-wrap">{post.content}</p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="whitespace-pre-wrap">{post.content}</p>
+                  )}
+                  
+                  {/* 매칭 피드백인 경우 매칭 점수와 이유 표시 */}
+                  {post.is_matching_feedback && post.matching_score && (
+                    <div className="mt-3 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded">
+                      <div className="mb-2">
+                        <p className="text-sm font-semibold">매칭 점수</p>
+                        <div className="relative h-6 rounded-full bg-gray-200 overflow-hidden mt-1">
+                          <div 
+                            className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
+                            style={{ width: `${post.matching_score}%` }}
+                          ></div>
+                          <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
+                            <span className="text-xs font-bold text-gray-800">{post.matching_score}점</span>
+                          </div>
+                        </div>
                       </div>
-                    ) : (
-                      <p className="text-gray-700 whitespace-pre-wrap mb-3">{post.content}</p>
-                    )}
-                    <div className="flex items-center gap-4">
-                      <button
-                        onClick={() => handleLike(post.user_id)}
-                        className={`flex items-center gap-1 ${
-                          post.likes?.includes(userInfo.id)
-                            ? 'text-red-500'
-                            : 'text-gray-500'
-                        }`}
-                      >
-                        <HeartIcon className="w-5 h-5" />
-                        <span>{post.likes?.length || 0}</span>
-                      </button>
-                      <button 
-                        onClick={() => setShowCommentInput(showCommentInput === post.user_id ? null : post.user_id)}
-                        className="flex items-center gap-1 text-gray-500"
-                      >
-                        <ChatBubbleOvalLeftIcon className="w-5 h-5" />
-                        <span>{post.comments?.length || 0}</span>
-                      </button>
+                      
+                      {post.matching_reasons && post.matching_reasons.length > 0 && (
+                        <div>
+                          <p className="text-sm font-semibold">매칭 이유</p>
+                          <ul className="mt-1">
+                            {post.matching_reasons.map((reason, idx) => (
+                              <li key={idx} className="text-xs text-gray-600 flex items-center">
+                                <span className="mr-1">•</span> {reason}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
-                  </>
-                )}
-
-                {/* 댓글 입력창 */}
-                {!post.isdeleted && showCommentInput === post.user_id && (
-                  <div className="mt-4 space-y-4 border-t pt-4">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={newComment}
-                        onChange={(e) => {
-                          // 디바운싱 적용: 타이핑마다 API 요청 방지
-                          const newValue = e.target.value;
-                          setNewComment(newValue); // 화면 업데이트는 즉시 적용
-                          
-                          // 기존 타이머 취소
-                          if (debounceTimerRef.current) {
-                            clearTimeout(debounceTimerRef.current);
-                          }
-                          
-                          // 새 타이머 설정 (300ms 디바운스)
-                          debounceTimerRef.current = setTimeout(() => {
-                            // 디바운스된 작업 처리
-                            console.log('디바운스된 댓글 입력:', newValue.length, '글자');
-                          }, 300);
-                        }}
-                        placeholder="댓글을 입력하세요"
-                        className="input-field flex-1"
-                      />
-                      <button
-                        onClick={() => handleAddComment(post.user_id)}
-                        className="btn-primary px-4"
-                      >
-                        작성
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* 댓글 목록 */}
-                {!post.isdeleted && renderComments(post, showAllComments === post.user_id)}
+                  )}
+                  
+                  {post.isEdited && !editingPost && (
+                    <p className="text-xs text-gray-500 mt-1">(수정됨)</p>
+                  )}
+                </div>
+                
+                {/* 게시물 하단 액션 버튼 */}
+                {/* ... existing code ... */}
+                
+                {/* 댓글 영역 */}
+                {/* ... existing code ... */}
               </div>
             ))
           ) : (
