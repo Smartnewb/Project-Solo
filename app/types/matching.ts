@@ -131,4 +131,5 @@ export interface UserProfile {
   interests?: string[];
   bio?: string;
   image_url?: string;
+  instagram_id?: string;
 } 

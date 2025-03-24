@@ -91,9 +91,9 @@ const OfflineDatingSection: React.FC<OfflineDatingSectionProps> = ({ title }) =>
   };
 
   // 상태별 미팅 필터링
-  const pendingMeetings = meetings.filter(meeting => meeting.status === MeetingStatus.PENDING && !meeting.isInviter);
-  const confirmedMeetings = meetings.filter(meeting => meeting.status === MeetingStatus.CONFIRMED);
-  const myInvitations = meetings.filter(meeting => meeting.isInviter);
+  const pendingMeetings = meetings.filter(meeting => meeting.status === MeetingStatus.PENDING && meeting.initiator_id !== user?.id);
+  const confirmedMeetings = meetings.filter(meeting => meeting.status === MeetingStatus.ACCEPTED);
+  const myInvitations = meetings.filter(meeting => meeting.initiator_id === user?.id);
 
   if (loading) {
     return <div className="p-4 text-center">미팅 정보를 불러오는 중...</div>;
@@ -116,16 +116,16 @@ const OfflineDatingSection: React.FC<OfflineDatingSectionProps> = ({ title }) =>
               <div key={meeting.id} className="border rounded-lg p-4 bg-yellow-50">
                 <div className="flex justify-between">
                   <div>
-                    <p className="font-medium">{meeting.otherUser?.nickname}님의 초대</p>
+                    <p className="font-medium">{meeting.initiator_profile?.nickname}님의 초대</p>
                     <p className="text-sm text-gray-600">
-                      날짜: {formatDate(meeting.meeting_date)}
+                      날짜: {formatDate(meeting.proposed_date)}
                     </p>
                     <p className="text-sm text-gray-600">
-                      장소: {meeting.location}
+                      장소: {meeting.proposed_location}
                     </p>
-                    {meeting.notes && (
+                    {meeting.message && (
                       <p className="text-sm text-gray-600 mt-1">
-                        메시지: {meeting.notes}
+                        메시지: {meeting.message}
                       </p>
                     )}
                   </div>
@@ -157,21 +157,21 @@ const OfflineDatingSection: React.FC<OfflineDatingSectionProps> = ({ title }) =>
           <div className="space-y-4">
             {confirmedMeetings.map(meeting => (
               <div key={meeting.id} className="border rounded-lg p-4 bg-green-50">
-                <p className="font-medium">{meeting.otherUser?.nickname}님과의 미팅</p>
+                <p className="font-medium">{meeting.initiator_profile?.nickname}님과의 미팅</p>
                 <p className="text-sm text-gray-600">
-                  날짜: {formatDate(meeting.meeting_date)}
+                  날짜: {formatDate(meeting.proposed_date)}
                 </p>
                 <p className="text-sm text-gray-600">
-                  장소: {meeting.location}
+                  장소: {meeting.proposed_location}
                 </p>
-                {meeting.notes && (
+                {meeting.message && (
                   <p className="text-sm text-gray-600 mt-1">
-                    메모: {meeting.notes}
+                    메모: {meeting.message}
                   </p>
                 )}
                 <div className="mt-2">
                   <p className="text-sm">
-                    Instagram: {meeting.otherUser?.instagram_id || '미등록'}
+                    Instagram: {meeting.recipient_profile?.instagram_id || '미등록'}
                   </p>
                 </div>
               </div>
@@ -187,31 +187,31 @@ const OfflineDatingSection: React.FC<OfflineDatingSectionProps> = ({ title }) =>
           <div className="space-y-4">
             {myInvitations.map(meeting => (
               <div key={meeting.id} className="border rounded-lg p-4 bg-blue-50">
-                <p className="font-medium">{meeting.otherUser?.nickname}님에게 보낸 초대</p>
+                <p className="font-medium">{meeting.initiator_profile?.nickname}님에게 보낸 초대</p>
                 <p className="text-sm text-gray-600">
                   상태: {
                     meeting.status === MeetingStatus.PENDING ? '대기 중' :
-                    meeting.status === MeetingStatus.CONFIRMED ? '수락됨' :
+                    meeting.status === MeetingStatus.ACCEPTED ? '수락됨' :
                     meeting.status === MeetingStatus.REJECTED ? '거절됨' :
                     meeting.status === MeetingStatus.CANCELED ? '취소됨' : '완료'
                   }
                 </p>
                 <p className="text-sm text-gray-600">
-                  날짜: {formatDate(meeting.meeting_date)}
+                  날짜: {formatDate(meeting.proposed_date)}
                 </p>
                 <p className="text-sm text-gray-600">
-                  장소: {meeting.location}
+                  장소: {meeting.proposed_location}
                 </p>
-                {meeting.notes && (
+                {meeting.message && (
                   <p className="text-sm text-gray-600 mt-1">
-                    메시지: {meeting.notes}
+                    메시지: {meeting.message}
                   </p>
                 )}
-                {meeting.status === MeetingStatus.CONFIRMED && (
+                {meeting.status === MeetingStatus.ACCEPTED && (
                   <div className="mt-2">
                     <p className="text-sm">
-                      Instagram: {meeting.otherUser?.instagram_id || '미등록'}
-                    </p>
+                      Instagram: {meeting.recipient_profile?.instagram_id || '미등록'}
+                      </p>
                   </div>
                 )}
               </div>
