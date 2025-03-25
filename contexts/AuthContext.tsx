@@ -92,6 +92,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
 
+  // 💡 user는 있는데 profile은 null인 경우 → 자동 재시도
+useEffect(() => {
+  if (user && !profile && !loading) {
+    console.log('user는 있는데 profile이 없어서 다시 fetch 시도함');
+    fetchProfile(user.id);
+  }
+}, [user, profile, loading]);
+
+
   // 프로필 정보 가져오기
   const fetchProfile = async (userId: string): Promise<Profile | null> => {
     try {

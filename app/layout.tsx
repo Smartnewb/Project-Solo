@@ -10,6 +10,7 @@ import { AuthProvider } from '../contexts/AuthContext'
 //   description: '나의 이상형을 찾아서',
 // }
 
+
 export default function RootLayout({
   children,
 }: {
