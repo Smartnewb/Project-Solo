@@ -74,7 +74,7 @@ export default function ActiveUsersCounter() {
         className="registration-count"
       >
         <div className="count-main space-y-2">
-          <h2 className="text-5xl font-black mb-2 whitespace-nowrap">
+          <h2 className="text-4xl font-black mb-2 whitespace-nowrap">
             지금까지{' '}
             <span className="highlight-text number-pulse">
               {isLoading ? '로딩 중...' : displayCount.toLocaleString()}
