@@ -303,7 +303,7 @@ export default function Profile() {
           
           {/* 성격 선택 */}
           <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">성격 (복수 선택 가능)</h2>
+            <h2 className="text-lg font-semibold text-gray-900">성격 (최대 3개 선택)</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {['활발한', '차분한', '다정한', '감성적인', '이성적인', '웃긴', '진지한', 
                 '열정적인', '낙천적인', '솔직한', '섬세한', '긍정적인'].map(personality => (
@@ -325,7 +325,7 @@ export default function Profile() {
           
           {/* 연애 스타일 */}
           <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">연애 스타일 (복수 선택 가능)</h2>
+            <h2 className="text-lg font-semibold text-gray-900">연애 스타일 (최대 2개 선택)</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {['연락 자주하는', '데이트 많이 하는', '취미 공유하는', '선물 좋아하는', 
                 '집순인', '스킨십 많은', '이벤트 챙기는', '돈 잘 쓰는', '아껴쓰는'].map(style => (
@@ -347,7 +347,7 @@ export default function Profile() {
           
           {/* 이상적인 라이프스타일 */}
           <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">이상적인 라이프스타일 (복수 선택 가능)</h2>
+            <h2 className="text-lg font-semibold text-gray-900">이상적인 라이프스타일 (최대 3개 선택)</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {['여행 가능한', '맛집 탐방하는', '운동하는', '영화/넷플 보는', 
                 '게임하는', '문화생활 즐기는', '집에서 쉬는', '야외활동 좋아하는'].map(lifestyle => (
@@ -369,7 +369,7 @@ export default function Profile() {
           
           {/* 관심사 */}
           <div className="bg-white rounded-2xl shadow-sm p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">관심사 (복수 선택 가능)</h2>
+            <h2 className="text-lg font-semibold text-gray-900">관심사 (최대 5개 선택)</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {['음악', '여행', '영화/드라마', '독서', '패션', '요리', 
                 '카페', '운동', '게임', '반려동물', '사진', '미술/그림'].map(interest => (
