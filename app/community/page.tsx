@@ -1110,7 +1110,7 @@ export default function Community() {
         <div className="max-w-lg mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <button 
-              onClick={() => window.location.href = '/home'}
+              onClick={() => router.back()}
               className="p-2 rounded-full hover:bg-gray-100"
               aria-label="뒤로 가기"
             >
