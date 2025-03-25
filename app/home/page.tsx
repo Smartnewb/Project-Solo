@@ -35,6 +35,7 @@ export default function Home() {
   const [notificationMessage, setNotificationMessage] = useState('');
   const [isCopied, setIsCopied] = useState(false);
   const accountNumberRef = useRef<HTMLParagraphElement>(null);
+  const [isMatchingTimeOver, setIsMatchingTimeOver] = useState(false);
 
   // 페이지 이동 함수들
   const handleGoToProfile = () => router.push('/profile');
@@ -71,7 +72,7 @@ export default function Home() {
     setShowRematchModal(true);
   };
   
-  // 리매칭 확인 처리
+  // 리매칭 확인 처리 
   const handleConfirmRematch = async () => {
     try {
       setShowRematchModal(false);
@@ -101,6 +102,11 @@ export default function Home() {
       setNotificationMessage('리매칭 요청 중 오류가 발생했습니다.');
       setShowNotificationModal(true);
     }
+  };
+
+  // 매칭 시간 상태 업데이트 핸들러
+  const handleMatchingTimeUpdate = (isOver: boolean) => {
+    setIsMatchingTimeOver(isOver);
   };
 
   // AuthContext에서 profile 데이터가 변경될 때마다 userName 업데이트
@@ -420,7 +426,7 @@ export default function Home() {
                   <h2 className="text-2xl font-bold text-[#2D3436] tracking-tight">매칭 시작까지</h2>
                 </div>
                 <div className="bg-[#0984E3]/5 rounded-xl p-4">
-                  <MatchingCountdown />
+                  <MatchingCountdown onTimeOver={handleMatchingTimeUpdate} />
                 </div>
               </div>
             </section>
@@ -437,18 +443,22 @@ export default function Home() {
                   <h2 className="text-2xl font-bold text-[#2D3436] tracking-tight">매칭 상태</h2>
                 </div>
                 <div className="bg-[#74B9FF]/5 rounded-xl p-4">
-                  <p className="text-[#636E72] leading-relaxed text-lg">아직 매칭이 시작되지 않았어요.</p>
+                  <p className="text-[#636E72] leading-relaxed text-lg">
+                    {isMatchingTimeOver ? '매칭이 진행 중입니다.' : '매칭 카운트 다운이 지나면 공개됩니다.'}
+                  </p>
                 </div>
-                <button
-                  onClick={handleRematchRequest}
-                  className="btn-secondary w-full py-4 flex items-center justify-center gap-3 bg-[#74B9FF] text-white rounded-xl font-medium transform transition-all duration-200 hover:bg-[#5FA8FF] hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#74B9FF] focus:ring-offset-2"
-                  type="button"
-                >
-                  <span className="text-lg">재매칭 신청하기</span>
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                </button>
+                {isMatchingTimeOver && (  // 매칭 시간이 되었을 때만 버튼 표시
+                  <button
+                    onClick={handleRematchRequest}
+                    className="btn-secondary w-full py-4 flex items-center justify-center gap-3 bg-[#74B9FF] text-white rounded-xl font-medium transform transition-all duration-200 hover:bg-[#5FA8FF] hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#74B9FF] focus:ring-offset-2"
+                    type="button"
+                  >
+                    <span className="text-lg">재매칭 신청하기</span>
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </button>
+                )}
               </div>
             </section>
 

@@ -597,6 +597,25 @@ export default function AdminMatching() {
             점수: bestMatch.score,
             상세점수: bestMatch.details
           });
+
+          // 매칭 결과를 데이터베이스에 저장
+          try {
+            const { error: matchError } = await supabase
+              .from('matches')
+              .insert([{
+                user1_id: bestMatch.male.user_id,  // 남성 user_id
+                user2_id: female.user_id,          // 여성 user_id
+                score: bestMatch.score             // 매칭 점수
+              }]);
+
+            if (matchError) {
+              console.error('매칭 결과 저장 실패:', matchError);
+            } else {
+              console.log('매칭 결과가 데이터베이스에 저장되었습니다.');
+            }
+          } catch (error) {
+            console.error('매칭 결과 저장 중 오류 발생:', error);
+          }
           
           matchResults.push({
             female,

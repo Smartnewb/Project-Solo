@@ -3,7 +3,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ClockIcon } from '@heroicons/react/24/outline';
 
-export default function MatchingCountdown() {
+interface MatchingCountdownProps {
+  onTimeOver: (isOver: boolean) => void;
+}
+
+export default function MatchingCountdown({ onTimeOver }: MatchingCountdownProps) {
   const [timeLeft, setTimeLeft] = useState({
     hours: 0,
     minutes: 0,
@@ -92,6 +96,7 @@ export default function MatchingCountdown() {
         localStorage.removeItem('matchingTime');
         setMatchingTime(null);
         fetchMatchingTime();
+        onTimeOver(true);
         return {
           hours: 0,
           minutes: 0,
@@ -99,6 +104,7 @@ export default function MatchingCountdown() {
         };
       }
 
+      onTimeOver(false);
       const difference = target.getTime() - now.getTime();
       
       return {
@@ -116,7 +122,7 @@ export default function MatchingCountdown() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [matchingTime, fetchMatchingTime]);
+  }, [matchingTime, fetchMatchingTime, onTimeOver]);
 
   if (isLoading && !matchingTime) {
     return (
