@@ -5,6 +5,11 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { redirect } from 'next/navigation';
 
+// 정적 생성에서 동적 렌더링으로 전환
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+export const dynamic = 'force-dynamic';
+
 // 클라이언트 컴포넌트 동적 임포트
 const MatchingResultClient = dynamic(() => import('./MatchingResultClient'), { ssr: false });
 

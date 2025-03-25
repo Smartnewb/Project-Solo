@@ -3,6 +3,9 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { ADMIN_EMAIL } from '@/utils/config';
 
+// 상단에 동적 렌더링 지시어 추가
+export const dynamic = 'force-dynamic';
+
 /**
  * GET handler for retrieving all matches for admin
  * Returns a list of all matched users with their profile information

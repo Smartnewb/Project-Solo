@@ -3,6 +3,9 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 
+// 정적 생성에서 동적 렌더링으로 전환
+export const dynamic = 'force-dynamic';
+
 /**
  * POST handler for processing a rematch request
  * Takes a single user who requested a rematch and finds a new match for them

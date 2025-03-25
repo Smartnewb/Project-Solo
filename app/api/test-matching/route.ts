@@ -1,3 +1,6 @@
+// 상단에 동적 렌더링 지시어 추가
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import { matchUsersByGradeAndPreference } from '@/app/matchingAlgorithm';
 import { Profile } from '@/app/types/matching';

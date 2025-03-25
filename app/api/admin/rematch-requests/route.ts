@@ -2,6 +2,9 @@ import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
+// 정적 생성에서 동적 렌더링으로 전환
+export const dynamic = 'force-dynamic';
+
 /**
  * GET handler to retrieve all rematch requests
  * Returns a list of users who have requested a rematch

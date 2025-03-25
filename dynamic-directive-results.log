@@ -1,0 +1,78 @@
+API 라우트에 동적 렌더링 지시어 추가를 시작합니다...
+처리 중: app/api/matching/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/test-matching/route.ts
+  이미 dynamic 지시어가 있습니다. 건너뜁니다.
+처리 중: app/api/test-connection/route.ts
+  이미 dynamic 지시어가 있습니다. 건너뜁니다.
+처리 중: app/api/init-db/route.ts
+  이미 dynamic 지시어가 있습니다. 건너뜁니다.
+처리 중: app/api/user-preferences/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/admin/matching/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/admin/traffic/route.ts
+  이미 dynamic 지시어가 있습니다. 건너뜁니다.
+처리 중: app/api/admin/signup-control/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/admin/matches/route.ts
+  이미 dynamic 지시어가 있습니다. 건너뜁니다.
+처리 중: app/api/admin/process-rematch/route.ts
+  이미 dynamic 지시어가 있습니다. 건너뜁니다.
+처리 중: app/api/admin/rematch-requests/route.ts
+  이미 dynamic 지시어가 있습니다. 건너뜁니다.
+처리 중: app/api/admin/matching-time/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/admin/create/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/admin/stats/route.ts
+  이미 dynamic 지시어가 있습니다. 건너뜁니다.
+처리 중: app/api/user/[id]/route.ts
+  이미 dynamic 지시어가 있습니다. 건너뜁니다.
+처리 중: app/api/test-schema/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/offline-meetings/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/offline-meetings/respond/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/matchings/route.ts
+  이미 dynamic 지시어가 있습니다. 건너뜁니다.
+처리 중: app/api/matchings/decision/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/profile-debug/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/test-post/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/test-post-direct/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/community/posts/vote/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/community/posts/comments/vote/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/community/posts/comments/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/community/posts/comments/[id]/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/community/posts/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/community/posts/[id]/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/community/daily-questions/response/vote/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/community/daily-questions/response/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/community/test/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/community/auto/daily-questions/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/community/auto/generator/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/community/auto/balance-games/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/community/balance-games/vote/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/notifications/count/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리 중: app/api/notifications/route.ts
+  동적 렌더링 지시어가 추가되었습니다.
+처리가 완료되었습니다.
