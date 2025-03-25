@@ -2,7 +2,7 @@ import React from 'react';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
+import NextDynamic from 'next/dynamic';
 import { redirect } from 'next/navigation';
 
 // 정적 생성에서 동적 렌더링으로 전환
@@ -10,8 +10,45 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 export const dynamic = 'force-dynamic';
 
-// 클라이언트 컴포넌트 동적 임포트
-const MatchingResultClient = dynamic(() => import('./MatchingResultClient'), { ssr: false });
+// 클라이언트 컴포넌트 동적 임포트 (이름 변경)
+const MatchingResultClient = NextDynamic(() => import('./MatchingResultClient'), { ssr: false });
+
+// 매치 사용자 타입 정의
+interface MatchedUser {
+  id: string;
+  user_id: string;
+  nickname: string;
+  age: number;
+  gender: string;
+  department: string;
+  mbti: string;
+  height: number;
+  personalities: string[];
+  dating_styles: string[];
+  interests: string[];
+  avatar_url: string;
+  instagram_id: string;
+  university: string;
+  grade: string;
+  drinking: string;
+  smoking: string;
+  tattoo: string;
+  lifestyles: string[];
+}
+
+// Supabase 쿼리 결과 타입 정의
+interface Matching {
+  id: string;
+  user_id: string;
+  matched_user_id: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  user_decision: boolean | null;
+  score: number;
+  compatibility_reasons: string[];
+  matched_user: MatchedUser | MatchedUser[] | null;
+}
 
 export default async function MatchingResult() {
   const cookieStore = cookies();
@@ -96,39 +133,53 @@ export default async function MatchingResult() {
     console.error('Error fetching matchings:', error);
   }
   
-  // 매칭 데이터 변환
-  const formattedMatchings = (matchings || []).map(matching => ({
-    id: matching.id,
-    user_id: matching.user_id,
-    matched_user_id: matching.matched_user_id,
-    status: matching.status,
-    created_at: matching.created_at,
-    updated_at: matching.updated_at,
-    userDecision: matching.user_decision,
-    score: matching.score,
-    compatibility_reasons: matching.compatibility_reasons,
-    matchedUser: {
-      id: matching.matched_user?.id,
-      user_id: matching.matched_user?.user_id,
-      nickname: matching.matched_user?.nickname,
-      age: matching.matched_user?.age,
-      gender: matching.matched_user?.gender,
-      department: matching.matched_user?.department,
-      mbti: matching.matched_user?.mbti,
-      height: matching.matched_user?.height,
-      personalities: matching.matched_user?.personalities,
-      dating_styles: matching.matched_user?.dating_styles,
-      interests: matching.matched_user?.interests,
-      avatar_url: matching.matched_user?.avatar_url,
-      instagram_id: matching.matched_user?.instagram_id,
-      university: matching.matched_user?.university,
-      grade: matching.matched_user?.grade,
-      drinking: matching.matched_user?.drinking,
-      smoking: matching.matched_user?.smoking,
-      tattoo: matching.matched_user?.tattoo,
-      lifestyles: matching.matched_user?.lifestyles
+  // 매칭 데이터 변환 (타입스크립트 오류 해결)
+  const formattedMatchings = (matchings || []).map((matching: Matching) => {
+    // 타입스크립트 컴파일러가 배열로 인식하는 문제를 해결하기 위한 로직
+    let matchedUser: Record<string, any> = {};
+    
+    // matched_user가 배열인 경우 첫 번째 항목을 사용
+    if (Array.isArray(matching.matched_user) && matching.matched_user.length > 0) {
+      matchedUser = matching.matched_user[0];
+    } 
+    // matched_user가 객체인 경우 그대로 사용
+    else if (matching.matched_user && typeof matching.matched_user === 'object') {
+      matchedUser = matching.matched_user as Record<string, any>;
     }
-  }));
+    
+    return {
+      id: matching.id,
+      user_id: matching.user_id,
+      matched_user_id: matching.matched_user_id,
+      status: matching.status,
+      created_at: matching.created_at,
+      updated_at: matching.updated_at,
+      userDecision: matching.user_decision,
+      score: matching.score,
+      compatibility_reasons: matching.compatibility_reasons || [],
+      matchedUser: {
+        id: matchedUser?.id || '',
+        user_id: matchedUser?.user_id || '',
+        nickname: matchedUser?.nickname || '',
+        age: matchedUser?.age || 0,
+        gender: matchedUser?.gender || '',
+        department: matchedUser?.department || '',
+        mbti: matchedUser?.mbti || '',
+        height: matchedUser?.height || 0,
+        personalities: matchedUser?.personalities || [],
+        dating_styles: matchedUser?.dating_styles || [],
+        interests: matchedUser?.interests || [],
+        avatar_url: matchedUser?.avatar_url || '',
+        instagram_id: matchedUser?.instagram_id || '',
+        university: matchedUser?.university || '',
+        grade: matchedUser?.grade || '',
+        drinking: matchedUser?.drinking || '',
+        smoking: matchedUser?.smoking || '',
+        tattoo: matchedUser?.tattoo || '',
+        lifestyles: matchedUser?.lifestyles || []
+      }
+    };
+  });
   
   return (
     <div className="container mx-auto py-8 px-4">
