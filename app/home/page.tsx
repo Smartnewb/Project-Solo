@@ -15,6 +15,11 @@ import { createClient } from '@/utils/supabase/client';
 import { ADMIN_EMAIL } from '@/utils/config';
 import type { Database } from '../types/database.types';
 
+interface MatchResult {
+  instagram_id: string | null;
+  score: number;
+}
+
 export default function Home() {
   const supabase = createClient();
   const router = useRouter();
@@ -36,6 +41,7 @@ export default function Home() {
   const [isCopied, setIsCopied] = useState(false);
   const accountNumberRef = useRef<HTMLParagraphElement>(null);
   const [isMatchingTimeOver, setIsMatchingTimeOver] = useState(false);
+  const [matchResult, setMatchResult] = useState<MatchResult | null>(null);
 
   // 페이지 이동 함수들
   const handleGoToProfile = () => router.push('/profile');
@@ -107,6 +113,58 @@ export default function Home() {
   // 매칭 시간 상태 업데이트 핸들러
   const handleMatchingTimeUpdate = (isOver: boolean) => {
     setIsMatchingTimeOver(isOver);
+  };
+
+  // 매칭 결과 조회 함수
+  const fetchMatchResult = async () => {
+    if (!user) return;
+
+    try {
+      // 1. matches 테이블에서 현재 사용자의 매칭 정보 조회
+      const { data: matchData, error: matchError } = await supabase
+        .from('matches')
+        .select('user1_id, user2_id, score')
+        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+        .single();
+
+      if (matchError || !matchData) {
+        console.error('매칭 결과 조회 실패:', matchError);
+        return;
+      }
+
+      // 2. 상대방의 user_id 찾기
+      const partnerId = matchData.user1_id === user.id ? matchData.user2_id : matchData.user1_id;
+
+      // 3. 상대방의 프로필에서 instagram_id 조회
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('instagram_id')
+        .eq('user_id', partnerId)
+        .single();
+
+      if (profileError) {
+        console.error('프로필 조회 실패:', profileError);
+        return;
+      }
+
+      setMatchResult({
+        instagram_id: profileData.instagram_id,
+        score: matchData.score
+      });
+    } catch (error) {
+      console.error('매칭 결과 조회 중 오류:', error);
+    }
+  };
+
+  // 인스타 ID 복사 함수
+  const copyInstagramId = async (instagramId: string) => {
+    try {
+      await navigator.clipboard.writeText(instagramId);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch (err) {
+      console.error('복사 실패:', err);
+    }
   };
 
   // AuthContext에서 profile 데이터가 변경될 때마다 userName 업데이트
@@ -225,6 +283,13 @@ export default function Home() {
     // 클린업 함수에서 타임아웃 제거
     return () => clearTimeout(timeoutId);
   }, [router, supabase, user]);
+
+  // 매칭 시간이 되면 결과 조회
+  useEffect(() => {
+    if (isMatchingTimeOver) {
+      fetchMatchResult();
+    }
+  }, [isMatchingTimeOver]);
 
   return (
     <div className="min-h-screen bg-[#F8FAFD] pb-20">
@@ -444,7 +509,26 @@ export default function Home() {
                 </div>
                 <div className="bg-[#74B9FF]/5 rounded-xl p-4">
                   <p className="text-[#636E72] leading-relaxed text-lg">
-                    {isMatchingTimeOver ? '매칭이 진행 중입니다.' : '매칭 카운트 다운이 지나면 공개됩니다.'}
+                    {isMatchingTimeOver ? (
+                      matchResult ? (
+                        <div className="space-y-2">
+                          <p>매칭이 완료되었습니다! 🎉</p>
+                          <button
+                            onClick={() => matchResult.instagram_id && copyInstagramId(matchResult.instagram_id)}
+                            className="text-blue-500 hover:text-blue-700 underline focus:outline-none"
+                          >
+                            {isCopied ? "복사됨!" : `Instagram ID: ${matchResult.instagram_id || '미설정'}`}
+                          </button>
+                          <p className="text-sm text-gray-500">
+                            매칭 점수: {matchResult.score}점
+                          </p>
+                        </div>
+                      ) : (
+                        '매칭에 실패하였습니다.'
+                      )
+                    ) : (
+                      '매칭 카운트 다운이 지나면 공개됩니다.'
+                    )}
                   </p>
                 </div>
                 {isMatchingTimeOver && (  // 매칭 시간이 되었을 때만 버튼 표시
