@@ -295,7 +295,7 @@ export default function Home() {
                 <button
                   onClick={() => {
                     setShowAdditionalInfoModal(false);
-                    router.replace('/profile/additional');
+                    router.replace('/profile');
                   }}
                   className="btn-primary w-full py-4"
                   type="button"
