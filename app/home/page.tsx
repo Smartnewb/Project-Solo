@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import ActiveUsersCounter from '../components/ActiveUsersCounter';
 import MatchingCountdown from '../components/MatchingCountdown';
@@ -9,7 +9,7 @@ import MatchPrediction from '../components/MatchPrediction';
 import DateSpotRecommendation from '../components/DateSpotRecommendation';
 import PopularQuestions from '../components/PopularQuestions';
 import SuccessStories from '../components/SuccessStories';
-import { HomeIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/utils/supabase/client';
 import { ADMIN_EMAIL } from '@/utils/config';
@@ -27,11 +27,81 @@ export default function Home() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showAdditionalInfoModal, setShowAdditionalInfoModal] = useState(false);
+  
+  // 리매칭 관련 상태
+  const [showRematchModal, setShowRematchModal] = useState(false);
+  const [showRematchWarningModal, setShowRematchWarningModal] = useState(false);
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState('');
+  const [isCopied, setIsCopied] = useState(false);
+  const accountNumberRef = useRef<HTMLParagraphElement>(null);
 
   // 페이지 이동 함수들
   const handleGoToProfile = () => router.push('/profile');
   const handleGoToHome = () => router.push('/home');
   const handleGoToSettings = () => router.push('/settings');
+  
+  // 계좌번호 복사 기능
+  const copyAccountNumber = () => {
+    navigator.clipboard.writeText("카카오뱅크 3333-12-3456789")
+      .then(() => {
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+      })
+      .catch(err => {
+        console.error('계좌번호 복사 실패:', err);
+      });
+  };
+  
+  // 리매칭 신청 처리 함수
+  const handleRematchRequest = () => {
+    // 매칭에 필요한 정보가 있는지 확인
+    const requiredFields = ['height', 'personalities', 'dating_styles'];
+    const hasRequiredFields = requiredFields.every(field => 
+      profile && (profile as any)[field] && 
+      (Array.isArray((profile as any)[field]) ? (profile as any)[field].length > 0 : Boolean((profile as any)[field]))
+    );
+    
+    if (!hasRequiredFields) {
+      setShowRematchWarningModal(true);
+      return;
+    }
+    
+    // 리매칭 모달 표시
+    setShowRematchModal(true);
+  };
+  
+  // 리매칭 확인 처리
+  const handleConfirmRematch = async () => {
+    try {
+      setShowRematchModal(false);
+      setNotificationMessage('리매칭 신청이 완료되었습니다. 다음 매칭을 기대해주세요!');
+      setShowNotificationModal(true);
+      
+      // matching_requests 테이블에 레코드 추가
+      const { data, error } = await supabase
+        .from('matching_requests')
+        .insert([
+          { 
+            user_id: user?.id,
+            status: 'pending',
+            preferred_date: new Date().toISOString().split('T')[0],
+            preferred_time: '19:00', // 기본 소개팅 시간
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+        ]);
+      
+      if (error) {
+        console.error('리매칭 요청 DB 저장 오류:', error);
+        throw new Error('리매칭 요청 처리 중 오류가 발생했습니다.');
+      }
+    } catch (error) {
+      console.error('리매칭 요청 오류:', error);
+      setNotificationMessage('리매칭 요청 중 오류가 발생했습니다.');
+      setShowNotificationModal(true);
+    }
+  };
 
   // AuthContext에서 profile 데이터가 변경될 때마다 userName 업데이트
   useEffect(() => {
@@ -370,6 +440,7 @@ export default function Home() {
                   <p className="text-[#636E72] leading-relaxed text-lg">아직 매칭이 시작되지 않았어요.</p>
                 </div>
                 <button
+                  onClick={handleRematchRequest}
                   className="btn-secondary w-full py-4 flex items-center justify-center gap-3 bg-[#74B9FF] text-white rounded-xl font-medium transform transition-all duration-200 hover:bg-[#5FA8FF] hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#74B9FF] focus:ring-offset-2"
                   type="button"
                 >
@@ -447,6 +518,115 @@ export default function Home() {
               </div>
             </nav>
           </main>
+          
+          {/* 리매치 모달 (매칭 결과 페이지와 동일한 스타일) */}
+          {showRematchModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+              <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative">
+                <button
+                  onClick={() => setShowRematchModal(false)}
+                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+                
+                <h3 className="text-xl font-bold mb-4">리매칭 신청</h3>
+                
+                <div className="mb-6">
+                  <p className="mb-3">매칭 결과에 만족하지 않으신가요?</p>
+                  <p className="mb-3">리매칭을 신청하시면 새로운 매칭을 받으실 수 있습니다.</p>
+                  <div className="bg-yellow-50 p-4 rounded-md mb-4">
+                    <p className="font-medium text-yellow-700 mb-2">참가비: 2,000원</p>
+                    <div className="flex items-center">
+                      <p className="text-sm text-gray-700 mr-2">계좌번호: 카카오뱅크 3333-12-3456789</p>
+                      <button
+                        onClick={copyAccountNumber}
+                        className="text-xs bg-gray-200 hover:bg-gray-300 py-1 px-2 rounded"
+                      >
+                        {isCopied ? "복사됨" : "복사"}
+                      </button>
+                    </div>
+                    <p className="text-sm text-gray-700 mt-2">예금주: 킹스 매크로</p>
+                    <p 
+                      ref={accountNumberRef} 
+                      className="absolute opacity-0 pointer-events-none"
+                    >
+                      카카오뱅크 3333-12-3456789
+                    </p>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    * 입금 후 리매칭 신청이 완료됩니다. 매칭 시간에 새로운 매칭 결과를 확인해주세요.
+                  </p>
+                </div>
+                
+                <div className="flex space-x-3">
+                  <button
+                    onClick={handleConfirmRematch}
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded"
+                  >
+                    신청하기
+                  </button>
+                  <button
+                    onClick={() => setShowRematchModal(false)}
+                    className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded"
+                  >
+                    취소
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 알림 모달 */}
+          {showNotificationModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+              <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                <div className="text-center mb-4">
+                  <p className="text-lg">{notificationMessage}</p>
+                </div>
+                <div className="flex justify-center">
+                  <button
+                    onClick={() => setShowNotificationModal(false)}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-6 rounded"
+                  >
+                    확인
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* 프로필 경고 모달 */}
+          {showRematchWarningModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+              <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                <div className="text-center mb-6">
+                  <div className="text-5xl mb-4">⚠️</div>
+                  <h3 className="text-xl font-bold mb-2">프로필 정보를 완성해주세요</h3>
+                  <p className="text-gray-600">
+                    매칭에 필요한 정보가 부족합니다. 프로필을 완성하고 재매칭 신청을 진행해주세요.
+                  </p>
+                </div>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => {
+                      setShowRematchWarningModal(false);
+                      router.push('/profile');
+                    }}
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded"
+                  >
+                    프로필 완성하기
+                  </button>
+                  <button
+                    onClick={() => setShowRematchWarningModal(false)}
+                    className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded"
+                  >
+                    취소
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
