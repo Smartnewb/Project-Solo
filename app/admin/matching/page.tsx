@@ -24,6 +24,7 @@ import {
   Alert,
   AlertTitle
 } from '@mui/material';
+import { createClient } from '@/utils/supabase/client';
 
 // 매칭된 유저 타입 정의
 interface MatchedUser {
@@ -47,6 +48,37 @@ interface MatchData {
   user2: MatchedUser; // 여성
 }
 
+// 매칭 알고리즘에 필요한 인터페이스 추가
+interface Profile {
+  id: string;
+  user_id: string;
+  name: string;
+  gender: string;
+  age: number;
+  department: string;
+  mbti: string;
+  height: number;
+  personalities: string[];
+  dating_styles: string[];
+  smoking: boolean;
+  drinking: boolean;
+  tattoo: boolean;
+}
+
+interface UserPreference {
+  user_id: string;
+  preferred_age_type: string;
+  preferred_height_min: number;
+  preferred_height_max: number;
+  preferred_mbti: string[];
+  disliked_mbti: string[];
+  preferred_personalities: string[];
+  preferred_dating_styles: string[];
+  preferred_smoking: boolean;
+  preferred_drinking: boolean;
+  preferred_tattoo: boolean;
+}
+
 export default function AdminMatching() {
   const [matchingDate, setMatchingDate] = useState('');
   const [savedMatchingTime, setSavedMatchingTime] = useState<string | null>(null);
@@ -59,6 +91,12 @@ export default function AdminMatching() {
     type: 'info',
     content: ''
   });
+  const [matchResults, setMatchResults] = useState<Array<{
+    female: Profile & { preferences: UserPreference };
+    male: Profile;
+    score: number;
+    details: any;
+  }>>([]);
 
   useEffect(() => {
     fetchMatchingTime();
@@ -237,38 +275,359 @@ export default function AdminMatching() {
     }
   };
 
+  const calculateMatchScore = (female: Profile, male: Profile, femalePref: UserPreference) => {
+    // 같은 학과인 경우 매칭 제외
+    if (female.department === male.department) {
+      return { score: 0, details: { 제외사유: '같은 학과' } };
+    }
+
+    let score = 0;
+    const details: any = {};
+
+    // 1. 나이 선호도 점수 (35점)
+    const ageDiff = Math.abs(male.age - female.age);
+    let ageScore = 0;
+    
+    switch (femalePref.preferred_age_type) {
+      case '동갑':
+        ageScore = ageDiff === 0 ? 35 : Math.max(0, 25 - (ageDiff * 5));
+        break;
+      case '연상':
+        ageScore = male.age > female.age ? Math.max(0, 35 - (ageDiff * 3)) : 0;
+        break;
+      case '연하':
+        ageScore = male.age < female.age ? Math.max(0, 35 - (ageDiff * 3)) : 0;
+        break;
+      case '상관없음':
+        ageScore = Math.max(0, 25 - (ageDiff * 2));
+        break;
+    }
+    
+    details.나이_점수 = { 점수: ageScore, 차이: ageDiff, 선호유형: femalePref.preferred_age_type };
+    score += ageScore;
+
+    // 2. 키 선호도 점수 (20점)
+    const heightScore = (male.height >= femalePref.preferred_height_min && 
+                        male.height <= femalePref.preferred_height_max) ? 20 : 0;
+    details.키_점수 = { 
+      점수: heightScore, 
+      남성키: male.height,
+      선호범위: `${femalePref.preferred_height_min}-${femalePref.preferred_height_max}cm`
+    };
+    score += heightScore;
+
+    // 3. MBTI 선호도 점수 (20점)
+    let mbtiScore = 0;
+    if (femalePref.preferred_mbti.includes(male.mbti)) {
+      mbtiScore = 20;
+    } else if (!femalePref.disliked_mbti?.includes(male.mbti)) {
+      mbtiScore = 10;
+    }
+    
+    details.MBTI_점수 = { 
+      점수: mbtiScore, 
+      남성MBTI: male.mbti,
+      선호MBTI: femalePref.preferred_mbti,
+      비선호MBTI: femalePref.disliked_mbti
+    };
+    score += mbtiScore;
+
+    // 4. 선호 성격 매칭 점수 (15점)
+    const matchedPersonalities = male.personalities.filter(p => 
+      femalePref.preferred_personalities.includes(p)
+    );
+    const personalityScore = Math.round((matchedPersonalities.length / femalePref.preferred_personalities.length) * 15);
+    details.성격_점수 = { 
+      점수: personalityScore, 
+      매칭성격: matchedPersonalities,
+      선호성격: femalePref.preferred_personalities
+    };
+    score += personalityScore;
+
+    // 5. 선호 데이트 스타일 매칭 점수 (10점)
+    const matchedDatingStyles = male.dating_styles.filter(s => 
+      femalePref.preferred_dating_styles.includes(s)
+    );
+    const datingStyleScore = Math.round((matchedDatingStyles.length / femalePref.preferred_dating_styles.length) * 10);
+    details.데이트스타일_점수 = { 
+      점수: datingStyleScore, 
+      매칭스타일: matchedDatingStyles,
+      선호스타일: femalePref.preferred_dating_styles
+    };
+    score += datingStyleScore;
+
+    // 6. 흡연/음주/타투 선호도 점수 (총 15점)
+    let lifestyleScore = 0;
+    const lifestyleDetails: any = {};
+
+    // 흡연 (5점)
+    if (male.smoking === femalePref.preferred_smoking) {
+      lifestyleScore += 5;
+      lifestyleDetails.흡연 = '일치';
+    } else {
+      lifestyleDetails.흡연 = '불일치';
+    }
+
+    // 음주 (5점)
+    if (male.drinking === femalePref.preferred_drinking) {
+      lifestyleScore += 5;
+      lifestyleDetails.음주 = '일치';
+    } else {
+      lifestyleDetails.음주 = '불일치';
+    }
+
+    // 타투 (5점)
+    if (male.tattoo === femalePref.preferred_tattoo) {
+      lifestyleScore += 5;
+      lifestyleDetails.타투 = '일치';
+    } else {
+      lifestyleDetails.타투 = '불일치';
+    }
+
+    details.생활습관_점수 = {
+      점수: lifestyleScore,
+      상세: lifestyleDetails
+    };
+    score += lifestyleScore;
+
+    details.총점 = Math.min(100, score);
+    return { score: Math.min(100, score), details };
+  };
+
+  const hasRequiredData = (profile: Profile, preferences: UserPreference): boolean => {
+    // 프로필 필수 데이터 체크
+    const validProfile = !!(
+      profile?.name &&
+      profile?.age &&
+      profile?.department &&
+      profile?.mbti &&
+      profile?.height &&
+      Array.isArray(profile?.personalities) && profile.personalities.length > 0 &&
+      Array.isArray(profile?.dating_styles) && profile.dating_styles.length > 0
+    );
+
+    // 선호도 필수 데이터 체크
+    const validPreferences = !!(
+      preferences?.preferred_age_type &&
+      preferences?.preferred_height_min &&
+      preferences?.preferred_height_max &&
+      Array.isArray(preferences?.preferred_mbti) && preferences.preferred_mbti.length > 0 &&
+      Array.isArray(preferences?.preferred_personalities) && preferences.preferred_personalities.length > 0 &&
+      Array.isArray(preferences?.preferred_dating_styles) && preferences.preferred_dating_styles.length > 0
+    );
+
+    return validProfile && validPreferences;
+  };
+
   const startMatching = async () => {
     try {
       setIsMatchingLoading(true);
-      console.log('매칭 프로세스 시작');
+      console.log('=== 매칭 프로세스 시작 ===');
       
-      const response = await fetch('/api/admin/matching', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const supabase = createClient();
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `API 응답 오류: ${response.status}`);
+      // 1. 여성 프로필 데이터 가져오기 - 테스트 코드와 동일한 조건으로 수정
+      console.log('1. 여성 프로필 데이터 조회 중...');
+      const { data: femaleProfiles, error: femaleError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'user')
+        .eq('gender', 'female')
+        .not('name', 'is', null)
+        .not('age', 'is', null)
+        .not('department', 'is', null)
+        .not('mbti', 'is', null)
+        .not('height', 'is', null)
+        .not('personalities', 'is', null)
+        .not('dating_styles', 'is', null);
+
+      if (femaleError) {
+        console.error('여성 프로필 조회 실패:', femaleError);
+        throw femaleError;
       }
 
-      const data = await response.json();
-      console.log('매칭 결과:', data);
+      console.log(`초기 여성 프로필 수: ${femaleProfiles?.length || 0}명`);
 
+      // null이나 빈 배열 값을 가진 프로필 필터링 - 테스트 코드와 동일하게 수정
+      const validFemaleProfiles = femaleProfiles?.filter(profile => 
+        profile.name?.trim() &&
+        profile.age > 0 &&
+        profile.department?.trim() &&
+        profile.mbti?.trim() &&
+        profile.height > 0 &&
+        Array.isArray(profile.personalities) && profile.personalities.length > 0 &&
+        Array.isArray(profile.dating_styles) && profile.dating_styles.length > 0
+      ) || [];
+
+      console.log(`유효한 여성 프로필 수: ${validFemaleProfiles.length}명`);
+
+      if (validFemaleProfiles.length === 0) {
+        throw new Error('매칭 가능한 여성 프로필이 없습니다.');
+      }
+
+      // 2. 여성 선호도 데이터 가져오기
+      console.log('2. 여성 선호도 데이터 조회 중...');
+      const femaleUserIds = validFemaleProfiles.map(p => p.user_id);
+      const { data: femalePreferences, error: prefError } = await supabase
+        .from('user_preferences')
+        .select('*')
+        .in('user_id', femaleUserIds)
+        .not('preferred_age_type', 'is', null)
+        .not('preferred_height_min', 'is', null)
+        .not('preferred_height_max', 'is', null)
+        .not('preferred_mbti', 'is', null)
+        .not('preferred_personalities', 'is', null)
+        .not('preferred_dating_styles', 'is', null);
+
+      if (prefError) {
+        console.error('여성 선호도 데이터 조회 실패:', prefError);
+        throw prefError;
+      }
+
+      // 3. 남성 프로필 데이터 가져오기
+      console.log('3. 남성 프로필 데이터 조회 중...');
+      const { data: maleProfiles, error: maleError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'user')
+        .eq('gender', 'male')
+        .not('name', 'is', null)
+        .not('age', 'is', null)
+        .not('department', 'is', null)
+        .not('mbti', 'is', null)
+        .not('height', 'is', null)
+        .not('personalities', 'is', null)
+        .not('dating_styles', 'is', null);
+
+      if (maleError) {
+        console.error('남성 프로필 조회 실패:', maleError);
+        throw maleError;
+      }
+
+      // null이나 빈 배열 값을 가진 남성 프로필 필터링
+      const validMales = maleProfiles?.filter(male => 
+        male.name?.trim() &&
+        male.age > 0 &&
+        male.department?.trim() &&
+        male.mbti?.trim() &&
+        male.height > 0 &&
+        Array.isArray(male.personalities) && male.personalities.length > 0 &&
+        Array.isArray(male.dating_styles) && male.dating_styles.length > 0
+      ) || [];
+
+      console.log('\n=== 데이터 로드 상태 ===');
+      console.log(`유효한 여성 프로필 수: ${validFemaleProfiles.length}명`);
+      console.log(`여성 선호도 데이터 수: ${femalePreferences?.length || 0}명`);
+      console.log(`유효한 남성 프로필 수: ${validMales.length}명`);
+
+      // 프로필과 선호도 데이터 매칭
+      const validFemales = validFemaleProfiles
+        .map(profile => {
+          const preferences = femalePreferences?.find(pref => pref.user_id === profile.user_id);
+          if (preferences && hasRequiredData(profile, preferences)) {
+            return { ...profile, preferences };
+          }
+          console.log('선호도 데이터 없는 여성:', profile.name);
+          return null;
+        })
+        .filter((female): female is (typeof female & { preferences: UserPreference }) => 
+          female !== null
+        );
+
+      // 매칭 결과를 저장할 배열과 Set
+      const matchResults: any[] = [];
+      const matchedUsers = new Set<string>();
+
+      // 매칭 로직 실행
+      console.log('5. 매칭 로직 실행 중...');
+      for (const female of validFemales) {
+        if (matchedUsers.has(female.user_id)) continue;
+
+        const availableMales = validMales.filter(male => !matchedUsers.has(male.user_id));
+        
+        console.log(`\n👩 ${female.name}님의 매칭 시작`);
+        console.log(`매칭 가능한 남성 수: ${availableMales.length}명`);
+
+        if (availableMales.length === 0) {
+          console.log('매칭 가능한 남성이 없습니다.');
+          continue;
+        }
+
+        // 각 남성과의 매칭 점수 계산 및 로그 출력
+        console.log('\n=== 매칭 점수 계산 결과 ===');
+        const matches = availableMales
+          .map(male => {
+            const { score, details } = calculateMatchScore(female, male, female.preferences);
+            console.log(`\n👨 ${male.name}님과의 매칭 점수:`, {
+              점수: score,
+              나이: male.age,
+              학과: male.department,
+              MBTI: male.mbti,
+              키: male.height,
+              상세점수: details
+            });
+            return { male, score, details };
+          })
+          .sort((a, b) => b.score - a.score);
+
+        // 최고 점수 매칭 결과 출력
+        if (matches.length > 0) {
+          console.log('\n=== 최고 점수 매칭 ===');
+          console.log(`1위: ${matches[0].male.name} (${matches[0].score}점)`);
+          if (matches[1]) console.log(`2위: ${matches[1].male.name} (${matches[1].score}점)`);
+          if (matches[2]) console.log(`3위: ${matches[2].male.name} (${matches[2].score}점)`);
+        }
+
+        if (matches.length > 0 && matches[0].score > 0) {
+          const bestMatch = matches[0];
+          console.log(`\n✅ 매칭 성사: ${female.name} ↔ ${bestMatch.male.name}`);
+          console.log('매칭 상세 정보:', {
+            여성: {
+              이름: female.name,
+              나이: female.age,
+              학과: female.department,
+              MBTI: female.mbti
+            },
+            남성: {
+              이름: bestMatch.male.name,
+              나이: bestMatch.male.age,
+              학과: bestMatch.male.department,
+              MBTI: bestMatch.male.mbti
+            },
+            점수: bestMatch.score,
+            상세점수: bestMatch.details
+          });
+          
+          matchResults.push({
+            female,
+            male: bestMatch.male,
+            score: bestMatch.score,
+            details: bestMatch.details
+          });
+
+          matchedUsers.add(female.user_id);
+          matchedUsers.add(bestMatch.male.user_id);
+        } else {
+          console.log(`❌ ${female.name}님과 매칭 가능한 남성이 없습니다. (모든 점수 0점)`);
+        }
+      }
+
+      console.log('\n=== 최종 매칭 결과 ===');
+      console.log(`총 매칭 성사 건수: ${matchResults.length}`);
+      console.log(`매칭된 사용자 수: ${matchedUsers.size}`);
+
+      // 매칭 결과 저장
+      setMatchResults(matchResults);
       setMessage({
         type: 'success',
-        content: `매칭이 성공적으로 완료되었습니다. ${data.matchedCount || 0}쌍의 매칭이 생성되었습니다.`
+        content: `매칭이 완료되었습니다. 총 ${matchResults.length}쌍이 매칭되었습니다.`
       });
-      
-      // 매칭 후 목록 새로고침
-      fetchMatchedUsers();
+
     } catch (error) {
-      console.error('매칭 중 오류 발생:', error);
+      console.error('매칭 프로세스 오류:', error);
       setMessage({
         type: 'error',
-        content: error instanceof Error ? error.message : '매칭에 실패했습니다.'
+        content: error instanceof Error ? error.message : '매칭 중 오류가 발생했습니다.'
       });
     } finally {
       setIsMatchingLoading(false);
@@ -529,6 +888,69 @@ export default function AdminMatching() {
           )}
         </div>
       </div>
+
+      {/* 매칭 결과 테이블 */}
+      <Card>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            매칭된 유저 목록
+          </Typography>
+          {matchResults.length > 0 ? (
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>여성</TableCell>
+                    <TableCell>남성</TableCell>
+                    <TableCell>매칭 점수</TableCell>
+                    <TableCell>상세 정보</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {matchResults.map((match, index) => (
+                    <TableRow key={index}>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {match.female.name} ({match.female.age}세)<br/>
+                          {match.female.department}<br/>
+                          {match.female.mbti}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {match.male.name} ({match.male.age}세)<br/>
+                          {match.male.department}<br/>
+                          {match.male.mbti}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip 
+                          label={`${match.score}점`} 
+                          color={match.score >= 80 ? "success" : 
+                                 match.score >= 60 ? "primary" : 
+                                 "default"}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" component="pre" style={{whiteSpace: 'pre-wrap'}}>
+                          {Object.entries(match.details)
+                            .filter(([key]) => key !== '총점')
+                            .map(([key, value]) => `${key}: ${JSON.stringify(value, null, 2)}`)
+                            .join('\n')}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
+            <Typography color="textSecondary" align="center">
+              매칭된 유저가 없습니다.
+            </Typography>
+          )}
+        </CardContent>
+      </Card>
 
       {/* 메시지 표시 */}
       {message.content && (
