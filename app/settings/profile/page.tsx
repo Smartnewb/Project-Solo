@@ -383,7 +383,7 @@ export default function ProfilePage() {
             </button>
             
             <button
-              onClick={() => router.push('/settings/profile/edit')}
+              onClick={() => router.push('/profile')}
               className="w-full py-3 px-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all"
             >
               프로필 수정하기
