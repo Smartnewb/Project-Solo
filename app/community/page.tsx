@@ -374,7 +374,18 @@ export default function Community() {
       }
     };
     
+    // 5초 타임아웃 설정 - 브라우저를 나갔다 들어왔을 때 무한 로딩 방지
+    const timeoutId = setTimeout(() => {
+      if (isLoading) {
+        console.log('타임아웃으로 인한 로딩 상태 해제');
+        setIsLoading(false);
+      }
+    }, 5000);
+    
     initializeData();
+    
+    // 클린업 함수에서 타임아웃 제거
+    return () => clearTimeout(timeoutId);
   }, [user]);
 
   // 게시물이 변경될 때마다 인기 게시물 업데이트

@@ -252,16 +252,31 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
       if (!currentMatching) {
         throw new Error('매칭 정보를 찾을 수 없습니다.');
       }
+
+      // UUID 생성 함수
+      const generateUUID = () => {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
+      };
       
-      // 커뮤니티에 피드백 게시물 생성
+      // 현재 시간
+      const now = new Date().toISOString();
+      const postId = generateUUID();
+      
+      // 커뮤니티에 피드백 게시물 생성 - 'posts' 테이블 사용
       const { data, error } = await supabase
-        .from('community_posts')
+        .from('posts')
         .insert([
           {
+            user_id: postId,
             author_id: userId,
             content: `[매칭 피드백] ${feedbackText}`,
             nickname: username || '익명 사용자',
             emoji: randomEmoji,
+            created_at: now,
+            updated_at: now,
             likes: [],
             reports: [],
             isEdited: false,

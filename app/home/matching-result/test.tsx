@@ -105,6 +105,48 @@ export default function TestMatchingResult() {
         setShowNotificationModal(true);
         setIsSubmittingFeedback(false);
       }, 1000);
+      
+      // 실제 구현 시에는 아래와 같이 작성됨:
+      /*
+      const supabase = createClient();
+      
+      // UUID 생성 함수
+      const generateUUID = () => {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+          const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
+      };
+      
+      // 현재 시간
+      const now = new Date().toISOString();
+      const postId = generateUUID();
+      
+      // 커뮤니티에 피드백 게시물 생성 - 'posts' 테이블 사용
+      const { data, error } = await supabase
+        .from('posts')
+        .insert([
+          {
+            user_id: postId,
+            author_id: 'test-user-id',
+            content: `[매칭 피드백] ${feedbackText}`,
+            nickname: '테스트 사용자',
+            emoji: '😊',
+            created_at: now,
+            updated_at: now,
+            likes: [],
+            reports: [],
+            isEdited: false,
+            isdeleted: false,
+            is_matching_feedback: true,
+            matching_score: matchingData.score,
+            matching_reasons: matchingData.compatibility_reasons
+          }
+        ]);
+      
+      if (error) throw error;
+      */
+      
     } catch (err) {
       console.error('피드백 제출 중 오류 발생:', err);
       setNotificationMessage('피드백 제출 중 오류가 발생했습니다.');

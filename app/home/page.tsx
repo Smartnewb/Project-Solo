@@ -134,9 +134,20 @@ export default function Home() {
       }
     };
 
+    // 5초 타임아웃 설정 - 브라우저를 나갔다 들어왔을 때 무한 로딩 방지
+    const timeoutId = setTimeout(() => {
+      if (isLoading) {
+        console.log('타임아웃으로 인한 로딩 상태 해제');
+        setIsLoading(false);
+      }
+    }, 5000);
+
     // 상태 초기화
     setIsLoading(true);
     checkAuthAndProfile();
+    
+    // 클린업 함수에서 타임아웃 제거
+    return () => clearTimeout(timeoutId);
   }, [router, supabase, user]);
 
   return (

@@ -25,7 +25,7 @@ export default function Login() {
         console.log('세션 확인 타임아웃, 수동으로 세션 확인 완료 처리');
         setSessionChecked(true);
       }
-    }, 3000); // 3초 타임아웃
+    }, 3000);
 
     const checkSession = async () => {
       try {
