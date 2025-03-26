@@ -531,7 +531,7 @@ export default function IdealType() {
           {/* 성격 */}
           <div className={`bg-white rounded-2xl shadow-sm p-6 space-y-4 ${errors.personalities ? 'ring-2 ring-red-500' : ''}`}>
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">3. 이상형의 성격 (최대 3개)</h2>
+              <h2 className="text-lg font-semibold text-gray-900">3. 이상형의 성격 (최대 4개)</h2>
               {errors.personalities && (
                 <span className="text-sm text-red-500">1개 이상 선택해주세요</span>
               )}
@@ -541,12 +541,12 @@ export default function IdealType() {
                 <button
                   key={option}
                   type="button"
-                  onClick={() => toggleSelection('personalities', option, 3)}
+                  onClick={() => toggleSelection('personalities', option, 5)}
                   className={getButtonClassName(
                     formData.personalities.includes(option),
-                    formData.personalities.length >= 3 && !formData.personalities.includes(option)
+                    formData.personalities.length >= 5 && !formData.personalities.includes(option)
                   )}
-                  disabled={formData.personalities.length >= 3 && !formData.personalities.includes(option)}
+                  disabled={formData.personalities.length >= 5 && !formData.personalities.includes(option)}
                 >
                   {option}
                 </button>
@@ -567,12 +567,12 @@ export default function IdealType() {
                 <button
                   key={option}
                   type="button"
-                  onClick={() => toggleSelection('datingStyles', option, 2)}
+                  onClick={() => toggleSelection('datingStyles', option, 3)}
                   className={getButtonClassName(
                     formData.datingStyles.includes(option),
-                    formData.datingStyles.length >= 2 && !formData.datingStyles.includes(option)
+                    formData.datingStyles.length >= 3 && !formData.datingStyles.includes(option)
                   )}
-                  disabled={formData.datingStyles.length >= 2 && !formData.datingStyles.includes(option)}
+                  disabled={formData.datingStyles.length >= 3 && !formData.datingStyles.includes(option)}
                 >
                   {option}
                 </button>
@@ -583,7 +583,7 @@ export default function IdealType() {
           {/* 라이프스타일 */}
           <div className={`bg-white rounded-2xl shadow-sm p-6 space-y-4 ${errors.lifestyles ? 'ring-2 ring-red-500' : ''}`}>
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">5. 이상형의 라이프스타일 (최대 3개)</h2>
+              <h2 className="text-lg font-semibold text-gray-900">5. 이상형의 라이프스타일 (최대 2개)</h2>
               {errors.lifestyles && (
                 <span className="text-sm text-red-500">1개 이상 선택해주세요</span>
               )}
