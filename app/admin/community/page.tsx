@@ -9,7 +9,7 @@ import { HomeIcon, ChatBubbleLeftRightIcon, Cog6ToothIcon } from '@heroicons/rea
 import { ADMIN_EMAIL } from '@/utils/config';
 
 interface Post {
-  userId: string;
+  user_id: string;
   author_id: string;
   content: string;
   created_at: string;
@@ -23,7 +23,7 @@ interface Post {
   studentid: string;
   emoji: string;
   comments: Comment[];
-  name?: string;
+  username?: string;
 }
 
 interface Comment {
@@ -119,9 +119,35 @@ export default function AdminCommunity() {
       // 기본 쿼리 설정
       let query = supabase
         .from('posts')
-        .select('*, comments(*), profiles!posts_author_id_fkey(name)')
+        .select('*, comments(*)')
         .order('created_at', { ascending: false });
+      
 
+        // 1. 게시글 데이터 가져오기
+        const { data: postsData, error: postsError } = await supabase
+          .from('posts')
+          .select('*')
+          .order('created_at', { ascending: false });
+    
+        if (postsError) {
+          console.error('게시글 조회 에러:', postsError);
+          throw postsError;
+        }
+    
+        // 2. 프로필 데이터 가져오기
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('user_id, name');
+    
+        if (profilesError) {
+          console.error('프로필 조회 에러:', profilesError);
+          throw profilesError;
+        }
+    
+        // 3. 프로필 데이터를 Map으로 변환하여 빠른 검색 가능하게 함
+        const profileMap = new Map(
+          profilesData.map(profile => [profile.user_id, profile])
+        );
       // 필터 적용
       if (filterType === 'reported') {
         try {
@@ -151,10 +177,11 @@ export default function AdminCommunity() {
             // 댓글 작성자 정보 가져오기 대신 이 시점에 작성자 이름 설정
             return {
               ...post,
-              name: post.profiles?.name || post.nickname || '이름 없음'
+              username: profileMap.get(post.author_id)?.name || '알 수 없음'
             };
           });
-          
+
+          console.log('processedPosts',processedPosts);
           setPosts(processedPosts);
           
           // 댓글 작성자 정보 가져오기
@@ -197,7 +224,7 @@ export default function AdminCommunity() {
       const processedPosts = data?.map(post => {
         return {
           ...post,
-          name: post.profiles?.name || post.nickname || '이름 없음'
+          username: profileMap.get(post.author_id)?.name || '알 수 없음'
         };
       }) || [];
       
@@ -901,7 +928,7 @@ export default function AdminCommunity() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {posts.map((post, index) => {
                   // 각 게시글마다 고유 ID 생성
-                  const uniqueId = `${post.userId}-${index}`;
+                  const uniqueId = `${post.user_id}-${index}`;
                   const reportCount = getReportCount(post.reports);
                   
                   return (
@@ -915,8 +942,8 @@ export default function AdminCommunity() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="ml-0">
-                              <div className="text-sm font-medium text-gray-900">{post.name || post.nickname}</div>
-                              <div className="text-sm text-gray-500">{post.nickname} ({post.studentid})</div>
+                              <div className="text-sm font-medium text-gray-900">{post.nickname}</div>
+                              <div className="text-sm text-gray-500">{post.username}</div>
                             </div>
                           </div>
                         </td>
@@ -924,7 +951,7 @@ export default function AdminCommunity() {
                           <div className="text-sm text-gray-900 max-w-md break-words">{post.content}</div>
                           {post.comments && post.comments.length > 0 && (
                             <button 
-                              onClick={() => toggleComments(post.userId, index)}
+                              onClick={() => toggleComments(post.user_id, index)}
                               className="mt-2 text-xs text-blue-600 hover:text-blue-800 flex items-center"
                             >
                               <svg 
@@ -970,7 +997,7 @@ export default function AdminCommunity() {
                           <div className="flex flex-col space-y-2">
                             {post.isdeleted || post.isBlinded ? (
                               <button
-                                onClick={() => handleRestoreContent('post', post.userId)}
+                                onClick={() => handleRestoreContent('post', post.user_id)}
                                 className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors duration-200 text-xs flex items-center justify-center"
                               >
                                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -981,7 +1008,7 @@ export default function AdminCommunity() {
                             ) : (
                               <>
                                 <button
-                                  onClick={() => handleBlindPost(post.userId)}
+                                  onClick={() => handleBlindPost(post.user_id)}
                                   className="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors duration-200 text-xs flex items-center justify-center"
                                 >
                                   <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -990,7 +1017,7 @@ export default function AdminCommunity() {
                                   블라인드
                                 </button>
                                 <button
-                                  onClick={() => handleDeletePost(post.userId)}
+                                  onClick={() => handleDeletePost(post.user_id)}
                                   className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors duration-200 text-xs flex items-center justify-center"
                                 >
                                   <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1001,7 +1028,7 @@ export default function AdminCommunity() {
                               </>
                             )}
                             <button 
-                              onClick={() => toggleComments(post.userId, index)}
+                              onClick={() => toggleComments(post.user_id, index)}
                               className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors duration-200 text-xs flex items-center justify-center"
                             >
                               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
