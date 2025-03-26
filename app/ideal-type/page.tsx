@@ -531,7 +531,7 @@ export default function IdealType() {
           {/* 성격 */}
           <div className={`bg-white rounded-2xl shadow-sm p-6 space-y-4 ${errors.personalities ? 'ring-2 ring-red-500' : ''}`}>
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">3. 이상형의 성격 (최대 4개)</h2>
+              <h2 className="text-lg font-semibold text-gray-900">3. 이상형의 성격 (최대 5개)</h2>
               {errors.personalities && (
                 <span className="text-sm text-red-500">1개 이상 선택해주세요</span>
               )}
@@ -557,7 +557,7 @@ export default function IdealType() {
           {/* 연애 스타일 */}
           <div className={`bg-white rounded-2xl shadow-sm p-6 space-y-4 ${errors.datingStyles ? 'ring-2 ring-red-500' : ''}`}>
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">4. 이상형의 연애 스타일 (최대 2개)</h2>
+              <h2 className="text-lg font-semibold text-gray-900">4. 이상형의 연애 스타일 (최대 3개)</h2>
               {errors.datingStyles && (
                 <span className="text-sm text-red-500">1개 이상 선택해주세요</span>
               )}
@@ -583,7 +583,7 @@ export default function IdealType() {
           {/* 라이프스타일 */}
           <div className={`bg-white rounded-2xl shadow-sm p-6 space-y-4 ${errors.lifestyles ? 'ring-2 ring-red-500' : ''}`}>
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">5. 이상형의 라이프스타일 (최대 2개)</h2>
+              <h2 className="text-lg font-semibold text-gray-900">5. 이상형의 라이프스타일 (최대 3개)</h2>
               {errors.lifestyles && (
                 <span className="text-sm text-red-500">1개 이상 선택해주세요</span>
               )}
