@@ -1222,9 +1222,33 @@ export default function Community() {
                       <p className="text-xs text-gray-500">{formatTime(post.created_at)}</p>
                     </div>
                   </div>
-                  
-                  {/* 더보기 메뉴 */}
-                  {/* ... existing code ... */}
+                  <div className="flex items-center gap-2">
+
+                    {post.isEdited && <span className="text-sm text-gray-500">(수정됨)</span>}
+                    {post.author_id === userInfo.id && !post.isdeleted ? (
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => handleEdit(post)}
+                          className="text-sm text-blue-500 hover:text-blue-600"
+                        >
+                          수정
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(post.user_id)}
+                          className="text-sm text-red-500 hover:text-red-600"
+                        >
+                          삭제
+                        </button>
+                      </div>
+                    ) : !post.isdeleted && user && post.user_id !== user.id && (
+                      <button
+                        onClick={() => handleOpenReport('post', post.user_id)}
+                        className="text-sm text-gray-500 hover:text-gray-600"
+                      >
+                        신고
+                      </button>
+                    )}
+                  </div>
                 </div>
                 
                 {/* 게시물 내용 */}
@@ -1276,16 +1300,66 @@ export default function Community() {
                     </div>
                   )}
                   
-                  {post.isEdited && !editingPost && (
-                    <p className="text-xs text-gray-500 mt-1">(수정됨)</p>
-                  )}
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={() => handleLike(post.user_id)}
+                      className={`flex items-center gap-1 ${
+                        post.likes?.includes(userInfo.id)
+                          ? 'text-red-500'
+                          : 'text-gray-500'
+                      }`}
+                    >
+                      <HeartIcon className="w-5 h-5" />
+                      <span>{post.likes?.length || 0}</span>
+                    </button>
+                    <button 
+                      onClick={() => setShowCommentInput(showCommentInput === post.user_id ? null : post.user_id)}
+                      className="flex items-center gap-1 text-gray-500"
+                    >
+                      <ChatBubbleOvalLeftIcon className="w-5 h-5" />
+                      <span>{post.comments?.length || 0}</span>
+                    </button>
+                  </div>
                 </div>
-                
-                {/* 게시물 하단 액션 버튼 */}
-                {/* ... existing code ... */}
-                
-                {/* 댓글 영역 */}
-                {/* ... existing code ... */}
+
+                {/* 댓글 입력창 */}
+                {!post.isdeleted && showCommentInput === post.user_id && (
+                  <div className="mt-4 space-y-4 border-t pt-4">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newComment}
+                        onChange={(e) => {
+                          // 디바운싱 적용: 타이핑마다 API 요청 방지
+                          const newValue = e.target.value;
+                          setNewComment(newValue); // 화면 업데이트는 즉시 적용
+                          
+                          // 기존 타이머 취소
+                          if (debounceTimerRef.current) {
+                            clearTimeout(debounceTimerRef.current);
+                          }
+                          
+                          // 새 타이머 설정 (300ms 디바운스)
+                          debounceTimerRef.current = setTimeout(() => {
+                            // 디바운스된 작업 처리
+                            console.log('디바운스된 댓글 입력:', newValue.length, '글자');
+                          }, 300);
+                        }}
+                        placeholder="댓글을 입력하세요"
+                        className="input-field flex-1"
+                      />
+                      <button
+                        onClick={() => handleAddComment(post.user_id)}
+                        className="btn-primary px-4"
+                      >
+                        작성
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* 댓글 목록 */}
+                {!post.isdeleted && renderComments(post, showAllComments === post.user_id)}
               </div>
             ))
           ) : (
