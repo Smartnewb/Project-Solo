@@ -34,8 +34,8 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // 비로그인 유저가 접근 가능한 경로
-  const publicPaths = ['/', '/signup'];
-  const isPublicPath = publicPaths.some((path) => pathname === path);
+  const publicPaths = ['/', '/signup', '/api/admin/signup-control'];
+  const isPublicPath = publicPaths.some((path) => pathname === path || pathname.startsWith('/api/'));
 
   // 관리자 전용 경로
   const isAdminPath = pathname.startsWith('/admin');

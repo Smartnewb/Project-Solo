@@ -1,16 +1,14 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { ADMIN_EMAIL } from '@/utils/config';
 
 export async function POST(request: Request) {
   try {
     console.log('회원가입 상태 설정 요청 시작');
     const { isSignupEnabled } = await request.json();
-    console.log('요청 데이터:', { isSignupEnabled });
     
     const cookieStore = cookies();
-    console.log('쿠키 가져오기 성공');
-    
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -36,21 +34,12 @@ export async function POST(request: Request) {
     
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
-    if (sessionError) {
-      console.error('세션 조회 오류:', sessionError);
-      return NextResponse.json({ error: '인증 세션 오류가 발생했습니다.' }, { status: 401 });
-    }
-    
-    if (!session || !session.user) {
-      console.warn('세션 없음 - 인증되지 않은 요청');
+    if (sessionError || !session?.user) {
       return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
     }
     
-    console.log('사용자 이메일:', session.user.email);
-    const isAdmin = process.env.NODE_ENV === 'development' || session.user.email === 'notify@smartnewb.com';
-    
-    if (!isAdmin) {
-      console.warn('관리자 아님:', session.user.email);
+    // ADMIN_EMAIL로 관리자 권한 확인
+    if (session.user.email !== ADMIN_EMAIL) {
       return NextResponse.json({ error: '관리자 권한이 없습니다.' }, { status: 403 });
     }
 
@@ -70,7 +59,6 @@ export async function POST(request: Request) {
       }, { status: 500 });
     }
 
-    console.log('회원가입 상태 업데이트 성공:', isSignupEnabled);
     return NextResponse.json({ success: true, isSignupEnabled });
   } catch (error) {
     console.error('회원가입 상태 설정 오류:', error);
@@ -83,7 +71,6 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
-    console.log('회원가입 상태 조회 요청 시작');
     const cookieStore = cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

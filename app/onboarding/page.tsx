@@ -525,7 +525,7 @@ export default function Onboarding() {
                     className="input-field w-full"
                   />
                   <p className="text-sm text-gray-500 mt-1">
-                    프로필 사진을 등록하면 매칭 확률이 높아집니다!
+                    당신을 잘 나타낼 수 있는 사진을 넣어주세요!
                   </p>
                 </div>
               </div>
