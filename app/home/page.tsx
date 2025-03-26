@@ -13,6 +13,7 @@ import { HomeIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/utils/supabase/client';
 import { ADMIN_EMAIL } from '@/utils/config';
+import type { Profile } from '@/contexts/AuthContext';
 import type { Database } from '../types/database.types';
 
 interface MatchResult {
@@ -23,15 +24,13 @@ interface MatchResult {
 export default function Home() {
   const supabase = createClient();
   const router = useRouter();
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile } = useAuth();
 
-  const [hasProfile, setHasProfile] = useState(false);
-  const [hasIdealType, setHasIdealType] = useState(false);
-  const [userName, setUserName] = useState('게스트');
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showAdditionalInfoModal, setShowAdditionalInfoModal] = useState(false);
+  const [hasUserPreferences, setHasUserPreferences] = useState(false);
   
   // 리매칭 관련 상태
   const [showRematchModal, setShowRematchModal] = useState(false);
@@ -42,6 +41,27 @@ export default function Home() {
   const accountNumberRef = useRef<HTMLParagraphElement>(null);
   const [isMatchingTimeOver, setIsMatchingTimeOver] = useState(false);
   const [matchResult, setMatchResult] = useState<MatchResult | null>(null);
+
+  // 사용자 선호도 정보 조회
+  const checkUserPreferences = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_preferences')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (error) {
+        console.error('선호도 정보 조회 오류:', error);
+        return false;
+      }
+
+      return !!data;
+    } catch (error) {
+      console.error('선호도 정보 확인 중 오류:', error);
+      return false;
+    }
+  };
 
   // 페이지 이동 함수들
   const handleGoToProfile = () => router.push('/profile');
@@ -62,19 +82,19 @@ export default function Home() {
   
   // 리매칭 신청 처리 함수
   const handleRematchRequest = () => {
-    // 매칭에 필요한 정보가 있는지 확인
-    const requiredFields = ['height', 'personalities', 'dating_styles'];
-    const hasRequiredFields = requiredFields.every(field => 
-      profile && (profile as any)[field] && 
-      (Array.isArray((profile as any)[field]) ? (profile as any)[field].length > 0 : Boolean((profile as any)[field]))
-    );
+    if (!profile) return;
+
+    const requiredFields = ['height', 'personalities', 'dating_styles'] as const;
+    const hasRequiredFields = requiredFields.every(field => {
+      const value = profile[field];
+      return value && (Array.isArray(value) ? value.length > 0 : Boolean(value));
+    });
     
     if (!hasRequiredFields) {
       setShowRematchWarningModal(true);
       return;
     }
     
-    // 리매칭 모달 표시
     setShowRematchModal(true);
   };
   
@@ -167,122 +187,34 @@ export default function Home() {
     }
   };
 
-  // AuthContext에서 profile 데이터가 변경될 때마다 userName 업데이트
+  // 초기 상태 설정
   useEffect(() => {
-    console.log('⚡️ 컴포넌트 마운트 - 프로필 새로고침');
-    refreshProfile(); // 명시적으로 프로필 데이터 새로고침
-  }, []); // 컴포넌트 마운트 시 한 번만 실행, refreshProfile 의존성 제거
-
-  useEffect(() => {
-    console.log('AuthContext 상태 변경 감지:', { user, profile });
-    
-    if (profile) {
-      if (profile.name && userName !== profile.name) { // 이름이 다를 때만 업데이트
-        setUserName(profile.name);
-        console.log('⚡️ 사용자 이름을 설정했습니다:', profile.name);
-      } else {
-        console.log('⚠️ 프로필에 이름이 없습니다');
-      }
-    } else {
-      console.log('❌ 프로필 데이터가 없습니다');
-    }
-  }, [profile]); // user 의존성 제거, profile만 감시
-
-  useEffect(() => {
-    const checkAuthAndProfile = async () => {
+    const initializeHome = async () => {
       try {
-        console.log('홈 페이지 로딩 시작');
-        console.log('AuthContext 사용자 정보:', user);
-        
-        // 세션 상태 확인
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error('세션 확인 오류:', sessionError);
-          setIsLoading(false);
+        setIsLoading(true);
+
+        if (user?.email === ADMIN_EMAIL) {
+          router.replace('/admin/community');
           return;
         }
 
-        if (!session) {
-          console.log('세션이 없습니다. 로그인 필요');
-          // 미들웨어에서 리다이렉션을 처리하도록 둠
-          setIsLoading(false);
-          return;
-        }
+        // 프로필이 없으면 프로필 작성 모달 표시
+        setShowOnboardingModal(!profile);
 
-        console.log('세션 확인 완료:', session.user.id);
-
-        // ✅ Admin이면 /admin/community로 리다이렉트
-        if (session.user.email === ADMIN_EMAIL) {
-          console.log('✅ Admin 계정 로그인, /admin/community로 이동');
-          router.replace('/admin/community'); // ✅ Admin 계정이면 즉시 이동
-          return;
-        }
-
-        // 세션이 있는 경우, 프로필 확인
-        if (session) {
-          console.log('세션이 있습니다. 프로필을 확인합니다.');
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .single();
-
-          if (error) {
-            console.error('프로필 조회 에러:', error);
-            setHasProfile(false);
-            setShowOnboardingModal(true);
-          } else if (profile) {
-            console.log('프로필이 있습니다:', profile);
-            setHasProfile(true);
-            setShowOnboardingModal(false);
-            
-            // 이상형 정보가 있는지 확인 (personalites 등의 필드가 있으면 이상형이 이미 설정됨)
-            const idealTypeFields = ['personalities', 'datingStyles', 'idealLifestyles', 'interests'];
-            const hasIdealTypeInfo = idealTypeFields.some(field => profile[field] && 
-              (Array.isArray(profile[field]) ? profile[field].length > 0 : Boolean(profile[field])));
-            
-            setHasIdealType(hasIdealTypeInfo);
-            console.log('이상형 정보 확인:', hasIdealTypeInfo ? '설정됨' : '미설정');
-            
-            // 추가 프로필 정보가 필요한지 확인
-            const requiredFields = ['height', 'personalities'];
-            const needsAdditionalInfo = requiredFields.some(field => !profile[field]);
-            
-            if (needsAdditionalInfo) {
-              console.log('추가 프로필 정보가 필요합니다.');
-              setShowAdditionalInfoModal(true);
-            }
-          } else {
-            console.log('프로필이 없습니다.');
-            setHasProfile(false);
-            setShowOnboardingModal(true);
-          }
+        // 프로필이 있고 user_id가 있는 경우에만 선호도 정보 확인
+        if (profile && user?.id) {
+          const hasPreferences = await checkUserPreferences(user.id);
+          setHasUserPreferences(hasPreferences);
         }
       } catch (error) {
-        console.error('프로필 확인 중 오류 발생:', error);
+        console.error('홈 페이지 초기화 중 오류:', error);
       } finally {
-        // 로딩 상태 종료
-        console.log('홈 페이지 로딩 완료');
         setIsLoading(false);
       }
     };
 
-    // 5초 타임아웃 설정 - 브라우저를 나갔다 들어왔을 때 무한 로딩 방지
-    const timeoutId = setTimeout(() => {
-      if (isLoading) {
-        console.log('타임아웃으로 인한 로딩 상태 해제');
-        setIsLoading(false);
-      }
-    }, 5000);
-
-    // 상태 초기화
-    setIsLoading(true);
-    checkAuthAndProfile();
-    
-    // 클린업 함수에서 타임아웃 제거
-    return () => clearTimeout(timeoutId);
-  }, [router, supabase, user]);
+    initializeHome();
+  }, [user, profile, router]);
 
   // 매칭 시간이 되면 결과 조회
   useEffect(() => {
@@ -384,15 +316,12 @@ export default function Home() {
                 <div className="text-2xl font-bold bg-gradient-to-r from-[#6C5CE7] to-[#A8A4E3] text-transparent bg-clip-text">
                   Project-Solo
                 </div>
-                <div className="text-[#2D3436] font-medium flex items-center gap-2" onClick={() => {
-                    console.log('\u26a1\ufe0f 현재 프로필 데이터:', profile);
-                    console.log('\u26a1\ufe0f 현재 유저 데이터:', user);
-                  }}>
+                <div className="text-[#2D3436] font-medium flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-[#6C5CE7] text-white flex items-center justify-center font-bold cursor-pointer">
-                    {profile && profile.name && profile.name.length > 0 ? profile.name[0].toUpperCase() : '?'}
+                    {profile?.name?.[0]?.toUpperCase() || '?'}
                   </div>
                   <span>
-                    {profile && profile.name ? profile.name : userName}님
+                    {profile?.name || '게스트'}님
                   </span>
                 </div>
               </div>
@@ -402,7 +331,7 @@ export default function Home() {
           {/* 메인 컨텐츠 */}
           <main className="max-w-lg mx-auto p-6 space-y-6" role="main">
             {/* 프로필 작성 알림 */}
-            {!hasProfile && (
+            {!profile && (
               <section className="card space-y-6 transform transition-all hover:scale-[1.02] bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl">
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
@@ -432,7 +361,7 @@ export default function Home() {
             )}
 
             {/* 이상형 설정 알림 */}
-            {!hasIdealType && (
+            {profile && !hasUserPreferences && (
               <section className="card space-y-6 transform transition-all hover:scale-[1.02] bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl">
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">

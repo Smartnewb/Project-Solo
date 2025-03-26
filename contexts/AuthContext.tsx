@@ -43,6 +43,7 @@ export type Profile = {
   height?: number;
   ideal_lifestyles?: string[];
   mbti?: string;
+  [key: string]: any; // 인덱스 시그니처 추가
 };
 
 // 인증 컨텍스트 타입 정의
@@ -52,6 +53,8 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   hasCompletedOnboarding: boolean;
+  hasCompletedProfile: boolean;
+  hasCompletedIdealType: boolean;
   updateProfile: (profile: Profile) => Promise<void>;
   signOut: () => Promise<void>;
   isAdmin: boolean;
@@ -66,6 +69,8 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   loading: true,
   hasCompletedOnboarding: false,
+  hasCompletedProfile: false,
+  hasCompletedIdealType: false,
   updateProfile: async () => {},
   signOut: async () => {},
   isAdmin: false,
@@ -91,15 +96,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const [hasCompletedProfile, setHasCompletedProfile] = useState(false);
+  const [hasCompletedIdealType, setHasCompletedIdealType] = useState(false);
 
-  // 💡 user는 있는데 profile은 null인 경우 → 자동 재시도
-useEffect(() => {
-  if (user && !profile && !loading) {
-    console.log('user는 있는데 profile이 없어서 다시 fetch 시도함');
-    fetchProfile(user.id);
-  }
-}, [user, profile, loading]);
+  // 프로필 완성도 체크 함수
+  const checkProfileCompletion = (profile: Profile | null) => {
+    if (!profile) return false;
+    
+    const requiredFields = ['height', 'personalities', 'university', 'department', 'student_id', 'instagram_id'];
+    return requiredFields.every(field => profile[field]);
+  };
 
+  // 이상형 정보 완성도 체크 함수
+  const checkIdealTypeCompletion = (profile: Profile | null) => {
+    if (!profile) return false;
+    
+    const idealTypeFields = ['dating_styles', 'lifestyles', 'interests'];
+    return idealTypeFields.every(field => 
+      profile[field] && Array.isArray(profile[field]) && profile[field].length > 0
+    );
+  };
 
   // 프로필 정보 가져오기
   const fetchProfile = async (userId: string): Promise<Profile | null> => {
@@ -150,6 +166,8 @@ useEffect(() => {
         }
         
         setProfile(data);
+        setHasCompletedProfile(checkProfileCompletion(data));
+        setHasCompletedIdealType(checkIdealTypeCompletion(data));
         return data;
       } else {
         console.log('프로필 데이터 없음, null 반환');
@@ -208,32 +226,37 @@ useEffect(() => {
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       console.log('세션 상태:', currentSession ? '세션 있음' : '세션 없음');
       
-      setSession(currentSession);
-      
       if (currentSession) {
+        setSession(currentSession);
         setUser(currentSession.user);
         setIsAdmin(currentSession.user.email === ADMIN_EMAIL);
         
-        console.log('사용자 정보:', currentSession.user.id, currentSession.user.email);
-        console.log('관리자 여부:', currentSession.user.email === ADMIN_EMAIL);
-        
-        // 프로필 정보 가져오기
-        await fetchProfile(currentSession.user.id);
+        // 로컬 스토리지에서 프로필 확인
+        const cachedProfile = localStorage.getItem('profile');
+        if (cachedProfile) {
+          const parsedProfile = JSON.parse(cachedProfile);
+          setProfile(parsedProfile);
+          setHasCompletedProfile(checkProfileCompletion(parsedProfile));
+          setHasCompletedIdealType(checkIdealTypeCompletion(parsedProfile));
+          setLoading(false);
+          
+          // 백그라운드에서 프로필 새로고침
+          fetchProfile(currentSession.user.id).catch(console.error);
+        } else {
+          // 캐시된 프로필이 없는 경우에만 서버에서 조회
+          await fetchProfile(currentSession.user.id);
+          setLoading(false);
+        }
       } else {
         setUser(null);
         setProfile(null);
         setIsAdmin(false);
         setNeedsOnboarding(false);
-        
-        try {
-          localStorage.removeItem('profile');
-        } catch (storageError) {
-          console.error('로컬 스토리지 클리어 오류:', storageError);
-        }
+        setLoading(false);
+        localStorage.removeItem('profile');
       }
     } catch (error) {
       console.error('인증 초기화 중 오류:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -243,31 +266,32 @@ useEffect(() => {
     console.log('AuthContext 마운트, 인증 초기화');
     initAuth();
     
-    // 인증 상태 변경 구독
+    // Session 타입 명시
+    let lastKnownSession: Session | null = null;
+    
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('인증 상태 변경:', event, session ? '세션 있음' : '세션 없음');
         
-        setSession(session);
-        
-        if (session) {
-          setUser(session.user);
-          setIsAdmin(session.user.email === ADMIN_EMAIL);
+        // 세션이 실제로 변경된 경우에만 처리
+        if (JSON.stringify(session) !== JSON.stringify(lastKnownSession)) {
+          lastKnownSession = session;
           
-          // 로그인 또는 토큰 갱신 시 프로필 가져오기
-          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            await fetchProfile(session.user.id);
-          }
-        } else {
-          setUser(null);
-          setProfile(null);
-          setIsAdmin(false);
-          setNeedsOnboarding(false);
-          
-          try {
+          if (session) {
+            setSession(session);
+            setUser(session.user);
+            setIsAdmin(session.user.email === ADMIN_EMAIL);
+            
+            // 로그인 또는 토큰 갱신 시에만 프로필 새로고침
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+              await fetchProfile(session.user.id);
+            }
+          } else {
+            setUser(null);
+            setProfile(null);
+            setIsAdmin(false);
+            setNeedsOnboarding(false);
             localStorage.removeItem('profile');
-          } catch (storageError) {
-            console.error('로컬 스토리지 클리어 오류:', storageError);
           }
         }
         
@@ -288,9 +312,12 @@ useEffect(() => {
     profile,
     loading,
     hasCompletedOnboarding,
+    hasCompletedProfile,
+    hasCompletedIdealType,
     updateProfile: async (profile: Profile) => {
       setProfile(profile);
-      await fetchProfile(profile.id);
+      setHasCompletedProfile(checkProfileCompletion(profile));
+      setHasCompletedIdealType(checkIdealTypeCompletion(profile));
     },
     signOut,
     isAdmin,
