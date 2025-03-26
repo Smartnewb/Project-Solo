@@ -9,6 +9,7 @@ import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/utils/supabase/client';
+import Filter from 'badwords-ko';
 
 interface Comment {
   id: string;
@@ -484,6 +485,7 @@ export default function Community() {
 
   // 댓글 작성
   const handleAddComment = async (PostUserId: string) => {
+    const filter = new Filter();
     if (!newComment.trim() || !user) {
       console.log('댓글 작성 실패: 내용 또는 사용자 정보 누락', {
         hasContent: !!newComment.trim(),
@@ -535,7 +537,7 @@ export default function Community() {
         id: generateUUID(), // 고유 ID 생성
         post_id: PostUserId,
         author_id: profileId, // 위에서 가져온 프로필 ID 사용
-        content: newComment,
+        content: filter.clean(newComment),
         nickname: userInfo.nickname || '',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -929,6 +931,7 @@ export default function Community() {
 
   // 새 게시글 작성 함수
   const handleCreatePost = async () => {
+    const filter = new Filter();
     if (!newPostContent.trim()) {
       setErrorMessage('게시글 내용을 입력해주세요.');
       setShowErrorModal(true);
@@ -977,7 +980,7 @@ export default function Community() {
       const postId = generateUUID();
       const postData = {
         user_id: postId,
-        content: newPostContent,
+        content: filter.clean(newPostContent),
         author_id: user.id,
         nickname: randomNickname,
         emoji: userInfo.emoji || randomEmoji,
@@ -1245,7 +1248,7 @@ export default function Community() {
                         onClick={() => handleOpenReport('post', post.user_id)}
                         className="text-sm text-gray-500 hover:text-gray-600"
                       >
-                        신고
+                        🚨신고
                       </button>
                     )}
                   </div>
