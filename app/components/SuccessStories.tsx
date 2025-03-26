@@ -53,7 +53,7 @@ export default function SuccessStories() {
       </div>
       <div className="flex justify-between items-center pt-2">
         <button
-          onClick={() => router.push('/community/success-stories')}
+         // onClick={() => router.push('/community/success-stories')}
           className="flex items-center text-primary-DEFAULT text-sm font-medium hover:text-primary-dark transition-colors"
         >
           <HeartIcon className="w-4 h-4 mr-1" />
@@ -68,7 +68,7 @@ export default function SuccessStories() {
       </div>
       <div className="mt-4 pt-3 border-t">
         <button
-          onClick={() => router.push('/community/write-story')}
+          //onClick={() => router.push('/community/write-story')}
           className="w-full py-2 text-center text-primary-DEFAULT font-medium hover:bg-primary-50 rounded-lg transition-colors"
         >
           💌 나의 성공 후기 남기기

@@ -60,7 +60,7 @@ export default function PopularQuestions() {
       </div>
       <div className="flex justify-between items-center pt-2">
         <button
-          onClick={() => router.push(`/community/question/${currentQuestion.id}`)}
+          //onClick={() => router.push(`/community/question/${currentQuestion.id}`)}
           className="flex items-center text-primary-DEFAULT text-sm font-medium hover:text-primary-dark transition-colors"
         >
           <ChatBubbleOvalLeftIcon className="w-4 h-4 mr-1" />
