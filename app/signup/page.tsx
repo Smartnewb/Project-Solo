@@ -5,6 +5,63 @@ import { useRouter } from 'next/navigation';
 import { createClientSupabaseClient } from '@/utils/supabase';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// 개인정보 동의 모달 컴포넌트
+function PrivacyPolicyModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+        >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6 max-h-[80vh] overflow-y-auto"
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold">개인정보 수집 및 이용 동의</h3>
+              <button
+                onClick={onClose}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-4 text-gray-600">
+              <p className="font-medium">
+                "한밭대의 모든 것"은 블라인드 소개팅 서비스 신청을 받기 위해
+                아래와 같이 개인정보를 수집, 이용합니다.
+              </p>
+              <div>
+                <p className="font-semibold">1. 수집, 이용 목적</p>
+                <p>블라인드 소개팅 신청자 정보 관리 및 연락 수단</p>
+              </div>
+              <div>
+                <p className="font-semibold">2. 수집하는 개인정보의 항목</p>
+                <p>성명, 인스타그램 계정 아이디, 성별, 학과, 학번, 휴대전화 번호, 개인 신상 정보 및 기타 정보</p>
+              </div>
+              <div>
+                <p className="font-semibold">3. 보유 및 이용 기간</p>
+                <p>2025년 12월 31일까지</p>
+              </div>
+              <div>
+                <p className="font-semibold">4. 동의 거부권 및 불이익</p>
+                <p>귀하는 "한밭대의 모든 것"의 블라인드 서비스 신청에 필요한 최소한의 개인정보 수집, 이용에 동의하지 않으실 경우, 서비스 사용 불가 등의 불이익이 발생하게 됩니다.</p>
+              </div>
+              <p className="font-medium">수집 근거: 개인정보 보호법 제15조 제1항</p>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
 
 export default function SignUp() {
   const router = useRouter();
@@ -20,6 +77,8 @@ export default function SignUp() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isSignupEnabled, setIsSignupEnabled] = useState<boolean | null>(null);
+  const [privacyAgreed, setPrivacyAgreed] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
 
   useEffect(() => {
     // 회원가입 상태 확인
@@ -193,122 +252,162 @@ export default function SignUp() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-lg mx-auto px-4 py-4">
-          <div className="flex items-center">
-            <Link href="/" className="p-2 -ml-2 hover:bg-gray-100 rounded-lg">
-              <ArrowLeftIcon className="w-6 h-6" />
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+      <div className="w-full max-w-md">
+        <div className="bg-white border-b sticky top-0 z-10">
+          <div className="max-w-lg mx-auto px-4 py-4">
+            <div className="flex items-center">
+              <Link href="/" className="p-2 -ml-2 hover:bg-gray-100 rounded-lg">
+                <ArrowLeftIcon className="w-6 h-6" />
+              </Link>
+              <h1 className="text-h2 ml-2">회원가입</h1>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md p-8 space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="card space-y-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  이메일
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="input-field"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  비밀번호
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="input-field"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  비밀번호 확인
+                </label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className="input-field"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  이름
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className="input-field"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  나이
+                </label>
+                <input
+                  type="number"
+                  name="age"
+                  value={formData.age}
+                  onChange={handleChange}
+                  className="input-field"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  성별
+                </label>
+                <select
+                  name="gender"
+                  value={formData.gender}
+                  onChange={handleChange}
+                  className="input-field"
+                  required
+                >
+                  <option value="">선택해주세요</option>
+                  <option value="male">남성</option>
+                  <option value="female">여성</option>
+                </select>
+              </div>
+            </div>
+
+            {/* 개인정보 동의 체크박스 */}
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="privacy"
+                checked={privacyAgreed}
+                onChange={(e) => setPrivacyAgreed(e.target.checked)}
+                className="h-4 w-4 text-pink-500 focus:ring-pink-400 border-gray-300 rounded"
+                required
+              />
+              <label htmlFor="privacy" className="text-sm text-gray-600">
+                개인정보 수집 및 이용에 동의합니다.
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowPrivacyModal(true)}
+                className="text-sm text-pink-500 hover:text-pink-600 underline"
+              >
+                상세보기
+              </button>
+            </div>
+
+            {error && (
+              <p className="text-red-500 text-sm text-center">{error}</p>
+            )}
+
+            <button
+              type="submit"
+              className={`w-full py-3 px-4 ${
+                privacyAgreed 
+                  ? 'bg-pink-500 hover:bg-pink-600' 
+                  : 'bg-gray-400 cursor-not-allowed'
+              } text-white font-medium rounded-md transition duration-200 text-lg`}
+              disabled={loading || !privacyAgreed}
+            >
+              {loading ? '가입 중...' : '가입하기'}
+            </button>
+          </form>
+
+          <div className="text-center">
+            <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">
+              이미 계정이 있으신가요? 로그인하기
             </Link>
-            <h1 className="text-h2 ml-2">회원가입</h1>
           </div>
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto p-4">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="card space-y-4">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                이메일
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="input-field"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                비밀번호
-              </label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                className="input-field"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                비밀번호 확인
-              </label>
-              <input
-                type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className="input-field"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                이름
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className="input-field"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                나이
-              </label>
-              <input
-                type="number"
-                name="age"
-                value={formData.age}
-                onChange={handleChange}
-                className="input-field"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                성별
-              </label>
-              <select
-                name="gender"
-                value={formData.gender}
-                onChange={handleChange}
-                className="input-field"
-                required
-              >
-                <option value="">선택해주세요</option>
-                <option value="male">남성</option>
-                <option value="female">여성</option>
-              </select>
-            </div>
-          </div>
-
-          {error && (
-            <p className="text-red-500 text-sm text-center">{error}</p>
-          )}
-
-          <button
-            type="submit"
-            className="btn-primary w-full"
-            disabled={loading}
-          >
-            {loading ? '가입 중...' : '가입하기'}
-          </button>
-        </form>
-      </div>
+      {/* 개인정보 동의 모달 */}
+      <PrivacyPolicyModal
+        isOpen={showPrivacyModal}
+        onClose={() => setShowPrivacyModal(false)}
+      />
     </div>
   );
 }
