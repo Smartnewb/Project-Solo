@@ -362,7 +362,7 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">이상형 설정</h2>
               <button
-                onClick={() => router.push('/settings/ideal-type')}
+                onClick={() => router.push('/ideal-type')}
                 className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all"
               >
                 이상형 설정하기
