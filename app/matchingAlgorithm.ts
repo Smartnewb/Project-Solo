@@ -266,3 +266,169 @@ export function findBestMatch(
     return match ? match.female : null;
   }
 } 
+
+/**
+ * 재매칭 결과 인터페이스
+ */
+export interface RematchResult {
+  user: Profile;        // 재매칭을 요청한 사용자
+  newMatch: Profile;    // 새로 매칭된 상대방
+  previousMatch: Profile | null; // 이전에 매칭되었던 상대방 (있는 경우)
+  score: number;        // 매칭 점수
+}
+
+/**
+ * 재매칭 알고리즘 - 사용자에게 더 높은 등급의 새로운 매칭 상대 찾기
+ * 
+ * 기존의 매칭 알고리즘과 다른 점:
+ * 1. 이미 매칭된 상대와도 매칭 가능 (기존 매칭 기록 무시)
+ * 2. 반드시 자신보다 더 높은 등급의 상대와 매칭 
+ * 3. 같은 MBTI, 같은 학과 제약 완화 (더 좋은 매칭을 위해)
+ * 
+ * @param user 재매칭을 요청한 사용자
+ * @param userPreferences 사용자의 선호도 정보
+ * @param candidates 매칭 후보들
+ * @param candidatePreferences 후보들의 선호도 정보
+ * @param previousMatchId 이전에 매칭된 상대방 ID (있는 경우)
+ * @returns 재매칭 결과 또는 null (매칭 실패)
+ */
+export function findRematch(
+  user: Profile,
+  userPreferences: UserPreferences,
+  candidates: Profile[],
+  candidatePreferences: UserPreferences[],
+  previousMatchId?: string
+): RematchResult | null {
+  // 성별에 맞는 후보 필터링 (남성은 여성만, 여성은 남성만)
+  const oppositeGender = user.gender === 'female' ? 'male' : 'female';
+  let eligibleCandidates = candidates.filter(c => c.gender === oppositeGender && c.id !== undefined);
+  
+  // 이전 매칭 상대 정보 찾기 (있는 경우)
+  const previousMatch = previousMatchId ? 
+    candidates.find(c => c.id === previousMatchId) || null : null;
+  
+  // 등급 값 변환 테이블 (S > A > B > C)
+  const gradeValues: Record<Grade, number> = { 'S': 4, 'A': 3, 'B': 2, 'C': 1 };
+  const userGradeVal = user.classification ? 
+    (gradeValues[user.classification as Grade] || 0) : 0;
+  
+  // 후보 필터링: 사용자보다 더 높은 등급만 선택
+  eligibleCandidates = eligibleCandidates.filter(candidate => {
+    const candidateGradeVal = candidate.classification ? 
+      (gradeValues[candidate.classification as Grade] || 0) : 0;
+    
+    // 반드시 더 높은 등급만 통과
+    return candidateGradeVal > userGradeVal;
+  });
+  
+  // 후보가 없으면 null 반환
+  if (eligibleCandidates.length === 0) {
+    return null;
+  }
+  
+  // 모든 후보와의 매칭 점수 계산
+  const candidateScores: {candidate: Profile, score: number}[] = [];
+  
+  for (const candidate of eligibleCandidates) {
+    if (!candidate.id) continue;
+    
+    const candidatePref = candidatePreferences.find(p => p.user_id === candidate.id);
+    if (!candidatePref) continue;
+    
+    // 개선된 매칭 점수 계산 (기본 함수에 가중치 추가)
+    const score = calculateRematchScore(user, userPreferences, candidate, candidatePref);
+    candidateScores.push({ candidate, score });
+  }
+  
+  // 후보가 없으면 null 반환
+  if (candidateScores.length === 0) {
+    return null;
+  }
+  
+  // 점수가 가장 높은 매칭 찾기
+  candidateScores.sort((a, b) => b.score - a.score);
+  const bestMatch = candidateScores[0];
+  
+  // 재매칭 결과 반환
+  return {
+    user: user,
+    newMatch: bestMatch.candidate,
+    previousMatch: previousMatch,
+    score: bestMatch.score
+  };
+}
+
+/**
+ * 재매칭을 위한 향상된 점수 계산 함수
+ * 기본 점수 계산에 추가 가중치 적용
+ */
+function calculateRematchScore(
+  user: Profile,
+  userPref: UserPreferences,
+  candidate: Profile,
+  candidatePref: UserPreferences
+): number {
+  let score = 0;
+  
+  // 남성/여성에 따라 파라미터 정렬
+  const female = user.gender === 'female' ? user : candidate;
+  const male = user.gender === 'male' ? user : candidate;
+  const femalePref = user.gender === 'female' ? userPref : candidatePref;
+  const malePref = user.gender === 'male' ? userPref : candidatePref;
+  
+  // 기본 매칭 점수 계산
+  score = calculateMatchScore(female, femalePref, male, malePref);
+  
+  // 추가 가중치: 등급 차이 (차이가 클수록 높은 점수)
+  const gradeValues: Record<Grade, number> = { 'S': 4, 'A': 3, 'B': 2, 'C': 1 };
+  const userGradeVal = user.classification ? 
+    (gradeValues[user.classification as Grade] || 0) : 0;
+  const candidateGradeVal = candidate.classification ? 
+    (gradeValues[candidate.classification as Grade] || 0) : 0;
+  
+  // 등급 차이에 가중치 부여 (최대 20점)
+  const gradeDiff = candidateGradeVal - userGradeVal;
+  score += gradeDiff * 5; // 등급 차이당 5점
+  
+  // 추가 가중치: 프로필 완성도가 높을수록 점수 추가
+  const userProfileCompleteness = calculateProfileCompleteness(user);
+  const candidateProfileCompleteness = calculateProfileCompleteness(candidate);
+  
+  // 프로필 완성도 점수 (최대 10점)
+  score += candidateProfileCompleteness * 0.1;
+  
+  return score;
+}
+
+/**
+ * 프로필 완성도 계산 (0-100)
+ */
+function calculateProfileCompleteness(profile: Profile): number {
+  let totalFields = 0;
+  let filledFields = 0;
+  
+  // 필수 필드 (id, gender는 제외)
+  const fields: (keyof Profile)[] = [
+    'name', 'age', 'height', 'mbti', 'classification',
+    'department', 'interests', 'personalities',
+    'dating_styles', 'smoking', 'drinking', 'tattoo'
+  ];
+  
+  for (const field of fields) {
+    totalFields++;
+    if (profile[field] !== undefined && profile[field] !== null && profile[field] !== '') {
+      filledFields++;
+    }
+  }
+  
+  // 배열 필드 추가 점수
+  ['interests', 'personalities', 'dating_styles'].forEach(field => {
+    const value = profile[field as keyof Profile];
+    if (Array.isArray(value) && value.length > 0) {
+      totalFields += Math.min(value.length - 1, 2); // 최대 2점 추가
+      filledFields += Math.min(value.length - 1, 2);
+    }
+  });
+  
+  return totalFields > 0 ? (filledFields / totalFields) * 100 : 0;
+}

@@ -17,8 +17,11 @@ import type { Profile } from '@/contexts/AuthContext';
 import type { Database } from '../types/database.types';
 
 interface MatchResult {
+  id: string;
   instagram_id: string | null;
   score: number;
+  isRematch?: boolean; // 재매칭으로 생성된 매치인지 여부
+  partner_name?: string; // 매칭 상대방 이름
 }
 
 export default function Home() {
@@ -40,7 +43,8 @@ export default function Home() {
   const [isCopied, setIsCopied] = useState(false);
   const accountNumberRef = useRef<HTMLParagraphElement>(null);
   const [isMatchingTimeOver, setIsMatchingTimeOver] = useState(false);
-  const [matchResult, setMatchResult] = useState<MatchResult | null>(null);
+  const [matchResults, setMatchResults] = useState<MatchResult[]>([]);
+  const [isMultipleMatches, setIsMultipleMatches] = useState(false);
 
   // 사용자 선호도 정보 조회
   const checkUserPreferences = async (userId: string) => {
@@ -140,37 +144,57 @@ export default function Home() {
     if (!user) return;
 
     try {
-      // 1. matches 테이블에서 현재 사용자의 매칭 정보 조회
+      // 1. matches 테이블에서 현재 사용자의 모든 매칭 정보 조회 (single 대신 여러 개)
       const { data: matchData, error: matchError } = await supabase
         .from('matches')
-        .select('user1_id, user2_id, score')
+        .select('id, user1_id, user2_id, score, status, created_at')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-        .single();
+        .eq('status', 'pending') // 활성화된 매칭만
+        .order('created_at', { ascending: false }); // 최신순 정렬
 
-      if (matchError || !matchData) {
-        console.error('매칭 결과 조회 실패:', matchError);
+      if (matchError || !matchData || matchData.length === 0) {
+        console.error('매칭 결과 조회 실패 또는 매칭 없음:', matchError);
         return;
       }
 
-      // 2. 상대방의 user_id 찾기
-      const partnerId = matchData.user1_id === user.id ? matchData.user2_id : matchData.user1_id;
+      // 여러 매칭이 있는지 확인
+      setIsMultipleMatches(matchData.length > 1);
+      
+      // 모든 매칭 정보를 처리
+      const matchResultsPromises = matchData.map(async (match) => {
+        // 상대방의 user_id 찾기
+        const partnerId = match.user1_id === user.id ? match.user2_id : match.user1_id;
 
-      // 3. 상대방의 프로필에서 instagram_id 조회
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('instagram_id')
-        .eq('user_id', partnerId)
-        .single();
+        // 상대방의 프로필 정보 조회 (인스타그램 ID와 이름)
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('instagram_id, name')
+          .eq('user_id', partnerId)
+          .single();
 
-      if (profileError) {
-        console.error('프로필 조회 실패:', profileError);
-        return;
-      }
+        if (profileError) {
+          console.error('프로필 조회 실패:', profileError);
+          return null;
+        }
 
-      setMatchResult({
-        instagram_id: profileData.instagram_id,
-        score: matchData.score
+        // 이 매칭이 재매칭인지 확인 (첫 번째 매칭 외의 모든 매칭은 재매칭으로 취급)
+        const isRematch = matchData.length > 1 && 
+          match.created_at !== matchData[matchData.length - 1].created_at;
+
+        return {
+          id: match.id,
+          instagram_id: profileData.instagram_id,
+          score: match.score,
+          isRematch: isRematch,
+          partner_name: profileData.name
+        };
       });
+
+      // 모든 매칭 결과 가져오기
+      const results = await Promise.all(matchResultsPromises);
+      const validResults = results.filter(result => result !== null) as MatchResult[];
+      
+      setMatchResults(validResults);
     } catch (error) {
       console.error('매칭 결과 조회 중 오류:', error);
     }
@@ -425,55 +449,104 @@ export default function Home() {
               </div>
             </section>
 
-            {/* 매칭 상태 */}
-            <section className="card space-y-6 transform transition-all hover:scale-[1.02] bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl">
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-[#74B9FF]/10 flex items-center justify-center transform transition-all duration-200 hover:rotate-12">
-                    <svg className="w-7 h-7 text-[#74B9FF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                  </div>
-                  <h2 className="text-2xl font-bold text-[#2D3436] tracking-tight">매칭 상태</h2>
-                </div>
-                <div className="bg-[#74B9FF]/5 rounded-xl p-4">
-                  <p className="text-[#636E72] leading-relaxed text-lg">
-                    {isMatchingTimeOver ? (
-                      matchResult ? (
+            {/* 매칭 결과 섹션 - 여러 개의 매칭 카드 표시 */}
+            {isMatchingTimeOver && matchResults.length > 0 && (
+              <>
+                {matchResults.map((match, index) => (
+                  <section 
+                    key={match.id} 
+                    className={`card space-y-6 transform transition-all hover:scale-[1.02] bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl ${match.isRematch ? 'border-2 border-[#0984E3]' : ''}`}
+                  >
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-2xl ${match.isRematch ? 'bg-[#0984E3]/10' : 'bg-[#74B9FF]/10'} flex items-center justify-center transform transition-all duration-200 hover:rotate-12`}>
+                          <svg className={`w-7 h-7 ${match.isRematch ? 'text-[#0984E3]' : 'text-[#74B9FF]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h2 className="text-2xl font-bold text-[#2D3436] tracking-tight">
+                            {match.isRematch ? '추가 매칭 결과' : '매칭 결과'}
+                          </h2>
+                          {match.isRematch && (
+                            <span className="text-sm text-[#0984E3] font-medium">
+                              재매칭으로 추가된 상대입니다
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="bg-[#74B9FF]/5 rounded-xl p-4">
                         <div className="space-y-2">
-                          <p>매칭이 완료되었습니다! 🎉</p>
+                          <p className="text-[#636E72] leading-relaxed text-lg">매칭이 완료되었습니다! 🎉</p>
+                          {match.partner_name && (
+                            <p className="font-medium text-gray-800">
+                              {match.partner_name}님과 매칭되었습니다
+                            </p>
+                          )}
                           <button
-                            onClick={() => matchResult.instagram_id && copyInstagramId(matchResult.instagram_id)}
+                            onClick={() => match.instagram_id && copyInstagramId(match.instagram_id)}
                             className="text-blue-500 hover:text-blue-700 underline focus:outline-none"
                           >
-                            {isCopied ? "복사됨!" : `Instagram ID: ${matchResult.instagram_id || '미설정'}`}
+                            {isCopied ? "복사됨!" : `Instagram ID: ${match.instagram_id || '미설정'}`}
                           </button>
                           <p className="text-sm text-gray-500">
-                            매칭 점수: {matchResult.score}점
+                            매칭 점수: {match.score}점
                           </p>
                         </div>
-                      ) : (
-                        '매칭에 실패하였습니다.'
-                      )
-                    ) : (
-                      '매칭 카운트 다운이 지나면 공개됩니다.'
-                    )}
-                  </p>
+                      </div>
+                      
+                      {/* 재매칭 버튼은 첫 번째(가장 오래된) 카드에만 표시 */}
+                      {index === 0 && (
+                        <button
+                          onClick={handleRematchRequest}
+                          className="btn-secondary w-full py-4 flex items-center justify-center gap-3 bg-[#74B9FF] text-white rounded-xl font-medium transform transition-all duration-200 hover:bg-[#5FA8FF] hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#74B9FF] focus:ring-offset-2"
+                          type="button"
+                        >
+                          <span className="text-lg">재매칭 신청하기</span>
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  </section>
+                ))}
+              </>
+            )}
+            
+            {/* 매칭 결과가 없거나 시간이 안 된 경우 표시할 섹션 */}
+            {(!isMatchingTimeOver || matchResults.length === 0) && (
+              <section className="card space-y-6 transform transition-all hover:scale-[1.02] bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-[#74B9FF]/10 flex items-center justify-center transform transition-all duration-200 hover:rotate-12">
+                      <svg className="w-7 h-7 text-[#74B9FF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
+                    </div>
+                    <h2 className="text-2xl font-bold text-[#2D3436] tracking-tight">매칭 상태</h2>
+                  </div>
+                  <div className="bg-[#74B9FF]/5 rounded-xl p-4">
+                    <p className="text-[#636E72] leading-relaxed text-lg">
+                      {isMatchingTimeOver ? '매칭된 상대가 없습니다.' : '매칭 카운트 다운이 지나면 공개됩니다.'}
+                    </p>
+                  </div>
+                  {isMatchingTimeOver && (
+                    <button
+                      onClick={handleRematchRequest}
+                      className="btn-secondary w-full py-4 flex items-center justify-center gap-3 bg-[#74B9FF] text-white rounded-xl font-medium transform transition-all duration-200 hover:bg-[#5FA8FF] hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#74B9FF] focus:ring-offset-2"
+                      type="button"
+                    >
+                      <span className="text-lg">매칭 신청하기</span>
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
-                {isMatchingTimeOver && (  // 매칭 시간이 되었을 때만 버튼 표시
-                  <button
-                    onClick={handleRematchRequest}
-                    className="btn-secondary w-full py-4 flex items-center justify-center gap-3 bg-[#74B9FF] text-white rounded-xl font-medium transform transition-all duration-200 hover:bg-[#5FA8FF] hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#74B9FF] focus:ring-offset-2"
-                    type="button"
-                  >
-                    <span className="text-lg">재매칭 신청하기</span>
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-            </section>
+              </section>
+            )}
 
             {/* 실시간 인기 질문 */}
             <section className="card space-y-6 transform transition-all hover:scale-[1.02]">

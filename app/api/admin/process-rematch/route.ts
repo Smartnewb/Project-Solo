@@ -2,6 +2,9 @@ import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
+import { findRematch, RematchResult } from '@/app/matchingAlgorithm';
+import { Profile } from '@/app/types/matching';
+import { UserPreferences } from '@/types';
 
 // 정적 생성에서 동적 렌더링으로 전환
 export const dynamic = 'force-dynamic';
@@ -81,22 +84,103 @@ export async function POST(request: Request) {
       });
     }
 
-    // 재매칭 대상 검색
-    const { data: potentialMatches, error: matchError } = await supabase
+    // 모든 프로필 가져오기 (매칭 알고리즘용)
+    const { data: allProfiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('*')
-      .eq('gender', oppositeGender);
+      .select('*');
     
-    if (matchError) {
-      throw new Error(`잠재적 매치 검색 실패: ${matchError.message}`);
+    if (profilesError) {
+      throw new Error(`프로필 검색 실패: ${profilesError.message}`);
     }
 
-    // 매칭되지 않은 사용자 필터링
-    const availableMatches = potentialMatches.filter(profile => 
-      !matchedUserIds.has(profile.id) && profile.id !== userId
-    );
+    // 현재 매칭된 사용자의 이전 매칭 파트너 ID 가져오기
+    const { data: previousMatchData } = await supabase
+      .from('matches')
+      .select('user1_id, user2_id')
+      .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+    
+    let previousMatchId: string | undefined = undefined;
+    
+    if (previousMatchData) {
+      previousMatchId = previousMatchData.user1_id === userId 
+        ? previousMatchData.user2_id 
+        : previousMatchData.user1_id;
+    }
 
-    if (availableMatches.length === 0) {
+    // 사용자 선호도 가져오기
+    const { data: userPreferences, error: preferencesError } = await supabase
+      .from('user_preferences')
+      .select('*');
+    
+    if (preferencesError) {
+      throw new Error(`사용자 선호도 검색 실패: ${preferencesError.message}`);
+    }
+
+    // 재매칭 실행
+    // 1. 유저와 상대방 프로필 완성
+    const userProfileForMatching: Profile = {
+      ...userProfile,
+      id: userProfile.id,
+      gender: userProfile.gender === '남성' ? 'male' : 'female',
+      classification: userProfile.classification || 'C',
+    };
+    
+    // 2. 매칭 후보 프로필 변환
+    const candidateProfiles: Profile[] = allProfiles
+      .filter(profile => profile.id !== userId) // 자기 자신 제외
+      .map(profile => ({
+        ...profile,
+        id: profile.id,
+        gender: profile.gender === '남성' ? 'male' : 'female',
+        classification: profile.classification || 'C',
+      }));
+    
+    // 3. 사용자 선호도 변환
+    const userPref = userPreferences?.find(p => p.user_id === userId);
+    const candidatePrefs = userPreferences?.filter(p => p.user_id !== userId) || [];
+    
+    if (!userPref) {
+      // 선호도 정보가 없는 경우 기본값 생성
+      const defaultPref: Partial<UserPreferences> = {
+        user_id: userId,
+        preferred_age_min: 20,
+        preferred_age_max: 35,
+        preferred_age_type: 'any',
+        preferred_height_min: '150',
+        preferred_height_max: '190',
+        preferred_mbti: ['INFP', 'ENFP', 'INFJ', 'ENFJ'],
+        id: uuidv4(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      candidatePrefs.push(defaultPref as UserPreferences);
+    }
+    
+    // 4. 재매칭 알고리즘 실행
+    const rematchResult = findRematch(
+      userProfileForMatching,
+      userPref || {
+        user_id: userId,
+        preferred_age_min: 20,
+        preferred_age_max: 35,
+        preferred_age_type: 'any',
+        preferred_height_min: '150',
+        preferred_height_max: '190',
+        preferred_mbti: ['INFP', 'ENFP', 'INFJ', 'ENFJ'],
+        id: uuidv4(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      candidateProfiles,
+      candidatePrefs,
+      previousMatchId
+    );
+    
+    // 매칭 결과가 없으면 실패 처리
+    if (!rematchResult) {
       // 재매칭 요청 상태 업데이트 (매칭 불가)
       await supabase
         .from('matching_requests')
@@ -108,10 +192,9 @@ export async function POST(request: Request) {
         message: '현재 재매칭 가능한 사용자가 없습니다.'
       });
     }
-
-    // 간단한 매칭 알고리즘 (첫 번째 가용 사용자와 매칭)
-    // 실제로는 취향이나 선호도를 고려한 알고리즘 사용 가능
-    const matchedPartner = availableMatches[0];
+    
+    // 매칭된 파트너 정보
+    const matchedPartner = allProfiles.find(p => p.id === rematchResult.newMatch.id);
 
     // 현재 매칭 시간 설정 가져오기
     const { data: settingsData } = await supabase
@@ -153,7 +236,17 @@ export async function POST(request: Request) {
       match: {
         id: newMatch.id,
         userId: userId,
-        partnerId: userId === newMatch.user1_id ? newMatch.user2_id : newMatch.user1_id
+        partnerId: userId === newMatch.user1_id ? newMatch.user2_id : newMatch.user1_id,
+        score: rematchResult.score,
+        previousMatch: rematchResult.previousMatch ? {
+          id: rematchResult.previousMatch.id,
+          name: rematchResult.previousMatch.name
+        } : null,
+        newMatch: {
+          id: rematchResult.newMatch.id,
+          name: rematchResult.newMatch.name,
+          classification: rematchResult.newMatch.classification
+        }
       }
     });
   } catch (error) {
