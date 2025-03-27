@@ -46,40 +46,33 @@ export type Profile = {
   [key: string]: any; // 인덱스 시그니처 추가
 };
 
-// 인증 컨텍스트 타입 정의
+// 컨텍스트 타입 정의
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
-  hasCompletedOnboarding: boolean;
-  hasCompletedProfile: boolean;
-  hasCompletedIdealType: boolean;
-  updateProfile: (profile: Profile) => Promise<void>;
-  signOut: () => Promise<void>;
   isAdmin: boolean;
   needsOnboarding: boolean;
+  hasCompletedProfile: boolean;
+  hasCompletedIdealType: boolean;
+  hasCompletedOnboarding: boolean;
+  updateProfile: (profile: Profile) => Promise<void>;
+  signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
 
-// 기본값으로 컨텍스트 생성
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  session: null,
-  profile: null,
-  loading: true,
-  hasCompletedOnboarding: false,
-  hasCompletedProfile: false,
-  hasCompletedIdealType: false,
-  updateProfile: async () => {},
-  signOut: async () => {},
-  isAdmin: false,
-  needsOnboarding: false,
-  refreshProfile: async () => {},
-});
+// 기본값 제거하고 null로 초기화
+const AuthContext = createContext<AuthContextType | null>(null);
 
-// 인증 컨텍스트 사용을 위한 훅
-export const useAuth = () => useContext(AuthContext);
+// 커스텀 훅에서 null 체크 추가
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
 
 // 인증 상태를 관리하는 프로바이더 컴포넌트
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -120,68 +113,60 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // 프로필 정보 가져오기
   const fetchProfile = async (userId: string): Promise<Profile | null> => {
     try {
-      console.log('fetchProfile 호출됨, 조회할 사용자 ID:', userId);
-      
+      console.log('fetchProfile 시작:', userId);
+
       if (!userId) {
         console.error('fetchProfile: 유효하지 않은 사용자 ID');
-        setProfile(null);
-        setNeedsOnboarding(true);
         return null;
       }
-      
+
+      // 1. 로컬 스토리지 확인
+      const cachedProfile = localStorage.getItem('profile');
+      if (cachedProfile) {
+        try {
+          const parsed = JSON.parse(cachedProfile);
+          if (parsed.user_id === userId) {
+            console.log('캐시된 프로필 사용:', userId);
+            setProfile(parsed);
+            setHasCompletedProfile(checkProfileCompletion(parsed));
+            setHasCompletedIdealType(checkIdealTypeCompletion(parsed));
+            return parsed;
+          }
+        } catch (e) {
+          console.error('캐시 파싱 오류:', e);
+        }
+      }
+
+      // 2. 서버에서 프로필 조회
+      console.log('서버에서 프로필 조회 중:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', userId)
         .single();
-      
+
       if (error) {
         console.error('프로필 조회 오류:', error);
-        setProfile(null);
-        setNeedsOnboarding(true);
-        localStorage.removeItem('profile');
         return null;
       }
-      
+
       if (data) {
-        console.log('프로필 조회 성공:', data);
-        
-        // 필수 필드가 있는지 확인
-        const requiredFields = ['university', 'department', 'student_id', 'grade', 'instagram_id'];
-        const needsOnboarding = requiredFields.some(field => !data[field]);
-        
-        setNeedsOnboarding(needsOnboarding);
-        
-        if (needsOnboarding) {
-          console.log('필수 필드 누락, 온보딩 필요:', 
-            requiredFields.filter(field => !data[field]));
-        } else {
-          console.log('온보딩 완료 상태');
-        }
-        
-        try {
-          localStorage.setItem('profile', JSON.stringify(data));
-        } catch (e) {
-          console.error('프로필 localStorage 저장 오류:', e);
-        }
-        
+        console.log('프로필 조회 성공:', data.user_id);
         setProfile(data);
         setHasCompletedProfile(checkProfileCompletion(data));
         setHasCompletedIdealType(checkIdealTypeCompletion(data));
+        localStorage.setItem('profile', JSON.stringify(data));
         return data;
-      } else {
-        console.log('프로필 데이터 없음, null 반환');
-        setProfile(null);
-        setNeedsOnboarding(true);
-        localStorage.removeItem('profile');
-        return null;
       }
-    } catch (e) {
-      console.error('fetchProfile 예외 발생:', e);
-      setProfile(null);
-      setNeedsOnboarding(true);
-      localStorage.removeItem('profile');
+
+      console.log('프로필 데이터 없음');
       return null;
+
+    } catch (error) {
+      console.error('fetchProfile 예외:', error);
+      return null;
+    } finally {
+      setLoading(false);  // 로딩 상태 해제
     }
   };
 
@@ -219,44 +204,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // 초기 인증 상태 설정
   const initAuth = async () => {
     try {
-      console.log('인증 상태 초기화 중...');
+      console.log('인증 초기화 시작');
       setLoading(true);
-      
-      // 세션 가져오기
+
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       console.log('세션 상태:', currentSession ? '세션 있음' : '세션 없음');
-      
+
       if (currentSession) {
         setSession(currentSession);
         setUser(currentSession.user);
         setIsAdmin(currentSession.user.email === ADMIN_EMAIL);
-        
-        // 로컬 스토리지에서 프로필 확인
-        const cachedProfile = localStorage.getItem('profile');
-        if (cachedProfile) {
-          const parsedProfile = JSON.parse(cachedProfile);
-          setProfile(parsedProfile);
-          setHasCompletedProfile(checkProfileCompletion(parsedProfile));
-          setHasCompletedIdealType(checkIdealTypeCompletion(parsedProfile));
-          setLoading(false);
-          
-          // 백그라운드에서 프로필 새로고침
-          fetchProfile(currentSession.user.id).catch(console.error);
-        } else {
-          // 캐시된 프로필이 없는 경우에만 서버에서 조회
-          await fetchProfile(currentSession.user.id);
-          setLoading(false);
-        }
+
+        // 프로필 조회
+        const profileData = await fetchProfile(currentSession.user.id);
+        console.log('프로필 조회 결과:', profileData ? '성공' : '실패');
       } else {
+        // 세션이 없는 경우 상태 초기화
         setUser(null);
         setProfile(null);
         setIsAdmin(false);
         setNeedsOnboarding(false);
-        setLoading(false);
         localStorage.removeItem('profile');
       }
     } catch (error) {
-      console.error('인증 초기화 중 오류:', error);
+      console.error('인증 초기화 오류:', error);
+    } finally {
       setLoading(false);
     }
   };
@@ -306,11 +278,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [supabase, router]);
 
   // 컨텍스트 값 설정
-  const value = {
+  const value: AuthContextType = {
     user,
     session,
     profile,
     loading,
+    isAdmin,
+    needsOnboarding,
     hasCompletedOnboarding,
     hasCompletedProfile,
     hasCompletedIdealType,
@@ -320,8 +294,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setHasCompletedIdealType(checkIdealTypeCompletion(profile));
     },
     signOut,
-    isAdmin,
-    needsOnboarding,
     refreshProfile,
   };
 
