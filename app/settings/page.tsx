@@ -4,9 +4,12 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { HomeIcon, ChatBubbleLeftRightIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 import { createClient } from '@/utils/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { createClient as supabaseAdminClient } from '@supabase/supabase-js';
 
 export default function Settings() {
   const router = useRouter();
+  const { user } = useAuth();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [notifications, setNotifications] = useState({
     matching: true,
@@ -54,9 +57,45 @@ export default function Settings() {
     }
   };
 
-  const handleDeleteAccount = () => {
-    // TODO: 회원 탈퇴 로직 구현
-    router.push('/');
+  const handleDeleteAccount = async () => {
+    try {
+      if (!user) {
+        console.error('사용자 정보가 없습니다.');
+        return;
+      }
+
+      // API 호출하여 회원 탈퇴 처리
+      const response = await fetch('/api/user/delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user.id }),
+      });
+
+      if (!response.ok) {
+        throw new Error('회원 탈퇴 처리에 실패했습니다.');
+      }
+
+      // 로컬 스토리지 클리어
+      localStorage.clear();
+
+      // 쿠키 클리어
+      document.cookie.split(';').forEach(cookie => {
+        document.cookie = cookie
+          .replace(/^ +/, '')
+          .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+      });
+
+      // 홈페이지로 리다이렉션
+      router.push('/');
+      
+    } catch (error) {
+      console.error('회원 탈퇴 중 오류:', error);
+      alert('회원 탈퇴 처리 중 오류가 발생했습니다.');
+    } finally {
+      setShowDeleteConfirm(false);
+    }
   };
 
   return (
