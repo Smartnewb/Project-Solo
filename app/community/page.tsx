@@ -206,7 +206,7 @@ export default function Community() {
                 .from('comments')
                 .select('*')
                 .eq('post_id', post.user_id)
-                .order('created_at', { ascending: true });
+                .order('created_at', { ascending: false });
                 
               if (commentsResponse.error) {
                 console.error(`게시글 ID ${post.user_id}의 댓글 조회 에러:`, commentsResponse.error);
@@ -662,7 +662,7 @@ export default function Community() {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-500">
-              {new Date(comment.created_at).toLocaleString()}
+              {formatTime(comment.created_at)}
             </span>
             {comment.isEdited && (
               <span className="text-xs text-gray-500">(수정됨)</span>
@@ -688,7 +688,7 @@ export default function Community() {
                 onClick={() => handleOpenReport('comment', post.user_id, comment.id)}
                 className="text-xs text-gray-500 hover:text-gray-600"
               >
-                신고
+                🚨신고
               </button>
             )}
           </div>
@@ -1362,7 +1362,33 @@ export default function Community() {
                 )}
 
                 {/* 댓글 목록 */}
-                {!post.isdeleted && renderComments(post, showAllComments === post.user_id)}
+                {!post.isdeleted && (
+                  <div className="mt-4 space-y-4 border-t pt-4">
+                    {renderComments(post, showAllComments === post.user_id)}
+                    {post.comments && post.comments.length > 2 && (
+                      <button
+                        onClick={() => setShowAllComments(showAllComments === post.user_id ? null : post.user_id)}
+                        className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                      >
+                        {showAllComments === post.user_id ? (
+                          <>
+                            <span>댓글 접기</span>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                            </svg>
+                          </>
+                        ) : (
+                          <>
+                            <span>댓글 {post.comments.length - 2}개 더 보기</span>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             ))
           ) : (
