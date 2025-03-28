@@ -209,6 +209,9 @@ export default function Profile() {
       await refreshProfile();
       
       showTemporaryModal('프로필이 저장되었습니다!', 'success');
+      await supabase.auth.updateUser({
+        data: { profileDone: true }
+      });
       
       setTimeout(() => {
         router.push('/home');
