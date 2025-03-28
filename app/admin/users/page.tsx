@@ -397,6 +397,21 @@ export default function UsersAdmin() {
     
     const pageButtons = [];
     
+    // 맨 앞으로 버튼 (첫 페이지)
+    if (page > 1) {
+      pageButtons.push(
+        <button
+          key="first"
+          onClick={() => handlePageChange(1)}
+          className="px-3 py-1 mx-1 rounded border border-gray-300 hover:bg-gray-100"
+          disabled={loading}
+          title="첫 페이지"
+        >
+          &laquo;&laquo;
+        </button>
+      );
+    }
+    
     // 이전 버튼
     if (page > 1) {
       pageButtons.push(
@@ -435,6 +450,21 @@ export default function UsersAdmin() {
           disabled={loading}
         >
           &raquo;
+        </button>
+      );
+    }
+    
+    // 맨 뒤로 버튼 (마지막 페이지)
+    if (page < totalPages) {
+      pageButtons.push(
+        <button
+          key="last"
+          onClick={() => handlePageChange(totalPages)}
+          className="px-3 py-1 mx-1 rounded border border-gray-300 hover:bg-gray-100"
+          disabled={loading}
+          title="마지막 페이지"
+        >
+          &raquo;&raquo;
         </button>
       );
     }
