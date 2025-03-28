@@ -63,6 +63,7 @@ interface Profile {
   smoking: boolean;
   drinking: boolean;
   tattoo: boolean;
+  classification?: string;
 }
 
 interface UserPreference {
@@ -78,6 +79,9 @@ interface UserPreference {
   preferred_drinking: boolean;
   preferred_tattoo: boolean;
 }
+
+// 등급별 점수 가중치 추가
+const gradeValues: Record<string, number> = { 'S': 4, 'A': 3, 'B': 2, 'C': 1 };
 
 export default function AdminMatching() {
   const [matchingDate, setMatchingDate] = useState('');
@@ -284,6 +288,19 @@ export default function AdminMatching() {
     let score = 0;
     const details: any = {};
 
+    // 등급 차이에 따른 점수 차감 (한 단계당 -2점)
+    const femaleGradeVal = female.classification ? (gradeValues[female.classification] || 0) : 0;
+    const maleGradeVal = male.classification ? (gradeValues[male.classification] || 0) : 0;
+    const gradeDiff = Math.abs(maleGradeVal - femaleGradeVal);
+    const gradePenalty = gradeDiff * 2;
+    
+    details.등급_점수 = {
+      차감점수: -gradePenalty,
+      여성등급: female.classification,
+      남성등급: male.classification,
+      등급차이: gradeDiff
+    };
+    
     // 1. 나이 선호도 점수 (35점)
     const ageDiff = Math.abs(male.age - female.age);
     let ageScore = 0;
@@ -390,8 +407,10 @@ export default function AdminMatching() {
     };
     score += lifestyleScore;
 
-    details.총점 = Math.min(100, score);
-    return { score: Math.min(100, score), details };
+    // 최종 점수에서 등급 차이만큼 차감
+    const finalScore = Math.max(0, score - gradePenalty);
+    details.총점 = finalScore;
+    return { score: finalScore, details };
   };
 
   const hasRequiredData = (profile: Profile, preferences: UserPreference): boolean => {
