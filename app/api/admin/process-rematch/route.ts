@@ -51,16 +51,6 @@ export async function POST(request: Request) {
     }
 
     // 기존 매치 정보 제거 (상태를 'cancelled'로 변경)
-    const { error: updateError } = await supabase
-      .from('matches')
-      .update({ status: 'cancelled' })
-      .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
-      .eq('status', 'pending');
-
-    if (updateError) {
-      throw new Error(`기존 매치 취소 실패: ${updateError.message}`);
-    }
-
     // 재매칭을 위한 파트너 찾기 (성별에 맞는 다른 사용자 중에서 매치가 없는 사람)
     const oppositeGender = userProfile.gender === '남성' ? '여성' : '남성';
     
@@ -68,7 +58,6 @@ export async function POST(request: Request) {
     const { data: existingMatches } = await supabase
       .from('matches')
       .select('user1_id, user2_id')
-      .eq('status', 'pending');
     
     const matchedUserIds = new Set();
     
@@ -187,11 +176,6 @@ export async function POST(request: Request) {
     
     // 매칭 결과가 없으면 실패 처리
     if (!rematchResult) {
-      // 재매칭 요청 상태 업데이트 (매칭 불가)
-      await supabase
-        .from('matching_requests')
-        .update({ status: 'no_match' })
-        .eq('user_id', userId);
       
       return NextResponse.json({
         success: false,
@@ -217,7 +201,6 @@ export async function POST(request: Request) {
       user2_id: userProfile.gender === '남성' ? matchedPartner.id : userProfile.id,
       match_date: new Date().toISOString().split('T')[0],
       match_time: matchingDateTime,
-      status: 'pending',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -231,10 +214,6 @@ export async function POST(request: Request) {
     }
 
     // 재매칭 요청 상태 업데이트 (완료)
-    await supabase
-      .from('matching_requests')
-      .update({ status: 'completed' })
-      .eq('user_id', userId);
 
     return NextResponse.json({
       success: true,

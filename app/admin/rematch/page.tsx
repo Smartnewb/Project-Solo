@@ -17,6 +17,10 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import PersonIcon from '@mui/icons-material/Person';
+import { createClient } from '@/utils/supabase/client';
+
+// supabase 클라이언트 초기화
+const supabase = createClient();
 
 // 프로필 모달 컴포넌트
 function UserProfileModal({ open, onClose, userData }: {
@@ -92,6 +96,67 @@ function UserProfileModal({ open, onClose, userData }: {
   );
 }
 
+// calculateMatchScore 함수 정의
+const calculateMatchScore = (profile1: any, profile2: any, preferences: any) => {
+  let score = 0;
+  const details: any = {};
+
+  // 같은 학과인 경우 매칭 제외
+  if (profile1.department === profile2.department) {
+    return { score: 0, details: { 제외사유: '같은 학과' } };
+  }
+
+  // 1. 나이 선호도 점수 (35점)
+  const ageDiff = Math.abs(profile2.age - profile1.age);
+  let ageScore = 0;
+  
+  switch (preferences.preferred_age_type) {
+    case '동갑':
+      ageScore = ageDiff === 0 ? 35 : Math.max(0, 25 - (ageDiff * 5));
+      break;
+    case '연상':
+      ageScore = profile2.age > profile1.age ? Math.max(0, 35 - (ageDiff * 3)) : 0;
+      break;
+    case '연하':
+      ageScore = profile2.age < profile1.age ? Math.max(0, 35 - (ageDiff * 3)) : 0;
+      break;
+    default: // '상관없음'
+      ageScore = Math.max(0, 25 - (ageDiff * 2));
+  }
+  score += ageScore;
+  details['나이 점수'] = ageScore;
+
+  // 2. MBTI 점수 (15점)
+  const mbtiScore = preferences.preferred_mbti?.includes(profile2.mbti) ? 15 : 0;
+  score += mbtiScore;
+  details['MBTI 점수'] = mbtiScore;
+
+  // 3. 성격 매칭 점수 (20점)
+  const personalityScore = profile2.personalities?.filter((p: string) => 
+    preferences.preferred_personalities?.includes(p)
+  ).length * 5 || 0;
+  score += Math.min(personalityScore, 20);
+  details['성격 점수'] = Math.min(personalityScore, 20);
+
+  // 4. 데이트 스타일 매칭 점수 (20점)
+  const styleScore = profile2.dating_styles?.filter((s: string) => 
+    preferences.preferred_dating_styles?.includes(s)
+  ).length * 5 || 0;
+  score += Math.min(styleScore, 20);
+  details['데이트 스타일 점수'] = Math.min(styleScore, 20);
+
+  // 5. 기타 선호도 점수 (10점)
+  let otherScore = 0;
+  if (preferences.preferred_smoking === profile2.smoking) otherScore += 4;
+  if (preferences.preferred_drinking === profile2.drinking) otherScore += 3;
+  if (preferences.preferred_tattoo === profile2.tattoo) otherScore += 3;
+  score += otherScore;
+  details['기타 선호도 점수'] = otherScore;
+
+  details['총점'] = score;
+  return { score, details };
+};
+
 export default function RematchRequestPage() {
   const [rematchRequests, setRematchRequests] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -113,9 +178,8 @@ export default function RematchRequestPage() {
       console.log('재매칭 요청 데이터:', data);
       
       // API 응답에 필요한 상태 정보가 없을 경우를 위한 임시 처리
-      const enhancedRequests = (data.requests || []).map(req => ({
+      const enhancedRequests = (data.requests || []).map((req: any) => ({
         ...req,
-        status: req.status || 'pending', // 상태가 없으면 'pending'으로 설정
         depositConfirmed: req.depositConfirmed || false,
         matchedPartner: req.matchedPartner || {
           name: req.gender === '여성' ? '김민준' : '이서연',
@@ -189,52 +253,185 @@ export default function RematchRequestPage() {
   const processRematch = async (userId: string) => {
     try {
       console.log('재매칭 처리 시작:', userId);
-      
-      const response = await fetch('/api/admin/process-rematch', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId }),
-      });
+      const supabase = createClient();
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `API 응답 오류: ${response.status}`);
+      // 1. 재매칭 요청한 유저의 정보와 선호도 가져오기
+      const { data: userProfile, error: userError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (userError || !userProfile) {
+        throw new Error('사용자 프로필을 찾을 수 없습니다.');
       }
 
-      const data = await response.json();
-      console.log('재매칭 처리 결과:', data);
+      // 2. 유저의 선호도 정보 가져오기
+      const { data: userPreference, error: prefError } = await supabase
+        .from('user_preferences')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
 
-      // 재매칭 요청 목록 새로고침
-      // fetchRematchRequests();
-      
-      // 테스트를 위해 로컬 상태 업데이트 - API가 완전히 구현된 후에는 fetchRematchRequests로 대체
-      setRematchRequests(prevRequests => 
-        prevRequests.map(req => 
-          req.user_id === userId 
-            ? {
-                ...req, 
-                status: 'completed',
-                newPartner: {
-                  name: '정유진',
-                  instagramId: 'yujin_jung97'
-                }
-              } 
-            : req
-        )
+      if (prefError) {
+        throw new Error('사용자 선호도 정보를 찾을 수 없습니다.');
+      }
+
+      // 3. 이전 매칭 파트너 ID 가져오기
+      const { data: previousMatch } = await supabase
+        .from('matches')
+        .select('user1_id, user2_id')
+        .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      const previousPartnerId = previousMatch
+        ? (previousMatch.user1_id === userId ? previousMatch.user2_id : previousMatch.user1_id)
+        : null;
+
+      // 4. 상대 성별의 프로필 가져오기
+      const oppositeGender = userProfile.gender === 'male' ? 'female' : 'male';
+
+      // 현재 매칭된 사용자들의 ID 가져오기
+      const { data: currentMatches } = await supabase
+        .from('matches')
+        .select('user1_id, user2_id')
+        .eq('status', 'active');  // 활성 상태인 매칭만 가져오기
+
+      // 이미 매칭된 사용자 ID 목록 생성
+      const matchedUserIds = new Set();
+      if (currentMatches) {
+        currentMatches.forEach(match => {
+          matchedUserIds.add(match.user1_id);
+          matchedUserIds.add(match.user2_id);
+        });
+      }
+
+      // 매칭 가능한 후보 조회
+      const { data: candidates, error: candidatesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('gender', oppositeGender)
+        .neq('user_id', userId);  // id 대신 user_id 사용
+
+      if (candidatesError) {
+        throw new Error('매칭 후보 조회에 실패했습니다.');
+      }
+
+      // 5. 매칭 점수 계산 및 최적의 파트너 찾기
+      let bestMatch = null;
+      let highestScore = -1;
+
+      // 매칭되지 않은 후보들만 필터링
+      const availableCandidates = candidates.filter(candidate => 
+        !matchedUserIds.has(candidate.user_id) && // 이미 매칭된 사용자 제외
+        candidate.user_id !== previousPartnerId && // 이전 파트너 제외
+        candidate.department !== userProfile.department // 같은 학과 제외
       );
 
-      setMessage({
-        type: 'success',
-        content: '재매칭이 성공적으로 처리되었습니다.'
+      for (const candidate of availableCandidates) {
+        const { score } = calculateMatchScore(
+          userProfile,
+          candidate,
+          userPreference
+        );
+
+        if (score > highestScore) {
+          highestScore = score;
+          bestMatch = candidate;
+        }
+      }
+
+      if (!bestMatch) {
+        throw new Error('적합한 매칭 상대를 찾을 수 없습니다.');
+      }
+
+      // 새로운 매칭을 rematches 테이블에 생성
+      const newMatch = {
+        user1_id: userProfile.gender === 'male' ? userProfile.user_id : bestMatch.user_id,
+        user2_id: userProfile.gender === 'male' ? bestMatch.user_id : userProfile.user_id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        score: highestScore
+      };
+
+      console.log('재매칭 데이터:', {
+        userProfile: {
+          id: userProfile.id,
+          user_id: userProfile.user_id,
+          gender: userProfile.gender
+        },
+        bestMatch: {
+          id: bestMatch.id,
+          user_id: bestMatch.user_id,
+          gender: bestMatch.gender
+        },
+        newMatch
       });
+
+      const { data, error: insertError } = await supabase
+        .from('rematches')
+        .insert([newMatch])
+        .select();  // 추가된 데이터 반환
+
+      if (insertError) {
+        console.error('재매칭 저장 실패:', {
+          error: insertError,
+          errorMessage: insertError.message,
+          details: insertError.details,
+          hint: insertError.hint
+        });
+        throw new Error(`재매칭 정보 저장에 실패했습니다: ${insertError.message}`);
+      }
+
+      console.log('재매칭 저장 성공:', data);
+
+      // 매칭된 사용자들의 이름 조회
+      const { data: user1Data } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('user_id', newMatch.user1_id)
+        .single();
+
+      const { data: user2Data } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('user_id', newMatch.user2_id)
+        .single();
+
+      console.log('매칭된 사용자들:', {
+        user1: {
+          id: newMatch.user1_id,
+          name: user1Data?.name || '알 수 없음'
+        },
+        user2: {
+          id: newMatch.user2_id,
+          name: user2Data?.name || '알 수 없음'
+        },
+        score: highestScore
+      });
+
+      return {
+        success: true,
+        message: '재매칭이 성공적으로 처리되었습니다.',
+        match: {
+          id: newMatch.user1_id,
+          score: highestScore,
+          user1: {
+            id: newMatch.user1_id,
+            name: user1Data?.name || '알 수 없음'
+          },
+          user2: {
+            id: newMatch.user2_id,
+            name: user2Data?.name || '알 수 없음'
+          }
+        }
+      };
+
     } catch (error) {
-      console.error('재매칭 처리 중 오류 발생:', error);
-      setMessage({
-        type: 'error',
-        content: error instanceof Error ? error.message : '재매칭 처리에 실패했습니다.'
-      });
+      console.error('재매칭 처리 중 오류:', error);
+      throw error;
     }
   };
 
