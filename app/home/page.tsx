@@ -201,7 +201,7 @@ export default function Home() {
         return {
           id: match.id,
           instagram_id: profileData.instagram_id,
-          score: match.score + 30,
+          score: match.score + 40,
           isRematch: isFromRematches,
           partner_name: profileData.name,
           created_at: match.created_at,
