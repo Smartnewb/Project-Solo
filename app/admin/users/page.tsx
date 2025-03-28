@@ -13,7 +13,7 @@ type User = {
   age?: number;
   gender?: string;
   role?: string;
-  classification?: string;
+  classification?: string | null;
   created_at: string;
   updated_at: string;
   
@@ -305,6 +305,9 @@ export default function UsersAdmin() {
       console.log('등급 변경 시작 - 사용자 ID:', userId);
       console.log('새 등급:', classification);
       
+      // 빈 문자열이면 null로 변환 (미분류 처리)
+      const classificationValue = classification === '' ? null : classification;
+      
       // 먼저 현재 프로필 정보 확인
       const { data: currentProfile, error: fetchError } = await supabase
         .from('profiles')
@@ -322,7 +325,7 @@ export default function UsersAdmin() {
       // 프로필 테이블 업데이트
       const { data, error } = await supabase
         .from('profiles')
-        .update({ classification })
+        .update({ classification: classificationValue })
         .eq('user_id', userId)
         .select();
         
@@ -335,12 +338,12 @@ export default function UsersAdmin() {
       
       // 사용자 목록 업데이트
       setUsers(prevUsers => prevUsers.map(user => 
-        user.user_id === userId ? { ...user, classification } : user
+        user.user_id === userId ? { ...user, classification: classificationValue } : user
       ));
       
       // 선택된 사용자가 있고, 그 ID가 현재 업데이트하는 ID와 같다면 선택된 사용자 정보도 업데이트
       if (selectedUser && selectedUser.user_id === userId) {
-        setSelectedUser(prev => prev ? { ...prev, classification } : null);
+        setSelectedUser(prev => prev ? { ...prev, classification: classificationValue } : null);
       }
       
     } catch (err: any) {
