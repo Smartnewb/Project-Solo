@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { ADMIN_EMAIL } from '@/utils/config';
 
 export default function Login() {
   const router = useRouter();
@@ -19,7 +20,7 @@ export default function Login() {
   useEffect(() => {
     if (!authLoading && user) {
       console.log('로그인 상태 감지됨:', user.id);
-      if (user.email === 'notify@smartnewb.com') {
+      if (user.email === ADMIN_EMAIL) {
         router.replace('/admin/community');
       } else {
         router.replace('/home');
@@ -59,7 +60,13 @@ export default function Login() {
         return;
       }
 
-      // 로그인 성공 - AuthContext가 자동으로 상태를 업데이트하고 리다이렉션 처리
+      // 로그인 성공 시 사용자 정보와 어드민 여부 저장
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+        const isAdmin = data.user.email === ADMIN_EMAIL;
+        localStorage.setItem('isAdmin', String(isAdmin));
+      }
+
       console.log('로그인 성공:', data.user?.id);
     } catch (err) {
       console.error('로그인 중 예외 발생:', err);

@@ -649,9 +649,12 @@ export default function Community() {
 
   const renderComments = (post: Post, showAll: boolean) => {
     const comments = post.comments || [];
-    const displayComments = showAll ? comments : comments.slice(0, 2);
-    const hasMoreComments = comments.length > 2;
-    return displayComments.map((comment) => !comment.isdeleted ? (
+    // isdeleted가 false인 댓글만 필터링
+    const filteredComments = comments.filter(comment => !comment.isdeleted);
+    const displayComments = showAll ? filteredComments : filteredComments.slice(0, 2);
+    const hasMoreComments = filteredComments.length > 2;
+    
+    return displayComments.map((comment) => (
       <div key={comment.id} className="bg-gray-50 p-3 rounded-lg">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
@@ -719,10 +722,6 @@ export default function Community() {
         ) : (
           <p className="text-sm text-gray-700">{comment.content}</p>
         )}
-      </div>
-    ) : (
-      <div key={comment.id} className="bg-gray-50 p-3 rounded-lg">
-        <p className="text-sm text-gray-500 text-center">삭제된 댓글입니다.</p>
       </div>
     ));
   };
@@ -1320,7 +1319,7 @@ export default function Community() {
                       className="flex items-center gap-1 text-gray-500"
                     >
                       <ChatBubbleOvalLeftIcon className="w-5 h-5" />
-                      <span>{post.comments?.length || 0}</span>
+                      <span>{post.comments?.filter(comment => !comment.isdeleted).length || 0}</span>
                     </button>
                   </div>
                 </div>
@@ -1379,7 +1378,7 @@ export default function Community() {
                           </>
                         ) : (
                           <>
-                            <span>댓글 {post.comments.length - 2}개 더 보기</span>
+                            <span>댓글 {post.comments?.filter(comment => !comment.isdeleted).length || 0}개 더 보기</span>
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                             </svg>

@@ -207,17 +207,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log('인증 초기화 시작');
       setLoading(true);
 
+      // 로컬스토리지에서 어드민 상태 확인
+      const storedIsAdmin = localStorage.getItem('isAdmin') === 'true';
+      if (storedIsAdmin) {
+        setIsAdmin(true);
+        setLoading(false);
+        return;
+      }
+
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       console.log('세션 상태:', currentSession ? '세션 있음' : '세션 없음');
 
       if (currentSession) {
         setSession(currentSession);
         setUser(currentSession.user);
-        setIsAdmin(currentSession.user.email === ADMIN_EMAIL);
+        const isAdminUser = currentSession.user.email === ADMIN_EMAIL;
+        setIsAdmin(isAdminUser);
+        if (isAdminUser) {
+          localStorage.setItem('isAdmin', 'true');
+        }
 
-        // 프로필 조회
-        const profileData = await fetchProfile(currentSession.user.id);
-        console.log('프로필 조회 결과:', profileData ? '성공' : '실패');
+        // 어드민이 아닌 경우에만 프로필 조회
+        if (!isAdminUser) {
+          const profileData = await fetchProfile(currentSession.user.id);
+          console.log('프로필 조회 결과:', profileData ? '성공' : '실패');
+        }
       } else {
         // 세션이 없는 경우 상태 초기화
         setUser(null);
@@ -225,6 +239,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsAdmin(false);
         setNeedsOnboarding(false);
         localStorage.removeItem('profile');
+        localStorage.removeItem('isAdmin');
       }
     } catch (error) {
       console.error('인증 초기화 오류:', error);

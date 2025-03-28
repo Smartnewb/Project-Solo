@@ -22,6 +22,8 @@ interface MatchResult {
   score: number;
   isRematch?: boolean; // 재매칭으로 생성된 매치인지 여부
   partner_name?: string; // 매칭 상대방 이름
+  title: string;
+  description: string;
 }
 
 export default function Home() {
@@ -45,6 +47,7 @@ export default function Home() {
   const [isMatchingTimeOver, setIsMatchingTimeOver] = useState(false);
   const [matchResults, setMatchResults] = useState<MatchResult[]>([]);
   const [isMultipleMatches, setIsMultipleMatches] = useState(false);
+  const [hasRequestedRematch, setHasRequestedRematch] = useState(false);
 
   // 사용자 선호도 정보 조회
   const checkUserPreferences = async (userId: string) => {
@@ -106,8 +109,6 @@ export default function Home() {
   const handleConfirmRematch = async () => {
     try {
       setShowRematchModal(false);
-      setNotificationMessage('리매칭 신청이 완료되었습니다. 다음 매칭을 기대해주세요!');
-      setShowNotificationModal(true);
       
       // matching_requests 테이블에 레코드 추가
       const { data, error } = await supabase
@@ -117,7 +118,7 @@ export default function Home() {
             user_id: user?.id,
             status: 'pending',
             preferred_date: new Date().toISOString().split('T')[0],
-            preferred_time: '19:00', // 기본 소개팅 시간
+            preferred_time: '19:00',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           }
@@ -127,6 +128,13 @@ export default function Home() {
         console.error('리매칭 요청 DB 저장 오류:', error);
         throw new Error('리매칭 요청 처리 중 오류가 발생했습니다.');
       }
+
+      // 로컬 스토리지에 재매칭 신청 상태 저장
+      localStorage.setItem('rematchRequested', 'true');
+      setHasRequestedRematch(true);
+      
+      setNotificationMessage('리매칭 신청이 완료되었습니다. 다음 매칭을 기대해주세요!');
+      setShowNotificationModal(true);
     } catch (error) {
       console.error('리매칭 요청 오류:', error);
       setNotificationMessage('리매칭 요청 중 오류가 발생했습니다.');
@@ -136,7 +144,7 @@ export default function Home() {
 
   // 매칭 시간 상태 업데이트 핸들러
   const handleMatchingTimeUpdate = (isOver: boolean) => {
-    setIsMatchingTimeOver(isOver);
+    setIsMatchingTimeOver(isOver); // isOver로 수정해야함 테스트 전용
   };
 
   // 매칭 결과 조회 함수
@@ -144,27 +152,36 @@ export default function Home() {
     if (!user) return;
 
     try {
-      // 1. matches 테이블에서 현재 사용자의 모든 매칭 정보 조회 (single 대신 여러 개)
+      // 1. matches 테이블에서 매칭 정보 조회
       const { data: matchData, error: matchError } = await supabase
         .from('matches')
         .select('id, user1_id, user2_id, score, created_at')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-        .order('created_at', { ascending: false }); // 최신순 정렬
+        .order('created_at', { ascending: false });
 
-      if (matchError || !matchData || matchData.length === 0) {
-        console.error('매칭 결과 조회 실패 또는 매칭 없음:', matchError);
+      // 2. rematches 테이블에서 재매칭 정보 조회
+      const { data: rematchData, error: rematchError } = await supabase
+        .from('rematches')
+        .select('id, user1_id, user2_id, score, created_at')
+        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+        .order('created_at', { ascending: false });
+
+      if ((matchError && rematchError) || (!matchData && !rematchData)) {
+        console.error('매칭 결과 조회 실패:', { matchError, rematchError });
         return;
       }
 
-      // 여러 매칭이 있는지 확인
-      setIsMultipleMatches(matchData.length > 1);
+      // 모든 매칭 데이터 합치기
+      const allMatches = [...(matchData || []), ...(rematchData || [])].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      setIsMultipleMatches(allMatches.length > 1);
       
       // 모든 매칭 정보를 처리
-      const matchResultsPromises = matchData.map(async (match) => {
-        // 상대방의 user_id 찾기
+      const matchResultsPromises = allMatches.map(async (match, index) => {
         const partnerId = match.user1_id === user.id ? match.user2_id : match.user1_id;
 
-        // 상대방의 프로필 정보 조회 (인스타그램 ID와 이름)
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('instagram_id, name')
@@ -176,16 +193,20 @@ export default function Home() {
           return null;
         }
 
-        // 이 매칭이 재매칭인지 확인 (첫 번째 매칭 외의 모든 매칭은 재매칭으로 취급)
-        const isRematch = matchData.length > 1 && 
-          match.created_at !== matchData[matchData.length - 1].created_at;
+        // 매칭 타입 구분 (matches vs rematches)
+        const isFromRematches = rematchData?.some(
+          rematch => rematch.id === match.id
+        );
 
         return {
           id: match.id,
           instagram_id: profileData.instagram_id,
-          score: match.score,
-          isRematch: isRematch,
-          partner_name: profileData.name
+          score: match.score + 30,
+          isRematch: isFromRematches,
+          partner_name: profileData.name,
+          created_at: match.created_at,
+          title: isFromRematches ? '재매칭 결과' : '매칭 결과',
+          description: isFromRematches ? '재매칭으로 새로 매칭된 상대입니다' : '첫 매칭 상대입니다'
         };
       });
 
@@ -208,6 +229,24 @@ export default function Home() {
     } catch (err) {
       console.error('복사 실패:', err);
     }
+  };
+
+  // 재매칭 신청 여부 확인 함수 추가
+  const checkRematchRequest = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('matching_requests')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (error) {
+      console.error('재매칭 신청 조회 오류:', error);
+      return;
+    }
+
+    setHasRequestedRematch(!!data);
   };
 
   // 초기 상태 설정
@@ -239,10 +278,17 @@ export default function Home() {
     initializeHome();
   }, [user, profile, router]);
 
+  // 상태 초기화 시 localStorage 체크 추가
+  useEffect(() => {
+    const hasRequested = localStorage.getItem('rematchRequested') === 'true';
+    setHasRequestedRematch(hasRequested);
+  }, []);
+
   // 매칭 시간이 되면 결과 조회
   useEffect(() => {
     if (isMatchingTimeOver) {
       fetchMatchResult();
+      checkRematchRequest();  // 재매칭 신청 여부 확인
     }
   }, [isMatchingTimeOver]);
 
@@ -465,13 +511,11 @@ export default function Home() {
                         </div>
                         <div>
                           <h2 className="text-2xl font-bold text-[#2D3436] tracking-tight">
-                            {match.isRematch ? '추가 매칭 결과' : '매칭 결과'}
+                            {match.title}
                           </h2>
-                          {match.isRematch && (
-                            <span className="text-sm text-[#0984E3] font-medium">
-                              재매칭으로 추가된 상대입니다
-                            </span>
-                          )}
+                          <span className="text-sm text-[#0984E3] font-medium">
+                            {match.description}
+                          </span>
                         </div>
                       </div>
                       
@@ -495,8 +539,12 @@ export default function Home() {
                         </div>
                       </div>
                       
-                      {/* 재매칭 버튼은 첫 번째(가장 오래된) 카드에만 표시 */}
-                      {index === 0 && (
+                      {/* 재매칭 버튼 상태 처리 */}
+                      {hasRequestedRematch ? (
+                        <div className="text-center py-3 bg-gray-100 rounded-xl">
+                          <p className="text-gray-600">이미 재매칭이 신청되었습니다</p>
+                        </div>
+                      ) : !matchResults.some(m => m.isRematch) && (
                         <button
                           onClick={handleRematchRequest}
                           className="btn-secondary w-full py-4 flex items-center justify-center gap-3 bg-[#74B9FF] text-white rounded-xl font-medium transform transition-all duration-200 hover:bg-[#5FA8FF] hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#74B9FF] focus:ring-offset-2"
@@ -531,17 +579,23 @@ export default function Home() {
                       {isMatchingTimeOver ? '매칭된 상대가 없습니다.' : '매칭 카운트 다운이 지나면 공개됩니다.'}
                     </p>
                   </div>
-                  {isMatchingTimeOver && (
-                    <button
-                      onClick={handleRematchRequest}
-                      className="btn-secondary w-full py-4 flex items-center justify-center gap-3 bg-[#74B9FF] text-white rounded-xl font-medium transform transition-all duration-200 hover:bg-[#5FA8FF] hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#74B9FF] focus:ring-offset-2"
-                      type="button"
-                    >
-                      <span className="text-lg">재매칭 신청하기</span>
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                    </button>
+                  {isMatchingTimeOver && !matchResults.some(m => m.isRematch) && (
+                    hasRequestedRematch ? (
+                      <div className="text-center py-3 bg-gray-100 rounded-xl">
+                        <p className="text-gray-600">이미 재매칭이 신청되었습니다</p>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleRematchRequest}
+                        className="btn-secondary w-full py-4 flex items-center justify-center gap-3 bg-[#74B9FF] text-white rounded-xl font-medium transform transition-all duration-200 hover:bg-[#5FA8FF] hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#74B9FF] focus:ring-offset-2"
+                        type="button"
+                      >
+                        <span className="text-lg">재매칭 신청하기</span>
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      </button>
+                    )
                   )}
                 </div>
               </section>
@@ -699,7 +753,7 @@ export default function Home() {
                   <div className="text-5xl mb-4">⚠️</div>
                   <h3 className="text-xl font-bold mb-2">프로필 정보를 완성해주세요</h3>
                   <p className="text-gray-600">
-                    매칭에 필요한 정보가 부족합니다. 프로필을 완성하고 재매칭 신청을 진행해주세요.
+                    매칭에 필요한 정보가 부족합니다. 프로필, 이상형 정보, 기본 정보를 완성하고 재매칭 신청을 진행해주세요. 계속 오류가 발생하면 재 로그인 부탁드립니다.
                   </p>
                 </div>
                 <div className="flex space-x-3">
