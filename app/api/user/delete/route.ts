@@ -10,6 +10,13 @@ export async function POST(request: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
+    const { error: prefError } = await supabaseAdmin
+      .from('user_preferences')
+      .delete()
+      .eq('user_id', userId);
+
+    if (prefError) throw prefError;
+
     // 1. 프로필 삭제
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
@@ -19,12 +26,7 @@ export async function POST(request: Request) {
     if (profileError) throw profileError;
 
     // 2. 선호도 데이터 삭제
-    const { error: prefError } = await supabaseAdmin
-      .from('user_preferences')
-      .delete()
-      .eq('user_id', userId);
 
-    if (prefError) throw prefError;
 
     // 3. Auth 사용자 삭제
     const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);

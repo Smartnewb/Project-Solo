@@ -109,8 +109,6 @@ export default function Home() {
   const handleConfirmRematch = async () => {
     try {
       setShowRematchModal(false);
-      setNotificationMessage('리매칭 신청이 완료되었습니다. 다음 매칭을 기대해주세요!');
-      setShowNotificationModal(true);
       
       // matching_requests 테이블에 레코드 추가
       const { data, error } = await supabase
@@ -120,7 +118,7 @@ export default function Home() {
             user_id: user?.id,
             status: 'pending',
             preferred_date: new Date().toISOString().split('T')[0],
-            preferred_time: '19:00', // 기본 소개팅 시간
+            preferred_time: '19:00',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           }
@@ -130,6 +128,13 @@ export default function Home() {
         console.error('리매칭 요청 DB 저장 오류:', error);
         throw new Error('리매칭 요청 처리 중 오류가 발생했습니다.');
       }
+
+      // 로컬 스토리지에 재매칭 신청 상태 저장
+      localStorage.setItem('rematchRequested', 'true');
+      setHasRequestedRematch(true);
+      
+      setNotificationMessage('리매칭 신청이 완료되었습니다. 다음 매칭을 기대해주세요!');
+      setShowNotificationModal(true);
     } catch (error) {
       console.error('리매칭 요청 오류:', error);
       setNotificationMessage('리매칭 요청 중 오류가 발생했습니다.');
@@ -272,6 +277,12 @@ export default function Home() {
 
     initializeHome();
   }, [user, profile, router]);
+
+  // 상태 초기화 시 localStorage 체크 추가
+  useEffect(() => {
+    const hasRequested = localStorage.getItem('rematchRequested') === 'true';
+    setHasRequestedRematch(hasRequested);
+  }, []);
 
   // 매칭 시간이 되면 결과 조회
   useEffect(() => {
@@ -528,8 +539,12 @@ export default function Home() {
                         </div>
                       </div>
                       
-                      {/* 재매칭 버튼은 신청한 적이 없는 경우에만 표시 */}
-                      {!hasRequestedRematch && (
+                      {/* 재매칭 버튼 상태 처리 */}
+                      {hasRequestedRematch ? (
+                        <div className="text-center py-3 bg-gray-100 rounded-xl">
+                          <p className="text-gray-600">이미 재매칭이 신청되었습니다</p>
+                        </div>
+                      ) : !matchResults.some(m => m.isRematch) && (
                         <button
                           onClick={handleRematchRequest}
                           className="btn-secondary w-full py-4 flex items-center justify-center gap-3 bg-[#74B9FF] text-white rounded-xl font-medium transform transition-all duration-200 hover:bg-[#5FA8FF] hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#74B9FF] focus:ring-offset-2"
@@ -565,16 +580,22 @@ export default function Home() {
                     </p>
                   </div>
                   {isMatchingTimeOver && !matchResults.some(m => m.isRematch) && (
-                    <button
-                      onClick={handleRematchRequest}
-                      className="btn-secondary w-full py-4 flex items-center justify-center gap-3 bg-[#74B9FF] text-white rounded-xl font-medium transform transition-all duration-200 hover:bg-[#5FA8FF] hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#74B9FF] focus:ring-offset-2"
-                      type="button"
-                    >
-                      <span className="text-lg">재매칭 신청하기</span>
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                    </button>
+                    hasRequestedRematch ? (
+                      <div className="text-center py-3 bg-gray-100 rounded-xl">
+                        <p className="text-gray-600">이미 재매칭이 신청되었습니다</p>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleRematchRequest}
+                        className="btn-secondary w-full py-4 flex items-center justify-center gap-3 bg-[#74B9FF] text-white rounded-xl font-medium transform transition-all duration-200 hover:bg-[#5FA8FF] hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#74B9FF] focus:ring-offset-2"
+                        type="button"
+                      >
+                        <span className="text-lg">재매칭 신청하기</span>
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      </button>
+                    )
                   )}
                 </div>
               </section>
@@ -732,7 +753,7 @@ export default function Home() {
                   <div className="text-5xl mb-4">⚠️</div>
                   <h3 className="text-xl font-bold mb-2">프로필 정보를 완성해주세요</h3>
                   <p className="text-gray-600">
-                    매칭에 필요한 정보가 부족합니다. 프로필을 완성하고 재매칭 신청을 진행해주세요.
+                    매칭에 필요한 정보가 부족합니다. 프로필, 이상형 정보, 기본 정보를 완성하고 재매칭 신청을 진행해주세요. 계속 오류가 발생하면 재 로그인 부탁드립니다.
                   </p>
                 </div>
                 <div className="flex space-x-3">
