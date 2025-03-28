@@ -382,6 +382,19 @@ export default function Onboarding() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // 유효성 검사
+    const newErrors = {
+      ...errors,
+      instagramId: !formData.instagramId?.trim()  // 인스타그램 아이디가 비어있거나 공백만 있는 경우
+    };
+    
+    setErrors(newErrors);
+
+    // 에러가 있으면 제출하지 않음
+    if (Object.values(newErrors).some(error => error)) {
+      return;
+    }
+
     try {
       if (!user) {
         console.error('사용자 정보가 없습니다.');
@@ -670,9 +683,10 @@ export default function Onboarding() {
             </div>
             <input
               type="text"
+              required
               value={formData.instagramId}
               onChange={(e) => {
-                setFormData({ ...formData, instagramId: e.target.value });
+                setFormData({ ...formData, instagramId: e.target.value.trim() });
                 setErrors({ ...errors, instagramId: false });
               }}
               className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-300 focus:outline-none transition-all"

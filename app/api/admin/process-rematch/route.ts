@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { findRematch, RematchResult } from '@/app/matchingAlgorithm';
 import { Profile } from '@/app/types/matching';
 import { UserPreferences } from '@/types';
+import { ADMIN_EMAIL } from '@/utils/config';
 
 // 정적 생성에서 동적 렌더링으로 전환
 export const dynamic = 'force-dynamic';
@@ -25,14 +26,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '인증되지 않은 사용자입니다.' }, { status: 401 });
     }
     
-    // 관리자 확인
-    const { data: adminCheck } = await supabase
-      .from('profiles')
-      .select('is_admin')
-      .eq('user_id', user.id)
-      .single();
-    
-    if (!adminCheck || !adminCheck.is_admin) {
+    // ADMIN_EMAIL을 사용한 관리자 확인
+    if (user.email !== ADMIN_EMAIL) {
       return NextResponse.json({ error: '관리자 권한이 없습니다.' }, { status: 403 });
     }
 
@@ -48,7 +43,7 @@ export async function POST(request: Request) {
     const { data: userProfile, error: userError } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', userId)
+      .eq('user_id', userId)
       .single();
     
     if (userError || !userProfile) {
@@ -136,6 +131,17 @@ export async function POST(request: Request) {
         id: profile.id,
         gender: profile.gender === '남성' ? 'male' : 'female',
         classification: profile.classification || 'C',
+        user_id: profile.user_id,
+        name: profile.name,
+        age: profile.age,
+        department: profile.department,
+        mbti: profile.mbti,
+        height: profile.height,
+        personalities: profile.personalities,
+        dating_styles: profile.dating_styles,
+        smoking: profile.smoking,
+        drinking: profile.drinking,
+        tattoo: profile.tattoo
       }));
     
     // 3. 사용자 선호도 변환

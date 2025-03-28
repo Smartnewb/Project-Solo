@@ -388,6 +388,13 @@ export default function ProfilePage() {
             >
               프로필 수정하기
             </button>
+
+            <button
+              onClick={() => router.push('/onboarding')}
+              className="w-full py-3 px-6 bg-purple-100 text-purple-800 font-medium rounded-xl hover:bg-purple-200 transition-all"
+            >
+              기본 정보 수정
+            </button>
           </div>
         </div>
       </div>
