@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClientSupabaseClient } from '@/utils/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -12,17 +12,20 @@ type User = {
   name: string;
   age?: number;
   gender?: string;
+  role?: string;
+  classification?: string;
   created_at: string;
   updated_at: string;
-  email?: string;
+  
+  // 추가 필드 (데이터베이스에 없지만 정보 표시용)
+  email?: string; // 프로필이 아닌 auth.users에 있을 수 있는 필드
   is_blocked?: boolean;
   reports_count?: number;
   matches_count?: number;
   last_active?: string;
   instagram_id?: string;
-  classification?: string;
   
-  // 프로필 필드
+  // 프로필 관련 필드 (임시로 코드 호환성을 위해 유지)
   height?: number;
   university?: string;
   department?: string;
@@ -60,53 +63,102 @@ export default function UsersAdmin() {
   const [filter, setFilter] = useState<string>('all'); // 'all', 'blocked', 'reported', 'active'
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedGender, setSelectedGender] = useState<'all' | 'male' | 'female'>('all');
-  const [selectedClass, setSelectedClass] = useState<'all' | 'S' | 'A' | 'B' | 'C'>('all');
+  const [selectedClass, setSelectedClass] = useState<'all' | 'S' | 'A' | 'B' | 'C' | 'unclassified'>('all');
+  const [dbError, setDbError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10); // 페이지당 표시 개수 감소
+  const [totalCount, setTotalCount] = useState(0);
+
   const { isAdmin } = useAuth();
   const supabase = createClientSupabaseClient();
 
   useEffect(() => {
     if (isAdmin) {
+      setPage(1); // 필터 변경 시 페이지 초기화
       fetchUsers();
     }
-  }, [filter, isAdmin]);
+  }, [filter, isAdmin, selectedGender, selectedClass, searchTerm]);
+  
+  // 페이지 변경 시 데이터 가져오기
+  useEffect(() => {
+    if (isAdmin && page > 0) {
+      fetchUsers();
+    }
+  }, [page]);
+  
+  // 검색어 입력 시 디바운스 적용
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (isAdmin) {
+        setPage(1);
+        fetchUsers();
+      }
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   async function fetchUsers() {
     try {
       setLoading(true);
       setError(null); // 오류 상태 초기화
       
-      console.log('사용자 데이터 불러오기 시작');
-      
-      // 기본 프로필 정보 조회
-      const { data: profilesData, error: profilesError } = await supabase
+      // 실제 테이블에 존재하는 필드만 선택
+      let query = supabase
         .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-        
-      if (profilesError) {
-        console.error('프로필 데이터 조회 오류:', profilesError);
-        throw profilesError;
+        .select(
+          'id, user_id, name, age, gender, role, classification, created_at, updated_at, instagram_id',
+          { count: 'exact' }
+        )
+        .order('created_at', { ascending: false })
+        .range((page - 1) * pageSize, page * pageSize - 1);
+      
+      // 서버 측 필터링 적용
+      if (filter === 'blocked') {
+        // is_blocked 필드가 없으므로, 임시로 admin 사용자는 필터링하지 않음
+        // query = query.eq('role', 'admin');
+      } else if (filter === 'reported') {
+        // reports_count 필드가 없으므로, 임시로 아무 필터링도 하지 않음
+        // query = query.gt('reports_count', 0);
       }
       
-      console.log('프로필 데이터 불러오기 성공:', profilesData?.length || 0, '개의 프로필');
+      if (selectedGender !== 'all') {
+        query = query.eq('gender', selectedGender);
+      }
       
-      // 디버깅: 첫 번째 프로필의 구조 확인
-      if (profilesData && profilesData.length > 0) {
-        console.log('프로필 데이터 구조:', Object.keys(profilesData[0]));
-        console.log('첫 번째 프로필 샘플:', JSON.stringify(profilesData[0], null, 2));
-        console.log('user_id 필드:', profilesData[0].user_id);
-        console.log('classification 필드:', profilesData[0].classification);
+      if (selectedClass !== 'all') {
+        if (selectedClass === 'unclassified') {
+          // classification이 null인 경우 검색
+          query = query.is('classification', null);
+        } else {
+          query = query.eq('classification', selectedClass);
+        }
+      }
+      
+      if (searchTerm.trim() !== '') {
+        // email 필드가 없으므로 name 필드로만 검색
+        query = query.ilike('name', `%${searchTerm}%`);
+      }
+      
+      const { data: profilesData, error: profilesError, count } = await query;
+        
+      if (profilesError) {
+        setDbError(profilesError.message);
+        return;
       }
       
       if (!profilesData || profilesData.length === 0) {
         setUsers([]);
-        setLoading(false);
         return;
       }
 
-      // 사용자 목록 설정
+      // 사용자 목록 설정 (이제 페이지네이션을 사용하므로 항상 더기가 아닌 대체)
       setUsers(profilesData);
-      console.log('사용자 목록 설정 완료');
+      
+      // 총 개수 설정
+      if (count !== null) {
+        setTotalCount(count);
+      }
       
     } catch (err: any) {
       console.error('사용자 목록 불러오기 오류:', err);
@@ -168,9 +220,10 @@ export default function UsersAdmin() {
     try {
       setLoading(true);
       
+      // is_blocked 필드가 없으므로 임시로 role을 'blocked'로 변경
       const { error } = await supabase
         .from('profiles')
-        .update({ is_blocked: true })
+        .update({ role: 'blocked' })
         .eq('user_id', userId);
         
       if (error) {
@@ -179,7 +232,7 @@ export default function UsersAdmin() {
       
       // 목록 업데이트
       setUsers(users.map(user => 
-        user.user_id === userId ? { ...user, is_blocked: true } : user
+        user.user_id === userId ? { ...user, role: 'blocked' } : user
       ));
       
       alert('사용자가 차단되었습니다.');
@@ -200,9 +253,10 @@ export default function UsersAdmin() {
     try {
       setLoading(true);
       
+      // is_blocked 필드가 없으므로 role을 'user'로 변경
       const { error } = await supabase
         .from('profiles')
-        .update({ is_blocked: false })
+        .update({ role: 'user' })
         .eq('user_id', userId);
         
       if (error) {
@@ -211,7 +265,7 @@ export default function UsersAdmin() {
       
       // 목록 업데이트
       setUsers(users.map(user => 
-        user.user_id === userId ? { ...user, is_blocked: false } : user
+        user.user_id === userId ? { ...user, role: 'user' } : user
       ));
       
       alert('사용자 차단이 해제되었습니다.');
@@ -225,35 +279,8 @@ export default function UsersAdmin() {
   };
 
   const handleClearReports = async (userId: string) => {
-    if (!confirm('이 사용자의 신고 내역을 모두 삭제하시겠습니까?')) {
-      return;
-    }
-    
-    try {
-      setLoading(true);
-      
-      const { error } = await supabase
-        .from('profiles')
-        .update({ reports_count: 0 })
-        .eq('user_id', userId);
-        
-      if (error) {
-        throw error;
-      }
-      
-      // 목록 업데이트
-      setUsers(users.map(user => 
-        user.user_id === userId ? { ...user, reports_count: 0 } : user
-      ));
-      
-      alert('신고 내역이 삭제되었습니다.');
-      
-    } catch (err: any) {
-      console.error('신고 내역 삭제 오류:', err);
-      alert('신고 내역 삭제 중 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
-    }
+    alert('신고 기능은 현재 준비중입니다.');
+    // reports_count 필드가 없으므로 기능 비활성화
   };
 
   const formatDateKorean = (dateString: string) => {
@@ -324,65 +351,118 @@ export default function UsersAdmin() {
     }
   };
 
-  /* 필터링된 사용자 목록 가져오기 */
-  const getFilteredProfiles = () => {
-    if (!users || users.length === 0) {
-      console.log('사용자 목록 없음');
-      return [];
+  /* 필터 변경 핸들러 - 이제 서버 측에서 처리됨 */
+  const handleFilterChange = (newFilter: string) => {
+    setFilter(newFilter);
+    setPage(1); // 필터 변경 시 페이지 초기화
+  };
+  
+  const handleGenderChange = (gender: 'all' | 'male' | 'female') => {
+    setSelectedGender(gender);
+    setPage(1); // 필터 변경 시 페이지 초기화
+  };
+  
+  const handleClassChange = (classType: 'all' | 'S' | 'A' | 'B' | 'C' | 'unclassified') => {
+    setSelectedClass(classType);
+    setPage(1); // 필터 변경 시 페이지 초기화
+  };
+  
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    // 검색어 변경 시 페이지 초기화는 디바운스된 useEffect에서 처리
+  };
+  
+  // 페이지 변경 핸들러
+  const handlePageChange = (newPage: number) => {
+    if (!loading && newPage > 0 && newPage <= Math.ceil(totalCount / pageSize)) {
+      setPage(newPage);
+    }
+  };
+  
+  // 페이지 버튼 렌더링
+  const renderPagination = () => {
+    if (totalCount === 0) return null;
+    
+    const totalPages = Math.ceil(totalCount / pageSize);
+    const maxButtons = 5; // 한 번에 보이는 버튼 수
+    
+    // 현재 페이지 주변에 보여질 버튼 범위 계산
+    let startPage = Math.max(1, page - Math.floor(maxButtons / 2));
+    let endPage = startPage + maxButtons - 1;
+    
+    if (endPage > totalPages) {
+      endPage = totalPages;
+      startPage = Math.max(1, endPage - maxButtons + 1);
     }
     
-    console.log(`전체 사용자 수: ${users.length}명, 필터링 전`);
+    const pageButtons = [];
     
-    // 검색 필터링
-    let filtered = [...users];
-    
-    // 성별 필터
-    if (selectedGender !== 'all') {
-      filtered = filtered.filter(user => user.gender === selectedGender);
-    }
-    
-    // 등급 필터
-    if (selectedClass !== 'all') {
-      filtered = filtered.filter(user => user.classification === selectedClass);
-    }
-    
-    // 검색어 필터
-    if (searchTerm.trim() !== '') {
-      const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter(user => 
-        (user.name && user.name.toLowerCase().includes(searchLower)) ||
-        (user.email && user.email.toLowerCase().includes(searchLower)) ||
-        (user.user_id && user.user_id.toLowerCase().includes(searchLower))
+    // 이전 버튼
+    if (page > 1) {
+      pageButtons.push(
+        <button
+          key="prev"
+          onClick={() => handlePageChange(page - 1)}
+          className="px-3 py-1 mx-1 rounded border border-gray-300 hover:bg-gray-100"
+          disabled={loading}
+        >
+          &laquo;
+        </button>
       );
     }
     
-    // 상태 필터
-    if (filter === 'blocked') {
-      filtered = filtered.filter(user => user.is_blocked === true);
-    } else if (filter === 'reported') {
-      filtered = filtered.filter(user => user.reports_count && user.reports_count > 0);
-    } else if (filter === 'active') {
-      // 최근 30일 이내에 활동한 사용자
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      filtered = filtered.filter(user => {
-        if (!user.last_active) return false;
-        const lastActive = new Date(user.last_active);
-        return lastActive > thirtyDaysAgo;
-      });
+    // 페이지 번호 버튼
+    for (let i = startPage; i <= endPage; i++) {
+      pageButtons.push(
+        <button
+          key={i}
+          onClick={() => handlePageChange(i)}
+          className={`px-3 py-1 mx-1 rounded font-bold ${page === i ? 'bg-blue-600 text-white border-2 border-blue-700 shadow-md' : 'border border-gray-300 hover:bg-gray-100 text-gray-700'}`}
+          disabled={loading || page === i}
+        >
+          {i}
+        </button>
+      );
     }
     
-    console.log(`필터링 후 사용자 수: ${filtered.length}명`);
+    // 다음 버튼
+    if (page < totalPages) {
+      pageButtons.push(
+        <button
+          key="next"
+          onClick={() => handlePageChange(page + 1)}
+          className="px-3 py-1 mx-1 rounded border border-gray-300 hover:bg-gray-100"
+          disabled={loading}
+        >
+          &raquo;
+        </button>
+      );
+    }
     
-    return filtered;
+    return (
+      <div className="flex justify-center items-center py-4">
+        {pageButtons}
+      </div>
+    );
   };
 
   // 사용자 목록 렌더링 부분
   const renderUsersList = () => {
-    const filteredUsers = getFilteredProfiles();
+    if (dbError) {
+      return (
+        <div className="py-8 text-center">
+          <p className="text-red-500">데이터베이스 오류: {dbError}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-primary-DEFAULT text-white rounded hover:bg-primary-dark"
+          >
+            다시 시도
+          </button>
+        </div>
+      );
+    }
     
-    if (filteredUsers.length === 0) {
-      console.log('필터링된 사용자가 없음');
+    if (users.length === 0 && !loading) {
       return (
         <div className="py-8 text-center">
           <p className="text-gray-500">조건에 맞는 사용자가 없습니다</p>
@@ -390,13 +470,11 @@ export default function UsersAdmin() {
       );
     }
     
-    console.log('사용자 목록 렌더링:', filteredUsers.length);
-    
     return (
       <div className="bg-white rounded shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 sticky top-0 z-10">
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   이름
@@ -422,9 +500,10 @@ export default function UsersAdmin() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredUsers.map(user => {
-                const isBlocked = user.is_blocked;
-                const hasReports = user.reports_count && user.reports_count > 0;
+              {users.map(user => {
+                // 실제 필드가 없으므로 false로 처리
+                const isBlocked = false; // user.is_blocked;
+                const hasReports = false; // user.reports_count && user.reports_count > 0;
                 
                 return (
                   <tr 
@@ -484,17 +563,17 @@ export default function UsersAdmin() {
                       {formatDateKorean(user.created_at)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {isBlocked ? (
+                      {user.role === 'blocked' ? (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                           차단됨
                         </span>
-                      ) : hasReports ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                          신고 {user.reports_count}건
+                      ) : user.role === 'admin' ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          관리자
                         </span>
                       ) : (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          정상
+                          사용자
                         </span>
                       )}
                     </td>
@@ -541,6 +620,14 @@ export default function UsersAdmin() {
               })}
             </tbody>
           </table>
+        </div>
+        
+        {/* 페이지네이션 */}
+        {renderPagination()}
+        
+        {/* 페이지 정보 표시 */}
+        <div className="px-4 py-3 bg-gray-50 text-right sm:px-6 text-sm text-gray-500">
+          총 {totalCount}명의 사용자 중 {users.length}명 표시 중
         </div>
       </div>
     );
@@ -593,10 +680,11 @@ export default function UsersAdmin() {
 
             <select
               value={selectedClass}
-              onChange={(e) => setSelectedClass(e.target.value as 'all' | 'S' | 'A' | 'B' | 'C')}
+              onChange={(e) => handleClassChange(e.target.value as 'all' | 'S' | 'A' | 'B' | 'C' | 'unclassified')}
               className="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-DEFAULT"
             >
               <option value="all">전체 등급</option>
+              <option value="unclassified">미분류</option>
               <option value="S">S등급</option>
               <option value="A">A등급</option>
               <option value="B">B등급</option>
@@ -608,7 +696,7 @@ export default function UsersAdmin() {
                 type="text"
                 placeholder="사용자 검색..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={handleSearchChange}
                 className="border rounded pl-10 pr-4 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-primary-DEFAULT"
               />
               <svg 
@@ -687,7 +775,7 @@ export default function UsersAdmin() {
       </div>
       
       <div className="bg-white p-4 rounded shadow mb-6">
-        <p className="text-gray-700">총 {getFilteredProfiles().length}명의 사용자가 등록되어 있습니다.</p>
+        <p className="text-gray-700">총 {totalCount}명의 사용자가 등록되어 있습니다.</p>
       </div>
       
       {renderUsersList()}
