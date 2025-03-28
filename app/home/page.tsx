@@ -136,7 +136,7 @@ export default function Home() {
 
   // 매칭 시간 상태 업데이트 핸들러
   const handleMatchingTimeUpdate = (isOver: boolean) => {
-    setIsMatchingTimeOver(true);
+    setIsMatchingTimeOver(isOver);
   };
 
   // 매칭 결과 조회 함수
