@@ -136,7 +136,7 @@ export default function Home() {
 
   // 매칭 시간 상태 업데이트 핸들러
   const handleMatchingTimeUpdate = (isOver: boolean) => {
-    setIsMatchingTimeOver(isOver);
+    setIsMatchingTimeOver(true);
   };
 
   // 매칭 결과 조회 함수
@@ -147,9 +147,8 @@ export default function Home() {
       // 1. matches 테이블에서 현재 사용자의 모든 매칭 정보 조회 (single 대신 여러 개)
       const { data: matchData, error: matchError } = await supabase
         .from('matches')
-        .select('id, user1_id, user2_id, score, status, created_at')
+        .select('id, user1_id, user2_id, score, created_at')
         .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-        .eq('status', 'pending') // 활성화된 매칭만
         .order('created_at', { ascending: false }); // 최신순 정렬
 
       if (matchError || !matchData || matchData.length === 0) {
@@ -538,7 +537,7 @@ export default function Home() {
                       className="btn-secondary w-full py-4 flex items-center justify-center gap-3 bg-[#74B9FF] text-white rounded-xl font-medium transform transition-all duration-200 hover:bg-[#5FA8FF] hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#74B9FF] focus:ring-offset-2"
                       type="button"
                     >
-                      <span className="text-lg">매칭 신청하기</span>
+                      <span className="text-lg">재매칭 신청하기</span>
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                       </svg>

@@ -420,238 +420,182 @@ export default function AdminMatching() {
   };
 
   const startMatching = async () => {
-    try {
-      setIsMatchingLoading(true);
-      console.log('=== 매칭 프로세스 시작 ===');
-      
-      const supabase = createClient();
+  try {
+    setIsMatchingLoading(true);
+    console.log('=== 매칭 프로세스 시작 ===');
 
-      // 1. 여성 프로필 데이터 가져오기 - 테스트 코드와 동일한 조건으로 수정
-      console.log('1. 여성 프로필 데이터 조회 중...');
-      const { data: femaleProfiles, error: femaleError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('role', 'user')
-        .eq('gender', 'female')
-        .not('name', 'is', null)
-        .not('age', 'is', null)
-        .not('department', 'is', null)
-        .not('mbti', 'is', null)
-        .not('height', 'is', null)
-        .not('personalities', 'is', null)
-        .not('dating_styles', 'is', null);
+    const supabase = createClient();
 
-      if (femaleError) {
-        console.error('여성 프로필 조회 실패:', femaleError);
-        throw femaleError;
-      }
+    // 1. 여성 프로필
+    console.log('1. 여성 프로필 데이터 조회 중...');
+    const { data: femaleProfiles, error: femaleError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('role', 'user')
+      .eq('gender', 'female')
+      .not('name', 'is', null)
+      .not('age', 'is', null)
+      .not('department', 'is', null)
+      .not('mbti', 'is', null)
+      .not('height', 'is', null)
+      .not('personalities', 'is', null)
+      .not('dating_styles', 'is', null);
 
-      console.log(`초기 여성 프로필 수: ${femaleProfiles?.length || 0}명`);
+    if (femaleError) throw femaleError;
 
-      // null이나 빈 배열 값을 가진 프로필 필터링 - 테스트 코드와 동일하게 수정
-      const validFemaleProfiles = femaleProfiles?.filter(profile => 
-        profile.name?.trim() &&
-        profile.age > 0 &&
-        profile.department?.trim() &&
-        profile.mbti?.trim() &&
-        profile.height > 0 &&
-        Array.isArray(profile.personalities) && profile.personalities.length > 0 &&
-        Array.isArray(profile.dating_styles) && profile.dating_styles.length > 0
-      ) || [];
+    const validFemaleProfiles = femaleProfiles?.filter(profile =>
+      profile.name?.trim() &&
+      profile.age > 0 &&
+      profile.department?.trim() &&
+      profile.mbti?.trim() &&
+      profile.height > 0 &&
+      Array.isArray(profile.personalities) && profile.personalities.length > 0 &&
+      Array.isArray(profile.dating_styles) && profile.dating_styles.length > 0
+    ) || [];
 
-      console.log(`유효한 여성 프로필 수: ${validFemaleProfiles.length}명`);
+    if (validFemaleProfiles.length === 0) {
+      throw new Error('매칭 가능한 여성 프로필이 없습니다.');
+    }
 
-      if (validFemaleProfiles.length === 0) {
-        throw new Error('매칭 가능한 여성 프로필이 없습니다.');
-      }
+    // 2. 여성 선호도
+    console.log('2. 여성 선호도 데이터 조회 중...');
+    const femaleUserIds = validFemaleProfiles.map(p => p.user_id);
+    const { data: femalePreferences, error: prefError } = await supabase
+      .from('user_preferences')
+      .select('*')
+      .in('user_id', femaleUserIds)
+      .not('preferred_age_type', 'is', null)
+      .not('preferred_height_min', 'is', null)
+      .not('preferred_height_max', 'is', null)
+      .not('preferred_mbti', 'is', null)
+      .not('preferred_personalities', 'is', null)
+      .not('preferred_dating_styles', 'is', null);
 
-      // 2. 여성 선호도 데이터 가져오기
-      console.log('2. 여성 선호도 데이터 조회 중...');
-      const femaleUserIds = validFemaleProfiles.map(p => p.user_id);
-      const { data: femalePreferences, error: prefError } = await supabase
-        .from('user_preferences')
-        .select('*')
-        .in('user_id', femaleUserIds)
-        .not('preferred_age_type', 'is', null)
-        .not('preferred_height_min', 'is', null)
-        .not('preferred_height_max', 'is', null)
-        .not('preferred_mbti', 'is', null)
-        .not('preferred_personalities', 'is', null)
-        .not('preferred_dating_styles', 'is', null);
+    if (prefError) throw prefError;
 
-      if (prefError) {
-        console.error('여성 선호도 데이터 조회 실패:', prefError);
-        throw prefError;
-      }
+    const validFemales = validFemaleProfiles
+      .map(profile => {
+        const preferences = femalePreferences?.find(pref => pref.user_id === profile.user_id);
+        if (preferences && hasRequiredData(profile, preferences)) {
+          return { ...profile, preferences };
+        }
+        return null;
+      })
+      .filter((female): female is (typeof female & { preferences: UserPreference }) =>
+        female !== null
+      );
 
-      // 3. 남성 프로필 데이터 가져오기
-      console.log('3. 남성 프로필 데이터 조회 중...');
-      const { data: maleProfiles, error: maleError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('role', 'user')
-        .eq('gender', 'male')
-        .not('name', 'is', null)
-        .not('age', 'is', null)
-        .not('department', 'is', null)
-        .not('mbti', 'is', null)
-        .not('height', 'is', null)
-        .not('personalities', 'is', null)
-        .not('dating_styles', 'is', null);
+    const matchResults: any[] = [];
+    const matchedUsers = new Set<string>();
+    const batchSize = 100;
 
-      if (maleError) {
-        console.error('남성 프로필 조회 실패:', maleError);
-        throw maleError;
-      }
+    console.log('5. 매칭 로직 실행 중...');
+    for (const female of validFemales) {
+      if (matchedUsers.has(female.user_id)) continue;
 
-      // null이나 빈 배열 값을 가진 남성 프로필 필터링
-      const validMales = maleProfiles?.filter(male => 
-        male.name?.trim() &&
-        male.age > 0 &&
-        male.department?.trim() &&
-        male.mbti?.trim() &&
-        male.height > 0 &&
-        Array.isArray(male.personalities) && male.personalities.length > 0 &&
-        Array.isArray(male.dating_styles) && male.dating_styles.length > 0
-      ) || [];
+      let offset = 0;
+      let bestMatch: any = null;
+      let highestScore = -1;
 
-      console.log('\n=== 데이터 로드 상태 ===');
-      console.log(`유효한 여성 프로필 수: ${validFemaleProfiles.length}명`);
-      console.log(`여성 선호도 데이터 수: ${femalePreferences?.length || 0}명`);
-      console.log(`유효한 남성 프로필 수: ${validMales.length}명`);
+      while (true) {
+        const { data: maleBatch, error: maleError } = await supabase
+          .from('profiles')
+          .select('id, user_id, name, age, department, mbti, height, personalities, dating_styles, smoking, drinking, tattoo')
+          .eq('role', 'user')
+          .eq('gender', 'male')
+          .not('name', 'is', null)
+          .not('age', 'is', null)
+          .not('department', 'is', null)
+          .not('mbti', 'is', null)
+          .not('height', 'is', null)
+          .not('personalities', 'is', null)
+          .not('dating_styles', 'is', null)
+          .range(offset, offset + batchSize - 1);
 
-      // 프로필과 선호도 데이터 매칭
-      const validFemales = validFemaleProfiles
-        .map(profile => {
-          const preferences = femalePreferences?.find(pref => pref.user_id === profile.user_id);
-          if (preferences && hasRequiredData(profile, preferences)) {
-            return { ...profile, preferences };
-          }
-          console.log('선호도 데이터 없는 여성:', profile.name);
-          return null;
-        })
-        .filter((female): female is (typeof female & { preferences: UserPreference }) => 
-          female !== null
+        if (maleError) {
+          console.error('남성 프로필 조회 실패:', maleError);
+          break;
+        }
+
+        if (!maleBatch || maleBatch.length === 0) break;
+
+        const validMales = maleBatch.filter(male =>
+          male.name?.trim() &&
+          male.age > 0 &&
+          male.department?.trim() &&
+          male.mbti?.trim() &&
+          male.height > 0 &&
+          Array.isArray(male.personalities) && male.personalities.length > 0 &&
+          Array.isArray(male.dating_styles) && male.dating_styles.length > 0 &&
+          !matchedUsers.has(male.user_id)
         );
 
-      // 매칭 결과를 저장할 배열과 Set
-      const matchResults: any[] = [];
-      const matchedUsers = new Set<string>();
-
-      // 매칭 로직 실행
-      console.log('5. 매칭 로직 실행 중...');
-      for (const female of validFemales) {
-        if (matchedUsers.has(female.user_id)) continue;
-
-        const availableMales = validMales.filter(male => !matchedUsers.has(male.user_id));
-        
-        console.log(`\n👩 ${female.name}님의 매칭 시작`);
-        console.log(`매칭 가능한 남성 수: ${availableMales.length}명`);
-
-        if (availableMales.length === 0) {
-          console.log('매칭 가능한 남성이 없습니다.');
-          continue;
-        }
-
-        // 각 남성과의 매칭 점수 계산 및 로그 출력
-        console.log('\n=== 매칭 점수 계산 결과 ===');
-        const matches = availableMales
-          .map(male => {
-            const { score, details } = calculateMatchScore(female, male, female.preferences);
-            console.log(`\n👨 ${male.name}님과의 매칭 점수:`, {
-              점수: score,
-              나이: male.age,
-              학과: male.department,
-              MBTI: male.mbti,
-              키: male.height,
-              상세점수: details
-            });
-            return { male, score, details };
-          })
-          .sort((a, b) => b.score - a.score);
-
-        // 최고 점수 매칭 결과 출력
-        if (matches.length > 0) {
-          console.log('\n=== 최고 점수 매칭 ===');
-          console.log(`1위: ${matches[0].male.name} (${matches[0].score}점)`);
-          if (matches[1]) console.log(`2위: ${matches[1].male.name} (${matches[1].score}점)`);
-          if (matches[2]) console.log(`3위: ${matches[2].male.name} (${matches[2].score}점)`);
-        }
-
-        if (matches.length > 0 && matches[0].score > 0) {
-          const bestMatch = matches[0];
-          console.log(`\n✅ 매칭 성사: ${female.name} ↔ ${bestMatch.male.name}`);
-          console.log('매칭 상세 정보:', {
-            여성: {
-              이름: female.name,
-              나이: female.age,
-              학과: female.department,
-              MBTI: female.mbti
-            },
-            남성: {
-              이름: bestMatch.male.name,
-              나이: bestMatch.male.age,
-              학과: bestMatch.male.department,
-              MBTI: bestMatch.male.mbti
-            },
-            점수: bestMatch.score,
-            상세점수: bestMatch.details
-          });
-
-          // 매칭 결과를 데이터베이스에 저장
-          try {
-            const { error: matchError } = await supabase
-              .from('matches')
-              .insert([{
-                user1_id: bestMatch.male.user_id,  // 남성 user_id
-                user2_id: female.user_id,          // 여성 user_id
-                score: bestMatch.score             // 매칭 점수
-              }]);
-
-            if (matchError) {
-              console.error('매칭 결과 저장 실패:', matchError);
-            } else {
-              console.log('매칭 결과가 데이터베이스에 저장되었습니다.');
-            }
-          } catch (error) {
-            console.error('매칭 결과 저장 중 오류 발생:', error);
+        for (const male of validMales) {
+          const { score, details } = calculateMatchScore(
+            { ...female, gender: female.gender === '남성' ? 'male' : 'female' },
+            { ...male, gender: 'male' },
+            female.preferences
+          );
+          if (score > highestScore) {
+            highestScore = score;
+            bestMatch = { male, score, details };
           }
-          
-          matchResults.push({
-            female,
-            male: bestMatch.male,
-            score: bestMatch.score,
-            details: bestMatch.details
-          });
-
-          matchedUsers.add(female.user_id);
-          matchedUsers.add(bestMatch.male.user_id);
-        } else {
-          console.log(`❌ ${female.name}님과 매칭 가능한 남성이 없습니다. (모든 점수 0점)`);
         }
+
+        offset += batchSize;
       }
 
-      console.log('\n=== 최종 매칭 결과 ===');
-      console.log(`총 매칭 성사 건수: ${matchResults.length}`);
-      console.log(`매칭된 사용자 수: ${matchedUsers.size}`);
+      if (bestMatch && highestScore > 0) {
+        try {
+          const { error: matchError } = await supabase
+            .from('matches')
+            .insert([{
+              user1_id: bestMatch.male.user_id,
+              user2_id: female.user_id,
+              score: bestMatch.score
+            }]);
 
-      // 매칭 결과 저장
-      setMatchResults(matchResults);
-      setMessage({
-        type: 'success',
-        content: `매칭이 완료되었습니다. 총 ${matchResults.length}쌍이 매칭되었습니다.`
-      });
-
-    } catch (error) {
-      console.error('매칭 프로세스 오류:', error);
-      setMessage({
-        type: 'error',
-        content: error instanceof Error ? error.message : '매칭 중 오류가 발생했습니다.'
-      });
-    } finally {
-      setIsMatchingLoading(false);
+          if (matchError) {
+            console.error('매칭 결과 저장 실패:', matchError);
+          } else {
+            console.log(`✅ 매칭 성사: ${female.name} ↔ ${bestMatch.male.name}`);
+            matchResults.push({
+              female,
+              male: bestMatch.male,
+              score: bestMatch.score,
+              details: bestMatch.details
+            });
+            matchedUsers.add(female.user_id);
+            matchedUsers.add(bestMatch.male.user_id);
+          }
+        } catch (error) {
+          console.error('매칭 결과 저장 중 오류 발생:', error);
+        }
+      } else {
+        console.log(`❌ ${female.name}님과 매칭 가능한 남성이 없습니다.`);
+      }
     }
-  };
+
+    console.log('\n=== 최종 매칭 결과 ===');
+    console.log(`총 매칭 성사 건수: ${matchResults.length}`);
+    console.log(`매칭된 사용자 수: ${matchedUsers.size}`);
+
+    setMatchResults(matchResults);
+    setMessage({
+      type: 'success',
+      content: `매칭이 완료되었습니다. 총 ${matchResults.length}쌍이 매칭되었습니다.`
+    });
+  } catch (error) {
+    console.error('매칭 프로세스 오류:', error);
+    setMessage({
+      type: 'error',
+      content: error instanceof Error ? error.message : '매칭 중 오류가 발생했습니다.'
+    });
+  } finally {
+    setIsMatchingLoading(false);
+  }
+};
+
 
   const fetchMatchedUsers = async () => {
     try {
