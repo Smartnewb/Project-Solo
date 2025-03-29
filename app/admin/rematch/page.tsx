@@ -431,6 +431,7 @@ export default function RematchRequestPage() {
 
     } catch (error) {
       console.error('재매칭 처리 중 오류:', error);
+      alert("적합한 매칭 대상이 없습니다.");
       throw error;
     }
   };
