@@ -411,6 +411,7 @@ export default function RematchRequestPage() {
 
       console.log('재매칭 저장 성공:', data);
 
+
       // 매칭된 사용자들의 이름 조회
       const { data: user1Data } = await supabase
         .from('profiles')
@@ -435,6 +436,31 @@ export default function RematchRequestPage() {
         },
         score: highestScore
       });
+
+      // 슬랙 알림 전송
+      try {
+        const slackResponse = await fetch('/api/slack/notify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text: `🔄 새로운 재매칭이 완료되었습니다!\n\n` +
+                  `매칭 점수: ${highestScore}점\n` +
+                  `매칭된 사용자:\n` +
+                  `- ${user1Data?.name || '알 수 없음'}\n` +
+                  `- ${user2Data?.name || '알 수 없음'}`
+          })
+        });
+
+        if (!slackResponse.ok) {
+          console.error('슬랙 알림 전송 실패:', await slackResponse.text());
+        } else {
+          console.log('슬랙 알림 전송 성공');
+        }
+      } catch (error) {
+        console.error('슬랙 알림 전송 중 오류:', error);
+      }
 
       return {
         success: true,
