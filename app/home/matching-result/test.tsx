@@ -76,7 +76,7 @@ export default function TestMatchingResult() {
   
   // 계좌번호 복사 기능
   const copyAccountNumber = () => {
-    navigator.clipboard.writeText("카카오뱅크 3333-12-3456789")
+    navigator.clipboard.writeText("카카오뱅크 전준영 3333225272696")
       .then(() => {
         setIsCopied(true);
         setTimeout(() => setIsCopied(false), 2000);
@@ -493,7 +493,7 @@ export default function TestMatchingResult() {
               <div className="bg-yellow-50 p-4 rounded-md mb-4">
                 <p className="font-medium text-yellow-700 mb-2">참가비: 2,000원</p>
                 <div className="flex items-center">
-                  <p className="text-sm text-gray-700 mr-2">계좌번호: 카카오뱅크 3333-12-3456789</p>
+                  <p className="text-sm text-gray-700 mr-2">계좌번호: 카카오뱅크 전준영 3333225272696</p>
                   <button
                     onClick={copyAccountNumber}
                     className="text-xs bg-gray-200 hover:bg-gray-300 py-1 px-2 rounded"
@@ -501,7 +501,7 @@ export default function TestMatchingResult() {
                     {isCopied ? "복사됨" : "복사"}
                   </button>
                 </div>
-                <p className="text-sm text-gray-700 mt-2">예금주: 킹스 매크로</p>
+                <p className="text-sm text-gray-700 mt-2">예금주: 전준영</p>
                 <p 
                   ref={accountNumberRef} 
                   className="absolute opacity-0 pointer-events-none"

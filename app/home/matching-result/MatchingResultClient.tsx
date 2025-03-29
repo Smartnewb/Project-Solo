@@ -715,11 +715,11 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
               <div className="bg-yellow-50 p-4 rounded-md mb-4">
                 <p className="font-medium text-yellow-700 mb-2">참가비: 2,000원</p>
                 <div className="flex items-center">
-                  <p className="text-sm text-gray-700 mr-2">계좌번호: 카카오뱅크 3333-22-5272696</p>
+                  <p className="text-sm text-gray-700 mr-2">계좌번호: 카카오뱅크 3333225272696 전준영</p>
                   <button
                     onClick={() => {
                       if (accountNumberRef.current) {
-                        navigator.clipboard.writeText("카카오뱅크 3333-22-5272696");
+                        navigator.clipboard.writeText("카카오뱅크 3333225272696 전준영");
                         setIsCopied(true);
                         setTimeout(() => setIsCopied(false), 2000);
                       }
