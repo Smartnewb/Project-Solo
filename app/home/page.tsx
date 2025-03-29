@@ -533,7 +533,7 @@ export default function Home() {
                       {/* 재매칭 버튼 상태 처리 */}
                       {hasRequestedRematch ? (
                         <div className="text-center py-3 bg-gray-100 rounded-xl">
-                          <p className="text-gray-600">이미 재매칭이 신청되었습니다</p>
+                          <p className="text-gray-600">이미 재매칭이 신청되었습니다, 참가비: 2,000원, 계좌번호: 카카오뱅크 3333-12-3456789,예금주: 킹스 매크로</p>
                         </div>
                       ) : !matchResults.some(m => m.isRematch) && (
                         <button
