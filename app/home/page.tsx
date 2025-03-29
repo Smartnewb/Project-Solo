@@ -144,7 +144,7 @@ export default function Home() {
 
   // 매칭 시간 상태 업데이트 핸들러
   const handleMatchingTimeUpdate = (isOver: boolean) => {
-    setIsMatchingTimeOver(isOver); // isOver로 수정해야함 테스트 전용
+    setIsMatchingTimeOver(true); // isOver로 수정해야함 테스트 전용
   };
 
   // 매칭 결과 조회 함수
