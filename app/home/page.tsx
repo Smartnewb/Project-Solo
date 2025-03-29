@@ -18,12 +18,104 @@ import type { Database } from '../types/database.types';
 
 interface MatchResult {
   id: string;
+  user1_id: string;
+  user2_id: string;
   instagram_id: string | null;
   score: number;
-  isRematch?: boolean; // 재매칭으로 생성된 매치인지 여부
-  partner_name?: string; // 매칭 상대방 이름
+  isRematch?: boolean;
+  partner_name?: string;
   title: string;
   description: string;
+}
+
+// 프로필 모달 컴포넌트 추가
+function PartnerProfileModal({ open, onClose, profile }: {
+  open: boolean;
+  onClose: () => void;
+  profile: any;
+}) {
+  if (!profile) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative max-h-[90vh] overflow-y-auto">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+        >
+          <XMarkIcon className="h-6 w-6" />
+        </button>
+
+        <h3 className="text-xl font-bold mb-4">매칭 상대 프로필</h3>
+
+        {/* 기본 정보 */}
+        <div className="bg-purple-50 rounded-lg p-4 mb-4">
+          <h4 className="font-semibold mb-2 text-purple-700">기본 정보</h4>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <span className="text-sm font-medium text-gray-500">나이:</span>
+              <span className="ml-2">{profile.age}세</span>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-gray-500">MBTI:</span>
+              <span className="ml-2">{profile.mbti}</span>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-gray-500">키:</span>
+              <span className="ml-2">{profile.height}cm</span>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-gray-500">학과:</span>
+              <span className="ml-2">{profile.department}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 성격 */}
+        <div className="bg-blue-50 rounded-lg p-4 mb-4">
+          <h4 className="font-semibold mb-2 text-blue-700">성격</h4>
+          <div className="flex flex-wrap gap-2">
+            {profile.personalities?.map((personality: string, index: number) => (
+              <span key={index} className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                {personality}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* 데이트 스타일 */}
+        <div className="bg-pink-50 rounded-lg p-4 mb-4">
+          <h4 className="font-semibold mb-2 text-pink-700">데이트 스타일</h4>
+          <div className="flex flex-wrap gap-2">
+            {profile.dating_styles?.map((style: string, index: number) => (
+              <span key={index} className="px-2 py-1 bg-pink-100 text-pink-700 rounded-full text-sm">
+                {style}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* 생활 습관 */}
+        <div className="bg-green-50 rounded-lg p-4">
+          <h4 className="font-semibold mb-2 text-green-700">생활 습관</h4>
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <span className="text-sm font-medium text-gray-500">흡연:</span>
+              <span className="ml-2">{profile.smoking ? '예' : '아니오'}</span>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-gray-500">음주:</span>
+              <span className="ml-2">{profile.drinking ? '예' : '아니오'}</span>
+            </div>
+            <div>
+              <span className="text-sm font-medium text-gray-500">타투:</span>
+              <span className="ml-2">{profile.tattoo ? '예' : '아니오'}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function Home() {
@@ -48,6 +140,10 @@ export default function Home() {
   const [matchResults, setMatchResults] = useState<MatchResult[]>([]);
   const [isMultipleMatches, setIsMultipleMatches] = useState(false);
   const [hasRequestedRematch, setHasRequestedRematch] = useState(false);
+
+  // 추가된 상태
+  const [showPartnerProfile, setShowPartnerProfile] = useState(false);
+  const [partnerProfile, setPartnerProfile] = useState<any>(null);
 
   // 사용자 선호도 정보 조회
   const checkUserPreferences = async (userId: string) => {
@@ -200,6 +296,8 @@ export default function Home() {
 
         return {
           id: match.id,
+          user1_id: match.user1_id,
+          user2_id: match.user2_id,
           instagram_id: profileData.instagram_id,
           score: match.score + 40,
           isRematch: isFromRematches,
@@ -247,6 +345,45 @@ export default function Home() {
     }
 
     setHasRequestedRematch(!!data);
+  };
+
+  // 프로필 조회 함수
+  const fetchPartnerProfile = async (match: MatchResult) => {
+    if (!user) return null;
+    
+    try {
+      // 현재 사용자가 user1인지 user2인지 확인하여 상대방 ID 결정
+      const partnerId = match.user1_id === user.id ? match.user2_id : match.user1_id;
+
+      // 프로필 정보 조회
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', partnerId)
+        .maybeSingle();  // single() 대신 maybeSingle() 사용
+
+      if (profileError) throw profileError;
+      if (!profileData) return null;
+
+      // 재매칭인 경우 rematches 테이블도 확인
+      if (match.isRematch) {
+        const { data: rematchData, error: rematchError } = await supabase
+          .from('rematches')
+          .select('*')
+          .or(`user1_id.eq.${partnerId},user2_id.eq.${partnerId}`)
+          .maybeSingle();  // single() 대신 maybeSingle() 사용
+
+        if (!rematchError && rematchData) {
+          // rematchData가 있는 경우에만 합치기
+          return { ...profileData, rematchData };
+        }
+      }
+
+      return profileData;
+    } catch (error) {
+      console.error('프로필 조회 오류:', error);
+      return null;
+    }
   };
 
   // 초기 상태 설정
@@ -512,11 +649,27 @@ export default function Home() {
                       
                       <div className="bg-[#74B9FF]/5 rounded-xl p-4">
                         <div className="space-y-2">
-                          <p className="text-[#636E72] leading-relaxed text-lg">매칭이 완료되었습니다! 🎉</p>
+                          <p className="text-[#636E72] leading-relaxed text-lg">
+                            {match.isRematch ? '재매칭이 완료되었습니다! 🎉' : '매칭이 완료되었습니다! 🎉'}
+                          </p>
                           {match.partner_name && (
-                            <p className="font-medium text-gray-800">
-                              {match.partner_name}님과 매칭되었습니다
-                            </p>
+                            <div className="flex items-center justify-between">
+                              <p className="font-medium text-gray-800">
+                                {match.partner_name}님과 매칭되었습니다
+                              </p>
+                              <button
+                                onClick={async () => {
+                                  const profile = await fetchPartnerProfile(match);
+                                  if (profile) {
+                                    setPartnerProfile(profile);
+                                    setShowPartnerProfile(true);
+                                  }
+                                }}
+                                className="text-blue-600 hover:text-blue-800 font-medium"
+                              >
+                                프로필 보기
+                              </button>
+                            </div>
                           )}
                           <button
                             onClick={() => match.instagram_id && copyInstagramId(match.instagram_id)}
@@ -766,6 +919,15 @@ export default function Home() {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* 프로필 모달 추가 */}
+          {showPartnerProfile && (
+            <PartnerProfileModal
+              open={showPartnerProfile}
+              onClose={() => setShowPartnerProfile(false)}
+              profile={partnerProfile}
+            />
           )}
         </>
       )}
