@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClientSupabaseClient } from '@/utils/supabase';
+import { createBrowserClient } from '@supabase/ssr';
+import { ADMIN_EMAIL } from '@/utils/config';
 
 const supabase = createClientSupabaseClient();
 
@@ -16,6 +18,91 @@ export default function AdminLayout({
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { user, isAdmin } = useAuth();
+  const [adminState, setAdminState] = useState({
+    isVerified: false,
+    lastVerified: 0
+  });
+
+  useEffect(() => {
+    const supabaseBrowser = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    const verifyAdminStatus = async () => {
+      try {
+        const { data: { session } } = await supabaseBrowser.auth.getSession();
+        
+        // 세션이 없으면 관리자 상태 초기화
+        if (!session) {
+          localStorage.removeItem('admin_status');
+          setAdminState({
+            isVerified: false,
+            lastVerified: 0
+          });
+          return;
+        }
+
+        // 현재 세션의 이메일과 저장된 이메일이 다르면 초기화
+        const savedStatus = localStorage.getItem('admin_status');
+        if (savedStatus) {
+          const { email } = JSON.parse(savedStatus);
+          if (email !== session.user.email) {
+            localStorage.removeItem('admin_status');
+            setAdminState({
+              isVerified: false,
+              lastVerified: 0
+            });
+          }
+        }
+
+        if (session?.user.email === ADMIN_EMAIL || 
+            session?.user.email === process.env.NEXT_PUBLIC_DEFAULT_ADMIN_EMAIL) {
+          // 관리자 상태 저장
+          setAdminState({
+            isVerified: true,
+            lastVerified: Date.now()
+          });
+          
+          // 로컬스토리지에도 저장
+          localStorage.setItem('admin_status', JSON.stringify({
+            verified: true,
+            timestamp: Date.now(),
+            email: session?.user?.email
+          }));
+        }
+      } catch (error) {
+        console.error('Admin verification failed:', error);
+        // 에러 발생 시 관리자 상태 초기화
+        localStorage.removeItem('admin_status');
+        setAdminState({
+          isVerified: false,
+          lastVerified: 0
+        });
+      }
+    }
+
+    // 초기 로드시 로컬스토리지 체크
+    const savedStatus = localStorage.getItem('admin_status');
+    if (savedStatus) {
+      const { verified, timestamp, email } = JSON.parse(savedStatus);
+      // 4시간 이내의 검증 기록이 있으면 사용
+      if (Date.now() - timestamp < 4 * 60 * 60 * 1000) {
+        setAdminState({
+          isVerified: verified,
+          lastVerified: timestamp
+        });
+      }
+    }
+
+    // 초기 검증
+    verifyAdminStatus();
+
+    // 4시간마다 재검증
+    const interval = setInterval(verifyAdminStatus, 4 * 60 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     let mounted = true;

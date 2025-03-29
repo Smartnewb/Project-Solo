@@ -54,12 +54,8 @@ export default function AdminCommunity() {
   const [showReportDetails, setShowReportDetails] = useState<string | null>(null);
   const [message, setMessage] = useState({ type: '', content: '' });
   const [expandedPosts, setExpandedPosts] = useState<string[]>([]);
+
   
-  // 상태와 설정 관련 로그 추가
-  console.log('현재 환경 변수:', {
-    DEFAULT_ADMIN_EMAIL: process.env.NEXT_PUBLIC_DEFAULT_ADMIN_EMAIL,
-    ADMIN_EMAIL: ADMIN_EMAIL,
-  });
   
   useEffect(() => {
     if (loading) {
