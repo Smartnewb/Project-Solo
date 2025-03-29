@@ -214,7 +214,7 @@ export default function Profile() {
       });
       
       setTimeout(() => {
-        router.push('/home');
+        router.push('/ideal-type');
       }, 3000);
       
     } catch (error) {
