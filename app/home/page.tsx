@@ -144,7 +144,7 @@ export default function Home() {
 
   // 매칭 시간 상태 업데이트 핸들러
   const handleMatchingTimeUpdate = (isOver: boolean) => {
-    setIsMatchingTimeOver(true); // isOver로 수정해야함 테스트 전용
+    setIsMatchingTimeOver(true); // 항상 true로 설정
   };
 
   // 매칭 결과 조회 함수
@@ -252,24 +252,15 @@ export default function Home() {
   // 초기 상태 설정
   useEffect(() => {
     const initializeHome = async () => {
+      if (!user) return;
+
+      setIsLoading(true);
       try {
-        setIsLoading(true);
-
-        if (user?.email === ADMIN_EMAIL) {
-          router.replace('/admin/community');
-          return;
-        }
-
-        // 프로필이 없으면 프로필 작성 모달 표시
-        setShowOnboardingModal(!profile);
-
-        // 프로필이 있고 user_id가 있는 경우에만 선호도 정보 확인
-        if (profile && user?.id) {
-          const hasPreferences = await checkUserPreferences(user.id);
-          setHasUserPreferences(hasPreferences);
-        }
+        // 매칭 결과를 즉시 보이도록 설정
+        setIsMatchingTimeOver(true);
+        await fetchMatchResult();
       } catch (error) {
-        console.error('홈 페이지 초기화 중 오류:', error);
+        console.error('초기화 중 오류:', error);
       } finally {
         setIsLoading(false);
       }
