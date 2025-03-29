@@ -18,6 +18,8 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import PersonIcon from '@mui/icons-material/Person';
 import { createClient } from '@/utils/supabase/client';
+import { useRouter } from 'next/navigation';
+import { AdminService } from '@/app/services';
 
 // supabase 클라이언트 초기화
 const supabase = createClient();
@@ -163,10 +165,33 @@ export default function RematchRequestPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; content: string } | null>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const router = useRouter(); 
+
+  const onFailureRedirectMain = () => {
+    AdminService.auth.cleanup();
+    alert("어드민 권한 만료로 로그인화면으로 이동합니다.");
+    router.push('/');
+  };
+
+  const withErrorHandler = async <T,>(
+    callback: () => Promise<T>,
+    onError?: (error: any) => void
+  ): Promise<T | undefined> => {
+    try {
+      return await callback();
+    } catch (error) {
+      console.error('Error:', error);
+      if (onError) {
+        onError(error);
+      }
+      onFailureRedirectMain();
+      return undefined;
+    }
+  };
 
   const fetchRematchRequests = async () => {
-    try {
-      setIsLoading(true);
+    setIsLoading(true);
+    await withErrorHandler(async () => {
       console.log('재매칭 요청 조회 시작');
       const response = await fetch('/api/admin/rematch-requests');
       
@@ -200,15 +225,14 @@ export default function RematchRequestPage() {
           content: '현재 재매칭 요청이 없습니다.'
         });
       }
-    } catch (error) {
+    }, (error) => {
       console.error('재매칭 요청 조회 실패:', error);
       setMessage({
         type: 'error',
         content: '재매칭 요청 목록을 불러오는데 실패했습니다.'
       });
-    } finally {
-      setIsLoading(false);
-    }
+    });
+    setIsLoading(false);
   };
   
   // 프로필 모달 열기
@@ -224,7 +248,7 @@ export default function RematchRequestPage() {
 
   // 입금 확인 처리
   const confirmDeposit = async (requestId: string) => {
-    try {
+    await withErrorHandler(async () => {
       console.log('입금 확인 처리 시작:', requestId);
       
       // 실제로는 API 호출이 필요하지만 테스트를 위해 로컬 상태만 업데이트
@@ -240,18 +264,18 @@ export default function RematchRequestPage() {
         type: 'success',
         content: '입금이 확인되었습니다.'
       });
-    } catch (error) {
+    }, (error) => {
       console.error('입금 확인 중 오류 발생:', error);
       setMessage({
         type: 'error',
         content: error instanceof Error ? error.message : '입금 확인에 실패했습니다.'
       });
-    }
+    });
   };
 
   // 재매칭 처리
   const processRematch = async (userId: string) => {
-    try {
+    await withErrorHandler(async () => {
       console.log('재매칭 처리 시작:', userId);
       const supabase = createClient();
 
@@ -373,7 +397,7 @@ export default function RematchRequestPage() {
       const { data, error: insertError } = await supabase
         .from('rematches')
         .insert([newMatch])
-        .select();  // 추가된 데이터 반환
+        .select();  // 추가된 데이터 반환₩
 
       if (insertError) {
         console.error('재매칭 저장 실패:', {
@@ -429,11 +453,10 @@ export default function RematchRequestPage() {
         }
       };
 
-    } catch (error) {
+    }, (error) => {
       console.error('재매칭 처리 중 오류:', error);
       alert("적합한 매칭 대상이 없습니다.");
-      throw error;
-    }
+    });
   };
 
   useEffect(() => {
