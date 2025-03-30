@@ -3,7 +3,7 @@ import { ADMIN_EMAIL } from '@/utils/config';
 import { createClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
 
-const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
+const SLACK_WEBHOOK_URL = process.env.NEXT_SLACK_WEBHOOK_URL;
 
 export async function POST(request: Request) {
   try {
