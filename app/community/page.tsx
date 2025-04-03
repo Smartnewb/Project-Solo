@@ -639,12 +639,37 @@ export default function Community() {
     const date = new Date(dateString);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(minutes / 60);
+    
+    // 시간 단위별 밀리초 정의
+    const TIME_UNITS = [
+      { max: 30 * 1000, text: '지금' },
+      { max: 60 * 1000, text: '방금 전' },
+      { max: 60 * 60 * 1000, division: 60 * 1000, unit: '분 전' },
+      { max: 24 * 60 * 60 * 1000, division: 60 * 60 * 1000, unit: '시간 전' },
+      { max: 7 * 24 * 60 * 60 * 1000, division: 24 * 60 * 60 * 1000, unit: '일 전' },
+      { max: 30 * 24 * 60 * 60 * 1000, division: 7 * 24 * 60 * 60 * 1000, unit: '주 전' },
+      { max: 12 * 30 * 24 * 60 * 60 * 1000, division: 30 * 24 * 60 * 60 * 1000, unit: '개월 전' },
+      { max: Infinity, division: 12 * 30 * 24 * 60 * 60 * 1000, unit: '년 전' }
+    ];
 
-    if (minutes < 60) return `${minutes}분 전`;
-    if (hours < 24) return `${hours}시간 전`;
-    return date.toLocaleDateString();
+    const timeUnit = TIME_UNITS.find(unit => diff < unit.max);
+    if (!timeUnit) return '오래 전';
+
+    if (!timeUnit.division) return timeUnit.text;
+    
+    const value = Math.floor(diff / timeUnit.division);
+    if (value === 1) {
+      // 1단위 일 때 특별한 처리
+      const specialCases = {
+        '일 전': '어제',
+        '주 전': '지난주',
+        '개월 전': '지난달',
+        '년 전': '작년'
+      };
+      return specialCases[timeUnit.unit] || `1${timeUnit.unit}`;
+    }
+    
+    return `${value}${timeUnit.unit}`;
   };
 
   const renderComments = (post: Post, showAll: boolean) => {
