@@ -762,7 +762,7 @@ export default function Onboarding() {
               {modalMessage}
             </h3>
             <p className="text-sm text-gray-600 text-center mb-2">
-              홈 화면으로 이동합니다...
+              프로필 정보 작성으로 이동합니다
             </p>
           </div>
         </div>

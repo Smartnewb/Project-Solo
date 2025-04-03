@@ -79,7 +79,7 @@ export default function SignUp() {
   const [isSignupEnabled, setIsSignupEnabled] = useState<boolean | null>(null);
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
-  const [emailVerified, setEmailVerified] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(true); // 이거 임시로 true로 설정, false로 설정해둬야함 ( 테스트용)
   const [verificationCode, setVerificationCode] = useState('');
   const [showVerificationInput, setShowVerificationInput] = useState(false);
   const [verificationError, setVerificationError] = useState<string | null>(null);
@@ -169,10 +169,11 @@ export default function SignUp() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!emailVerified) {
-      setError('이메일 인증이 필요합니다.');
-      return;
-    }
+    // 이메일 인증 체크 임시 비활성화 테스트용
+    // if (!emailVerified) {
+    //   setError('이메일 인증이 필요합니다.');
+    //   return;
+    // }
 
     // 회원가입이 비활성화된 경우
     if (!isSignupEnabled) {
@@ -347,7 +348,7 @@ export default function SignUp() {
                     value={formData.email}
                     onChange={handleChange}
                     className="input-field flex-1"
-                    disabled={emailVerified}
+                    //disabled={emailVerified} 테스트용 주석처리
                     required
                   />
                   <button

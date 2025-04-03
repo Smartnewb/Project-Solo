@@ -160,6 +160,9 @@ export default function Home() {
   const [showPartnerProfile, setShowPartnerProfile] = useState(false);
   const [partnerProfile, setPartnerProfile] = useState<any>(null);
 
+  // 새로운 상태 추가
+  const [showProfileWarningModal, setShowProfileWarningModal] = useState(false);
+
   // 사용자 선호도 정보 조회
   const checkUserPreferences = async (userId: string) => {
     try {
@@ -401,6 +404,48 @@ export default function Home() {
     }
   };
 
+  // 프로필 정보 체크 함수 수정
+  const checkProfileCompletion = () => {
+    if (!profile) return false;
+    
+    const requiredFields = [
+      'university',
+      'department',
+      'student_id',
+      'grade',
+      'height',
+      'mbti',
+      'personalities',
+      'dating_styles',
+      'drinking',
+      'smoking',
+      'tattoo',
+      'instagram_id'
+    ];
+
+    const missingFields = requiredFields.filter(field => {
+      if (Array.isArray(profile[field])) {
+        return profile[field].length === 0;
+      }
+      return !profile[field];
+    });
+
+    if (missingFields.length > 0) {
+      console.log('=== 미입력 프로필 정보 ===');
+      console.log('현재 프로필:', profile);
+      console.log('미입력 필드:', missingFields);
+      missingFields.forEach(field => {
+        console.log(`${field}: ${profile[field]}`);
+      });
+      console.log('========================');
+      
+      setShowProfileWarningModal(true);
+      return false;
+    }
+
+    return true;
+  };
+
   // 초기 상태 설정
   useEffect(() => {
     const initializeHome = async () => {
@@ -434,6 +479,13 @@ export default function Home() {
       checkRematchRequest();  // 재매칭 신청 여부 확인
     }
   }, [isMatchingTimeOver]);
+
+  // useEffect에 프로필 체크 로직 추가
+  useEffect(() => {
+    if (profile) {
+      checkProfileCompletion();
+    }
+  }, [profile]);
 
   return (
     <div className="min-h-screen bg-[#F8FAFD] pb-20">
@@ -565,37 +617,6 @@ export default function Home() {
                   >
                     <span className="text-lg">프로필 작성하기</span>
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </div>
-              </section>
-            )}
-
-            {/* 이상형 설정 알림 */}
-            {profile && !hasUserPreferences && (
-              <section className="card space-y-6 transform transition-all hover:scale-[1.02] bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-[#FD79A8]/10 flex items-center justify-center transform transition-all duration-200 hover:rotate-12">
-                      <svg className="w-7 h-7 text-[#FD79A8]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                      </svg>
-                    </div>
-                    <h2 className="text-2xl font-bold text-[#2D3436] tracking-tight">이상형을 설정해주세요!</h2>
-                  </div>
-                  <p className="text-[#636E72] leading-relaxed text-lg">
-                    나에게 딱 맞는 상대를 찾기 위해 이상형을 설정해주세요.
-                    더 정확한 매칭을 위해 꼭 필요해요!
-                  </p>
-                  <button
-                    onClick={() => router.push('/ideal-type')}
-                    className="btn-primary w-full py-4 flex items-center justify-center gap-3 bg-[#FD79A8] text-white rounded-xl font-medium transform transition-all duration-200 hover:bg-[#FF65A3] hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#FD79A8] focus:ring-offset-2"
-                    type="button"
-                    aria-label="이상형 설정 페이지로 이동"
-                  >
-                    <span className="text-lg">이상형 설정하기</span>
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
@@ -919,7 +940,7 @@ export default function Home() {
                   <button
                     onClick={() => {
                       setShowRematchWarningModal(false);
-                      router.push('/profile');
+                      router.push('/onboarding');
                     }}
                     className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded"
                   >
@@ -930,6 +951,39 @@ export default function Home() {
                     className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded"
                   >
                     취소
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 프로필 정보 미입력 경고 모달 */}
+          {showProfileWarningModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+              <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+                <div className="text-center mb-6">
+                  <div className="text-5xl mb-4">⚠️</div>
+                  <h3 className="text-xl font-bold mb-2">프로필 정보를 입력해주세요</h3>
+                  <p className="text-gray-600">
+                    매칭 서비스를 이용하기 위해서는 기본 정보, 프로필 정보, 이상형 정보가 모두 필요합니다.
+                    지금 바로 입력하고 매칭을 시작해보세요!
+                  </p>
+                </div>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => {
+                      setShowProfileWarningModal(false);
+                      router.push('/onboarding');
+                    }}
+                    className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all"
+                  >
+                    프로필 입력하기
+                  </button>
+                  <button
+                    onClick={() => setShowProfileWarningModal(false)}
+                    className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-all"
+                  >
+                    나중에 하기
                   </button>
                 </div>
               </div>
