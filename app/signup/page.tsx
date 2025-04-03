@@ -79,6 +79,12 @@ export default function SignUp() {
   const [isSignupEnabled, setIsSignupEnabled] = useState<boolean | null>(null);
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [showVerificationInput, setShowVerificationInput] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
     // 회원가입 상태 확인
@@ -103,9 +109,71 @@ export default function SignUp() {
     }));
   };
 
+  const handleSendVerification = async () => {
+    if (!formData.email) {
+      setError('이메일을 입력해주세요.');
+      return;
+    }
+
+    setSendingEmail(true);
+    try {
+      const response = await fetch('/api/auth/send-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email })
+      });
+
+      if (!response.ok) {
+        throw new Error('인증 코드 전송에 실패했습니다.');
+      }
+
+      setShowVerificationInput(true);
+      setError(null);
+    } catch (err) {
+      setError('인증 코드 전송 중 오류가 발생했습니다.');
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!verificationCode) {
+      setVerificationError('인증 코드를 입력해주세요.');
+      return;
+    }
+
+    setVerifying(true);
+    try {
+      const response = await fetch('/api/auth/verify-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          code: verificationCode
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('잘못된 인증 코드입니다.');
+      }
+
+      setEmailVerified(true);
+      setVerificationError(null);
+    } catch (err) {
+      setVerificationError('인증에 실패했습니다. 코드를 다시 확인해주세요.');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!emailVerified) {
+      setError('이메일 인증이 필요합니다.');
+      return;
+    }
+
     // 회원가입이 비활성화된 경우
     if (!isSignupEnabled) {
       setError('현재 매칭이 진행 중이라 신규 회원가입을 받지 않고 있습니다. 다음 매칭 시간에 다시 시도해주세요.');
@@ -272,15 +340,65 @@ export default function SignUp() {
                 <label className="block text-sm font-medium text-gray-700">
                   이메일
                 </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="input-field"
-                  required
-                />
+                <div className="flex space-x-2">
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="input-field flex-1"
+                    disabled={emailVerified}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSendVerification}
+                    disabled={sendingEmail || emailVerified}
+                    className={`px-4 py-2 rounded-md text-sm font-medium ${
+                      emailVerified
+                        ? 'bg-green-500 text-white cursor-not-allowed'
+                        : sendingEmail
+                        ? 'bg-gray-400 text-white cursor-not-allowed'
+                        : 'bg-blue-500 hover:bg-blue-600 text-white'
+                    }`}
+                  >
+                    {emailVerified ? '인증완료' : sendingEmail ? '전송중...' : '인증하기'}
+                  </button>
+                </div>
               </div>
+
+              {showVerificationInput && !emailVerified && (
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    인증 코드
+                  </label>
+                  <div className="flex space-x-2">
+                    <input
+                      type="text"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value)}
+                      className="input-field flex-1"
+                      placeholder="인증 코드 6자리를 입력하세요"
+                      maxLength={6}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleVerifyCode}
+                      disabled={verifying || !verificationCode}
+                      className={`px-4 py-2 rounded-md text-sm font-medium ${
+                        verifying
+                          ? 'bg-gray-400 cursor-not-allowed'
+                          : 'bg-blue-500 hover:bg-blue-600'
+                      } text-white`}
+                    >
+                      {verifying ? '확인중...' : '확인'}
+                    </button>
+                  </div>
+                  {verificationError && (
+                    <p className="text-red-500 text-sm">{verificationError}</p>
+                  )}
+                </div>
+              )}
 
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">

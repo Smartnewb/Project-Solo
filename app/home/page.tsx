@@ -101,15 +101,30 @@ function PartnerProfileModal({ open, onClose, profile }: {
           <div className="grid grid-cols-3 gap-2">
             <div>
               <span className="text-sm font-medium text-gray-500">흡연:</span>
-              <span className="ml-2">{profile.smoking ? '예' : '아니오'}</span>
+              <span className="ml-2">
+                {profile.smoking === '비흡연' ? '비흡연' : 
+                 profile.smoking === '가끔 흡연' ? '가끔 흡연' :
+                 profile.smoking === '흡연' ? '흡연' : 
+                 '미입력'}
+              </span>
             </div>
             <div>
               <span className="text-sm font-medium text-gray-500">음주:</span>
-              <span className="ml-2">{profile.drinking ? '예' : '아니오'}</span>
+              <span className="ml-2">
+                {profile.drinking === '안 마심' ? '안 마심' :
+                 profile.drinking === '가끔 마심' ? '가끔 마심' :
+                 profile.drinking === '자주 마심' ? '자주 마심' :
+                 '미입력'}
+              </span>
             </div>
             <div>
               <span className="text-sm font-medium text-gray-500">타투:</span>
-              <span className="ml-2">{profile.tattoo ? '예' : '아니오'}</span>
+              <span className="ml-2">
+                {profile.tattoo === '없음' ? '없음' :
+                 profile.tattoo === '있음' ? '있음' :
+                 profile.tattoo === '비공개' ? '비공개' :
+                 '미입력'}
+              </span>
             </div>
           </div>
         </div>
