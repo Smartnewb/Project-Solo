@@ -215,80 +215,79 @@ export default function SignUp() {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError('비밀번호는 최소 6자 이상이어야 합니다.');
+    if (formData.password.length < 8) {
+      setError('비밀번호는 최소 8자 이상이어야 합니다.');
       setLoading(false);
       return;
     }
 
     try {
-      // 1. 회원가입 시도
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            name: formData.name,
-            age: parseInt(formData.age),
-            gender: formData.gender
-          }
-        }
+      // 1. 이메일 중복 확인
+      const checkEmailResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/check/email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: formData.email }),
       });
 
-      if (signUpError) {
-        console.error('회원가입 에러:', signUpError);
-        if (signUpError.message.includes('already registered')) {
-          setError('이미 등록된 이메일입니다.');
-        } else {
-          setError(signUpError.message);
-        }
-        setLoading(false);
-        return;
+      if (!checkEmailResponse.ok) {
+        const errorData = await checkEmailResponse.json();
+        throw new Error(errorData.message || '이미 사용 중인 이메일입니다.');
       }
 
-      if (!signUpData.user) {
-        setError('회원가입 처리 중 오류가 발생했습니다.');
-        setLoading(false);
-        return;
-      }
+      // 2. 회원가입 요청 비밀번호에 특수문자 포함
+      const signupData = {
+        email: formData.email,
+        password: formData.password,
+        name: formData.name,
+        age: parseInt(formData.age),
+        gender: formData.gender as 'MALE' | 'FEMALE'
+      };
 
-      // 2. profiles 테이블에 사용자 정보 저장
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          user_id: signUpData.user.id,
-          name: formData.name,
-          age: parseInt(formData.age),
-          gender: formData.gender,
-          role: 'user'
+      console.log('회원가입 요청 데이터:', signupData);
+
+      const signupResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(signupData),
+      });
+
+      if (!signupResponse.ok) {
+        const errorData = await signupResponse.json();
+        console.error('회원가입 실패 응답:', {
+          status: signupResponse.status,
+          statusText: signupResponse.statusText,
+          error: errorData
         });
-
-      if (profileError) {
-        console.error('프로필 생성 에러:', profileError);
-        setError('프로필 생성 중 오류가 발생했습니다.');
-        setLoading(false);
-        return;
+        
+        // HTTP 상태 코드에 따른 에러 메시지 처리
+        let errorMessage;
+        switch (signupResponse.status) {
+          case 409:
+            errorMessage = '이미 등록된 이메일입니다.';
+            break;
+          case 400:
+            errorMessage = '비밀번호는 특수문자가 포함된 8자리 이상이어야 합니다.';
+            break;
+          default:
+            errorMessage = errorData.message || '회원가입 처리 중 오류가 발생했습니다.';
+        }
+        
+        throw new Error(errorMessage);
       }
 
-      // 3. 자동 로그인 처리
-      const { error: loginError } = await supabase.auth.signInWithPassword({
-        email: formData.email,
-        password: formData.password,
-      });
+      // 회원가입 성공 메시지 표시
+      alert('회원가입에 성공했습니다.');
 
-      if (loginError) {
-        console.error('로그인 에러:', loginError);
-        setError('회원가입 후 로그인 중 오류가 발생했습니다.');
-        setLoading(false);
-        return;
-      }
-
-      // 4. 온보딩 페이지로 이동
-      router.push('/onboarding');
+      // 3. 회원가입 성공 시 로그인 페이지로 이동
+      router.push('/');
 
     } catch (err) {
-      console.error('예상치 못한 에러:', err);
-      setError('회원가입 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      console.error('회원가입 중 오류:', err);
+      setError(err instanceof Error ? err.message : '회원가입 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
@@ -497,8 +496,8 @@ export default function SignUp() {
                   required
                 >
                   <option value="">선택해주세요</option>
-                  <option value="male">남성</option>
-                  <option value="female">여성</option>
+                  <option value="MALE">남성</option>
+                  <option value="FEMALE">여성</option>
                 </select>
               </div>
             </div>

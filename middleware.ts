@@ -1,62 +1,61 @@
-// middleware.ts
-import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { ADMIN_EMAIL } from '@/utils/config';
 
 export async function middleware(request: NextRequest) {
-  const supabaseResponse = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  });
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            supabaseResponse.cookies.set(name, value, options);
-          });
-        },
-      },
-    }
-  );
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   const pathname = request.nextUrl.pathname;
 
-  // 비로그인 유저가 접근 가능한 경로
   const publicPaths = ['/', '/signup', '/api/admin/signup-control', '/signup/test'];
   const isPublicPath = publicPaths.some((path) => pathname === path || pathname.startsWith('/api/'));
-
-  // 관리자 전용 경로
   const isAdminPath = pathname.startsWith('/admin');
 
-  if (!user) {
-    // 비로그인 유저는 public paths만 접근 가능
-    if (!isPublicPath) {
+  // 공개 경로는 통과
+  if (isPublicPath) {
+    return NextResponse.next();
+  }
+
+  // 임시: 모든 protected 라우트 허용 (개발 중에만 사용)
+  return NextResponse.next();
+
+  /* 백엔드 API 준비되면 아래 코드 주석 해제
+  // Authorization 헤더 확인
+  const authHeader = request.headers.get('Authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = '/';
+    return NextResponse.redirect(redirectUrl);
+  }
+
+  const accessToken = authHeader.split(' ')[1];
+
+  // 토큰이 있을 경우, 백엔드에서 유저 정보 요청
+  try {
+    const userInfo = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }).then(res => res.ok ? res.json() : null);
+
+    if (!userInfo) {
+      // accessToken이 만료됐거나 잘못된 경우
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = '/';
       return NextResponse.redirect(redirectUrl);
     }
-  } else {
-    // 로그인 유저의 관리자 페이지 접근 제한
-    if (isAdminPath && user.email !== ADMIN_EMAIL) {
+
+    if (isAdminPath && userInfo.email !== ADMIN_EMAIL) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = '/home';
       return NextResponse.redirect(redirectUrl);
     }
-  }
 
-  return supabaseResponse;
+    return NextResponse.next();
+  } catch (error) {
+    console.error('Auth check error:', error);
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = '/';
+    return NextResponse.redirect(redirectUrl);
+  }
+  */
 }
 
 export const config = {
