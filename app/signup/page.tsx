@@ -316,7 +316,7 @@ export default function SignUp() {
               <Link href="/" className="p-2 -ml-2 hover:bg-gray-100 rounded-lg">
                 <ArrowLeftIcon className="w-6 h-6" />
               </Link>
-              <h1 className="text-h2 ml-2">회원가입</h1>
+              <h1 className="text-h2 ml-2 mt-3">회원가입</h1>
             </div>
           </div>
         </div>
@@ -346,7 +346,7 @@ export default function SignUp() {
               <Link href="/" className="p-2 -ml-2 hover:bg-gray-100 rounded-lg">
                 <ArrowLeftIcon className="w-6 h-6" />
               </Link>
-              <h1 className="text-h2 ml-2">회원가입</h1>
+              <h1 className="text-h2 ml-2 mt-3">회원가입</h1>
             </div>
           </div>
         </div>
