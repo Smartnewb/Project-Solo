@@ -210,10 +210,6 @@ export default function RematchRequestPage() {
       const enhancedRequests = (data.requests || []).map((req: any) => ({
         ...req,
         depositConfirmed: req.depositConfirmed || false,
-        matchedPartner: req.matchedPartner || {
-          name: req.gender === '여성' ? '김민준' : '이서연',
-          instagramId: req.gender === '여성' ? 'mj_kim97' : 'seoyeon_lee'
-        }
       }));
       
       setRematchRequests(enhancedRequests);
@@ -622,19 +618,23 @@ export default function RematchRequestPage() {
                       </Button>
                       
                       {/* 매칭된 파트너 정보 */}
-                      {request.matchedPartner && (
-                        <Box p={1.5} mb={1} bgcolor="#e3f2fd" borderRadius={1}>
-                          <Typography variant="body2" fontWeight="medium" mb={0.5}>
-                            이전 매칭 파트너:
-                          </Typography>
+                      <Box p={1.5} mb={1} bgcolor="#e3f2fd" borderRadius={1}>
+                        <Typography variant="body2" fontWeight="medium" mb={0.5}>
+                          이전 매칭 파트너:
+                        </Typography>
+                        {request.matchedPartner ? (
                           <Typography variant="body2">
                             {request.matchedPartner.name} - 
                             <Link href={`https://instagram.com/${request.matchedPartner.instagramId}`} target="_blank" underline="hover">
                               @{request.matchedPartner.instagramId}
                             </Link>
                           </Typography>
-                        </Box>
-                      )}
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">
+                            매칭된 파트너가 없습니다.
+                          </Typography>
+                        )}
+                      </Box>
                       
                       {/* 새로 매칭된 파트너 정보 (재매칭 완료 시) */}
                       {request.status === 'matched' && request.newPartner && (
