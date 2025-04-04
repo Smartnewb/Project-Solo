@@ -102,11 +102,27 @@ export default function SignUp() {
     checkSignupStatus();
   }, []);
 
+  // 이메일 검증 함수 추가
+  const validateEmail = (email: string) => {
+    return email.toLowerCase().endsWith('ac.kr');
+  };
+
+  // handleChange 함수 수정
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [name]: value
     }));
+
+    // 이메일 필드 변경 시 검증
+    if (name === 'email' && value) {
+      if (!validateEmail(value)) {
+        setError('학교 이메일(@ac.kr)만 사용 가능합니다.');
+      } else {
+        setError(null);
+      }
+    }
   };
 
   const handleSendVerification = async () => {
@@ -340,6 +356,9 @@ export default function SignUp() {
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
                   이메일
+                  <span className="text-xs text-purple-600 ml-1">
+                    (@ac.kr 학교 계정만 가능)
+                  </span>
                 </label>
                 <div className="flex space-x-2">
                   <input
@@ -347,18 +366,24 @@ export default function SignUp() {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    className="input-field flex-1"
-                    //disabled={emailVerified} 테스트용 주석처리
+                    className={`input-field flex-1 ${
+                      formData.email && !validateEmail(formData.email)
+                        ? 'border-red-300 focus:border-red-500'
+                        : ''
+                    }`}
+                    placeholder="example@university.ac.kr"
                     required
                   />
                   <button
                     type="button"
                     onClick={handleSendVerification}
-                    disabled={sendingEmail || emailVerified}
+                    disabled={sendingEmail || emailVerified || (formData.email ? !validateEmail(formData.email) : false)}
                     className={`px-4 py-2 rounded-md text-sm font-medium ${
                       emailVerified
                         ? 'bg-green-500 text-white cursor-not-allowed'
                         : sendingEmail
+                        ? 'bg-gray-400 text-white cursor-not-allowed'
+                        : formData.email && !validateEmail(formData.email)
                         ? 'bg-gray-400 text-white cursor-not-allowed'
                         : 'bg-blue-500 hover:bg-blue-600 text-white'
                     }`}
@@ -366,6 +391,11 @@ export default function SignUp() {
                     {emailVerified ? '인증완료' : sendingEmail ? '전송중...' : '인증하기'}
                   </button>
                 </div>
+                {formData.email && !validateEmail(formData.email) && (
+                  <p className="text-red-500 text-sm mt-1">
+                    학교 이메일(@ac.kr)만 사용 가능합니다.
+                  </p>
+                )}
               </div>
 
               {showVerificationInput && !emailVerified && (

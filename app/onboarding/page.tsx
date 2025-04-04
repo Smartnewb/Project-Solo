@@ -302,21 +302,42 @@ export default function Onboarding() {
       ) || []
     : [];
 
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string>('');
+  const [profileImages, setProfileImages] = useState<string[]>([]);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imageErrors, setImageErrors] = useState<string | null>(null);
 
-  // 이미지 파일 처리 함수
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setAvatarFile(file);
-      // 미리보기 생성
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    
+    if (files.length + imageFiles.length > 3) {
+      setImageErrors('프로필 사진은 최대 3장까지 업로드 가능합니다.');
+      return;
     }
+
+    // 파일 형식 검증 - 다양한 이미지 형식 허용
+    const validFiles = files.filter(file => {
+      const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic'];
+      if (!validTypes.includes(file.type)) {
+        setImageErrors('지원하지 않는 파일 형식입니다. (JPEG, PNG, GIF, WEBP, HEIC 파일만 가능)');
+        return false;
+      }
+      if (file.size > 20 * 1024 * 1024) { // 20MB로 제한 상향
+        setImageErrors('20MB 이하의 파일만 업로드 가능합니다.');
+        return false;
+      }
+      return true;
+    });
+
+    // 미리보기 URL 생성
+    const newPreviewUrls = validFiles.map(file => URL.createObjectURL(file));
+    setProfileImages(prev => [...prev, ...newPreviewUrls]);
+    setImageFiles(prev => [...prev, ...validFiles]);
+    setImageErrors(null);
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setProfileImages(prev => prev.filter((_, i) => i !== index));
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const validateForm = () => {
@@ -404,16 +425,20 @@ export default function Onboarding() {
       let avatar_url = '';
       
       // 프로필 이미지를 base64로 변환
-      if (avatarFile) {
+      if (imageFiles.length > 0) {
         try {
           console.log('이미지 변환 시작');
-          const reader = new FileReader();
-          const base64Promise = new Promise<string>((resolve, reject) => {
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = (error) => reject(error);
+          const base64Promises = imageFiles.map(async (file) => {
+            const reader = new FileReader();
+            const promise = new Promise<string>((resolve, reject) => {
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = (error) => reject(error);
+            });
+            reader.readAsDataURL(file);
+            return promise;
           });
-          reader.readAsDataURL(avatarFile);
-          avatar_url = await base64Promise;
+          const base64Results = await Promise.all(base64Promises);
+          avatar_url = base64Results.join(',');
           console.log('이미지 base64 변환 성공');
         } catch (error) {
           console.error('이미지 변환 실패:', error);
@@ -512,36 +537,58 @@ export default function Onboarding() {
           <div className="card space-y-4">
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
-                프로필 사진 (선택)
+                프로필 사진
+                <span className="text-red-500">*</span>
+                <span className="text-sm text-gray-500 ml-1">(3장 필수)</span>
               </label>
-              <div className="flex items-center space-x-4">
-                {avatarPreview ? (
-                  <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-100">
-                    <img 
-                      src={avatarPreview} 
-                      alt="프로필 미리보기" 
-                      className="w-full h-full object-cover"
-                    />
+              <div className="grid grid-cols-3 gap-4">
+                {[0, 1, 2].map((index) => (
+                  <div key={index} className="relative">
+                    {profileImages[index] ? (
+                      <div className="relative w-full pt-[100%]">
+                        <img 
+                          src={profileImages[index]}
+                          alt={`프로필 사진 ${index + 1}`}
+                          className="absolute inset-0 w-full h-full object-cover rounded-lg"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(index)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="relative w-full pt-[100%] bg-gray-100 rounded-lg flex items-center justify-center">
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center">
-                    <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                )}
-                <div className="flex-1">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="input-field w-full"
-                  />
-                  <p className="text-sm text-gray-500 mt-1">
-                    당신을 잘 나타낼 수 있는 사진을 넣어주세요!
-                  </p>
-                </div>
+                ))}
               </div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="input-field w-full"
+                multiple
+              />
+              {imageErrors && (
+                <p className="text-red-500 text-sm">{imageErrors}</p>
+              )}
+              {profileImages.length < 3 && (
+                <p className="text-red-500 text-sm">프로필 사진 3장을 모두 업로드해주세요.</p>
+              )}
+              <p className="text-sm text-gray-500">
+                얼굴이 잘 보이는 사진을 업로드해주세요. (최대 20MB)
+              </p>
             </div>
           </div>
 
