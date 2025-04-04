@@ -37,7 +37,6 @@ export async function GET() {
           gender
         )
       `)
-      .eq('status', 'pending')
       .order('created_at', { ascending: false });
     
     if (requestsError) {

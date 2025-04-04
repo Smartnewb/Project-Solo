@@ -13,13 +13,16 @@ import {
   Modal,
   IconButton,
   Divider,
-  Link
+  Link,
+  TextField,
+  InputAdornment
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import PersonIcon from '@mui/icons-material/Person';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { AdminService } from '@/app/services';
+import SearchIcon from '@mui/icons-material/Search';
 
 // supabase 클라이언트 초기화
 const supabase = createClient();
@@ -165,6 +168,7 @@ export default function RematchRequestPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; content: string } | null>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter(); 
 
   const onFailureRedirectMain = () => {
@@ -411,6 +415,25 @@ export default function RematchRequestPage() {
 
       console.log('재매칭 저장 성공:', data);
 
+      // 재매칭 요청 상태를 matched로 업데이트
+      const { error: updateError } = await supabase
+        .from('matching_requests')
+        .update({ status: 'matched' })
+        .eq('user_id', userId);
+
+      if (updateError) {
+        console.error('재매칭 상태 업데이트 실패:', updateError);
+        throw new Error('재매칭 상태 업데이트에 실패했습니다.');
+      }
+
+      // 로컬 상태도 업데이트
+      setRematchRequests(prevRequests =>
+        prevRequests.map(req =>
+          req.user_id === userId
+            ? { ...req, status: 'matched' }
+            : req
+        )
+      );
 
       // 매칭된 사용자들의 이름 조회
       const { data: user1Data } = await supabase
@@ -485,6 +508,11 @@ export default function RematchRequestPage() {
     });
   };
 
+  // 검색어에 따라 필터링된 요청 목록을 반환하는 함수
+  const filteredRequests = rematchRequests.filter(request =>
+    request.userName?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   useEffect(() => {
     fetchRematchRequests();
   }, []);
@@ -504,6 +532,35 @@ export default function RematchRequestPage() {
           {isLoading ? <CircularProgress size={24} /> : '목록 새로고침'}
         </Button>
       </div>
+      
+      {/* 검색 입력창 추가 */}
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          label="이름으로 검색"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="검색할 이름을 입력하세요"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+            endAdornment: searchQuery && (
+              <InputAdornment position="end">
+                <IconButton
+                  onClick={() => setSearchQuery('')}
+                  edge="end"
+                >
+                  <CloseIcon />
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+        />
+      </Box>
       
       {message && (
         <Alert 
@@ -528,8 +585,8 @@ export default function RematchRequestPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {rematchRequests.length > 0 ? (
-            rematchRequests.map((request) => (
+          {filteredRequests.length > 0 ? (
+            filteredRequests.map((request) => (
               <Card key={request.id} className="mb-4">
                 <CardContent>
                   <div className="flex justify-between items-start">
@@ -546,7 +603,7 @@ export default function RematchRequestPage() {
                         {request.status === 'deposit_confirmed' && (
                           <Chip size="small" label="입금확인" color="success" sx={{ ml: 1 }} />
                         )}
-                        {request.status === 'completed' && (
+                        {request.status === 'matched' && (
                           <Chip size="small" label="재매칭완료" color="primary" sx={{ ml: 1 }} />
                         )}
                       </Box>
@@ -580,7 +637,7 @@ export default function RematchRequestPage() {
                       )}
                       
                       {/* 새로 매칭된 파트너 정보 (재매칭 완료 시) */}
-                      {request.status === 'completed' && request.newPartner && (
+                      {request.status === 'matched' && request.newPartner && (
                         <Box p={1.5} mb={1} bgcolor="#e8f5e9" borderRadius={1}>
                           <Typography variant="body2" fontWeight="medium" mb={0.5}>
                             새 매칭 파트너:
@@ -619,7 +676,7 @@ export default function RematchRequestPage() {
                       )}
                       
                       {/* 처리 완료된 경우 */}
-                      {request.status === 'completed' && (
+                      {request.status === 'matched' && (
                         <Typography variant="body2" color="success.main" fontWeight="medium">
                           처리 완료
                         </Typography>
