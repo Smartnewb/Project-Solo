@@ -104,7 +104,8 @@ export default function SignUp() {
 
   // 이메일 검증 함수 추가
   const validateEmail = (email: string) => {
-    return email.toLowerCase().endsWith('ac.kr');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
 
   // handleChange 함수 수정
@@ -118,7 +119,7 @@ export default function SignUp() {
     // 이메일 필드 변경 시 검증
     if (name === 'email' && value) {
       if (!validateEmail(value)) {
-        setError('학교 이메일(@ac.kr)만 사용 가능합니다.');
+        setError('올바른 이메일 형식이 아닙니다.');
       } else {
         setError(null);
       }
@@ -356,9 +357,6 @@ export default function SignUp() {
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
                   이메일
-                  <span className="text-xs text-purple-600 ml-1">
-                    (@ac.kr 학교 계정만 가능)
-                  </span>
                 </label>
                 <div className="flex space-x-2">
                   <input
@@ -371,7 +369,7 @@ export default function SignUp() {
                         ? 'border-red-300 focus:border-red-500'
                         : ''
                     }`}
-                    placeholder="example@university.ac.kr"
+                    placeholder="example@email.com"
                     required
                   />
                   <button
@@ -393,7 +391,7 @@ export default function SignUp() {
                 </div>
                 {formData.email && !validateEmail(formData.email) && (
                   <p className="text-red-500 text-sm mt-1">
-                    학교 이메일(@ac.kr)만 사용 가능합니다.
+                    올바른 이메일 형식이 아닙니다.
                   </p>
                 )}
               </div>
