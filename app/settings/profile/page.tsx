@@ -248,7 +248,7 @@ export default function ProfilePage() {
         {/* 하단 버튼 */}
         <div className="flex gap-3">
           <button
-            onClick={() => router.push('/onboarding')}
+            onClick={() => router.push('/profile')}
             className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all"
           >
             프로필 수정하기

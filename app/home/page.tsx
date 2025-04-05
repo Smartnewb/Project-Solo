@@ -143,6 +143,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [showAdditionalInfoModal, setShowAdditionalInfoModal] = useState(false);
   const [hasUserPreferences, setHasUserPreferences] = useState(false);
+  const [profileData, setProfileData] = useState<any>(null);
   
   // 리매칭 관련 상태
   const [showRematchModal, setShowRematchModal] = useState(false);
@@ -162,6 +163,37 @@ export default function Home() {
 
   // 새로운 상태 추가
   const [showProfileWarningModal, setShowProfileWarningModal] = useState(false);
+
+  // 프로필 정보 조회
+  const fetchProfileData = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        console.error('토큰이 없습니다.');
+        router.push('/');
+        return;
+      }
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          router.push('/');
+          return;
+        }
+        throw new Error('프로필 정보 조회 실패');
+      }
+
+      const data = await response.json();
+      setProfileData(data);
+    } catch (error) {
+      console.error('프로필 정보 조회 중 오류:', error);
+    }
+  };
 
   // 사용자 선호도 정보 조회
   const checkUserPreferences = async (userId: string) => {
@@ -453,7 +485,7 @@ export default function Home() {
 
       setIsLoading(true);
       try {
-        // 매칭 결과를 즉시 보이도록 설정
+        await fetchProfileData();
         setIsMatchingTimeOver(true);
         await fetchMatchResult();
       } catch (error) {
@@ -464,7 +496,7 @@ export default function Home() {
     };
 
     initializeHome();
-  }, [user, profile, router]);
+  }, [user]);
 
   // 상태 초기화 시 localStorage 체크 추가
   useEffect(() => {
@@ -582,10 +614,10 @@ export default function Home() {
                 </div>
                 <div className="text-[#2D3436] font-medium flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-[#6C5CE7] text-white flex items-center justify-center font-bold cursor-pointer">
-                    {profile?.name?.[0]?.toUpperCase() || '?'}
+                    {profileData?.name?.[0]?.toUpperCase() || '?'}
                   </div>
                   <span>
-                    {profile?.name || '게스트'}님
+                    {profileData?.name || '게스트'}님
                   </span>
                 </div>
               </div>
@@ -594,8 +626,8 @@ export default function Home() {
 
           {/* 메인 컨텐츠 */}
           <main className="max-w-lg mx-auto p-6 space-y-6" role="main">
-            {/* 프로필 작성 알림 */}
-            {!profile && (
+            {/* 프로필 작성 알림 - 프로필 데이터가 없을 때만 표시 */}
+            {!profileData && (
               <section className="card space-y-6 transform transition-all hover:scale-[1.02] bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl">
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
