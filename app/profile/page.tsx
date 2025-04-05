@@ -50,14 +50,6 @@ export default function Profile() {
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [formData, setFormData] = useState<ProfileForm>({});
 
-  // 각 타입별 최대 선택 가능 개수 설정
-  const MAX_SELECTIONS = {
-    '관심사': 5,
-    '라이프스타일': 3,
-    '성격 유형': 3,
-    '연애 스타일': 3
-  };
-
   // 선택 가능한 옵션들과 저장된 프로필 정보를 가져오는 함수
   const fetchData = async () => {
     try {
@@ -220,6 +212,11 @@ export default function Profile() {
     return preferenceType?.options || [];
   };
 
+  const getMaxSelectionsForType = (typeName: string): number => {
+    const preferenceType = preferences.find(p => p.typeName === typeName);
+    return preferenceType?.maximumChoiceCount || 1;
+  };
+
   // 데이터 로딩 중이거나 preferences가 없으면 로딩 표시
   if (loading || !preferences.length) {
     return (
@@ -271,9 +268,9 @@ export default function Profile() {
                   <h2 className="text-lg font-semibold text-gray-900">
                     {preferenceType.typeName}
                   </h2>
-                  {preferenceType.multiple && MAX_SELECTIONS[preferenceType.typeName as keyof typeof MAX_SELECTIONS] && (
+                  {preferenceType.multiple && preferenceType.maximumChoiceCount > 1 && (
                     <span className="text-sm text-gray-500">
-                      최대 {MAX_SELECTIONS[preferenceType.typeName as keyof typeof MAX_SELECTIONS]}개 선택 가능
+                      최대 {preferenceType.maximumChoiceCount}개 선택 가능
                     </span>
                   )}
                 </div>
@@ -281,7 +278,7 @@ export default function Profile() {
                   {preferenceType.options.map((option) => {
                     const isSelected = formData[preferenceType.typeName]?.includes(option.displayName);
                     const currentSelections = formData[preferenceType.typeName]?.length || 0;
-                    const maxSelections = MAX_SELECTIONS[preferenceType.typeName as keyof typeof MAX_SELECTIONS];
+                    const maxSelections = preferenceType.maximumChoiceCount;
                     const canSelect = !isSelected && (!maxSelections || currentSelections < maxSelections);
 
                     return (
