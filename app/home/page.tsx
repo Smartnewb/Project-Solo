@@ -161,7 +161,6 @@ export default function Home() {
 
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [showAdditionalInfoModal, setShowAdditionalInfoModal] = useState(false);
   const [hasUserPreferences, setHasUserPreferences] = useState(false);
   const [profileData, setProfileData] = useState<any>(null);
@@ -520,32 +519,18 @@ export default function Home() {
   const initializeHome = async () => {
     if (!user) return;
 
-    setIsLoading(true);
     try {
-      // 1. 프로필 데이터와 매칭 결과를 동시에 가져오기
-      const [profileData, matchData] = await Promise.all([
-        fetchProfileData(),
-        fetchMatchResult(),
-      ]);
+      // 1. 매칭 결과 가져오기
+      await fetchMatchResult();
 
       // 2. localStorage 체크
       const hasRequested = localStorage.getItem("rematchRequested") === "true";
       setHasRequestedRematch(hasRequested);
 
-      // 3. 프로필 완성도 체크
-      if (profile) {
-        const isComplete = checkProfileCompletion();
-        if (!isComplete) {
-          setShowProfileWarningModal(true);
-        }
-      }
-
-      // 4. 매칭 시간 설정
+      // 3. 매칭 시간 설정
       setIsMatchingTimeOver(true);
     } catch (error) {
       console.error("초기화 중 오류:", error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -564,43 +549,35 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFD] pb-20">
-      {isLoading ? (
-        <div className="flex justify-center items-center h-screen">
-          <div className="animate-pulse space-y-4 text-center">
-            <div className="h-12 w-12 rounded-full bg-[#6C5CE7]/20 mx-auto" />
-            <p className="text-[#636E72]">잠시만 기다려주세요...</p>
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* 온보딩 모달 */}
-          {showOnboardingModal && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-              <div className="bg-white rounded-2xl p-8 max-w-sm mx-4 space-y-6 shadow-xl transform transition-all">
-                <div className="text-center space-y-4">
-                  <div className="text-5xl">👋</div>
-                  <h2 className="text-2xl font-bold text-[#2D3436]">
-                    환영합니다!
-                  </h2>
-                  <p className="text-[#636E72] leading-relaxed">
-                    매칭 서비스를 이용하기 위해서는
-                    <br />
-                    먼저 기본 정보를 입력해주세요.
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    setShowOnboardingModal(false);
-                    router.replace("/onboarding");
-                  }}
-                  className="btn-primary w-full py-4"
-                  type="button"
-                >
-                  시작하기
-                </button>
+      <>
+        {/* 온보딩 모달 */}
+        {showOnboardingModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-8 max-w-sm mx-4 space-y-6 shadow-xl transform transition-all">
+              <div className="text-center space-y-4">
+                <div className="text-5xl">👋</div>
+                <h2 className="text-2xl font-bold text-[#2D3436]">
+                  환영합니다!
+                </h2>
+                <p className="text-[#636E72] leading-relaxed">
+                  매칭 서비스를 이용하기 위해서는
+                  <br />
+                  먼저 기본 정보를 입력해주세요.
+                </p>
               </div>
+              <button
+                onClick={() => {
+                  setShowOnboardingModal(false);
+                  router.replace("/onboarding");
+                }}
+                className="btn-primary w-full py-4"
+                type="button"
+              >
+                시작하기
+              </button>
             </div>
-          )}
+          </div>
+        )}
 
           {/* 프로필 설정 모달 */}
           {showProfileModal && (
@@ -1134,107 +1111,106 @@ export default function Home() {
             </div>
           )}
 
-          {/* 알림 모달 */}
-          {showNotificationModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-              <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-                <div className="text-center mb-4">
-                  <p className="text-lg">{notificationMessage}</p>
-                </div>
-                <div className="flex justify-center">
-                  <button
-                    onClick={() => setShowNotificationModal(false)}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-6 rounded"
-                  >
-                    확인
-                  </button>
-                </div>
+        {/* 알림 모달 */}
+        {showNotificationModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <div className="text-center mb-4">
+                <p className="text-lg">{notificationMessage}</p>
+              </div>
+              <div className="flex justify-center">
+                <button
+                  onClick={() => setShowNotificationModal(false)}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-6 rounded"
+                >
+                  확인
+                </button>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* 프로필 경고 모달 */}
-          {showRematchWarningModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-              <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-                <div className="text-center mb-6">
-                  <div className="text-5xl mb-4">⚠️</div>
-                  <h3 className="text-xl font-bold mb-2">
-                    프로필 정보를 완성해주세요
-                  </h3>
-                  <p className="text-gray-600">
-                    매칭에 필요한 정보가 부족합니다. 프로필, 이상형 정보, 기본
-                    정보를 완성하고 재매칭 신청을 진행해주세요. 계속 오류가
-                    발생하면 재 로그인 부탁드립니다.
-                  </p>
-                </div>
-                <div className="flex space-x-3">
-                  <button
-                    onClick={() => {
-                      setShowRematchWarningModal(false);
-                      router.push("/onboarding");
-                    }}
-                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded"
-                  >
-                    프로필 완성하기
-                  </button>
-                  <button
-                    onClick={() => setShowRematchWarningModal(false)}
-                    className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded"
-                  >
-                    취소
-                  </button>
-                </div>
+        {/* 프로필 경고 모달 */}
+        {showRematchWarningModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <div className="text-center mb-6">
+                <div className="text-5xl mb-4">⚠️</div>
+                <h3 className="text-xl font-bold mb-2">
+                  프로필 정보를 완성해주세요
+                </h3>
+                <p className="text-gray-600">
+                  매칭에 필요한 정보가 부족합니다. 프로필, 이상형 정보, 기본
+                  정보를 완성하고 재매칭 신청을 진행해주세요. 계속 오류가
+                  발생하면 재 로그인 부탁드립니다.
+                </p>
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setShowRematchWarningModal(false);
+                    router.push("/onboarding");
+                  }}
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded"
+                >
+                  프로필 완성하기
+                </button>
+                <button
+                  onClick={() => setShowRematchWarningModal(false)}
+                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded"
+                >
+                  취소
+                </button>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* 프로필 정보 미입력 경고 모달 */}
-          {showProfileWarningModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-              <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
-                <div className="text-center mb-6">
-                  <div className="text-5xl mb-4">⚠️</div>
-                  <h3 className="text-xl font-bold mb-2">
-                    프로필 정보를 입력해주세요
-                  </h3>
-                  <p className="text-gray-600">
-                    매칭 서비스를 이용하기 위해서는 기본 정보, 프로필 정보,
-                    이상형 정보가 모두 필요합니다. 지금 바로 입력하고 매칭을
-                    시작해보세요!
-                  </p>
-                </div>
-                <div className="flex space-x-3">
-                  <button
-                    onClick={() => {
-                      setShowProfileWarningModal(false);
-                      router.push("/onboarding");
-                    }}
-                    className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all"
-                  >
-                    프로필 입력하기
-                  </button>
-                  <button
-                    onClick={() => setShowProfileWarningModal(false)}
-                    className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-all"
-                  >
-                    나중에 하기
-                  </button>
-                </div>
+        {/* 프로필 정보 미입력 경고 모달 */}
+        {showProfileWarningModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
+              <div className="text-center mb-6">
+                <div className="text-5xl mb-4">⚠️</div>
+                <h3 className="text-xl font-bold mb-2">
+                  프로필 정보를 입력해주세요
+                </h3>
+                <p className="text-gray-600">
+                  매칭 서비스를 이용하기 위해서는 기본 정보, 프로필 정보, 이상형
+                  정보가 모두 필요합니다. 지금 바로 입력하고 매칭을
+                  시작해보세요!
+                </p>
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setShowProfileWarningModal(false);
+                    router.push("/onboarding");
+                  }}
+                  className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all"
+                >
+                  프로필 입력하기
+                </button>
+                <button
+                  onClick={() => setShowProfileWarningModal(false)}
+                  className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-all"
+                >
+                  나중에 하기
+                </button>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* 프로필 모달 추가 */}
-          {showPartnerProfile && (
-            <PartnerProfileModal
-              open={showPartnerProfile}
-              onClose={() => setShowPartnerProfile(false)}
-              profile={partnerProfile}
-            />
-          )}
-        </>
-      )}
+        {/* 프로필 모달 추가 */}
+        {showPartnerProfile && (
+          <PartnerProfileModal
+            open={showPartnerProfile}
+            onClose={() => setShowPartnerProfile(false)}
+            profile={partnerProfile}
+          />
+        )}
+      </>
     </div>
   );
 }
