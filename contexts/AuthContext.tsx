@@ -1,71 +1,51 @@
 'use client';
 
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  ReactNode,
-} from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { createBrowserClient } from '@supabase/ssr';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 
-// 환경 변수에서 관리자 이메일 가져오기
-const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'notify@smartnewb.com';
+export type User = {
+  id: string;
+  email: string;
+  role?: string;
+};
 
-// 프로필 타입 정의
 export type Profile = {
   id: string;
-  created_at?: string;
-  updated_at?: string;
-  user_id?: string;
-  email?: string;
-  name?: string;
-  age?: number;
-  gender?: string;
-  is_admin?: boolean;
-  role?: string;
-  classification?: string;
-  student_id?: string;
-  avatar_url?: string;
+  user_id: string;
+  name: string;
   university?: string;
   department?: string;
+  student_id?: string;
   grade?: string;
-  instagram_id?: string;
+  age?: number;
+  height?: number;
+  mbti?: string;
   personalities?: string[];
   dating_styles?: string[];
-  lifestyles?: string[];
-  interests?: string[];
   drinking?: string;
   smoking?: string;
   tattoo?: string;
-  height?: number;
-  ideal_lifestyles?: string[];
-  mbti?: string;
-  [key: string]: any; // 인덱스 시그니처 추가
+  instagram_id?: string;
+  created_at?: string;
+  updated_at?: string;
 };
 
-// 컨텍스트 타입 정의
-interface AuthContextType {
+interface AuthState {
   user: User | null;
-  session: Session | null;
   profile: Profile | null;
   loading: boolean;
   isAdmin: boolean;
-  needsOnboarding: boolean;
-  hasCompletedProfile: boolean;
-  hasCompletedIdealType: boolean;
-  hasCompletedOnboarding: boolean;
-  updateProfile: (profile: Profile) => Promise<void>;
-  signOut: () => Promise<void>;
-  refreshProfile: () => Promise<void>;
 }
 
-// 기본값 제거하고 null로 초기화
+interface AuthContextType extends AuthState {
+  login: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
+  refreshAccessToken: () => Promise<boolean>;
+  fetchProfile: () => Promise<void>;
+}
+
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// 커스텀 훅에서 null 체크 추가
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -74,242 +54,196 @@ export const useAuth = () => {
   return context;
 };
 
-// 인증 상태를 관리하는 프로바이더 컴포넌트
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-  
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [needsOnboarding, setNeedsOnboarding] = useState(false);
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
-  const [hasCompletedProfile, setHasCompletedProfile] = useState(false);
-  const [hasCompletedIdealType, setHasCompletedIdealType] = useState(false);
+  const [state, setState] = useState<AuthState>({
+    user: null,
+    profile: null,
+    loading: true,
+    isAdmin: false
+  });
 
-  // 프로필 완성도 체크 함수
-  const checkProfileCompletion = (profile: Profile | null) => {
-    if (!profile) return false;
-    
-    const requiredFields = ['height', 'personalities', 'university', 'department', 'student_id', 'instagram_id'];
-    return requiredFields.every(field => profile[field]);
+  const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'notify@smartnewb.com';
+
+  // 토큰 관리 함수들
+  const getAccessToken = () => localStorage.getItem('accessToken');
+  const setAccessToken = (token: string) => {
+    localStorage.setItem('accessToken', token);
+    document.cookie = `accessToken=${token}; path=/; max-age=3600; SameSite=Lax`;
+  };
+  const removeAccessToken = () => {
+    localStorage.removeItem('accessToken');
+    document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
   };
 
-  // 이상형 정보 완성도 체크 함수
-  const checkIdealTypeCompletion = (profile: Profile | null) => {
-    if (!profile) return false;
-    
-    const idealTypeFields = ['dating_styles', 'lifestyles', 'interests'];
-    return idealTypeFields.every(field => 
-      profile[field] && Array.isArray(profile[field]) && profile[field].length > 0
-    );
-  };
-
-  // 프로필 정보 가져오기
-  const fetchProfile = async (userId: string): Promise<Profile | null> => {
+  // 프로필 조회
+  const fetchProfile = async () => {
     try {
-      console.log('fetchProfile 시작:', userId);
+      const token = getAccessToken();
+      if (!token || !state.user) return;
 
-      if (!userId) {
-        console.error('fetchProfile: 유효하지 않은 사용자 ID');
-        return null;
-      }
-
-      // 1. 로컬 스토리지 확인
-      const cachedProfile = localStorage.getItem('profile');
-      if (cachedProfile) {
-        try {
-          const parsed = JSON.parse(cachedProfile);
-          if (parsed.user_id === userId) {
-            console.log('캐시된 프로필 사용:', userId);
-            setProfile(parsed);
-            setHasCompletedProfile(checkProfileCompletion(parsed));
-            setHasCompletedIdealType(checkIdealTypeCompletion(parsed));
-            return parsed;
-          }
-        } catch (e) {
-          console.error('캐시 파싱 오류:', e);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          const refreshSuccess = await refreshAccessToken();
+          if (!refreshSuccess) {
+            await signOut();
+            return;
+          }
+          return await fetchProfile();
+        }
+        throw new Error('프로필 조회 실패');
       }
 
-      // 2. 서버에서 프로필 조회
-      console.log('서버에서 프로필 조회 중:', userId);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
-      if (error) {
-        console.error('프로필 조회 오류:', error);
-        return null;
-      }
-
-      if (data) {
-        console.log('프로필 조회 성공:', data.user_id);
-        setProfile(data);
-        setHasCompletedProfile(checkProfileCompletion(data));
-        setHasCompletedIdealType(checkIdealTypeCompletion(data));
-        localStorage.setItem('profile', JSON.stringify(data));
-        return data;
-      }
-
-      console.log('프로필 데이터 없음');
-      return null;
-
+      const profileData = await response.json();
+      setState(prev => ({ ...prev, profile: profileData }));
     } catch (error) {
-      console.error('fetchProfile 예외:', error);
-      return null;
-    } finally {
-      setLoading(false);  // 로딩 상태 해제
+      console.error('프로필 조회 중 오류:', error);
+      setState(prev => ({ ...prev, profile: null }));
     }
   };
 
-  // 프로필 새로고침
-  const refreshProfile = async () => {
-    if (user) {
-      await fetchProfile(user.id);
-    }
-  };
-
-  // 로그아웃 처리
-  const signOut = async () => {
+  // 토큰 갱신
+  const refreshAccessToken = async (): Promise<boolean> => {
     try {
-      setLoading(true);
-      await supabase.auth.signOut();
-      setUser(null);
-      setSession(null);
-      setProfile(null);
-      
-      // 로컬 스토리지 클리어
-      try {
-        localStorage.removeItem('profile');
-      } catch (storageError) {
-        console.error('로컬 스토리지 클리어 오류:', storageError);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to refresh token');
       }
-      
+
+      const data = await response.json();
+      setAccessToken(data.accessToken);
+      return true;
+    } catch (error) {
+      console.error('토큰 갱신 실패:', error);
+      return false;
+    }
+  };
+
+  // 로그인
+  const login = async (email: string, password: string) => {
+    setState(prev => ({ ...prev, loading: true }));
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || '로그인에 실패했습니다.');
+      }
+
+      if (!data.accessToken) {
+        throw new Error('토큰이 없습니다.');
+      }
+
+      // 토큰 저장
+      setAccessToken(data.accessToken);
+
+      // 사용자 정보 설정
+      const userInfo = data.user || data;
+      setState(prev => ({
+        ...prev,
+        user: userInfo,
+        isAdmin: userInfo.email === ADMIN_EMAIL,
+        loading: false
+      }));
+
+      // 프로필 정보 조회
+      await fetchProfile();
+
+      // 리다이렉트
+      router.push(userInfo.email === ADMIN_EMAIL ? '/admin/community' : '/home');
+    } catch (error) {
+      setState(prev => ({ ...prev, loading: false }));
+      throw error;
+    }
+  };
+
+  // 로그아웃
+  const signOut = async () => {
+    setState(prev => ({ ...prev, loading: true }));
+    try {
+      removeAccessToken();
+      setState({
+        user: null,
+        profile: null,
+        loading: false,
+        isAdmin: false
+      });
       router.push('/');
     } catch (error) {
       console.error('로그아웃 중 오류 발생:', error);
-    } finally {
-      setLoading(false);
+      setState(prev => ({ ...prev, loading: false }));
     }
   };
 
   // 초기 인증 상태 설정
   const initAuth = async () => {
+    const token = getAccessToken();
+    if (!token) {
+      setState(prev => ({ ...prev, loading: false }));
+      return;
+    }
+
     try {
-      console.log('인증 초기화 시작');
-      setLoading(true);
+      // 토큰 유효성 검증
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/verify`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
 
-      // 로컬스토리지에서 어드민 상태 확인
-      const storedIsAdmin = localStorage.getItem('isAdmin') === 'true';
-      if (storedIsAdmin) {
-        setIsAdmin(true);
-        setLoading(false);
-        return;
+      if (!response.ok) {
+        if (response.status === 401) {
+          const refreshSuccess = await refreshAccessToken();
+          if (!refreshSuccess) {
+            await signOut();
+            return;
+          }
+          return await initAuth();
+        }
+        throw new Error('토큰 검증 실패');
       }
 
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      console.log('세션 상태:', currentSession ? '세션 있음' : '세션 없음');
+      const userData = await response.json();
+      setState(prev => ({
+        ...prev,
+        user: userData,
+        isAdmin: userData.email === ADMIN_EMAIL,
+        loading: false
+      }));
 
-      if (currentSession) {
-        setSession(currentSession);
-        setUser(currentSession.user);
-        const isAdminUser = currentSession.user.email === ADMIN_EMAIL;
-        setIsAdmin(isAdminUser);
-        if (isAdminUser) {
-          localStorage.setItem('isAdmin', 'true');
-        }
-
-        // 어드민이 아닌 경우에만 프로필 조회
-        if (!isAdminUser) {
-          const profileData = await fetchProfile(currentSession.user.id);
-          console.log('프로필 조회 결과:', profileData ? '성공' : '실패');
-        }
-      } else {
-        // 세션이 없는 경우 상태 초기화
-        setUser(null);
-        setProfile(null);
-        setIsAdmin(false);
-        setNeedsOnboarding(false);
-        localStorage.removeItem('profile');
-        localStorage.removeItem('isAdmin');
-      }
+      await fetchProfile();
     } catch (error) {
       console.error('인증 초기화 오류:', error);
-    } finally {
-      setLoading(false);
+      await signOut();
     }
   };
 
-  // 인증 상태 변경 감지
+  // 초기화
   useEffect(() => {
-    console.log('AuthContext 마운트, 인증 초기화');
     initAuth();
-    
-    // Session 타입 명시
-    let lastKnownSession: Session | null = null;
-    
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('인증 상태 변경:', event, session ? '세션 있음' : '세션 없음');
-        
-        // 세션이 실제로 변경된 경우에만 처리
-        if (JSON.stringify(session) !== JSON.stringify(lastKnownSession)) {
-          lastKnownSession = session;
-          
-          if (session) {
-            setSession(session);
-            setUser(session.user);
-            setIsAdmin(session.user.email === ADMIN_EMAIL);
-            
-            // 로그인 또는 토큰 갱신 시에만 프로필 새로고침
-            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-              await fetchProfile(session.user.id);
-            }
-          } else {
-            setUser(null);
-            setProfile(null);
-            setIsAdmin(false);
-            setNeedsOnboarding(false);
-            localStorage.removeItem('profile');
-          }
-        }
-        
-        setLoading(false);
-      }
-    );
-    
-    return () => {
-      console.log('AuthContext 언마운트, 구독 해제');
-      authListener.subscription.unsubscribe();
-    };
-  }, [supabase, router]);
+  }, []);
 
-  // 컨텍스트 값 설정
   const value: AuthContextType = {
-    user,
-    session,
-    profile,
-    loading,
-    isAdmin,
-    needsOnboarding,
-    hasCompletedOnboarding,
-    hasCompletedProfile,
-    hasCompletedIdealType,
-    updateProfile: async (profile: Profile) => {
-      setProfile(profile);
-      setHasCompletedProfile(checkProfileCompletion(profile));
-      setHasCompletedIdealType(checkIdealTypeCompletion(profile));
-    },
+    ...state,
+    login,
     signOut,
-    refreshProfile,
+    refreshAccessToken,
+    fetchProfile
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
