@@ -283,7 +283,7 @@ export default function SignUp() {
       alert('회원가입에 성공했습니다.');
 
       // 3. 회원가입 성공 시 로그인 페이지로 이동
-      router.push('/');
+      router.push('/onboarding');
 
     } catch (err) {
       console.error('회원가입 중 오류:', err);

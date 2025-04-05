@@ -199,30 +199,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      // 토큰 유효성 검증
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/verify`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          const refreshSuccess = await refreshAccessToken();
-          if (!refreshSuccess) {
-            await signOut();
-            return;
-          }
-          return await initAuth();
-        }
-        throw new Error('토큰 검증 실패');
-      }
-
-      const userData = await response.json();
+      // 임시로 토큰이 있으면 인증된 것으로 처리
       setState(prev => ({
         ...prev,
-        user: userData,
-        isAdmin: userData.email === ADMIN_EMAIL,
+        user: { id: 'temp-id', email: 'temp@email.com' }, // 임시 사용자 정보
         loading: false
       }));
 
