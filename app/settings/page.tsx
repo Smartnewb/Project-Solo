@@ -15,10 +15,13 @@ export default function Settings() {
     matching: true,
     events: true
   });
-    // 페이지 이동 함수들
-    const handleGoToProfile = () => router.push('/profile');
-    const handleGoToHome = () => router.push('/home');
-    const handleGoToSettings = () => router.push('/settings');
+  const [password, setPassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+
+  // 페이지 이동 함수들
+  const handleGoToProfile = () => router.push('/profile');
+  const handleGoToHome = () => router.push('/home');
+  const handleGoToSettings = () => router.push('/settings');
 
   const handleLogout = async () => {
     try {
@@ -68,22 +71,31 @@ export default function Settings() {
 
   const handleDeleteAccount = async () => {
     try {
-      if (!user) {
-        console.error('사용자 정보가 없습니다.');
+      if (!password.trim()) {
+        setDeleteError('비밀번호를 입력해주세요.');
         return;
       }
 
-      // API 호출하여 회원 탈퇴 처리
-      const response = await fetch('/api/user/delete', {
-        method: 'POST',
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        console.error('토큰이 없습니다.');
+        router.push('/');
+        return;
+      }
+
+      // Nest.js API 호출
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/withdraw`, {
+        method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ userId: user.id }),
+        body: JSON.stringify({ password })
       });
 
       if (!response.ok) {
-        throw new Error('회원 탈퇴 처리에 실패했습니다.');
+        const errorData = await response.json();
+        throw new Error(errorData.message || '회원 탈퇴 처리에 실패했습니다.');
       }
 
       // 로컬 스토리지 클리어
@@ -101,9 +113,7 @@ export default function Settings() {
       
     } catch (error) {
       console.error('회원 탈퇴 중 오류:', error);
-      alert('회원 탈퇴 처리 중 오류가 발생했습니다.');
-    } finally {
-      setShowDeleteConfirm(false);
+      setDeleteError(error instanceof Error ? error.message : '회원 탈퇴 처리 중 오류가 발생했습니다.');
     }
   };
 
@@ -196,19 +206,44 @@ export default function Settings() {
             <p className="text-gray-600 text-center">
               탈퇴하시면 모든 정보가 삭제되며 복구할 수 없습니다.
             </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                className="btn-secondary w-full"
-              >
-                취소
-              </button>
-              <button
-                onClick={handleDeleteAccount}
-                className="btn-primary w-full bg-red-500 hover:bg-red-600"
-              >
-                탈퇴하기
-              </button>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  비밀번호 확인
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setDeleteError('');
+                  }}
+                  placeholder="비밀번호를 입력해주세요"
+                  className="w-full px-4 py-2 rounded-xl border-2 border-gray-200 focus:border-purple-300 focus:outline-none transition-all"
+                />
+                {deleteError && (
+                  <p className="mt-1 text-sm text-red-600">{deleteError}</p>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setPassword('');
+                    setDeleteError('');
+                  }}
+                  className="btn-secondary w-full"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  className="btn-primary w-full bg-red-500 hover:bg-red-600"
+                >
+                  탈퇴하기
+                </button>
+              </div>
             </div>
           </div>
         </div>
