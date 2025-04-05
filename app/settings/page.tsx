@@ -22,15 +22,24 @@ export default function Settings() {
 
   const handleLogout = async () => {
     try {
-      const supabase = createClient();
-      
-      // 로그아웃 실행
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        console.error('로그아웃 중 오류 발생:', error);
-        alert('로그아웃 중 오류가 발생했습니다.');
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        console.error('토큰이 없습니다.');
+        router.push('/');
         return;
+      }
+
+      // Nest.js 로그아웃 API 호출
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/logout`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('로그아웃 처리에 실패했습니다.');
       }
 
       // 로컬 스토리지 클리어
@@ -123,35 +132,35 @@ export default function Settings() {
         {/* 알림 설정 섹션 */}
         <div className="card space-y-4">
           <h2 className="text-h2">알림 설정</h2>
-          <div className="space-y-4">
+          <div className="space-y-4 bg-gray-50 p-4 rounded-xl">
             <div className="flex items-center justify-between">
-              <span className="text-gray-700">매칭 완료 알림</span>
+              <span className="text-gray-700 font-medium">매칭 완료 알림</span>
               <button
                 onClick={() => setNotifications(prev => ({
                   ...prev,
                   matching: !prev.matching
                 }))}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out
-                  ${notifications.matching ? 'bg-primary-DEFAULT' : 'bg-gray-200'}`}
+                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2
+                  ${notifications.matching ? 'bg-[#6C5CE7]' : 'bg-gray-300'}`}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition duration-200 ease-in-out
                     ${notifications.matching ? 'translate-x-6' : 'translate-x-1'}`}
                 />
               </button>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-gray-700">이벤트 알림</span>
+              <span className="text-gray-700 font-medium">이벤트 알림</span>
               <button
                 onClick={() => setNotifications(prev => ({
                   ...prev,
                   events: !prev.events
                 }))}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ease-in-out
-                  ${notifications.events ? 'bg-primary-DEFAULT' : 'bg-gray-200'}`}
+                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2
+                  ${notifications.events ? 'bg-[#6C5CE7]' : 'bg-gray-300'}`}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition duration-200 ease-in-out
                     ${notifications.events ? 'translate-x-6' : 'translate-x-1'}`}
                 />
               </button>
