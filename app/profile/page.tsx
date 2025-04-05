@@ -50,6 +50,14 @@ export default function Profile() {
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [formData, setFormData] = useState<ProfileForm>({});
 
+  // 각 타입별 최대 선택 가능 개수 설정
+  const MAX_SELECTIONS = {
+    '관심사': 5,
+    '라이프스타일': 3,
+    '성격 유형': 3,
+    '연애 스타일': 3
+  };
+
   // 선택 가능한 옵션들과 저장된 프로필 정보를 가져오는 함수
   const fetchData = async () => {
     try {
@@ -240,72 +248,107 @@ export default function Profile() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-pink-50">
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold mb-6">프로필 설정</h1>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {preferences.map((preferenceType) => (
-            <div key={preferenceType.typeName} className="space-y-4">
-              <h2 className="text-xl font-semibold">{preferenceType.typeName}</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {preferenceType.options.map((option) => (
-                  <div
-                    key={option.id}
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                      preferenceType.multiple
-                        ? formData[preferenceType.typeName]?.includes(option.displayName)
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-white hover:bg-gray-50'
-                        : formData[preferenceType.typeName]?.[0] === option.displayName
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-white hover:bg-gray-50'
-                    }`}
-                    onClick={() => {
-                      const currentValue = formData[preferenceType.typeName] || [];
-                      let newValue: string[];
-
-                      if (preferenceType.multiple) {
-                        if (currentValue.includes(option.displayName)) {
-                          newValue = currentValue.filter(v => v !== option.displayName);
-                        } else {
-                          newValue = [...currentValue, option.displayName];
-                        }
-                      } else {
-                        newValue = [option.displayName];
-                      }
-
-                      setFormData({
-                        ...formData,
-                        [preferenceType.typeName]: newValue
-                      });
-                    }}
-                  >
-                    {option.displayName}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-          <div className="flex justify-end space-x-4">
-            <button
-              type="submit"
-              className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-              disabled={loading}
+    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-pink-50 py-8">
+      <div className="container mx-auto px-4 max-w-5xl">
+        <div className="bg-white rounded-2xl shadow-sm p-8">
+          <div className="flex items-center mb-8">
+            <button 
+              onClick={() => router.push('/home')} 
+              className="mr-4 p-2 rounded-full hover:bg-gray-100 transition-all"
+              aria-label="뒤로 가기"
             >
-              {loading ? '저장 중...' : '저장'}
+              <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+              </svg>
             </button>
+            <h1 className="text-2xl font-bold text-gray-900">프로필 설정</h1>
           </div>
-        </form>
-        {showModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className={`p-6 rounded-lg ${modalType === 'success' ? 'bg-green-100' : 'bg-red-100'}`}>
-              <p className={`${modalType === 'success' ? 'text-green-800' : 'text-red-800'}`}>
-                {modalMessage}
-              </p>
+
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {preferences.map((preferenceType) => (
+              <div key={preferenceType.typeName} className="bg-gray-50 rounded-xl p-6 space-y-4">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    {preferenceType.typeName}
+                  </h2>
+                  {preferenceType.multiple && MAX_SELECTIONS[preferenceType.typeName as keyof typeof MAX_SELECTIONS] && (
+                    <span className="text-sm text-gray-500">
+                      최대 {MAX_SELECTIONS[preferenceType.typeName as keyof typeof MAX_SELECTIONS]}개 선택 가능
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {preferenceType.options.map((option) => {
+                    const isSelected = formData[preferenceType.typeName]?.includes(option.displayName);
+                    const currentSelections = formData[preferenceType.typeName]?.length || 0;
+                    const maxSelections = MAX_SELECTIONS[preferenceType.typeName as keyof typeof MAX_SELECTIONS];
+                    const canSelect = !isSelected && (!maxSelections || currentSelections < maxSelections);
+
+                    return (
+                      <div
+                        key={option.id}
+                        onClick={() => {
+                          if (preferenceType.multiple) {
+                            if (isSelected) {
+                              const newValue = (formData[preferenceType.typeName] || [])
+                                .filter(v => v !== option.displayName);
+                              setFormData({
+                                ...formData,
+                                [preferenceType.typeName]: newValue
+                              });
+                            } else if (canSelect) {
+                              const newValue = [
+                                ...(formData[preferenceType.typeName] || []),
+                                option.displayName
+                              ];
+                              setFormData({
+                                ...formData,
+                                [preferenceType.typeName]: newValue
+                              });
+                            } else {
+                              showTemporaryModal(`최대 ${maxSelections}개까지 선택 가능합니다.`);
+                            }
+                          } else {
+                            setFormData({
+                              ...formData,
+                              [preferenceType.typeName]: [option.displayName]
+                            });
+                          }
+                        }}
+                        className={`px-4 py-3 rounded-xl text-sm font-medium transition-all cursor-pointer
+                          ${isSelected
+                            ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+                            : canSelect
+                              ? 'bg-white border-2 border-gray-200 hover:border-purple-300 hover:bg-purple-50 text-gray-700'
+                              : 'bg-gray-100 border-2 border-gray-200 text-gray-400 cursor-not-allowed'
+                          }`}
+                      >
+                        {option.displayName}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+            <div className="flex justify-end pt-6">
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="w-full md:w-1/2 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-lg font-semibold rounded-xl shadow-sm hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSaving ? '저장 중...' : '변경사항 저장'}
+              </button>
             </div>
-          </div>
-        )}
+          </form>
+        </div>
       </div>
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-sm mx-4">
+            <p className="text-center text-gray-800">{modalMessage}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }   
