@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { createClient } from '@/utils/supabase/client';
 
 // 로딩 컴포넌트
 const Loader = () => (
@@ -11,37 +10,63 @@ const Loader = () => (
   </div>
 );
 
+interface ProfileData {
+  name: string;
+  age: number;
+  gender: 'MALE' | 'FEMALE';
+  profileImages: Array<{
+    id: string;
+    order: number;
+    isMain: boolean;
+    url: string;
+  }>;
+  universityDetails: {
+    name: string;
+    authentication: boolean;
+    department: string;
+  } | null;
+  preferences: Array<{
+    typeName: string;
+    selectedOptions: Array<{
+      id: string;
+      displayName: string;
+    }>;
+  }>;
+}
+
 export default function ProfilePage() {
   const router = useRouter();
-  const supabase = createClient();
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
 
   useEffect(() => {
     async function getProfileData() {
       try {
         setLoading(true);
         
-        // 현재 로그인된 사용자 정보 가져오기
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          console.error('사용자 인증 정보가 없습니다.');
-          router.push('/login');
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+          console.error('인증 토큰이 없습니다.');
+          router.push('/');
           return;
         }
-        
-        // 프로필 정보 가져오기
-        const { data: profileData, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
 
-        if (error) {
-          throw error;
+        // 프로필 정보 가져오기
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/profile`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            router.push('/');
+            return;
+          }
+          throw new Error('프로필 조회 실패');
         }
 
+        const profileData = await response.json();
         setProfile(profileData);
         
       } catch (error) {
@@ -52,10 +77,27 @@ export default function ProfilePage() {
     }
     
     getProfileData();
-  }, [supabase, router]);
+  }, [router]);
 
   if (loading) return <Loader />;
   if (!profile) return <div>프로필 정보를 찾을 수 없습니다.</div>;
+
+  // 선호도 옵션에서 특정 타입의 옵션들을 찾는 헬퍼 함수
+  const getPreferencesByType = (typeName: string) => {
+    const preferenceGroup = profile.preferences.find(p => p.typeName === typeName);
+    return preferenceGroup?.selectedOptions.map(option => option.displayName) || [];
+  };
+
+  // 각 선호도 옵션 가져오기
+  const personalities = getPreferencesByType('성격 유형');
+  const datingStyles = getPreferencesByType('연애 스타일');
+  const lifestyles = getPreferencesByType('라이프스타일');
+  const interests = getPreferencesByType('관심사');
+  const drinking = getPreferencesByType('음주 선호도')[0];
+  const smoking = getPreferencesByType('흡연 선호도')[0];
+  const tattoo = getPreferencesByType('문신 선호도')[0];
+  const mbti = getPreferencesByType('MBTI 유형')[0];
+  const agePreference = getPreferencesByType('선호 나이대')[0];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-pink-50 pb-20">
@@ -75,93 +117,69 @@ export default function ProfilePage() {
 
         {/* 기본 정보 */}
         <div className="bg-white rounded-2xl shadow-sm p-6 mb-4">
-          <div className="flex items-center mb-6">
-            <div className="relative w-24 h-24 rounded-full overflow-hidden bg-gray-100 mr-6">
-              {profile.avatar_url ? (
-                <img
-                  src={profile.avatar_url}
-                  alt="프로필 사진"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-purple-100">
-                  <svg
-                    className="w-12 h-12 text-purple-300"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                  </svg>
-                </div>
-              )}
-            </div>
-            <div>
-              <h2 className="text-xl font-bold mb-1">기본 정보</h2>
-              <p className="text-sm text-gray-500">
-                {profile.name || '이름 미입력'} · {profile.age || '나이 미입력'}
-              </p>
-            </div>
-          </div>
+          <h2 className="text-xl font-bold mb-4">기본 정보</h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-gray-500 text-sm">이름</p>
-              <p className="font-medium">{profile.name || '미입력'}</p>
+              <p className="font-medium">{profile.name}</p>
             </div>
             <div>
               <p className="text-gray-500 text-sm">나이</p>
-              <p className="font-medium">{profile.age || '미입력'}</p>
+              <p className="font-medium">{profile.age}세</p>
             </div>
             <div>
               <p className="text-gray-500 text-sm">성별</p>
-              <p className="font-medium">{profile.gender || '미입력'}</p>
+              <p className="font-medium">{profile.gender === 'MALE' ? '남성' : '여성'}</p>
             </div>
             <div>
               <p className="text-gray-500 text-sm">MBTI</p>
-              <p className="font-medium">{profile.mbti || '미입력'}</p>
-            </div>
-            <div>
-              <p className="text-gray-500 text-sm">키</p>
-              <p className="font-medium">{profile.height ? `${profile.height}cm` : '미입력'}</p>
-            </div>
-            <div>
-              <p className="text-gray-500 text-sm">인스타그램</p>
-              <p className="font-medium">{profile.instagram_id || '미입력'}</p>
+              <p className="font-medium">{mbti || '미입력'}</p>
             </div>
           </div>
         </div>
 
         {/* 학교 정보 */}
+        {profile.universityDetails && (
+          <div className="bg-white rounded-2xl shadow-sm p-6 mb-4">
+            <h2 className="text-xl font-bold mb-4">학교 정보</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-gray-500 text-sm">대학교</p>
+                <p className="font-medium">{profile.universityDetails.name}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-sm">학과</p>
+                <p className="font-medium">{profile.universityDetails.department}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 관심사 */}
         <div className="bg-white rounded-2xl shadow-sm p-6 mb-4">
-          <h2 className="text-xl font-bold mb-4">학교 정보</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-gray-500 text-sm">대학교</p>
-              <p className="font-medium">{profile.university || '미입력'}</p>
-            </div>
-            <div>
-              <p className="text-gray-500 text-sm">학과</p>
-              <p className="font-medium">{profile.department || '미입력'}</p>
-            </div>
-            <div>
-              <p className="text-gray-500 text-sm">학번</p>
-              <p className="font-medium">{profile.student_id || '미입력'}</p>
-            </div>
-            <div>
-              <p className="text-gray-500 text-sm">학년</p>
-              <p className="font-medium">{profile.grade || '미입력'}</p>
-            </div>
+          <h2 className="text-xl font-bold mb-4">관심사</h2>
+          <div className="flex flex-wrap gap-2">
+            {interests.length > 0 ? (
+              interests.map((item, index) => (
+                <span key={index} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                  {item}
+                </span>
+              ))
+            ) : (
+              <span className="text-gray-400">미입력</span>
+            )}
           </div>
         </div>
 
-        {/* 성격 및 취향 */}
+        {/* 성격 및 연애 스타일 */}
         <div className="bg-white rounded-2xl shadow-sm p-6 mb-4">
-          <h2 className="text-xl font-bold mb-4">성격 및 취향</h2>
+          <h2 className="text-xl font-bold mb-4">성격 및 연애 스타일</h2>
           <div className="space-y-4">
             <div>
               <p className="text-gray-500 text-sm mb-2">성격</p>
               <div className="flex flex-wrap gap-2">
-                {profile.personalities?.length > 0 ? (
-                  profile.personalities.map((item: string, index: number) => (
+                {personalities.length > 0 ? (
+                  personalities.map((item, index) => (
                     <span key={index} className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
                       {item}
                     </span>
@@ -172,10 +190,10 @@ export default function ProfilePage() {
               </div>
             </div>
             <div>
-              <p className="text-gray-500 text-sm mb-2">데이트 스타일</p>
+              <p className="text-gray-500 text-sm mb-2">연애 스타일</p>
               <div className="flex flex-wrap gap-2">
-                {profile.dating_styles?.length > 0 ? (
-                  profile.dating_styles.map((item: string, index: number) => (
+                {datingStyles.length > 0 ? (
+                  datingStyles.map((item, index) => (
                     <span key={index} className="px-3 py-1 bg-pink-100 text-pink-700 rounded-full text-sm">
                       {item}
                     </span>
@@ -188,21 +206,41 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* 생활 습관 */}
-        <div className="bg-white rounded-2xl shadow-sm p-6 mb-6">
-          <h2 className="text-xl font-bold mb-4">생활 습관</h2>
-          <div className="grid grid-cols-3 gap-4">
+        {/* 라이프스타일 */}
+        <div className="bg-white rounded-2xl shadow-sm p-6 mb-4">
+          <h2 className="text-xl font-bold mb-4">라이프스타일</h2>
+          <div className="flex flex-wrap gap-2">
+            {lifestyles.length > 0 ? (
+              lifestyles.map((item, index) => (
+                <span key={index} className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
+                  {item}
+                </span>
+              ))
+            ) : (
+              <span className="text-gray-400">미입력</span>
+            )}
+          </div>
+        </div>
+
+        {/* 선호도 정보 */}
+        <div className="bg-white rounded-2xl shadow-sm p-6 mb-4">
+          <h2 className="text-xl font-bold mb-4">선호도 정보</h2>
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-gray-500 text-sm">흡연</p>
-              <p className="font-medium">{profile.smoking || '미입력'}</p>
+              <p className="font-medium">{smoking || '미입력'}</p>
             </div>
             <div>
               <p className="text-gray-500 text-sm">음주</p>
-              <p className="font-medium">{profile.drinking || '미입력'}</p>
+              <p className="font-medium">{drinking || '미입력'}</p>
             </div>
             <div>
-              <p className="text-gray-500 text-sm">타투</p>
-              <p className="font-medium">{profile.tattoo || '미입력'}</p>
+              <p className="text-gray-500 text-sm">문신</p>
+              <p className="font-medium">{tattoo || '미입력'}</p>
+            </div>
+            <div>
+              <p className="text-gray-500 text-sm">선호 나이대</p>
+              <p className="font-medium">{agePreference || '미입력'}</p>
             </div>
           </div>
         </div>
