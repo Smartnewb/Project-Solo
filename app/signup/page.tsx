@@ -1,14 +1,20 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClientSupabaseClient } from '@/utils/supabase';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
-import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createClientSupabaseClient } from "@/utils/supabase";
+import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 
 // 개인정보 동의 모달 컴포넌트
-function PrivacyPolicyModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function PrivacyPolicyModal({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) {
   return (
     <AnimatePresence>
       {isOpen && (
@@ -44,7 +50,10 @@ function PrivacyPolicyModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
               </div>
               <div>
                 <p className="font-semibold">2. 수집하는 개인정보의 항목</p>
-                <p>성명, 인스타그램 계정 아이디, 성별, 학과, 학번, 휴대전화 번호, 개인 신상 정보 및 기타 정보</p>
+                <p>
+                  성명, 인스타그램 계정 아이디, 성별, 학과, 학번, 휴대전화 번호,
+                  개인 신상 정보 및 기타 정보
+                </p>
               </div>
               <div>
                 <p className="font-semibold">3. 보유 및 이용 기간</p>
@@ -52,9 +61,15 @@ function PrivacyPolicyModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
               </div>
               <div>
                 <p className="font-semibold">4. 동의 거부권 및 불이익</p>
-                <p>귀하는 "한밭대의 모든 것"의 블라인드 서비스 신청에 필요한 최소한의 개인정보 수집, 이용에 동의하지 않으실 경우, 서비스 사용 불가 등의 불이익이 발생하게 됩니다.</p>
+                <p>
+                  귀하는 "한밭대의 모든 것"의 블라인드 서비스 신청에 필요한
+                  최소한의 개인정보 수집, 이용에 동의하지 않으실 경우, 서비스
+                  사용 불가 등의 불이익이 발생하게 됩니다.
+                </p>
               </div>
-              <p className="font-medium">수집 근거: 개인정보 보호법 제15조 제1항</p>
+              <p className="font-medium">
+                수집 근거: 개인정보 보호법 제15조 제1항
+              </p>
             </div>
           </motion.div>
         </motion.div>
@@ -67,22 +82,24 @@ export default function SignUp() {
   const router = useRouter();
   const supabase = createClientSupabaseClient();
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    name: '',
-    age: '',
-    gender: ''
+    email: "",
+    password: "",
+    confirmPassword: "",
+    name: "",
+    age: "",
+    gender: "",
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [isSignupEnabled, setIsSignupEnabled] = useState<boolean | null>(null);
+  const [isSignupEnabled, setIsSignupEnabled] = useState<boolean>(true);
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [emailVerified, setEmailVerified] = useState(true); // 이거 임시로 true로 설정, false로 설정해둬야함 ( 테스트용)
-  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationCode, setVerificationCode] = useState("");
   const [showVerificationInput, setShowVerificationInput] = useState(false);
-  const [verificationError, setVerificationError] = useState<string | null>(null);
+  const [verificationError, setVerificationError] = useState<string | null>(
+    null
+  );
   const [sendingEmail, setSendingEmail] = useState(false);
   const [verifying, setVerifying] = useState(false);
 
@@ -90,11 +107,11 @@ export default function SignUp() {
     // 회원가입 상태 확인
     const checkSignupStatus = async () => {
       try {
-        const response = await fetch('/api/admin/signup-control');
+        const response = await fetch("/api/admin/signup-control");
         const data = await response.json();
         setIsSignupEnabled(data.isSignupEnabled);
       } catch (error) {
-        console.error('회원가입 상태 확인 실패:', error);
+        console.error("회원가입 상태 확인 실패:", error);
         setIsSignupEnabled(false);
       }
     };
@@ -109,17 +126,19 @@ export default function SignUp() {
   };
 
   // handleChange 함수 수정
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
 
     // 이메일 필드 변경 시 검증
-    if (name === 'email' && value) {
+    if (name === "email" && value) {
       if (!validateEmail(value)) {
-        setError('올바른 이메일 형식이 아닙니다.');
+        setError("올바른 이메일 형식이 아닙니다.");
       } else {
         setError(null);
       }
@@ -128,26 +147,26 @@ export default function SignUp() {
 
   const handleSendVerification = async () => {
     if (!formData.email) {
-      setError('이메일을 입력해주세요.');
+      setError("이메일을 입력해주세요.");
       return;
     }
 
     setSendingEmail(true);
     try {
-      const response = await fetch('/api/auth/send-verification', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: formData.email })
+      const response = await fetch("/api/auth/send-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email }),
       });
 
       if (!response.ok) {
-        throw new Error('인증 코드 전송에 실패했습니다.');
+        throw new Error("인증 코드 전송에 실패했습니다.");
       }
 
       setShowVerificationInput(true);
       setError(null);
     } catch (err) {
-      setError('인증 코드 전송 중 오류가 발생했습니다.');
+      setError("인증 코드 전송 중 오류가 발생했습니다.");
     } finally {
       setSendingEmail(false);
     }
@@ -155,29 +174,29 @@ export default function SignUp() {
 
   const handleVerifyCode = async () => {
     if (!verificationCode) {
-      setVerificationError('인증 코드를 입력해주세요.');
+      setVerificationError("인증 코드를 입력해주세요.");
       return;
     }
 
     setVerifying(true);
     try {
-      const response = await fetch('/api/auth/verify-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/auth/verify-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: formData.email,
-          code: verificationCode
-        })
+          code: verificationCode,
+        }),
       });
 
       if (!response.ok) {
-        throw new Error('잘못된 인증 코드입니다.');
+        throw new Error("잘못된 인증 코드입니다.");
       }
 
       setEmailVerified(true);
       setVerificationError(null);
     } catch (err) {
-      setVerificationError('인증에 실패했습니다. 코드를 다시 확인해주세요.');
+      setVerificationError("인증에 실패했습니다. 코드를 다시 확인해주세요.");
     } finally {
       setVerifying(false);
     }
@@ -185,7 +204,7 @@ export default function SignUp() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // 이메일 인증 체크 임시 비활성화 테스트용
     // if (!emailVerified) {
     //   setError('이메일 인증이 필요합니다.');
@@ -194,46 +213,57 @@ export default function SignUp() {
 
     // 회원가입이 비활성화된 경우
     if (!isSignupEnabled) {
-      setError('현재 매칭이 진행 중이라 신규 회원가입을 받지 않고 있습니다. 다음 매칭 시간에 다시 시도해주세요.');
+      setError(
+        "현재 매칭이 진행 중이라 신규 회원가입을 받지 않고 있습니다. 다음 매칭 시간에 다시 시도해주세요."
+      );
       return;
     }
 
-    console.log('회원가입 시도:', { data: formData });
+    console.log("회원가입 시도:", { data: formData });
     setError(null);
     setLoading(true);
 
     // 입력값 검증
-    if (!formData.email || !formData.password || !formData.name || !formData.age || !formData.gender) {
-      setError('모든 필드를 입력해주세요.');
+    if (
+      !formData.email ||
+      !formData.password ||
+      !formData.name ||
+      !formData.age ||
+      !formData.gender
+    ) {
+      setError("모든 필드를 입력해주세요.");
       setLoading(false);
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError('비밀번호가 일치하지 않습니다.');
+      setError("비밀번호가 일치하지 않습니다.");
       setLoading(false);
       return;
     }
 
     if (formData.password.length < 8) {
-      setError('비밀번호는 최소 8자 이상이어야 합니다.');
+      setError("비밀번호는 최소 8자 이상이어야 합니다.");
       setLoading(false);
       return;
     }
 
     try {
       // 1. 이메일 중복 확인
-      const checkEmailResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/check/email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: formData.email }),
-      });
+      const checkEmailResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/check/email`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email: formData.email }),
+        }
+      );
 
       if (!checkEmailResponse.ok) {
         const errorData = await checkEmailResponse.json();
-        throw new Error(errorData.message || '이미 사용 중인 이메일입니다.');
+        throw new Error(errorData.message || "이미 사용 중인 이메일입니다.");
       }
 
       // 2. 회원가입 요청 비밀번호에 특수문자 포함
@@ -242,68 +272,62 @@ export default function SignUp() {
         password: formData.password,
         name: formData.name,
         age: parseInt(formData.age),
-        gender: formData.gender as 'MALE' | 'FEMALE'
+        gender: formData.gender as "MALE" | "FEMALE",
       };
 
-      console.log('회원가입 요청 데이터:', signupData);
+      console.log("회원가입 요청 데이터:", signupData);
 
-      const signupResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/signup`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(signupData),
-      });
+      const signupResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/signup`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(signupData),
+        }
+      );
 
       if (!signupResponse.ok) {
         const errorData = await signupResponse.json();
-        console.error('회원가입 실패 응답:', {
+        console.error("회원가입 실패 응답:", {
           status: signupResponse.status,
           statusText: signupResponse.statusText,
-          error: errorData
+          error: errorData,
         });
-        
+
         // HTTP 상태 코드에 따른 에러 메시지 처리
         let errorMessage;
         switch (signupResponse.status) {
           case 409:
-            errorMessage = '이미 등록된 이메일입니다.';
+            errorMessage = "이미 등록된 이메일입니다.";
             break;
           case 400:
-            errorMessage = '비밀번호는 특수문자가 포함된 8자리 이상이어야 합니다.';
+            errorMessage =
+              "비밀번호는 특수문자가 포함된 8자리 이상이어야 합니다.";
             break;
           default:
-            errorMessage = errorData.message || '회원가입 처리 중 오류가 발생했습니다.';
+            errorMessage =
+              errorData.message || "회원가입 처리 중 오류가 발생했습니다.";
         }
-        
+
         throw new Error(errorMessage);
       }
 
       // 회원가입 성공 메시지 표시
-      alert('회원가입에 성공했습니다.');
+      alert("회원가입에 성공했습니다.");
 
       // 3. 회원가입 성공 시 로그인 페이지로 이동
-      router.push('/onboarding');
-
+      router.push("/onboarding");
     } catch (err) {
-      console.error('회원가입 중 오류:', err);
-      setError(err instanceof Error ? err.message : '회원가입 중 오류가 발생했습니다.');
+      console.error("회원가입 중 오류:", err);
+      setError(
+        err instanceof Error ? err.message : "회원가입 중 오류가 발생했습니다."
+      );
     } finally {
       setLoading(false);
     }
   };
-
-  // 회원가입 상태 로딩 중
-  if (isSignupEnabled === null) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-DEFAULT mx-auto"></div>
-          <p className="mt-4 text-gray-600">로딩 중...</p>
-        </div>
-      </div>
-    );
-  }
 
   // 회원가입이 비활성화된 경우
   if (!isSignupEnabled) {
@@ -322,9 +346,12 @@ export default function SignUp() {
 
         <div className="max-w-lg mx-auto p-4">
           <div className="card p-6 text-center space-y-4">
-            <h2 className="text-xl font-bold text-red-600">회원가입 일시 중단</h2>
+            <h2 className="text-xl font-bold text-red-600">
+              회원가입 일시 중단
+            </h2>
             <p className="text-gray-600">
-              현재 매칭이 진행 중이라 신규 회원가입을 받지 않고 있습니다.<br />
+              현재 매칭이 진행 중이라 신규 회원가입을 받지 않고 있습니다.
+              <br />
               다음 매칭 시간에 다시 시도해주세요.
             </p>
             <Link href="/" className="btn-primary inline-block">
@@ -365,8 +392,8 @@ export default function SignUp() {
                     onChange={handleChange}
                     className={`input-field flex-1 ${
                       formData.email && !validateEmail(formData.email)
-                        ? 'border-red-300 focus:border-red-500'
-                        : ''
+                        ? "border-red-300 focus:border-red-500"
+                        : ""
                     }`}
                     placeholder="example@email.com"
                     required
@@ -374,18 +401,26 @@ export default function SignUp() {
                   <button
                     type="button"
                     onClick={handleSendVerification}
-                    disabled={sendingEmail || emailVerified || (formData.email ? !validateEmail(formData.email) : false)}
+                    disabled={
+                      sendingEmail ||
+                      emailVerified ||
+                      (formData.email ? !validateEmail(formData.email) : false)
+                    }
                     className={`px-4 py-2 rounded-md text-sm font-medium ${
                       emailVerified
-                        ? 'bg-green-500 text-white cursor-not-allowed'
+                        ? "bg-green-500 text-white cursor-not-allowed"
                         : sendingEmail
-                        ? 'bg-gray-400 text-white cursor-not-allowed'
+                        ? "bg-gray-400 text-white cursor-not-allowed"
                         : formData.email && !validateEmail(formData.email)
-                        ? 'bg-gray-400 text-white cursor-not-allowed'
-                        : 'bg-blue-500 hover:bg-blue-600 text-white'
+                        ? "bg-gray-400 text-white cursor-not-allowed"
+                        : "bg-blue-500 hover:bg-blue-600 text-white"
                     }`}
                   >
-                    {emailVerified ? '인증완료' : sendingEmail ? '전송중...' : '인증하기'}
+                    {emailVerified
+                      ? "인증완료"
+                      : sendingEmail
+                      ? "전송중..."
+                      : "인증하기"}
                   </button>
                 </div>
                 {formData.email && !validateEmail(formData.email) && (
@@ -415,11 +450,11 @@ export default function SignUp() {
                       disabled={verifying || !verificationCode}
                       className={`px-4 py-2 rounded-md text-sm font-medium ${
                         verifying
-                          ? 'bg-gray-400 cursor-not-allowed'
-                          : 'bg-blue-500 hover:bg-blue-600'
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-blue-500 hover:bg-blue-600"
                       } text-white`}
                     >
-                      {verifying ? '확인중...' : '확인'}
+                      {verifying ? "확인중..." : "확인"}
                     </button>
                   </div>
                   {verificationError && (
@@ -531,18 +566,21 @@ export default function SignUp() {
             <button
               type="submit"
               className={`w-full py-3 px-4 ${
-                privacyAgreed 
-                  ? 'bg-pink-500 hover:bg-pink-600' 
-                  : 'bg-gray-400 cursor-not-allowed'
+                privacyAgreed
+                  ? "bg-pink-500 hover:bg-pink-600"
+                  : "bg-gray-400 cursor-not-allowed"
               } text-white font-medium rounded-md transition duration-200 text-lg`}
               disabled={loading || !privacyAgreed}
             >
-              {loading ? '가입 중...' : '가입하기'}
+              {loading ? "가입 중..." : "가입하기"}
             </button>
           </form>
 
           <div className="text-center">
-            <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">
+            <Link
+              href="/"
+              className="text-sm text-gray-500 hover:text-gray-700"
+            >
               이미 계정이 있으신가요? 로그인하기
             </Link>
           </div>
