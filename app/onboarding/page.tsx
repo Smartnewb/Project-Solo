@@ -221,21 +221,48 @@ export default function Onboarding() {
         return;
       }
 
-      // 이미지 파일들을 FormData로 변환
+      // 1. 대학교 인증 요청
+      const universityResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/universities`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          universityName: formData.university,
+          department: formData.department,
+          studentNumber: formData.studentId,
+          grade: formData.grade
+        })
+      });
+
+      if (!universityResponse.ok) {
+        throw new Error('대학교 인증 실패');
+      }
+
+      // 2. 인스타그램 아이디 등록
+      const instagramResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/profile/instagram`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          instagramId: formData.instagramId
+        })
+      });
+
+      if (!instagramResponse.ok) {
+        throw new Error('인스타그램 아이디 등록 실패');
+      }
+
+      // 3. 이미지 업로드
       const formDataToSend = new FormData();
       imageFiles.forEach((file, index) => {
         formDataToSend.append('images', file);
       });
 
-      // 프로필 정보 추가
-      formDataToSend.append('university', formData.university);
-      formDataToSend.append('department', formData.department);
-      formDataToSend.append('studentId', formData.studentId);
-      formDataToSend.append('grade', formData.grade);
-      formDataToSend.append('instagramId', formData.instagramId);
-
-      // 프로필 정보 저장 API 호출
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/profile`, {
+      const imageResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/profile/images`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -243,8 +270,8 @@ export default function Onboarding() {
         body: formDataToSend
       });
 
-      if (!response.ok) {
-        throw new Error('프로필 저장 실패');
+      if (!imageResponse.ok) {
+        throw new Error('이미지 업로드 실패');
       }
 
       setModalMessage('프로필이 저장되었습니다!');
@@ -255,7 +282,11 @@ export default function Onboarding() {
 
     } catch (error) {
       console.error('프로필 저장 중 오류:', error);
-      setModalMessage('프로필 저장 중 오류가 발생했습니다.');
+      let errorMessage = '프로필 저장 중 오류가 발생했습니다.';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      setModalMessage(errorMessage);
       setShowModal(true);
     }
   };
