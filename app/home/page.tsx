@@ -28,6 +28,9 @@ interface MatchResult {
   description: string;
 }
 
+// 프로필 필드 타입 정의
+type ProfileField = keyof Profile;
+
 // 프로필 모달 컴포넌트 추가
 function PartnerProfileModal({
   open,
@@ -477,7 +480,7 @@ export default function Home() {
   const checkProfileCompletion = () => {
     if (!profile) return false;
 
-    const requiredFields = [
+    const requiredFields: ProfileField[] = [
       "university",
       "department",
       "student_id",
@@ -493,10 +496,11 @@ export default function Home() {
     ];
 
     const missingFields = requiredFields.filter((field) => {
-      if (Array.isArray(profile[field])) {
-        return profile[field].length === 0;
+      const value = profile[field];
+      if (field === "personalities" || field === "dating_styles") {
+        return !Array.isArray(value) || value.length === 0;
       }
-      return !profile[field];
+      return value === undefined || value === null || value === "";
     });
 
     if (missingFields.length > 0) {
@@ -504,7 +508,8 @@ export default function Home() {
       console.log("현재 프로필:", profile);
       console.log("미입력 필드:", missingFields);
       missingFields.forEach((field) => {
-        console.log(`${field}: ${profile[field]}`);
+        const value = profile[field];
+        console.log(`${field}: ${Array.isArray(value) ? `[${value.join(", ")}]` : value}`);
       });
       console.log("========================");
 
@@ -520,14 +525,17 @@ export default function Home() {
     if (!user) return;
 
     try {
-      // 1. 매칭 결과 가져오기
+      // 1. 프로필 정보 가져오기
+      await fetchProfileData();
+
+      // 2. 매칭 결과 가져오기
       await fetchMatchResult();
 
-      // 2. localStorage 체크
+      // 3. localStorage 체크
       const hasRequested = localStorage.getItem("rematchRequested") === "true";
       setHasRequestedRematch(hasRequested);
 
-      // 3. 매칭 시간 설정
+      // 4. 매칭 시간 설정
       setIsMatchingTimeOver(true);
     } catch (error) {
       console.error("초기화 중 오류:", error);
