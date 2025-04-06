@@ -93,13 +93,11 @@ export default function SignUp() {
   const [loading, setLoading] = useState(false);
   const [isSignupEnabled, setIsSignupEnabled] = useState<boolean>(true);
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
-  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
-  const [emailVerified, setEmailVerified] = useState(true); // 이거 임시로 true로 설정, false로 설정해둬야함 ( 테스트용)
+  const [termsAgreed, setTermsAgreed] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(true);
   const [verificationCode, setVerificationCode] = useState("");
   const [showVerificationInput, setShowVerificationInput] = useState(false);
-  const [verificationError, setVerificationError] = useState<string | null>(
-    null
-  );
+  const [verificationError, setVerificationError] = useState<string | null>(null);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [verifying, setVerifying] = useState(false);
 
@@ -538,25 +536,50 @@ export default function SignUp() {
             </div>
 
             {/* 개인정보 동의 체크박스 */}
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="privacy"
-                checked={privacyAgreed}
-                onChange={(e) => setPrivacyAgreed(e.target.checked)}
-                className="h-4 w-4 text-pink-500 focus:ring-pink-400 border-gray-300 rounded"
-                required
-              />
-              <label htmlFor="privacy" className="text-sm text-gray-600">
-                개인정보 수집 및 이용에 동의합니다.
-              </label>
-              <button
-                type="button"
-                onClick={() => setShowPrivacyModal(true)}
-                className="text-sm text-pink-500 hover:text-pink-600 underline"
-              >
-                상세보기
-              </button>
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="privacy"
+                  checked={privacyAgreed}
+                  onChange={(e) => setPrivacyAgreed(e.target.checked)}
+                  className="h-4 w-4 text-pink-500 focus:ring-pink-400 border-gray-300 rounded"
+                  required
+                />
+                <label htmlFor="privacy" className="text-sm text-gray-600">
+                  개인정보 처리 방침에 동의합니다.
+                </label>
+                <a
+                  href="https://ruby-composer-6d2.notion.site/1cd1bbec5ba180a3a4bbdf9301683145?pvs=4"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-pink-500 hover:text-pink-600 underline"
+                >
+                  보기
+                </a>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="terms"
+                  checked={termsAgreed}
+                  onChange={(e) => setTermsAgreed(e.target.checked)}
+                  className="h-4 w-4 text-pink-500 focus:ring-pink-400 border-gray-300 rounded"
+                  required
+                />
+                <label htmlFor="terms" className="text-sm text-gray-600">
+                  서비스 이용약관에 동의합니다.
+                </label>
+                <a
+                  href="https://ruby-composer-6d2.notion.site/1cd1bbec5ba1805dbafbc9426a0aaa80?pvs=4"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-pink-500 hover:text-pink-600 underline"
+                >
+                  보기
+                </a>
+              </div>
             </div>
 
             {error && (
@@ -566,11 +589,11 @@ export default function SignUp() {
             <button
               type="submit"
               className={`w-full py-3 px-4 ${
-                privacyAgreed
+                privacyAgreed && termsAgreed
                   ? "bg-pink-500 hover:bg-pink-600"
                   : "bg-gray-400 cursor-not-allowed"
               } text-white font-medium rounded-md transition duration-200 text-lg`}
-              disabled={loading || !privacyAgreed}
+              disabled={loading || !privacyAgreed || !termsAgreed}
             >
               {loading ? "가입 중..." : "가입하기"}
             </button>
@@ -586,12 +609,6 @@ export default function SignUp() {
           </div>
         </div>
       </div>
-
-      {/* 개인정보 동의 모달 */}
-      <PrivacyPolicyModal
-        isOpen={showPrivacyModal}
-        onClose={() => setShowPrivacyModal(false)}
-      />
     </div>
   );
 }
