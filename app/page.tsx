@@ -108,15 +108,6 @@ export default function Login() {
             <span>문의전화: 010-8465-2476</span>
             <span>|</span>
             <span>이메일: notify@smartnewb.com</span>
-            <span>|</span>
-            <a 
-              href="https://ruby-composer-6d2.notion.site/1cd1bbec5ba1800e84f2d2eb0a11ffbf?pvs=4"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-500 hover:text-blue-700 underline cursor-pointer"
-            >
-              사업자정보 확인
-            </a>
           </div>
         </footer>
       </div>
