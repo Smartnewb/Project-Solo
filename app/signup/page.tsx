@@ -492,7 +492,7 @@ export default function SignUp() {
                   </a>
                 </div>
 
-                {/* 위치정보 이용약관 */}
+                {/* 개인정보처리방침 */}
                 <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center space-x-2">
                     <input
@@ -505,13 +505,13 @@ export default function SignUp() {
                     />
                     <div>
                       <label htmlFor="location" className="text-sm text-gray-600">
-                        위치정보 이용약관 동의
+                        개인정보 처리방침 동의
                       </label>
                       <span className="ml-2 text-xs text-pink-500">(필수)</span>
                     </div>
                   </div>
                   <a
-                    href="#"
+                    href="https://www.notion.so/1cd1bbec5ba180a3a4bbdf9301683145"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-pink-500 hover:text-pink-600"
@@ -539,7 +539,7 @@ export default function SignUp() {
                     </div>
                   </div>
                   <a
-                    href="#"
+                    href="https://www.notion.so/1cd1bbec5ba180ae800ff36c46285274"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-pink-500 hover:text-pink-600"
@@ -566,7 +566,7 @@ export default function SignUp() {
                     </div>
                   </div>
                   <a
-                    href="#"
+                    href="https://www.notion.so/1cd1bbec5ba1800daa29fd7a8d01b7c9"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-pink-500 hover:text-pink-600"
