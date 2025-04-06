@@ -81,6 +81,7 @@ function PrivacyPolicyModal({
 export default function SignUp() {
   const router = useRouter();
   const supabase = createClientSupabaseClient();
+  const [showSignupForm, setShowSignupForm] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -94,6 +95,10 @@ export default function SignUp() {
   const [isSignupEnabled, setIsSignupEnabled] = useState<boolean>(true);
   const [privacyAgreed, setPrivacyAgreed] = useState(false);
   const [termsAgreed, setTermsAgreed] = useState(false);
+  const [locationAgreed, setLocationAgreed] = useState(false);
+  const [sensitiveAgreed, setSensitiveAgreed] = useState(false);
+  const [marketingAgreed, setMarketingAgreed] = useState(false);
+  const [allAgreed, setAllAgreed] = useState(false);
   const [emailVerified, setEmailVerified] = useState(true);
   const [verificationCode, setVerificationCode] = useState("");
   const [showVerificationInput, setShowVerificationInput] = useState(false);
@@ -327,6 +332,42 @@ export default function SignUp() {
     }
   };
 
+  // 전체 동의 처리
+  const handleAllAgree = (checked: boolean) => {
+    setAllAgreed(checked);
+    setPrivacyAgreed(checked);
+    setTermsAgreed(checked);
+    setLocationAgreed(checked);
+    setSensitiveAgreed(checked);
+    setMarketingAgreed(checked);
+  };
+
+  // 개별 동의 상태 변경 시 전체 동의 상태 체크
+  useEffect(() => {
+    const allChecked = 
+      privacyAgreed && 
+      termsAgreed && 
+      locationAgreed && 
+      sensitiveAgreed && 
+      marketingAgreed;
+    
+    setAllAgreed(allChecked);
+  }, [privacyAgreed, termsAgreed, locationAgreed, sensitiveAgreed, marketingAgreed]);
+
+  // 필수 약관 동의 확인
+  const requiredAgreementsChecked = 
+    privacyAgreed && 
+    termsAgreed && 
+    locationAgreed && 
+    sensitiveAgreed;
+
+  const handleAgreementSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (requiredAgreementsChecked) {
+      setShowSignupForm(true);
+    }
+  };
+
   // 회원가입이 비활성화된 경우
   if (!isSignupEnabled) {
     return (
@@ -356,6 +397,198 @@ export default function SignUp() {
               홈으로 돌아가기
             </Link>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!showSignupForm) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-white border-b sticky top-0 z-10">
+          <div className="max-w-lg mx-auto px-4 py-4">
+            <div className="flex items-center">
+              <Link href="/" className="p-2 -ml-2 hover:bg-gray-100 rounded-lg">
+                <ArrowLeftIcon className="w-6 h-6" />
+              </Link>
+              <h1 className="text-h2 ml-2 mt-3">이용약관 동의</h1>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-lg mx-auto p-4">
+          <form onSubmit={handleAgreementSubmit} className="space-y-6">
+            <div className="bg-white rounded-lg shadow-md p-6 space-y-4">
+              {/* 전체 동의 */}
+              <div className="flex items-center justify-between p-4 border-2 border-pink-200 rounded-lg bg-pink-50">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="all"
+                    checked={allAgreed}
+                    onChange={(e) => handleAllAgree(e.target.checked)}
+                    className="h-5 w-5 text-pink-500 focus:ring-pink-400 border-gray-300 rounded"
+                  />
+                  <label htmlFor="all" className="text-base font-medium text-gray-700">
+                    전체 동의
+                  </label>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* 개인정보 수집 및 이용 동의 */}
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="privacy"
+                      checked={privacyAgreed}
+                      onChange={(e) => setPrivacyAgreed(e.target.checked)}
+                      className="h-5 w-5 text-pink-500 focus:ring-pink-400 border-gray-300 rounded"
+                      required
+                    />
+                    <div>
+                      <label htmlFor="privacy" className="text-sm text-gray-600">
+                        개인정보 수집 및 이용 동의
+                      </label>
+                      <span className="ml-2 text-xs text-pink-500">(필수)</span>
+                    </div>
+                  </div>
+                  <a
+                    href="https://ruby-composer-6d2.notion.site/1cd1bbec5ba180a3a4bbdf9301683145?pvs=4"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-pink-500 hover:text-pink-600"
+                  >
+                    보기
+                  </a>
+                </div>
+
+                {/* 서비스 이용약관 */}
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="terms"
+                      checked={termsAgreed}
+                      onChange={(e) => setTermsAgreed(e.target.checked)}
+                      className="h-5 w-5 text-pink-500 focus:ring-pink-400 border-gray-300 rounded"
+                      required
+                    />
+                    <div>
+                      <label htmlFor="terms" className="text-sm text-gray-600">
+                        서비스 이용약관 동의
+                      </label>
+                      <span className="ml-2 text-xs text-pink-500">(필수)</span>
+                    </div>
+                  </div>
+                  <a
+                    href="https://ruby-composer-6d2.notion.site/1cd1bbec5ba1805dbafbc9426a0aaa80?pvs=4"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-pink-500 hover:text-pink-600"
+                  >
+                    보기
+                  </a>
+                </div>
+
+                {/* 위치정보 이용약관 */}
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="location"
+                      checked={locationAgreed}
+                      onChange={(e) => setLocationAgreed(e.target.checked)}
+                      className="h-5 w-5 text-pink-500 focus:ring-pink-400 border-gray-300 rounded"
+                      required
+                    />
+                    <div>
+                      <label htmlFor="location" className="text-sm text-gray-600">
+                        위치정보 이용약관 동의
+                      </label>
+                      <span className="ml-2 text-xs text-pink-500">(필수)</span>
+                    </div>
+                  </div>
+                  <a
+                    href="#"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-pink-500 hover:text-pink-600"
+                  >
+                    보기
+                  </a>
+                </div>
+
+                {/* 민감정보 이용 동의 */}
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="sensitive"
+                      checked={sensitiveAgreed}
+                      onChange={(e) => setSensitiveAgreed(e.target.checked)}
+                      className="h-5 w-5 text-pink-500 focus:ring-pink-400 border-gray-300 rounded"
+                      required
+                    />
+                    <div>
+                      <label htmlFor="sensitive" className="text-sm text-gray-600">
+                        민감정보 이용 동의
+                      </label>
+                      <span className="ml-2 text-xs text-pink-500">(필수)</span>
+                    </div>
+                  </div>
+                  <a
+                    href="#"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-pink-500 hover:text-pink-600"
+                  >
+                    보기
+                  </a>
+                </div>
+
+                {/* 마케팅 수신 동의 */}
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="marketing"
+                      checked={marketingAgreed}
+                      onChange={(e) => setMarketingAgreed(e.target.checked)}
+                      className="h-5 w-5 text-pink-500 focus:ring-pink-400 border-gray-300 rounded"
+                    />
+                    <div>
+                      <label htmlFor="marketing" className="text-sm text-gray-600">
+                        마케팅 수신 동의
+                      </label>
+                      <span className="ml-2 text-xs text-gray-500">(선택)</span>
+                    </div>
+                  </div>
+                  <a
+                    href="#"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-pink-500 hover:text-pink-600"
+                  >
+                    보기
+                  </a>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className={`w-full py-3 px-4 ${
+                  requiredAgreementsChecked
+                    ? "bg-pink-500 hover:bg-pink-600"
+                    : "bg-gray-400 cursor-not-allowed"
+                } text-white font-medium rounded-md transition duration-200 text-lg`}
+                disabled={!requiredAgreementsChecked}
+              >
+                다음
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     );
@@ -535,53 +768,6 @@ export default function SignUp() {
               </div>
             </div>
 
-            {/* 개인정보 동의 체크박스 */}
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="privacy"
-                  checked={privacyAgreed}
-                  onChange={(e) => setPrivacyAgreed(e.target.checked)}
-                  className="h-4 w-4 text-pink-500 focus:ring-pink-400 border-gray-300 rounded"
-                  required
-                />
-                <label htmlFor="privacy" className="text-sm text-gray-600">
-                  개인정보 처리 방침에 동의합니다.
-                </label>
-                <a
-                  href="https://ruby-composer-6d2.notion.site/1cd1bbec5ba180a3a4bbdf9301683145?pvs=4"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-pink-500 hover:text-pink-600 underline"
-                >
-                  보기
-                </a>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="terms"
-                  checked={termsAgreed}
-                  onChange={(e) => setTermsAgreed(e.target.checked)}
-                  className="h-4 w-4 text-pink-500 focus:ring-pink-400 border-gray-300 rounded"
-                  required
-                />
-                <label htmlFor="terms" className="text-sm text-gray-600">
-                  서비스 이용약관에 동의합니다.
-                </label>
-                <a
-                  href="https://ruby-composer-6d2.notion.site/1cd1bbec5ba1805dbafbc9426a0aaa80?pvs=4"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-pink-500 hover:text-pink-600 underline"
-                >
-                  보기
-                </a>
-              </div>
-            </div>
-
             {error && (
               <p className="text-red-500 text-sm text-center">{error}</p>
             )}
@@ -589,11 +775,11 @@ export default function SignUp() {
             <button
               type="submit"
               className={`w-full py-3 px-4 ${
-                privacyAgreed && termsAgreed
+                requiredAgreementsChecked
                   ? "bg-pink-500 hover:bg-pink-600"
                   : "bg-gray-400 cursor-not-allowed"
               } text-white font-medium rounded-md transition duration-200 text-lg`}
-              disabled={loading || !privacyAgreed || !termsAgreed}
+              disabled={loading || !requiredAgreementsChecked}
             >
               {loading ? "가입 중..." : "가입하기"}
             </button>

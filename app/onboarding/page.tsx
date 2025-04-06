@@ -135,16 +135,16 @@ export default function Onboarding() {
       if (!response.ok) throw new Error('학과 등록 요청 실패');
 
       // 폼 데이터 업데이트
-      setFormData({ ...formData, department: customDepartment });
-      setErrors({ ...errors, department: false });
-      
+    setFormData({ ...formData, department: customDepartment });
+    setErrors({ ...errors, department: false });
+
     } catch (error) {
       console.error('학과 등록 요청 중 오류:', error);
     }
   };
 
   const filteredDepartments = departments.filter(dept =>
-    dept.toLowerCase().includes(departmentSearch.toLowerCase())
+        dept.toLowerCase().includes(departmentSearch.toLowerCase())
   );
 
   const [profileImages, setProfileImages] = useState<string[]>([]);
@@ -391,7 +391,7 @@ export default function Onboarding() {
         if (authLoading) {
           return;
         }
-
+        
         const token = localStorage.getItem('accessToken');
         if (!token) {
           console.error('No access token found');

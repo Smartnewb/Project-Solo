@@ -197,6 +197,8 @@ export default function Home() {
         return;
       }
 
+      console.log('토큰:', token); // 토큰 확인
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/profile`,
         {
@@ -215,6 +217,11 @@ export default function Home() {
       }
 
       const data = await response.json();
+      console.log('백엔드 응답 전체:', {
+        status: response.status,
+        headers: Object.fromEntries(response.headers.entries()),
+        data: data
+      });
       setProfileData(data);
     } catch (error) {
       console.error("프로필 정보 조회 중 오류:", error);
@@ -991,6 +998,37 @@ export default function Home() {
             <section className="card space-y-6 transform transition-all hover:scale-[1.02]">
               <DateSpotRecommendation />
             </section>
+
+            {/* 회사 정보 추가 */}
+            <footer className="mt-8 mb-20 text-center text-xs text-gray-500 space-y-2">
+              <div className="space-x-2">
+                <span>상호명: 스마트 뉴비</span>
+                <span>|</span>
+                <span>대표이사: 전준영</span>
+              </div>
+              <div className="space-x-2">
+                <span>사업장 소재지: 대전광역시 유성구 동서대로 125, S9동 202호</span>
+              </div>
+              <div className="space-x-2">
+                <span>사업자 등록번호: 498-05-02914</span>
+                <span>|</span>
+                <span>통신판매업신고: [통신판매업신고번호]</span>
+              </div>
+              <div className="space-x-2">
+                <span>문의전화: 010-8465-2476</span>
+                <span>|</span>
+                <span>이메일: notify@smartnewb.com</span>
+                <span>|</span>
+                <a 
+                  href="https://ruby-composer-6d2.notion.site/1cd1bbec5ba1800e84f2d2eb0a11ffbf?pvs=4"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:text-blue-700 underline cursor-pointer"
+                >
+                  사업자정보 확인
+                </a>
+              </div>
+            </footer>
 
             {/* 하단 네비게이션 */}
             <nav

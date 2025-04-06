@@ -99,7 +99,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       const profileData = await response.json();
+      console.log('받아온 프로필 데이터:', profileData);
       setState(prev => ({ ...prev, profile: profileData }));
+      
+      // 상태 업데이트 후 최종 상태 확인
+      console.log('저장된 프로필 상태:', state.profile);
     } catch (error) {
       console.error('프로필 조회 중 오류:', error);
       setState(prev => ({ ...prev, profile: null }));

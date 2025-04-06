@@ -88,6 +88,37 @@ export default function Login() {
             </Link>
           </div>
         </div>
+
+        {/* 회사 정보 추가 */}
+        <footer className="mt-8 text-center text-xs text-gray-500 space-y-2">
+          <div className="space-x-2">
+            <span>상호명: 스마트 뉴비</span>
+            <span>|</span>
+            <span>대표이사: 전준영</span>
+          </div>
+          <div className="space-x-2">
+            <span>사업장 소재지: 대전광역시 유성구 동서대로 125, S9동 202호</span>
+          </div>
+          <div className="space-x-2">
+            <span>사업자 등록번호: 498-05-02914</span>
+            <span>|</span>
+            <span>통신판매업신고: [통신판매업신고번호]</span>
+          </div>
+          <div className="space-x-2">
+            <span>문의전화: 010-8465-2476</span>
+            <span>|</span>
+            <span>이메일: notify@smartnewb.com</span>
+            <span>|</span>
+            <a 
+              href="https://ruby-composer-6d2.notion.site/1cd1bbec5ba1800e84f2d2eb0a11ffbf?pvs=4"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:text-blue-700 underline cursor-pointer"
+            >
+              사업자정보 확인
+            </a>
+          </div>
+        </footer>
       </div>
     </div>
   );
