@@ -14,6 +14,11 @@ interface OnboardingForm {
   image?: string;
 }
 
+interface ProfileImage {
+  id: string;
+  url: string;
+}
+
 interface ValidationErrors {
   university: boolean;
   department: boolean;
@@ -221,7 +226,112 @@ export default function Onboarding() {
         return;
       }
 
-      // 1. 대학교 인증 요청
+      // 1. 기존 프로필 이미지 조회 및 삭제
+      const profileResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        }
+      });
+
+      if (!profileResponse.ok) {
+        throw new Error('프로필 정보 조회 실패');
+      }
+
+      const profileData = await profileResponse.json();
+      console.log('현재 프로필 정보:', profileData);
+      
+      // 기존 이미지 삭제
+      if (profileData && Array.isArray(profileData.profileImages) && profileData.profileImages.length > 0) {
+        console.log('삭제할 이미지 목록:', profileData.profileImages);
+        
+        try {
+          // 각 이미지 삭제를 순차적으로 처리
+          for (const image of profileData.profileImages) {
+            if (!image || !image.id) {
+              console.log('유효하지 않은 이미지 데이터:', image);
+              continue;
+            }
+
+            console.log('이미지 삭제 시도:', image.id);
+            const deleteResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/profile/images/${image.id}`, {
+              method: 'DELETE',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+              }
+            });
+
+            // 삭제 응답 확인
+            if (!deleteResponse.ok) {
+              const errorText = await deleteResponse.text();
+              console.error('이미지 삭제 실패:', {
+                id: image.id,
+                status: deleteResponse.status,
+                response: errorText
+              });
+              throw new Error(`이미지 삭제 실패 (ID: ${image.id}): ${errorText}`);
+            }
+
+            // 성공 시 응답이 비어있을 수 있으므로 json() 파싱 시도하지 않음
+            console.log('이미지 삭제 성공:', image.id, '(Status:', deleteResponse.status, ')');
+          }
+          
+          // 모든 삭제 완료 후 프로필 재확인
+          const checkResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/profile`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            }
+          });
+          
+          if (!checkResponse.ok) {
+            throw new Error('프로필 상태 확인 실패');
+          }
+          
+          const checkData = await checkResponse.json();
+          console.log('삭제 후 프로필 상태:', checkData);
+          
+          if (checkData.profileImages && checkData.profileImages.length > 0) {
+            console.error('이미지가 완전히 삭제되지 않음:', checkData.profileImages);
+            throw new Error('이미지 삭제가 완료되지 않았습니다. 다시 시도해주세요.');
+          }
+          
+          console.log('모든 이미지 삭제 확인 완료');
+        } catch (error) {
+          console.error('이미지 삭제 중 오류:', error);
+          throw error;
+        }
+      } else {
+        console.log('삭제할 이미지가 없음:', profileData);
+      }
+
+      // 2. 새 이미지 업로드 (한 번에 모든 이미지 전송)
+      console.log('새 이미지 업로드 시작');
+      const imageFormData = new FormData();
+      imageFiles.forEach((file) => {
+        imageFormData.append('files', file);
+      });
+
+      console.log(`업로드 시도: ${imageFiles.length}개 이미지`);
+      const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/profile/images`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: imageFormData
+      });
+
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        console.error('이미지 업로드 실패:', {
+          status: uploadResponse.status,
+          error: errorText
+        });
+        throw new Error(`이미지 업로드 실패: ${errorText}`);
+      }
+
+      const uploadResult = await uploadResponse.json();
+      console.log('이미지 업로드 완료:', uploadResult);
+
+      // 3. 대학교 인증 요청
       const universityResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/universities`, {
         method: 'POST',
         headers: {
@@ -240,7 +350,7 @@ export default function Onboarding() {
         throw new Error('대학교 인증 실패');
       }
 
-      // 2. 인스타그램 아이디 등록
+      // 4. 인스타그램 아이디 등록
       const instagramResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/profile/instagram`, {
         method: 'PATCH',
         headers: {
@@ -255,32 +365,6 @@ export default function Onboarding() {
       if (!instagramResponse.ok) {
         throw new Error('인스타그램 아이디 등록 실패');
       }
-
-      // 3. 이미지 업로드
-      const formDataToSend = new FormData();
-      imageFiles.forEach((file, index) => {
-        formDataToSend.append('files', file);
-      });
-
-      console.log('Sending files:', imageFiles);
-      console.log('FormData entries:', Array.from(formDataToSend.entries()));
-      console.log('Backend URL:', process.env.NEXT_PUBLIC_BACKEND_URL);
-
-      const imageResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/profile/images`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formDataToSend
-      });
-
-      if (!imageResponse.ok) {
-        const errorData = await imageResponse.json();
-        throw new Error(errorData.message || '이미지 업로드 실패');
-      }
-
-      const imageResult = await imageResponse.json();
-      console.log('Image upload result:', imageResult);
 
       setModalMessage('프로필이 저장되었습니다!');
       setShowSuccessModal(true);
