@@ -259,8 +259,12 @@ export default function Onboarding() {
       // 3. 이미지 업로드
       const formDataToSend = new FormData();
       imageFiles.forEach((file, index) => {
-        formDataToSend.append('images', file);
+        formDataToSend.append('files', file);
       });
+
+      console.log('Sending files:', imageFiles);
+      console.log('FormData entries:', Array.from(formDataToSend.entries()));
+      console.log('Backend URL:', process.env.NEXT_PUBLIC_BACKEND_URL);
 
       const imageResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/profile/images`, {
         method: 'POST',
@@ -271,8 +275,12 @@ export default function Onboarding() {
       });
 
       if (!imageResponse.ok) {
-        throw new Error('이미지 업로드 실패');
+        const errorData = await imageResponse.json();
+        throw new Error(errorData.message || '이미지 업로드 실패');
       }
+
+      const imageResult = await imageResponse.json();
+      console.log('Image upload result:', imageResult);
 
       setModalMessage('프로필이 저장되었습니다!');
       setShowSuccessModal(true);
