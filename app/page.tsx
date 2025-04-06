@@ -20,9 +20,9 @@ export default function Login() {
 
     try {
       await login(email.trim(), password);
-    } catch (err) {
+    } catch (err: any) {
       console.error('로그인 중 오류:', err);
-      setError(err instanceof Error ? err.message : '로그인 중 오류가 발생했습니다.');
+      setError(err.message);
     } finally {
       setIsLoading(false);
     }

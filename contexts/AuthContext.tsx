@@ -140,7 +140,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || '로그인에 실패했습니다.');
+        throw new Error(data.error || '로그인에 실패했습니다.');
       }
 
       if (!data.accessToken) {
