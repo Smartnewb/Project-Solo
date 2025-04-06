@@ -15,16 +15,14 @@ import axios from "axios";
 
 interface Comment {
   id: string;
-  post_id: string;
-  author_id: string;
+  authorId: string;
+  postId: string;
   content: string;
-  created_at: string;
-  updated_at: string;
-  nickname: string;
-  studentid: string;
-  isEdited: boolean;
-  isdeleted: boolean;
-  reports: string[];
+  anonymous: string;
+  emoji: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string;
 }
 
 interface Post {
@@ -37,7 +35,7 @@ interface Post {
   deletedAt: string;
   likeCount: number;
   comments: Comment[];
-  author_id: string;
+  authorId: string;
 }
 
 // 랜덤 닉네임 생성을 위한 데이터
@@ -165,7 +163,7 @@ export default function Community() {
           Authorization: `Bearer ${token}`,
         },
       });
-      setPosts(response.data);
+      setPosts(response.data.items);
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 401) {
         // 토큰이 만료된 경우 갱신 시도
@@ -212,6 +210,28 @@ export default function Community() {
   };
   // 컴포넌트 마운트 시 게시글 불러오기
 
+  // 댓글 작성
+  const handleAddComment = async (post_id: string) => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
+    try {
+      await axiosServer.post(
+        `/articles/${post_id}/comments`,
+        {
+          content: newComment,
+          anonymous: randomNickname,
+          emoji: randomEmoji,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+    } catch (error) {
+      console.error("댓글 작성 중 오류가 발생했습니다:", error);
+    }
+  };
   // 게시글 수정
   const handleSaveEdit = async (postId: string) => {};
 
@@ -232,95 +252,6 @@ export default function Community() {
       setShowErrorModal(true);
     }
   };
-
-  // 댓글 작성
-  const handleAddComment = async (PostUserId: string) => {
-    const filter = new Filter();
-    if (!newComment.trim() || !user) {
-      console.log('댓글 작성 실패: 내용 또는 사용자 정보 누락', {
-        hasContent: !!newComment.trim(),
-        hasUser: !!user
-      });
-      setErrorMessage('댓글을 작성할 수 없습니다. 로그인이 필요합니다.');
-      setShowErrorModal(true);
-      return;
-    }
-
-    try {
-      // 사용자 프로필 정보 가져오기
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, name')
-        .eq('id', user.id);
-      
-      if (profileError || !profile[0]) {
-        console.error('프로필을 불러오는 중 오류가 발생했습니다:', profileError);
-        setErrorMessage('댓글을 작성할 수 없습니다. 프로필 정보를 확인해주세요.');
-        setShowErrorModal(true);
-        return;
-      }
-      
-      // 프로필 ID 가져오기
-      const profileId = profile[0].id;
-      // 게시글이 존재하는지 확인
-      const { data: postCheck, error: postError } = await supabase
-        .from('posts')
-        .select('user_id')
-        .eq('user_id', PostUserId)
-      console.log('postCheck:', postCheck)
-      if (postError || !postCheck[0]) {
-        console.error('게시글을 확인할 수 없습니다:', postError);
-        setErrorMessage('댓글을 작성할 수 없습니다. 게시글이 존재하지 않습니다.');
-        setShowErrorModal(true);
-        return;
-      }
-
-      // UUID 생성 함수
-      const generateUUID = () => {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-          const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
-          return v.toString(16);
-        });
-      };
-
-      const commentData = {
-        id: generateUUID(), // 고유 ID 생성
-        post_id: PostUserId,
-        author_id: profileId, // 위에서 가져온 프로필 ID 사용
-        content: filter.clean(newComment),
-        nickname: userInfo.nickname || '',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        isEdited: false,
-        isdeleted: false
-      };
-
-      console.log('댓글 작성:', commentData);  // 요청 데이터 로깅
-
-      const { error } = await supabase
-        .from('comments')
-        .insert([commentData]);
-
-      if (error) {
-        console.error('댓글 작성 중 오류가 발생했습니다:', error);
-        setErrorMessage(`댓글 작성 중 오류가 발생했습니다: ${error.message}`);
-        setShowErrorModal(true);
-        return;
-      }
-
-      setNewComment('');
-      fetchPosts();
-    } catch (error) {
-      console.error('댓글 작성 중 오류가 발생했습니다:', error);
-      setErrorMessage('댓글 작성 중 오류가 발생했습니다.');
-      setShowErrorModal(true);
-    }
-  };
-
-  const handleEditPost = (post: Post) => {};
-
-  const handleSaveCommentEdit = async (postId: string, commentId: string) => {};
-  const handleEditComment = (postId: string) => {};
 
   const handleDeleteComment = async (
     postId: string,
@@ -367,84 +298,97 @@ export default function Community() {
   };
 
   const renderComments = (post: Post, showAll: boolean) => {
-    return post.comments.map((comment) => (
-      <div key={comment.id} className="bg-gray-50 p-3 rounded-lg">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">{post.emoji}</span>
-            <div>
-              <p className="font-medium text-sm">{comment.nickname}</p>
+    if (!post.comments || post.comments.length === 0) return null;
+
+    const commentsToShow = showAll ? post.comments : post.comments.slice(0, 2);
+
+    return (
+      <div className="space-y-4">
+        {commentsToShow.map((comment) => (
+          <div
+            key={`comment-${comment.id}`}
+            className="bg-gray-50 p-3 rounded-lg"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">{post.emoji}</span>
+                <div>
+                  <p className="font-medium text-sm">{comment.anonymous}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">
+                  {formatTime(comment.createdAt)}
+                </span>
+                {comment.updatedAt &&
+                  comment.updatedAt !== comment.createdAt && (
+                    <span className="text-xs text-gray-500">(수정됨)</span>
+                  )}
+                {comment.authorId === userInfo?.id ? (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleEditComment(comment.id)}
+                      className="text-xs text-blue-500 hover:text-blue-600"
+                    >
+                      수정
+                    </button>
+                    <button
+                      onClick={() =>
+                        handleDeleteComment(
+                          post.authorId,
+                          comment.id,
+                          comment.authorId
+                        )
+                      }
+                      className="text-xs text-red-500 hover:text-red-600"
+                    >
+                      삭제
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() =>
+                      handleOpenReport("comment", post.authorId, comment.id)
+                    }
+                    className="text-xs text-gray-500 hover:text-gray-600"
+                  >
+                    🚨신고
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500">
-              {formatTime(comment.created_at)}
-            </span>
-            {comment.isEdited && (
-              <span className="text-xs text-gray-500">(수정됨)</span>
-            )}
-            {comment.author_id && (
+
+            {editingComment?.postId === post.authorId &&
+            editingComment?.commentId === comment.id ? (
               <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={editCommentContent}
+                  onChange={(e) => setEditCommentContent(e.target.value)}
+                  className="input-field flex-1"
+                />
                 <button
-                  onClick={() => handleEditComment(comment.id)}
-                  className="text-xs text-blue-500 hover:text-blue-600"
+                  onClick={() => setEditingComment(null)}
+                  className="btn-secondary px-3"
                 >
-                  수정
+                  취소
                 </button>
                 <button
                   onClick={() =>
-                    handleDeleteComment(
-                      post.author_id,
-                      comment.id,
-                      comment.author_id
-                    )
+                    handleSaveCommentEdit(post.authorId, comment.id)
                   }
-                  className="text-xs text-red-500 hover:text-red-600"
+                  className="btn-primary px-3"
                 >
-                  삭제
+                  저장
                 </button>
               </div>
-            )}
-            {user && comment.author_id !== user.id && (
-              <button
-                onClick={() =>
-                  handleOpenReport("comment", post.author_id, comment.id)
-                }
-                className="text-xs text-gray-500 hover:text-gray-600"
-              >
-                🚨신고
-              </button>
+            ) : (
+              <p className="text-sm text-gray-700">{comment.content}</p>
             )}
           </div>
-        </div>
-
-        {editingComment?.postId === post.author_id &&
-        editingComment?.commentId === comment.id ? (
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={editCommentContent}
-              onChange={(e) => setEditCommentContent(e.target.value)}
-              className="input-field flex-1"
-            />
-            <button
-              onClick={() => setEditingComment(null)}
-              className="btn-secondary px-3"
-            >
-              취소
-            </button>
-            <button
-              onClick={() => handleSaveCommentEdit(post.author_id, comment.id)}
-              className="btn-primary px-3"
-            >
-              저장
-            </button>
-          </div>
-        ) : (
-          <p className="text-sm text-gray-700">{comment.content}</p>
-        )}
+        ))}
       </div>
-    ));
+    );
   };
 
   // 게시물로 스크롤하는 함수
@@ -522,15 +466,15 @@ export default function Community() {
       const reportData = {
         reporter_id: reporterId,
         reason: reportReason,
-        timestamp: timestamp
+        timestamp: timestamp,
       };
 
-      if (type === 'post') {
+      if (type === "post") {
         // 게시글 신고 처리
         const { data: postData, error: fetchError } = await supabase
-          .from('posts')
-          .select('reports')
-          .eq('user_id', postId)
+          .from("posts")
+          .select("reports")
+          .eq("authorId", postId)
           .single();
 
         if (fetchError) throw fetchError;
@@ -708,9 +652,9 @@ export default function Community() {
             <div className="mb-6">
               <Slider {...sliderSettings} ref={sliderRef}>
                 {popularPosts.map((post, index) => (
-                  <div key={post.author_id} className="px-2">
+                  <div key={post.authorId} className="px-2">
                     <button
-                      onClick={() => scrollToPost(post.author_id)}
+                      onClick={() => scrollToPost(post.authorId)}
                       className="w-full text-left bg-white rounded-lg p-4 hover:bg-gray-50 transition-colors shadow-md"
                     >
                       <div className="flex items-center gap-2 mb-2">
@@ -786,8 +730,8 @@ export default function Community() {
           {posts.length > 0 ? (
             posts.map((post) => (
               <div
-                key={post.author_id}
-                id={`post-${post.author_id}`}
+                key={post.id}
+                id={`post-${post.id}`}
                 className={`bg-white rounded-lg shadow-md p-5 mb-4 `}
               >
                 <div className="flex items-start justify-between mb-3">
@@ -803,10 +747,10 @@ export default function Community() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {post.updatedAt !== post.createdAt && (
+                    {post.updatedAt && post.updatedAt !== post.createdAt && (
                       <span className="text-sm text-gray-500">(수정됨)</span>
                     )}
-                    {post.author_id === userInfo.id && !post.deletedAt ? (
+                    {post.authorId === userInfo.id && !post.deletedAt ? (
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleEditPost(post)}
@@ -815,7 +759,7 @@ export default function Community() {
                           수정
                         </button>
                         <button
-                          onClick={() => handlePostDelete(post.author_id)}
+                          onClick={() => handlePostDelete(post.authorId)}
                           className="text-sm text-red-500 hover:text-red-600"
                         >
                           삭제
@@ -824,10 +768,10 @@ export default function Community() {
                     ) : (
                       !post.deletedAt &&
                       user &&
-                      post.author_id !== user.id && (
+                      post.authorId !== user.id && (
                         <button
                           onClick={() =>
-                            handleOpenReport("post", post.author_id)
+                            handleOpenReport("post", post.authorId)
                           }
                           className="text-sm text-gray-500 hover:text-gray-600"
                         >
@@ -842,7 +786,7 @@ export default function Community() {
                 <div className="mb-4">
                   {post.updatedAt !== post.createdAt ? (
                     <>
-                      {editingPost === post.author_id ? (
+                      {editingPost === post.authorId ? (
                         <textarea
                           className="w-full border rounded p-2"
                           value={editContent}
@@ -858,7 +802,7 @@ export default function Community() {
 
                   <div className="flex items-center gap-4">
                     <button
-                      onClick={() => handleLike(post.author_id)}
+                      onClick={() => handleLike(post.authorId)}
                       className={`flex items-center gap-1 ${
                         post.likeCount > 0 ? "text-red-500" : "text-gray-500"
                       }`}
@@ -869,16 +813,14 @@ export default function Community() {
                     <button
                       onClick={() =>
                         setShowCommentInput(
-                          showCommentInput === post.author_id
-                            ? null
-                            : post.author_id
+                          showCommentInput === post.id ? null : post.id
                         )
                       }
                       className="flex items-center gap-1 text-gray-500"
                     >
                       <ChatBubbleOvalLeftIcon className="w-5 h-5" />
                       <span>
-                        {post.comments?.filter((comment) => !comment.isdeleted)
+                        {post.comments?.filter((comment) => !comment.deletedAt)
                           .length || 0}
                       </span>
                     </button>
@@ -886,7 +828,7 @@ export default function Community() {
                 </div>
 
                 {/* 댓글 입력창 */}
-                {!post.deletedAt && showCommentInput === post.author_id && (
+                {!post.deletedAt && showCommentInput === post.id && (
                   <div className="mt-4 space-y-4 border-t pt-4">
                     <div className="flex gap-2">
                       <input
@@ -912,7 +854,7 @@ export default function Community() {
                         className="input-field flex-1"
                       />
                       <button
-                        onClick={() => handleAddComment(post.author_id)}
+                        onClick={() => handleAddComment(post.id)}
                         className="btn-primary px-4"
                       >
                         작성
@@ -924,19 +866,17 @@ export default function Community() {
                 {/* 댓글 목록 */}
                 {!post.deletedAt && (
                   <div className="mt-4 space-y-4 border-t pt-4">
-                    {renderComments(post, showAllComments === post.author_id)}
+                    {renderComments(post, showAllComments === post.authorId)}
                     {post.comments && post.comments.length > 2 && (
                       <button
                         onClick={() =>
                           setShowAllComments(
-                            showAllComments === post.author_id
-                              ? null
-                              : post.author_id
+                            showAllComments === post.id ? null : post.id
                           )
                         }
                         className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
                       >
-                        {showAllComments === post.author_id ? (
+                        {showAllComments === post.id ? (
                           <>
                             <span>댓글 접기</span>
                             <svg
@@ -958,7 +898,7 @@ export default function Community() {
                             <span>
                               댓글{" "}
                               {post.comments?.filter(
-                                (comment) => !comment.isdeleted
+                                (comment) => !comment.deletedAt
                               ).length - 2 || 0}
                               개 더 보기
                             </span>
