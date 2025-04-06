@@ -10,6 +10,8 @@ import 'slick-carousel/slick/slick-theme.css';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/utils/supabase/client';
 import Filter from 'badwords-ko';
+import axiosServer from "@/utils/axios";
+import axios from "axios";
 
 interface Comment {
   id: string;
