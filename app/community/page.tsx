@@ -1,15 +1,23 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { HomeIcon, ChatBubbleLeftRightIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
-import { HeartIcon, ChatBubbleOvalLeftIcon, ExclamationTriangleIcon } from '@heroicons/react/24/solid';
-import Slider from 'react-slick';
-import 'slick-carousel/slick/slick.css';
-import 'slick-carousel/slick/slick-theme.css';
-import { useAuth } from '@/contexts/AuthContext';
-import { createClient } from '@/utils/supabase/client';
-import Filter from 'badwords-ko';
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import {
+  HomeIcon,
+  ChatBubbleLeftRightIcon,
+  Cog6ToothIcon,
+} from "@heroicons/react/24/outline";
+import {
+  HeartIcon,
+  ChatBubbleOvalLeftIcon,
+  ExclamationTriangleIcon,
+} from "@heroicons/react/24/solid";
+import Slider from "react-slick";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
+import { useAuth } from "@/contexts/AuthContext";
+import { createClient } from "@/utils/supabase/client";
+import Filter from "badwords-ko";
 import axiosServer from "@/utils/axios";
 import axios from "axios";
 
@@ -40,34 +48,75 @@ interface Post {
 
 // 랜덤 닉네임 생성을 위한 데이터
 const adjectives = [
-  '귀여운', '즐거운', '행복한', '신나는', '따뜻한', 
-  '달콤한', '상큼한', '활발한', '차분한', '깔끔한',
-  '멋진', '예쁜', '친절한', '똑똑한', '재미있는'
+  "귀여운",
+  "즐거운",
+  "행복한",
+  "신나는",
+  "따뜻한",
+  "달콤한",
+  "상큼한",
+  "활발한",
+  "차분한",
+  "깔끔한",
+  "멋진",
+  "예쁜",
+  "친절한",
+  "똑똑한",
+  "재미있는",
 ];
 
 const nouns = [
-  '사과', '딸기', '오렌지', '포도', '레몬',
-  '토끼', '강아지', '고양이', '판다', '코알라',
-  '학생', '친구', '여행자', '예술가', '과학자'
+  "사과",
+  "딸기",
+  "오렌지",
+  "포도",
+  "레몬",
+  "토끼",
+  "강아지",
+  "고양이",
+  "판다",
+  "코알라",
+  "학생",
+  "친구",
+  "여행자",
+  "예술가",
+  "과학자",
 ];
 
 // 랜덤 이모지 생성을 위한 데이터
-const emojis = ['😊', '🥰', '😎', '🤗', '😇', '🦊', '🐰', '🐻', '🐼', '🐨', '🦁', '🐯', '🦒', '🦮', '🐶'];
+const emojis = [
+  "😊",
+  "🥰",
+  "😎",
+  "🤗",
+  "😇",
+  "🦊",
+  "🐰",
+  "🐻",
+  "🐼",
+  "🐨",
+  "🦁",
+  "🐯",
+  "🦒",
+  "🦮",
+  "🐶",
+];
 
 // 신고 사유 목록
 const reportReasons = [
-  '음란물/성적 콘텐츠',
-  '폭력적/폭력 위협 콘텐츠',
-  '증오/혐오 발언',
-  '스팸/광고',
-  '개인정보 노출',
-  '가짜 정보',
-  '저작권 침해',
-  '기타 사유'
+  "음란물/성적 콘텐츠",
+  "폭력적/폭력 위협 콘텐츠",
+  "증오/혐오 발언",
+  "스팸/광고",
+  "개인정보 노출",
+  "가짜 정보",
+  "저작권 침해",
+  "기타 사유",
 ];
 
 function generateRandomNickname(): string {
-  const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+  const randomAdjective =
+    adjectives[Math.floor(Math.random() * adjectives.length)];
   const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
   return `${randomAdjective} ${randomNoun}`;
 }
@@ -102,17 +151,17 @@ export default function Community() {
 
   // 디바운싱을 위한 타이머 참조 저장
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   // 디바운시 처리를 위한 함수
   const debounce = <T extends (...args: any[]) => void>(
-    callback: T, 
+    callback: T,
     delay: number = 500
   ) => {
-    return function(...args: Parameters<T>) {
+    return function (...args: Parameters<T>) {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
-      
+
       debounceTimerRef.current = setTimeout(() => {
         callback(...args);
       }, delay);
@@ -122,17 +171,18 @@ export default function Community() {
   const [editContent, setEditContent] = useState("");
   const [showAllComments, setShowAllComments] = useState<string | null>(null);
   const [newComment, setNewComment] = useState("");
+  const [showCommentInput, setShowCommentInput] = useState<string | null>(null);
   const [editingComment, setEditingComment] = useState<{
     postId: string;
     commentId: string;
   } | null>(null);
-  const [reportReason, setReportReason] = useState('');
+  const [reportReason, setReportReason] = useState("");
   const [showErrorModal, setShowErrorModal] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   // 새 게시글 작성 상태 추가
-  const [newPostContent, setNewPostContent] = useState('');
+  const [newPostContent, setNewPostContent] = useState("");
   const [isPostingLoading, setIsPostingLoading] = useState(false);
   // 토큰 가져오기
   const [randomNickname, setRandomNickname] = useState(() =>
@@ -284,36 +334,48 @@ export default function Community() {
     const date = new Date(dateString);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
-    
+
     // 시간 단위별 밀리초 정의
     const TIME_UNITS = [
-      { max: 30 * 1000, text: '지금' },
-      { max: 60 * 1000, text: '방금 전' },
-      { max: 60 * 60 * 1000, division: 60 * 1000, unit: '분 전' },
-      { max: 24 * 60 * 60 * 1000, division: 60 * 60 * 1000, unit: '시간 전' },
-      { max: 7 * 24 * 60 * 60 * 1000, division: 24 * 60 * 60 * 1000, unit: '일 전' },
-      { max: 30 * 24 * 60 * 60 * 1000, division: 7 * 24 * 60 * 60 * 1000, unit: '주 전' },
-      { max: 12 * 30 * 24 * 60 * 60 * 1000, division: 30 * 24 * 60 * 60 * 1000, unit: '개월 전' },
-      { max: Infinity, division: 12 * 30 * 24 * 60 * 60 * 1000, unit: '년 전' }
+      { max: 30 * 1000, text: "지금" },
+      { max: 60 * 1000, text: "방금 전" },
+      { max: 60 * 60 * 1000, division: 60 * 1000, unit: "분 전" },
+      { max: 24 * 60 * 60 * 1000, division: 60 * 60 * 1000, unit: "시간 전" },
+      {
+        max: 7 * 24 * 60 * 60 * 1000,
+        division: 24 * 60 * 60 * 1000,
+        unit: "일 전",
+      },
+      {
+        max: 30 * 24 * 60 * 60 * 1000,
+        division: 7 * 24 * 60 * 60 * 1000,
+        unit: "주 전",
+      },
+      {
+        max: 12 * 30 * 24 * 60 * 60 * 1000,
+        division: 30 * 24 * 60 * 60 * 1000,
+        unit: "개월 전",
+      },
+      { max: Infinity, division: 12 * 30 * 24 * 60 * 60 * 1000, unit: "년 전" },
     ];
 
-    const timeUnit = TIME_UNITS.find(unit => diff < unit.max);
-    if (!timeUnit) return '오래 전';
+    const timeUnit = TIME_UNITS.find((unit) => diff < unit.max);
+    if (!timeUnit) return "오래 전";
 
     if (!timeUnit.division) return timeUnit.text;
-    
+
     const value = Math.floor(diff / timeUnit.division);
     if (value === 1) {
       // 1단위 일 때 특별한 처리
       const specialCases = {
-        '일 전': '어제',
-        '주 전': '지난주',
-        '개월 전': '지난달',
-        '년 전': '작년'
+        "일 전": "어제",
+        "주 전": "지난주",
+        "개월 전": "지난달",
+        "년 전": "작년",
       };
       return specialCases[timeUnit.unit] || `1${timeUnit.unit}`;
     }
-    
+
     return `${value}${timeUnit.unit}`;
   };
 
@@ -432,11 +494,11 @@ export default function Community() {
     setSelectedPost(postId);
     const postElement = document.getElementById(`post-${postId}`);
     if (postElement) {
-      postElement.scrollIntoView({ behavior: 'smooth' });
+      postElement.scrollIntoView({ behavior: "smooth" });
       // 스크롤 후 잠시 하이라이트 효과를 주기 위해
-      postElement.classList.add('highlight-post');
+      postElement.classList.add("highlight-post");
       setTimeout(() => {
-        postElement.classList.remove('highlight-post');
+        postElement.classList.remove("highlight-post");
       }, 2000);
     }
   };
@@ -453,31 +515,35 @@ export default function Community() {
   };
 
   // 신고 모달 열기
-  const handleOpenReport = (type: 'post' | 'comment', postId: string, commentId?: string) => {
+  const handleOpenReport = (
+    type: "post" | "comment",
+    postId: string,
+    commentId?: string
+  ) => {
     // 로그인한 사용자 확인
     if (!user) {
-      setErrorMessage('신고하려면 로그인이 필요합니다.');
+      setErrorMessage("신고하려면 로그인이 필요합니다.");
       setShowErrorModal(true);
       return;
     }
-    
+
     // 본인 게시글/댓글 신고 방지
-    if (type === 'post') {
+    if (type === "post") {
       // 게시글 작성자 확인
-      const post = posts.find(p => p.user_id === postId);
+      const post = posts.find((p) => p.user_id === postId);
       if (post && post.author_id === user.id) {
-        setErrorMessage('본인이 작성한 게시글은 신고할 수 없습니다.');
+        setErrorMessage("본인이 작성한 게시글은 신고할 수 없습니다.");
         setShowErrorModal(true);
         return;
       }
-    } else if (type === 'comment' && commentId) {
+    } else if (type === "comment" && commentId) {
       // 댓글 작성자 확인
-      const post = posts.find(p => p.user_id === postId);
+      const post = posts.find((p) => p.user_id === postId);
       if (post) {
         const comment = post.comments?.find((c: any) => c.id === commentId);
         // any를 사용하여 타입 오류 피하기
         if (comment && (comment as any).author_id === user.id) {
-          setErrorMessage('본인이 작성한 댓글은 신고할 수 없습니다.');
+          setErrorMessage("본인이 작성한 댓글은 신고할 수 없습니다.");
           setShowErrorModal(true);
           return;
         }
@@ -498,15 +564,17 @@ export default function Community() {
 
   // 네비게이션 핸들러 추가
   const handleGoToHome = () => {
-    router.push('/home');
+    router.push("/home");
   };
 
   const handleGoToProfile = () => {
-    router.push('/profile');
+    router.push("/profile");
   };
 
   const handleGoToSettings = () => {
-    router.push('/settings');
+    router.push("/settings");
+  };
+
   const fetchComments = async (postId: string) => {
     const token = localStorage.getItem("accessToken");
     console.log("postId:", postId);
@@ -743,16 +811,20 @@ export default function Community() {
                           // 디바운싱 적용: 타이핑마다 API 요청 방지
                           const newValue = e.target.value;
                           setNewComment(newValue); // 화면 업데이트는 즉시 적용
-                          
+
                           // 기존 타이머 취소
                           if (debounceTimerRef.current) {
                             clearTimeout(debounceTimerRef.current);
                           }
-                          
+
                           // 새 타이머 설정 (300ms 디바운스)
                           debounceTimerRef.current = setTimeout(() => {
                             // 디바운스된 작업 처리
-                            console.log('디바운스된 댓글 입력:', newValue.length, '글자');
+                            console.log(
+                              "디바운스된 댓글 입력:",
+                              newValue.length,
+                              "글자"
+                            );
                           }, 300);
                         }}
                         placeholder="댓글을 입력하세요"
@@ -778,7 +850,9 @@ export default function Community() {
             ))
           ) : (
             <div className="card p-8 text-center">
-              <p className="text-gray-500 text-lg mb-4">아직 게시글이 없습니다.</p>
+              <p className="text-gray-500 text-lg mb-4">
+                아직 게시글이 없습니다.
+              </p>
               <p className="text-gray-400">첫 번째 게시글을 작성해보세요!</p>
             </div>
           )}
@@ -789,7 +863,9 @@ export default function Community() {
       {showErrorModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-bold mb-4 text-red-600">오류가 발생했습니다</h3>
+            <h3 className="text-lg font-bold mb-4 text-red-600">
+              오류가 발생했습니다
+            </h3>
             <p className="text-gray-700 mb-4">{errorMessage}</p>
             <div className="flex justify-end">
               <button
@@ -804,50 +880,6 @@ export default function Community() {
       )}
 
       {/* 신고 모달 */}
-      {showReportModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-bold mb-4">신고하기</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  신고 사유
-                </label>
-                <select
-                  value={reportReason}
-                  onChange={(e) => setReportReason(e.target.value)}
-                  className="input-field w-full"
-                >
-                  <option value="">신고 사유를 선택해주세요</option>
-                  {reportReasons.map((reason) => (
-                    <option key={reason} value={reason}>
-                      {reason}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex justify-end gap-2">
-                <button
-                  onClick={() => {
-                    setShowReportModal(false);
-                    setReportReason("");
-                  }}
-                  className="btn-secondary"
-                >
-                  취소
-                </button>
-                <button
-                  onClick={handleSubmitReport}
-                  disabled={!reportReason}
-                  className="btn-primary"
-                >
-                  신고하기
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 하단 네비게이션 */}
       <nav
