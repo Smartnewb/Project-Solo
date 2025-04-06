@@ -142,198 +142,33 @@ export default function Community() {
   const [isPostingLoading, setIsPostingLoading] = useState(false);
 
   // 게시글 불러오기
-  const fetchPosts = async () => {
+  const fetchPosts = async (page: number = 1, limit: number = 0) => {
+    const token = localStorage.getItem("accessToken");
     try {
-      setIsLoading(true);
-      console.log('게시글 조회 시작');
-      // 신고 임계값을 3으로 설정 (월드스타일)
-      const reportThreshold = 3; // 월드스타일은 3회 신고시 블라인드 처리
-      console.log('현재 신고 임계값:', reportThreshold);
-      
-      // 게시물 조회 - 오류 방지를 위해 단일 호출로 변경
-      let postsData: any[] = [];
-      let postsError = null;
-      
-      try {
-        const response = await supabase
-        .from('posts')
-        .select('*')
-        .eq('isdeleted', false)
-        .order('created_at', { ascending: false });
-        
-        if (response.error) {
-          postsError = response.error;
-        } else {
-          postsData = response.data || [];
-        }
-      } catch (error) {
-        postsError = error;
-        console.error('게시글 조회 중 예외 발생:', error);
-      }
-      console.log('게시글 데이터 구조:', Object.keys(postsData[0]));
-      
-      if (postsError) {
-        console.error('게시글 조회 에러:', postsError);
-        setIsLoading(false);
-        return;
-      }
-      
-      console.log('게시글 조회 완료:', postsData.length, '개');
-      
-      // userId를 사용하는지 확인하고 로그
-      console.log('게시글 데이터 구조 확인:', postsData.length > 0 ? Object.keys(postsData[0]) : '게시글 없음');
-      
-      // 신고 수가 임계값 미만인 게시글만 필터링
-      const filteredPosts = postsData.filter(post => {
-        // 신고 횟수가 없거나 임계값 미만인 경우만 포함
-        return !post.reports || post.reports.length < reportThreshold;
+      // axios 요청에 토큰 포함
+      const response = await axiosServer.get("/articles", {
+        params: {
+          page,
+          limit,
+        },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-      
-      console.log('filteredPosts:', filteredPosts);
-      
-      // 각 게시글에 댓글 추가 - 오류 방지를 위해 로직 수정
-      const postsWithComments = await Promise.all(
-        filteredPosts.map(async (post) => {
-          try {
-            console.log(`게시글 ID ${post.user_id}의 댓글 조회 시작`);
-            
-            // 댓글 조회를 위한 별도의 함수 호출
-            let commentsData: any[] = [];
-            
-            try {
-              console.log(post)
-              const commentsResponse = await supabase
-                .from('comments')
-                .select('*')
-                .eq('post_id', post.user_id)
-                .order('created_at', { ascending: false });
-                
-              if (commentsResponse.error) {
-                console.error(`게시글 ID ${post.user_id}의 댓글 조회 에러:`, commentsResponse.error);
-              } else {
-                commentsData = commentsResponse.data || [];
-                console.log(`게시글 ID ${post.user_id}의 댓글 조회 완료:`, commentsData.length, '개');
-                
-                // 댓글 데이터 구조 확인
-                if (commentsData.length > 0) {
-                  console.log('댓글 데이터 구조:', Object.keys(commentsData[0]));
-                }
-              }
-            } catch (commentError) {
-              console.error(`게시글 ID ${post.user_id}의 댓글 조회 중 예외:`, commentError);
-            }
-            
-            return { ...post, comments: commentsData };
-          } catch (error) {
-            console.error(`게시글 ID ${post.user_id}의 댓글 처리 중 오류:`, error);
-            return { ...post, comments: [] };
-          }
-        })
-      );
-      
-      setPosts(postsWithComments);
-      
-      // 인기 게시글 (좋아요 3개 이상) 계산
-      const popular = postsWithComments
-        .filter(post => post.likes && post.likes.length >= 3)
-        .sort((a, b) => (b.likes?.length || 0) - (a.likes?.length || 0))
-        .slice(0, 5);
-        
-      setPopularPosts(popular);
-      setIsLoading(false);
+      setPosts(response.data);
     } catch (error) {
-      console.error('게시글 조회 중 오류가 발생했습니다:', error);
-      setIsLoading(false);
-    }
-  };
-
-  // 프로필 정보 가져오기
-  const fetchProfileInfo = async (userId: string) => {
-    try {
-      console.log('프로필 정보 가져오기 시작:', userId);
-      
-      // DB 구조에 맞게 수정 - id를 사용하여 프로필 검색(테이블 구조에 맞게 수정)
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('id, name')
-        .eq('id', userId) // user_id 대신 id 사용
-        .single();
-
-      console.log('프로필 검색 결과:', { profile, error });
-        
-      if (error) {
-        console.log('프로필을 찾을 수 없어 새로 생성합니다:', error.message);
-        
-        // 프로필 생성 (DB 구조에 맞게 수정)
-        const randomNickname = generateRandomNickname();
-        const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-        
-        const newProfileData = {
-          id: userId,
-          name: randomNickname, // 익명_userId 대신 실제 랜덤 닉네임 사용
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-        
-        const { data: newProfile, error: createError } = await supabase
-          .from('profiles')
-          .insert([newProfileData])
-          .select()
-          .single();
-
-        if (createError) {
-          console.error('프로필 생성 중 오류가 발생했습니다:', createError);
-          setErrorMessage('프로필을 생성할 수 없습니다.');
-          setShowErrorModal(true);
-          return false;
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        // 토큰이 만료된 경우 갱신 시도
+        const refreshed = await refreshAccessToken();
+        if (refreshed) {
+          // 토큰 갱신 성공시 다시 요청
+          fetchPosts(page, limit);
         }
-        
-        if (newProfile) {
-          // 새로 생성된 프로필로 userInfo 설정
-          localStorage.setItem(`userNickname_${userId}`, JSON.stringify({ nickname: randomNickname, emoji }));
-          setUserInfo({ 
-            id: userId,
-            profileId: newProfile.id,
-            nickname: randomNickname,
-            emoji
-          });
-          console.log('새 프로필 생성 완료:', newProfile);
-          return true;
-        }
-      } else if (profile) {
-        // 기존 프로필 정보 처리
-        let userNickname = { nickname: '', emoji: '' };
-        // 로컬스토리지에서 닉네임 가져오기
-        const savedNickname = localStorage.getItem(`userNickname_${userId}`);
-        
-        if (savedNickname) {
-          userNickname = JSON.parse(savedNickname);
-        } else {
-          // 로컬스토리지에 닉네임이 없는 경우 새로 생성
-          userNickname = {
-            nickname: profile.name || generateRandomNickname(),
-            emoji: emojis[Math.floor(Math.random() * emojis.length)]
-          };
-          localStorage.setItem(`userNickname_${userId}`, JSON.stringify(userNickname));
-        }
-        
-        setUserInfo({
-          id: userId,
-          profileId: profile.id,
-          nickname: userNickname.nickname || profile.name || generateRandomNickname(),
-          emoji: userNickname.emoji
-        });
-        console.log('기존 프로필 정보 가져오기 성공:', profile);
-        return true;
+      } else {
+        console.error("게시글 조회 중 오류가 발생했습니다:", error);
+        setErrorMessage("게시글을 불러오는데 실패했습니다.");
+        setShowErrorModal(true);
       }
-      
-      console.log('프로필 정보 가져오기 완료');
-      return true;
-    } catch (error) {
-      console.error('프로필 정보 가져오기 중 오류 발생:', error);
-      setErrorMessage('프로필 정보를 가져올 수 없습니다.');
-      setShowErrorModal(true);
-      return false;
     }
   };
 
