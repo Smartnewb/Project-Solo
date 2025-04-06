@@ -46,6 +46,9 @@ interface Post {
   authorId: string;
 }
 
+interface User {
+  id: string;
+}
 // 랜덤 닉네임 생성을 위한 데이터
 const adjectives = [
   "귀여운",
@@ -128,21 +131,21 @@ function generateRandomEmoji(): string {
 export default function Community() {
   const router = useRouter();
   const { user, refreshAccessToken } = useAuth();
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [Checkuser, setCheckuser] = useState<User | null>(null);
   const sliderRef = useRef<Slider>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [popularPosts, setPopularPosts] = useState<Post[]>([]);
 
-  const fetchProfile = async () => {
+  const fetchCheckuser = async () => {
     const token = localStorage.getItem("accessToken");
     await axiosServer
-      .get("/profile", {
+      .get("/user", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })
       .then((res) => {
-        setProfile(res.data);
+        setCheckuser(res.data);
       })
       .catch((err) => {
         console.log(err);
@@ -171,14 +174,17 @@ export default function Community() {
   const [editContent, setEditContent] = useState("");
   const [showAllComments, setShowAllComments] = useState<string | null>(null);
   const [newComment, setNewComment] = useState("");
+  const [selectedPost, setSelectedPost] = useState<string | null>(null);
+  const [editCommentContent, setEditCommentContent] = useState("");
   const [showCommentInput, setShowCommentInput] = useState<string | null>(null);
   const [editingComment, setEditingComment] = useState<{
     postId: string;
     commentId: string;
   } | null>(null);
-  const [reportReason, setReportReason] = useState("");
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportReason, setReportReason] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   // 새 게시글 작성 상태 추가
@@ -406,7 +412,7 @@ export default function Community() {
                   comment.updatedAt !== comment.createdAt && (
                     <span className="text-xs text-gray-500">(수정됨)</span>
                   )}
-                {comment.authorId === profile?.id ? (
+                {comment.authorId === Checkuser?.id ? (
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEditComment(comment.id)}
@@ -530,15 +536,15 @@ export default function Community() {
     // 본인 게시글/댓글 신고 방지
     if (type === "post") {
       // 게시글 작성자 확인
-      const post = posts.find((p) => p.user_id === postId);
-      if (post && post.author_id === user.id) {
+      const post = posts.find((p) => p.authorId === postId);
+      if (post && post.authorId === user.id) {
         setErrorMessage("본인이 작성한 게시글은 신고할 수 없습니다.");
         setShowErrorModal(true);
         return;
       }
     } else if (type === "comment" && commentId) {
       // 댓글 작성자 확인
-      const post = posts.find((p) => p.user_id === postId);
+      const post = posts.find((p) => p.authorId === postId);
       if (post) {
         const comment = post.comments?.find((c: any) => c.id === commentId);
         // any를 사용하여 타입 오류 피하기
@@ -723,7 +729,7 @@ export default function Community() {
                     {post.updatedAt && post.updatedAt !== post.createdAt && (
                       <span className="text-sm text-gray-500">(수정됨)</span>
                     )}
-                    {post.authorId === profile?.user_id && !post.deletedAt ? (
+                    {post.authorId === Checkuser?.id && !post.deletedAt ? (
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleEditPost(post)}
@@ -732,7 +738,7 @@ export default function Community() {
                           수정
                         </button>
                         <button
-                          onClick={() => handlePostDelete(post.authorId)}
+                          onClick={() => handlePostDelete(post.id)}
                           className="text-sm text-red-500 hover:text-red-600"
                         >
                           삭제
@@ -741,7 +747,7 @@ export default function Community() {
                     ) : (
                       !post.deletedAt &&
                       user &&
-                      post.authorId !== profile?.user_id && (
+                      post.authorId !== Checkuser?.id && (
                         <button
                           onClick={() =>
                             handleOpenReport("post", post.authorId)
