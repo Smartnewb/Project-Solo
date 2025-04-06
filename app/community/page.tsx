@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import React from "react";
 import {
   HomeIcon,
   ChatBubbleLeftRightIcon,
@@ -114,7 +115,6 @@ const reportReasons = [
   "개인정보 노출",
   "가짜 정보",
   "저작권 침해",
-  "기타 사유",
 ];
 
 function generateRandomNickname(): string {
@@ -170,6 +170,13 @@ export default function Community() {
       }, delay);
     };
   };
+  const [reportReason, setReportReason] = useState("");
+  const [selectedReportType, setSelectedReportType] = useState<
+    "post" | "comment"
+  >("post");
+  const [selectedPostId, setSelectedPostId] = useState<string>("");
+  const [selectedCommentId, setSelectedCommentId] = useState<string>("");
+
   const [editingPost, setEditingPost] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
   const [showAllComments, setShowAllComments] = useState<string | null>(null);
@@ -184,8 +191,9 @@ export default function Community() {
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [showReportModal, setShowReportModal] = useState(false);
-  const [reportReason, setReportReason] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   // 새 게시글 작성 상태 추가
   const [newPostContent, setNewPostContent] = useState("");
@@ -199,6 +207,7 @@ export default function Community() {
   // 게시글 불러오기는 별도의 useEffect로 분리
   useEffect(() => {
     fetchPosts();
+    fetchCheckuser();
   }, []);
 
   useEffect(() => {
@@ -279,8 +288,13 @@ export default function Community() {
   const handleAddComment = async (post_id: string) => {
     const token = localStorage.getItem("accessToken");
     if (!token) return;
+    if (!newComment.trim()) {
+      setErrorMessage("댓글 내용을 입력해주세요.");
+      setShowErrorModal(true);
+      return;
+    }
     try {
-      await axiosServer.post(
+      const response = await axiosServer.post(
         `/articles/${post_id}/comments`,
         {
           content: newComment,
@@ -294,7 +308,19 @@ export default function Community() {
         }
       );
       setNewComment(""); // 댓글 입력창 초기화
-      fetchPosts(); // 게시글 목록 새로고침
+
+      // 로컬 상태 업데이트
+      setPosts(
+        posts.map((post) => {
+          if (post.id === post_id) {
+            return {
+              ...post,
+              comments: [...(post.comments || []), response.data],
+            };
+          }
+          return post;
+        })
+      );
     } catch (error) {
       console.error("댓글 작성 중 오류가 발생했습니다:", error);
     }
@@ -307,10 +333,96 @@ export default function Community() {
   }, [newComment]);
 
   // 게시글 수정
-  const handleSaveEdit = async (postId: string) => {};
-  const handleEditPost = (post: Post) => {};
-  const handleSaveCommentEdit = async (postId: string, commentId: string) => {};
-  const handleEditComment = (postId: string) => {};
+  const handleEditPost = async (post: Post) => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
+    try {
+      const response = await axiosServer.patch(
+        `/articles/${post.id}`,
+        {
+          content: editContent,
+          anonymous: randomNickname,
+          emoji: randomEmoji,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // 로컬 상태 업데이트
+      setPosts(
+        posts.map((p) => {
+          if (p.id === post.id) {
+            return {
+              ...p,
+              content: response.data.content,
+              updatedAt: response.data.updatedAt,
+            };
+          }
+          return p;
+        })
+      );
+
+      setEditingPost(null);
+      setEditContent("");
+    } catch (error) {
+      console.error("게시글 수정 중 오류가 발생했습니다:", error);
+      setErrorMessage("게시글 수정에 실패했습니다.");
+      setShowErrorModal(true);
+    }
+  };
+
+  const handleEditComment = async (postId: string, commentId: string) => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
+    try {
+      const response = await axiosServer.patch(
+        `/articles/${postId}/comments/${commentId}`,
+        {
+          content: editCommentContent,
+          anonymous: randomNickname,
+          emoji: randomEmoji,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // 로컬 상태 업데이트
+      setPosts(
+        posts.map((post) => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              comments:
+                post.comments?.map((comment) => {
+                  if (comment.id === commentId) {
+                    return {
+                      ...comment,
+                      content: response.data.content,
+                      updatedAt: response.data.updatedAt,
+                    };
+                  }
+                  return comment;
+                }) || [],
+            };
+          }
+          return post;
+        })
+      );
+
+      setEditingComment(null);
+      setEditCommentContent("");
+    } catch (error) {
+      console.error("댓글 수정 중 오류가 발생했습니다:", error);
+      setErrorMessage("댓글 수정에 실패했습니다.");
+      setShowErrorModal(true);
+    }
+  };
   // 게시글 삭제
   const handlePostDelete = async (postId: string) => {
     const token = localStorage.getItem("accessToken");
@@ -329,13 +441,37 @@ export default function Community() {
     }
   };
 
-  const handleDeleteComment = async (
-    postId: string,
-    commentId: string,
-    authorId: string
-  ) => {};
+  const handleDeleteComment = async (postId: string, commentId: string) => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
+    try {
+      await axiosServer.delete(`/articles/${postId}/comments/${commentId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      // 로컬 상태 업데이트
+      setPosts(
+        posts.map((post) => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              comments:
+                post.comments?.filter((comment) => comment.id !== commentId) ||
+                [],
+            };
+          }
+          return post;
+        })
+      );
+    } catch (error) {
+      console.error("댓글 삭제 중 오류가 발생했습니다:", error);
+    }
+  };
 
   const handleLike = async (postId: string) => {};
+
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -414,20 +550,38 @@ export default function Community() {
                   )}
                 {comment.authorId === Checkuser?.id ? (
                   <div className="flex gap-2">
+                    {editingComment?.postId === post.id &&
+                    editingComment?.commentId === comment.id ? (
+                      <>
+                        <button
+                          onClick={() => setEditingComment(null)}
+                          className="text-xs text-gray-500 hover:text-gray-600"
+                        >
+                          취소
+                        </button>
+                        <button
+                          onClick={() => handleEditComment(post.id, comment.id)}
+                          className="text-xs text-blue-500 hover:text-blue-600"
+                        >
+                          저장
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setEditingComment({
+                            postId: post.id,
+                            commentId: comment.id,
+                          });
+                          setEditCommentContent(comment.content);
+                        }}
+                        className="text-xs text-blue-500 hover:text-blue-600"
+                      >
+                        수정
+                      </button>
+                    )}
                     <button
-                      onClick={() => handleEditComment(comment.id)}
-                      className="text-xs text-blue-500 hover:text-blue-600"
-                    >
-                      수정
-                    </button>
-                    <button
-                      onClick={() =>
-                        handleDeleteComment(
-                          post.authorId,
-                          comment.id,
-                          comment.authorId
-                        )
-                      }
+                      onClick={() => handleDeleteComment(post.id, comment.id)}
                       className="text-xs text-red-500 hover:text-red-600"
                     >
                       삭제
@@ -436,7 +590,7 @@ export default function Community() {
                 ) : (
                   <button
                     onClick={() =>
-                      handleOpenReport("comment", post.authorId, comment.id)
+                      handleOpenReport("comment", post.id, comment.id)
                     }
                     className="text-xs text-gray-500 hover:text-gray-600"
                   >
@@ -446,30 +600,14 @@ export default function Community() {
               </div>
             </div>
 
-            {editingComment?.postId === post.authorId &&
+            {editingComment?.postId === post.id &&
             editingComment?.commentId === comment.id ? (
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={editCommentContent}
-                  onChange={(e) => setEditCommentContent(e.target.value)}
-                  className="input-field flex-1"
-                />
-                <button
-                  onClick={() => setEditingComment(null)}
-                  className="btn-secondary px-3"
-                >
-                  취소
-                </button>
-                <button
-                  onClick={() =>
-                    handleSaveCommentEdit(post.authorId, comment.id)
-                  }
-                  className="btn-primary px-3"
-                >
-                  저장
-                </button>
-              </div>
+              <input
+                type="text"
+                value={editCommentContent}
+                onChange={(e) => setEditCommentContent(e.target.value)}
+                className="w-full p-2 border rounded"
+              />
             ) : (
               <p className="text-sm text-gray-700">{comment.content}</p>
             )}
@@ -526,55 +664,60 @@ export default function Community() {
     postId: string,
     commentId?: string
   ) => {
-    // 로그인한 사용자 확인
-    if (!user) {
-      setErrorMessage("신고하려면 로그인이 필요합니다.");
+    setSelectedReportType(type);
+    setSelectedPostId(postId);
+    if (commentId) setSelectedCommentId(commentId);
+    setShowReportModal(true);
+  };
+
+  // 신고 제출
+  const handleSubmitReport = async () => {
+    if (!reportReason) {
+      setErrorMessage("신고 사유를 선택해주세요.");
       setShowErrorModal(true);
       return;
     }
 
-    // 본인 게시글/댓글 신고 방지
-    if (type === "post") {
-      // 게시글 작성자 확인
-      const post = posts.find((p) => p.authorId === postId);
-      if (post && post.authorId === user.id) {
-        setErrorMessage("본인이 작성한 게시글은 신고할 수 없습니다.");
-        setShowErrorModal(true);
-        return;
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
+
+    try {
+      if (selectedReportType === "post") {
+        await axiosServer.post(
+          `/articles/${selectedPostId}/reports`,
+          { reason: reportReason },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+      } else {
+        await axiosServer.post(
+          `/articles/${selectedPostId}/comments/${selectedCommentId}/reports`,
+          { reason: reportReason },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
       }
-    } else if (type === "comment" && commentId) {
-      // 댓글 작성자 확인
-      const post = posts.find((p) => p.authorId === postId);
-      if (post) {
-        const comment = post.comments?.find((c: any) => c.id === commentId);
-        // any를 사용하여 타입 오류 피하기
-        if (comment && (comment as any).author_id === user.id) {
-          setErrorMessage("본인이 작성한 댓글은 신고할 수 없습니다.");
-          setShowErrorModal(true);
-          return;
-        }
-      }
+
+      setShowReportModal(false);
+      setReportReason("");
+      setSuccessMessage("신고가 성공적으로 접수되었습니다.");
+      setShowSuccessModal(true);
+    } catch (error) {
+      console.error("신고 접수 중 오류가 발생했습니다:", error);
+      setErrorMessage("신고 접수에 실패했습니다.");
+      setShowErrorModal(true);
     }
-
-    setShowReportModal(true);
   };
-
-  // 신고 제출 처리
-  const handleSubmitReport = async () => {};
-
-  // 새 게시글 작성 함수
-  const handleCreatePost = async () => {};
-
-  // 신고 처리
-  const handleReport = () => {};
 
   // 네비게이션 핸들러 추가
   const handleGoToHome = () => {
     router.push("/home");
-  };
-
-  const handleGoToProfile = () => {
-    router.push("/profile");
   };
 
   const handleGoToSettings = () => {
@@ -731,12 +874,32 @@ export default function Community() {
                     )}
                     {post.authorId === Checkuser?.id && !post.deletedAt ? (
                       <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEditPost(post)}
-                          className="text-sm text-blue-500 hover:text-blue-600"
-                        >
-                          수정
-                        </button>
+                        {editingPost === post.id ? (
+                          <>
+                            <button
+                              onClick={() => setEditingPost(null)}
+                              className="text-sm text-gray-500 hover:text-gray-600"
+                            >
+                              취소
+                            </button>
+                            <button
+                              onClick={() => handleEditPost(post)}
+                              className="text-sm text-blue-500 hover:text-blue-600"
+                            >
+                              저장
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setEditingPost(post.id);
+                              setEditContent(post.content);
+                            }}
+                            className="text-sm text-blue-500 hover:text-blue-600"
+                          >
+                            수정
+                          </button>
+                        )}
                         <button
                           onClick={() => handlePostDelete(post.id)}
                           className="text-sm text-red-500 hover:text-red-600"
@@ -749,9 +912,7 @@ export default function Community() {
                       user &&
                       post.authorId !== Checkuser?.id && (
                         <button
-                          onClick={() =>
-                            handleOpenReport("post", post.authorId)
-                          }
+                          onClick={() => handleOpenReport("post", post.id)}
                           className="text-sm text-gray-500 hover:text-gray-600"
                         >
                           🚨신고
@@ -763,25 +924,19 @@ export default function Community() {
 
                 {/* 게시물 내용 */}
                 <div className="mb-4">
-                  {post.updatedAt !== post.createdAt ? (
-                    <>
-                      {editingPost === post.authorId ? (
-                        <textarea
-                          className="w-full border rounded p-2"
-                          value={editContent}
-                          onChange={(e) => setEditContent(e.target.value)}
-                        />
-                      ) : (
-                        <p className="whitespace-pre-wrap">{post.content}</p>
-                      )}
-                    </>
+                  {editingPost === post.id ? (
+                    <textarea
+                      className="w-full border rounded p-2"
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                    />
                   ) : (
                     <p className="whitespace-pre-wrap">{post.content}</p>
                   )}
 
                   <div className="flex items-center gap-4">
                     <button
-                      onClick={() => handleLike(post.authorId)}
+                      onClick={() => handleLike(post.id)}
                       className={`flex items-center gap-1 ${
                         post.likeCount > 0 ? "text-red-500" : "text-gray-500"
                       }`}
@@ -814,31 +969,20 @@ export default function Community() {
                         type="text"
                         value={newComment}
                         onChange={(e) => {
-                          // 디바운싱 적용: 타이핑마다 API 요청 방지
                           const newValue = e.target.value;
-                          setNewComment(newValue); // 화면 업데이트는 즉시 적용
-
-                          // 기존 타이머 취소
-                          if (debounceTimerRef.current) {
-                            clearTimeout(debounceTimerRef.current);
-                          }
-
-                          // 새 타이머 설정 (300ms 디바운스)
-                          debounceTimerRef.current = setTimeout(() => {
-                            // 디바운스된 작업 처리
-                            console.log(
-                              "디바운스된 댓글 입력:",
-                              newValue.length,
-                              "글자"
-                            );
-                          }, 300);
+                          setNewComment(newValue);
                         }}
                         placeholder="댓글을 입력하세요"
                         className="input-field flex-1"
                       />
                       <button
                         onClick={() => handleAddComment(post.id)}
-                        className="btn-primary px-4"
+                        disabled={!newComment.trim()}
+                        className={`px-4 py-2 rounded-lg transition-colors ${
+                          newComment.trim()
+                            ? "bg-[#6C5CE7] text-white hover:bg-[#5849BE]"
+                            : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        }`}
                       >
                         작성
                       </button>
@@ -886,6 +1030,130 @@ export default function Community() {
       )}
 
       {/* 신고 모달 */}
+      {showReportModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4 shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-900">신고하기</h3>
+              <button
+                onClick={() => {
+                  setShowReportModal(false);
+                  setReportReason("");
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <p className="text-gray-600 mb-6">신고 사유를 선택해주세요.</p>
+            <div className="space-y-3 mb-6">
+              {reportReasons.map((reason) => (
+                <label
+                  key={reason}
+                  className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${
+                    reportReason === reason
+                      ? "border-[#6C5CE7] bg-[#6C5CE7] bg-opacity-5"
+                      : "border-gray-200 hover:border-[#6C5CE7]"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="reportReason"
+                    value={reason}
+                    checked={reportReason === reason}
+                    onChange={(e) => setReportReason(e.target.value)}
+                    className="hidden"
+                  />
+                  <div
+                    className={`w-5 h-5 rounded-full border mr-3 flex items-center justify-center ${
+                      reportReason === reason
+                        ? "border-[#6C5CE7] bg-[#6C5CE7]"
+                        : "border-gray-300"
+                    }`}
+                  >
+                    {reportReason === reason && (
+                      <div className="w-2 h-2 rounded-full bg-white" />
+                    )}
+                  </div>
+                  <span className="text-gray-700">{reason}</span>
+                </label>
+              ))}
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowReportModal(false);
+                  setReportReason("");
+                }}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleSubmitReport}
+                className={`px-4 py-2 rounded-lg transition-colors ${
+                  reportReason
+                    ? "bg-[#6C5CE7] text-white hover:bg-[#5849BE]"
+                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                }`}
+                disabled={!reportReason}
+              >
+                신고하기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 성공 모달 */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4 shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-900">알림</h3>
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <p className="text-gray-700 mb-4">{successMessage}</p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="px-4 py-2 bg-[#6C5CE7] text-white rounded-lg hover:bg-[#5849BE] transition-colors"
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 하단 네비게이션 */}
       <nav
