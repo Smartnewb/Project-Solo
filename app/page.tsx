@@ -94,7 +94,7 @@ export default function Login() {
           <div className="space-x-2">
             <span>상호명: 스마트 뉴비</span>
             <span>|</span>
-            <span>대표이사: 전준영</span>
+            <span>대표: 전준영</span>
           </div>
           <div className="space-x-2">
             <span>사업장 소재지: 대전광역시 유성구 동서대로 125, S9동 202호</span>
