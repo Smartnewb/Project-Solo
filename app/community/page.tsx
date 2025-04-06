@@ -839,7 +839,9 @@ export default function Community() {
                           ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                           : "bg-[#6C5CE7] text-white hover:bg-[#5849BE] transition-colors"
                       }`}
-                    ></button>
+                    >
+                      작성
+                    </button>
                   </div>
                 </div>
               </div>
