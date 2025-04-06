@@ -79,20 +79,27 @@ function generateRandomEmoji(): string {
 export default function Community() {
   const router = useRouter();
   const { user, refreshAccessToken } = useAuth();
+  const [profile, setProfile] = useState<Profile | null>(null);
   const sliderRef = useRef<Slider>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [popularPosts, setPopularPosts] = useState<Post[]>([]);
-  const supabase = createClient();
-  
-  const [userInfo, setUserInfo] = useState<{
-    id: string;
-    profileId?: string;
-    nickname?: string;
-    emoji?: string;
-  }>({
-    id: '',
-  });
-  
+
+  const fetchProfile = async () => {
+    const token = localStorage.getItem("accessToken");
+    await axiosServer
+      .get("/profile", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      .then((res) => {
+        setProfile(res.data);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
   // 디바운싱을 위한 타이머 참조 저장
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -112,18 +119,12 @@ export default function Community() {
     };
   };
   const [editingPost, setEditingPost] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState('');
+  const [editContent, setEditContent] = useState("");
   const [showAllComments, setShowAllComments] = useState<string | null>(null);
-  const [newComment, setNewComment] = useState('');
-  const [editingComment, setEditingComment] = useState<{postId: string, commentId: string} | null>(null);
-  const [editCommentContent, setEditCommentContent] = useState('');
-  const [selectedPost, setSelectedPost] = useState<string | null>(null);
-  const [showCommentInput, setShowCommentInput] = useState<string | null>(null);
-  const [showReportModal, setShowReportModal] = useState(false);
-  const [reportTarget, setReportTarget] = useState<{
-    type: 'post' | 'comment';
+  const [newComment, setNewComment] = useState("");
+  const [editingComment, setEditingComment] = useState<{
     postId: string;
-    commentId?: string;
+    commentId: string;
   } | null>(null);
   const [reportReason, setReportReason] = useState('');
   const [showErrorModal, setShowErrorModal] = useState(false);
@@ -150,10 +151,9 @@ export default function Community() {
   }, [randomNickname, randomEmoji]);
 
   // 게시글 불러오기
-  const fetchPosts = async (page: number = 1, limit: number = 0) => {
+  const fetchPosts = async (page: number = 1, limit: number = 10) => {
     const token = localStorage.getItem("accessToken");
     try {
-      // axios 요청에 토큰 포함
       const response = await axiosServer.get("/articles", {
         params: {
           page,
@@ -163,22 +163,31 @@ export default function Community() {
           Authorization: `Bearer ${token}`,
         },
       });
+
       setPosts(response.data.items);
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        // 토큰이 만료된 경우 갱신 시도
-        const refreshed = await refreshAccessToken();
-        if (refreshed) {
-          // 토큰 갱신 성공시 다시 요청
-          fetchPosts(page, limit);
-        }
-      } else {
-        console.error("게시글 조회 중 오류가 발생했습니다:", error);
-        setErrorMessage("게시글을 불러오는데 실패했습니다.");
-        setShowErrorModal(true);
-      }
+      console.error("게시글 조회 중 오류가 발생했습니다:", error);
     }
   };
+
+  useEffect(() => {
+    const loadComments = async () => {
+      const postsWithComments = await Promise.all(
+        posts.map(async (post) => {
+          const comments = await fetchComments(post.id);
+          return {
+            ...post,
+            comments: comments || [],
+          };
+        })
+      );
+      setPosts(postsWithComments);
+    };
+
+    if (posts.length > 0) {
+      loadComments();
+    }
+  }, [posts.length]);
 
   // 게시물 작성
   const handleAddPost = async (content: string) => {
@@ -228,13 +237,24 @@ export default function Community() {
           },
         }
       );
+      setNewComment(""); // 댓글 입력창 초기화
+      fetchPosts(); // 게시글 목록 새로고침
     } catch (error) {
       console.error("댓글 작성 중 오류가 발생했습니다:", error);
     }
   };
+
+  useEffect(() => {
+    if (newComment === "") {
+      fetchPosts();
+    }
+  }, [newComment]);
+
   // 게시글 수정
   const handleSaveEdit = async (postId: string) => {};
-
+  const handleEditPost = (post: Post) => {};
+  const handleSaveCommentEdit = async (postId: string, commentId: string) => {};
+  const handleEditComment = (postId: string) => {};
   // 게시글 삭제
   const handlePostDelete = async (postId: string) => {
     const token = localStorage.getItem("accessToken");
@@ -300,7 +320,7 @@ export default function Community() {
   const renderComments = (post: Post, showAll: boolean) => {
     if (!post.comments || post.comments.length === 0) return null;
 
-    const commentsToShow = showAll ? post.comments : post.comments.slice(0, 2);
+    const commentsToShow = showAll ? post.comments : post.comments.slice(0, 3);
 
     return (
       <div className="space-y-4">
@@ -324,7 +344,7 @@ export default function Community() {
                   comment.updatedAt !== comment.createdAt && (
                     <span className="text-xs text-gray-500">(수정됨)</span>
                   )}
-                {comment.authorId === userInfo?.id ? (
+                {comment.authorId === profile?.id ? (
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleEditComment(comment.id)}
@@ -387,6 +407,22 @@ export default function Community() {
             )}
           </div>
         ))}
+        {!showAll && post.comments?.length > 3 && (
+          <button
+            onClick={() => setShowAllComments(post.id)}
+            className="text-sm text-gray-500 hover:text-gray-700"
+          >
+            댓글 {post.comments.length - 3}개 더 보기
+          </button>
+        )}
+        {showAll && post.comments?.length > 3 && (
+          <button
+            onClick={() => setShowAllComments(null)}
+            className="text-sm text-gray-500 hover:text-gray-700"
+          >
+            댓글 접기
+          </button>
+        )}
       </div>
     );
   };
@@ -446,152 +482,13 @@ export default function Community() {
           return;
         }
       }
-    }    
-    setReportTarget({ type, postId, commentId });
+    }
+
     setShowReportModal(true);
   };
 
   // 신고 제출 처리
-  const handleSubmitReport = async () => {
-    if (!reportTarget || !reportReason || !user) {
-      setErrorMessage('신고 정보가 올바르지 않습니다.');
-      setShowErrorModal(true);
-      return;
-    }
-
-    try {
-      const { type, postId, commentId } = reportTarget;
-      const reporterId = user.id;
-      const timestamp = new Date().toISOString();
-      const reportData = {
-        reporter_id: reporterId,
-        reason: reportReason,
-        timestamp: timestamp,
-      };
-
-      if (type === "post") {
-        // 게시글 신고 처리
-        const { data: postData, error: fetchError } = await supabase
-          .from("posts")
-          .select("reports")
-          .eq("authorId", postId)
-          .single();
-
-        if (fetchError) throw fetchError;
-
-        const reports = postData.reports || [];
-        // 이미 신고한 사용자인지 확인
-        const alreadyReported = reports.some((report: any) => report.reporter_id === reporterId);
-        
-        if (alreadyReported) {
-          setErrorMessage('이미 신고한 게시글입니다.');
-          setShowErrorModal(true);
-          setShowReportModal(false);
-          setReportReason('');
-          return;
-        }
-
-        const updatedReports = [...reports, reportData];
-        
-        // 신고 횟수가 1회 이상이면 블라인드 처리 (테스트용으로 임시 변경)
-        const shouldBlind = updatedReports.length >= 1;
-        const updateData = { reports: updatedReports };
-        
-        if (shouldBlind) {
-          // 어드민에게 알림 전송 (실제 구현 시 여기에 알림 API 호출 추가)
-          try {
-            // 어드민 알림 테이블에 신고 데이터 추가
-            await supabase.from('admin_notifications').insert([{
-              type: 'report',
-              content_type: 'post',
-              content_id: postId,
-              reporter_id: reporterId,
-              reason: reportReason,
-              created_at: new Date().toISOString(),
-              is_read: false
-            }]);
-          } catch (notificationError) {
-            console.error('어드민 알림 전송 중 오류:', notificationError);
-          }
-        }
-        
-        const { error: updateError } = await supabase
-          .from('posts')
-          .update(updateData)
-          .eq('user_id', postId);
-
-        if (updateError) throw updateError;
-      } else if (type === 'comment' && commentId) {
-        // 댓글 신고 처리
-        const { data: commentData, error: fetchError } = await supabase
-          .from('comments')
-          .select('reports')
-          .eq('id', commentId)
-          .single();
-
-        if (fetchError) throw fetchError;
-
-        const reports = commentData.reports || [];
-        // 이미 신고한 사용자인지 확인
-        const alreadyReported = reports.some((report: any) => report.reporter_id === reporterId);
-        
-        if (alreadyReported) {
-          setErrorMessage('이미 신고한 댓글입니다.');
-          setShowErrorModal(true);
-          setShowReportModal(false);
-          setReportReason('');
-          return;
-        }
-
-        const updatedReports = [...reports, reportData];
-        
-        // 신고 횟수가 1회 이상이면 블라인드 처리 (테스트용으로 임시 변경)
-        const shouldBlind = updatedReports.length >= 1;
-        const updateData = { reports: updatedReports };
-        
-        if (shouldBlind) {
-          // 어드민에게 알림 전송 (실제 구현 시 여기에 알림 API 호출 추가)
-          try {
-            // 어드민 알림 테이블에 신고 데이터 추가
-            await supabase.from('admin_notifications').insert([{
-              type: 'report',
-              content_type: 'comment',
-              content_id: commentId,
-              post_id: postId,
-              reporter_id: reporterId,
-              reason: reportReason,
-              created_at: new Date().toISOString(),
-              is_read: false
-            }]);
-          } catch (notificationError) {
-            console.error('어드민 알림 전송 중 오류:', notificationError);
-          }
-        }
-        
-        const { error: updateError } = await supabase
-          .from('comments')
-          .update(updateData)
-          .eq('id', commentId);
-
-        if (updateError) throw updateError;
-      }
-
-      // 신고 처리 후 상태 초기화
-      setShowReportModal(false);
-      setReportReason('');
-      setReportTarget(null);
-      
-      // 게시글 목록 새로고침
-      fetchPosts();
-      
-      // 성공 메시지 표시
-      alert('신고가 접수되었습니다. 검토 후 조치하겠습니다.');
-    } catch (error) {
-      console.error('신고 처리 중 오류가 발생했습니다:', error);
-      setErrorMessage('신고 처리 중 오류가 발생했습니다.');
-      setShowErrorModal(true);
-    }
-  };
+  const handleSubmitReport = async () => {};
 
   // 새 게시글 작성 함수
   const handleCreatePost = async () => {};
@@ -610,6 +507,16 @@ export default function Community() {
 
   const handleGoToSettings = () => {
     router.push('/settings');
+  const fetchComments = async (postId: string) => {
+    const token = localStorage.getItem("accessToken");
+    console.log("postId:", postId);
+    const response = await axiosServer.get(`/articles/${postId}/comments`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    console.log("response:", response);
+    return response.data;
   };
 
   return (
@@ -654,7 +561,7 @@ export default function Community() {
                 {popularPosts.map((post, index) => (
                   <div key={post.authorId} className="px-2">
                     <button
-                      onClick={() => scrollToPost(post.authorId)}
+                      onClick={() => scrollToPost(post.id)}
                       className="w-full text-left bg-white rounded-lg p-4 hover:bg-gray-50 transition-colors shadow-md"
                     >
                       <div className="flex items-center gap-2 mb-2">
@@ -691,7 +598,7 @@ export default function Community() {
             <div className="flex gap-3">
               <div className="flex-shrink-0">
                 <div className="w-10 h-10 rounded-full bg-[#6C5CE7] text-white flex items-center justify-center font-bold">
-                  {userInfo.emoji || "😊"}
+                  {randomEmoji || "😊"}
                 </div>
               </div>
               <div className="flex-grow">
@@ -709,15 +616,13 @@ export default function Community() {
                     </div>
                     <button
                       onClick={() => handleAddPost(newPostContent)}
-                      disabled={isPostingLoading || !newPostContent.trim()}
+                      disabled={!newPostContent.trim()}
                       className={`px-4 py-2 rounded-full ${
-                        isPostingLoading || !newPostContent.trim()
+                        !newPostContent.trim()
                           ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                           : "bg-[#6C5CE7] text-white hover:bg-[#5849BE] transition-colors"
                       }`}
-                    >
-                      {isPostingLoading ? "게시 중..." : "게시하기"}
-                    </button>
+                    ></button>
                   </div>
                 </div>
               </div>
@@ -750,7 +655,7 @@ export default function Community() {
                     {post.updatedAt && post.updatedAt !== post.createdAt && (
                       <span className="text-sm text-gray-500">(수정됨)</span>
                     )}
-                    {post.authorId === userInfo.id && !post.deletedAt ? (
+                    {post.authorId === profile?.user_id && !post.deletedAt ? (
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleEditPost(post)}
@@ -768,7 +673,7 @@ export default function Community() {
                     ) : (
                       !post.deletedAt &&
                       user &&
-                      post.authorId !== user.id && (
+                      post.authorId !== profile?.user_id && (
                         <button
                           onClick={() =>
                             handleOpenReport("post", post.authorId)
@@ -866,59 +771,7 @@ export default function Community() {
                 {/* 댓글 목록 */}
                 {!post.deletedAt && (
                   <div className="mt-4 space-y-4 border-t pt-4">
-                    {renderComments(post, showAllComments === post.authorId)}
-                    {post.comments && post.comments.length > 2 && (
-                      <button
-                        onClick={() =>
-                          setShowAllComments(
-                            showAllComments === post.id ? null : post.id
-                          )
-                        }
-                        className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
-                      >
-                        {showAllComments === post.id ? (
-                          <>
-                            <span>댓글 접기</span>
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M5 15l7-7 7 7"
-                              />
-                            </svg>
-                          </>
-                        ) : (
-                          <>
-                            <span>
-                              댓글{" "}
-                              {post.comments?.filter(
-                                (comment) => !comment.deletedAt
-                              ).length - 2 || 0}
-                              개 더 보기
-                            </span>
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 9l-7 7-7-7"
-                              />
-                            </svg>
-                          </>
-                        )}
-                      </button>
-                    )}
+                    {renderComments(post, showAllComments === post.id)}
                   </div>
                 )}
               </div>
@@ -977,8 +830,7 @@ export default function Community() {
                 <button
                   onClick={() => {
                     setShowReportModal(false);
-                    setReportTarget(null);
-                    setReportReason('');
+                    setReportReason("");
                   }}
                   className="btn-secondary"
                 >
