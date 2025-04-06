@@ -80,7 +80,7 @@ function generateRandomEmoji(): string {
 
 export default function Community() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, refreshAccessToken } = useAuth();
   const sliderRef = useRef<Slider>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [popularPosts, setPopularPosts] = useState<Post[]>([]);
@@ -135,6 +135,21 @@ export default function Community() {
   // 새 게시글 작성 상태 추가
   const [newPostContent, setNewPostContent] = useState('');
   const [isPostingLoading, setIsPostingLoading] = useState(false);
+  // 토큰 가져오기
+  const [randomNickname, setRandomNickname] = useState(() =>
+    generateRandomNickname()
+  );
+  const [randomEmoji, setRandomEmoji] = useState(() => generateRandomEmoji());
+
+  // 게시글 불러오기는 별도의 useEffect로 분리
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  useEffect(() => {
+    console.log("RandomNickname:", randomNickname);
+    console.log("RandomEmoji:", randomEmoji);
+  }, [randomNickname, randomEmoji]);
 
   // 게시글 불러오기
   const fetchPosts = async (page: number = 1, limit: number = 0) => {
@@ -167,148 +182,53 @@ export default function Community() {
     }
   };
 
-  // 컴포넌트 마운트 시 게시글 불러오기
-  useEffect(() => {
-    const initializeData = async () => {
-      try {
-        console.log('커뮤니티 페이지 초기화 시작');
-        setIsLoading(true);
-        
-        // 사용자 인증 확인
-        if (user) {
-          console.log('커뮤니티 페이지 로드: 사용자 인증됨', user.id);
-          
-          // 세션 새로고침 시도
-          const { data: { session } } = await supabase.auth.getSession();
-          console.log('현재 세션 상태:', session ? '유효한 세션 있음' : '세션 없음');
-          
-          // 프로필 정보 가져오기
-          const profileResult = await fetchProfileInfo(user.id);
-          console.log('프로필 정보 가져오기 결과:', profileResult);
-          
-          if (!profileResult) {
-            console.error('프로필 정보를 가져오지 못했습니다.');
-          }
-          
-          // 게시글 가져오기
-          await fetchPosts();
-        } else {
-          console.log('커뮤니티 페이지 로드: 사용자 인증 안 됨');
-          // 사용자 인증되지 않은 상태에서도 게시글 목록은 표시
-          await fetchPosts();
-        }
-      } catch (error) {
-        console.error('커뮤니티 페이지 초기화 오류:', error);
-      } finally {
-        setIsLoading(false);
-        console.log('커뮤니티 페이지 초기화 완료');
-      }
-    };
-    
-    // 5초 타임아웃 설정 - 브라우저를 나갔다 들어왔을 때 무한 로딩 방지
-    const timeoutId = setTimeout(() => {
-      if (isLoading) {
-        console.log('타임아웃으로 인한 로딩 상태 해제');
-        setIsLoading(false);
-      }
-    }, 5000);
-    
-    initializeData();
-    
-    // 클린업 함수에서 타임아웃 제거
-    return () => clearTimeout(timeoutId);
-  }, [user]);
+  // 게시물 작성
+  const handleAddPost = async (content: string) => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
+    console.log("user:", user);
 
-  // 게시물이 변경될 때마다 인기 게시물 업데이트
-  useEffect(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-  
-    const oneWeekAgo = new Date(today);
-    oneWeekAgo.setDate(today.getDate() - 7);
-  
-    const popularPosts = posts
-      .filter(post => {
-        const postDate = new Date(post.created_at);
-        return !post.isdeleted && postDate >= oneWeekAgo && (post.likes?.length || 0) > 0;
-      })
-      .sort((a, b) => {
-        const aScore = (a.likes?.length || 0) + (a.comments?.length || 0);
-        const bScore = (b.likes?.length || 0) + (b.comments?.length || 0);
-        return bScore - aScore;
-      })
-      .slice(0, 5);
-  
-    setPopularPosts(popularPosts);
-  
-  }, [posts]);
-  
-
-  // 좋아요 처리
-  const handleLike = async (PostUerId: string) => {
     try {
-      const post = posts.find(p => p.user_id === PostUerId);
-      if (!post) return;
+      await axiosServer.post(
+        "/articles",
+        {
+          content,
+          anonymous: randomNickname,
+          emoji: randomEmoji,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-      const likes = post.likes || [];
-      const hasLiked = likes.includes(userInfo.id);
-      
-      const updatedLikes = hasLiked
-        ? likes.filter(id => id !== userInfo.id)
-        : [...likes, userInfo.id];
-
-      const { error } = await supabase
-        .from('posts')
-        .update({ likes: updatedLikes })
-        .eq('user_id', PostUerId);
-
-      if (error) throw error;
       fetchPosts();
     } catch (error) {
-      console.error('좋아요 처리 중 오류가 발생했습니다:', error);
-      setErrorMessage('좋아요 처리 중 오류가 발생했습니다.');
+      console.error("게시글 작성 중 오류가 발생했습니다:", error);
+      setErrorMessage("게시글 작성에 실패했습니다.");
       setShowErrorModal(true);
     }
   };
+  // 컴포넌트 마운트 시 게시글 불러오기
 
   // 게시글 수정
-  const handleSaveEdit = async (postId: string) => {
-    if (!editContent.trim()) return;
-
-    try {
-      const { error } = await supabase
-        .from('posts')
-        .update({
-          content: editContent,
-          isEdited: true
-        })
-        .eq('user_id', postId);
-
-      if (error) throw error;
-
-      setEditingPost(null);
-      setEditContent('');
-      fetchPosts();
-    } catch (error) {
-      console.error('게시글 수정 중 오류가 발생했습니다:', error);
-      setErrorMessage('게시글 수정 중 오류가 발생했습니다.');
-      setShowErrorModal(true);
-    }
-  };
+  const handleSaveEdit = async (postId: string) => {};
 
   // 게시글 삭제
-  const handleDelete = async (postId: string) => {
+  const handlePostDelete = async (postId: string) => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
     try {
-      const { error } = await supabase
-        .from('posts')
-        .update({ isdeleted: true })
-        .eq('user_id', postId);
-
-      if (error) throw error;
+      await axiosServer.delete(`/articles/${postId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       fetchPosts();
     } catch (error) {
-      console.error('게시글 삭제 중 오류가 발생했습니다:', error);
-      setErrorMessage('게시글 삭제 중 오류가 발생했습니다.');
+      console.error("게시글 삭제 중 오류가 발생했습니다:", error);
+      setErrorMessage("게시글 삭제에 실패했습니다.");
       setShowErrorModal(true);
     }
   };
@@ -397,74 +317,18 @@ export default function Community() {
     }
   };
 
-  const handleEdit = (post: Post) => {
-    setEditingPost(post.user_id);
-    setEditContent(post.content);
-  };
+  const handleEditPost = (post: Post) => {};
 
-  const handleEditComment = (postId: string, commentId: string, content: string) => {
-    setEditingComment({ postId, commentId });
-    setEditCommentContent(content);
-  };
+  const handleSaveCommentEdit = async (postId: string, commentId: string) => {};
+  const handleEditComment = (postId: string) => {};
 
-  const handleSaveCommentEdit = async (postId: string, commentId: string) => {
-    if (!editCommentContent.trim()) return;
+  const handleDeleteComment = async (
+    postId: string,
+    commentId: string,
+    authorId: string
+  ) => {};
 
-    try {
-      const { error } = await supabase
-        .from('comments')
-        .update({
-          content: editCommentContent,
-          isEdited: true
-        })
-        .eq('id', commentId);
-
-      if (error) throw error;
-
-      setEditingComment(null);
-      setEditCommentContent('');
-      fetchPosts();
-    } catch (error) {
-      console.error('댓글 수정 중 오류가 발생했습니다:', error);
-      setErrorMessage('댓글 수정 중 오류가 발생했습니다.');
-      setShowErrorModal(true);
-    }
-  };
-
-  const handleDeleteComment = async (PostUserId: string, commentId: string, userId: string) => {
-    const updatedPosts = posts.map(post => {
-      if (post.user_id === PostUserId) {
-        const updatedComments = post.comments.map(comment => {
-          if (comment.id === commentId && comment.author_id === userId) {
-            return { ...comment, isdeleted: true }; 
-          }
-          return comment; 
-        });
-        return { ...post, comments: updatedComments };  
-      }
-      return post; 
-    });
-  
-    console.log('updatedPosts:', updatedPosts);
-    setPosts(updatedPosts);
-    localStorage.setItem('communityPosts', JSON.stringify(updatedPosts));
-  
-    try {
-      const { data, error } = await supabase
-        .from('comments')
-        .update({ isdeleted: true })
-        .match({ id: commentId, author_id: userId});
-  
-      if (error) {
-        throw error;
-      }
-  
-      console.log('댓글 삭제가 DB에 반영되었습니다:', data);
-    } catch (error: any) {
-      console.error('댓글 삭제 실패:', error.message);
-    }
-  };
-
+  const handleLike = async (postId: string) => {};
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
