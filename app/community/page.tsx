@@ -28,23 +28,16 @@ interface Comment {
 }
 
 interface Post {
-  user_id: string;
-  author_id: string;
+  id: string;
   content: string;
-  created_at: string;
-  updated_at: string;
-  likes: string[];
-  isEdited: boolean;
-  isdeleted: boolean;
-  isBlinded?: boolean;
-  reports: string[];
-  nickname: string;
-  studentid: string;
+  anonymous: string;
   emoji: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string;
+  likeCount: number;
   comments: Comment[];
-  is_matching_feedback?: boolean;
-  matching_score?: number;
-  matching_reasons?: string[];
+  author_id: string;
 }
 
 // 랜덤 닉네임 생성을 위한 데이터
@@ -510,13 +503,7 @@ export default function Community() {
   };
 
   const renderComments = (post: Post, showAll: boolean) => {
-    const comments = post.comments || [];
-    // isdeleted가 false인 댓글만 필터링
-    const filteredComments = comments.filter(comment => !comment.isdeleted);
-    const displayComments = showAll ? filteredComments : filteredComments.slice(0, 2);
-    const hasMoreComments = filteredComments.length > 2;
-    
-    return displayComments.map((comment) => (
+    return post.comments.map((comment) => (
       <div key={comment.id} className="bg-gray-50 p-3 rounded-lg">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
@@ -532,16 +519,22 @@ export default function Community() {
             {comment.isEdited && (
               <span className="text-xs text-gray-500">(수정됨)</span>
             )}
-            {comment.author_id === userInfo.id && (
+            {comment.author_id && (
               <div className="flex gap-2">
                 <button
-                  onClick={() => handleEditComment(post.user_id, comment.id, comment.content)}
+                  onClick={() => handleEditComment(comment.id)}
                   className="text-xs text-blue-500 hover:text-blue-600"
                 >
                   수정
                 </button>
                 <button
-                  onClick={() => handleDeleteComment(post.user_id, comment.id, comment.author_id)}
+                  onClick={() =>
+                    handleDeleteComment(
+                      post.author_id,
+                      comment.id,
+                      comment.author_id
+                    )
+                  }
                   className="text-xs text-red-500 hover:text-red-600"
                 >
                   삭제
@@ -550,7 +543,9 @@ export default function Community() {
             )}
             {user && comment.author_id !== user.id && (
               <button
-                onClick={() => handleOpenReport('comment', post.user_id, comment.id)}
+                onClick={() =>
+                  handleOpenReport("comment", post.author_id, comment.id)
+                }
                 className="text-xs text-gray-500 hover:text-gray-600"
               >
                 🚨신고
@@ -558,9 +553,9 @@ export default function Community() {
             )}
           </div>
         </div>
-        
-        {editingComment?.postId === post.user_id && 
-         editingComment?.commentId === comment.id ? (
+
+        {editingComment?.postId === post.author_id &&
+        editingComment?.commentId === comment.id ? (
           <div className="flex gap-2">
             <input
               type="text"
@@ -575,7 +570,7 @@ export default function Community() {
               취소
             </button>
             <button
-              onClick={() => handleSaveCommentEdit(post.user_id, comment.id)}
+              onClick={() => handleSaveCommentEdit(post.author_id, comment.id)}
               className="btn-primary px-3"
             >
               저장
@@ -791,168 +786,10 @@ export default function Community() {
   };
 
   // 새 게시글 작성 함수
-  const handleCreatePost = async () => {
-    const filter = new Filter();
-    if (!newPostContent.trim()) {
-      setErrorMessage('게시글 내용을 입력해주세요.');
-      setShowErrorModal(true);
-      return;
-    }
-
-    if (!user) {
-      console.error('사용자 인증 정보가 없습니다.');
-      setErrorMessage('로그인 후 게시글을 작성할 수 있습니다.');
-      setShowErrorModal(true);
-      return;
-    }
-
-    try {
-      setIsPostingLoading(true);
-      console.log('게시글 작성 시도 - 사용자:', user);
-      console.log('게시글 작성 시도 - 내용:', newPostContent);
-
-      // UUID 생성 함수
-      const generateUUID = () => {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-          const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
-          return v.toString(16);
-        });
-      };
-
-      // 현재 사용자 정보 확인
-      console.log('현재 userInfo 상태:', userInfo);
-      
-      // userInfo가 비어있으면 프로필 정보 새로 가져오기
-      if (!userInfo.nickname || !userInfo.id) {
-        console.log('사용자 정보가 불완전하여 프로필 정보를 새로 가져옵니다.');
-        await fetchProfileInfo(user.id);
-      }
-
-      // 현재 시간
-      const now = new Date().toISOString();
-      
-      // 랜덤 이모지 선택
-      const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-      
-      // 랜덤 닉네임 생성
-      const randomNickname = userInfo.nickname || generateRandomNickname();
-
-      // 게시글 데이터 생성
-      const postId = generateUUID();
-      const postData = {
-        user_id: postId,
-        content: filter.clean(newPostContent),
-        author_id: user.id,
-        nickname: randomNickname,
-        emoji: userInfo.emoji || randomEmoji,
-        created_at: now,
-        updated_at: now,
-        isEdited: false,
-        isdeleted: false,
-        likes: [],
-        comments: [],
-        reports: []
-      };
-
-      console.log('게시글 저장 시도:', postData);
-      
-      // Supabase에 게시글 저장
-      const { data, error } = await supabase
-        .from('posts')
-        .insert([postData]);
-
-      if (error) {
-        console.error('게시글 저장 중 오류 발생:', error);
-        setErrorMessage('게시글을 저장하는 데 실패했습니다: ' + error.message);
-        setShowErrorModal(true);
-        return;
-      }
-
-      console.log('게시글 저장 성공:', data);
-      setNewPostContent(''); // 입력 필드 초기화
-      await fetchPosts(); // 게시글 목록 새로고침
-    } catch (error: any) {
-      console.error('게시글 작성 중 오류 발생:', error);
-      setErrorMessage('게시글 작성 중 오류가 발생했습니다: ' + (error.message || '알 수 없는 오류'));
-      setShowErrorModal(true);
-    } finally {
-      setIsPostingLoading(false);
-    }
-  };
+  const handleCreatePost = async () => {};
 
   // 신고 처리
-  const handleReport = () => {
-    if (!reportTarget || !reportReason || !userInfo.id) return;
-
-    const updatedPosts = posts.map(post => {
-      if (post.user_id === reportTarget.postId) {
-        if (reportTarget.type === 'post') {
-          // 게시글 신고
-          const reports = post.reports || [];
-          if (!reports.includes(userInfo.id)) {
-            return {
-              ...post,
-              reports: [...reports, userInfo.id]
-            };
-          }
-        } else if (reportTarget.type === 'comment') {
-          // 댓글 신고
-          const updatedComments = post.comments.map(comment => {
-            if (comment.id === reportTarget.commentId) {
-              const reports = comment.reports || [];
-              if (!reports.includes(userInfo.id)) {
-                return {
-                  ...comment,
-                  reports: [...reports, userInfo.id]
-                };
-              }
-            }
-            return comment;
-          });
-          return { ...post, comments: updatedComments };
-        }
-      }
-      return post;
-    });
-
-    setPosts(updatedPosts);
-    localStorage.setItem('communityPosts', JSON.stringify(updatedPosts));
-    setShowReportModal(false);
-    setReportTarget(null);
-    setReportReason('');
-    alert('신고가 접수되었습니다.');
-  };
-
-  useEffect(() => {
-    // 실시간 구독 설정
-    const postsSubscription = supabase
-      .channel('public:posts')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'posts' 
-      }, () => {
-        fetchPosts();
-      })
-      .subscribe();
-
-    const commentsSubscription = supabase
-      .channel('public:comments')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'comments' 
-      }, () => {
-        fetchPosts();
-      })
-      .subscribe();
-
-    // 컴포넌트 언마운트 시 구독 해제
-    return () => {
-      postsSubscription.unsubscribe();
-      commentsSubscription.unsubscribe();
-    };
-  }, []);
+  const handleReport = () => {};
 
   // 네비게이션 핸들러 추가
   const handleGoToHome = () => {
@@ -973,13 +810,24 @@ export default function Community() {
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="max-w-lg mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <button 
+            <button
               onClick={() => router.back()}
               className="p-2 rounded-full hover:bg-gray-100"
               aria-label="뒤로 가기"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
               </svg>
             </button>
             <h1 className="text-h2 text-center flex-1">커뮤니티</h1>
@@ -996,20 +844,22 @@ export default function Community() {
             <div className="mb-6">
               <Slider {...sliderSettings} ref={sliderRef}>
                 {popularPosts.map((post, index) => (
-                  <div key={post.user_id} className="px-2">
+                  <div key={post.author_id} className="px-2">
                     <button
-                      onClick={() => scrollToPost(post.user_id)}
+                      onClick={() => scrollToPost(post.author_id)}
                       className="w-full text-left bg-white rounded-lg p-4 hover:bg-gray-50 transition-colors shadow-md"
                     >
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-2xl">{post.emoji}</span>
-                        <span className="font-medium">{post.nickname}</span>
+                        <span className="font-medium">{post.anonymous}</span>
                       </div>
-                      <p className="text-gray-700 line-clamp-2 mb-2">{post.content}</p>
+                      <p className="text-gray-700 line-clamp-2 mb-2">
+                        {post.content}
+                      </p>
                       <div className="flex items-center gap-4 text-gray-500">
                         <div className="flex items-center gap-1">
                           <HeartIcon className="w-4 h-4" />
-                          <span>{post.likes?.length || 0}</span>
+                          <span>{post.likeCount || 0}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <ChatBubbleOvalLeftIcon className="w-4 h-4" />
@@ -1033,7 +883,7 @@ export default function Community() {
             <div className="flex gap-3">
               <div className="flex-shrink-0">
                 <div className="w-10 h-10 rounded-full bg-[#6C5CE7] text-white flex items-center justify-center font-bold">
-                  {userInfo.emoji || '😊'}
+                  {userInfo.emoji || "😊"}
                 </div>
               </div>
               <div className="flex-grow">
@@ -1050,15 +900,15 @@ export default function Community() {
                       {newPostContent.length}/500
                     </div>
                     <button
-                      onClick={handleCreatePost}
+                      onClick={() => handleAddPost(newPostContent)}
                       disabled={isPostingLoading || !newPostContent.trim()}
                       className={`px-4 py-2 rounded-full ${
                         isPostingLoading || !newPostContent.trim()
-                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          : 'bg-[#6C5CE7] text-white hover:bg-[#5849BE] transition-colors'
+                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          : "bg-[#6C5CE7] text-white hover:bg-[#5849BE] transition-colors"
                       }`}
                     >
-                      {isPostingLoading ? '게시 중...' : '게시하기'}
+                      {isPostingLoading ? "게시 중..." : "게시하기"}
                     </button>
                   </div>
                 </div>
@@ -1071,10 +921,10 @@ export default function Community() {
         <div className="space-y-4">
           {posts.length > 0 ? (
             posts.map((post) => (
-              <div 
-                key={post.user_id} 
-                id={`post-${post.user_id}`}
-                className={`bg-white rounded-lg shadow-md p-5 mb-4 ${post.is_matching_feedback ? 'border-l-4 border-pink-500' : ''}`}
+              <div
+                key={post.author_id}
+                id={`post-${post.author_id}`}
+                className={`bg-white rounded-lg shadow-md p-5 mb-4 `}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center">
@@ -1082,47 +932,56 @@ export default function Community() {
                       <span className="text-xl">{post.emoji}</span>
                     </div>
                     <div>
-                      <h3 className="font-medium">{post.nickname}</h3>
-                      <p className="text-xs text-gray-500">{formatTime(post.created_at)}</p>
+                      <h3 className="font-medium">{post.anonymous}</h3>
+                      <p className="text-xs text-gray-500">
+                        {formatTime(post.createdAt)}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-
-                    {post.isEdited && <span className="text-sm text-gray-500">(수정됨)</span>}
-                    {post.author_id === userInfo.id && !post.isdeleted ? (
+                    {post.updatedAt !== post.createdAt && (
+                      <span className="text-sm text-gray-500">(수정됨)</span>
+                    )}
+                    {post.author_id === userInfo.id && !post.deletedAt ? (
                       <div className="flex gap-2">
-                        <button 
-                          onClick={() => handleEdit(post)}
+                        <button
+                          onClick={() => handleEditPost(post)}
                           className="text-sm text-blue-500 hover:text-blue-600"
                         >
                           수정
                         </button>
-                        <button 
-                          onClick={() => handleDelete(post.user_id)}
+                        <button
+                          onClick={() => handlePostDelete(post.author_id)}
                           className="text-sm text-red-500 hover:text-red-600"
                         >
                           삭제
                         </button>
                       </div>
-                    ) : !post.isdeleted && user && post.user_id !== user.id && (
-                      <button
-                        onClick={() => handleOpenReport('post', post.user_id)}
-                        className="text-sm text-gray-500 hover:text-gray-600"
-                      >
-                        🚨신고
-                      </button>
+                    ) : (
+                      !post.deletedAt &&
+                      user &&
+                      post.author_id !== user.id && (
+                        <button
+                          onClick={() =>
+                            handleOpenReport("post", post.author_id)
+                          }
+                          className="text-sm text-gray-500 hover:text-gray-600"
+                        >
+                          🚨신고
+                        </button>
+                      )
                     )}
                   </div>
                 </div>
-                
+
                 {/* 게시물 내용 */}
                 <div className="mb-4">
-                  {post.isEdited ? (
+                  {post.updatedAt !== post.createdAt ? (
                     <>
-                      {editingPost === post.user_id ? (
-                        <textarea 
+                      {editingPost === post.author_id ? (
+                        <textarea
                           className="w-full border rounded p-2"
-                          value={editContent} 
+                          value={editContent}
                           onChange={(e) => setEditContent(e.target.value)}
                         />
                       ) : (
@@ -1132,62 +991,38 @@ export default function Community() {
                   ) : (
                     <p className="whitespace-pre-wrap">{post.content}</p>
                   )}
-                  
-                  {/* 매칭 피드백인 경우 매칭 점수와 이유 표시 */}
-                  {post.is_matching_feedback && post.matching_score && (
-                    <div className="mt-3 p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded">
-                      <div className="mb-2">
-                        <p className="text-sm font-semibold">매칭 점수</p>
-                        <div className="relative h-6 rounded-full bg-gray-200 overflow-hidden mt-1">
-                          <div 
-                            className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
-                            style={{ width: `${post.matching_score}%` }}
-                          ></div>
-                          <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
-                            <span className="text-xs font-bold text-gray-800">{post.matching_score}점</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {post.matching_reasons && post.matching_reasons.length > 0 && (
-                        <div>
-                          <p className="text-sm font-semibold">매칭 이유</p>
-                          <ul className="mt-1">
-                            {post.matching_reasons.map((reason, idx) => (
-                              <li key={idx} className="text-xs text-gray-600 flex items-center">
-                                <span className="mr-1">•</span> {reason}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
+
                   <div className="flex items-center gap-4">
                     <button
-                      onClick={() => handleLike(post.user_id)}
+                      onClick={() => handleLike(post.author_id)}
                       className={`flex items-center gap-1 ${
-                        post.likes?.includes(userInfo.id)
-                          ? 'text-red-500'
-                          : 'text-gray-500'
+                        post.likeCount > 0 ? "text-red-500" : "text-gray-500"
                       }`}
                     >
                       <HeartIcon className="w-5 h-5" />
-                      <span>{post.likes?.length || 0}</span>
+                      <span>{post.likeCount || 0}</span>
                     </button>
-                    <button 
-                      onClick={() => setShowCommentInput(showCommentInput === post.user_id ? null : post.user_id)}
+                    <button
+                      onClick={() =>
+                        setShowCommentInput(
+                          showCommentInput === post.author_id
+                            ? null
+                            : post.author_id
+                        )
+                      }
                       className="flex items-center gap-1 text-gray-500"
                     >
                       <ChatBubbleOvalLeftIcon className="w-5 h-5" />
-                      <span>{post.comments?.filter(comment => !comment.isdeleted).length || 0}</span>
+                      <span>
+                        {post.comments?.filter((comment) => !comment.isdeleted)
+                          .length || 0}
+                      </span>
                     </button>
                   </div>
                 </div>
 
                 {/* 댓글 입력창 */}
-                {!post.isdeleted && showCommentInput === post.user_id && (
+                {!post.deletedAt && showCommentInput === post.author_id && (
                   <div className="mt-4 space-y-4 border-t pt-4">
                     <div className="flex gap-2">
                       <input
@@ -1213,7 +1048,7 @@ export default function Community() {
                         className="input-field flex-1"
                       />
                       <button
-                        onClick={() => handleAddComment(post.user_id)}
+                        onClick={() => handleAddComment(post.author_id)}
                         className="btn-primary px-4"
                       >
                         작성
@@ -1223,26 +1058,58 @@ export default function Community() {
                 )}
 
                 {/* 댓글 목록 */}
-                {!post.isdeleted && (
+                {!post.deletedAt && (
                   <div className="mt-4 space-y-4 border-t pt-4">
-                    {renderComments(post, showAllComments === post.user_id)}
+                    {renderComments(post, showAllComments === post.author_id)}
                     {post.comments && post.comments.length > 2 && (
                       <button
-                        onClick={() => setShowAllComments(showAllComments === post.user_id ? null : post.user_id)}
+                        onClick={() =>
+                          setShowAllComments(
+                            showAllComments === post.author_id
+                              ? null
+                              : post.author_id
+                          )
+                        }
                         className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
                       >
-                        {showAllComments === post.user_id ? (
+                        {showAllComments === post.author_id ? (
                           <>
                             <span>댓글 접기</span>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 15l7-7 7 7"
+                              />
                             </svg>
                           </>
                         ) : (
                           <>
-                            <span>댓글 {post.comments?.filter(comment => !comment.isdeleted).length-2 || 0}개 더 보기</span>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            <span>
+                              댓글{" "}
+                              {post.comments?.filter(
+                                (comment) => !comment.isdeleted
+                              ).length - 2 || 0}
+                              개 더 보기
+                            </span>
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 9l-7 7-7-7"
+                              />
                             </svg>
                           </>
                         )}
@@ -1327,45 +1194,67 @@ export default function Community() {
       )}
 
       {/* 하단 네비게이션 */}
-      <nav 
-              className="fixed bottom-0 left-0 right-0 bg-white border-t py-3 shadow-lg transition-all duration-200 ease-in-out" 
-              role="navigation" 
-              aria-label="메인 네비게이션"
+      <nav
+        className="fixed bottom-0 left-0 right-0 bg-white border-t py-3 shadow-lg transition-all duration-200 ease-in-out"
+        role="navigation"
+        aria-label="메인 네비게이션"
+      >
+        <div className="max-w-lg mx-auto px-6 flex justify-around items-center">
+          <button
+            onClick={handleGoToHome}
+            className="flex flex-col items-center text-[#636E72] hover:text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
+            type="button"
+            aria-label="홈으로 이동"
+          >
+            <HomeIcon className="w-7 h-7" aria-hidden="true" />
+            <span className="text-sm font-medium mt-1">홈</span>
+          </button>
+          <button
+            onClick={() => router.push("/community")}
+            className="flex flex-col items-center text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
+            type="button"
+            aria-label="커뮤니티로 이동"
+          >
+            <svg
+              className="w-7 h-7"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
             >
-              <div className="max-w-lg mx-auto px-6 flex justify-around items-center">
-                <button
-                  onClick={handleGoToHome}
-                  className="flex flex-col items-center text-[#636E72] hover:text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
-                  type="button"
-                  aria-label="홈으로 이동"
-                >
-                  <HomeIcon className="w-7 h-7" aria-hidden="true" />
-                  <span className="text-sm font-medium mt-1">홈</span>
-                </button>
-                <button
-                  onClick={() => router.push('/community')}
-                  className="flex flex-col items-center text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
-                  type="button"
-                  aria-label="커뮤니티로 이동"
-                >
-                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-                  </svg>
-                  <span className="text-sm font-medium mt-1">커뮤니티</span>
-                </button>
-                <button
-                  onClick={handleGoToSettings}
-                  className="flex flex-col items-center text-[#636E72] hover:text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
-                  type="button"
-                  aria-label="설정으로 이동"
-                >
-                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  <span className="text-sm font-medium mt-1">설정</span>
-                </button>
-              </div>
-            </nav>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
+              />
+            </svg>
+            <span className="text-sm font-medium mt-1">커뮤니티</span>
+          </button>
+          <button
+            onClick={handleGoToSettings}
+            className="flex flex-col items-center text-[#636E72] hover:text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
+            type="button"
+            aria-label="설정으로 이동"
+          >
+            <svg
+              className="w-7 h-7"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+              />
+            </svg>
+            <span className="text-sm font-medium mt-1">설정</span>
+          </button>
+        </div>
+      </nav>
     </div>
   );
-} 
+}
