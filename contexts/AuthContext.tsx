@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 export type User = {
   id: string;
   email: string;
-  role?: string;
+  role: string;
 };
 
 export type Profile = {
@@ -62,8 +62,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     loading: true,
     isAdmin: false
   });
-
-  const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'notify@smartnewb.com';
 
   // 토큰 관리 함수들
   const getAccessToken = () => localStorage.getItem('accessToken');
@@ -157,7 +155,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setState(prev => ({
         ...prev,
         user: userInfo,
-        isAdmin: userInfo.email === ADMIN_EMAIL,
+        isAdmin: userInfo.role === 'admin',
         loading: false
       }));
 
@@ -165,7 +163,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await fetchProfile();
 
       // 리다이렉트
-      router.push(userInfo.email === ADMIN_EMAIL ? '/admin/community' : '/home');
+      router.push(userInfo.role === 'admin' ? '/admin/community' : '/home');
     } catch (error) {
       setState(prev => ({ ...prev, loading: false }));
       throw error;
@@ -202,7 +200,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // 임시로 토큰이 있으면 인증된 것으로 처리
       setState(prev => ({
         ...prev,
-        user: { id: 'temp-id', email: 'temp@email.com' }, // 임시 사용자 정보
+        user: { id: 'temp-id', email: 'temp@email.com', role: 'user' }, // 임시 사용자 정보
         loading: false
       }));
 
