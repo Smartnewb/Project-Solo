@@ -6,7 +6,7 @@ import type { Metadata } from 'next'
 import { AuthProvider } from '../contexts/AuthContext'
 // import Navbar from '@/components/Navbar'
 // export const metadata: Metadata = {
-//   title: 'Project-Solo',
+//   title: 'Sometime',
 //   description: '나의 이상형을 찾아서',
 // }
 

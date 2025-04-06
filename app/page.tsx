@@ -41,7 +41,7 @@ export default function Login() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-5xl font-bold text-gray-800">Project-Solo</h1>
+          <h1 className="text-5xl font-bold text-gray-800">Sometime</h1>
           <p className="text-gray-600 mt-2 text-lg">나의 이상형을 찾아서</p>
         </div>
 

@@ -653,7 +653,7 @@ export default function Home() {
             <div className="max-w-lg mx-auto px-6 py-4">
               <div className="flex justify-between items-center">
                 <div className="text-2xl font-bold bg-gradient-to-r from-[#6C5CE7] to-[#A8A4E3] text-transparent bg-clip-text">
-                  Project-Solo
+                  Sometime
                 </div>
                 <div className="text-[#2D3436] font-medium flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-[#6C5CE7] text-white flex items-center justify-center font-bold cursor-pointer">
