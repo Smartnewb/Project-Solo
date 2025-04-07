@@ -487,9 +487,9 @@ export default function Community() {
                 <span className="text-xl">{post.emoji}</span>
                 <div>
                   <p className="font-medium text-sm">
-                    {comment.anonymous
-                      ? comment.nickname
-                      : comment.author?.name || "익명"}
+                    {comment.anonymous || !comment.author
+                      ? "익명"
+                      : comment.author.name}
                   </p>
                 </div>
               </div>
@@ -886,9 +886,9 @@ export default function Community() {
                     </div>
                     <div>
                       <h3 className="font-medium">
-                        {post.anonymous
-                          ? post.nickname
-                          : post.author.name || "익명"}
+                        {post.anonymous || !post.author
+                          ? "익명"
+                          : post.author.name}
                       </h3>
                       <p className="text-xs text-gray-500">
                         {formatTime(post.createdAt)}
