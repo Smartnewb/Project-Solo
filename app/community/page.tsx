@@ -168,14 +168,6 @@ export default function Community() {
     }
   }, [posts.length]);
 
-  // 댓글이 작성되거나 삭제될 때마다 게시글 목록 새로고침
-  useEffect(() => {
-    if (newComment === "") {
-      // 댓글 작성 후에는 전체 게시글을 새로고침하지 않음
-      // fetchPosts();
-    }
-  }, [newComment]);
-
   // 인기 게시글 불러오기
   const fetchPopularPosts = async () => {};
   // 게시글 불러오기
@@ -455,7 +447,7 @@ export default function Community() {
           >
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <span className="text-xl">{post.emoji}</span>
+                <span className="text-xl">{comment.emoji}</span>
                 <div>
                   <p className="font-medium text-sm">
                     {comment.author.name || "익명"}
