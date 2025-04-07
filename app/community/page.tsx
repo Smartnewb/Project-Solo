@@ -429,7 +429,7 @@ export default function Community() {
     const value = Math.floor(diff / timeUnit.division);
     if (value === 1) {
       // 1단위 일 때 특별한 처리
-      const specialCases = {
+      const specialCases: Record<string, string> = {
         "일 전": "어제",
         "주 전": "지난주",
         "개월 전": "지난달",
@@ -872,9 +872,7 @@ export default function Community() {
                     </div>
                     <div>
                       <h3 className="font-medium">
-                        {post.anonymous || !post.author
-                          ? "익명"
-                          : post.author.name}
+                        {post.author.name || "익명"}
                       </h3>
                       <p className="text-xs text-gray-500">
                         {formatTime(post.createdAt)}
