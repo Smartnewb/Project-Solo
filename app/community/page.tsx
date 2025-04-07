@@ -30,6 +30,7 @@ interface Comment {
     email: string;
   };
   postId: string;
+  nickname: string;
   content: string;
   anonymous: boolean;
   emoji: string;
@@ -48,6 +49,7 @@ interface Post {
   deletedAt: string;
   likeCount: number;
   comments: Comment[];
+  nickname: string;
   author: {
     id: string;
     name: string;
@@ -484,7 +486,11 @@ export default function Community() {
               <div className="flex items-center gap-2">
                 <span className="text-xl">{post.emoji}</span>
                 <div>
-                  <p className="font-medium text-sm">{comment.anonymous}</p>
+                  <p className="font-medium text-sm">
+                    {comment.anonymous
+                      ? comment.nickname
+                      : comment.author?.name || "익명"}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -753,7 +759,11 @@ export default function Community() {
                     >
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-2xl">{post.emoji}</span>
-                        <span className="font-medium">{post.anonymous}</span>
+                        <span className="font-medium">
+                          {post.anonymous
+                            ? post.nickname
+                            : post.author.name || "익명"}
+                        </span>
                       </div>
                       <p className="text-gray-700 line-clamp-2 mb-2">
                         {post.content}
@@ -875,7 +885,11 @@ export default function Community() {
                       <span className="text-xl">{post.emoji}</span>
                     </div>
                     <div>
-                      <h3 className="font-medium">{post.anonymous}</h3>
+                      <h3 className="font-medium">
+                        {post.anonymous
+                          ? post.nickname
+                          : post.author.name || "익명"}
+                      </h3>
                       <p className="text-xs text-gray-500">
                         {formatTime(post.createdAt)}
                       </p>
