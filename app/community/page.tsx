@@ -165,7 +165,8 @@ export default function Community() {
   // 댓글이 작성되거나 삭제될 때마다 게시글 목록 새로고침
   useEffect(() => {
     if (newComment === "") {
-      fetchPosts();
+      // 댓글 작성 후에는 전체 게시글을 새로고침하지 않음
+      // fetchPosts();
     }
   }, [newComment]);
 
@@ -184,7 +185,7 @@ export default function Community() {
           Authorization: `Bearer ${token}`,
         },
       });
-
+      console.log(response.data.items);
       setPosts(response.data.items);
     } catch (error) {
       console.error("게시글 조회 중 오류가 발생했습니다:", error);
@@ -240,7 +241,7 @@ export default function Community() {
       return;
     }
     try {
-      const response = await axiosServer.post(
+      await axiosServer.post(
         `/articles/${post_id}/comments`,
         {
           content: newComment,
@@ -253,20 +254,14 @@ export default function Community() {
           },
         }
       );
-      setNewComment(""); // 댓글 입력창 초기화
 
-      // 로컬 상태 업데이트
-      setPosts(
-        posts.map((post) => {
-          if (post.id === post_id) {
-            return {
-              ...post,
-              comments: [...(post.comments || []), response.data],
-            };
-          }
-          return post;
-        })
-      );
+      // 댓글 목록 새로고침
+      await fetchComments(post_id);
+
+      // 입력 상태 초기화
+      setNewComment("");
+      setIsCommentAnonymous(false);
+      setShowCommentInput(null);
     } catch (error) {
       console.error("댓글 작성 중 오류가 발생했습니다:", error);
     }
@@ -327,7 +322,7 @@ export default function Community() {
     const token = localStorage.getItem("accessToken");
     if (!token) return;
     try {
-      const response = await axiosServer.patch(
+      await axiosServer.patch(
         `/articles/${postId}/comments/${commentId}`,
         {
           content: editCommentContent,
@@ -341,31 +336,11 @@ export default function Community() {
         }
       );
 
-      // 로컬 상태 업데이트
-      setPosts(
-        posts.map((post) => {
-          if (post.id === postId) {
-            return {
-              ...post,
-              comments:
-                post.comments?.map((comment) => {
-                  if (comment.id === commentId) {
-                    return {
-                      ...comment,
-                      content: response.data.content,
-                      updatedAt: response.data.updatedAt,
-                    };
-                  }
-                  return comment;
-                }) || [],
-            };
-          }
-          return post;
-        })
-      );
-
       setEditingComment(null);
       setEditCommentContent("");
+
+      // 댓글 목록 새로고침
+      await fetchComments(postId);
     } catch (error) {
       console.error("댓글 수정 중 오류가 발생했습니다:", error);
       setErrorMessage("댓글 수정에 실패했습니다.");
@@ -400,22 +375,12 @@ export default function Community() {
         },
       });
 
-      // 로컬 상태 업데이트
-      setPosts(
-        posts.map((post) => {
-          if (post.id === postId) {
-            return {
-              ...post,
-              comments:
-                post.comments?.filter((comment) => comment.id !== commentId) ||
-                [],
-            };
-          }
-          return post;
-        })
-      );
+      // 댓글 목록 새로고침
+      await fetchComments(postId);
     } catch (error) {
       console.error("댓글 삭제 중 오류가 발생했습니다:", error);
+      setErrorMessage("댓글 삭제에 실패했습니다.");
+      setShowErrorModal(true);
     }
   };
 
@@ -686,14 +651,32 @@ export default function Community() {
 
   const fetchComments = async (postId: string) => {
     const token = localStorage.getItem("accessToken");
-    console.log("postId:", postId);
-    const response = await axiosServer.get(`/articles/${postId}/comments`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    console.log("response:", response);
-    return response.data;
+    try {
+      const response = await axiosServer.get(`/articles/${postId}/comments`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log(response.data);
+      // 댓글 목록을 받아온 후 바로 상태 업데이트
+      setPosts((prevPosts) => {
+        const updatedPosts = prevPosts.map((post) => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              comments: response.data,
+            };
+          }
+          return post;
+        });
+        return updatedPosts;
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error("댓글 조회 중 오류가 발생했습니다:", error);
+      return [];
+    }
   };
 
   const fetchCheckuser = async () => {
@@ -705,6 +688,7 @@ export default function Community() {
         },
       })
       .then((res) => {
+        console.log("user:", res.data);
         setCheckuser(res.data);
       })
       .catch((err) => {
@@ -791,17 +775,17 @@ export default function Community() {
       <div className="max-w-lg mx-auto p-4">
         {/* 게시글 작성 폼 - 트위터 스타일 */}
         {user && (
-          <div className="bg-white rounded-xl p-4 mb-6 shadow-md">
-            <div className="flex gap-3">
+          <div className="bg-white rounded-xl p-6 mb-6 shadow-sm border border-gray-100">
+            <div className="flex gap-4">
               <div className="flex-shrink-0">
                 <button
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  className="w-10 h-10 rounded-full bg-[#6C5CE7] text-white flex items-center justify-center font-bold hover:bg-[#5849BE] transition-colors"
+                  className="w-11 h-11 rounded-full bg-gradient-to-r from-[#6C5CE7] to-[#5849BE] text-white flex items-center justify-center text-xl hover:opacity-90 transition-all duration-200 shadow-md"
                 >
                   {selectedEmoji}
                 </button>
                 {showEmojiPicker && (
-                  <div className="absolute z-10 mt-2 bg-white rounded-lg shadow-lg p-4 border border-gray-200">
+                  <div className="absolute z-10 mt-2 bg-white rounded-xl shadow-lg p-4 border border-gray-100 backdrop-blur-sm bg-white/80">
                     <div className="grid grid-cols-5 gap-2">
                       {emojis.map((emoji) => (
                         <button
@@ -810,7 +794,7 @@ export default function Community() {
                             setSelectedEmoji(emoji);
                             setShowEmojiPicker(false);
                           }}
-                          className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
+                          className="w-9 h-9 flex items-center justify-center hover:bg-gray-50 rounded-lg text-lg transition-all duration-200"
                         >
                           {emoji}
                         </button>
@@ -820,31 +804,31 @@ export default function Community() {
                 )}
               </div>
               <div className="flex-grow">
-                <div className="mb-2">
+                <div className="space-y-3">
                   <textarea
                     placeholder="무슨 생각을 하고 계신가요?"
-                    className="w-full p-2 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#6C5CE7] min-h-[100px]"
+                    className="w-full p-3 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#6C5CE7] focus:border-transparent min-h-[120px] text-gray-700 placeholder-gray-400 bg-gray-50/50"
                     value={newPostContent}
                     onChange={(e) => setNewPostContent(e.target.value)}
                     maxLength={500}
                   />
-                  <div className="flex justify-between items-center mt-2">
-                    <div className="flex items-center gap-2">
-                      <label className="flex items-center gap-2 text-sm text-gray-600">
-                        익명
-                        <div className="relative inline-block w-10 h-6">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <label className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50/80 px-3 py-1.5 rounded-lg hover:bg-gray-100/80 transition-colors">
+                        <div className="relative inline-block w-9 h-5">
                           <input
                             type="checkbox"
                             checked={isAnonymous}
                             onChange={(e) => setIsAnonymous(e.target.checked)}
                             className="sr-only peer"
                           />
-                          <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#6C5CE7] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#6C5CE7]"></div>
+                          <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#6C5CE7] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#6C5CE7] peer-checked:to-[#5849BE]"></div>
                         </div>
+                        익명
                       </label>
-                      <div className="text-sm text-gray-500">
+                      <span className="text-sm text-gray-500 bg-gray-50/80 px-3 py-1.5 rounded-lg">
                         {newPostContent.length}/500
-                      </div>
+                      </span>
                     </div>
                     <button
                       onClick={() =>
@@ -855,13 +839,13 @@ export default function Community() {
                         )
                       }
                       disabled={!newPostContent.trim()}
-                      className={`px-4 py-2 rounded-full ${
+                      className={`px-5 py-2 rounded-xl font-medium transition-all duration-200 ${
                         !newPostContent.trim()
-                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                          : "bg-[#6C5CE7] text-white hover:bg-[#5849BE] transition-colors"
+                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                          : "bg-gradient-to-r from-[#6C5CE7] to-[#5849BE] text-white hover:opacity-90 shadow-md"
                       }`}
                     >
-                      작성
+                      작성하기
                     </button>
                   </div>
                 </div>
@@ -993,17 +977,70 @@ export default function Community() {
                 {/* 댓글 입력창 */}
                 {!post.deletedAt && showCommentInput === post.id && (
                   <div className="mt-4 space-y-4 border-t pt-4">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() =>
-                          setShowCommentEmojiPicker(!showCommentEmojiPicker)
-                        }
-                        className="w-8 h-8 rounded-full bg-[#6C5CE7] text-white flex items-center justify-center font-bold hover:bg-[#5849BE] transition-colors"
-                      >
-                        {selectedCommentEmoji}
-                      </button>
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() =>
+                            setShowCommentEmojiPicker(!showCommentEmojiPicker)
+                          }
+                          className="w-8 h-8 rounded-full bg-[#6C5CE7] text-white flex items-center justify-center font-bold hover:bg-[#5849BE] transition-colors mt-1"
+                        >
+                          {selectedCommentEmoji}
+                        </button>
+                        <div className="flex-1">
+                          <input
+                            type="text"
+                            value={newComment}
+                            onChange={(e) => {
+                              const newValue = e.target.value;
+                              setNewComment(newValue);
+                            }}
+                            placeholder="댓글을 입력하세요"
+                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6C5CE7]"
+                            maxLength={200}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between px-2">
+                        <div className="flex items-center gap-3">
+                          <label className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50/80 px-3 py-1.5 rounded-lg hover:bg-gray-100/80 transition-colors">
+                            <div className="relative inline-block w-9 h-5">
+                              <input
+                                type="checkbox"
+                                checked={isCommentAnonymous}
+                                onChange={(e) =>
+                                  setIsCommentAnonymous(e.target.checked)
+                                }
+                                className="sr-only peer"
+                              />
+                              <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#6C5CE7] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#6C5CE7] peer-checked:to-[#5849BE]"></div>
+                            </div>
+                            익명
+                          </label>
+                          <span className="text-sm text-gray-500 bg-gray-50/80 px-3 py-1.5 rounded-lg">
+                            {newComment.length}/200
+                          </span>
+                        </div>
+                        <button
+                          onClick={() =>
+                            handleAddComment(
+                              post.id,
+                              isCommentAnonymous,
+                              selectedCommentEmoji
+                            )
+                          }
+                          disabled={!newComment.trim()}
+                          className={`px-4 py-2 rounded-lg transition-all duration-200 ${
+                            newComment.trim()
+                              ? "bg-gradient-to-r from-[#6C5CE7] to-[#5849BE] text-white hover:opacity-90 shadow-md"
+                              : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                          }`}
+                        >
+                          작성
+                        </button>
+                      </div>
                       {showCommentEmojiPicker && (
-                        <div className="absolute z-10 mt-2 bg-white rounded-lg shadow-lg p-4 border border-gray-200">
+                        <div className="absolute z-10 mt-10 bg-white rounded-lg shadow-lg p-4 border border-gray-200">
                           <div className="grid grid-cols-5 gap-2">
                             {emojis.map((emoji) => (
                               <button
@@ -1020,49 +1057,6 @@ export default function Community() {
                           </div>
                         </div>
                       )}
-                      <input
-                        type="text"
-                        value={newComment}
-                        onChange={(e) => {
-                          const newValue = e.target.value;
-                          setNewComment(newValue);
-                        }}
-                        placeholder="댓글을 입력하세요"
-                        className="input-field flex-1"
-                      />
-                      <div className="flex items-center gap-2">
-                        <label className="flex items-center gap-2 text-sm text-gray-600">
-                          <div className="relative inline-block w-10 h-6">
-                            <input
-                              type="checkbox"
-                              checked={isCommentAnonymous}
-                              onChange={(e) =>
-                                setIsCommentAnonymous(e.target.checked)
-                              }
-                              className="sr-only peer"
-                            />
-                            <div className="w-10 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#6C5CE7] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#6C5CE7]"></div>
-                          </div>
-                          익명
-                        </label>
-                        <button
-                          onClick={() =>
-                            handleAddComment(
-                              post.id,
-                              isCommentAnonymous,
-                              selectedCommentEmoji
-                            )
-                          }
-                          disabled={!newComment.trim()}
-                          className={`px-4 py-2 rounded-lg transition-colors ${
-                            newComment.trim()
-                              ? "bg-[#6C5CE7] text-white hover:bg-[#5849BE]"
-                              : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                          }`}
-                        >
-                          작성
-                        </button>
-                      </div>
                     </div>
                   </div>
                 )}
