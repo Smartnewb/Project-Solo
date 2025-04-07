@@ -14,17 +14,26 @@ const Modal = React.forwardRef<HTMLDivElement, ModalProps>(
 
     return (
       <>
-        <div className="fixed inset-0 bg-black/50 z-50" onClick={onClose} />
-        <div
-          ref={ref}
-          className={cn(
-            "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50",
-            "w-full max-w-lg rounded-xl border bg-card text-card-foreground shadow-lg",
-            className
-          )}
-          {...props}
-        >
-          {children}
+        {/* 오버레이 */}
+        <div 
+          className="fixed inset-0 bg-black/50 z-50" 
+          onClick={onClose}
+          aria-hidden="true"
+        />
+        {/* 모달 컨테이너 */}
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+          <div
+            ref={ref}
+            className={cn(
+              "relative bg-white max-h-[90vh] overflow-auto",
+              "w-full max-w-lg rounded-xl border shadow-lg",
+              "animate-in fade-in-0 zoom-in-95",
+              className
+            )}
+            {...props}
+          >
+            {children}
+          </div>
         </div>
       </>
     );
@@ -39,7 +48,7 @@ const ModalHeader = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "flex items-center justify-between border-b p-4",
+      "flex items-center justify-between border-b p-4 bg-white",
       className
     )}
     {...props}
@@ -48,7 +57,7 @@ const ModalHeader = React.forwardRef<
     {onClose && (
       <button
         onClick={onClose}
-        className="rounded-full p-1 hover:bg-muted transition-colors"
+        className="rounded-full p-1 hover:bg-gray-100 transition-colors"
       >
         <X className="h-4 w-4" />
       </button>
@@ -63,7 +72,7 @@ const ModalContent = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("p-4", className)}
+    className={cn("p-4 bg-white", className)}
     {...props}
   />
 ));
@@ -76,7 +85,7 @@ const ModalFooter = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "flex items-center justify-end gap-2 border-t p-4",
+      "flex items-center justify-end gap-2 border-t p-4 bg-white",
       className
     )}
     {...props}

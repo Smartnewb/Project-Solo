@@ -15,6 +15,10 @@ import { createClient } from "@/utils/supabase/client";
 import { ADMIN_EMAIL } from "@/utils/config";
 import type { Profile } from "@/contexts/AuthContext";
 import type { Database } from "../types/database.types";
+import { Card, CardContent, CardHeader } from "@/shared/ui";
+import { Button } from "@/shared/ui/button";
+import { useModal } from "@/shared/hooks/use-modal";
+import { PaymentModal } from "@/features/toss-payment";
 
 interface MatchResult {
   id: string;
@@ -161,6 +165,7 @@ export default function Home() {
   const supabase = createClient();
   const router = useRouter();
   const { user, profile } = useAuth();
+  const { open, close } = useModal();
 
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -562,6 +567,26 @@ export default function Home() {
     }
   }, [isMatchingTimeOver]);
 
+  const handlePaymentClick = () => {
+    const modalId = open(
+      <PaymentModal 
+        amount={2000}
+        onSuccess={() => {
+          setHasRequestedRematch(true);
+          localStorage.setItem("rematchRequested", "true");
+          setNotificationMessage("결제가 완료되었습니다. 다음 매칭을 기대해주세요!");
+          setShowNotificationModal(true);
+        }}
+        onError={(error) => {
+          console.error("Payment failed:", error);
+          setNotificationMessage("결제 중 오류가 발생했습니다. 다시 시도해주세요.");
+          setShowNotificationModal(true);
+        }}
+        onClose={() => close(modalId)}
+      />
+    );
+  };
+
   return (
     <div className="min-h-screen bg-[#F8FAFD] pb-20">
       <>
@@ -747,6 +772,13 @@ export default function Home() {
                 </div>
               </div>
             </section>
+
+            <Card>
+              <CardHeader>토스 페이먼츠 결제(재매칭 결제)</CardHeader>
+              <CardContent>
+                <Button onClick={handlePaymentClick}>결제하기</Button>
+              </CardContent>
+            </Card>
 
             {/* 매칭 시작까지 남은 시간 */}
             <section className="card space-y-6 transform transition-all hover:scale-[1.02] bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl">
