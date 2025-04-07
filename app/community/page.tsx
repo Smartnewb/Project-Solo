@@ -30,7 +30,6 @@ interface Comment {
     email: string;
   };
   postId: string;
-  nickname: string;
   content: string;
   anonymous: boolean;
   emoji: string;
@@ -49,7 +48,6 @@ interface Post {
   deletedAt: string;
   likeCount: number;
   comments: Comment[];
-  nickname: string;
   author: {
     id: string;
     name: string;
@@ -136,6 +134,14 @@ export default function Community() {
   // 디바운싱을 위한 타이머 참조 저장
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // 비속어 필터 인스턴스 생성
+  const filter = new Filter();
+
+  // 비속어 필터링 함수
+  const filterProfanity = (text: string) => {
+    return filter.clean(text);
+  };
+
   // 컴포넌트 마운트 시 게시글과 사용자 정보 불러오기
   useEffect(() => {
     fetchPosts();
@@ -206,7 +212,7 @@ export default function Community() {
       await axiosServer.post(
         "/articles",
         {
-          content,
+          content: filterProfanity(content),
           anonymous: anonymous,
           emoji: emoji,
         },
@@ -244,7 +250,7 @@ export default function Community() {
       await axiosServer.post(
         `/articles/${post_id}/comments`,
         {
-          content: newComment,
+          content: filterProfanity(newComment),
           anonymous: annonymous,
           emoji: emoji,
         },
@@ -279,7 +285,7 @@ export default function Community() {
       const response = await axiosServer.patch(
         `/articles/${post.id}`,
         {
-          content: editContent,
+          content: filterProfanity(editContent),
           anonymous: anonymous,
           emoji: emoji,
         },
@@ -325,7 +331,7 @@ export default function Community() {
       await axiosServer.patch(
         `/articles/${postId}/comments/${commentId}`,
         {
-          content: editCommentContent,
+          content: filterProfanity(editCommentContent),
           anonymous: anonymous,
           emoji: emoji,
         },
@@ -452,9 +458,7 @@ export default function Community() {
                 <span className="text-xl">{post.emoji}</span>
                 <div>
                   <p className="font-medium text-sm">
-                    {comment.anonymous || !comment.author
-                      ? "익명"
-                      : comment.author.name}
+                    {comment.author.name || "익명"}
                   </p>
                 </div>
               </div>
@@ -744,9 +748,7 @@ export default function Community() {
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-2xl">{post.emoji}</span>
                         <span className="font-medium">
-                          {post.anonymous
-                            ? post.nickname
-                            : post.author.name || "익명"}
+                          {post.author.name || "익명"}
                         </span>
                       </div>
                       <p className="text-gray-700 line-clamp-2 mb-2">
