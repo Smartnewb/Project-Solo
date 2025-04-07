@@ -183,7 +183,6 @@ export default function Community() {
           Authorization: `Bearer ${token}`,
         },
       });
-      console.log(response.data.items);
       setPosts(response.data.items);
     } catch (error) {
       console.error("게시글 조회 중 오류가 발생했습니다:", error);
@@ -198,7 +197,6 @@ export default function Community() {
   ) => {
     const token = localStorage.getItem("accessToken");
     if (!token) return;
-    console.log("user:", user);
 
     try {
       await axiosServer.post(
@@ -653,7 +651,6 @@ export default function Community() {
           Authorization: `Bearer ${token}`,
         },
       });
-      console.log(response.data);
       // 댓글 목록을 받아온 후 바로 상태 업데이트
       setPosts((prevPosts) => {
         const updatedPosts = prevPosts.map((post) => {
@@ -684,11 +681,10 @@ export default function Community() {
         },
       })
       .then((res) => {
-        console.log("user:", res.data);
         setCheckuser(res.data);
       })
       .catch((err) => {
-        console.log(err);
+        console.error(err);
       });
   };
 
