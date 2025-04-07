@@ -501,7 +501,7 @@ export default function Community() {
                   comment.updatedAt !== comment.createdAt && (
                     <span className="text-xs text-gray-500">(수정됨)</span>
                   )}
-                {comment.author.id === Checkuser?.id ? (
+                {comment.author?.id === Checkuser?.id ? (
                   <div className="flex gap-2">
                     {editingComment?.postId === post.id &&
                     editingComment?.commentId === comment.id ? (
@@ -899,7 +899,7 @@ export default function Community() {
                     {post.updatedAt && post.updatedAt !== post.createdAt && (
                       <span className="text-sm text-gray-500">(수정됨)</span>
                     )}
-                    {post.author.id === Checkuser?.id && !post.deletedAt ? (
+                    {post.author?.id === Checkuser?.id && !post.deletedAt ? (
                       <div className="flex gap-2">
                         {editingPost === post.id ? (
                           <>
@@ -939,7 +939,7 @@ export default function Community() {
                     ) : (
                       !post.deletedAt &&
                       user &&
-                      post.author.id !== Checkuser?.id && (
+                      post.author?.id !== Checkuser?.id && (
                         <button
                           onClick={() => handleOpenReport("post", post.id)}
                           className="text-sm text-gray-500 hover:text-gray-600"
