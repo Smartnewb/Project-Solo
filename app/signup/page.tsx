@@ -266,10 +266,14 @@ export default function SignUp() {
 
       if (!checkEmailResponse.ok) {
         const errorData = await checkEmailResponse.json();
+        console.log("이메일 중복 확인 에러:", {
+          status: checkEmailResponse.status,
+          data: errorData
+        });
         throw new Error(errorData.message || "이미 사용 중인 이메일입니다.");
       }
 
-      // 2. 회원가입 요청 비밀번호에 특수문자 포함
+      // 2. 회원가입 요청
       const signupData = {
         email: formData.email,
         password: formData.password,
@@ -292,30 +296,19 @@ export default function SignUp() {
       );
 
       if (!signupResponse.ok) {
+        // 실패 응답인 경우에만 에러 데이터 파싱
         const errorData = await signupResponse.json();
-        console.error("회원가입 실패 응답:", {
+        console.error("회원가입 실패:", {
           status: signupResponse.status,
-          statusText: signupResponse.statusText,
-          error: errorData,
+          data: errorData
         });
-
-        // HTTP 상태 코드에 따른 에러 메시지 처리
-        let errorMessage;
-        switch (signupResponse.status) {
-          case 409:
-            errorMessage = "이미 등록된 이메일입니다.";
-            break;
-          case 400:
-            errorMessage =
-              "비밀번호는 특수문자가 포함된 8자리 이상이어야 합니다.";
-            break;
-          default:
-            errorMessage =
-              errorData.message || "회원가입 처리 중 오류가 발생했습니다.";
-        }
-
-        throw new Error(errorMessage);
+        
+        // 서버에서 온 에러 메시지를 그대로 사용
+        throw new Error(errorData.message || errorData.error || "회원가입 처리 중 오류가 발생했습니다.");
       }
+      
+      // 성공 응답인 경우
+      const successData = await signupResponse.json();
 
       // 회원가입 성공 메시지 표시
       alert("회원가입에 성공했습니다.");
@@ -324,6 +317,7 @@ export default function SignUp() {
       router.push("/onboarding");
     } catch (err) {
       console.error("회원가입 중 오류:", err);
+      // 에러 객체에서 메시지 추출
       setError(
         err instanceof Error ? err.message : "회원가입 중 오류가 발생했습니다."
       );
