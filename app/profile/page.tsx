@@ -911,18 +911,6 @@ export default function Onboarding() {
         </div>
       )}
 
-      {/* 이미지 업로드 상태 디버깅 정보 (개발 중에만 사용) */}
-      <div className="bg-gray-100 p-3 rounded-lg mt-4 text-xs">
-        <p>디버깅 정보:</p>
-        <p>- profileImages 길이: {profileImages.length}</p>
-        <p>- imageFiles 길이: {imageFiles.length}</p>
-        <p>- uploadedImages 길이: {uploadedImages.length}</p>
-        <p>- selectedMainImage: {selectedMainImage || '없음'}</p>
-        <details>
-          <summary>uploadedImages 상세 정보</summary>
-          <pre>{JSON.stringify(uploadedImages, null, 2)}</pre>
-        </details>
-      </div>
     </div>
   );
 }
