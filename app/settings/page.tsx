@@ -33,7 +33,7 @@ export default function Settings() {
       }
 
       // Nest.js 로그아웃 API 호출
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
