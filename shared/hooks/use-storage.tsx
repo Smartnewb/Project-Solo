@@ -15,6 +15,9 @@ function useLocalStorage<K extends LocalStorageKey>(
 ): [LocalStorageValue[K], (value: LocalStorageValue[K]) => void] {
   const [storedValue, setStoredValue] = useState<LocalStorageValue[K]>(() => {
     try {
+      if (typeof window === 'undefined') {
+        return initialValue;
+      }
       const item = window.localStorage.getItem(key);
       return item ? JSON.parse(item) : initialValue;
     } catch (error) {
@@ -26,6 +29,9 @@ function useLocalStorage<K extends LocalStorageKey>(
   const setValue = (value: LocalStorageValue[K]) => {
     try {
       setStoredValue(value);
+      if (typeof window === 'undefined') {
+        return;
+      }
       window.localStorage.setItem(key, JSON.stringify(value));
     } catch (error) {
       console.error('Error setting localStorage key:', key, error);
@@ -35,6 +41,9 @@ function useLocalStorage<K extends LocalStorageKey>(
   useEffect(() => {
     const handleStorageChange = () => {
       try {
+        if (typeof window === 'undefined') {
+          return initialValue;
+        }
         const item = window.localStorage.getItem(key);
         setStoredValue(item ? JSON.parse(item) : initialValue);
       } catch (error) {
