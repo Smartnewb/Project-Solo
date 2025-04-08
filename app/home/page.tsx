@@ -18,7 +18,7 @@ import type { Database } from "../types/database.types";
 import { Card, CardContent, CardHeader } from "@/shared/ui";
 import { Button } from "@/shared/ui/button";
 import { useModal } from "@/shared/hooks/use-modal";
-import { PaymentModal } from "@/features/toss-payment";
+import { PaymentModal, useRedirectTossPayment } from "@/features/toss-payment";
 
 interface MatchResult {
   id: string;
@@ -172,6 +172,7 @@ export default function Home() {
   const [showAdditionalInfoModal, setShowAdditionalInfoModal] = useState(false);
   const [hasUserPreferences, setHasUserPreferences] = useState(false);
   const [profileData, setProfileData] = useState<any>(null);
+  const { redirect } = useRedirectTossPayment();
 
   // 리매칭 관련 상태
   const [showRematchModal, setShowRematchModal] = useState(false);
@@ -567,25 +568,7 @@ export default function Home() {
     }
   }, [isMatchingTimeOver]);
 
-  const handlePaymentClick = () => {
-    const modalId = open(
-      <PaymentModal 
-        amount={2000}
-        onSuccess={() => {
-          setHasRequestedRematch(true);
-          localStorage.setItem("rematchRequested", "true");
-          setNotificationMessage("결제가 완료되었습니다. 다음 매칭을 기대해주세요!");
-          setShowNotificationModal(true);
-        }}
-        onError={(error) => {
-          console.error("Payment failed:", error);
-          setNotificationMessage("결제 중 오류가 발생했습니다. 다시 시도해주세요.");
-          setShowNotificationModal(true);
-        }}
-        onClose={() => close(modalId)}
-      />
-    );
-  };
+  const handlePaymentClick = redirect;
 
   return (
     <div className="min-h-screen bg-[#F8FAFD] pb-20">

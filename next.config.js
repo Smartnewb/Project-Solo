@@ -10,6 +10,13 @@ const nextConfig = {
       },
     ],
   },
+  webpack: (config) => {
+    config.module.rules.push({
+      test: /\.svg$/,
+      use: ['@svgr/webpack'],
+    });
+    return config;
+  },
   // Vercel 배포에서 정적 생성 오류를 해결하기 위한 설정
   output: 'standalone',
   experimental: {

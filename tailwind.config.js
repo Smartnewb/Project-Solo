@@ -5,30 +5,41 @@ module.exports = {
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
     './app/**/*.{js,ts,jsx,tsx,mdx}',
+		'./features/**/*.{js,ts,jsx,tsx,mdx}',
+		'./shared/**/*.{js,ts,jsx,tsx,mdx}',
+		'./page/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
   	extend: {
   		colors: {
-  			primary: {
-  				DEFAULT: 'hsl(var(--primary))',
-  				light: '#FFB6C1',
-  				dark: '#FF1493',
-  				foreground: 'hsl(var(--primary-foreground))'
-  			},
-  			secondary: {
-  				DEFAULT: 'hsl(var(--secondary))',
-  				light: '#F0F0FF',
-  				dark: '#D8D8FF',
-  				foreground: 'hsl(var(--secondary-foreground))'
-  			},
-  			accent: {
-  				DEFAULT: 'hsl(var(--accent))',
-  				light: '#87CEFA',
-  				dark: '#0099CC',
-  				foreground: 'hsl(var(--accent-foreground))'
-  			},
-  			background: 'hsl(var(--background))',
-  			foreground: 'hsl(var(--foreground))',
+        // Wippy 스타일 컬러
+        primary: {
+          DEFAULT: 'var(--color-primary)',      // #6C5CE7
+          light: 'var(--color-primary-light)',  // #A8A4E3
+          foreground: 'hsl(var(--primary-foreground))'
+        },
+        secondary: {
+          DEFAULT: 'var(--color-secondary)',    // #00B894
+          foreground: 'hsl(var(--secondary-foreground))'
+        },
+        accent: {
+          DEFAULT: 'var(--color-accent)',       // #FD79A8
+          foreground: 'hsl(var(--accent-foreground))'
+        },
+        background: 'var(--color-background)',  // #F8FAFD
+        foreground: 'hsl(var(--foreground))',
+        text: {
+          DEFAULT: 'var(--color-text)',         // #2D3436
+          light: 'var(--color-text-light)',     // #636E72
+          foreground: 'hsl(var(--foreground))'
+        },
+        border: 'var(--color-border)',          // #DFE6E9
+        white: 'var(--color-white)',            // #FFFFFF
+        error: 'var(--color-error)',            // #FF7675
+        success: 'var(--color-success)',        // #55EFC4
+        warning: 'var(--color-warning)',        // #FFEAA7
+
+  			// 기존 다크모드 관련 색상
   			card: {
   				DEFAULT: 'hsl(var(--card))',
   				foreground: 'hsl(var(--card-foreground))'
@@ -45,9 +56,6 @@ module.exports = {
   				DEFAULT: 'hsl(var(--destructive))',
   				foreground: 'hsl(var(--destructive-foreground))'
   			},
-  			border: 'hsl(var(--border))',
-  			input: 'hsl(var(--input))',
-  			ring: 'hsl(var(--ring))',
   			chart: {
   				'1': 'hsl(var(--chart-1))',
   				'2': 'hsl(var(--chart-2))',
@@ -63,7 +71,8 @@ module.exports = {
   			]
   		},
   		boxShadow: {
-  			card: '0 4px 6px rgba(0, 0, 0, 0.1)'
+  			card: 'var(--box-shadow)',
+        hover: 'var(--box-shadow-hover)'
   		},
   		animation: {
   			'float-up': 'float-up 0.5s ease-out',
