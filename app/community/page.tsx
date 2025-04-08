@@ -101,7 +101,7 @@ export default function Community() {
   const [editContent, setEditContent] = useState("");
   const [newPostContent, setNewPostContent] = useState("");
   const [isPostingLoading, setIsPostingLoading] = useState(false);
-  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(true);
   const [selectedEmoji, setSelectedEmoji] = useState("😊");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
@@ -114,7 +114,7 @@ export default function Community() {
     postId: string;
     commentId: string;
   } | null>(null);
-  const [isCommentAnonymous, setIsCommentAnonymous] = useState(false);
+  const [isCommentAnonymous, setIsCommentAnonymous] = useState(true);
   const [selectedCommentEmoji, setSelectedCommentEmoji] = useState("😊");
   const [showCommentEmojiPicker, setShowCommentEmojiPicker] = useState(false);
 
@@ -183,6 +183,7 @@ export default function Community() {
           Authorization: `Bearer ${token}`,
         },
       });
+      console.log(response.data.items);
       setPosts(response.data.items);
     } catch (error) {
       console.error("게시글 조회 중 오류가 발생했습니다:", error);
@@ -215,7 +216,7 @@ export default function Community() {
 
       fetchPosts();
       setNewPostContent("");
-      setIsAnonymous(false);
+      setIsAnonymous(true);
     } catch (error) {
       console.error("게시글 작성 중 오류가 발생했습니다:", error);
       setErrorMessage("게시글 작성에 실패했습니다.");
@@ -256,7 +257,7 @@ export default function Community() {
 
       // 입력 상태 초기화
       setNewComment("");
-      setIsCommentAnonymous(false);
+      setIsCommentAnonymous(true);
       setShowCommentInput(null);
     } catch (error) {
       console.error("댓글 작성 중 오류가 발생했습니다:", error);
