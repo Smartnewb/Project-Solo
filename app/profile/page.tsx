@@ -108,21 +108,21 @@ export default function Onboarding() {
       // 프로필 데이터가 있으면 폼 데이터 초기화
       if (profileData) {
         // 대학교 및 학과 정보 설정
-        if (profileData.universityInfo) {
-          const { universityName, department, studentNumber, grade } = profileData.universityInfo;
+        if (profileData.universityDetails) {
+          const { name, department, studentNumber, grade } = profileData.universityDetails;
           
           setFormData(prev => ({
             ...prev,
-            university: universityName || '',
+            university: name || '',
             department: department || '',
             studentId: studentNumber || '',
             grade: grade || ''
           }));
 
           // 해당 대학의 학과 목록 로드
-          if (universityName) {
-            setSelectedUniversity(universityName);
-            fetchDepartments(universityName);
+          if (name) {
+            setSelectedUniversity(name);
+            fetchDepartments(name);
           }
         }
 
