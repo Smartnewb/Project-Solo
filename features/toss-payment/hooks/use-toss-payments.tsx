@@ -79,5 +79,9 @@ export function useTossPayments(amount?: number) {
 }
 
 function generateRandomKey() {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
   return window.btoa(Math.random().toString()).slice(0, 20);
 } 
