@@ -1,6 +1,5 @@
 'use client';
 
-import { MobileLayout } from "@/features/layouts";
 import { useRedirectTossPayment } from "@/features/toss-payment";
 import { Button } from "@/shared/ui/button";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -23,10 +22,10 @@ export default function FailPage() {
     }
 
     console.log({ code, message, orderId });
-  }, []);
+  }, [searchParams]);
 
   return (
-    <MobileLayout className="flex flex-col justify-center">
+    <div className="flex flex-col justify-center">
       <h1 className="text-error text-2xl font-bold">결제 실패</h1>
       <p className="text-sm text-gray-500 mt-2 mb-4">
         {searchParams?.get('message') || '결제 처리 중 문제가 발생했습니다.'}
@@ -47,6 +46,6 @@ export default function FailPage() {
       >
         홈으로 돌아가기
       </Button>
-    </MobileLayout>
+    </div>
   );
 }
