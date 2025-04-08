@@ -148,49 +148,6 @@ export default function SignUp() {
     }
   };
 
-  const handleSendVerification = async () => {
-    if (!formData.email) {
-      setError("이메일을 입력해주세요.");
-      return;
-    }
-
-    setSendingEmail(true);
-    try {
-      const response = await axios.post("/api/auth/send-verification", {
-        email: formData.email
-      });
-
-      setShowVerificationInput(true);
-      setError(null);
-    } catch (err) {
-      setError("인증 코드 전송 중 오류가 발생했습니다.");
-    } finally {
-      setSendingEmail(false);
-    }
-  };
-
-  const handleVerifyCode = async () => {
-    if (!verificationCode) {
-      setVerificationError("인증 코드를 입력해주세요.");
-      return;
-    }
-
-    setVerifying(true);
-    try {
-      const response = await axios.post("/api/auth/verify-code", {
-        email: formData.email,
-        code: verificationCode
-      });
-
-      setEmailVerified(true);
-      setVerificationError(null);
-    } catch (err) {
-      setVerificationError("인증에 실패했습니다. 코드를 다시 확인해주세요.");
-    } finally {
-      setVerifying(false);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -567,84 +524,25 @@ export default function SignUp() {
                 <label className="block text-sm font-medium text-gray-700">
                   이메일
                 </label>
-                <div className="flex space-x-2">
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className={`input-field flex-1 ${
-                      formData.email && !validateEmail(formData.email)
-                        ? "border-red-300 focus:border-red-500"
-                        : ""
-                    }`}
-                    placeholder="example@email.com"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={handleSendVerification}
-                    disabled={
-                      sendingEmail ||
-                      emailVerified ||
-                      (formData.email ? !validateEmail(formData.email) : false)
-                    }
-                    className={`px-4 py-2 rounded-md text-sm font-medium ${
-                      emailVerified
-                        ? "bg-green-500 text-white cursor-not-allowed"
-                        : sendingEmail
-                        ? "bg-gray-400 text-white cursor-not-allowed"
-                        : formData.email && !validateEmail(formData.email)
-                        ? "bg-gray-400 text-white cursor-not-allowed"
-                        : "bg-blue-500 hover:bg-blue-600 text-white"
-                    }`}
-                  >
-                    {emailVerified
-                      ? "인증완료"
-                      : sendingEmail
-                      ? "전송중..."
-                      : "인증하기"}
-                  </button>
-                </div>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={`input-field w-full ${
+                    formData.email && !validateEmail(formData.email)
+                      ? "border-red-300 focus:border-red-500"
+                      : ""
+                  }`}
+                  placeholder="example@email.com"
+                  required
+                />
                 {formData.email && !validateEmail(formData.email) && (
                   <p className="text-red-500 text-sm mt-1">
                     올바른 이메일 형식이 아닙니다.
                   </p>
                 )}
               </div>
-
-              {showVerificationInput && !emailVerified && (
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    인증 코드
-                  </label>
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      value={verificationCode}
-                      onChange={(e) => setVerificationCode(e.target.value)}
-                      className="input-field flex-1"
-                      placeholder="인증 코드 6자리를 입력하세요"
-                      maxLength={6}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleVerifyCode}
-                      disabled={verifying || !verificationCode}
-                      className={`px-4 py-2 rounded-md text-sm font-medium ${
-                        verifying
-                          ? "bg-gray-400 cursor-not-allowed"
-                          : "bg-blue-500 hover:bg-blue-600"
-                      } text-white`}
-                    >
-                      {verifying ? "확인중..." : "확인"}
-                    </button>
-                  </div>
-                  {verificationError && (
-                    <p className="text-red-500 text-sm">{verificationError}</p>
-                  )}
-                </div>
-              )}
 
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">

@@ -154,7 +154,7 @@ export default function Profile() {
       });
 
       showTemporaryModal('프로필이 성공적으로 저장되었습니다.', 'success');
-      router.push('/ideal-type');
+      router.push('/home');
     } catch (error) {
       console.error('프로필 저장 중 오류:', error);
       if (axios.isAxiosError(error) && error.response?.status === 401) {
