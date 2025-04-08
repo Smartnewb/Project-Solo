@@ -33,8 +33,8 @@ axiosServer.interceptors.response.use(
     // 401 에러 처리 (인증 만료)
     if (error.response?.status === 401) {
       // 로그인 페이지로 리다이렉트 또는 토큰 갱신 로직
-      // localStorage.removeItem('token');
-      // window.location.href = '/';
+      localStorage.removeItem('token');
+      window.location.href = '/';
     }
     return Promise.reject(error);
   }
