@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import axios from 'axios';
 
 export type User = {
   id: string;
@@ -80,32 +81,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const token = getAccessToken();
       if (!token || !state.user) return;
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/profile`, {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/profile`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          const refreshSuccess = await refreshAccessToken();
-          if (!refreshSuccess) {
-            await signOut();
-            return;
-          }
-          return await fetchProfile();
-        }
-        throw new Error('프로필 조회 실패');
-      }
-
-      const profileData = await response.json();
-      console.log('받아온 프로필 데이터:', profileData);
-      setState(prev => ({ ...prev, profile: profileData }));
+      console.log('받아온 프로필 데이터:', response.data);
+      setState(prev => ({ ...prev, profile: response.data }));
       
       // 상태 업데이트 후 최종 상태 확인
       console.log('저장된 프로필 상태:', state.profile);
     } catch (error) {
       console.error('프로필 조회 중 오류:', error);
+      
+      // 401 에러 처리
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        const refreshSuccess = await refreshAccessToken();
+        if (!refreshSuccess) {
+          await signOut();
+          return;
+        }
+        return await fetchProfile();
+      }
+      
       setState(prev => ({ ...prev, profile: null }));
     }
   };
@@ -113,17 +112,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // 토큰 갱신
   const refreshAccessToken = async (): Promise<boolean> => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/refresh`, {
-        method: 'POST',
-        credentials: 'include'
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`, {}, {
+        withCredentials: true
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to refresh token');
-      }
-
-      const data = await response.json();
-      setAccessToken(data.accessToken);
+      setAccessToken(response.data.accessToken);
       return true;
     } catch (error) {
       console.error('토큰 갱신 실패:', error);
@@ -135,17 +128,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string) => {
     setState(prev => ({ ...prev, loading: true }));
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+        email,
+        password
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || '로그인에 실패했습니다.');
-      }
+      const data = response.data;
 
       if (!data.accessToken) {
         throw new Error('토큰이 없습니다.');
@@ -170,6 +158,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       router.push(userInfo.role === 'admin' ? '/admin/community' : '/home');
     } catch (error) {
       setState(prev => ({ ...prev, loading: false }));
+      
+      // 에러 메시지 추출 및 전달
+      if (axios.isAxiosError(error) && error.response?.data) {
+        throw new Error(error.response.data.message || error.response.data.error || '로그인에 실패했습니다.');
+      }
       throw error;
     }
   };

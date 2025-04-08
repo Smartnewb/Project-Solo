@@ -2,6 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import axiosServer from '@/utils/axios';
+import axios, { AxiosError } from 'axios';
 
 // 로딩 컴포넌트
 const Loader = () => (
@@ -52,25 +54,22 @@ export default function ProfilePage() {
         }
 
         // 프로필 정보 가져오기
-        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/profile`, {
+        const response = await axiosServer.get('/profile', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
 
-        if (!response.ok) {
-          if (response.status === 401) {
-            router.push('/');
-            return;
-          }
-          throw new Error('프로필 조회 실패');
-        }
-
-        const profileData = await response.json();
-        setProfile(profileData);
+        setProfile(response.data);
         
       } catch (error) {
         console.error('프로필 데이터 로딩 중 오류:', error);
+        
+        // 인증 오류 시 로그인 페이지로 리다이렉트
+        if (axios.isAxiosError(error) && (error as AxiosError).response?.status === 401) {
+          router.push('/');
+          return;
+        }
       } finally {
         setLoading(false);
       }
