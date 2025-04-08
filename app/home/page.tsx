@@ -206,7 +206,7 @@ export default function Home() {
       console.log('토큰:', token); // 토큰 확인
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/profile`,
+        `${process.env.NEXT_PUBLIC_API_URL}/profile`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

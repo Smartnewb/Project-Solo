@@ -33,7 +33,7 @@ export default function Settings() {
       }
 
       // Nest.js 로그아웃 API 호출
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/logout`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -84,7 +84,7 @@ export default function Settings() {
       }
 
       // Nest.js API 호출
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/withdraw`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/withdraw`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
