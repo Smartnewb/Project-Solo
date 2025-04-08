@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { TOSS_PAYMENTS_CONFIG } from "../config/payments";
-import { loadTossPayments, ANONYMOUS } from "@tosspayments/tosspayments-sdk";
+import { loadTossPayments } from "@tosspayments/tosspayments-sdk";
 
 interface PaymentWidgetState {
   widgets: any;
@@ -40,7 +40,7 @@ export function useTossPayments(amount?: number) {
 
   }, [payAmount]);
 
-  const requestPayment = useCallback(async () => {
+  const requestPayment = async () => {
     if (!state.widgets || !state.ready) return;
 
     try {
@@ -54,7 +54,7 @@ export function useTossPayments(amount?: number) {
       console.error("Payment request failed:", error);
       throw error;
     }
-  }, [state.widgets, state.ready]);
+  };
 
   return { ...state, requestPayment, updatePayAmount };
 }

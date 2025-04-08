@@ -44,6 +44,7 @@ export function PaymentModal({ amount, onSuccess, onError, onClose }: PaymentMod
           취소
         </Button>
         <Button
+          variant="default"
           onClick={handlePayment}
           disabled={!ready}
         >
