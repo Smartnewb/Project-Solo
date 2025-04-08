@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import axiosServer from '@/utils/axios';
+import axios, { AxiosError } from 'axios';
 
 interface PreferenceOption {
   id: string;
@@ -61,49 +63,43 @@ export default function Profile() {
       }
 
       // 선택 가능한 옵션들 조회
-      const preferencesResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/profile/preferences`, {
+      const preferencesResponse = await axiosServer.get('/profile/preferences', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
-      if (!preferencesResponse.ok) {
-        if (preferencesResponse.status === 401) {
-          router.push('/');
-          return;
-        }
-        throw new Error('선택 옵션 조회 실패');
-      }
-
-      const preferencesData: PreferenceType[] = await preferencesResponse.json();
+      const preferencesData: PreferenceType[] = preferencesResponse.data;
       console.log('Fetched preferences:', preferencesData);
       setPreferences(preferencesData);
 
       // 저장된 프로필 정보 조회
-      const profileResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/profile`, {
+      const profileResponse = await axiosServer.get('/profile', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
-      if (profileResponse.ok) {
-        const profile: ProfileData = await profileResponse.json();
-        setProfileData(profile);
-        console.log('Fetched profile:', profile);
+      const profile: ProfileData = profileResponse.data;
+      setProfileData(profile);
+      console.log('Fetched profile:', profile);
 
-        // 새로운 API 응답 구조에 맞게 formData 설정
-        const newFormData: ProfileForm = {};
-        
-        // profile.preferences에서 각 타입별로 선택된 옵션들을 formData에 설정
-        profile.preferences.forEach(pref => {
-          newFormData[pref.typeName] = pref.selectedOptions.map(option => option.displayName);
-        });
+      // 새로운 API 응답 구조에 맞게 formData 설정
+      const newFormData: ProfileForm = {};
+      
+      // profile.preferences에서 각 타입별로 선택된 옵션들을 formData에 설정
+      profile.preferences.forEach(pref => {
+        newFormData[pref.typeName] = pref.selectedOptions.map(option => option.displayName);
+      });
 
-        console.log('Setting formData:', newFormData);
-        setFormData(newFormData);
-      }
+      console.log('Setting formData:', newFormData);
+      setFormData(newFormData);
     } catch (error) {
       console.error('데이터 조회 중 오류:', error);
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        router.push('/');
+        return;
+      }
       showTemporaryModal('데이터 조회 중 오류가 발생했습니다.', 'error');
     }
   };
@@ -149,28 +145,22 @@ export default function Profile() {
           .map(option => option.id)
       })).filter(pref => pref.optionIds.length > 0);
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/profile/preferences`, {
-        method: 'PATCH',
+      const response = await axiosServer.patch('/profile/preferences', {
+        data: selectedPreferences
+      }, {
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ data: selectedPreferences })
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          router.push('/');
-          return;
         }
-        const errorData = await response.json();
-        throw new Error(errorData.error || '프로필 저장 실패');
-      }
+      });
 
       showTemporaryModal('프로필이 성공적으로 저장되었습니다.', 'success');
       router.push('/ideal-type');
     } catch (error) {
       console.error('프로필 저장 중 오류:', error);
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        router.push('/');
+        return;
+      }
       showTemporaryModal('프로필 저장 중 오류가 발생했습니다.', 'error');
     } finally {
       setIsSaving(false);
