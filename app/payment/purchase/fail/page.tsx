@@ -12,9 +12,9 @@ export default function FailPage() {
   const { back } = useRedirectTossPayment();
   
   useEffect(() => {
-    const code = searchParams.get('code');
-    const message = searchParams.get('message');
-    const orderId = searchParams.get('orderId');
+    const code = searchParams?.get('code');
+    const message = searchParams?.get('message');
+    const orderId = searchParams?.get('orderId');
 
     if (!code || !message) {
       alert('결제 오류 정보가 잘못되었습니다.');
@@ -29,7 +29,7 @@ export default function FailPage() {
     <MobileLayout className="flex flex-col justify-center">
       <h1 className="text-error text-2xl font-bold">결제 실패</h1>
       <p className="text-sm text-gray-500 mt-2 mb-4">
-        {searchParams.get('message') || '결제 처리 중 문제가 발생했습니다.'}
+        {searchParams?.get('message') || '결제 처리 중 문제가 발생했습니다.'}
       </p>
       <Button 
         onClick={back} 
