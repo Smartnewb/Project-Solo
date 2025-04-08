@@ -13,7 +13,7 @@ const axiosServer = axios.create({
 axiosServer.interceptors.request.use(
   (config: any) => {
     // 토큰이 있다면 헤더에 추가
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -33,8 +33,8 @@ axiosServer.interceptors.response.use(
     // 401 에러 처리 (인증 만료)
     if (error.response?.status === 401) {
       // 로그인 페이지로 리다이렉트 또는 토큰 갱신 로직
-      localStorage.removeItem('token');
-      window.location.href = '/';
+      // localStorage.removeItem('token');
+      // window.location.href = '/';
     }
     return Promise.reject(error);
   }

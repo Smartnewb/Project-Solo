@@ -1,7 +1,19 @@
-export default function MobileLayout({ children }: { children: React.ReactNode }) {
+'use client';
+
+import { ReactNode } from 'react';
+import { cn } from '@/shared/utils';
+
+interface MobileLayoutProps {
+  children: ReactNode;
+  className?: string;
+}
+
+export default function MobileLayout({ children, className }: MobileLayoutProps) {
   return (
-    <div className="w-[100dvw] h-[100dvh] flex justify-center bg-white">
-      <div className="flex flex-col items-center justify-center h-screen w-[480px] w-max-[480px]">
+    <div className="flex min-h-screen w-full justify-center bg-white">
+      <div className={cn("max-w-[480px] bg-white px-2", className)} style={{
+        width: '480px',
+      }}>
         {children}
       </div>
     </div>

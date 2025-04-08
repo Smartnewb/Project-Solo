@@ -172,7 +172,7 @@ export default function Home() {
   const [showAdditionalInfoModal, setShowAdditionalInfoModal] = useState(false);
   const [hasUserPreferences, setHasUserPreferences] = useState(false);
   const [profileData, setProfileData] = useState<any>(null);
-  const redirectTossPayment = useRedirectTossPayment();
+  const { redirect } = useRedirectTossPayment();
 
   // 리매칭 관련 상태
   const [showRematchModal, setShowRematchModal] = useState(false);
@@ -568,7 +568,7 @@ export default function Home() {
     }
   }, [isMatchingTimeOver]);
 
-  const handlePaymentClick = () => redirectTossPayment();
+  const handlePaymentClick = redirect;
 
   return (
     <div className="min-h-screen bg-[#F8FAFD] pb-20">

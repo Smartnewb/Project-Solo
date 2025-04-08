@@ -4,10 +4,18 @@ import { usePathname, useRouter } from "next/navigation";
 export default function useRedirectTossPayment() {
   const router = useRouter();
   const location = usePathname();
-  const [_, setBeforeTossPaymentUrl] = useLocalStorage('before-toss-payment-url', location);
+  const [url, setBeforeTossPaymentUrl] = useLocalStorage('before-toss-payment-url', location);
 
-  return () => {
+  const redirect = () => {
     setBeforeTossPaymentUrl(location);
     router.push("/payment/purchase");
   };
+
+  const back = () => {
+    url ? router.push(url) : router.back();
+    setBeforeTossPaymentUrl(null);
+  };
+  
+
+  return { redirect, back };
 }

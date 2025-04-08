@@ -1,52 +1,69 @@
 import { useEffect, useState } from "react";
 import { TOSS_PAYMENTS_CONFIG } from "../config/payments";
-import { loadTossPayments } from "@tosspayments/tosspayments-sdk";
+import { loadTossPayments, TossPaymentsWidgets } from "@tosspayments/tosspayments-sdk";
+import { useRef } from "react";
+import paymentApis, { PaymentBeforeHistory } from "@/features/payment/api";
 
-interface PaymentWidgetState {
-  widgets: any;
-  ready: boolean;
-}
+type PurchaseType = '재매칭';
 
 export function useTossPayments(amount?: number) {
-  const [state, setState] = useState<PaymentWidgetState>({
-    widgets: null,
-    ready: false,
-  });
+  const paymentWidgetRef = useRef<TossPaymentsWidgets | null>(null);
+  const mountRef = useRef(false);
+  const [ready, setReady] = useState(false);
   const [payAmount, setPayAmount] = useState<number>(amount || 0);
-
+  const [isAgreed, setIsAgreed] = useState(true);
+  
   const updatePayAmount = (amount: number) => {
+    const widget = paymentWidgetRef.current;
+    if (!widget) {
+      throw new Error('결제 위젯이 연동되지않았습니다.');
+    }
     setPayAmount(amount);
+    widget.setAmount({ value: payAmount, currency: "KRW" });
   };
 
   useEffect(() => {
-    const initializePayments = async () => {
-      try {
-        const tossPayments = await loadTossPayments(TOSS_PAYMENTS_CONFIG.clientKey);
-        const widgets = tossPayments.widgets({ customerKey: generateRandomKey() });
-        widgets.setAmount({ value: payAmount, currency: "KRW" });
+    (async () => {
+      if (mountRef.current) return;
+      mountRef.current = true;
 
-        await Promise.all([
-          widgets.renderPaymentMethods({ selector: "#payment-method" }),
-          widgets.renderAgreement({ selector: "#agreement" }),
-        ]);
+      const paymentWidget = await loadTossPayments(TOSS_PAYMENTS_CONFIG.clientKey);
+      const widget = paymentWidget.widgets({ customerKey: generateRandomKey() });
+      widget.setAmount({ value: payAmount, currency: "KRW" });
+      paymentWidgetRef.current = widget;
 
-        setState({ widgets, ready: true });
-      } catch (error) {
-        console.error("Failed to initialize TossPayments:", error);
-      }
-    };
+      const [paymentMethods, agreement] = await Promise.all([
+        widget.renderPaymentMethods({ selector: "#payment-method" }),
+        widget.renderAgreement({ selector: "#agreement" }),
+      ]);
+      
+      agreement.on('agreementStatusChange', ({ agreedRequiredTerms }) => {
+        if (agreedRequiredTerms) {
+          setIsAgreed(true);
+        } else {
+          setIsAgreed(false);
+        }
+      });
 
-    initializePayments();
+      setReady(true);
+    })();
+  }, []);
 
-  }, [payAmount]);
 
-  const requestPayment = async () => {
-    if (!state.widgets || !state.ready) return;
+  const requestPayment = async (type: PurchaseType) => {
+    if (!paymentWidgetRef.current || !ready) return;
+
+    const paymentHistory = {
+      orderId: generateRandomKey(),
+      orderName: `${type}`,
+      amount: payAmount,
+    } as PaymentBeforeHistory;
 
     try {
-      return await state.widgets.requestPayment({
-        orderId: generateRandomKey(),
-        orderName: "재매칭 결제",
+      await paymentApis.saveHistory(paymentHistory);
+      return await paymentWidgetRef.current.requestPayment({
+        orderId: paymentHistory.orderId,
+        orderName: paymentHistory.orderName,
         successUrl: TOSS_PAYMENTS_CONFIG.successUrl,
         failUrl: TOSS_PAYMENTS_CONFIG.failUrl,
       });
@@ -56,7 +73,7 @@ export function useTossPayments(amount?: number) {
     }
   };
 
-  return { ...state, requestPayment, updatePayAmount };
+  return { ready, requestPayment, updatePayAmount, isAgreed };
 }
 
 function generateRandomKey() {
