@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
+import axiosServer from '@/utils/axios';
+import axios, { AxiosError } from 'axios';
 
 interface OnboardingForm {
   university: string;
@@ -64,10 +66,18 @@ export default function Onboarding() {
   // 대학교 목록 조회
   const fetchUniversities = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/universities`);
-      if (!response.ok) throw new Error('대학교 목록 조회 실패');
-      const data = await response.json();
-      setUniversities(data);
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        router.push('/');
+        return;
+      }
+
+      const response = await axiosServer.get('/universities', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setUniversities(response.data);
     } catch (error) {
       console.error('대학교 목록 조회 중 오류:', error);
     }
@@ -76,12 +86,19 @@ export default function Onboarding() {
   // 학과 목록 조회
   const fetchDepartments = async (university: string) => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/universities/departments?university=${encodeURIComponent(university)}`
-      );
-      if (!response.ok) throw new Error('학과 목록 조회 실패');
-      const data = await response.json();
-      setDepartments(data);
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        router.push('/');
+        return;
+      }
+
+      const response = await axiosServer.get('/universities/departments', {
+        params: { university },
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setDepartments(response.data);
     } catch (error) {
       console.error('학과 목록 조회 중 오류:', error);
     }
@@ -120,23 +137,25 @@ export default function Onboarding() {
     if (!customDepartment.trim() || !formData.university) return;
 
     try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        router.push('/');
+        return;
+      }
+
       // 대학교 인증 요청 API 호출
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/universities`, {
-        method: 'POST',
+      const response = await axiosServer.post('/universities', {
+        universityName: formData.university,
+        department: customDepartment
+      }, {
         headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          universityName: formData.university,
-          department: customDepartment
-        })
+          'Authorization': `Bearer ${token}`
+        }
       });
 
-      if (!response.ok) throw new Error('학과 등록 요청 실패');
-
       // 폼 데이터 업데이트
-    setFormData({ ...formData, department: customDepartment });
-    setErrors({ ...errors, department: false });
+      setFormData({ ...formData, department: customDepartment });
+      setErrors({ ...errors, department: false });
 
     } catch (error) {
       console.error('학과 등록 요청 중 오류:', error);
@@ -150,6 +169,8 @@ export default function Onboarding() {
   const [profileImages, setProfileImages] = useState<string[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imageErrors, setImageErrors] = useState<string | null>(null);
+  const [uploadedImages, setUploadedImages] = useState<Array<{id: string, url: string}>>([]);
+  const [selectedMainImage, setSelectedMainImage] = useState<string | null>(null);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -179,9 +200,46 @@ export default function Onboarding() {
     setImageErrors(null);
   };
 
+  // 대표 이미지 설정 함수
+  const handleSetMainImage = async (imageId: string) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        router.push('/');
+        return;
+      }
+
+      // UI에 즉시 반영 (비관적 UI 업데이트)
+      setSelectedMainImage(imageId);
+      
+      // API 호출
+      await axiosServer.post(`/profile/images/${imageId}/main`, {}, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      console.log(`이미지 ${imageId}가 대표 이미지로 설정되었습니다.`);
+    } catch (error) {
+      console.error('대표 이미지 설정 중 오류:', error);
+      if (axios.isAxiosError(error) && error.response?.data?.message) {
+        setModalMessage(error.response.data.message);
+      } else {
+        setModalMessage('대표 이미지 설정 중 오류가 발생했습니다.');
+      }
+      setShowModal(true);
+    }
+  };
+
   const handleRemoveImage = (index: number) => {
+    // 대표 이미지로 설정되어 있던 이미지를 삭제하는 경우, 선택 상태 초기화
+    if (uploadedImages[index] && uploadedImages[index].id === selectedMainImage) {
+      setSelectedMainImage(null);
+    }
+    
     setProfileImages(prev => prev.filter((_, i) => i !== index));
     setImageFiles(prev => prev.filter((_, i) => i !== index));
+    setUploadedImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const validateForm = () => {
@@ -201,21 +259,28 @@ export default function Onboarding() {
 
     setErrors(newErrors);
 
+    // 모든 필드가 채워져 있고, 이미지 3장이 업로드 되었는지, 대표 이미지가 선택되었는지 확인
     const hasErrors = Object.values(newErrors).some(error => error);
+    const hasEnoughImages = imageFiles.length >= 3;
+    const hasMainImage = !!selectedMainImage;
+    
     if (hasErrors) {
+      setShowModal(true);
+    } else if (!hasEnoughImages) {
+      setImageErrors('프로필 사진 3장을 모두 업로드해주세요.');
+      setShowModal(true);
+    } else if (!hasMainImage) {
+      setImageErrors('대표 이미지를 선택해주세요.');
       setShowModal(true);
     }
 
-    return !hasErrors;
+    return !hasErrors && hasEnoughImages && hasMainImage;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm() || imageFiles.length < 3) {
-      if (imageFiles.length < 3) {
-        setImageErrors('프로필 사진 3장을 모두 업로드해주세요.');
-      }
+    if (!validateForm()) {
       return;
     }
 
@@ -227,17 +292,13 @@ export default function Onboarding() {
       }
 
       // 1. 기존 프로필 이미지 조회 및 삭제
-      const profileResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/profile`, {
+      const profileResponse = await axiosServer.get('/profile', {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${token}`
         }
       });
 
-      if (!profileResponse.ok) {
-        throw new Error('프로필 정보 조회 실패');
-      }
-
-      const profileData = await profileResponse.json();
+      const profileData = profileResponse.data;
       console.log('현재 프로필 정보:', profileData);
       
       // 기존 이미지 삭제
@@ -253,44 +314,26 @@ export default function Onboarding() {
             }
 
             console.log('이미지 삭제 시도:', image.id);
-            const deleteResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/profile/images/${image.id}`, {
-              method: 'DELETE',
+            await axiosServer.delete(`/profile/images/${image.id}`, {
               headers: {
-                'Authorization': `Bearer ${token}`,
+                'Authorization': `Bearer ${token}`
               }
             });
 
-            // 삭제 응답 확인
-            if (!deleteResponse.ok) {
-              const errorText = await deleteResponse.text();
-              console.error('이미지 삭제 실패:', {
-                id: image.id,
-                status: deleteResponse.status,
-                response: errorText
-              });
-              throw new Error(`이미지 삭제 실패 (ID: ${image.id}): ${errorText}`);
-            }
-
-            // 성공 시 응답이 비어있을 수 있으므로 json() 파싱 시도하지 않음
-            console.log('이미지 삭제 성공:', image.id, '(Status:', deleteResponse.status, ')');
+            console.log('이미지 삭제 성공:', image.id);
           }
           
           // 모든 삭제 완료 후 프로필 재확인
-          const checkResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/profile`, {
+          const checkResponse = await axiosServer.get('/profile', {
             headers: {
-              'Authorization': `Bearer ${token}`,
+              'Authorization': `Bearer ${token}`
             }
           });
           
-          if (!checkResponse.ok) {
-            throw new Error('프로필 상태 확인 실패');
-          }
-          
-          const checkData = await checkResponse.json();
+          const checkData = checkResponse.data;
           console.log('삭제 후 프로필 상태:', checkData);
           
           if (checkData.profileImages && checkData.profileImages.length > 0) {
-            console.error('이미지가 완전히 삭제되지 않음:', checkData.profileImages);
             throw new Error('이미지 삭제가 완료되지 않았습니다. 다시 시도해주세요.');
           }
           
@@ -305,66 +348,40 @@ export default function Onboarding() {
 
       // 2. 새 이미지 업로드 (한 번에 모든 이미지 전송)
       console.log('새 이미지 업로드 시작');
-      const imageFormData = new FormData();
-      imageFiles.forEach((file) => {
-        imageFormData.append('files', file);
-      });
-
-      console.log(`업로드 시도: ${imageFiles.length}개 이미지`);
-      const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/profile/images`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: imageFormData
-      });
-
-      if (!uploadResponse.ok) {
-        const errorText = await uploadResponse.text();
-        console.error('이미지 업로드 실패:', {
-          status: uploadResponse.status,
-          error: errorText
-        });
-        throw new Error(`이미지 업로드 실패: ${errorText}`);
+      const uploadResult = await handleImageUpload();
+      if (!uploadResult || uploadResult.length === 0) {
+        throw new Error('이미지 업로드에 실패했습니다.');
       }
-
-      const uploadResult = await uploadResponse.json();
-      console.log('이미지 업로드 완료:', uploadResult);
+      
+      // 업로드된 이미지 정보 저장
+      setUploadedImages(uploadResult);
+      
+      // 대표 이미지가 선택되어 있는 경우에만 대표 이미지 설정
+      if (selectedMainImage) {
+        await handleSetMainImage(selectedMainImage);
+        console.log(`대표 이미지 ${selectedMainImage}로 설정 완료`);
+      }
 
       // 3. 대학교 인증 요청
-      const universityResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/universities`, {
-        method: 'POST',
+      const universityResponse = await axiosServer.post('/universities', {
+        universityName: formData.university,
+        department: formData.department,
+        studentNumber: formData.studentId,
+        grade: formData.grade
+      }, {
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          universityName: formData.university,
-          department: formData.department,
-          studentNumber: formData.studentId,
-          grade: formData.grade
-        })
+          'Authorization': `Bearer ${token}`
+        }
       });
-
-      if (!universityResponse.ok) {
-        throw new Error('대학교 인증 실패');
-      }
 
       // 4. 인스타그램 아이디 등록
-      const instagramResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/profile/instagram`, {
-        method: 'PATCH',
+      const instagramResponse = await axiosServer.patch('/profile/instagram', {
+        instagramId: formData.instagramId
+      }, {
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          instagramId: formData.instagramId
-        })
+          'Authorization': `Bearer ${token}`
+        }
       });
-
-      if (!instagramResponse.ok) {
-        throw new Error('인스타그램 아이디 등록 실패');
-      }
 
       setModalMessage('프로필이 저장되었습니다!');
       setShowSuccessModal(true);
@@ -375,11 +392,52 @@ export default function Onboarding() {
     } catch (error) {
       console.error('프로필 저장 중 오류:', error);
       let errorMessage = '프로필 저장 중 오류가 발생했습니다.';
-      if (error instanceof Error) {
+      
+      if (axios.isAxiosError(error) && error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error instanceof Error) {
         errorMessage = error.message;
       }
+      
       setModalMessage(errorMessage);
       setShowModal(true);
+    }
+  };
+
+  // 이미지 업로드 처리 함수
+  const handleImageUpload = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        router.push('/');
+        return [];
+      }
+
+      console.log(`업로드 시도: ${imageFiles.length}개 이미지`);
+      const imageFormData = new FormData();
+      imageFiles.forEach((file) => {
+        imageFormData.append('files', file);
+      });
+
+      const uploadResponse = await axiosServer.post('/profile/images', imageFormData, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      const uploadResult = uploadResponse.data;
+      console.log('이미지 업로드 완료:', uploadResult);
+      return uploadResult;
+    } catch (error) {
+      console.error('이미지 업로드 중 오류:', error);
+      if (axios.isAxiosError(error) && error.response?.data?.message) {
+        setModalMessage(error.response.data.message);
+      } else {
+        setModalMessage('이미지 업로드 중 오류가 발생했습니다.');
+      }
+      setShowModal(true);
+      return [];
     }
   };
 
@@ -438,16 +496,45 @@ export default function Onboarding() {
                 {[0, 1, 2].map((index) => (
                   <div key={index} className="relative">
                     {profileImages[index] ? (
-                      <div className="relative w-full pt-[100%]">
+                      <div 
+                        className={`relative w-full pt-[100%] rounded-lg overflow-hidden cursor-pointer ${
+                          uploadedImages[index] && uploadedImages[index].id === selectedMainImage ? 
+                          'outline outline-4 outline-blue-500 shadow-lg scale-105 z-20' : 
+                          'border border-gray-200'
+                        }`}
+                        onClick={() => {
+                          if (uploadedImages[index]) {
+                            // 이미지 ID로 대표 이미지 설정
+                            handleSetMainImage(uploadedImages[index].id);
+                            // 즉시 UI에 반영
+                            setSelectedMainImage(uploadedImages[index].id);
+                            console.log(`이미지 ${uploadedImages[index].id}를 대표 이미지로 설정합니다.`);
+                          }
+                        }}>
                         <img 
                           src={profileImages[index]}
                           alt={`프로필 사진 ${index + 1}`}
-                          className="absolute inset-0 w-full h-full object-cover rounded-lg"
+                          className="absolute inset-0 w-full h-full object-cover"
                         />
+                        {uploadedImages[index] && uploadedImages[index].id === selectedMainImage && (
+                          <div className="absolute top-0 left-0 w-full h-full">
+                            <span className="absolute top-3 left-3 bg-blue-600 text-white text-xs px-3 py-1 rounded-full font-bold shadow-sm z-30">
+                              대표
+                            </span>
+                          </div>
+                        )}
+                        {uploadedImages[index] && uploadedImages[index].id !== selectedMainImage && (
+                          <div className="absolute inset-0 bg-black bg-opacity-70 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity">
+                            <span className="text-white text-sm font-medium bg-blue-600 px-3 py-1.5 rounded shadow-sm">대표 이미지로 설정</span>
+                          </div>
+                        )}
                         <button
                           type="button"
-                          onClick={() => handleRemoveImage(index)}
-                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveImage(index);
+                          }}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 z-10"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -481,6 +568,9 @@ export default function Onboarding() {
               )}
               <p className="text-sm text-gray-500">
                 얼굴이 잘 보이는 사진을 업로드해주세요. (최대 20MB)
+              </p>
+              <p className="text-sm text-blue-600 font-medium">
+                업로드한 사진을 클릭하면 <span className="font-bold underline">대표 이미지</span>로 선택되며 파란색 테두리로 표시됩니다.
               </p>
             </div>
           </div>
@@ -672,9 +762,17 @@ export default function Onboarding() {
               {errors.grade && (
                 <p className="text-red-500">• 학년을 선택해주세요</p>
               )}
-
               {errors.instagramId && (
                 <p className="text-red-500">• 인스타그램 아이디를 입력해주세요</p>
+              )}
+              {imageErrors && (
+                <p className="text-red-500">• {imageErrors}</p>
+              )}
+              {imageFiles.length < 3 && (
+                <p className="text-red-500">• 프로필 사진 3장을 모두 업로드해주세요</p>
+              )}
+              {!selectedMainImage && imageFiles.length === 3 && (
+                <p className="text-red-500">• 대표 이미지를 선택해주세요</p>
               )}
             </div>
             <button

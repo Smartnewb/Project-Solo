@@ -6,6 +6,7 @@ import { createClientSupabaseClient } from "@/utils/supabase";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import axios from "axios";
 
 // 개인정보 동의 모달 컴포넌트
 function PrivacyPolicyModal({
@@ -110,9 +111,8 @@ export default function SignUp() {
     // 회원가입 상태 확인
     const checkSignupStatus = async () => {
       try {
-        const response = await fetch("/api/admin/signup-control");
-        const data = await response.json();
-        setIsSignupEnabled(data.isSignupEnabled);
+        const response = await axios.get("/api/admin/signup-control");
+        setIsSignupEnabled(response.data.isSignupEnabled);
       } catch (error) {
         console.error("회원가입 상태 확인 실패:", error);
         setIsSignupEnabled(false);
@@ -156,15 +156,9 @@ export default function SignUp() {
 
     setSendingEmail(true);
     try {
-      const response = await fetch("/api/auth/send-verification", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: formData.email }),
+      const response = await axios.post("/api/auth/send-verification", {
+        email: formData.email
       });
-
-      if (!response.ok) {
-        throw new Error("인증 코드 전송에 실패했습니다.");
-      }
 
       setShowVerificationInput(true);
       setError(null);
@@ -183,18 +177,10 @@ export default function SignUp() {
 
     setVerifying(true);
     try {
-      const response = await fetch("/api/auth/verify-code", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email,
-          code: verificationCode,
-        }),
+      const response = await axios.post("/api/auth/verify-code", {
+        email: formData.email,
+        code: verificationCode
       });
-
-      if (!response.ok) {
-        throw new Error("잘못된 인증 코드입니다.");
-      }
 
       setEmailVerified(true);
       setVerificationError(null);
@@ -253,25 +239,10 @@ export default function SignUp() {
 
     try {
       // 1. 이메일 중복 확인
-      const checkEmailResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/check/email`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email: formData.email }),
-        }
+      const checkEmailResponse = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/check/email`,
+        { email: formData.email }
       );
-
-      if (!checkEmailResponse.ok) {
-        const errorData = await checkEmailResponse.json();
-        console.log("이메일 중복 확인 에러:", {
-          status: checkEmailResponse.status,
-          data: errorData
-        });
-        throw new Error(errorData.message || "이미 사용 중인 이메일입니다.");
-      }
 
       // 2. 회원가입 요청
       const signupData = {
@@ -284,32 +255,13 @@ export default function SignUp() {
 
       console.log("회원가입 요청 데이터:", signupData);
 
-      const signupResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/signup`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(signupData),
-        }
+      const signupResponse = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/signup`,
+        signupData
       );
 
-      if (!signupResponse.ok) {
-        // 실패 응답인 경우에만 에러 데이터 파싱
-        const errorData = await signupResponse.json();
-        console.error("회원가입 실패:", {
-          status: signupResponse.status,
-          data: errorData
-        });
-        
-        // 서버에서 온 에러 메시지를 그대로 사용
-        throw new Error(errorData.message || errorData.error || "회원가입 처리 중 오류가 발생했습니다.");
-      }
+      console.log("회원가입 성공 응답:", signupResponse.data);
       
-      // 성공 응답인 경우
-      const successData = await signupResponse.json();
-
       // 회원가입 성공 메시지 표시
       alert("회원가입에 성공했습니다.");
 
@@ -317,10 +269,16 @@ export default function SignUp() {
       router.push("/onboarding");
     } catch (err) {
       console.error("회원가입 중 오류:", err);
-      // 에러 객체에서 메시지 추출
-      setError(
-        err instanceof Error ? err.message : "회원가입 중 오류가 발생했습니다."
-      );
+      
+      // 에러 메시지 추출
+      if (axios.isAxiosError(err) && err.response?.data) {
+        const errorData = err.response.data;
+        setError(errorData.message || errorData.error || "회원가입 중 오류가 발생했습니다.");
+      } else if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("회원가입 중 오류가 발생했습니다.");
+      }
     } finally {
       setLoading(false);
     }
