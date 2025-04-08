@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useState } from "react";
 import { TOSS_PAYMENTS_CONFIG } from "../config/payments";
 import { loadTossPayments, TossPaymentsWidgets } from "@tosspayments/tosspayments-sdk";
