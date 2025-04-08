@@ -25,6 +25,8 @@ export default function FailPage() {
   }, [searchParams]);
 
   return (
+    <div className="h-screen flex flex-col justify-center">
+
     <div className="flex flex-col justify-center">
       <h1 className="text-error text-2xl font-bold">결제 실패</h1>
       <p className="text-sm text-gray-500 mt-2 mb-4">
@@ -46,6 +48,7 @@ export default function FailPage() {
       >
         홈으로 돌아가기
       </Button>
+    </div>
     </div>
   );
 }

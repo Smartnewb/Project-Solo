@@ -32,6 +32,7 @@ export default function SuccessPage() {
   }, [searchParams]);
 
   return (
+    <div className="h-screen flex flex-col justify-center">
     <div className="flex flex-col justify-center">
       <div className="flex gap-x-1.5">
         <h1 className="text-primary text-4xl font-bold">결제 성공</h1>
@@ -46,5 +47,7 @@ export default function SuccessPage() {
         매칭현황으로 이동
       </Button>
     </div>
+    </div>
+
   );
 }
