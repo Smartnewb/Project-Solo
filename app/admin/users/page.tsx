@@ -3,8 +3,30 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createClientSupabaseClient } from '@/utils/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import axiosServer from '@/utils/axios';
 
-const ADMIN_EMAIL = 'notify@smartnewb.com';
+type ProfileImage = {
+  id: string;
+  order: number;
+  isMain: boolean;
+  url: string;
+};
+
+type UniversityDetails = {
+  name: string;
+  authentication: boolean;
+  department: string;
+};
+
+type PreferenceOption = {
+  id: string;
+  displayName: string;
+};
+
+type Preference = {
+  typeName: string;
+  selectedOptions: PreferenceOption[];
+};
 
 type User = {
   id: string;
@@ -53,6 +75,21 @@ type User = {
   preferred_tattoo?: string;
   preferred_mbti?: string;
   disliked_mbti?: string;
+  profileImages?: ProfileImage[];
+  universityDetails?: UniversityDetails;
+  preferences?: Preference[];
+};
+
+type ApiResponse = {
+  items: User[];
+  meta: {
+    currentPage: number;
+    itemsPerPage: number;
+    totalItems: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
 };
 
 export default function UsersAdmin() {
@@ -66,7 +103,7 @@ export default function UsersAdmin() {
   const [selectedClass, setSelectedClass] = useState<'all' | 'S' | 'A' | 'B' | 'C' | 'unclassified'>('all');
   const [dbError, setDbError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10); // 페이지당 표시 개수 감소
+  const [pageSize] = useState(10); // 페이지당 표시 개수 고정
   const [totalCount, setTotalCount] = useState(0);
 
   const { isAdmin } = useAuth();
@@ -103,62 +140,18 @@ export default function UsersAdmin() {
       setLoading(true);
       setError(null); // 오류 상태 초기화
       
-      // 실제 테이블에 존재하는 필드만 선택
-      let query = supabase
-        .from('profiles')
-        .select(
-          'id, user_id, name, age, gender, role, classification, created_at, updated_at, instagram_id',
-          { count: 'exact' }
-        )
-        .order('created_at', { ascending: false })
-        .range((page - 1) * pageSize, page * pageSize - 1);
-      
-      // 서버 측 필터링 적용
-      if (filter === 'blocked') {
-        // is_blocked 필드가 없으므로, 임시로 admin 사용자는 필터링하지 않음
-        // query = query.eq('role', 'admin');
-      } else if (filter === 'reported') {
-        // reports_count 필드가 없으므로, 임시로 아무 필터링도 하지 않음
-        // query = query.gt('reports_count', 0);
-      }
-      
-      if (selectedGender !== 'all') {
-        query = query.eq('gender', selectedGender);
-      }
-      
-      if (selectedClass !== 'all') {
-        if (selectedClass === 'unclassified') {
-          // classification이 null인 경우 검색
-          query = query.is('classification', null);
-        } else {
-          query = query.eq('classification', selectedClass);
-        }
-      }
-      
-      if (searchTerm.trim() !== '') {
-        // email 필드가 없으므로 name 필드로만 검색
-        query = query.ilike('name', `%${searchTerm}%`);
-      }
-      
-      const { data: profilesData, error: profilesError, count } = await query;
-        
-      if (profilesError) {
-        setDbError(profilesError.message);
-        return;
-      }
-      
-      if (!profilesData || profilesData.length === 0) {
-        setUsers([]);
-        return;
-      }
+      // API 요청 파라미터 구성 (페이지네이션만)
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: pageSize.toString()
+      });
 
-      // 사용자 목록 설정 (이제 페이지네이션을 사용하므로 항상 더기가 아닌 대체)
-      setUsers(profilesData);
-      
-      // 총 개수 설정
-      if (count !== null) {
-        setTotalCount(count);
-      }
+      // Nest.js API 호출
+      const response = await axiosServer.get<ApiResponse>(`/admin/users?${params}`);
+      const { items, meta } = response.data;
+
+      setUsers(items);
+      setTotalCount(meta.totalItems);
       
     } catch (err: any) {
       console.error('사용자 목록 불러오기 오류:', err);
@@ -853,12 +846,12 @@ export default function UsersAdmin() {
                       
                       <div>
                         <p className="text-sm text-gray-500">학교</p>
-                        <p className="font-medium">{selectedUser.university || '-'}</p>
+                        <p className="font-medium">{selectedUser.universityDetails?.name || '-'}</p>
                       </div>
                       
                       <div>
                         <p className="text-sm text-gray-500">학과</p>
-                        <p className="font-medium">{selectedUser.department || '-'}</p>
+                        <p className="font-medium">{selectedUser.universityDetails?.department || '-'}</p>
                       </div>
                       
                       <div>
