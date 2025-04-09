@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import axiosServer from '@/utils/axios';
 import axios, { AxiosError } from 'axios';
 
@@ -117,22 +118,49 @@ export default function ProfilePage() {
         {/* 기본 정보 */}
         <div className="bg-white rounded-2xl shadow-sm p-6 mb-4">
           <h2 className="text-xl font-bold mb-4">기본 정보</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-gray-500 text-sm">이름</p>
-              <p className="font-medium">{profile.name}</p>
+          <div className="flex gap-6">
+            {/* 프로필 이미지 */}
+            <div className="w-32 h-32 rounded-xl overflow-hidden flex-shrink-0 relative">
+              {profile.profileImages && profile.profileImages.length > 0 ? (
+                <Image
+                  src={profile.profileImages.find(img => img.isMain)?.url || profile.profileImages[0].url}
+                  alt="대표 프로필"
+                  fill
+                  sizes="128px"
+                  className="object-cover"
+                  onError={(e) => {
+                    console.error('이미지 로드 실패:', e);
+                    const target = e.target as HTMLImageElement;
+                    target.onerror = null; // 무한 루프 방지
+                    target.src = '/default-profile.png'; // 기본 이미지로 대체
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                  <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+              )}
             </div>
-            <div>
-              <p className="text-gray-500 text-sm">나이</p>
-              <p className="font-medium">{profile.age}세</p>
-            </div>
-            <div>
-              <p className="text-gray-500 text-sm">성별</p>
-              <p className="font-medium">{profile.gender === 'MALE' ? '남성' : '여성'}</p>
-            </div>
-            <div>
-              <p className="text-gray-500 text-sm">MBTI</p>
-              <p className="font-medium">{mbti || '미입력'}</p>
+            {/* 기본 정보 그리드 */}
+            <div className="flex-grow grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-gray-500 text-sm">이름</p>
+                <p className="font-medium">{profile.name}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-sm">나이</p>
+                <p className="font-medium">{profile.age}세</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-sm">성별</p>
+                <p className="font-medium">{profile.gender === 'MALE' ? '남성' : '여성'}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-sm">MBTI</p>
+                <p className="font-medium">{mbti || '미입력'}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -251,6 +279,12 @@ export default function ProfilePage() {
             className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all"
           >
             프로필 수정하기
+          </button>
+          <button
+            onClick={() => router.push('/ideal-type')}
+            className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all"
+          >
+            이상형 정보 수정하기
           </button>
           <button
             onClick={() => router.back()}
