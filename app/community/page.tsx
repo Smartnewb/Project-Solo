@@ -104,6 +104,10 @@ export default function Community() {
   const [isAnonymous, setIsAnonymous] = useState(true);
   const [selectedEmoji, setSelectedEmoji] = useState("😊");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [hasMore, setHasMore] = useState<boolean>(true);
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
+  const postsPerPage = 5;
 
   // 댓글 관련 상태
   const [showAllComments, setShowAllComments] = useState<string | null>(null);
@@ -144,9 +148,36 @@ export default function Community() {
 
   // 컴포넌트 마운트 시 게시글과 사용자 정보 불러오기
   useEffect(() => {
-    fetchPosts();
+    fetchPosts(1);
     fetchCheckuser();
   }, []);
+
+  // 스크롤 이벤트를 감지하여 무한 스크롤 구현
+  useEffect(() => {
+    const handleScroll = () => {
+      // 스크롤이 페이지 하단에서 200px 이내인 경우 추가 데이터 로드
+      if (
+        window.innerHeight + document.documentElement.scrollTop >=
+          document.documentElement.offsetHeight - 200 &&
+        hasMore &&
+        !isLoadingMore
+      ) {
+        loadMorePosts();
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [currentPage, hasMore, isLoadingMore]);
+
+  // 추가 게시글 로드
+  const loadMorePosts = async () => {
+    if (!hasMore || isLoadingMore) return;
+
+    setIsLoadingMore(true);
+    await fetchPosts(currentPage + 1);
+    setIsLoadingMore(false);
+  };
 
   // 게시글 목록이 변경될 때마다 각 게시글의 댓글을 불러오기
   useEffect(() => {
@@ -170,10 +201,13 @@ export default function Community() {
 
   // 인기 게시글 불러오기
   const fetchPopularPosts = async () => {};
+
   // 게시글 불러오기
-  const fetchPosts = async (page: number = 1, limit: number = 10) => {
+  const fetchPosts = async (page: number = 1, limit: number = postsPerPage) => {
     const token = localStorage.getItem("accessToken");
     try {
+      setIsLoadingMore(page > 1);
+
       const response = await axiosServer.get("/articles", {
         params: {
           page,
@@ -183,10 +217,25 @@ export default function Community() {
           Authorization: `Bearer ${token}`,
         },
       });
-      console.log(response.data.items);
-      setPosts(response.data.items);
+
+      const newPosts = response.data.items;
+
+      // 첫 페이지면 기존 데이터 교체, 아니면 추가
+      if (page === 1) {
+        setPosts(newPosts);
+      } else {
+        setPosts((prevPosts) => [...prevPosts, ...newPosts]);
+      }
+
+      // 새 페이지 설정
+      setCurrentPage(page);
+
+      // 가져온 게시글 수가 limit보다 적으면 더 이상 불러올 게시글이 없다는 의미
+      setHasMore(newPosts.length === limit);
     } catch (error) {
       console.error("게시글 조회 중 오류가 발생했습니다:", error);
+    } finally {
+      setIsLoadingMore(false);
     }
   };
 
@@ -848,216 +897,240 @@ export default function Community() {
         {/* 게시글 목록 */}
         <div className="space-y-4">
           {posts.length > 0 ? (
-            posts.map((post) => (
-              <div
-                key={post.id}
-                id={`post-${post.id}`}
-                className={`bg-white rounded-lg shadow-md p-5 mb-4 `}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 flex items-center justify-center bg-gray-200 rounded-full mr-3">
-                      <span className="text-xl">{post.emoji}</span>
+            <>
+              {posts.map((post) => (
+                <div
+                  key={post.id}
+                  id={`post-${post.id}`}
+                  className={`bg-white rounded-lg shadow-md p-5 mb-4 `}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 flex items-center justify-center bg-gray-200 rounded-full mr-3">
+                        <span className="text-xl">{post.emoji}</span>
+                      </div>
+                      <div>
+                        <h3 className="font-medium">
+                          {post.author.name || "익명"}
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                          {formatTime(post.createdAt)}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-medium">
-                        {post.author.name || "익명"}
-                      </h3>
-                      <p className="text-xs text-gray-500">
-                        {formatTime(post.createdAt)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {post.updatedAt && post.updatedAt !== post.createdAt && (
-                      <span className="text-sm text-gray-500">(수정됨)</span>
-                    )}
-                    {post.author?.id === Checkuser?.id && !post.deletedAt ? (
-                      <div className="flex gap-2">
-                        {editingPost === post.id ? (
-                          <>
+                    <div className="flex items-center gap-2">
+                      {post.updatedAt && post.updatedAt !== post.createdAt && (
+                        <span className="text-sm text-gray-500">(수정됨)</span>
+                      )}
+                      {post.author?.id === Checkuser?.id && !post.deletedAt ? (
+                        <div className="flex gap-2">
+                          {editingPost === post.id ? (
+                            <>
+                              <button
+                                onClick={() => setEditingPost(null)}
+                                className="text-sm text-gray-500 hover:text-gray-600"
+                              >
+                                취소
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleEditPost(
+                                    post,
+                                    post.anonymous,
+                                    post.emoji
+                                  )
+                                }
+                                className="text-sm text-blue-500 hover:text-blue-600"
+                              >
+                                저장
+                              </button>
+                            </>
+                          ) : (
                             <button
-                              onClick={() => setEditingPost(null)}
-                              className="text-sm text-gray-500 hover:text-gray-600"
-                            >
-                              취소
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleEditPost(post, post.anonymous, post.emoji)
-                              }
+                              onClick={() => {
+                                setEditingPost(post.id);
+                                setEditContent(post.content);
+                              }}
                               className="text-sm text-blue-500 hover:text-blue-600"
                             >
-                              저장
+                              수정
                             </button>
-                          </>
-                        ) : (
+                          )}
                           <button
-                            onClick={() => {
-                              setEditingPost(post.id);
-                              setEditContent(post.content);
-                            }}
-                            className="text-sm text-blue-500 hover:text-blue-600"
+                            onClick={() => handlePostDelete(post.id)}
+                            className="text-sm text-red-500 hover:text-red-600"
                           >
-                            수정
+                            삭제
                           </button>
-                        )}
-                        <button
-                          onClick={() => handlePostDelete(post.id)}
-                          className="text-sm text-red-500 hover:text-red-600"
-                        >
-                          삭제
-                        </button>
-                      </div>
-                    ) : (
-                      !post.deletedAt &&
-                      user &&
-                      post.author?.id !== Checkuser?.id && (
-                        <button
-                          onClick={() => handleOpenReport("post", post.id)}
-                          className="text-sm text-gray-500 hover:text-gray-600"
-                        >
-                          🚨신고
-                        </button>
-                      )
-                    )}
-                  </div>
-                </div>
-
-                {/* 게시물 내용 */}
-                <div className="mb-4">
-                  {editingPost === post.id ? (
-                    <textarea
-                      className="w-full border rounded p-2"
-                      value={editContent}
-                      onChange={(e) => setEditContent(e.target.value)}
-                    />
-                  ) : (
-                    <p className="whitespace-pre-wrap">{post.content}</p>
-                  )}
-
-                  <div className="flex items-center gap-4">
-                    <button
-                      onClick={() => handleLike(post.id)}
-                      className={`flex items-center gap-1 ${
-                        post.likeCount > 0 ? "text-red-500" : "text-gray-500"
-                      }`}
-                    >
-                      <HeartIcon className="w-5 h-5" />
-                      <span>{post.likeCount || 0}</span>
-                    </button>
-                    <button
-                      onClick={() =>
-                        setShowCommentInput(
-                          showCommentInput === post.id ? null : post.id
+                        </div>
+                      ) : (
+                        !post.deletedAt &&
+                        user &&
+                        post.author?.id !== Checkuser?.id && (
+                          <button
+                            onClick={() => handleOpenReport("post", post.id)}
+                            className="text-sm text-gray-500 hover:text-gray-600"
+                          >
+                            🚨신고
+                          </button>
                         )
-                      }
-                      className="flex items-center gap-1 text-gray-500"
-                    >
-                      <ChatBubbleOvalLeftIcon className="w-5 h-5" />
-                      <span>
-                        {post.comments?.filter((comment) => !comment.deletedAt)
-                          .length || 0}
-                      </span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* 댓글 입력창 */}
-                {!post.deletedAt && showCommentInput === post.id && (
-                  <div className="mt-4 space-y-4 border-t pt-4">
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() =>
-                            setShowCommentEmojiPicker(!showCommentEmojiPicker)
-                          }
-                          className="w-8 h-8 rounded-full bg-[#6C5CE7] text-white flex items-center justify-center font-bold hover:bg-[#5849BE] transition-colors mt-1"
-                        >
-                          {selectedCommentEmoji}
-                        </button>
-                        <div className="flex-1">
-                          <input
-                            type="text"
-                            value={newComment}
-                            onChange={(e) => {
-                              const newValue = e.target.value;
-                              setNewComment(newValue);
-                            }}
-                            placeholder="댓글을 입력하세요"
-                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6C5CE7]"
-                            maxLength={200}
-                          />
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between px-2">
-                        <div className="flex items-center gap-3">
-                          <label className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50/80 px-3 py-1.5 rounded-lg hover:bg-gray-100/80 transition-colors">
-                            <div className="relative inline-block w-9 h-5">
-                              <input
-                                type="checkbox"
-                                checked={isCommentAnonymous}
-                                onChange={(e) =>
-                                  setIsCommentAnonymous(e.target.checked)
-                                }
-                                className="sr-only peer"
-                              />
-                              <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#6C5CE7] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#6C5CE7] peer-checked:to-[#5849BE]"></div>
-                            </div>
-                            익명
-                          </label>
-                          <span className="text-sm text-gray-500 bg-gray-50/80 px-3 py-1.5 rounded-lg">
-                            {newComment.length}/200
-                          </span>
-                        </div>
-                        <button
-                          onClick={() =>
-                            handleAddComment(
-                              post.id,
-                              isCommentAnonymous,
-                              selectedCommentEmoji
-                            )
-                          }
-                          disabled={!newComment.trim()}
-                          className={`px-4 py-2 rounded-lg transition-all duration-200 ${
-                            newComment.trim()
-                              ? "bg-gradient-to-r from-[#6C5CE7] to-[#5849BE] text-white hover:opacity-90 shadow-md"
-                              : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          }`}
-                        >
-                          작성
-                        </button>
-                      </div>
-                      {showCommentEmojiPicker && (
-                        <div className="absolute z-10 mt-10 bg-white rounded-lg shadow-lg p-4 border border-gray-200">
-                          <div className="grid grid-cols-5 gap-2">
-                            {emojis.map((emoji) => (
-                              <button
-                                key={emoji}
-                                onClick={() => {
-                                  setSelectedCommentEmoji(emoji);
-                                  setShowCommentEmojiPicker(false);
-                                }}
-                                className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
-                              >
-                                {emoji}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
                       )}
                     </div>
                   </div>
-                )}
 
-                {/* 댓글 목록 */}
-                {!post.deletedAt && (
-                  <div className="mt-4 space-y-4 border-t pt-4">
-                    {renderComments(post, showAllComments === post.id)}
+                  {/* 게시물 내용 */}
+                  <div className="mb-4">
+                    {editingPost === post.id ? (
+                      <textarea
+                        className="w-full border rounded p-2"
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                      />
+                    ) : (
+                      <p className="whitespace-pre-wrap">{post.content}</p>
+                    )}
+
+                    <div className="flex items-center gap-4">
+                      <button
+                        onClick={() => handleLike(post.id)}
+                        className={`flex items-center gap-1 ${
+                          post.likeCount > 0 ? "text-red-500" : "text-gray-500"
+                        }`}
+                      >
+                        <HeartIcon className="w-5 h-5" />
+                        <span>{post.likeCount || 0}</span>
+                      </button>
+                      <button
+                        onClick={() =>
+                          setShowCommentInput(
+                            showCommentInput === post.id ? null : post.id
+                          )
+                        }
+                        className="flex items-center gap-1 text-gray-500"
+                      >
+                        <ChatBubbleOvalLeftIcon className="w-5 h-5" />
+                        <span>
+                          {post.comments?.filter(
+                            (comment) => !comment.deletedAt
+                          ).length || 0}
+                        </span>
+                      </button>
+                    </div>
                   </div>
-                )}
-              </div>
-            ))
+
+                  {/* 댓글 입력창 */}
+                  {!post.deletedAt && showCommentInput === post.id && (
+                    <div className="mt-4 space-y-4 border-t pt-4">
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() =>
+                              setShowCommentEmojiPicker(!showCommentEmojiPicker)
+                            }
+                            className="w-8 h-8 rounded-full bg-[#6C5CE7] text-white flex items-center justify-center font-bold hover:bg-[#5849BE] transition-colors mt-1"
+                          >
+                            {selectedCommentEmoji}
+                          </button>
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              value={newComment}
+                              onChange={(e) => {
+                                const newValue = e.target.value;
+                                setNewComment(newValue);
+                              }}
+                              placeholder="댓글을 입력하세요"
+                              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6C5CE7]"
+                              maxLength={200}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between px-2">
+                          <div className="flex items-center gap-3">
+                            <label className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50/80 px-3 py-1.5 rounded-lg hover:bg-gray-100/80 transition-colors">
+                              <div className="relative inline-block w-9 h-5">
+                                <input
+                                  type="checkbox"
+                                  checked={isCommentAnonymous}
+                                  onChange={(e) =>
+                                    setIsCommentAnonymous(e.target.checked)
+                                  }
+                                  className="sr-only peer"
+                                />
+                                <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#6C5CE7] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-[#6C5CE7] peer-checked:to-[#5849BE]"></div>
+                              </div>
+                              익명
+                            </label>
+                            <span className="text-sm text-gray-500 bg-gray-50/80 px-3 py-1.5 rounded-lg">
+                              {newComment.length}/200
+                            </span>
+                          </div>
+                          <button
+                            onClick={() =>
+                              handleAddComment(
+                                post.id,
+                                isCommentAnonymous,
+                                selectedCommentEmoji
+                              )
+                            }
+                            disabled={!newComment.trim()}
+                            className={`px-4 py-2 rounded-lg transition-all duration-200 ${
+                              newComment.trim()
+                                ? "bg-gradient-to-r from-[#6C5CE7] to-[#5849BE] text-white hover:opacity-90 shadow-md"
+                                : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                            }`}
+                          >
+                            작성
+                          </button>
+                        </div>
+                        {showCommentEmojiPicker && (
+                          <div className="absolute z-10 mt-10 bg-white rounded-lg shadow-lg p-4 border border-gray-200">
+                            <div className="grid grid-cols-5 gap-2">
+                              {emojis.map((emoji) => (
+                                <button
+                                  key={emoji}
+                                  onClick={() => {
+                                    setSelectedCommentEmoji(emoji);
+                                    setShowCommentEmojiPicker(false);
+                                  }}
+                                  className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors"
+                                >
+                                  {emoji}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 댓글 목록 */}
+                  {!post.deletedAt && (
+                    <div className="mt-4 space-y-4 border-t pt-4">
+                      {renderComments(post, showAllComments === post.id)}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {/* 로딩 인디케이터 */}
+              {isLoadingMore && (
+                <div className="text-center py-4">
+                  <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#6C5CE7] border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
+                  <p className="mt-2 text-gray-500">
+                    게시글을 더 불러오는 중...
+                  </p>
+                </div>
+              )}
+
+              {/* 더 이상 불러올 게시글이 없는 경우 */}
+              {!hasMore && posts.length > 0 && (
+                <div className="text-center py-4">
+                  <p className="text-gray-500">모든 게시글을 불러왔습니다.</p>
+                </div>
+              )}
+            </>
           ) : (
             <div className="card p-8 text-center">
               <p className="text-gray-500 text-lg mb-4">
