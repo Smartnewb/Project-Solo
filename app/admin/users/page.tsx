@@ -28,57 +28,21 @@ type Preference = {
   selectedOptions: PreferenceOption[];
 };
 
-type User = {
+interface User {
   id: string;
-  user_id: string;
+  userId: string;
+  email: string;
+  role: string;
+  classification: string | null;
+  gender: 'MALE' | 'FEMALE';
+  createdAt: string;
   name: string;
-  age?: number;
-  gender?: string;
-  role?: string;
-  classification?: string | null;
-  created_at: string;
-  updated_at: string;
-  
-  // 추가 필드 (데이터베이스에 없지만 정보 표시용)
-  email?: string; // 프로필이 아닌 auth.users에 있을 수 있는 필드
-  is_blocked?: boolean;
-  reports_count?: number;
-  matches_count?: number;
-  last_active?: string;
-  instagram_id?: string;
-  
-  // 프로필 관련 필드 (임시로 코드 호환성을 위해 유지)
-  height?: number;
-  university?: string;
-  department?: string;
-  student_id?: string;
-  grade?: string;
-  personalities?: string[];
-  dating_styles?: string[];
-  lifestyles?: string[];
-  interests?: string[];
-  drinking?: string;
-  smoking?: string;
-  tattoo?: string;
-  mbti?: string;
-  
-  // 이상형 정보 (user_preferences 테이블)
-  preferred_age_type?: string;
-  preferred_height_min?: number;
-  preferred_height_max?: number;
-  preferred_personalities?: string[];
-  preferred_dating_styles?: string[];
-  preferred_lifestyles?: string[];
-  preferred_interests?: string[];
-  preferred_drinking?: string;
-  preferred_smoking?: string;
-  preferred_tattoo?: string;
-  preferred_mbti?: string;
-  disliked_mbti?: string;
-  profileImages?: ProfileImage[];
-  universityDetails?: UniversityDetails;
-  preferences?: Preference[];
-};
+  age: number;
+  instagramId: string | null;
+  profileImages: ProfileImage[];
+  universityDetails: UniversityDetails | null;
+  preferences: Preference[];
+}
 
 type ApiResponse = {
   items: User[];
@@ -90,6 +54,12 @@ type ApiResponse = {
     hasNextPage: boolean;
     hasPreviousPage: boolean;
   };
+};
+
+const getGenderText = (gender: string) => {
+  if (gender === 'MALE') return '남성';
+  if (gender === 'FEMALE') return '여성';
+  return '미지정';
 };
 
 export default function UsersAdmin() {
@@ -162,43 +132,7 @@ export default function UsersAdmin() {
   }
 
   const handleUserSelect = async (user: User) => {
-    try {
-      console.log('선택된 사용자 기본 정보:', user);
-
-      // 프로필과 이상형 정보를 함께 조회
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select(`
-          *,
-          user_preferences!inner(*)
-        `)
-        .eq('user_id', user.user_id)
-        .single();
-
-      if (profileError) {
-        console.error('프로필 정보 조회 오류:', profileError);
-        // 프로필 정보만이라도 표시
-        setSelectedUser(user);
-        return;
-      }
-
-      console.log('조회된 프로필 데이터:', profileData);
-
-      // 기본 사용자 정보와 프로필, 이상형 정보를 모두 합쳐서 상태 업데이트
-      const userWithPreferences = {
-        ...user,
-        ...profileData,
-        ...(profileData?.user_preferences?.[0] || {})
-      };
-
-      console.log('최종 병합된 사용자 데이터:', userWithPreferences);
-      setSelectedUser(userWithPreferences);
-      
-    } catch (error) {
-      console.error('사용자 상세 정보 조회 중 오류 발생:', error);
-      // 에러 발생시 기본 정보라도 표시
-      setSelectedUser(user);
-    }
+    setSelectedUser(user);
   };
 
   const handleCloseDetails = () => {
@@ -225,7 +159,7 @@ export default function UsersAdmin() {
       
       // 목록 업데이트
       setUsers(users.map(user => 
-        user.user_id === userId ? { ...user, role: 'blocked' } : user
+        user.userId === userId ? { ...user, role: 'blocked' } : user
       ));
       
       alert('사용자가 차단되었습니다.');
@@ -258,7 +192,7 @@ export default function UsersAdmin() {
       
       // 목록 업데이트
       setUsers(users.map(user => 
-        user.user_id === userId ? { ...user, role: 'user' } : user
+        user.userId === userId ? { ...user, role: 'user' } : user
       ));
       
       alert('사용자 차단이 해제되었습니다.');
@@ -331,11 +265,11 @@ export default function UsersAdmin() {
       
       // 사용자 목록 업데이트
       setUsers(prevUsers => prevUsers.map(user => 
-        user.user_id === userId ? { ...user, classification: classificationValue } : user
+        user.userId === userId ? { ...user, classification: classificationValue } : user
       ));
       
       // 선택된 사용자가 있고, 그 ID가 현재 업데이트하는 ID와 같다면 선택된 사용자 정보도 업데이트
-      if (selectedUser && selectedUser.user_id === userId) {
+      if (selectedUser && selectedUser.userId === userId) {
         setSelectedUser(prev => prev ? { ...prev, classification: classificationValue } : null);
       }
       
@@ -377,97 +311,88 @@ export default function UsersAdmin() {
   
   // 페이지 버튼 렌더링
   const renderPagination = () => {
-    if (totalCount === 0) return null;
-    
     const totalPages = Math.ceil(totalCount / pageSize);
-    const maxButtons = 5; // 한 번에 보이는 버튼 수
-    
-    // 현재 페이지 주변에 보여질 버튼 범위 계산
-    let startPage = Math.max(1, page - Math.floor(maxButtons / 2));
-    let endPage = startPage + maxButtons - 1;
-    
-    if (endPage > totalPages) {
-      endPage = totalPages;
-      startPage = Math.max(1, endPage - maxButtons + 1);
-    }
-    
-    const pageButtons = [];
-    
-    // 맨 앞으로 버튼 (첫 페이지)
-    if (page > 1) {
-      pageButtons.push(
-        <button
-          key="first"
-          onClick={() => handlePageChange(1)}
-          className="px-3 py-1 mx-1 rounded border border-gray-300 hover:bg-gray-100"
-          disabled={loading}
-          title="첫 페이지"
-        >
-          &laquo;&laquo;
-        </button>
-      );
-    }
-    
-    // 이전 버튼
-    if (page > 1) {
-      pageButtons.push(
-        <button
-          key="prev"
-          onClick={() => handlePageChange(page - 1)}
-          className="px-3 py-1 mx-1 rounded border border-gray-300 hover:bg-gray-100"
-          disabled={loading}
-        >
-          &laquo;
-        </button>
-      );
-    }
-    
-    // 페이지 번호 버튼
-    for (let i = startPage; i <= endPage; i++) {
-      pageButtons.push(
-        <button
-          key={i}
-          onClick={() => handlePageChange(i)}
-          className={`px-3 py-1 mx-1 rounded font-bold ${page === i ? 'bg-blue-600 text-white border-2 border-blue-700 shadow-md' : 'border border-gray-300 hover:bg-gray-100 text-gray-700'}`}
-          disabled={loading || page === i}
-        >
-          {i}
-        </button>
-      );
-    }
-    
-    // 다음 버튼
-    if (page < totalPages) {
-      pageButtons.push(
-        <button
-          key="next"
-          onClick={() => handlePageChange(page + 1)}
-          className="px-3 py-1 mx-1 rounded border border-gray-300 hover:bg-gray-100"
-          disabled={loading}
-        >
-          &raquo;
-        </button>
-      );
-    }
-    
-    // 맨 뒤로 버튼 (마지막 페이지)
-    if (page < totalPages) {
-      pageButtons.push(
-        <button
-          key="last"
-          onClick={() => handlePageChange(totalPages)}
-          className="px-3 py-1 mx-1 rounded border border-gray-300 hover:bg-gray-100"
-          disabled={loading}
-          title="마지막 페이지"
-        >
-          &raquo;&raquo;
-        </button>
-      );
-    }
-    
+    const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
+
     return (
-      <div className="flex justify-center items-center py-4">
-        {pageButtons}
+      <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+        <div className="flex-1 flex justify-between sm:hidden">
+          <button
+            onClick={() => setPage(page - 1)}
+            disabled={page === 1}
+            className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+              page === 1
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-white text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            이전
+          </button>
+          <button
+            onClick={() => setPage(page + 1)}
+            disabled={page === totalPages}
+            className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+              page === totalPages
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-white text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            다음
+          </button>
+        </div>
+        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm text-gray-700">
+              <span className="font-medium">{page}</span> 페이지 / 총{' '}
+              <span className="font-medium">{totalPages}</span> 페이지
+            </p>
+          </div>
+          <div>
+            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              <button
+                onClick={() => setPage(page - 1)}
+                disabled={page === 1}
+                className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
+                  page === 1
+                    ? 'text-gray-300 cursor-not-allowed'
+                    : 'text-gray-500 hover:bg-gray-50'
+                }`}
+              >
+                <span className="sr-only">이전</span>
+                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </button>
+              {pages.map((pageNum) => (
+                <button
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
+                  className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                    page === pageNum
+                      ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                      : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              ))}
+              <button
+                onClick={() => setPage(page + 1)}
+                disabled={page === totalPages}
+                className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
+                  page === totalPages
+                    ? 'text-gray-300 cursor-not-allowed'
+                    : 'text-gray-500 hover:bg-gray-50'
+                }`}
+              >
+                <span className="sr-only">다음</span>
+                <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </nav>
+          </div>
+        </div>
       </div>
     );
   };
@@ -533,7 +458,7 @@ export default function UsersAdmin() {
                 
                 return (
                   <tr 
-                    key={user.id} 
+                    key={user.userId} 
                     className={`hover:bg-gray-50 ${isBlocked ? 'bg-red-50' : hasReports ? 'bg-yellow-50' : ''}`}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -551,7 +476,7 @@ export default function UsersAdmin() {
                       <div className="relative">
                         <select
                           value={user.classification || ''}
-                          onChange={(e) => handleClassificationChange(user.user_id, e.target.value, user.gender || '')}
+                          onChange={(e) => handleClassificationChange(user.userId, e.target.value, user.gender || '')}
                           className="appearance-none bg-transparent border border-gray-300 rounded-md py-1 px-3 pr-8 focus:outline-none focus:ring-primary-DEFAULT focus:border-primary-DEFAULT text-sm"
                           disabled={loading || isBlocked}
                         >
@@ -570,23 +495,22 @@ export default function UsersAdmin() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {user.age ? `${user.age}세` : '-'} / {' '}
-                      {user.gender === 'male' ? '남성' : 
-                       user.gender === 'female' ? '여성' : '기타'}
+                      {getGenderText(user.gender)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {user.instagram_id ? (
+                      {user.instagramId ? (
                         <a
-                          href={`https://www.instagram.com/${user.instagram_id}`}
+                          href={`https://www.instagram.com/${user.instagramId}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-500 hover:underline"
                         >
-                          @{user.instagram_id}
+                          @{user.instagramId}
                         </a>
                       ) : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {formatDateKorean(user.created_at)}
+                      {formatDateKorean(user.createdAt)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {user.role === 'blocked' ? (
@@ -614,7 +538,7 @@ export default function UsersAdmin() {
                         
                         {isBlocked ? (
                           <button
-                            onClick={() => handleUnblockUser(user.user_id)}
+                            onClick={() => handleUnblockUser(user.userId)}
                             className="text-green-500 hover:text-green-700"
                             disabled={loading}
                           >
@@ -622,7 +546,7 @@ export default function UsersAdmin() {
                           </button>
                         ) : (
                           <button
-                            onClick={() => handleBlockUser(user.user_id)}
+                            onClick={() => handleBlockUser(user.userId)}
                             className="text-red-500 hover:text-red-700"
                             disabled={loading}
                           >
@@ -632,7 +556,7 @@ export default function UsersAdmin() {
                         
                         {hasReports && (
                           <button
-                            onClick={() => handleClearReports(user.user_id)}
+                            onClick={() => handleClearReports(user.userId)}
                             className="text-yellow-500 hover:text-yellow-700"
                             disabled={loading}
                           >
@@ -832,7 +756,15 @@ export default function UsersAdmin() {
                 <div className="space-y-6">
                   <div className="flex justify-center">
                     <div className="h-32 w-32 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 text-4xl">
-                      {selectedUser.name ? selectedUser.name.charAt(0).toUpperCase() : '?'}
+                      {selectedUser.profileImages && selectedUser.profileImages.length > 0 ? (
+                        <img 
+                          src={selectedUser.profileImages[0].url} 
+                          alt={selectedUser.name}
+                          className="h-full w-full object-cover rounded-full"
+                        />
+                      ) : (
+                        selectedUser.name.charAt(0).toUpperCase()
+                      )}
                     </div>
                   </div>
                   
@@ -841,40 +773,30 @@ export default function UsersAdmin() {
                     <div className="space-y-3">
                       <div>
                         <p className="text-sm text-gray-500">이름</p>
-                        <p className="font-medium">{selectedUser.name || '-'}</p>
+                        <p className="font-medium">{selectedUser.name}</p>
                       </div>
                       
                       <div>
-                        <p className="text-sm text-gray-500">학교</p>
-                        <p className="font-medium">{selectedUser.universityDetails?.name || '-'}</p>
+                        <p className="text-sm text-gray-500">나이</p>
+                        <p className="font-medium">{selectedUser.age}세</p>
                       </div>
                       
                       <div>
-                        <p className="text-sm text-gray-500">학과</p>
-                        <p className="font-medium">{selectedUser.universityDetails?.department || '-'}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">학번</p>
-                        <p className="font-medium">{selectedUser.student_id || '-'}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">학년</p>
-                        <p className="font-medium">{selectedUser.grade || '-'}</p>
+                        <p className="text-sm text-gray-500">성별</p>
+                        <p className="font-medium">{getGenderText(selectedUser.gender)}</p>
                       </div>
                       
                       <div>
                         <p className="text-sm text-gray-500">인스타그램</p>
                         <p className="font-medium">
-                          {selectedUser.instagram_id ? (
+                          {selectedUser.instagramId ? (
                             <a
-                              href={`https://www.instagram.com/${selectedUser.instagram_id}`}
+                              href={`https://www.instagram.com/${selectedUser.instagramId}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-blue-500 hover:underline"
                             >
-                              @{selectedUser.instagram_id}
+                              @{selectedUser.instagramId}
                             </a>
                           ) : '-'}
                         </p>
@@ -882,175 +804,58 @@ export default function UsersAdmin() {
                     </div>
                   </div>
 
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="text-lg font-semibold mb-4">계정 정보</h3>
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-sm text-gray-500">사용자 ID</p>
-                        <p className="font-medium break-all">{selectedUser.user_id}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">등급</p>
-                        <p className="font-medium">{selectedUser.classification || '미분류'}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="text-lg font-semibold mb-4">활동 정보</h3>
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-sm text-gray-500">가입일</p>
-                        <p className="font-medium">{formatDateKorean(selectedUser.created_at)}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">최근 업데이트</p>
-                        <p className="font-medium">{formatDateKorean(selectedUser.updated_at)}</p>
-                      </div>
-                      
-                      {selectedUser.last_active && (
+                  {selectedUser.universityDetails && (
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h3 className="text-lg font-semibold mb-4">대학교 정보</h3>
+                      <div className="space-y-3">
                         <div>
-                          <p className="text-sm text-gray-500">최근 활동</p>
-                          <p className="font-medium">{formatDateKorean(selectedUser.last_active)}</p>
+                          <p className="text-sm text-gray-500">학교명</p>
+                          <p className="font-medium">{selectedUser.universityDetails.name}</p>
                         </div>
-                      )}
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">매칭 횟수</p>
-                        <p className="font-medium">{selectedUser.matches_count || 0}회</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">계정 상태</p>
-                        <p className="font-medium">
-                          {selectedUser.is_blocked ? (
-                            <span className="text-red-500">차단됨</span>
-                          ) : selectedUser.reports_count && selectedUser.reports_count > 0 ? (
-                            <span className="text-yellow-500">신고 {selectedUser.reports_count}건</span>
-                          ) : (
-                            <span className="text-green-500">정상</span>
-                          )}
-                        </p>
+                        
+                        <div>
+                          <p className="text-sm text-gray-500">학과</p>
+                          <p className="font-medium">{selectedUser.universityDetails.department}</p>
+                        </div>
+                        
+                        <div>
+                          <p className="text-sm text-gray-500">인증 상태</p>
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            selectedUser.universityDetails.authentication
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-red-100 text-red-800'
+                          }`}>
+                            {selectedUser.universityDetails.authentication ? '인증됨' : '미인증'}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
-                {/* 오른쪽 컬럼 */}
+                {/* 오른쪽 컬럼 - 선호도 정보 */}
                 <div className="space-y-6">
                   <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="text-lg font-semibold mb-4">프로필 상세 정보</h3>
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-sm text-gray-500">키</p>
-                        <p className="font-medium">{selectedUser.height ? `${selectedUser.height}cm` : '-'}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">성격</p>
-                        <p className="font-medium">{selectedUser.personalities?.join(', ') || '-'}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">데이트 스타일</p>
-                        <p className="font-medium">{selectedUser.dating_styles?.join(', ') || '-'}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">라이프스타일</p>
-                        <p className="font-medium">{selectedUser.lifestyles?.join(', ') || '-'}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">관심사</p>
-                        <p className="font-medium">{selectedUser.interests?.join(', ') || '-'}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">MBTI</p>
-                        <p className="font-medium">{selectedUser.mbti || '-'}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">음주</p>
-                        <p className="font-medium">{selectedUser.drinking || '-'}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">흡연</p>
-                        <p className="font-medium">{selectedUser.smoking || '-'}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">타투</p>
-                        <p className="font-medium">{selectedUser.tattoo || '-'}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="text-lg font-semibold mb-4">이상형 정보</h3>
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-sm text-gray-500">선호 연령대</p>
-                        <p className="font-medium">{selectedUser.preferred_age_type || '-'}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">선호 키</p>
-                        <p className="font-medium">
-                          {selectedUser.preferred_height_min && selectedUser.preferred_height_max
-                            ? `${selectedUser.preferred_height_min}cm ~ ${selectedUser.preferred_height_max}cm`
-                            : '-'}
-                        </p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">선호하는 성격</p>
-                        <p className="font-medium">{selectedUser.preferred_personalities?.join(', ') || '-'}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">선호하는 데이트 스타일</p>
-                        <p className="font-medium">{selectedUser.preferred_dating_styles?.join(', ') || '-'}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">선호하는 라이프스타일</p>
-                        <p className="font-medium">{selectedUser.preferred_lifestyles?.join(', ') || '-'}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">선호하는 관심사</p>
-                        <p className="font-medium">{selectedUser.preferred_interests?.join(', ') || '-'}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">선호하는 MBTI</p>
-                        <p className="font-medium">{selectedUser.preferred_mbti || '-'}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">비선호 MBTI</p>
-                        <p className="font-medium">{selectedUser.disliked_mbti || '-'}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">음주 선호</p>
-                        <p className="font-medium">{selectedUser.preferred_drinking || '-'}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">흡연 선호</p>
-                        <p className="font-medium">{selectedUser.preferred_smoking || '-'}</p>
-                      </div>
-                      
-                      <div>
-                        <p className="text-sm text-gray-500">타투 선호</p>
-                        <p className="font-medium">{selectedUser.preferred_tattoo || '-'}</p>
-                      </div>
+                    <h3 className="text-lg font-semibold mb-4">선호도 정보</h3>
+                    <div className="space-y-4">
+                      {selectedUser.preferences?.map((pref, index) => (
+                        <div key={index} className="border-b border-gray-200 pb-3 last:border-0">
+                          <p className="text-sm text-gray-500 mb-1">{pref.typeName}</p>
+                          <div className="flex flex-wrap gap-2">
+                            {pref.selectedOptions.map((option, optIndex) => (
+                              <span
+                                key={optIndex}
+                                className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"
+                              >
+                                {option.displayName}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                      {(!selectedUser.preferences || selectedUser.preferences.length === 0) && (
+                        <p className="text-gray-500 text-sm">등록된 선호도 정보가 없습니다.</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1059,41 +864,7 @@ export default function UsersAdmin() {
             
             {/* 하단 버튼 */}
             <div className="sticky bottom-0 bg-white pt-6 mt-6 border-t">
-              <div className="flex justify-end space-x-3">
-                {selectedUser.is_blocked ? (
-                  <button
-                    onClick={() => {
-                      handleUnblockUser(selectedUser.user_id);
-                      handleCloseDetails();
-                    }}
-                    className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-colors"
-                  >
-                    차단 해제
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => {
-                      handleBlockUser(selectedUser.user_id);
-                      handleCloseDetails();
-                    }}
-                    className="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition-colors"
-                  >
-                    차단
-                  </button>
-                )}
-                
-                {selectedUser.reports_count && selectedUser.reports_count > 0 && (
-                  <button
-                    onClick={() => {
-                      handleClearReports(selectedUser.user_id);
-                      handleCloseDetails();
-                    }}
-                    className="bg-yellow-500 text-white px-6 py-2 rounded-lg hover:bg-yellow-600 transition-colors"
-                  >
-                    신고 내역 삭제
-                  </button>
-                )}
-                
+              <div className="flex justify-end">
                 <button
                   onClick={handleCloseDetails}
                   className="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors"
