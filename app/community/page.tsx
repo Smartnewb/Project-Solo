@@ -47,6 +47,7 @@ interface Post {
   updatedAt: string;
   deletedAt: string;
   likeCount: number;
+  isLiked: boolean;
   comments: Comment[];
   author: {
     id: string;
@@ -430,7 +431,51 @@ export default function Community() {
     }
   };
 
-  const handleLike = async (postId: string) => {};
+  const handleLike = async (postId: string) => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
+
+    // 현재 게시물 찾기
+    const currentPost = posts.find((post) => post.id === postId);
+    if (!currentPost) return;
+
+    try {
+      // 좋아요 상태 토글
+      const newLikeStatus = !currentPost.isLiked;
+
+      await axiosServer.patch(
+        `/articles/${postId}/like`,
+        {
+          isLiked: newLikeStatus,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // 로컬 상태 업데이트 (즉각적인 UI 반응을 위해)
+      setPosts((prevPosts) =>
+        prevPosts.map((post) => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              isLiked: newLikeStatus,
+              likeCount: newLikeStatus
+                ? post.likeCount + 1
+                : post.likeCount - 1,
+            };
+          }
+          return post;
+        })
+      );
+    } catch (error) {
+      console.error("좋아요 처리 중 오류가 발생했습니다:", error);
+      setErrorMessage("좋아요 처리에 실패했습니다.");
+      setShowErrorModal(true);
+    }
+  };
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -994,11 +1039,11 @@ export default function Community() {
                       <button
                         onClick={() => handleLike(post.id)}
                         className={`flex items-center gap-1 ${
-                          post.likeCount > 0 ? "text-red-500" : "text-gray-500"
+                          post.isLiked ? "text-red-500" : "text-gray-500"
                         }`}
                       >
                         <HeartIcon className="w-5 h-5" />
-                        <span>{post.likeCount || 0}</span>
+                        <span>{post.likeCount}</span>
                       </button>
                       <button
                         onClick={() =>
