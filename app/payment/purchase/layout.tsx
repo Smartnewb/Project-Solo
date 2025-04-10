@@ -15,4 +15,4 @@ export default function PurchaseLayout({
       </Suspense>
     </MobileLayout>
   );
-} 
+}

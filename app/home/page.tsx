@@ -19,6 +19,13 @@ import { Card, CardContent, CardHeader } from "@/shared/ui";
 import { Button } from "@/shared/ui/button";
 import { useModal } from "@/shared/hooks/use-modal";
 import { PaymentModal, useRedirectTossPayment } from "@/features/toss-payment";
+import { Payment } from "@/features/payment";
+import { useRouteMemory } from "@/shared/hooks";
+import { PaymentProduct } from "@/types/pay";
+import Image from "next/image";
+import { Counter } from "@/shared/ui/counter";
+import { CheckIcon } from "@heroicons/react/24/outline";
+import { RematchingCard } from "@/features/matching";
 
 interface MatchResult {
   id: string;
@@ -172,7 +179,7 @@ export default function Home() {
   const [showAdditionalInfoModal, setShowAdditionalInfoModal] = useState(false);
   const [hasUserPreferences, setHasUserPreferences] = useState(false);
   const [profileData, setProfileData] = useState<any>(null);
-  const { redirect } = useRedirectTossPayment();
+  const { redirect } = useRouteMemory();
 
   // 리매칭 관련 상태
   const [showRematchModal, setShowRematchModal] = useState(false);
@@ -568,7 +575,11 @@ export default function Home() {
     }
   }, [isMatchingTimeOver]);
 
-  const handlePaymentClick = redirect;
+  const handlePaymentClick = async () => { 
+    redirect('payment/purchase', {
+      identifier: PaymentProduct.REMATCH,
+    });
+  };
 
   return (
     <div className="min-h-screen bg-[#F8FAFD] pb-20">
@@ -755,13 +766,6 @@ export default function Home() {
                 </div>
               </div>
             </section>
-
-            <Card>
-              <CardHeader>토스 페이먼츠 결제(재매칭 결제)</CardHeader>
-              <CardContent>
-                <Button onClick={handlePaymentClick}>결제하기</Button>
-              </CardContent>
-            </Card>
 
             {/* 매칭 시작까지 남은 시간 */}
             <section className="card space-y-6 transform transition-all hover:scale-[1.02] bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl">
@@ -988,6 +992,8 @@ export default function Home() {
                 </div>
               </section>
             )}
+
+            <RematchingCard />
 
             {/* 실시간 인기 질문 */}
             <section className="card space-y-6 transform transition-all hover:scale-[1.02]">

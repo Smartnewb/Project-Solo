@@ -8,8 +8,7 @@ export type PaymentBeforeHistory = {
 
 export type PaymentDetails = {
   orderId: string;
-  paymentKey: string;
-  amount: number;
+  txId: string;
 };
 
 const savePaymentHistory = async (paymentHistory: PaymentBeforeHistory) =>
