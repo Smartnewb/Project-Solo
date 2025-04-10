@@ -259,15 +259,22 @@ export default function Home() {
         return;
       }
 
-      const response = await axiosServer.get<MatchingResponse>("/matching", {
+      const response = await axiosServer.get("/matching", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      if (response.data && response.data.partner) {
-        setMatchingPartner(response.data.partner);
+      console.log("매칭 응답:", response.data); // 디버깅용 로그
+
+      if (response.data) {
+        // API가 직접 파트너 정보를 반환하므로 response.data를 그대로 사용
+        setMatchingPartner(response.data);
         setMatchingError(null);
+        setIsMatchingTimeOver(true);
+      } else {
+        setMatchingPartner(null);
+        setMatchingError("매칭된 상대가 없습니다.");
       }
     } catch (error) {
       console.error("매칭 상태 조회 중 오류:", error);
@@ -281,20 +288,13 @@ export default function Home() {
     if (!user) return;
 
     try {
-      // 1. 프로필 정보 가져오기
       await fetchProfileData();
-
-      // 2. 매칭 상태 가져오기
       await fetchMatchingStatus();
-
-      // 3. 매칭 시간 설정
-      setIsMatchingTimeOver(true);
     } catch (error) {
       console.error("초기화 중 오류:", error);
     }
   };
 
-  // 단일 useEffect로 모든 초기화 로직 처리
   useEffect(() => {
     initializeHome();
   }, [user]);
@@ -310,6 +310,156 @@ export default function Home() {
     redirect('payment/purchase', {
       identifier: PaymentProduct.REMATCH,
     });
+  };
+
+  // 매칭 상태 섹션 컴포넌트
+  const MatchingStatusSection = () => {
+    if (!isMatchingTimeOver) {
+      return (
+        <section className="card space-y-6 transform transition-all hover:scale-[1.02] bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl">
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#74B9FF]/10 flex items-center justify-center transform transition-all duration-200 hover:rotate-12">
+                <svg
+                  className="w-7 h-7 text-[#74B9FF]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                  />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-[#2D3436] tracking-tight">
+                매칭 상태
+              </h2>
+            </div>
+            <div className="bg-[#74B9FF]/5 rounded-xl p-4">
+              <p className="text-[#636E72] leading-relaxed text-lg">
+                매칭 카운트 다운이 지나면 공개됩니다.
+              </p>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    if (!matchingPartner) {
+      return (
+        <section className="card space-y-6 transform transition-all hover:scale-[1.02] bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl">
+          <div className="space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#74B9FF]/10 flex items-center justify-center transform transition-all duration-200 hover:rotate-12">
+                <svg
+                  className="w-7 h-7 text-[#74B9FF]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                  />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-[#2D3436] tracking-tight">
+                매칭 상태
+              </h2>
+            </div>
+            <div className="bg-[#74B9FF]/5 rounded-xl p-4">
+              <p className="text-[#636E72] leading-relaxed text-lg">
+                {matchingError || "매칭된 상대가 없습니다."}
+              </p>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    return (
+      <section className="card space-y-6 transform transition-all hover:scale-[1.02] bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl">
+        <div className="space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-[#6C5CE7]/10 flex items-center justify-center transform transition-all duration-200 hover:rotate-12">
+              <svg
+                className="w-7 h-7 text-[#6C5CE7]"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-[#2D3436] tracking-tight">
+                매칭 완료!
+              </h2>
+              <span className="text-sm text-[#0984E3] font-medium">
+                매칭된 상대방 정보
+              </span>
+            </div>
+          </div>
+
+          <div className="bg-[#6C5CE7]/5 rounded-xl p-6 space-y-4">
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-[#2D3436]">
+                  {matchingPartner.name}
+                </h3>
+                <span className="text-[#6C5CE7] font-medium">
+                  {matchingPartner.age}세
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div className="space-y-1">
+                  <p className="text-sm text-gray-500">학교/학과</p>
+                  <p className="font-medium">
+                    {matchingPartner.university?.name || '미입력'} {matchingPartner.university?.department || ''}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-gray-500">학년</p>
+                  <p className="font-medium">{matchingPartner.university?.grade || '미입력'}</p>
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <h4 className="text-lg font-semibold mb-3">선호도 정보</h4>
+                <div className="space-y-4">
+                  {matchingPartner.preferences?.map((pref, index) => (
+                    <div key={index} className="space-y-2">
+                      <p className="text-sm text-gray-500">{pref.typeName}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {pref.selectedOptions.map((option) => (
+                          <span
+                            key={option.id}
+                            className="px-3 py-1 bg-[#6C5CE7]/10 text-[#6C5CE7] rounded-full text-sm"
+                          >
+                            {option.displayName}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
   };
 
   return (
@@ -527,131 +677,8 @@ export default function Home() {
               </div>
             </section>
 
-            {/* 매칭 결과 섹션 - 여러 개의 매칭 카드 표시 */}
-            {isMatchingTimeOver && (
-              <>
-                {/* 현재 매칭 상태 섹션 */}
-                {matchingPartner && (
-                  <section className="card space-y-6 transform transition-all hover:scale-[1.02] bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl">
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-[#6C5CE7]/10 flex items-center justify-center transform transition-all duration-200 hover:rotate-12">
-                          <svg
-                            className="w-7 h-7 text-[#6C5CE7]"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                            />
-                          </svg>
-                        </div>
-                        <div>
-                          <h2 className="text-2xl font-bold text-[#2D3436] tracking-tight">
-                            현재 매칭 상태
-                          </h2>
-                          <span className="text-sm text-[#0984E3] font-medium">
-                            매칭된 상대방 정보
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="bg-[#6C5CE7]/5 rounded-xl p-6 space-y-4">
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-center">
-                            <h3 className="text-lg font-semibold text-[#2D3436]">
-                              {matchingPartner.name}
-                            </h3>
-                            <span className="text-[#6C5CE7] font-medium">
-                              {matchingPartner.age}세
-                            </span>
-                          </div>
-                          
-                          <div className="grid grid-cols-2 gap-4 mt-4">
-                            <div className="space-y-1">
-                              <p className="text-sm text-gray-500">학교/학과</p>
-                              <p className="font-medium">
-                                {matchingPartner.university.name} {matchingPartner.university.department}
-                              </p>
-                            </div>
-                            <div className="space-y-1">
-                              <p className="text-sm text-gray-500">학년</p>
-                              <p className="font-medium">{matchingPartner.university.grade}</p>
-                            </div>
-                          </div>
-
-                          <div className="mt-6">
-                            <h4 className="text-lg font-semibold mb-3">선호도 정보</h4>
-                            <div className="space-y-4">
-                              {matchingPartner.preferences.map((pref, index) => (
-                                <div key={index} className="space-y-2">
-                                  <p className="text-sm text-gray-500">{pref.typeName}</p>
-                                  <div className="flex flex-wrap gap-2">
-                                    {pref.selectedOptions.map((option) => (
-                                      <span
-                                        key={option.id}
-                                        className="px-3 py-1 bg-[#6C5CE7]/10 text-[#6C5CE7] rounded-full text-sm"
-                                      >
-                                        {option.displayName}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </section>
-                )}
-
-                {matchingError && (
-                  <div className="text-center text-red-500 mt-4">
-                    {matchingError}
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* 매칭 결과가 없거나 시간이 안 된 경우 표시할 섹션 */}
-            {(!isMatchingTimeOver || !matchingPartner) && (
-              <section className="card space-y-6 transform transition-all hover:scale-[1.02] bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-[#74B9FF]/10 flex items-center justify-center transform transition-all duration-200 hover:rotate-12">
-                      <svg
-                        className="w-7 h-7 text-[#74B9FF]"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                        />
-                      </svg>
-                    </div>
-                    <h2 className="text-2xl font-bold text-[#2D3436] tracking-tight">
-                      매칭 상태
-                    </h2>
-                  </div>
-                  <div className="bg-[#74B9FF]/5 rounded-xl p-4">
-                    <p className="text-[#636E72] leading-relaxed text-lg">
-                      {isMatchingTimeOver
-                        ? "매칭된 상대가 없습니다."
-                        : "매칭 카운트 다운이 지나면 공개됩니다."}
-                    </p>
-                  </div>
-                </div>
-              </section>
-            )}
+            {/* 매칭 상태 섹션 */}
+            <MatchingStatusSection />
 
             <RematchingCard />
 
