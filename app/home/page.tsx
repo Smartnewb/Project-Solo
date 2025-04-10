@@ -26,6 +26,7 @@ import Image from "next/image";
 import { Counter } from "@/shared/ui/counter";
 import { CheckIcon } from "@heroicons/react/24/outline";
 import { RematchingCard } from "@/features/matching";
+import axiosServer from "@/utils/axios";
 
 interface MatchResult {
   id: string;
@@ -210,30 +211,23 @@ export default function Home() {
         return;
       }
 
-      console.log('토큰:', token); // 토큰 확인
+      const response = await axiosServer.get("/profile", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/profile`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          router.push("/");
-          return;
-        }
-        throw new Error("프로필 정보 조회 실패");
+      if (response.status === 401) {
+        router.push("/");
+        console.error("프로필 정보 조회 실패");
+        return;
       }
 
-      const data = await response.json();
-      console.log('백엔드 응답 전체:', {
+      const data = await response.data;
+      console.log("백엔드 응답 전체:", {
         status: response.status,
         headers: Object.fromEntries(response.headers.entries()),
-        data: data
+        data: data,
       });
       setProfileData(data);
     } catch (error) {
