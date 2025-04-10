@@ -74,6 +74,9 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
   const [feedbackText, setFeedbackText] = useState('');
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
 
+  // 로딩 상태
+  const [isLoading, setIsLoading] = useState(true);
+
   // 로컬 스토리지에서 관심 표시 상태 불러오기
   useEffect(() => {
     try {
@@ -308,6 +311,22 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
   const goToCommunity = () => {
     router.push('/community');
   };
+
+  useEffect(() => {
+    const ticketCount = localStorage.getItem('ticketCount');
+    if (!ticketCount || parseInt(ticketCount) === 0) {
+      // 티켓이 없으면 로딩 메시지 표시 후 구매 페이지로 이동
+      setTimeout(() => {
+        router.push('/payment/purchase');
+      }, 1000); // 2초 후에 이동
+    } else {
+      setIsLoading(false);
+    }
+  }, []);
+
+  if (isLoading) {
+    return <div>티켓이 없어 구매 페이지로 넘어갑니다...</div>;
+  }
 
   if (showInviteForm) {
     return (

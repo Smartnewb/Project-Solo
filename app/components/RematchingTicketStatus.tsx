@@ -39,6 +39,7 @@ export default function RematchingTicketStatus() {
 
         setTicket(response.data[0]);
         setTicketCount(response.data.length);
+        localStorage.setItem("ticketCount", response.data.length.toString());
         setError(null);
       } catch (err) {
         setError("재매칭 티켓 정보를 불러오는데 실패했습니다.");
