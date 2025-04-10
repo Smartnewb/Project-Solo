@@ -27,6 +27,7 @@ import { Counter } from "@/shared/ui/counter";
 import { CheckIcon } from "@heroicons/react/24/outline";
 import { RematchingCard } from "@/features/matching";
 import axiosServer from "@/utils/axios";
+import RematchingTicketStatus from "../components/RematchingTicketStatus";
 
 interface MatchResult {
   id: string;
@@ -680,6 +681,10 @@ export default function Home() {
             {/* 매칭 상태 섹션 */}
             <MatchingStatusSection />
 
+            {/* 재매칭 티켓 개수 */}
+            <RematchingTicketStatus />
+
+            {/* 재매칭 티켓 결제 */}
             <RematchingCard />
 
             {/* 실시간 인기 질문 */}
