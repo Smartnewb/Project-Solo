@@ -1,19 +1,30 @@
 import { useState, useEffect } from 'react';
 
-type LocalStorageKey = 'userToken' | 'theme' | 'language' | 'before-toss-payment-url';
+type LocalStorageKey = 
+'userToken' |
+'theme' |
+'language' |
+'before-toss-payment-url' |
+'before-url' |
+'redirect-payload';
 
-interface LocalStorageValue {
+type LocalStorageSchema = {
   userToken: string | null;
   theme: 'light' | 'dark';
   language: 'en' | 'ko';
   'before-toss-payment-url': string | null;
+  'before-url': string | null;
+  'redirect-payload': Record<string, unknown> | null;
 }
 
-function useLocalStorage<K extends LocalStorageKey>(
+function useLocalStorage<
+  K extends LocalStorageKey,
+  T extends LocalStorageSchema[K] = LocalStorageSchema[K]
+>(
   key: K,
-  initialValue: LocalStorageValue[K]
-): [LocalStorageValue[K], (value: LocalStorageValue[K]) => void] {
-  const [storedValue, setStoredValue] = useState<LocalStorageValue[K]>(() => {
+  initialValue: T | null 
+): [T, (value: T | null) => void] {
+  const [storedValue, setStoredValue] = useState<T>(() => {
     try {
       if (typeof window === 'undefined') {
         return initialValue;
@@ -26,13 +37,17 @@ function useLocalStorage<K extends LocalStorageKey>(
     }
   });
 
-  const setValue = (value: LocalStorageValue[K]) => {
+  const setValue = (value: T | null) => {
     try {
-      setStoredValue(value);
+      setStoredValue(value as T);
       if (typeof window === 'undefined') {
         return;
       }
-      window.localStorage.setItem(key, JSON.stringify(value));
+      if (value === null) {
+        window.localStorage.removeItem(key);
+      } else {
+        window.localStorage.setItem(key, JSON.stringify(value));
+      }
     } catch (error) {
       console.error('Error setting localStorage key:', key, error);
     }
