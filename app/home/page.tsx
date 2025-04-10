@@ -40,6 +40,31 @@ interface MatchResult {
   description: string;
 }
 
+// 매칭 파트너 인터페이스 추가
+interface MatchingPartner {
+  id: string;
+  name: string;
+  age: number;
+  gender: string;
+  university: {
+    department: string;
+    name: string;
+    grade: string;
+    studentNumber: string;
+  };
+  preferences: {
+    typeName: string;
+    selectedOptions: {
+      id: string;
+      displayName: string;
+    }[];
+  }[];
+}
+
+interface MatchingResponse {
+  partner: MatchingPartner;
+}
+
 // 프로필 필드 타입 정의
 type ProfileField = keyof Profile;
 
@@ -190,16 +215,11 @@ export default function Home() {
   const [isCopied, setIsCopied] = useState(false);
   const accountNumberRef = useRef<HTMLParagraphElement>(null);
   const [isMatchingTimeOver, setIsMatchingTimeOver] = useState(false);
-  const [matchResults, setMatchResults] = useState<MatchResult[]>([]);
-  const [isMultipleMatches, setIsMultipleMatches] = useState(false);
   const [hasRequestedRematch, setHasRequestedRematch] = useState(false);
 
-  // 추가된 상태
-  const [showPartnerProfile, setShowPartnerProfile] = useState(false);
-  const [partnerProfile, setPartnerProfile] = useState<any>(null);
-
-  // 새로운 상태 추가
-  const [showProfileWarningModal, setShowProfileWarningModal] = useState(false);
+  // 매칭 상태 추가
+  const [matchingPartner, setMatchingPartner] = useState<MatchingPartner | null>(null);
+  const [matchingError, setMatchingError] = useState<string | null>(null);
 
   // 프로필 정보 조회
   const fetchProfileData = async () => {
@@ -224,314 +244,36 @@ export default function Home() {
       }
 
       const data = await response.data;
-      console.log("백엔드 응답 전체:", {
-        status: response.status,
-        headers: Object.fromEntries(response.headers.entries()),
-        data: data,
-      });
       setProfileData(data);
     } catch (error) {
       console.error("프로필 정보 조회 중 오류:", error);
     }
   };
 
-  // 사용자 선호도 정보 조회
-  const checkUserPreferences = async (userId: string) => {
+  // 매칭 상태 조회 함수
+  const fetchMatchingStatus = async () => {
     try {
-      const { data, error } = await supabase
-        .from("user_preferences")
-        .select("*")
-        .eq("user_id", userId)
-        .single();
-
-      if (error) {
-        console.error("선호도 정보 조회 오류:", error);
-        return false;
-      }
-
-      return !!data;
-    } catch (error) {
-      console.error("선호도 정보 확인 중 오류:", error);
-      return false;
-    }
-  };
-
-  // 페이지 이동 함수들
-  const handleGoToProfile = () => router.push("/profile");
-  const handleGoToHome = () => router.push("/home");
-  const handleGoToSettings = () => router.push("/settings");
-
-  // 계좌번호 복사 기능
-  const copyAccountNumber = () => {
-    navigator.clipboard
-      .writeText("카카오뱅크 3333-12-3456789")
-      .then(() => {
-        setIsCopied(true);
-        setTimeout(() => setIsCopied(false), 2000);
-      })
-      .catch((err) => {
-        console.error("계좌번호 복사 실패:", err);
-      });
-  };
-
-  // 리매칭 신청 처리 함수
-  const handleRematchRequest = () => {
-    if (!profile) return;
-
-    const requiredFields = [
-      "height",
-      "personalities",
-      "dating_styles",
-    ] as const;
-    const hasRequiredFields = requiredFields.every((field) => {
-      const value = profile[field];
-      return (
-        value && (Array.isArray(value) ? value.length > 0 : Boolean(value))
-      );
-    });
-
-    if (!hasRequiredFields) {
-      setShowRematchWarningModal(true);
-      return;
-    }
-
-    setShowRematchModal(true);
-  };
-
-  // 리매칭 확인 처리
-  const handleConfirmRematch = async () => {
-    try {
-      setShowRematchModal(false);
-
-      // matching_requests 테이블에 레코드 추가
-      const { data, error } = await supabase.from("matching_requests").insert([
-        {
-          user_id: user?.id,
-          status: "pending",
-          preferred_date: new Date().toISOString().split("T")[0],
-          preferred_time: "19:00",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-      ]);
-
-      if (error) {
-        console.error("리매칭 요청 DB 저장 오류:", error);
-        throw new Error("리매칭 요청 처리 중 오류가 발생했습니다.");
-      }
-
-      // 로컬 스토리지에 재매칭 신청 상태 저장
-      localStorage.setItem("rematchRequested", "true");
-      setHasRequestedRematch(true);
-
-      setNotificationMessage(
-        "리매칭 신청이 완료되었습니다. 다음 매칭을 기대해주세요!"
-      );
-      setShowNotificationModal(true);
-    } catch (error) {
-      console.error("리매칭 요청 오류:", error);
-      setNotificationMessage("리매칭 요청 중 오류가 발생했습니다.");
-      setShowNotificationModal(true);
-    }
-  };
-
-  // 매칭 시간 상태 업데이트 핸들러
-  const handleMatchingTimeUpdate = (isOver: boolean) => {
-    setIsMatchingTimeOver(true); // 항상 true로 설정
-  };
-
-  // 매칭 결과 조회 함수
-  const fetchMatchResult = async () => {
-    if (!user) return;
-
-    try {
-      // 1. matches 테이블에서 매칭 정보 조회
-      const { data: matchData, error: matchError } = await supabase
-        .from("matches")
-        .select("id, user1_id, user2_id, score, created_at")
-        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-        .order("created_at", { ascending: false });
-
-      // 2. rematches 테이블에서 재매칭 정보 조회
-      const { data: rematchData, error: rematchError } = await supabase
-        .from("rematches")
-        .select("id, user1_id, user2_id, score, created_at")
-        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-        .order("created_at", { ascending: false });
-
-      if ((matchError && rematchError) || (!matchData && !rematchData)) {
-        console.error("매칭 결과 조회 실패:", { matchError, rematchError });
+      const token = localStorage.getItem("accessToken");
+      if (!token) {
+        console.error("토큰이 없습니다.");
         return;
       }
 
-      // 모든 매칭 데이터 합치기
-      const allMatches = [...(matchData || []), ...(rematchData || [])].sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-
-      setIsMultipleMatches(allMatches.length > 1);
-
-      // 모든 매칭 정보를 처리
-      const matchResultsPromises = allMatches.map(async (match, index) => {
-        const partnerId =
-          match.user1_id === user.id ? match.user2_id : match.user1_id;
-
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("instagram_id, name")
-          .eq("user_id", partnerId)
-          .single();
-
-        if (profileError) {
-          console.error("프로필 조회 실패:", profileError);
-          return null;
-        }
-
-        // 매칭 타입 구분 (matches vs rematches)
-        const isFromRematches = rematchData?.some(
-          (rematch) => rematch.id === match.id
-        );
-
-        return {
-          id: match.id,
-          user1_id: match.user1_id,
-          user2_id: match.user2_id,
-          instagram_id: profileData.instagram_id,
-          score: match.score + 40,
-          isRematch: isFromRematches,
-          partner_name: profileData.name,
-          created_at: match.created_at,
-          title: isFromRematches ? "재매칭 결과" : "매칭 결과",
-          description: isFromRematches
-            ? "재매칭으로 새로 매칭된 상대입니다"
-            : "첫 매칭 상대입니다",
-        };
+      const response = await axiosServer.get<MatchingResponse>("/matching", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
-      // 모든 매칭 결과 가져오기
-      const results = await Promise.all(matchResultsPromises);
-      const validResults = results.filter(
-        (result) => result !== null
-      ) as MatchResult[];
-
-      setMatchResults(validResults);
-    } catch (error) {
-      console.error("매칭 결과 조회 중 오류:", error);
-    }
-  };
-
-  // 인스타 ID 복사 함수
-  const copyInstagramId = async (instagramId: string) => {
-    try {
-      await navigator.clipboard.writeText(instagramId);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-    } catch (err) {
-      console.error("복사 실패:", err);
-    }
-  };
-
-  // 재매칭 신청 여부 확인 함수 추가
-  const checkRematchRequest = async () => {
-    if (!user) return;
-
-    const { data, error } = await supabase
-      .from("matching_requests")
-      .select("*")
-      .eq("user_id", user.id)
-      .single();
-
-    if (error) {
-      console.error("재매칭 신청 조회 오류:", error);
-      return;
-    }
-
-    setHasRequestedRematch(!!data);
-  };
-
-  // 프로필 조회 함수
-  const fetchPartnerProfile = async (match: MatchResult) => {
-    if (!user) return null;
-
-    try {
-      // 현재 사용자가 user1인지 user2인지 확인하여 상대방 ID 결정
-      const partnerId =
-        match.user1_id === user.id ? match.user2_id : match.user1_id;
-
-      // 프로필 정보 조회
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", partnerId)
-        .maybeSingle(); // single() 대신 maybeSingle() 사용
-
-      if (profileError) throw profileError;
-      if (!profileData) return null;
-
-      // 재매칭인 경우 rematches 테이블도 확인
-      if (match.isRematch) {
-        const { data: rematchData, error: rematchError } = await supabase
-          .from("rematches")
-          .select("*")
-          .or(`user1_id.eq.${partnerId},user2_id.eq.${partnerId}`)
-          .maybeSingle(); // single() 대신 maybeSingle() 사용
-
-        if (!rematchError && rematchData) {
-          // rematchData가 있는 경우에만 합치기
-          return { ...profileData, rematchData };
-        }
+      if (response.data && response.data.partner) {
+        setMatchingPartner(response.data.partner);
+        setMatchingError(null);
       }
-
-      return profileData;
     } catch (error) {
-      console.error("프로필 조회 오류:", error);
-      return null;
+      console.error("매칭 상태 조회 중 오류:", error);
+      setMatchingError("매칭 정보를 불러오는데 실패했습니다.");
+      setMatchingPartner(null);
     }
-  };
-
-  // 프로필 정보 체크 함수 수정
-  const checkProfileCompletion = () => {
-    if (!profile) return false;
-
-    const requiredFields: ProfileField[] = [
-      "university",
-      "department",
-      "student_id",
-      "grade",
-      "height",
-      "mbti",
-      "personalities",
-      "dating_styles",
-      "drinking",
-      "smoking",
-      "tattoo",
-      "instagram_id",
-    ];
-
-    const missingFields = requiredFields.filter((field) => {
-      const value = profile[field];
-      if (field === "personalities" || field === "dating_styles") {
-        return !Array.isArray(value) || value.length === 0;
-      }
-      return value === undefined || value === null || value === "";
-    });
-
-    if (missingFields.length > 0) {
-      console.log("=== 미입력 프로필 정보 ===");
-      console.log("현재 프로필:", profile);
-      console.log("미입력 필드:", missingFields);
-      missingFields.forEach((field) => {
-        const value = profile[field];
-        console.log(`${field}: ${Array.isArray(value) ? `[${value.join(", ")}]` : value}`);
-      });
-      console.log("========================");
-
-      setShowProfileWarningModal(true);
-      return false;
-    }
-
-    return true;
   };
 
   // 초기화 함수
@@ -542,14 +284,10 @@ export default function Home() {
       // 1. 프로필 정보 가져오기
       await fetchProfileData();
 
-      // 2. 매칭 결과 가져오기
-      await fetchMatchResult();
+      // 2. 매칭 상태 가져오기
+      await fetchMatchingStatus();
 
-      // 3. localStorage 체크
-      const hasRequested = localStorage.getItem("rematchRequested") === "true";
-      setHasRequestedRematch(hasRequested);
-
-      // 4. 매칭 시간 설정
+      // 3. 매칭 시간 설정
       setIsMatchingTimeOver(true);
     } catch (error) {
       console.error("초기화 중 오류:", error);
@@ -559,13 +297,12 @@ export default function Home() {
   // 단일 useEffect로 모든 초기화 로직 처리
   useEffect(() => {
     initializeHome();
-  }, [user]); // user가 변경될 때만 실행
+  }, [user]);
 
   // 매칭 시간이 되면 결과 조회
   useEffect(() => {
     if (isMatchingTimeOver) {
-      fetchMatchResult();
-      checkRematchRequest();
+      fetchMatchingStatus();
     }
   }, [isMatchingTimeOver]);
 
@@ -623,7 +360,7 @@ export default function Home() {
                   </p>
                 </div>
                 <button
-                  onClick={handleGoToProfile}
+                  onClick={() => router.push("/profile")}
                   className="btn-primary w-full py-4"
                   type="button"
                 >
@@ -709,7 +446,7 @@ export default function Home() {
                     정확도를 높일 수 있어요!
                   </p>
                   <button
-                    onClick={handleGoToProfile}
+                    onClick={() => router.push("/profile")}
                     className="btn-primary w-full py-4 flex items-center justify-center gap-3 bg-[#6C5CE7] text-white rounded-xl font-medium transform transition-all duration-200 hover:bg-[#5849BE] hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#6C5CE7] focus:ring-offset-2"
                     type="button"
                   >
@@ -785,36 +522,22 @@ export default function Home() {
                   </h2>
                 </div>
                 <div className="bg-[#0984E3]/5 rounded-xl p-4">
-                  <MatchingCountdown onTimeOver={handleMatchingTimeUpdate} />
+                  <MatchingCountdown onTimeOver={() => setIsMatchingTimeOver(true)} />
                 </div>
               </div>
             </section>
 
             {/* 매칭 결과 섹션 - 여러 개의 매칭 카드 표시 */}
-            {isMatchingTimeOver && matchResults.length > 0 && (
+            {isMatchingTimeOver && (
               <>
-                {matchResults.map((match, index) => (
-                  <section
-                    key={match.id}
-                    className={`card space-y-6 transform transition-all hover:scale-[1.02] bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl ${
-                      match.isRematch ? "border-2 border-[#0984E3]" : ""
-                    }`}
-                  >
+                {/* 현재 매칭 상태 섹션 */}
+                {matchingPartner && (
+                  <section className="card space-y-6 transform transition-all hover:scale-[1.02] bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl">
                     <div className="space-y-4">
                       <div className="flex items-center gap-4">
-                        <div
-                          className={`w-12 h-12 rounded-2xl ${
-                            match.isRematch
-                              ? "bg-[#0984E3]/10"
-                              : "bg-[#74B9FF]/10"
-                          } flex items-center justify-center transform transition-all duration-200 hover:rotate-12`}
-                        >
+                        <div className="w-12 h-12 rounded-2xl bg-[#6C5CE7]/10 flex items-center justify-center transform transition-all duration-200 hover:rotate-12">
                           <svg
-                            className={`w-7 h-7 ${
-                              match.isRematch
-                                ? "text-[#0984E3]"
-                                : "text-[#74B9FF]"
-                            }`}
+                            className="w-7 h-7 text-[#6C5CE7]"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -829,101 +552,74 @@ export default function Home() {
                         </div>
                         <div>
                           <h2 className="text-2xl font-bold text-[#2D3436] tracking-tight">
-                            {match.title}
+                            현재 매칭 상태
                           </h2>
                           <span className="text-sm text-[#0984E3] font-medium">
-                            {match.description}
+                            매칭된 상대방 정보
                           </span>
                         </div>
                       </div>
 
-                      <div className="bg-[#74B9FF]/5 rounded-xl p-4">
+                      <div className="bg-[#6C5CE7]/5 rounded-xl p-6 space-y-4">
                         <div className="space-y-2">
-                          <p className="text-[#636E72] leading-relaxed text-lg">
-                            {match.isRematch
-                              ? "재매칭이 완료되었습니다! 🎉"
-                              : "매칭이 완료되었습니다! 🎉"}
-                          </p>
-                          {match.partner_name && (
-                            <div className="flex items-center justify-between">
-                              <p className="font-medium text-gray-800">
-                                {match.partner_name}님과 매칭되었습니다
+                          <div className="flex justify-between items-center">
+                            <h3 className="text-lg font-semibold text-[#2D3436]">
+                              {matchingPartner.name}
+                            </h3>
+                            <span className="text-[#6C5CE7] font-medium">
+                              {matchingPartner.age}세
+                            </span>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4 mt-4">
+                            <div className="space-y-1">
+                              <p className="text-sm text-gray-500">학교/학과</p>
+                              <p className="font-medium">
+                                {matchingPartner.university.name} {matchingPartner.university.department}
                               </p>
-                              <button
-                                onClick={async () => {
-                                  const profile = await fetchPartnerProfile(
-                                    match
-                                  );
-                                  if (profile) {
-                                    setPartnerProfile(profile);
-                                    setShowPartnerProfile(true);
-                                  }
-                                }}
-                                className="text-blue-600 hover:text-blue-800 font-medium"
-                              >
-                                프로필 보기
-                              </button>
                             </div>
-                          )}
-                          <button
-                            onClick={() =>
-                              match.instagram_id &&
-                              copyInstagramId(match.instagram_id)
-                            }
-                            className="text-blue-500 hover:text-blue-700 underline focus:outline-none"
-                          >
-                            {isCopied
-                              ? "복사됨!"
-                              : `Instagram ID: ${
-                                  match.instagram_id || "미설정"
-                                }`}
-                          </button>
-                          <p className="text-sm text-gray-500">
-                            매칭 점수: {match.score}점
-                          </p>
+                            <div className="space-y-1">
+                              <p className="text-sm text-gray-500">학년</p>
+                              <p className="font-medium">{matchingPartner.university.grade}</p>
+                            </div>
+                          </div>
+
+                          <div className="mt-6">
+                            <h4 className="text-lg font-semibold mb-3">선호도 정보</h4>
+                            <div className="space-y-4">
+                              {matchingPartner.preferences.map((pref, index) => (
+                                <div key={index} className="space-y-2">
+                                  <p className="text-sm text-gray-500">{pref.typeName}</p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {pref.selectedOptions.map((option) => (
+                                      <span
+                                        key={option.id}
+                                        className="px-3 py-1 bg-[#6C5CE7]/10 text-[#6C5CE7] rounded-full text-sm"
+                                      >
+                                        {option.displayName}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       </div>
-
-                      {/* 재매칭 버튼 상태 처리 */}
-                      {hasRequestedRematch ? (
-                        <div className="text-center py-3 bg-gray-100 rounded-xl">
-                          <p className="text-gray-600">
-                            이미 재매칭이 신청되었습니다, 참가비: 2000원,
-                            계좌번호: 카카오뱅크 3333225272696 전준영
-                          </p>
-                        </div>
-                      ) : (
-                        !matchResults.some((m) => m.isRematch) && (
-                          <button
-                            onClick={handleRematchRequest}
-                            className="btn-secondary w-full py-4 flex items-center justify-center gap-3 bg-[#74B9FF] text-white rounded-xl font-medium transform transition-all duration-200 hover:bg-[#5FA8FF] hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#74B9FF] focus:ring-offset-2"
-                            type="button"
-                          >
-                            <span className="text-lg">재매칭 신청하기</span>
-                            <svg
-                              className="w-6 h-6"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                              />
-                            </svg>
-                          </button>
-                        )
-                      )}
                     </div>
                   </section>
-                ))}
+                )}
+
+                {matchingError && (
+                  <div className="text-center text-red-500 mt-4">
+                    {matchingError}
+                  </div>
+                )}
               </>
             )}
 
             {/* 매칭 결과가 없거나 시간이 안 된 경우 표시할 섹션 */}
-            {(!isMatchingTimeOver || matchResults.length === 0) && (
+            {(!isMatchingTimeOver || !matchingPartner) && (
               <section className="card space-y-6 transform transition-all hover:scale-[1.02] bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl">
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
@@ -953,36 +649,6 @@ export default function Home() {
                         : "매칭 카운트 다운이 지나면 공개됩니다."}
                     </p>
                   </div>
-                  {isMatchingTimeOver &&
-                    !matchResults.some((m) => m.isRematch) &&
-                    (hasRequestedRematch ? (
-                      <div className="text-center py-3 bg-gray-100 rounded-xl">
-                        <p className="text-gray-600">
-                          이미 재매칭이 신청되었습니다
-                        </p>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={handleRematchRequest}
-                        className="btn-secondary w-full py-4 flex items-center justify-center gap-3 bg-[#74B9FF] text-white rounded-xl font-medium transform transition-all duration-200 hover:bg-[#5FA8FF] hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#74B9FF] focus:ring-offset-2"
-                        type="button"
-                      >
-                        <span className="text-lg">재매칭 신청하기</span>
-                        <svg
-                          className="w-6 h-6"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                          />
-                        </svg>
-                      </button>
-                    ))}
                 </div>
               </section>
             )}
@@ -1042,7 +708,7 @@ export default function Home() {
             >
               <div className="max-w-lg mx-auto px-6 flex justify-around items-center">
                 <button
-                  onClick={handleGoToHome}
+                  onClick={() => router.push("/home")}
                   className="flex flex-col items-center text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
                   type="button"
                   aria-label="홈으로 이동"
@@ -1073,7 +739,7 @@ export default function Home() {
                   <span className="text-sm font-medium mt-1">커뮤니티</span>
                 </button>
                 <button
-                  onClick={handleGoToSettings}
+                  onClick={() => router.push("/settings")}
                   className="flex flex-col items-center text-[#636E72] hover:text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
                   type="button"
                   aria-label="설정으로로 이동"
@@ -1125,7 +791,9 @@ export default function Home() {
                         계좌번호: 카카오뱅크 3333225272696 전준영
                       </p>
                       <button
-                        onClick={copyAccountNumber}
+                        onClick={() => {
+                          setShowRematchModal(false);
+                        }}
                         className="text-xs bg-gray-200 hover:bg-gray-300 py-1 px-2 rounded"
                       >
                         {isCopied ? "복사됨" : "복사"}
@@ -1145,7 +813,10 @@ export default function Home() {
 
                 <div className="flex space-x-3">
                   <button
-                    onClick={handleConfirmRematch}
+                    onClick={() => {
+                      setShowRematchModal(false);
+                      fetchMatchingStatus();
+                    }}
                     className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded"
                   >
                     신청하기
@@ -1216,48 +887,12 @@ export default function Home() {
           </div>
         )}
 
-        {/* 프로필 정보 미입력 경고 모달 */}
-        {showProfileWarningModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6">
-              <div className="text-center mb-6">
-                <div className="text-5xl mb-4">⚠️</div>
-                <h3 className="text-xl font-bold mb-2">
-                  프로필 정보를 입력해주세요
-                </h3>
-                <p className="text-gray-600">
-                  매칭 서비스를 이용하기 위해서는 기본 정보, 프로필 정보, 이상형
-                  정보가 모두 필요합니다. 지금 바로 입력하고 매칭을
-                  시작해보세요!
-                </p>
-              </div>
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => {
-                    setShowProfileWarningModal(false);
-                    router.push("/onboarding");
-                  }}
-                  className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-medium rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all"
-                >
-                  프로필 입력하기
-                </button>
-                <button
-                  onClick={() => setShowProfileWarningModal(false)}
-                  className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-all"
-                >
-                  나중에 하기
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* 프로필 모달 추가 */}
-        {showPartnerProfile && (
+        {showRematchModal && (
           <PartnerProfileModal
-            open={showPartnerProfile}
-            onClose={() => setShowPartnerProfile(false)}
-            profile={partnerProfile}
+            open={showRematchModal}
+            onClose={() => setShowRematchModal(false)}
+            profile={profileData}
           />
         )}
       </>
