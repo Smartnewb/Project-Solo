@@ -105,7 +105,7 @@ export default function Login() {
             <span>통신판매업신고: [통신판매업신고번호]</span>
           </div>
           <div className="space-x-2">
-            <span>문의전화: 010-8465-2476</span>
+            <span>문의전화: 070-8065-4387</span>
             <span>|</span>
             <span>이메일: notify@smartnewb.com</span>
           </div>

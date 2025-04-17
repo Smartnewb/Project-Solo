@@ -307,7 +307,7 @@ export default function Home() {
     }
   }, [isMatchingTimeOver]);
 
-  const handlePaymentClick = async () => { 
+  const handlePaymentClick = async () => {
     redirect('payment/purchase', {
       identifier: PaymentProduct.REMATCH,
     });
@@ -422,7 +422,7 @@ export default function Home() {
                   {matchingPartner.age}세
                 </span>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4 mt-4">
                 <div className="space-y-1">
                   <p className="text-sm text-gray-500">학교/학과</p>
@@ -726,7 +726,7 @@ export default function Home() {
                 <span>사업자 등록번호: 498-05-02914</span>
               </div>
               <div className="space-x-2">
-                <span>문의전화: 010-8465-2476</span>
+                <span>문의전화: 070-8065-4387</span>
                 <span>|</span>
                 <span>이메일: notify@smartnewb.com</span>
               </div>
