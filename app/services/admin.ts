@@ -113,6 +113,36 @@ const stats = {
       throw error;
     }
   },
+
+  // 대학별 통계 조회
+  getUniversityStats: async () => {
+    try {
+      const response = await axiosServer.get('/admin/stats/users/universities');
+      console.log('서비스에서 받은 대학별 통계 데이터:', response.data);
+      console.log('서비스에서 받은 데이터 구조:', JSON.stringify(response.data, null, 2));
+
+      // 대학명 확인
+      if (response.data && response.data.universities && response.data.universities.length > 0) {
+        console.log('첫 번째 대학 데이터:', response.data.universities[0]);
+        console.log('대학 데이터 키:', Object.keys(response.data.universities[0]));
+
+        // 데이터 값 확인
+        const firstUni = response.data.universities[0];
+        console.log('첫 번째 대학 상세 데이터:');
+        console.log('- 대학명:', firstUni.universityName);
+        console.log('- 전체 회원수:', firstUni.totalCount);
+        console.log('- 남성 회원수:', firstUni.maleCount);
+        console.log('- 여성 회원수:', firstUni.femaleCount);
+        console.log('- 사용자 비율:', firstUni.percentage);
+        console.log('- 성비:', firstUni.genderRatio);
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('대학별 통계 조회 중 오류:', error);
+      throw error;
+    }
+  },
 };
 // FIX ME
 const AdminService = {

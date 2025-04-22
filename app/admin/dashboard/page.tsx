@@ -16,6 +16,7 @@ import DailySignupsCard from '@/components/admin/dashboard/DailySignupsCard';
 import WeeklySignupsCard from '@/components/admin/dashboard/WeeklySignupsCard';
 import SignupTrendChart from '@/components/admin/dashboard/SignupTrendChart';
 import GenderStatsCard from '@/components/admin/dashboard/GenderStatsCard';
+import UniversityStatsCard from '@/components/admin/dashboard/UniversityStatsCard';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -187,6 +188,11 @@ export default function AdminDashboard() {
         {/* 사용자 지정 기간 회원가입 통계 */}
         <Box sx={{ mt: 4, mb: 4 }}>
           <CustomPeriodSignupStats />
+        </Box>
+
+        {/* 대학별 통계 카드 */}
+        <Box sx={{ mt: 4, mb: 4 }}>
+          <UniversityStatsCard />
         </Box>
 
         {/* 탭 메뉴 */}
