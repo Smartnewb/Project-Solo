@@ -11,6 +11,7 @@ import UniversityPerformanceTable from '@/components/admin/dashboard/UniversityP
 import ProfileCompletionFunnel from '@/components/admin/dashboard/ProfileCompletionFunnel';
 import TotalUsersCard from '@/components/admin/dashboard/TotalUsersCard';
 import DailySignupsCard from '@/components/admin/dashboard/DailySignupsCard';
+import WeeklySignupsCard from '@/components/admin/dashboard/WeeklySignupsCard';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -89,16 +90,7 @@ export default function AdminDashboard() {
             <TotalUsersCard />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Typography color="textSecondary" gutterBottom>
-                  활성 사용자
-                </Typography>
-                <Typography variant="h4">
-                  {loading ? '로딩 중...' : stats?.activeUsers.toLocaleString() || 0}
-                </Typography>
-              </CardContent>
-            </Card>
+            <WeeklySignupsCard />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <DailySignupsCard />

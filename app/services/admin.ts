@@ -26,6 +26,15 @@ const stats = {
       throw error;
     }
   },
+  getWeeklySignupCount: async () => {
+    try {
+      const response = await axiosServer.get('/admin/stats/users/weekly');
+      return response.data;
+    } catch (error) {
+      console.error('이번 주 가입한 회원 수 조회 중 오류:', error);
+      throw error;
+    }
+  },
 };
 
 const AdminService = {
