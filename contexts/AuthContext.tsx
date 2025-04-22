@@ -89,12 +89,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       console.log('받아온 프로필 데이터:', response.data);
       setState(prev => ({ ...prev, profile: response.data }));
-      
+
       // 상태 업데이트 후 최종 상태 확인
       console.log('저장된 프로필 상태:', state.profile);
     } catch (error) {
       console.error('프로필 조회 중 오류:', error);
-      
+
       // 401 에러 처리
       if (axios.isAxiosError(error) && error.response?.status === 401) {
         const refreshSuccess = await refreshAccessToken();
@@ -104,7 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         return await fetchProfile();
       }
-      
+
       setState(prev => ({ ...prev, profile: null }));
     }
   };
@@ -155,10 +155,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await fetchProfile();
 
       // 리다이렉트
-      router.push(userInfo.role === 'admin' ? '/admin/community' : '/home');
+      router.push(userInfo.role === 'admin' ? '/admin/dashboard' : '/home');
     } catch (error) {
       setState(prev => ({ ...prev, loading: false }));
-      
+
       // 에러 메시지 추출 및 전달
       if (axios.isAxiosError(error) && error.response?.data) {
         throw new Error(error.response.data.message || error.response.data.error || '로그인에 실패했습니다.');
@@ -222,4 +222,4 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}; 
+};

@@ -32,7 +32,7 @@ export default function AdminLayout({
     const verifyAdminStatus = async () => {
       try {
         const { data: { session } } = await supabaseBrowser.auth.getSession();
-        
+
         // 세션이 없으면 관리자 상태 초기화
         if (!session) {
           localStorage.removeItem('admin_status');
@@ -56,14 +56,14 @@ export default function AdminLayout({
           }
         }
 
-        if (session?.user.email === ADMIN_EMAIL || 
+        if (session?.user.email === ADMIN_EMAIL ||
             session?.user.email === process.env.NEXT_PUBLIC_DEFAULT_ADMIN_EMAIL) {
           // 관리자 상태 저장
           setAdminState({
             isVerified: true,
             lastVerified: Date.now()
           });
-          
+
           // 로컬스토리지에도 저장
           localStorage.setItem('admin_status', JSON.stringify({
             verified: true,
@@ -110,9 +110,9 @@ export default function AdminLayout({
     async function checkAccess() {
       try {
         if (!mounted) return;
-        
+
         console.log('관리자 권한 확인 시작');
-        
+
         // 로딩 중이 아닐 때만 상태 체크
         if (!loading) {
           // 인증되지 않은 경우
@@ -121,17 +121,17 @@ export default function AdminLayout({
             router.replace('/');
             return;
           }
-          
+
           console.log('로그인 사용자:', user.email);
           console.log('관리자 여부:', isAdmin);
-          
+
           // 관리자가 아닌 경우
           if (!isAdmin) {
             console.warn('관리자가 아닌 사용자의 접근 시도:', user.email);
             router.replace('/');
             return;
           }
-          
+
           console.log('관리자 권한 확인됨');
         }
       } catch (error) {
@@ -145,24 +145,24 @@ export default function AdminLayout({
         }
       }
     }
-    
+
     checkAccess();
 
     return () => {
       mounted = false;
     };
   }, [router, user, isAdmin, loading]);
-  
+
   const handleLogout = async () => {
     try {
       console.log('로그아웃 시도');
       const { error } = await supabase.auth.signOut();
-      
+
       if (error) {
         console.error('로그아웃 중 오류 발생:', error);
         return;
       }
-      
+
       console.log('로그아웃 성공 - 로그인 페이지로 리디렉션');
       router.push('/');
     } catch (error) {
@@ -188,7 +188,7 @@ export default function AdminLayout({
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
         <div className="text-center bg-white p-8 rounded-lg shadow-md">
           <p className="text-red-600 font-bold text-xl mb-4">관리자 권한이 필요합니다</p>
-          <button 
+          <button
             onClick={() => router.push('/')}
             className="px-6 py-2 bg-primary-DEFAULT text-white rounded-md hover:bg-primary-dark transition-colors"
           >
@@ -210,6 +210,11 @@ export default function AdminLayout({
         </div>
         <nav className="mt-4">
           <ul>
+            <li>
+              <Link href="/admin/dashboard" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
+                대시보드
+              </Link>
+            </li>
             <li>
               <Link href="/admin/community" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
                 커뮤니티 관리
@@ -241,8 +246,8 @@ export default function AdminLayout({
               </Link>
             </li>
             <li>
-              <button 
-                onClick={handleLogout} 
+              <button
+                onClick={handleLogout}
                 className="w-full text-left px-4 py-2 text-red-500 hover:bg-red-50 transition-colors"
               >
                 로그아웃

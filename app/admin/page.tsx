@@ -5,12 +5,12 @@ import { useRouter } from 'next/navigation';
 
 export default function AdminIndex() {
   const router = useRouter();
-  
+
   useEffect(() => {
-    // 기본적으로 커뮤니티 관리 페이지로 리다이렉션
-    router.push('/admin/community');
+    // 기본적으로 대시보드 페이지로 리다이렉션
+    router.push('/admin/dashboard');
   }, [router]);
-  
+
   return (
     <div className="flex items-center justify-center min-h-screen">
       <div className="text-center">
@@ -19,4 +19,4 @@ export default function AdminIndex() {
       </div>
     </div>
   );
-} 
+}

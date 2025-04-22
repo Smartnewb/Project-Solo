@@ -9,6 +9,8 @@ import GenderRatioDashboard from '@/components/admin/dashboard/GenderRatioDashbo
 import UserAcquisitionChart from '@/components/admin/dashboard/UserAcquisitionChart';
 import UniversityPerformanceTable from '@/components/admin/dashboard/UniversityPerformanceTable';
 import ProfileCompletionFunnel from '@/components/admin/dashboard/ProfileCompletionFunnel';
+import TotalUsersCard from '@/components/admin/dashboard/TotalUsersCard';
+import DailySignupsCard from '@/components/admin/dashboard/DailySignupsCard';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -84,16 +86,7 @@ export default function AdminDashboard() {
         {/* Summary Cards */}
         <Grid container spacing={3} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Typography color="textSecondary" gutterBottom>
-                  총 회원 수
-                </Typography>
-                <Typography variant="h4">
-                  {loading ? '로딩 중...' : stats?.totalUsers.toLocaleString() || 0}
-                </Typography>
-              </CardContent>
-            </Card>
+            <TotalUsersCard />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <Card>
@@ -108,16 +101,7 @@ export default function AdminDashboard() {
             </Card>
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <Card>
-              <CardContent>
-                <Typography color="textSecondary" gutterBottom>
-                  오늘의 신규 가입
-                </Typography>
-                <Typography variant="h4">
-                  {loading ? '로딩 중...' : stats?.newUsersToday.toLocaleString() || 0}
-                </Typography>
-              </CardContent>
-            </Card>
+            <DailySignupsCard />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <Card>
@@ -135,9 +119,9 @@ export default function AdminDashboard() {
 
         {/* 탭 메뉴 */}
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs 
-            value={activeTab} 
-            onChange={handleTabChange} 
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
             aria-label="dashboard tabs"
             variant="scrollable"
             scrollButtons="auto"
