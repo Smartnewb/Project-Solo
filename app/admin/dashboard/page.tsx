@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Grid, Card, CardContent, Typography, Box, Tabs, Tab } from '@mui/material';
+import { Grid, Card, CardContent, Typography, Box, Tabs, Tab, Alert, CircularProgress } from '@mui/material';
+import { useRouter } from 'next/navigation';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { ko } from 'date-fns/locale';
@@ -12,6 +13,7 @@ import ProfileCompletionFunnel from '@/components/admin/dashboard/ProfileComplet
 import TotalUsersCard from '@/components/admin/dashboard/TotalUsersCard';
 import DailySignupsCard from '@/components/admin/dashboard/DailySignupsCard';
 import WeeklySignupsCard from '@/components/admin/dashboard/WeeklySignupsCard';
+import SignupTrendChart from '@/components/admin/dashboard/SignupTrendChart';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -47,15 +49,51 @@ function a11yProps(index: number) {
 }
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState(0);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [authChecking, setAuthChecking] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 
+  // 관리자 인증 확인
   useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        setAuthChecking(true);
+        // 로컬 스토리지에서 토큰과 관리자 여부 확인
+        const token = localStorage.getItem('accessToken');
+        const isAdmin = localStorage.getItem('isAdmin');
+
+        if (!token || isAdmin !== 'true') {
+          setAuthError('관리자 권한이 없습니다. 로그인 페이지로 이동합니다.');
+          setTimeout(() => {
+            router.push('/');
+          }, 2000);
+          return;
+        }
+
+        setAuthError(null);
+      } catch (error) {
+        console.error('인증 확인 오류:', error);
+        setAuthError('인증 확인 중 오류가 발생했습니다.');
+      } finally {
+        setAuthChecking(false);
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+
+  // 통계 데이터 가져오기
+  useEffect(() => {
+    // 인증 중이거나 인증 오류가 있으면 통계 데이터를 가져오지 않음
+    if (authChecking || authError) return;
+
     const fetchStats = async () => {
       try {
         setLoading(true);
@@ -75,7 +113,32 @@ export default function AdminDashboard() {
     const interval = setInterval(fetchStats, 60000); // 1분마다 갱신
 
     return () => clearInterval(interval);
-  }, []);
+  }, [authChecking, authError]);
+
+  // 인증 확인 중이거나 인증 오류가 있으면 로딩 화면 또는 오류 메시지 표시
+  if (authChecking) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+        <Typography variant="h6" sx={{ ml: 2 }}>
+          관리자 권한 확인 중...
+        </Typography>
+      </Box>
+    );
+  }
+
+  if (authError) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {authError}
+        </Alert>
+        <Typography variant="body1">
+          잠시 후 로그인 페이지로 이동합니다...
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ko}>
@@ -108,6 +171,11 @@ export default function AdminDashboard() {
             </Card>
           </Grid>
         </Grid>
+
+        {/* 회원가입 추이 그래프 */}
+        <Box sx={{ mt: 4, mb: 4 }}>
+          <SignupTrendChart />
+        </Box>
 
         {/* 탭 메뉴 */}
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>

@@ -35,6 +35,33 @@ const stats = {
       throw error;
     }
   },
+  getDailySignupTrend: async () => {
+    try {
+      const response = await axiosServer.get('/admin/stats/users/trend/daily');
+      return response.data;
+    } catch (error) {
+      console.error('일별 회원가입 추이 조회 중 오류:', error);
+      throw error;
+    }
+  },
+  getWeeklySignupTrend: async () => {
+    try {
+      const response = await axiosServer.get('/admin/stats/users/trend/weekly');
+      return response.data;
+    } catch (error) {
+      console.error('주별 회원가입 추이 조회 중 오류:', error);
+      throw error;
+    }
+  },
+  getMonthlySignupTrend: async () => {
+    try {
+      const response = await axiosServer.get('/admin/stats/users/trend/monthly');
+      return response.data;
+    } catch (error) {
+      console.error('월별 회원가입 추이 조회 중 오류:', error);
+      throw error;
+    }
+  },
 };
 
 const AdminService = {

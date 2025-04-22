@@ -72,6 +72,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
   const removeAccessToken = () => {
     localStorage.removeItem('accessToken');
+    localStorage.removeItem('isAdmin');
     document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
   };
 
@@ -144,10 +145,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // 사용자 정보 설정
       const userInfo = data.user || data;
+      const isAdmin = userInfo.role === 'admin';
+
+      // 관리자 여부 저장
+      localStorage.setItem('isAdmin', isAdmin ? 'true' : 'false');
+
       setState(prev => ({
         ...prev,
         user: userInfo,
-        isAdmin: userInfo.role === 'admin',
+        isAdmin: isAdmin,
         loading: false
       }));
 
