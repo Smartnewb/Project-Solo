@@ -62,8 +62,48 @@ const stats = {
       throw error;
     }
   },
-};
 
+  // 사용자 지정 기간 회원가입자 수 조회
+  getCustomPeriodSignupCount: async (startDate: string, endDate: string) => {
+    try {
+      console.log('사용자 지정 기간 조회:', startDate, endDate);
+      const response = await axiosServer.post('/admin/stats/users/custom-period', {
+        startDate,
+        endDate
+      });
+
+      // 응답 로깅
+      console.log('원본 API 응답:', response);
+      console.log('응답 데이터:', response.data);
+
+      return response.data;
+    } catch (error) {
+      console.error('사용자 지정 기간 회원가입자 수 조회 중 오류:', error);
+      throw error;
+    }
+  },
+
+  // 사용자 지정 기간 회원가입 추이 조회
+  getCustomPeriodSignupTrend: async (startDate: string, endDate: string) => {
+    try {
+      console.log('사용자 지정 기간 추이 조회:', startDate, endDate);
+      const response = await axiosServer.post('/admin/stats/users/trend/custom-period', {
+        startDate,
+        endDate
+      });
+
+      // 응답 로깅
+      console.log('추이 원본 API 응답:', response);
+      console.log('추이 응답 데이터:', response.data);
+
+      return response.data;
+    } catch (error) {
+      console.error('사용자 지정 기간 회원가입 추이 조회 중 오류:', error);
+      throw error;
+    }
+  },
+};
+// FIX ME
 const AdminService = {
   auth,
   stats,

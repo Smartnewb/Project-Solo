@@ -7,6 +7,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { ko } from 'date-fns/locale';
 import GenderRatioDashboard from '@/components/admin/dashboard/GenderRatioDashboard';
+import CustomPeriodSignupStats from '@/components/admin/dashboard/CustomPeriodSignupStats';
 import UserAcquisitionChart from '@/components/admin/dashboard/UserAcquisitionChart';
 import UniversityPerformanceTable from '@/components/admin/dashboard/UniversityPerformanceTable';
 import ProfileCompletionFunnel from '@/components/admin/dashboard/ProfileCompletionFunnel';
@@ -175,6 +176,11 @@ export default function AdminDashboard() {
         {/* 회원가입 추이 그래프 */}
         <Box sx={{ mt: 4, mb: 4 }}>
           <SignupTrendChart />
+        </Box>
+
+        {/* 사용자 지정 기간 회원가입 통계 */}
+        <Box sx={{ mt: 4, mb: 4 }}>
+          <CustomPeriodSignupStats />
         </Box>
 
         {/* 탭 메뉴 */}
