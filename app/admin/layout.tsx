@@ -86,8 +86,8 @@ export default function AdminLayout({
     const savedStatus = localStorage.getItem('admin_status');
     if (savedStatus) {
       const { verified, timestamp, email } = JSON.parse(savedStatus);
-      // 4시간 이내의 검증 기록이 있으면 사용
-      if (Date.now() - timestamp < 4 * 60 * 60 * 1000) {
+      // 8시간 이내의 검증 기록이 있으면 사용
+      if (Date.now() - timestamp < 8 * 60 * 60 * 1000) {
         setAdminState({
           isVerified: verified,
           lastVerified: timestamp
@@ -98,8 +98,8 @@ export default function AdminLayout({
     // 초기 검증
     verifyAdminStatus();
 
-    // 4시간마다 재검증
-    const interval = setInterval(verifyAdminStatus, 4 * 60 * 60 * 1000);
+    // 8시간마다 재검증
+    const interval = setInterval(verifyAdminStatus, 8 * 60 * 60 * 1000);
 
     return () => clearInterval(interval);
   }, []);

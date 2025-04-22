@@ -68,7 +68,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const getAccessToken = () => localStorage.getItem('accessToken');
   const setAccessToken = (token: string) => {
     localStorage.setItem('accessToken', token);
-    document.cookie = `accessToken=${token}; path=/; max-age=3600; SameSite=Lax`;
+    // 토큰 만료 시간을 1시간에서 8시간으로 연장 (8시간 = 28800초)
+    document.cookie = `accessToken=${token}; path=/; max-age=28800; SameSite=Lax`;
   };
   const removeAccessToken = () => {
     localStorage.removeItem('accessToken');

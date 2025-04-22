@@ -49,6 +49,9 @@ axiosServer.interceptors.response.use(
           const newToken = response.data.accessToken;
           localStorage.setItem('accessToken', newToken);
 
+          // 쿠키에도 저장 (8시간 = 28800초)
+          document.cookie = `accessToken=${newToken}; path=/; max-age=28800; SameSite=Lax`;
+
           // 원래 요청의 헤더 업데이트
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
 
