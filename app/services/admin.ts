@@ -102,6 +102,17 @@ const stats = {
       throw error;
     }
   },
+
+  // 성별 통계 조회
+  getGenderStats: async () => {
+    try {
+      const response = await axiosServer.get('/admin/stats/users/gender');
+      return response.data;
+    } catch (error) {
+      console.error('성별 통계 조회 중 오류:', error);
+      throw error;
+    }
+  },
 };
 // FIX ME
 const AdminService = {
