@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Grid, Card, CardContent, Typography, Box, Alert, CircularProgress } from '@mui/material';
+import { Grid, Card, CardContent, Typography, Box, Alert, CircularProgress, Divider } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -14,6 +14,13 @@ import UniversityStatsCard from '@/components/admin/dashboard/UniversityStatsCar
 import UserActivityDashboard from '@/components/admin/dashboard/UserActivityDashboard';
 import SignupStatsDashboard from '@/components/admin/dashboard/SignupStatsDashboard';
 
+// 회원 탈퇴 통계 컴포넌트
+import WithdrawalStatsCard from '@/components/admin/dashboard/WithdrawalStatsCard';
+import WithdrawalStatsDashboard from '@/components/admin/dashboard/WithdrawalStatsDashboard';
+import WithdrawalReasonStats from '@/components/admin/dashboard/WithdrawalReasonStats';
+import ServiceDurationStats from '@/components/admin/dashboard/ServiceDurationStats';
+import ChurnRateStats from '@/components/admin/dashboard/ChurnRateStats';
+
 
 
 export default function AdminDashboard() {
@@ -25,12 +32,17 @@ export default function AdminDashboard() {
 
   // 관리자 인증 확인
   useEffect(() => {
+    // 클라이언트 사이드에서만 실행
+    if (typeof window === 'undefined') return;
+
     const checkAuth = async () => {
       try {
         setAuthChecking(true);
         // 로컬 스토리지에서 토큰과 관리자 여부 확인
         const token = localStorage.getItem('accessToken');
         const isAdmin = localStorage.getItem('isAdmin');
+
+        console.log('관리자 인증 확인:', { token: !!token, isAdmin });
 
         if (!token || isAdmin !== 'true') {
           setAuthError('관리자 권한이 없습니다. 로그인 페이지로 이동합니다.');
@@ -54,16 +66,36 @@ export default function AdminDashboard() {
 
   // 통계 데이터 가져오기
   useEffect(() => {
+    // 클라이언트 사이드에서만 실행
+    if (typeof window === 'undefined') return;
+
     // 인증 중이거나 인증 오류가 있으면 통계 데이터를 가져오지 않음
     if (authChecking || authError) return;
 
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/admin/stats');
+        console.log('대시보드 통계 데이터 요청 시작');
+
+        // 토큰 확인
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+          console.error('토큰이 없어 통계 데이터를 가져올 수 없습니다.');
+          return;
+        }
+
+        const response = await fetch('/api/admin/stats', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
         if (response.ok) {
           const data = await response.json();
+          console.log('대시보드 통계 데이터 응답:', data);
           setStats(data);
+        } else {
+          console.error('통계 데이터 요청 실패:', response.status, response.statusText);
         }
       } catch (error) {
         console.error('Error fetching dashboard stats:', error);
@@ -155,6 +187,36 @@ export default function AdminDashboard() {
           <UserActivityDashboard />
         </Box>
 
+        <Divider sx={{ my: 6 }} />
+
+        <Typography variant="h5" gutterBottom sx={{ mt: 6, mb: 4 }}>
+          회원 탈퇴 통계
+        </Typography>
+
+        {/* 회원 탈퇴 통계 카드 */}
+        <Box sx={{ mt: 4, mb: 4 }}>
+          <WithdrawalStatsCard />
+        </Box>
+
+        {/* 회원 탈퇴 추이 대시보드 */}
+        <Box sx={{ mt: 4, mb: 4 }}>
+          <WithdrawalStatsDashboard />
+        </Box>
+
+        {/* 탈퇴 사유 통계 */}
+        <Box sx={{ mt: 4, mb: 4 }}>
+          <WithdrawalReasonStats />
+        </Box>
+
+        {/* 서비스 사용 기간 통계 */}
+        <Box sx={{ mt: 4, mb: 4 }}>
+          <ServiceDurationStats />
+        </Box>
+
+        {/* 이탈률 통계 */}
+        <Box sx={{ mt: 4, mb: 4 }}>
+          <ChurnRateStats />
+        </Box>
 
       </Box>
     </LocalizationProvider>

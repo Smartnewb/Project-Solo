@@ -16,11 +16,26 @@ const nextConfig = {
       },
     ],
   },
-  webpack: (config) => {
+  webpack: (config, { dev, isServer }) => {
+    // SVG 파일 처리
     config.module.rules.push({
       test: /\.svg$/,
       use: ['@svgr/webpack'],
     });
+
+    // 개발 환경에서 React DevTools 관련 설정
+    if (dev && !isServer) {
+      // React DevTools 관련 설정 추가
+      const originalEntry = config.entry;
+      config.entry = async () => {
+        const entries = await originalEntry();
+        if (entries['main.js'] && !entries['main.js'].includes('react-refresh')) {
+          entries['main.js'].unshift('react-refresh/runtime');
+        }
+        return entries;
+      };
+    }
+
     return config;
   },
   // Vercel 배포에서 정적 생성 오류를 해결하기 위한 설정
@@ -42,6 +57,19 @@ const nextConfig = {
     // 빌드 ID를 매번 새로 생성하여 캐시 사용을 방지합니다
     return `build-${Date.now()}`
   },
+
+  // React DevTools 관련 설정
+  reactStrictMode: false, // 업데이트 후 true로 변경 가능
+
+  // 서버 사이드 렌더링 설정
+  experimental: {
+    // 서버 컴포넌트와 클라이언트 컴포넌트 구분 강화
+    serverComponentsExternalPackages: ['react-dom'],
+    // 서버 컴포넌트 오류 처리 개선
+    serverActions: {
+      bodySizeLimit: '2mb',
+    },
+  },
 };
 
-module.exports = nextConfig; 
+module.exports = nextConfig;
