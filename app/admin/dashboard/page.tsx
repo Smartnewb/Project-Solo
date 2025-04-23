@@ -6,14 +6,13 @@ import { useRouter } from 'next/navigation';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { ko } from 'date-fns/locale';
-import CustomPeriodSignupStats from '@/components/admin/dashboard/CustomPeriodSignupStats';
 import TotalUsersCard from '@/components/admin/dashboard/TotalUsersCard';
 import DailySignupsCard from '@/components/admin/dashboard/DailySignupsCard';
 import WeeklySignupsCard from '@/components/admin/dashboard/WeeklySignupsCard';
-import SignupTrendChart from '@/components/admin/dashboard/SignupTrendChart';
 import GenderStatsCard from '@/components/admin/dashboard/GenderStatsCard';
 import UniversityStatsCard from '@/components/admin/dashboard/UniversityStatsCard';
 import UserActivityDashboard from '@/components/admin/dashboard/UserActivityDashboard';
+import SignupStatsDashboard from '@/components/admin/dashboard/SignupStatsDashboard';
 
 
 
@@ -141,14 +140,9 @@ export default function AdminDashboard() {
           <GenderStatsCard />
         </Box>
 
-        {/* 회원가입 추이 그래프 */}
+        {/* 회원가입 통계 대시보드 */}
         <Box sx={{ mt: 4, mb: 4 }}>
-          <SignupTrendChart />
-        </Box>
-
-        {/* 사용자 지정 기간 회원가입 통계 */}
-        <Box sx={{ mt: 4, mb: 4 }}>
-          <CustomPeriodSignupStats />
+          <SignupStatsDashboard />
         </Box>
 
         {/* 대학별 통계 카드 */}
