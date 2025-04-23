@@ -1,67 +1,28 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Grid, Card, CardContent, Typography, Box, Tabs, Tab, Alert, CircularProgress } from '@mui/material';
+import { Grid, Card, CardContent, Typography, Box, Alert, CircularProgress } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { ko } from 'date-fns/locale';
-import GenderRatioDashboard from '@/components/admin/dashboard/GenderRatioDashboard';
 import CustomPeriodSignupStats from '@/components/admin/dashboard/CustomPeriodSignupStats';
-import UserAcquisitionChart from '@/components/admin/dashboard/UserAcquisitionChart';
-import UniversityPerformanceTable from '@/components/admin/dashboard/UniversityPerformanceTable';
-import ProfileCompletionFunnel from '@/components/admin/dashboard/ProfileCompletionFunnel';
 import TotalUsersCard from '@/components/admin/dashboard/TotalUsersCard';
 import DailySignupsCard from '@/components/admin/dashboard/DailySignupsCard';
 import WeeklySignupsCard from '@/components/admin/dashboard/WeeklySignupsCard';
 import SignupTrendChart from '@/components/admin/dashboard/SignupTrendChart';
 import GenderStatsCard from '@/components/admin/dashboard/GenderStatsCard';
 import UniversityStatsCard from '@/components/admin/dashboard/UniversityStatsCard';
+import UserActivityDashboard from '@/components/admin/dashboard/UserActivityDashboard';
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
 
-function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`dashboard-tabpanel-${index}`}
-      aria-labelledby={`dashboard-tab-${index}`}
-      {...other}
-    >
-      {value === index && (
-        <Box sx={{ pt: 3 }}>
-          {children}
-        </Box>
-      )}
-    </div>
-  );
-}
-
-function a11yProps(index: number) {
-  return {
-    id: `dashboard-tab-${index}`,
-    'aria-controls': `dashboard-tabpanel-${index}`,
-  };
-}
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState(0);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [authChecking, setAuthChecking] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
-
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
-  };
 
   // 관리자 인증 확인
   useEffect(() => {
@@ -195,35 +156,12 @@ export default function AdminDashboard() {
           <UniversityStatsCard />
         </Box>
 
-        {/* 탭 메뉴 */}
-        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs
-            value={activeTab}
-            onChange={handleTabChange}
-            aria-label="dashboard tabs"
-            variant="scrollable"
-            scrollButtons="auto"
-          >
-            <Tab label="여성 사용자 유입" {...a11yProps(0)} />
-            <Tab label="성비 균형" {...a11yProps(1)} />
-            <Tab label="사용자 활동" {...a11yProps(2)} />
-            <Tab label="대학별 성과" {...a11yProps(3)} />
-          </Tabs>
+        {/* 사용자 활동 지표 */}
+        <Box sx={{ mt: 4, mb: 4 }}>
+          <UserActivityDashboard />
         </Box>
 
-        {/* 탭 패널 */}
-        <TabPanel value={activeTab} index={0}>
-          <UserAcquisitionChart />
-        </TabPanel>
-        <TabPanel value={activeTab} index={1}>
-          <GenderRatioDashboard />
-        </TabPanel>
-        <TabPanel value={activeTab} index={2}>
-          <ProfileCompletionFunnel />
-        </TabPanel>
-        <TabPanel value={activeTab} index={3}>
-          <UniversityPerformanceTable />
-        </TabPanel>
+
       </Box>
     </LocalizationProvider>
   );

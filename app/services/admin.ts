@@ -143,6 +143,19 @@ const stats = {
       throw error;
     }
   },
+
+  // 사용자 활동 지표 조회
+  getUserActivityStats: async () => {
+    try {
+      const response = await axiosServer.get('/admin/stats/users/activity');
+      console.log('사용자 활동 지표 응답:', response.data);
+
+      return response.data;
+    } catch (error) {
+      console.error('사용자 활동 지표 조회 중 오류:', error);
+      throw error;
+    }
+  },
 };
 // FIX ME
 const AdminService = {

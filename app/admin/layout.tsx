@@ -31,10 +31,45 @@ export default function AdminLayout({
 
     const verifyAdminStatus = async () => {
       try {
+        console.log('관리자 상태 검증 시작');
+
+        // 저장된 관리자 상태 확인
+        const savedStatus = localStorage.getItem('admin_status');
+        const isAdminFlag = localStorage.getItem('isAdmin') === 'true';
+        const accessToken = localStorage.getItem('accessToken');
+
+        // Supabase 세션 확인
         const { data: { session } } = await supabaseBrowser.auth.getSession();
+
+        console.log('관리자 검증 상태:', {
+          hasSession: !!session,
+          hasAdminStatus: !!savedStatus,
+          isAdmin: isAdminFlag,
+          hasToken: !!accessToken,
+          sessionEmail: session?.user?.email
+        });
 
         // 세션이 없으면 관리자 상태 초기화
         if (!session) {
+          // 세션이 없지만 저장된 관리자 상태가 있고 토큰이 있는 경우
+          if (savedStatus && accessToken && isAdminFlag) {
+            try {
+              const { verified, timestamp } = JSON.parse(savedStatus);
+              // 8시간 이내의 검증 기록이 있으면 유지
+              if (verified && Date.now() - timestamp < 8 * 60 * 60 * 1000) {
+                console.log('세션은 없지만 유효한 관리자 상태 유지');
+                setAdminState({
+                  isVerified: true,
+                  lastVerified: timestamp
+                });
+                return;
+              }
+            } catch (e) {
+              console.error('저장된 관리자 상태 파싱 오류:', e);
+            }
+          }
+
+          console.log('세션이 없어 관리자 상태 초기화');
           localStorage.removeItem('admin_status');
           setAdminState({
             isVerified: false,
@@ -44,20 +79,29 @@ export default function AdminLayout({
         }
 
         // 현재 세션의 이메일과 저장된 이메일이 다르면 초기화
-        const savedStatus = localStorage.getItem('admin_status');
         if (savedStatus) {
-          const { email } = JSON.parse(savedStatus);
-          if (email !== session.user.email) {
-            localStorage.removeItem('admin_status');
-            setAdminState({
-              isVerified: false,
-              lastVerified: 0
-            });
+          try {
+            const { email } = JSON.parse(savedStatus);
+            if (email && email !== session.user.email) {
+              console.log('이메일 불일치: 저장된 이메일과 현재 세션 이메일이 다름');
+              localStorage.removeItem('admin_status');
+              setAdminState({
+                isVerified: false,
+                lastVerified: 0
+              });
+            }
+          } catch (e) {
+            console.error('이메일 비교 중 오류:', e);
           }
         }
 
-        if (session?.user.email === ADMIN_EMAIL ||
-            session?.user.email === process.env.NEXT_PUBLIC_DEFAULT_ADMIN_EMAIL) {
+        // 관리자 이메일 확인
+        const isAdminEmail = session?.user.email === ADMIN_EMAIL ||
+                            session?.user.email === process.env.NEXT_PUBLIC_DEFAULT_ADMIN_EMAIL;
+
+        if (isAdminEmail) {
+          console.log('관리자 이메일 확인됨:', session.user.email);
+
           // 관리자 상태 저장
           setAdminState({
             isVerified: true,
@@ -65,11 +109,28 @@ export default function AdminLayout({
           });
 
           // 로컬스토리지에도 저장
+          localStorage.setItem('isAdmin', 'true');
           localStorage.setItem('admin_status', JSON.stringify({
             verified: true,
             timestamp: Date.now(),
             email: session?.user?.email
           }));
+
+          // 토큰이 없는 경우 임시 토큰 생성
+          if (!accessToken) {
+            const tempToken = 'temp_admin_' + Date.now();
+            localStorage.setItem('accessToken', tempToken);
+            document.cookie = `accessToken=${tempToken}; path=/; max-age=28800; SameSite=Lax`;
+            console.log('관리자용 임시 토큰 생성');
+          }
+        } else {
+          console.log('관리자 이메일이 아님:', session.user.email);
+          localStorage.removeItem('admin_status');
+          localStorage.removeItem('isAdmin');
+          setAdminState({
+            isVerified: false,
+            lastVerified: 0
+          });
         }
       } catch (error) {
         console.error('Admin verification failed:', error);
@@ -84,14 +145,34 @@ export default function AdminLayout({
 
     // 초기 로드시 로컬스토리지 체크
     const savedStatus = localStorage.getItem('admin_status');
+    const isAdmin = localStorage.getItem('isAdmin') === 'true';
+    const accessToken = localStorage.getItem('accessToken');
+
+    console.log('관리자 상태 초기화:', { savedStatus, isAdmin, hasToken: !!accessToken });
+
     if (savedStatus) {
-      const { verified, timestamp, email } = JSON.parse(savedStatus);
-      // 8시간 이내의 검증 기록이 있으면 사용
-      if (Date.now() - timestamp < 8 * 60 * 60 * 1000) {
-        setAdminState({
-          isVerified: verified,
-          lastVerified: timestamp
-        });
+      try {
+        const { verified, timestamp, email } = JSON.parse(savedStatus);
+        // 8시간 이내의 검증 기록이 있으면 사용
+        if (Date.now() - timestamp < 8 * 60 * 60 * 1000) {
+          console.log('유효한 관리자 상태 발견:', { verified, timestamp, email });
+          setAdminState({
+            isVerified: verified,
+            lastVerified: timestamp
+          });
+
+          // 토큰이 없지만 관리자 상태가 유효한 경우, 임시 토큰 생성
+          if (!accessToken && verified && isAdmin) {
+            console.log('관리자 상태는 유효하지만 토큰이 없음, 임시 토큰 생성');
+            const tempToken = 'temp_' + Date.now();
+            localStorage.setItem('accessToken', tempToken);
+            document.cookie = `accessToken=${tempToken}; path=/; max-age=28800; SameSite=Lax`;
+          }
+        } else {
+          console.log('관리자 상태가 만료됨:', { timestamp, now: Date.now() });
+        }
+      } catch (error) {
+        console.error('관리자 상태 파싱 오류:', error);
       }
     }
 
