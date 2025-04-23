@@ -36,6 +36,13 @@ const nextConfig = {
       };
     }
 
+    // 청크 로딩 오류 해결을 위한 설정
+    if (!isServer) {
+      config.optimization.splitChunks = {
+        chunks: 'all',
+      };
+    }
+
     return config;
   },
   // Vercel 배포에서 정적 생성 오류를 해결하기 위한 설정
@@ -52,14 +59,14 @@ const nextConfig = {
     // 타임스탬프를 환경 변수로 추가하여 매 빌드마다 변경되도록 합니다
     CACHE_INVALIDATION: Date.now().toString(),
   },
-  // 빌드 캐시를 완전히 비활성화
-  generateBuildId: async () => {
-    // 빌드 ID를 매번 새로 생성하여 캐시 사용을 방지합니다
-    return `build-${Date.now()}`
-  },
+
 
   // React DevTools 관련 설정
   reactStrictMode: false, // 업데이트 후 true로 변경 가능
+
+  // 청크 로딩 오류 해결을 위한 설정
+  poweredByHeader: false,
+  compress: true,
 
   // 서버 사이드 렌더링 설정
   experimental: {

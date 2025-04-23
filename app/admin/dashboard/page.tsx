@@ -1,20 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { Grid, Card, CardContent, Typography, Box, Alert, CircularProgress, Divider } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { ko } from 'date-fns/locale';
+
+// 기본 컴포넌트 직접 임포트
 import TotalUsersCard from '@/components/admin/dashboard/TotalUsersCard';
 import DailySignupsCard from '@/components/admin/dashboard/DailySignupsCard';
 import WeeklySignupsCard from '@/components/admin/dashboard/WeeklySignupsCard';
+
+// 나머지 컴포넌트 직접 임포트
 import GenderStatsCard from '@/components/admin/dashboard/GenderStatsCard';
 import UniversityStatsCard from '@/components/admin/dashboard/UniversityStatsCard';
 import UserActivityDashboard from '@/components/admin/dashboard/UserActivityDashboard';
 import SignupStatsDashboard from '@/components/admin/dashboard/SignupStatsDashboard';
 
-// 회원 탈퇴 통계 컴포넌트
+// 회원 탈퇴 통계 컴포넌트 직접 임포트
 import WithdrawalStatsCard from '@/components/admin/dashboard/WithdrawalStatsCard';
 import WithdrawalStatsDashboard from '@/components/admin/dashboard/WithdrawalStatsDashboard';
 import WithdrawalReasonStats from '@/components/admin/dashboard/WithdrawalReasonStats';
@@ -169,22 +173,30 @@ export default function AdminDashboard() {
 
         {/* 성별 통계 카드 */}
         <Box sx={{ mt: 4, mb: 4 }}>
-          <GenderStatsCard />
+          <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>}>
+            <GenderStatsCard />
+          </Suspense>
         </Box>
 
         {/* 회원가입 통계 대시보드 */}
         <Box sx={{ mt: 4, mb: 4 }}>
-          <SignupStatsDashboard />
+          <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>}>
+            <SignupStatsDashboard />
+          </Suspense>
         </Box>
 
         {/* 대학별 통계 카드 */}
         <Box sx={{ mt: 4, mb: 4 }}>
-          <UniversityStatsCard />
+          <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>}>
+            <UniversityStatsCard />
+          </Suspense>
         </Box>
 
         {/* 사용자 활동 지표 */}
         <Box sx={{ mt: 4, mb: 4 }}>
-          <UserActivityDashboard />
+          <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>}>
+            <UserActivityDashboard />
+          </Suspense>
         </Box>
 
         <Divider sx={{ my: 6 }} />
@@ -195,27 +207,37 @@ export default function AdminDashboard() {
 
         {/* 회원 탈퇴 통계 카드 */}
         <Box sx={{ mt: 4, mb: 4 }}>
-          <WithdrawalStatsCard />
+          <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>}>
+            <WithdrawalStatsCard />
+          </Suspense>
         </Box>
 
         {/* 회원 탈퇴 추이 대시보드 */}
         <Box sx={{ mt: 4, mb: 4 }}>
-          <WithdrawalStatsDashboard />
+          <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>}>
+            <WithdrawalStatsDashboard />
+          </Suspense>
         </Box>
 
         {/* 탈퇴 사유 통계 */}
         <Box sx={{ mt: 4, mb: 4 }}>
-          <WithdrawalReasonStats />
+          <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>}>
+            <WithdrawalReasonStats />
+          </Suspense>
         </Box>
 
         {/* 서비스 사용 기간 통계 */}
         <Box sx={{ mt: 4, mb: 4 }}>
-          <ServiceDurationStats />
+          <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>}>
+            <ServiceDurationStats />
+          </Suspense>
         </Box>
 
         {/* 이탈률 통계 */}
         <Box sx={{ mt: 4, mb: 4 }}>
-          <ChurnRateStats />
+          <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>}>
+            <ChurnRateStats />
+          </Suspense>
         </Box>
 
       </Box>

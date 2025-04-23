@@ -27,169 +27,82 @@ export default function AdminLayout({
     // 클라이언트 사이드에서만 실행
     if (typeof window === 'undefined') return;
 
-    let supabaseBrowser;
-    try {
-      supabaseBrowser = createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
-    } catch (error) {
-      console.error('Supabase 클라이언트 생성 오류:', error);
-      return;
-    }
+    console.log('관리자 레이아웃 초기화');
 
-    const verifyAdminStatus = async () => {
+    // 관리자 상태 확인
+    const checkAdminStatus = () => {
       try {
-        console.log('관리자 상태 검증 시작');
-
         // 저장된 관리자 상태 확인
         const savedStatus = localStorage.getItem('admin_status');
         const isAdminFlag = localStorage.getItem('isAdmin') === 'true';
         const accessToken = localStorage.getItem('accessToken');
+        const tokenTimestamp = localStorage.getItem('tokenTimestamp');
 
-        // Supabase 세션 확인
-        const { data: { session } } = await supabaseBrowser.auth.getSession();
-
-        console.log('관리자 검증 상태:', {
-          hasSession: !!session,
+        console.log('관리자 상태 확인:', {
           hasAdminStatus: !!savedStatus,
           isAdmin: isAdminFlag,
           hasToken: !!accessToken,
-          sessionEmail: session?.user?.email
+          tokenAge: tokenTimestamp ? Math.floor((Date.now() - parseInt(tokenTimestamp)) / 1000 / 60) + '분' : '없음'
         });
 
-        // 세션이 없으면 관리자 상태 초기화
-        if (!session) {
-          // 세션이 없지만 저장된 관리자 상태가 있고 토큰이 있는 경우
-          if (savedStatus && accessToken && isAdminFlag) {
-            try {
-              const { verified, timestamp } = JSON.parse(savedStatus);
-              // 8시간 이내의 검증 기록이 있으면 유지
-              if (verified && Date.now() - timestamp < 8 * 60 * 60 * 1000) {
-                console.log('세션은 없지만 유효한 관리자 상태 유지');
-                setAdminState({
-                  isVerified: true,
-                  lastVerified: timestamp
-                });
-                return;
-              }
-            } catch (e) {
-              console.error('저장된 관리자 상태 파싱 오류:', e);
-            }
-          }
-
-          console.log('세션이 없어 관리자 상태 초기화');
-          localStorage.removeItem('admin_status');
-          setAdminState({
-            isVerified: false,
-            lastVerified: 0
-          });
-          return;
-        }
-
-        // 현재 세션의 이메일과 저장된 이메일이 다르면 초기화
-        if (savedStatus) {
+        // 관리자 상태가 유효한지 확인
+        if (savedStatus && isAdminFlag && accessToken) {
           try {
-            const { email } = JSON.parse(savedStatus);
-            if (email && email !== session.user.email) {
-              console.log('이메일 불일치: 저장된 이메일과 현재 세션 이메일이 다름');
-              localStorage.removeItem('admin_status');
+            const { verified, timestamp } = JSON.parse(savedStatus);
+            // 8시간 이내의 검증 기록이 있으면 유지
+            if (verified && Date.now() - timestamp < 8 * 60 * 60 * 1000) {
+              console.log('유효한 관리자 상태 발견');
               setAdminState({
-                isVerified: false,
-                lastVerified: 0
+                isVerified: true,
+                lastVerified: timestamp
               });
+              return true;
+            } else {
+              console.log('관리자 상태가 만료됨');
             }
           } catch (e) {
-            console.error('이메일 비교 중 오류:', e);
+            console.error('관리자 상태 파싱 오류:', e);
           }
         }
 
-        // 관리자 이메일 확인
-        const isAdminEmail = session?.user.email === ADMIN_EMAIL ||
-                            session?.user.email === process.env.NEXT_PUBLIC_DEFAULT_ADMIN_EMAIL;
+        // 토큰이 있지만 관리자 상태가 없는 경우, 상태 생성
+        if (accessToken && isAdminFlag && !savedStatus) {
+          console.log('토큰은 있지만 관리자 상태 정보가 없음, 생성');
+          localStorage.setItem('admin_status', JSON.stringify({
+            verified: true,
+            timestamp: Date.now(),
+            email: 'admin@example.com'
+          }));
 
-        if (isAdminEmail) {
-          console.log('관리자 이메일 확인됨:', session.user.email);
-
-          // 관리자 상태 저장
           setAdminState({
             isVerified: true,
             lastVerified: Date.now()
           });
-
-          // 로컬스토리지에도 저장
-          localStorage.setItem('isAdmin', 'true');
-          localStorage.setItem('admin_status', JSON.stringify({
-            verified: true,
-            timestamp: Date.now(),
-            email: session?.user?.email
-          }));
-
-          // 토큰이 없는 경우 임시 토큰 생성
-          if (!accessToken) {
-            const tempToken = 'temp_admin_' + Date.now();
-            localStorage.setItem('accessToken', tempToken);
-            document.cookie = `accessToken=${tempToken}; path=/; max-age=28800; SameSite=Lax`;
-            console.log('관리자용 임시 토큰 생성');
-          }
-        } else {
-          console.log('관리자 이메일이 아님:', session.user.email);
-          localStorage.removeItem('admin_status');
-          localStorage.removeItem('isAdmin');
-          setAdminState({
-            isVerified: false,
-            lastVerified: 0
-          });
+          return true;
         }
+
+        // 관리자 상태가 유효하지 않은 경우
+        return false;
       } catch (error) {
-        console.error('Admin verification failed:', error);
-        // 에러 발생 시 관리자 상태 초기화
-        localStorage.removeItem('admin_status');
-        setAdminState({
-          isVerified: false,
-          lastVerified: 0
-        });
+        console.error('관리자 상태 확인 오류:', error);
+        return false;
       }
+    };
+
+    // 초기 관리자 상태 확인
+    const isValidAdmin = checkAdminStatus();
+
+    // 유효한 관리자가 아닌 경우 초기화
+    if (!isValidAdmin) {
+      console.log('유효한 관리자 상태가 없음, 초기화');
+      setAdminState({
+        isVerified: false,
+        lastVerified: 0
+      });
     }
 
-    // 초기 로드시 로컬스토리지 체크
-    const savedStatus = localStorage.getItem('admin_status');
-    const isAdmin = localStorage.getItem('isAdmin') === 'true';
-    const accessToken = localStorage.getItem('accessToken');
-
-    console.log('관리자 상태 초기화:', { savedStatus, isAdmin, hasToken: !!accessToken });
-
-    if (savedStatus) {
-      try {
-        const { verified, timestamp, email } = JSON.parse(savedStatus);
-        // 8시간 이내의 검증 기록이 있으면 사용
-        if (Date.now() - timestamp < 8 * 60 * 60 * 1000) {
-          console.log('유효한 관리자 상태 발견:', { verified, timestamp, email });
-          setAdminState({
-            isVerified: verified,
-            lastVerified: timestamp
-          });
-
-          // 토큰이 없지만 관리자 상태가 유효한 경우, 임시 토큰 생성
-          if (!accessToken && verified && isAdmin) {
-            console.log('관리자 상태는 유효하지만 토큰이 없음, 임시 토큰 생성');
-            const tempToken = 'temp_' + Date.now();
-            localStorage.setItem('accessToken', tempToken);
-            document.cookie = `accessToken=${tempToken}; path=/; max-age=28800; SameSite=Lax`;
-          }
-        } else {
-          console.log('관리자 상태가 만료됨:', { timestamp, now: Date.now() });
-        }
-      } catch (error) {
-        console.error('관리자 상태 파싱 오류:', error);
-      }
-    }
-
-    // 초기 검증
-    verifyAdminStatus();
-
-    // 8시간마다 재검증
-    const interval = setInterval(verifyAdminStatus, 8 * 60 * 60 * 1000);
+    // 1시간마다 관리자 상태 확인
+    const interval = setInterval(checkAdminStatus, 60 * 60 * 1000);
 
     return () => clearInterval(interval);
   }, []);
@@ -203,26 +116,56 @@ export default function AdminLayout({
 
         console.log('관리자 권한 확인 시작');
 
+        // 저장된 관리자 상태 확인
+        const savedStatus = localStorage.getItem('admin_status');
+        const isAdminFlag = localStorage.getItem('isAdmin') === 'true';
+        const accessToken = localStorage.getItem('accessToken');
+
+        console.log('관리자 접근 권한 확인:', {
+          hasAdminStatus: !!savedStatus,
+          isAdmin: isAdminFlag,
+          hasToken: !!accessToken,
+          contextIsAdmin: isAdmin,
+          contextUser: user ? user.email : '없음'
+        });
+
         // 로딩 중이 아닐 때만 상태 체크
         if (!loading) {
           // 인증되지 않은 경우
-          if (!user) {
+          if (!user && !isAdminFlag) {
             console.warn('인증된 세션이 없음 - 관리자 페이지 접근 거부');
             router.replace('/');
             return;
           }
 
-          console.log('로그인 사용자:', user.email);
-          console.log('관리자 여부:', isAdmin);
-
           // 관리자가 아닌 경우
-          if (!isAdmin) {
-            console.warn('관리자가 아닌 사용자의 접근 시도:', user.email);
+          if (!isAdmin && !isAdminFlag) {
+            console.warn('관리자가 아닌 사용자의 접근 시도');
             router.replace('/');
             return;
           }
 
-          console.log('관리자 권한 확인됨');
+          // 관리자 상태가 유효한지 확인
+          if (savedStatus) {
+            try {
+              const { verified, timestamp } = JSON.parse(savedStatus);
+              // 8시간 이내의 검증 기록이 있으면 유지
+              if (verified && Date.now() - timestamp < 8 * 60 * 60 * 1000) {
+                console.log('관리자 권한 확인됨');
+                return;
+              } else {
+                console.log('관리자 상태가 만료됨');
+                router.replace('/');
+                return;
+              }
+            } catch (e) {
+              console.error('관리자 상태 파싱 오류:', e);
+            }
+          }
+
+          // 여기까지 왔다면 관리자 상태가 유효하지 않음
+          console.warn('유효한 관리자 상태가 없음');
+          router.replace('/');
         }
       } catch (error) {
         console.error('관리자 확인 중 오류:', error);
@@ -246,17 +189,35 @@ export default function AdminLayout({
   const handleLogout = async () => {
     try {
       console.log('로그아웃 시도');
-      const { error } = await supabase.auth.signOut();
 
-      if (error) {
-        console.error('로그아웃 중 오류 발생:', error);
-        return;
+      // 로컬 스토리지 초기화
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('isAdmin');
+      localStorage.removeItem('admin_status');
+      localStorage.removeItem('tokenTimestamp');
+
+      // 쿠키 초기화
+      document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+
+      // Supabase 로그아웃 시도
+      try {
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          console.error('Supabase 로그아웃 오류:', error);
+        }
+      } catch (supabaseError) {
+        console.error('Supabase 로그아웃 예외:', supabaseError);
       }
 
       console.log('로그아웃 성공 - 로그인 페이지로 리디렉션');
-      router.push('/');
+
+      // 로그인 페이지로 이동
+      window.location.href = '/';
     } catch (error) {
       console.error('로그아웃 처리 중 예외 발생:', error);
+
+      // 오류가 발생해도 로그인 페이지로 이동
+      window.location.href = '/';
     }
   };
 
@@ -333,6 +294,11 @@ export default function AdminLayout({
             <li>
               <Link href="/admin/rematch" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
                 재매칭 요청 관리
+              </Link>
+            </li>
+            <li>
+              <Link href="/admin/sales" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
+                매출 통계
               </Link>
             </li>
             <li>
