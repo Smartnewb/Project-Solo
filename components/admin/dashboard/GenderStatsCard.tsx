@@ -14,18 +14,21 @@ import {
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import AdminService from '@/app/services/admin';
 
+// API 응답 타입 정의
+interface GenderStats {
+  maleCount: number;
+  femaleCount: number;
+  totalCount: number;
+  malePercentage: number;
+  femalePercentage: number;
+  genderRatio: string;
+}
+
 // 성별 통계 카드 컴포넌트
 export default function GenderStatsCard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState<{
-    maleCount: number;
-    femaleCount: number;
-    totalUsers: number;
-    maleRatio: number;
-    femaleRatio: number;
-    genderRatio: string;
-  } | null>(null);
+  const [stats, setStats] = useState<GenderStats | null>(null);
 
   // 데이터 조회
   useEffect(() => {
@@ -55,8 +58,8 @@ export default function GenderStatsCard() {
 
   // 차트 데이터 생성
   const chartData = stats ? [
-    { name: '남성', value: stats.maleCount, ratio: stats.maleRatio },
-    { name: '여성', value: stats.femaleCount, ratio: stats.femaleRatio }
+    { name: '남성', value: stats.maleCount, ratio: stats.malePercentage },
+    { name: '여성', value: stats.femaleCount, ratio: stats.femalePercentage }
   ] : [];
 
   // 차트 색상
@@ -95,7 +98,7 @@ export default function GenderStatsCard() {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, ratio }) => `${name} ${ratio}%`}
+                      label={({ name, ratio }) => `${name} ${ratio?.toFixed(1)}%`}
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
@@ -117,13 +120,13 @@ export default function GenderStatsCard() {
                 </Typography>
                 <Divider sx={{ my: 2 }} />
                 <Typography variant="body1" sx={{ mb: 1 }}>
-                  남성 회원: <strong>{stats?.maleCount?.toLocaleString() || '0'}명</strong> ({stats?.maleRatio || 0}%)
+                  남성 회원: <strong>{stats?.maleCount?.toLocaleString() || '0'}명</strong> ({stats?.malePercentage?.toFixed(1) || 0}%)
                 </Typography>
                 <Typography variant="body1" sx={{ mb: 1 }}>
-                  여성 회원: <strong>{stats?.femaleCount?.toLocaleString() || '0'}명</strong> ({stats?.femaleRatio || 0}%)
+                  여성 회원: <strong>{stats?.femaleCount?.toLocaleString() || '0'}명</strong> ({stats?.femalePercentage?.toFixed(1) || 0}%)
                 </Typography>
                 <Typography variant="body1">
-                  전체 회원: <strong>{stats?.totalUsers?.toLocaleString() || '0'}명</strong>
+                  전체 회원: <strong>{stats?.totalCount?.toLocaleString() || '0'}명</strong>
                 </Typography>
               </Box>
             </Grid>
