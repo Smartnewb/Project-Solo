@@ -172,7 +172,7 @@ const UserAppearanceTable = forwardRef<
     setGradeMenuAnchorEl(event.currentTarget);
     setSelectedUser(user);
     setSelectedGrade(user.appearanceGrade);
-    setActiveUserId(user.userId);
+    setActiveUserId(user.userId || user.id); // userId가 없으면 id 사용
   };
 
   // 등급 토글 메뉴 닫기
@@ -245,7 +245,8 @@ const UserAppearanceTable = forwardRef<
     if (selectedUsers.length === users.length) {
       setSelectedUsers([]);
     } else {
-      setSelectedUsers(users.map(user => user.userId));
+      // userId가 없으면 id 사용
+      setSelectedUsers(users.map(user => user.userId || user.id).filter(Boolean) as string[]);
     }
   };
 
@@ -269,11 +270,13 @@ const UserAppearanceTable = forwardRef<
       await AdminService.userAppearance.bulkSetUserAppearanceGrade(selectedUsers, bulkSelectedGrade);
 
       // 목록 업데이트
-      setUsers(users.map(user =>
-        selectedUsers.includes(user.userId)
+      setUsers(users.map(user => {
+        // userId가 없으면 id 사용
+        const userIdentifier = user.userId || user.id;
+        return selectedUsers.includes(userIdentifier)
           ? { ...user, appearanceGrade: bulkSelectedGrade }
-          : user
-      ));
+          : user;
+      }));
 
       // 등급 변경 이벤트 발생 - 통계 데이터 갱신 트리거
       console.log('일괄 등급 변경 이벤트 발생');
@@ -351,11 +354,11 @@ const UserAppearanceTable = forwardRef<
               </TableRow>
             ) : (
               users.map((user) => (
-                <TableRow key={user.userId}>
+                <TableRow key={user.userId || user.id}>
                   <TableCell padding="checkbox">
                     <Checkbox
-                      checked={selectedUsers.includes(user.userId)}
-                      onChange={() => handleSelectUser(user.userId)}
+                      checked={selectedUsers.includes(user.userId || user.id)}
+                      onChange={() => handleSelectUser(user.userId || user.id)}
                     />
                   </TableCell>
                   <TableCell>
@@ -372,7 +375,46 @@ const UserAppearanceTable = forwardRef<
                     <Typography variant="caption" color="textSecondary">{user.email}</Typography>
                   </TableCell>
                   <TableCell>{user.age}세 / {GENDER_LABELS[user.gender]}</TableCell>
-                  <TableCell>{user.universityDetails?.name || '-'}</TableCell>
+                  <TableCell>
+                    {/* 대학교 정보 표시 (여러 필드 구조 지원) */}
+                    {user.university ? (
+                      // 새로운 university 필드가 있는 경우 (문자열 또는 객체)
+                      typeof user.university === 'string' ? (
+                        // university가 문자열인 경우 (새로운 API 응답)
+                        <Typography variant="body2">
+                          {user.university}
+                        </Typography>
+                      ) : (
+                        // university가 객체인 경우 (이전 API 응답)
+                        <Tooltip title={`${user.university.name} (${user.university.emailDomain || ''})`}>
+                          <Typography variant="body2">
+                            {user.university.name}
+                            {user.university.isVerified && (
+                              <span style={{ marginLeft: '4px', color: '#2ECC71' }}>✓</span>
+                            )}
+                          </Typography>
+                        </Tooltip>
+                      )
+                    ) : user.universityDetails ? (
+                      // 기존 universityDetails 필드가 있는 경우
+                      <Tooltip title={`${user.universityDetails.name} (${user.universityDetails.emailDomain || ''})`}>
+                        <Typography variant="body2">
+                          {user.universityDetails.name}
+                          {user.universityDetails.isVerified && (
+                            <span style={{ marginLeft: '4px', color: '#2ECC71' }}>✓</span>
+                          )}
+                        </Typography>
+                      </Tooltip>
+                    ) : user.universityName ? (
+                      // universityName 필드만 있는 경우
+                      <Typography variant="body2">
+                        {user.universityName}
+                      </Typography>
+                    ) : (
+                      // 대학교 정보가 없는 경우
+                      '-'
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Box sx={{ position: 'relative' }}>
                       <Chip

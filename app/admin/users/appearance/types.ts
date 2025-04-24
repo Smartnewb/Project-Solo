@@ -11,7 +11,7 @@ export interface ProfileImage {
   isMain: boolean;
 }
 
-// 대학 정보 타입
+// 대학 정보 타입 (기존)
 export interface UniversityDetails {
   id: string;
   name: string;
@@ -19,20 +19,35 @@ export interface UniversityDetails {
   isVerified: boolean;
 }
 
+// 대학 정보 타입 (새로운 구조)
+export interface University {
+  id: string;
+  name: string;
+  emailDomain: string;
+  isVerified: boolean;
+  // 추가 필드가 있을 수 있음
+}
+
 // 유저 프로필 타입 (외모 등급 포함)
 export interface UserProfileWithAppearance {
   id: string;
-  userId: string;
+  userId?: string; // 새로운 응답에서는 없을 수 있음
   name: string;
-  email: string;
+  email?: string; // 새로운 응답에서는 없을 수 있음
   gender: Gender;
   age: number;
-  profileImages: ProfileImage[];
-  universityDetails?: UniversityDetails;
+  profileImages?: ProfileImage[]; // 새로운 응답에서는 없을 수 있음
+  profileImageUrl?: string | null; // 새로운 응답에서 추가됨
+  universityDetails?: UniversityDetails; // 기존 필드 (하위 호환성 유지)
+  university?: University | string; // 새로운 필드 (객체 또는 문자열)
+  universityId?: string; // 대학교 ID만 있을 수도 있음
+  universityName?: string; // 대학교 이름만 있을 수도 있음
   appearanceGrade: AppearanceGrade;
-  instagramId?: string; // 인스타그램 아이디 추가
+  instagramId?: string; // 인스타그램 아이디
+  instagramUrl?: string; // 인스타그램 URL
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string; // 새로운 응답에서는 없을 수 있음
+  lastActiveAt?: string | null; // 새로운 응답에서 추가됨
 }
 
 // 페이지네이션 메타 정보

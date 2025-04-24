@@ -369,6 +369,28 @@ const userAppearance = {
       console.log('응답 데이터 샘플:', response.data?.items?.slice(0, 2));
       console.log('총 아이템 수:', response.data?.meta?.totalItems);
 
+      // 대학교 정보 로깅
+      if (response.data?.items?.length > 0) {
+        const firstUser = response.data.items[0];
+        console.log('첫 번째 사용자 대학교 정보 (universityDetails):', firstUser.universityDetails);
+        console.log('첫 번째 사용자 대학교 정보 (university):', firstUser.university);
+        console.log('첫 번째 사용자 전체 정보:', JSON.stringify(firstUser, null, 2));
+
+        // 모든 대학교 관련 필드 확인
+        const universityFields = Object.keys(firstUser).filter(key =>
+          key.toLowerCase().includes('univ') ||
+          key.toLowerCase().includes('school') ||
+          key.toLowerCase().includes('college')
+        );
+
+        if (universityFields.length > 0) {
+          console.log('대학교 관련 필드:', universityFields);
+          universityFields.forEach(field => {
+            console.log(`${field}:`, firstUser[field]);
+          });
+        }
+      }
+
       return response.data;
     } catch (error: any) {
       console.error('외모 등급 정보를 포함한 유저 목록 조회 중 오류:', error);
