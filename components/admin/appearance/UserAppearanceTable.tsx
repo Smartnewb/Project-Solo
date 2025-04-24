@@ -363,7 +363,7 @@ const UserAppearanceTable = forwardRef<
                   </TableCell>
                   <TableCell>
                     <Avatar
-                      src={user.profileImages?.[0]?.url}
+                      src={user.profileImageUrl || user.profileImages?.[0]?.url}
                       alt={user.name}
                       sx={{ width: 40, height: 40 }}
                     >
@@ -372,7 +372,9 @@ const UserAppearanceTable = forwardRef<
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2">{user.name}</Typography>
-                    <Typography variant="caption" color="textSecondary">{user.email}</Typography>
+                    {user.email && (
+                      <Typography variant="caption" color="textSecondary">{user.email}</Typography>
+                    )}
                   </TableCell>
                   <TableCell>{user.age}세 / {GENDER_LABELS[user.gender]}</TableCell>
                   <TableCell>
@@ -433,7 +435,7 @@ const UserAppearanceTable = forwardRef<
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <InstagramIcon sx={{ mr: 0.5, color: '#E1306C' }} fontSize="small" />
                         <Link
-                          href={`https://instagram.com/${user.instagramId}`}
+                          href={user.instagramUrl || `https://instagram.com/${user.instagramId}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           sx={{
