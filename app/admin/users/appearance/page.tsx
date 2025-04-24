@@ -54,20 +54,40 @@ export default function AppearanceGradePage() {
       // API 호출
       console.log('AdminService.userAppearance.getAppearanceGradeStats 호출');
       const response = await AdminService.userAppearance.getAppearanceGradeStats();
-      console.log('외모 등급 통계 응답:', response);
+      console.log('외모 등급 통계 응답 (요약):', {
+        total: response.total,
+        statsCount: Array.isArray(response.stats) ? response.stats.length : 'stats가 배열이 아님',
+        genderStatsCount: Array.isArray(response.genderStats) ? response.genderStats.length : 'genderStats가 배열이 아님'
+      });
+
+      // 응답 데이터 유효성 검사
+      if (!response) {
+        throw new Error('API 응답이 없습니다.');
+      }
 
       // 이전 통계와 비교
-      if (stats) {
+      if (stats && response) {
         console.log('이전 통계 total:', stats.total);
         console.log('새 통계 total:', response.total);
 
         // 등급별 변화 로깅
-        if (stats.stats && response.stats) {
+        if (Array.isArray(stats.stats) && Array.isArray(response.stats)) {
           console.log('등급별 변화:');
-          stats.stats.forEach((oldStat, index) => {
-            const newStat = response.stats[index];
-            if (newStat) {
-              console.log(`${oldStat.grade}: ${oldStat.count} -> ${newStat.count} (변화: ${newStat.count - oldStat.count})`);
+
+          // 모든 등급에 대한 맵 생성
+          const oldStatsMap = new Map();
+          stats.stats.forEach(stat => {
+            if (stat && stat.grade) {
+              oldStatsMap.set(stat.grade, stat.count || 0);
+            }
+          });
+
+          // 새 통계와 비교
+          response.stats.forEach(newStat => {
+            if (newStat && newStat.grade) {
+              const oldCount = oldStatsMap.get(newStat.grade) || 0;
+              const newCount = newStat.count || 0;
+              console.log(`${newStat.grade}: ${oldCount} -> ${newCount} (변화: ${newCount - oldCount})`);
             }
           });
         }
@@ -76,6 +96,7 @@ export default function AppearanceGradePage() {
       setStats(response);
     } catch (err: any) {
       console.error('외모 등급 통계 조회 중 오류:', err);
+      console.error('오류 상세 정보:', err.response?.data || err.message);
       setError(err.message || '외모 등급 통계를 불러오는 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
