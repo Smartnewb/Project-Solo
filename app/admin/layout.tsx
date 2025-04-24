@@ -316,6 +316,11 @@ export default function AdminLayout({
               </Link>
             </li>
             <li>
+              <Link href="/admin/users/appearance" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
+                외모 등급 관리
+              </Link>
+            </li>
+            <li>
               <Link href="/admin/matching" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
                 매칭 설정
               </Link>

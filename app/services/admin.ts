@@ -325,10 +325,192 @@ const stats = {
     }
   },
 };
-// FIX ME
+// 유저 외모 등급 관련 API
+const userAppearance = {
+  // 외모 등급 정보를 포함한 유저 목록 조회
+  getUsersWithAppearanceGrade: async (params: {
+    page?: number;
+    limit?: number;
+    gender?: 'MALE' | 'FEMALE';
+    appearanceGrade?: 'S' | 'A' | 'B' | 'C' | 'UNKNOWN';
+    universityName?: string;
+    minAge?: number;
+    maxAge?: number;
+    searchTerm?: string;
+  }) => {
+    try {
+      // URL 파라미터 구성
+      const queryParams = new URLSearchParams();
+
+      if (params.page) queryParams.append('page', params.page.toString());
+      if (params.limit) queryParams.append('limit', params.limit.toString());
+      if (params.gender) queryParams.append('gender', params.gender);
+      if (params.appearanceGrade) {
+        queryParams.append('appearanceGrade', params.appearanceGrade);
+      }
+      if (params.universityName) queryParams.append('universityName', params.universityName);
+      if (params.minAge) queryParams.append('minAge', params.minAge.toString());
+      if (params.maxAge) queryParams.append('maxAge', params.maxAge.toString());
+      if (params.searchTerm) queryParams.append('searchTerm', params.searchTerm);
+
+      const response = await axiosServer.get(`/admin/users/appearance?${queryParams.toString()}`);
+
+      // 응답 데이터 로깅
+      console.log('응답 데이터 샘플:', response.data?.items?.slice(0, 2));
+
+      return response.data;
+    } catch (error) {
+      console.error('외모 등급 정보를 포함한 유저 목록 조회 중 오류:', error);
+      throw error;
+    }
+  },
+
+  // 미분류 유저 목록 조회
+  getUnclassifiedUsers: async (page: number, limit: number) => {
+    try {
+      const response = await axiosServer.get(`/admin/users/appearance/unclassified?page=${page}&limit=${limit}`);
+
+      // 응답 데이터 로깅
+      console.log('미분류 사용자 데이터 샘플:', response.data?.items?.slice(0, 2));
+
+      return response.data;
+    } catch (error) {
+      console.error('미분류 유저 목록 조회 중 오류:', error);
+      throw error;
+    }
+  },
+
+  // 유저 외모 등급 설정
+  setUserAppearanceGrade: async (userId: string, grade: 'S' | 'A' | 'B' | 'C' | 'UNKNOWN') => {
+    console.log('등급 설정 요청 (원본):', { userId, grade });
+
+    // userId와 grade 유효성 검사
+    if (!userId) {
+      console.error('유저 ID가 없습니다.');
+      throw new Error('유저 ID가 없습니다.');
+    }
+
+    if (!grade) {
+      console.error('등급이 없습니다.');
+      throw new Error('등급이 없습니다.');
+    }
+
+    try {
+      // 요청 데이터 로깅
+      const requestData = {
+        userId: userId,
+        grade: grade
+      };
+      console.log('요청 데이터 (JSON):', JSON.stringify(requestData));
+
+      // 여러 URL 경로 시도
+      let response;
+      let error;
+
+      // 첫 번째 시도: /admin/users/appearance/grade
+      try {
+        const url1 = '/admin/users/appearance/grade';
+        console.log('첫 번째 시도 URL (상대 경로):', url1);
+        console.log('첫 번째 시도 URL (전체 경로):', process.env.NEXT_PUBLIC_API_URL + url1);
+
+        // 요청 헤더 로깅
+        console.log('요청 헤더:', {
+          'Content-Type': 'application/json',
+          'Authorization': typeof window !== 'undefined' ? `Bearer ${localStorage.getItem('accessToken')}` : 'N/A'
+        });
+
+        response = await axiosServer.post(url1, requestData);
+        console.log('첫 번째 시도 성공!');
+      } catch (err) {
+        console.error('첫 번째 시도 실패:', err);
+        error = err;
+
+        // 두 번째 시도: /users/appearance/grade
+        try {
+          const url2 = '/users/appearance/grade';
+          console.log('두 번째 시도 URL (상대 경로):', url2);
+          console.log('두 번째 시도 URL (전체 경로):', process.env.NEXT_PUBLIC_API_URL + url2);
+
+          response = await axiosServer.post(url2, requestData);
+          console.log('두 번째 시도 성공!');
+        } catch (err2) {
+          console.error('두 번째 시도 실패:', err2);
+
+          // 세 번째 시도: 직접 fetch 사용
+          try {
+            const url3 = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api'}/admin/users/appearance/grade`;
+            console.log('세 번째 시도 URL (전체 경로):', url3);
+
+            const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+            const fetchResponse = await fetch(url3, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+              },
+              body: JSON.stringify(requestData)
+            });
+
+            if (!fetchResponse.ok) {
+              throw new Error(`HTTP error! status: ${fetchResponse.status}`);
+            }
+
+            response = { data: await fetchResponse.json() };
+            console.log('세 번째 시도 성공!');
+          } catch (err3) {
+            console.error('세 번째 시도 실패:', err3);
+            throw error; // 원래 오류 다시 던지기
+          }
+        }
+      }
+      console.log('등급 설정 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('유저 외모 등급 설정 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      console.error('오류 상태 코드:', error.response?.status);
+      console.error('오류 헤더:', error.response?.headers);
+      console.error('요청 URL:', '/admin/users/appearance/grade');
+      console.error('요청 데이터:', JSON.stringify({ userId, grade }));
+      throw error;
+    }
+  },
+
+  // 유저 외모 등급 일괄 설정
+  bulkSetUserAppearanceGrade: async (userIds: string[], grade: 'S' | 'A' | 'B' | 'C' | 'UNKNOWN') => {
+    console.log('일괄 등급 설정 요청:', { userIds: userIds.length, grade });
+    try {
+      const response = await axiosServer.post('/admin/users/appearance/grade/bulk', {
+        userIds,
+        grade
+      });
+      return response.data;
+    } catch (error) {
+      console.error('유저 외모 등급 일괄 설정 중 오류:', error);
+      throw error;
+    }
+  },
+
+  // 외모 등급 통계 조회
+  getAppearanceGradeStats: async () => {
+    try {
+      const response = await axiosServer.get('/admin/users/appearance/stats');
+
+      // 응답 데이터 로깅
+      console.log('통계 데이터 샘플:', response.data?.stats?.slice(0, 2));
+
+      return response.data;
+    } catch (error) {
+      console.error('외모 등급 통계 조회 중 오류:', error);
+      throw error;
+    }
+  }
+};
+
 const AdminService = {
   auth,
   stats,
+  userAppearance
 };
 
 export default AdminService;
