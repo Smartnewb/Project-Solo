@@ -80,17 +80,13 @@ interface UserAppearanceTableProps {
 // forwardRef를 사용하여 ref를 전달받을 수 있도록 수정
 import { forwardRef, useImperativeHandle } from 'react';
 
-// 전역 타입 선언 (TypeScript 오류 방지)
-declare global {
-  interface Window {
-    userAppearanceTable: {
-      handleApplyFilter: (filters: any) => void;
-    } | null;
-  }
+// 타입 선언 (TypeScript 오류 방지)
+interface UserAppearanceTableRef {
+  handleApplyFilter: (filters: any) => void;
 }
 
 const UserAppearanceTable = forwardRef<
-  { handleApplyFilter: (filters: any) => void },
+  UserAppearanceTableRef,
   UserAppearanceTableProps
 >(({ initialFilters }, ref) => {
   const [users, setUsers] = useState<UserProfileWithAppearance[]>([]);
@@ -160,9 +156,15 @@ const UserAppearanceTable = forwardRef<
   };
 
   // ref를 통해 외부에서 접근할 수 있는 함수 노출
-  useImperativeHandle(ref, () => ({
-    handleApplyFilter
-  }));
+  useImperativeHandle(ref, () => {
+    console.log('useImperativeHandle 호출됨');
+    return {
+      handleApplyFilter: (newFilters: any) => {
+        console.log('ref를 통한 handleApplyFilter 호출:', newFilters);
+        handleApplyFilter(newFilters);
+      }
+    };
+  });
 
   // 등급 토글 메뉴 열기
   const handleOpenGradeMenu = (event: React.MouseEvent<HTMLElement>, user: UserProfileWithAppearance) => {

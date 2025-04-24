@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -25,6 +25,11 @@ export default function AppearanceGradePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<UserAppearanceGradeStatsResponse | null>(null);
+
+  // UserAppearanceTable 컴포넌트에 대한 참조
+  const tableRef = useRef<{
+    handleApplyFilter: (filters: any) => void;
+  } | null>(null);
 
   // 통계 데이터 로드
   useEffect(() => {
@@ -89,19 +94,20 @@ export default function AppearanceGradePage() {
             <AppearanceFilterPanel
               onFilter={(filters) => {
                 // 필터가 변경되면 UserAppearanceTable의 handleApplyFilter 함수 호출
-                if (window.userAppearanceTable) {
-                  window.userAppearanceTable.handleApplyFilter(filters);
+                console.log('필터 변경됨:', filters);
+                console.log('tableRef.current 존재 여부:', !!tableRef.current);
+
+                if (tableRef.current) {
+                  console.log('필터 적용 시도');
+                  tableRef.current.handleApplyFilter(filters);
+                } else {
+                  console.error('tableRef.current가 없습니다. 필터를 적용할 수 없습니다.');
                 }
               }}
             />
             <UserAppearanceTable
               initialFilters={{}}
-              ref={(tableComponent) => {
-                // UserAppearanceTable 컴포넌트의 handleApplyFilter 함수를 사용하기 위한 참조
-                if (tableComponent) {
-                  window.userAppearanceTable = tableComponent;
-                }
-              }}
+              ref={tableRef}
             />
           </Box>
         )}
