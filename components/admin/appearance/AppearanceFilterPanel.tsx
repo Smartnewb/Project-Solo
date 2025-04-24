@@ -25,7 +25,7 @@ const GRADE_OPTIONS: { value: AppearanceGrade | 'all'; label: string }[] = [
   { value: 'A', label: 'A등급' },
   { value: 'B', label: 'B등급' },
   { value: 'C', label: 'C등급' },
-  { value: 'UNKNOWN', label: '미분류' }
+  { value: 'UNKNOWN', label: '미분류' } // 백엔드 API에서 사용하는 값과 일치
 ];
 
 // 성별 옵션

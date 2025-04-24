@@ -339,28 +339,42 @@ const userAppearance = {
     searchTerm?: string;
   }) => {
     try {
+      console.log('유저 목록 조회 요청 파라미터:', params);
+
       // URL 파라미터 구성
       const queryParams = new URLSearchParams();
 
       if (params.page) queryParams.append('page', params.page.toString());
       if (params.limit) queryParams.append('limit', params.limit.toString());
       if (params.gender) queryParams.append('gender', params.gender);
+
+      // 외모 등급 파라미터 처리
       if (params.appearanceGrade) {
+        console.log(`외모 등급 필터: ${params.appearanceGrade}`);
         queryParams.append('appearanceGrade', params.appearanceGrade);
       }
+
       if (params.universityName) queryParams.append('universityName', params.universityName);
       if (params.minAge) queryParams.append('minAge', params.minAge.toString());
       if (params.maxAge) queryParams.append('maxAge', params.maxAge.toString());
       if (params.searchTerm) queryParams.append('searchTerm', params.searchTerm);
 
-      const response = await axiosServer.get(`/admin/users/appearance?${queryParams.toString()}`);
+      const url = `/admin/users/appearance?${queryParams.toString()}`;
+      console.log('API 요청 URL:', url);
+
+      const response = await axiosServer.get(url);
 
       // 응답 데이터 로깅
+      console.log('응답 상태 코드:', response.status);
       console.log('응답 데이터 샘플:', response.data?.items?.slice(0, 2));
+      console.log('총 아이템 수:', response.data?.meta?.totalItems);
 
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('외모 등급 정보를 포함한 유저 목록 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      console.error('오류 상태 코드:', error.response?.status);
+      console.error('요청 파라미터:', params);
       throw error;
     }
   },
@@ -479,6 +493,7 @@ const userAppearance = {
   // 유저 외모 등급 일괄 설정
   bulkSetUserAppearanceGrade: async (userIds: string[], grade: 'S' | 'A' | 'B' | 'C' | 'UNKNOWN') => {
     console.log('일괄 등급 설정 요청:', { userIds: userIds.length, grade });
+
     try {
       const response = await axiosServer.post('/admin/users/appearance/grade/bulk', {
         userIds,
