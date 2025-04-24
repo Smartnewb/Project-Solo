@@ -41,6 +41,7 @@ import {
   Gender,
   PaginatedResponse
 } from '@/app/admin/users/appearance/types';
+import { appearanceGradeEventBus } from '@/app/admin/users/appearance/page';
 
 // 등급 색상 정의
 const GRADE_COLORS: Record<AppearanceGrade, string> = {
@@ -215,6 +216,10 @@ const UserAppearanceTable = forwardRef<
           : user;
       }));
 
+      // 등급 변경 이벤트 발생 - 통계 데이터 갱신 트리거
+      console.log('등급 변경 이벤트 발생');
+      appearanceGradeEventBus.publish();
+
       handleCloseGradeMenu();
     } catch (err: any) {
       console.error('등급 설정 중 오류:', err);
@@ -269,6 +274,10 @@ const UserAppearanceTable = forwardRef<
           ? { ...user, appearanceGrade: bulkSelectedGrade }
           : user
       ));
+
+      // 등급 변경 이벤트 발생 - 통계 데이터 갱신 트리거
+      console.log('일괄 등급 변경 이벤트 발생');
+      appearanceGradeEventBus.publish();
 
       // 선택 초기화
       setSelectedUsers([]);

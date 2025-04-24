@@ -20,34 +20,107 @@ import UserAppearanceTable from '@/components/admin/appearance/UserAppearanceTab
 import AppearanceFilterPanel from '@/components/admin/appearance/AppearanceFilterPanel';
 import UnclassifiedUsersPanel from '@/components/admin/appearance/UnclassifiedUsersPanel';
 
+// 전역 이벤트 버스 생성 (등급 변경 이벤트 처리용)
+export const appearanceGradeEventBus = {
+  listeners: new Set<() => void>(),
+  subscribe(listener: () => void) {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  },
+  publish() {
+    this.listeners.forEach(listener => listener());
+  }
+};
+
 export default function AppearanceGradePage() {
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<UserAppearanceGradeStatsResponse | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0); // 강제 새로고침을 위한 상태
 
   // UserAppearanceTable 컴포넌트에 대한 참조
   const tableRef = useRef<{
     handleApplyFilter: (filters: any) => void;
   } | null>(null);
 
-  // 통계 데이터 로드
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await AdminService.userAppearance.getAppearanceGradeStats();
-        setStats(response);
-      } catch (err: any) {
-        console.error('외모 등급 통계 조회 중 오류:', err);
-        setError(err.message || '외모 등급 통계를 불러오는 중 오류가 발생했습니다.');
-      } finally {
-        setLoading(false);
+  // 통계 데이터 로드 함수
+  const fetchStats = async () => {
+    try {
+      console.log('외모 등급 통계 조회 시작 - 타임스탬프:', new Date().toISOString());
+      setLoading(true);
+      setError(null);
+
+      // API 호출
+      console.log('AdminService.userAppearance.getAppearanceGradeStats 호출');
+      const response = await AdminService.userAppearance.getAppearanceGradeStats();
+      console.log('외모 등급 통계 응답:', response);
+
+      // 이전 통계와 비교
+      if (stats) {
+        console.log('이전 통계 total:', stats.total);
+        console.log('새 통계 total:', response.total);
+
+        // 등급별 변화 로깅
+        if (stats.stats && response.stats) {
+          console.log('등급별 변화:');
+          stats.stats.forEach((oldStat, index) => {
+            const newStat = response.stats[index];
+            if (newStat) {
+              console.log(`${oldStat.grade}: ${oldStat.count} -> ${newStat.count} (변화: ${newStat.count - oldStat.count})`);
+            }
+          });
+        }
       }
+
+      setStats(response);
+    } catch (err: any) {
+      console.error('외모 등급 통계 조회 중 오류:', err);
+      setError(err.message || '외모 등급 통계를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 초기 데이터 로드
+  useEffect(() => {
+    fetchStats();
+  }, [refreshTrigger]); // refreshTrigger가 변경되면 데이터 다시 로드
+
+  // 등급 변경 이벤트 구독
+  useEffect(() => {
+    // 디바운스 타이머 참조
+    let debounceTimer: NodeJS.Timeout | null = null;
+
+    // 등급 변경 이벤트 핸들러 (디바운스 적용)
+    const handleGradeChange = () => {
+      console.log('등급 변경 이벤트 감지');
+
+      // 이미 예약된 타이머가 있으면 취소
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+
+      // 1초 후에 통계 데이터 새로고침 (여러 번 호출 방지)
+      debounceTimer = setTimeout(() => {
+        console.log('통계 데이터 새로고침 실행 (1초 지연)');
+        setRefreshTrigger(prev => prev + 1); // 강제 새로고침 트리거
+      }, 1000);
     };
 
-    fetchStats();
+    // 이벤트 구독
+    const unsubscribe = appearanceGradeEventBus.subscribe(handleGradeChange);
+
+    // 컴포넌트 언마운트 시 정리
+    return () => {
+      // 이벤트 구독 해제
+      unsubscribe();
+
+      // 타이머 정리
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+    };
   }, []);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {

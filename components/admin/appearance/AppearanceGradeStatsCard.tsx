@@ -36,8 +36,11 @@ interface AppearanceGradeStatsCardProps {
 }
 
 export default function AppearanceGradeStatsCard({ stats }: AppearanceGradeStatsCardProps) {
-  // 데이터가 없는 경우 처리
-  if (!stats || !stats.stats || !stats.genderStats) {
+  console.log('AppearanceGradeStatsCard에 전달된 데이터:', stats);
+
+  // 데이터 유효성 검사
+  if (!stats) {
+    console.error('통계 데이터가 없습니다.');
     return (
       <Card>
         <CardContent>
@@ -47,6 +50,28 @@ export default function AppearanceGradeStatsCard({ stats }: AppearanceGradeStats
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
             <Typography variant="body1" color="text.secondary">
               통계 데이터를 불러올 수 없습니다.
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // 필수 속성 확인
+  const hasRequiredProps = stats.stats && Array.isArray(stats.stats) &&
+                          stats.genderStats && Array.isArray(stats.genderStats);
+
+  if (!hasRequiredProps) {
+    console.error('통계 데이터 형식이 올바르지 않습니다:', stats);
+    return (
+      <Card>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            외모 등급 통계
+          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+            <Typography variant="body1" color="text.secondary">
+              통계 데이터 형식이 올바르지 않습니다.
             </Typography>
           </Box>
         </CardContent>

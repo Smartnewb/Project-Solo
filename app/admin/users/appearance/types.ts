@@ -66,6 +66,23 @@ export interface UserAppearanceGradeStatsResponse {
       percentage: number;
     }[];
   }[];
+  // 다른 형식의 응답을 위한 확장 필드
+  data?: {
+    total?: number;
+    stats?: {
+      grade: AppearanceGrade;
+      count: number;
+      percentage: number;
+    }[];
+    genderStats?: {
+      gender: Gender;
+      stats: {
+        grade: AppearanceGrade;
+        count: number;
+        percentage: number;
+      }[];
+    }[];
+  };
 }
 
 // 외모 등급 설정 요청 타입
