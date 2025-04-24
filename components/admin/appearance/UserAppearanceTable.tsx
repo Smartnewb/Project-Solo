@@ -77,7 +77,22 @@ interface UserAppearanceTableProps {
   };
 }
 
-export default function UserAppearanceTable({ initialFilters }: UserAppearanceTableProps) {
+// forwardRef를 사용하여 ref를 전달받을 수 있도록 수정
+import { forwardRef, useImperativeHandle } from 'react';
+
+// 전역 타입 선언 (TypeScript 오류 방지)
+declare global {
+  interface Window {
+    userAppearanceTable: {
+      handleApplyFilter: (filters: any) => void;
+    } | null;
+  }
+}
+
+const UserAppearanceTable = forwardRef<
+  { handleApplyFilter: (filters: any) => void },
+  UserAppearanceTableProps
+>(({ initialFilters }, ref) => {
   const [users, setUsers] = useState<UserProfileWithAppearance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -139,9 +154,15 @@ export default function UserAppearanceTable({ initialFilters }: UserAppearanceTa
 
   // 필터 적용 핸들러
   const handleApplyFilter = (newFilters: any) => {
+    console.log('필터 적용:', newFilters);
     setFilters(newFilters);
     setPage(0); // 필터 변경 시 첫 페이지로 이동
   };
+
+  // ref를 통해 외부에서 접근할 수 있는 함수 노출
+  useImperativeHandle(ref, () => ({
+    handleApplyFilter
+  }));
 
   // 등급 토글 메뉴 열기
   const handleOpenGradeMenu = (event: React.MouseEvent<HTMLElement>, user: UserProfileWithAppearance) => {
@@ -511,4 +532,6 @@ export default function UserAppearanceTable({ initialFilters }: UserAppearanceTa
       </Dialog>
     </Box>
   );
-}
+});
+
+export default UserAppearanceTable;

@@ -1,15 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Card, 
-  CardContent, 
-  Grid, 
-  CircularProgress, 
-  Alert, 
-  Tabs, 
+import {
+  Box,
+  Typography,
+  Card,
+  CardContent,
+  Grid,
+  CircularProgress,
+  Alert,
+  Tabs,
   Tab,
   Divider
 } from '@mui/material';
@@ -52,7 +52,7 @@ export default function AppearanceGradePage() {
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
-        외모 등급 관리
+        사용자 관리
       </Typography>
 
       {error && (
@@ -76,7 +76,7 @@ export default function AppearanceGradePage() {
 
       {/* 탭 메뉴 */}
       <Box sx={{ mb: 3 }}>
-        <Tabs value={activeTab} onChange={handleTabChange} aria-label="외모 등급 관리 탭">
+        <Tabs value={activeTab} onChange={handleTabChange} aria-label="사용자 관리 탭">
           <Tab label="전체 사용자" />
           <Tab label="미분류 사용자" />
         </Tabs>
@@ -86,8 +86,23 @@ export default function AppearanceGradePage() {
       <Box>
         {activeTab === 0 && (
           <Box>
-            <AppearanceFilterPanel />
-            <UserAppearanceTable />
+            <AppearanceFilterPanel
+              onFilter={(filters) => {
+                // 필터가 변경되면 UserAppearanceTable의 handleApplyFilter 함수 호출
+                if (window.userAppearanceTable) {
+                  window.userAppearanceTable.handleApplyFilter(filters);
+                }
+              }}
+            />
+            <UserAppearanceTable
+              initialFilters={{}}
+              ref={(tableComponent) => {
+                // UserAppearanceTable 컴포넌트의 handleApplyFilter 함수를 사용하기 위한 참조
+                if (tableComponent) {
+                  window.userAppearanceTable = tableComponent;
+                }
+              }}
+            />
           </Box>
         )}
         {activeTab === 1 && (
