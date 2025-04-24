@@ -65,43 +65,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   });
 
   // 토큰 관리 함수들
-  const getAccessToken = () => {
-    // 로컬스토리지에서 토큰 가져오기
-    const token = localStorage.getItem('accessToken');
-
-    // 토큰이 없으면 쿠키에서 확인
-    if (!token && typeof document !== 'undefined') {
-      const cookies = document.cookie.split(';');
-      for (let i = 0; i < cookies.length; i++) {
-        const cookie = cookies[i].trim();
-        if (cookie.startsWith('accessToken=')) {
-          return cookie.substring('accessToken='.length, cookie.length);
-        }
-      }
-    }
-
-    return token;
-  };
-
+  const getAccessToken = () => localStorage.getItem('accessToken');
   const setAccessToken = (token: string) => {
-    // 로컬스토리지에 토큰 저장
     localStorage.setItem('accessToken', token);
-
-    // 쿠키에도 토큰 저장 (8시간 = 28800초)
+    // 토큰 만료 시간을 1시간에서 8시간으로 연장 (8시간 = 28800초)
     document.cookie = `accessToken=${token}; path=/; max-age=28800; SameSite=Lax`;
-
-    // 마지막 토큰 갱신 시간 저장
-    localStorage.setItem('tokenTimestamp', Date.now().toString());
   };
-
   const removeAccessToken = () => {
-    // 로컬스토리지에서 토큰 삭제
     localStorage.removeItem('accessToken');
     localStorage.removeItem('isAdmin');
-    localStorage.removeItem('tokenTimestamp');
-    localStorage.removeItem('admin_status');
-
-    // 쿠키에서 토큰 삭제
     document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
   };
 
@@ -142,46 +114,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // 토큰 갱신
   const refreshAccessToken = async (): Promise<boolean> => {
     try {
-      console.log('토큰 갱신 시도');
-
-      // 토큰 갱신 API 호출
-      const response = await axios.post(`/api/auth/refresh`, {}, {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`, {}, {
         withCredentials: true
       });
 
-      if (!response.data.accessToken) {
-        console.error('토큰 갱신 응답에 토큰이 없습니다:', response.data);
-        return false;
-      }
-
-      console.log('토큰 갱신 성공');
-
-      // 새 토큰 저장
       setAccessToken(response.data.accessToken);
-
-      // 관리자 상태 유지
-      const isAdmin = localStorage.getItem('isAdmin') === 'true';
-      if (isAdmin) {
-        localStorage.setItem('admin_status', JSON.stringify({
-          verified: true,
-          timestamp: Date.now(),
-          email: 'admin@example.com' // 임시 이메일
-        }));
-      }
-
       return true;
     } catch (error) {
       console.error('토큰 갱신 실패:', error);
-
-      // 관리자 상태인 경우 임시 토큰 생성
-      const isAdmin = localStorage.getItem('isAdmin') === 'true';
-      if (isAdmin) {
-        console.log('관리자용 임시 토큰 생성');
-        const tempToken = 'temp_admin_' + Date.now();
-        setAccessToken(tempToken);
-        return true;
-      }
-
       return false;
     }
   };
@@ -190,21 +130,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string) => {
     setState(prev => ({ ...prev, loading: true }));
     try {
-      console.log('로그인 시도:', email);
-
-      // 관리자 이메일 확인 (임시 처리)
-      const isAdminEmail = email === 'admin@example.com' ||
-                          email === 'admin@smartnewbie.com' ||
-                          email.includes('admin');
-
-      // 로그인 API 호출
-      const response = await axios.post(`/api/auth/login`, {
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
         email,
         password
       });
 
       const data = response.data;
-      console.log('로그인 응답:', data);
 
       if (!data.accessToken) {
         throw new Error('토큰이 없습니다.');
@@ -215,19 +146,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // 사용자 정보 설정
       const userInfo = data.user || data;
-      const isAdmin = userInfo.role === 'admin' || isAdminEmail;
+      const isAdmin = userInfo.role === 'admin';
 
       // 관리자 여부 저장
       localStorage.setItem('isAdmin', isAdmin ? 'true' : 'false');
-
-      // 관리자인 경우 추가 정보 저장
-      if (isAdmin) {
-        localStorage.setItem('admin_status', JSON.stringify({
-          verified: true,
-          timestamp: Date.now(),
-          email: email
-        }));
-      }
 
       setState(prev => ({
         ...prev,
@@ -240,11 +162,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await fetchProfile();
 
       // 리다이렉트
-      router.push(isAdmin ? '/admin/dashboard' : '/home');
-
-      console.log('로그인 성공, 사용자 역할:', isAdmin ? 'admin' : 'user');
+      router.push(userInfo.role === 'admin' ? '/admin/dashboard' : '/home');
     } catch (error) {
-      console.error('로그인 오류:', error);
       setState(prev => ({ ...prev, loading: false }));
 
       // 에러 메시지 추출 및 전달
@@ -275,69 +194,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // 초기 인증 상태 설정
   const initAuth = async () => {
+    const token = getAccessToken();
+    if (!token) {
+      setState(prev => ({ ...prev, loading: false }));
+      return;
+    }
+
     try {
-      console.log('인증 초기화 시작');
-
-      // 토큰 확인
-      const token = getAccessToken();
-      if (!token) {
-        console.log('토큰이 없습니다. 비로그인 상태로 초기화');
-        setState(prev => ({ ...prev, loading: false }));
-        return;
-      }
-
-      // 관리자 상태 확인
-      const adminStatus = localStorage.getItem('admin_status');
-      const isAdminFlag = localStorage.getItem('isAdmin') === 'true';
-
-      // 관리자 상태가 유효한지 확인
-      if (adminStatus && isAdminFlag) {
-        try {
-          const { verified, timestamp } = JSON.parse(adminStatus);
-          // 8시간 이내의 관리자 상태는 유효하게 처리
-          if (verified && Date.now() - timestamp < 8 * 60 * 60 * 1000) {
-            console.log('유효한 관리자 상태 발견');
-
-            // 임시 사용자 정보 설정
-            setState(prev => ({
-              ...prev,
-              user: { id: 'temp-admin-id', email: 'admin@example.com', role: 'admin' },
-              isAdmin: true,
-              loading: false
-            }));
-
-            return;
-          }
-        } catch (e) {
-          console.error('관리자 상태 파싱 오류:', e);
-        }
-      }
-
-      // 토큰으로 사용자 정보 가져오기
+      // 토큰에서 사용자 정보 추출
       try {
-        console.log('토큰으로 사용자 정보 요청');
-        const response = await axios.get(`/api/auth/me`, {
+        // 토큰에서 사용자 정보 가져오기 시도
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
 
         const userData = response.data;
-        console.log('사용자 정보 가져오기 성공:', userData);
-
         const isAdmin = userData.role === 'admin';
 
         // 관리자 여부 저장
         localStorage.setItem('isAdmin', isAdmin ? 'true' : 'false');
-
-        // 관리자인 경우 추가 정보 저장
-        if (isAdmin) {
-          localStorage.setItem('admin_status', JSON.stringify({
-            verified: true,
-            timestamp: Date.now(),
-            email: userData.email
-          }));
-        }
 
         setState(prev => ({
           ...prev,
@@ -346,20 +223,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           loading: false
         }));
 
+        console.log('사용자 정보 가져오기 성공:', userData);
       } catch (userError) {
         console.error('사용자 정보 가져오기 실패:', userError);
 
         // 토큰이 유효하지 않은 경우 토큰 갱신 시도
-        console.log('토큰 갱신 시도');
         const refreshSuccess = await refreshAccessToken();
-
         if (!refreshSuccess) {
-          console.error('토큰 갱신 실패, 로그아웃 진행');
-          await signOut();
-          return;
+          throw new Error('토큰 갱신 실패');
         }
-
-        console.log('토큰 갱신 성공, 임시 사용자 정보 설정');
 
         // 임시 사용자 정보 설정 (이전 저장된 관리자 여부 활용)
         const isAdmin = localStorage.getItem('isAdmin') === 'true';
@@ -371,9 +243,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }));
       }
 
-      // 프로필 정보 가져오기 시도
       await fetchProfile();
-
     } catch (error) {
       console.error('인증 초기화 오류:', error);
       await signOut();
