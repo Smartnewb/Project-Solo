@@ -15,7 +15,7 @@ const stats = {
 
       // 실제 사용자 수를 반환하도록 수정
       // 임시 수정: 실제 사용자 수를 임의로 설정 (API가 완성되면 제거)
-      return { totalUsers: 120 }; // 임시 값으로 설정
+      return { totalUsers: response.data.totalUsers }; // 임시 값으로 설정
     } catch (error) {
       console.error('총 회원 수 조회 중 오류:', error);
       return { totalUsers: 120 }; // 오류 발생 시 기본값 반환
