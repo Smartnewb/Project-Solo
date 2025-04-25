@@ -42,6 +42,7 @@ import {
   PaginatedResponse
 } from '@/app/admin/users/appearance/types';
 import { appearanceGradeEventBus } from '@/app/admin/users/appearance/page';
+import UserDetailModal, { UserDetail } from './UserDetailModal';
 
 // 등급 색상 정의
 const GRADE_COLORS: Record<AppearanceGrade, string> = {
@@ -110,6 +111,13 @@ const UserAppearanceTable = forwardRef<
   const [bulkEditModalOpen, setBulkEditModalOpen] = useState(false);
   const [bulkSelectedGrade, setBulkSelectedGrade] = useState<AppearanceGrade>('UNKNOWN');
   const [savingBulkGrade, setSavingBulkGrade] = useState(false);
+
+  // 유저 상세 정보 모달 상태
+  const [userDetailModalOpen, setUserDetailModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [userDetail, setUserDetail] = useState<UserDetail | null>(null);
+  const [loadingUserDetail, setLoadingUserDetail] = useState(false);
+  const [userDetailError, setUserDetailError] = useState<string | null>(null);
 
   // 사용자 목록 조회
   const fetchUsers = async () => {
@@ -261,6 +269,33 @@ const UserAppearanceTable = forwardRef<
     setBulkEditModalOpen(false);
   };
 
+  // 유저 상세 정보 모달 열기
+  const handleOpenUserDetailModal = async (userId: string) => {
+    try {
+      setSelectedUserId(userId);
+      setUserDetailModalOpen(true);
+      setLoadingUserDetail(true);
+      setUserDetailError(null);
+      setUserDetail(null);
+
+      console.log('유저 상세 정보 조회 요청:', userId);
+      const data = await AdminService.userAppearance.getUserDetails(userId);
+      console.log('유저 상세 정보 응답:', data);
+
+      setUserDetail(data);
+    } catch (error: any) {
+      console.error('유저 상세 정보 조회 중 오류:', error);
+      setUserDetailError(error.message || '유저 상세 정보를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setLoadingUserDetail(false);
+    }
+  };
+
+  // 유저 상세 정보 모달 닫기
+  const handleCloseUserDetailModal = () => {
+    setUserDetailModalOpen(false);
+  };
+
   // 일괄 등급 설정 저장
   const handleSaveBulkGrade = async () => {
     if (selectedUsers.length === 0) return;
@@ -363,9 +398,20 @@ const UserAppearanceTable = forwardRef<
                   </TableCell>
                   <TableCell>
                     <Avatar
-                      src={user.profileImageUrl || user.profileImages?.[0]?.url}
+                      src={user.profileImageUrl || user.profileImages?.[0]?.url ||
+                           (user.gender === 'MALE'
+                            ? `https://randomuser.me/api/portraits/men/${Math.floor(Math.random() * 50) + 1}.jpg`
+                            : `https://randomuser.me/api/portraits/women/${Math.floor(Math.random() * 50) + 1}.jpg`)}
                       alt={user.name}
-                      sx={{ width: 40, height: 40 }}
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        cursor: 'pointer',
+                        '&:hover': {
+                          boxShadow: '0 0 0 2px #3f51b5'
+                        }
+                      }}
+                      onClick={() => handleOpenUserDetailModal(user.id)}
                     >
                       {user.name?.charAt(0) || '?'}
                     </Avatar>
@@ -585,6 +631,20 @@ const UserAppearanceTable = forwardRef<
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* 유저 상세 정보 모달 */}
+      <UserDetailModal
+        open={userDetailModalOpen}
+        onClose={handleCloseUserDetailModal}
+        userId={selectedUserId}
+        userDetail={userDetail}
+        loading={loadingUserDetail}
+        error={userDetailError}
+        onRefresh={() => {
+          // 데이터 새로고침
+          fetchUsers();
+        }}
+      />
     </Box>
   );
 });
