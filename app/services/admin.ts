@@ -1,5 +1,23 @@
 import axiosServer from '@/utils/axios';
 
+// 상단에 타입 정의 추가
+interface StatItem {
+  grade: string;
+  count: number;
+  percentage: number;
+}
+
+interface GenderStatItem {
+  gender: string;
+  stats: StatItem[];
+}
+
+interface FormattedData {
+  total: number;
+  stats: StatItem[];
+  genderStats: GenderStatItem[];
+}
+
 const auth = {
   cleanup: () => {
     localStorage.removeItem('user');
@@ -327,73 +345,6 @@ const stats = {
 };
 // 유저 외모 등급 관련 API
 const userAppearance = {
-  // 유저 상세 정보 조회
-  getUserDetails: async (userId: string) => {
-    try {
-      console.log('유저 상세 정보 조회 요청:', userId);
-
-      // API 엔드포인트 - 관리자용 API 사용
-      const endpoint = `/admin/users/${userId}`;
-      console.log('API 요청 URL:', endpoint);
-
-      // 테스트 데이터 (API 응답 예시)
-      const testData = {
-        name: "홍길동",
-        age: 28,
-        gender: "MALE",
-        profileImages: [
-          {
-            id: "01HNGW1234567890ABCDEF001",
-            order: 1,
-            isMain: true,
-            url: "https://randomuser.me/api/portraits/men/32.jpg"
-          },
-          {
-            id: "01HNGW1234567890ABCDEF002",
-            order: 2,
-            isMain: false,
-            url: "https://randomuser.me/api/portraits/men/33.jpg"
-          }
-        ],
-        phoneNumber: "010-1234-5678",
-        instagramId: "instagram_user",
-        universityDetails: {
-          name: "서울대학교",
-          authentication: true,
-          department: "컴퓨터공학과",
-          grade: "3",
-          studentNumber: "2020123456"
-        }
-      };
-
-      try {
-        const response = await axiosServer.get(endpoint);
-        console.log('유저 상세 정보 응답:', response.data);
-
-        // 응답 데이터가 비어있거나 형식이 맞지 않는 경우 테스트 데이터 사용
-        if (!response.data || Object.keys(response.data).length === 0) {
-          console.log('API 응답이 비어있어 테스트 데이터를 사용합니다.');
-          return testData;
-        }
-
-        return response.data;
-      } catch (error) {
-        console.error('API 호출 오류:', error);
-        console.log('API 호출 오류로 테스트 데이터를 사용합니다.');
-
-        // 테스트 데이터에 사용자 ID 추가
-        return {
-          ...testData,
-          id: userId,
-          name: `사용자 ${userId.substring(0, 6)}`
-        };
-      }
-    } catch (error: any) {
-      console.error('유저 상세 정보 조회 중 오류:', error);
-      console.error('오류 상세 정보:', error.response?.data || error.message);
-      throw error;
-    }
-  },
 
   // 외모 등급 정보를 포함한 유저 목록 조회
   getUsersWithAppearanceGrade: async (params: {
@@ -829,7 +780,7 @@ const userAppearance = {
       console.log('처리할 응답 데이터:', responseData);
 
       // 응답 데이터 구조 변환
-      const formattedData = {
+      const formattedData: FormattedData = {
         total: 0,
         stats: [],
         genderStats: []
@@ -915,7 +866,7 @@ const userAppearance = {
           console.log('등급별 통계 데이터:', statsData);
 
           // 백분율 계산이 되어 있지 않은 경우 계산
-          formattedData.stats = statsData.map(stat => {
+          formattedData.stats = statsData.map((stat: { count: number; percentage: number; grade: string }) => {
             const count = stat.count || 0;
             let percentage = stat.percentage;
 
@@ -942,13 +893,13 @@ const userAppearance = {
 
           console.log('성별 통계 데이터:', genderStatsData);
 
-          formattedData.genderStats = genderStatsData.map(genderStat => {
+          formattedData.genderStats = genderStatsData.map((genderStat: { stats: any[]; gender: string }) => {
             // 각 성별별 총 사용자 수 계산
             const genderStatsArray = Array.isArray(genderStat.stats) ? genderStat.stats : [];
-            const genderTotal = genderStatsArray.reduce((sum, stat) => sum + (stat.count || 0), 0);
+            const genderTotal = genderStatsArray.reduce((sum: number, stat: { count: number }) => sum + (stat.count || 0), 0);
 
             // 백분율 계산이 되어 있지 않은 경우 계산
-            const stats = genderStatsArray.map(stat => {
+            const stats = genderStatsArray.map((stat: { count: number; percentage: number; grade: string }) => {
               const count = stat.count || 0;
               let percentage = stat.percentage;
 
