@@ -69,7 +69,6 @@ function a11yProps(index: number) {
 // 일별 회원가입 추이 데이터 타입
 interface DailySignupTrendItem {
   date: string;
-  label?: string;
   count: number;
 }
 
@@ -81,7 +80,6 @@ interface DailySignupTrendResponse {
 interface WeeklySignupTrendItem {
   weekStart: string;
   weekEnd: string;
-  label?: string;
   count: number;
 }
 
@@ -92,7 +90,6 @@ interface WeeklySignupTrendResponse {
 // 월별 회원가입 추이 데이터 타입
 interface MonthlySignupTrendItem {
   month: string;
-  label?: string;
   count: number;
 }
 
@@ -192,21 +189,18 @@ export default function SignupStatsDashboard() {
     }
 
     return data.map(item => {
-      // item.label이 있는 경우 그대로 사용, 없는 경우 item.date를 포맷팅
-      let formattedDate = item.label || item.date;
-      if (!item.label && item.date) {
-        try {
-          // 날짜 형식 확인 및 변환
-          const date = new Date(item.date);
-          if (!isNaN(date.getTime())) {
-            // 월/일 형식으로 날짜 표시
-            const month = date.getMonth() + 1; // getMonth()는 0부터 시작하므로 1 더함
-            const day = date.getDate();
-            formattedDate = `${month}/${day}`;
-          }
-        } catch (e) {
-          console.error('일별 데이터 날짜 변환 오류:', e);
+      let formattedDate = item.date;
+      try {
+        // 날짜 형식 확인 및 변환
+        const date = new Date(item.date);
+        if (!isNaN(date.getTime())) {
+          // 월/일 형식으로 날짜 표시
+          const month = date.getMonth() + 1; // getMonth()는 0부터 시작하므로 1 더함
+          const day = date.getDate();
+          formattedDate = `${month}/${day}`;
         }
+      } catch (e) {
+        console.error('일별 데이터 날짜 변환 오류:', e);
       }
       return {
         date: formattedDate,
@@ -223,23 +217,21 @@ export default function SignupStatsDashboard() {
     }
 
     return data.map(item => {
-      let formattedDate = item.label;
-      if (!formattedDate) {
-        try {
-          // 날짜 형식 확인 및 변환
-          const startDate = new Date(item.weekStart);
-          const endDate = new Date(item.weekEnd);
-          if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
-            // 월/일 형식으로 날짜 표시
-            const startMonth = startDate.getMonth() + 1;
-            const startDay = startDate.getDate();
-            const endMonth = endDate.getMonth() + 1;
-            const endDay = endDate.getDate();
-            formattedDate = `${startMonth}/${startDay}~${endMonth}/${endDay}`;
-          }
-        } catch (e) {
-          console.error('주별 데이터 날짜 변환 오류:', e);
+      let formattedDate = `${item.weekStart} ~ ${item.weekEnd}`;
+      try {
+        // 날짜 형식 확인 및 변환
+        const startDate = new Date(item.weekStart);
+        const endDate = new Date(item.weekEnd);
+        if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+          // 월/일 형식으로 날짜 표시
+          const startMonth = startDate.getMonth() + 1;
+          const startDay = startDate.getDate();
+          const endMonth = endDate.getMonth() + 1;
+          const endDay = endDate.getDate();
+          formattedDate = `${startMonth}/${startDay}~${endMonth}/${endDay}`;
         }
+      } catch (e) {
+        console.error('주별 데이터 날짜 변환 오류:', e);
       }
       return {
         date: formattedDate,
@@ -256,22 +248,21 @@ export default function SignupStatsDashboard() {
     }
 
     return data.map(item => {
-      let formattedDate = item.label;
-      if (!formattedDate) {
-        try {
-          // 날짜 형식 확인 및 변환
-          if (/^\d{4}-\d{2}$/.test(item.month)) {
-            const date = new Date(`${item.month}-01T00:00:00`);
-            if (!isNaN(date.getTime())) {
-              // 년도/월 형식으로 표시
-              const year = date.getFullYear();
-              const month = date.getMonth() + 1;
-              formattedDate = `${year}/${month}`;
-            }
+      let formattedDate = item.month;
+      try {
+        // 날짜 형식 확인 및 변환
+        // month가 'YYYY-MM' 형식인지 확인
+        if (/^\d{4}-\d{2}$/.test(item.month)) {
+          const date = new Date(`${item.month}-01T00:00:00`);
+          if (!isNaN(date.getTime())) {
+            // 년도/월 형식으로 표시
+            const year = date.getFullYear();
+            const month = date.getMonth() + 1;
+            formattedDate = `${year}/${month}`;
           }
-        } catch (e) {
-          console.error('월별 데이터 날짜 변환 오류:', e);
         }
+      } catch (e) {
+        console.error('월별 데이터 날짜 변환 오류:', e);
       }
       return {
         date: formattedDate,
@@ -519,7 +510,7 @@ export default function SignupStatsDashboard() {
         ) : (
           <>
             {error && activeTab < 3 && <Alert severity="warning" sx={{ mt: 2, mb: 2 }}>{error}</Alert>}
-
+            
             {/* 일별 탭 */}
             <TabPanel value={activeTab} index={0}>
               <Box sx={{ height: 400 }}>
@@ -529,14 +520,7 @@ export default function SignupStatsDashboard() {
                     margin={{ top: 5, right: 30, left: 20, bottom: 50 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="date"
-                      interval={2}
-                      angle={-45}
-                      textAnchor="end"
-                      height={70}
-                      tick={{ fontSize: 12 }}
-                    />
+                    <XAxis dataKey="date" interval={2} angle={-45} textAnchor="end" height={70} />
                     <YAxis />
                     <Tooltip />
                     <Legend />
@@ -563,26 +547,15 @@ export default function SignupStatsDashboard() {
                     margin={{ top: 5, right: 30, left: 20, bottom: 50 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="date"
-                      interval={0}
-                      angle={-45}
-                      textAnchor="end"
-                      height={60}
-                      tick={{ fontSize: 12 }}
-                    />
+                    <XAxis dataKey="date" interval={1} angle={-45} textAnchor="end" height={70} />
                     <YAxis />
-                    <Tooltip
-                      formatter={(value: number) => [`${value}명`, '가입자수']}
-                      labelFormatter={(label) => `${label}`}
-                    />
+                    <Tooltip />
                     <Legend />
                     <Line
                       type="monotone"
                       dataKey="가입자수"
                       stroke="#82ca9d"
                       activeDot={{ r: 8 }}
-                      dot={{ r: 3 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -601,26 +574,15 @@ export default function SignupStatsDashboard() {
                     margin={{ top: 5, right: 30, left: 20, bottom: 50 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="date"
-                      interval={0}
-                      angle={-45}
-                      textAnchor="end"
-                      height={60}
-                      tick={{ fontSize: 12 }}
-                    />
+                    <XAxis dataKey="date" interval={0} angle={-45} textAnchor="end" height={70} />
                     <YAxis />
-                    <Tooltip
-                      formatter={(value: number) => [`${value}명`, '가입자수']}
-                      labelFormatter={(label) => `${label}`}
-                    />
+                    <Tooltip />
                     <Legend />
                     <Line
                       type="monotone"
                       dataKey="가입자수"
                       stroke="#ff7300"
                       activeDot={{ r: 8 }}
-                      dot={{ r: 3 }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -709,7 +671,6 @@ export default function SignupStatsDashboard() {
                             angle={-45}
                             textAnchor="end"
                             height={70}
-                            tick={{ fontSize: 12 }}
                           />
                           <YAxis />
                           <Tooltip />
