@@ -147,11 +147,7 @@ export default function AdminLayout({
                 매칭 분석
               </Link>
             </li>
-            <li>
-              <Link href="/admin/traffic" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
-                트래픽
-              </Link>
-            </li>
+
             <li>
               <Link href="/admin/analytics" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
                 트래픽 분석
