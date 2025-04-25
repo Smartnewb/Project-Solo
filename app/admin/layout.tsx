@@ -75,13 +75,6 @@ export default function AdminLayout({
   const handleLogout = async () => {
     try {
       console.log('로그아웃 시도');
-      const { error } = await supabase.auth.signOut();
-
-      if (error) {
-        console.error('로그아웃 중 오류 발생:', error);
-        return;
-      }
-
       console.log('로그아웃 성공 - 로그인 페이지로 리디렉션');
       router.push('/');
     } catch (error) {
