@@ -2,15 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createClient } from '@/utils/supabase/client';
-import axiosServer from '@/utils/axios';
 
 export default function ActiveUsersCounter() {
   const [actualCount, setActualCount] = useState(0);
   const [displayCount, setDisplayCount] = useState(0); // 실제 사용자 수 + 100
   const [prevCount, setPrevCount] = useState(0);
-  const [floatingNumbers, setFloatingNumbers] = useState<number>();
-  const [showAnimation, setShowAnimation] = useState(false);
+  const [floatingNumbers, setFloatingNumbers] = useState<number[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchUserCount = async () => { }
 
   useEffect(() => {
     // 초기 로드 시 사용자 수 가져오기
@@ -38,7 +38,7 @@ export default function ActiveUsersCounter() {
       <motion.div
         initial={{ scale: 0.5, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ 
+        transition={{
           type: "spring",
           stiffness: 260,
           damping: 20
@@ -54,7 +54,7 @@ export default function ActiveUsersCounter() {
           </h2>
           <p className="text-3xl font-bold text-gray-600">신청했어요!</p>
         </div>
-        
+
         {/* 증가하는 숫자 애니메이션 */}
         <AnimatePresence>
           {showAnimation && floatingNumbers && (

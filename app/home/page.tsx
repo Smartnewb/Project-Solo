@@ -11,8 +11,6 @@ import PopularQuestions from "../components/PopularQuestions";
 import SuccessStories from "../components/SuccessStories";
 import { HomeIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useAuth } from "@/contexts/AuthContext";
-import { createClient } from "@/utils/supabase/client";
-import { ADMIN_EMAIL } from "@/utils/config";
 import type { Profile } from "@/contexts/AuthContext";
 import type { Database } from "../types/database.types";
 import { Card, CardContent, CardHeader } from "@/shared/ui";
@@ -158,10 +156,10 @@ function PartnerProfileModal({
                 {profile.smoking === "비흡연"
                   ? "비흡연"
                   : profile.smoking === "가끔 흡연"
-                  ? "가끔 흡연"
-                  : profile.smoking === "흡연"
-                  ? "흡연"
-                  : "미입력"}
+                    ? "가끔 흡연"
+                    : profile.smoking === "흡연"
+                      ? "흡연"
+                      : "미입력"}
               </span>
             </div>
             <div>
@@ -170,10 +168,10 @@ function PartnerProfileModal({
                 {profile.drinking === "안 마심"
                   ? "안 마심"
                   : profile.drinking === "가끔 마심"
-                  ? "가끔 마심"
-                  : profile.drinking === "자주 마심"
-                  ? "자주 마심"
-                  : "미입력"}
+                    ? "가끔 마심"
+                    : profile.drinking === "자주 마심"
+                      ? "자주 마심"
+                      : "미입력"}
               </span>
             </div>
             <div>
@@ -182,10 +180,10 @@ function PartnerProfileModal({
                 {profile.tattoo === "없음"
                   ? "없음"
                   : profile.tattoo === "있음"
-                  ? "있음"
-                  : profile.tattoo === "비공개"
-                  ? "비공개"
-                  : "미입력"}
+                    ? "있음"
+                    : profile.tattoo === "비공개"
+                      ? "비공개"
+                      : "미입력"}
               </span>
             </div>
           </div>
@@ -196,7 +194,6 @@ function PartnerProfileModal({
 }
 
 export default function Home() {
-  const supabase = createClient();
   const router = useRouter();
   const { user, profile } = useAuth();
   const { open, close } = useModal();
@@ -495,21 +492,107 @@ export default function Home() {
           </div>
         )}
 
-          {/* 프로필 설정 모달 */}
-          {showProfileModal && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-              <div className="bg-white rounded-2xl p-8 max-w-sm mx-4 space-y-6 shadow-xl transform transition-all">
-                <div className="text-center space-y-4">
-                  <div className="text-5xl">✨</div>
-                  <h2 className="text-2xl font-bold text-[#2D3436]">
-                    프로필을 설정해주세요
-                  </h2>
-                  <p className="text-[#636E72] leading-relaxed">
-                    나를 더 잘 표현할 수 있는
-                    <br />
-                    프로필을 작성하고 매칭을 시작해보세요!
-                  </p>
+        {/* 프로필 설정 모달 */}
+        {showProfileModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-8 max-w-sm mx-4 space-y-6 shadow-xl transform transition-all">
+              <div className="text-center space-y-4">
+                <div className="text-5xl">✨</div>
+                <h2 className="text-2xl font-bold text-[#2D3436]">
+                  프로필을 설정해주세요
+                </h2>
+                <p className="text-[#636E72] leading-relaxed">
+                  나를 더 잘 표현할 수 있는
+                  <br />
+                  프로필을 작성하고 매칭을 시작해보세요!
+                </p>
+              </div>
+              <button
+                onClick={handleGoToProfile}
+                className="btn-primary w-full py-4"
+                type="button"
+              >
+                프로필 설정하기
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 추가 정보 모달 */}
+        {showAdditionalInfoModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-8 max-w-sm mx-4 space-y-6 shadow-xl transform transition-all">
+              <div className="text-center space-y-4">
+                <div className="text-5xl">🌟</div>
+                <h2 className="text-2xl font-bold text-[#2D3436]">
+                  추가 정보가 필요해요
+                </h2>
+                <p className="text-[#636E72] leading-relaxed">
+                  더 정확한 매칭을 위해
+                  <br />몇 가지 정보를 더 입력해주세요.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowAdditionalInfoModal(false);
+                  router.replace("/profile");
+                }}
+                className="btn-primary w-full py-4"
+                type="button"
+              >
+                추가 정보 입력하기
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 상단 헤더 */}
+        <header className="bg-white shadow-sm sticky top-0 z-10">
+          <div className="max-w-lg mx-auto px-6 py-4">
+            <div className="flex justify-between items-center">
+              <div className="text-2xl font-bold bg-gradient-to-r from-[#6C5CE7] to-[#A8A4E3] text-transparent bg-clip-text">
+                Sometime
+              </div>
+              <div className="text-[#2D3436] font-medium flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-[#6C5CE7] text-white flex items-center justify-center font-bold cursor-pointer">
+                  {profileData?.name?.[0]?.toUpperCase() || "?"}
                 </div>
+                <span>{profileData?.name || "게스트"}님</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* 메인 컨텐츠 */}
+        <main className="max-w-lg mx-auto p-6 space-y-6" role="main">
+          {/* 프로필 작성 알림 - 프로필 데이터가 없을 때만 표시 */}
+          {!profileData && (
+            <section className="card space-y-6 transform transition-all hover:scale-[1.02] bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl">
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-[#6C5CE7]/10 flex items-center justify-center transform transition-all duration-200 hover:rotate-12">
+                    <svg
+                      className="w-7 h-7 text-[#6C5CE7]"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                  </div>
+                  <h2 className="text-2xl font-bold text-[#2D3436] tracking-tight">
+                    프로필을 작성해주세요!
+                  </h2>
+                </div>
+                <p className="text-[#636E72] leading-relaxed text-lg">
+                  나를 더 잘 표현할 수 있는 프로필을 작성해주세요. 매칭의
+                  정확도를 높일 수 있어요!
+                </p>
                 <button
                   onClick={() => router.push("/profile")}
                   className="btn-primary w-full py-4"
@@ -601,53 +684,17 @@ export default function Home() {
                     className="btn-primary w-full py-4 flex items-center justify-center gap-3 bg-[#6C5CE7] text-white rounded-xl font-medium transform transition-all duration-200 hover:bg-[#5849BE] hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-[#6C5CE7] focus:ring-offset-2"
                     type="button"
                   >
-                    <span className="text-lg">프로필 작성하기</span>
-                    <svg
-                      className="w-6 h-6"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              </section>
-            )}
-
-            {/* 현재 참여자 수 */}
-            <section className="card space-y-6 transform transition-all hover:scale-[1.02] bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl">
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-[#00B894]/10 flex items-center justify-center transform transition-all duration-200 hover:rotate-12">
-                    <svg
-                      className="w-7 h-7 text-[#00B894]"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                      />
-                    </svg>
-                  </div>
-                  <h2 className="text-2xl font-bold text-[#2D3436] tracking-tight">
-                    현재 소개팅 신청자 수
-                  </h2>
-                </div>
-                <div className="bg-[#00B894]/5 rounded-xl p-4">
-                  <ActiveUsersCounter />
-                </div>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
               </div>
             </section>
+          )}
 
             {/* 매칭 시작까지 남은 시간 */}
             <section className="card space-y-6 transform transition-all hover:scale-[1.02] bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl">
@@ -675,8 +722,15 @@ export default function Home() {
                 <div className="bg-[#0984E3]/5 rounded-xl p-4">
                   <MatchingCountdown onTimeOver={() => setIsMatchingTimeOver(true)} />
                 </div>
+                <h2 className="text-2xl font-bold text-[#2D3436] tracking-tight">
+                  현재 소개팅 신청자 수
+                </h2>
               </div>
-            </section>
+              <div className="bg-[#00B894]/5 rounded-xl p-4">
+                <ActiveUsersCounter />
+              </div>
+            </div>
+          </section>
 
             {/* 매칭 상태 섹션 */}
             <MatchingStatusSection />
@@ -745,14 +799,27 @@ export default function Home() {
                   type="button"
                   aria-label="홈으로 이동"
                 >
-                  <HomeIcon className="w-7 h-7" aria-hidden="true" />
-                  <span className="text-sm font-medium mt-1">홈</span>
-                </button>
-                <button
-                  onClick={() => router.push("/community")}
-                  className="flex flex-col items-center text-[#636E72] hover:text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
-                  type="button"
-                  aria-label="커뮤니티로 이동"
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
+                  />
+                </svg>
+                <span className="text-sm font-medium mt-1">커뮤니티</span>
+              </button>
+              <button
+                onClick={handleGoToSettings}
+                className="flex flex-col items-center text-[#636E72] hover:text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
+                type="button"
+                aria-label="설정으로로 이동"
+              >
+                <svg
+                  className="w-7 h-7"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <svg
                     className="w-7 h-7"
@@ -796,15 +863,63 @@ export default function Home() {
             </nav>
           </main>
 
-          {/* 리매치 모달 (매칭 결과 페이지와 동일한 스타일) */}
-          {showRematchModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-              <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative">
+        {/* 리매치 모달 (매칭 결과 페이지와 동일한 스타일) */}
+        {showRematchModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative">
+              <button
+                onClick={() => setShowRematchModal(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+
+              <h3 className="text-xl font-bold mb-4">리매칭 신청</h3>
+
+              <div className="mb-6">
+                <p className="mb-3">매칭 결과에 만족하지 않으신가요?</p>
+                <p className="mb-3">
+                  리매칭을 신청하시면 새로운 매칭을 받으실 수 있습니다.
+                </p>
+                <div className="bg-yellow-50 p-4 rounded-md mb-4">
+                  <p className="font-medium text-yellow-700 mb-2">
+                    참가비: 2,000원
+                  </p>
+                  <div className="flex items-center">
+                    <p className="text-sm text-gray-700 mr-2">
+                      계좌번호: 카카오뱅크 3333225272696 전준영
+                    </p>
+                    <button
+                      onClick={copyAccountNumber}
+                      className="text-xs bg-gray-200 hover:bg-gray-300 py-1 px-2 rounded"
+                    >
+                      {isCopied ? "복사됨" : "복사"}
+                    </button>
+                  </div>
+                  <p className="text-sm text-gray-700 mt-2"></p>
+                  <p
+                    ref={accountNumberRef}
+                    className="absolute opacity-0 pointer-events-none"
+                  ></p>
+                </div>
+                <p className="text-sm text-gray-600">
+                  * 입금 후 리매칭 신청이 완료됩니다. 매칭 시간에 새로운 매칭
+                  결과를 확인해주세요.
+                </p>
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleConfirmRematch}
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded"
+                >
+                  신청하기
+                </button>
                 <button
                   onClick={() => setShowRematchModal(false)}
-                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded"
                 >
-                  <XMarkIcon className="h-6 w-6" />
+                  취소
                 </button>
 
                 <h3 className="text-xl font-bold mb-4">리매칭 신청</h3>
@@ -862,7 +977,8 @@ export default function Home() {
                 </div>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
         {/* 알림 모달 */}
         {showNotificationModal && (

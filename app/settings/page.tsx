@@ -3,9 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { HomeIcon, ChatBubbleLeftRightIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
-import { createClient } from '@/utils/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { createClient as supabaseAdminClient } from '@supabase/supabase-js';
 
 export default function Settings() {
   const router = useRouter();
@@ -60,7 +58,7 @@ export default function Settings() {
       });
 
       console.log('로그아웃 성공');
-      
+
       // 홈페이지로 리디렉션
       router.push('/');
     } catch (error) {
@@ -110,7 +108,7 @@ export default function Settings() {
 
       // 홈페이지로 리다이렉션
       router.push('/');
-      
+
     } catch (error) {
       console.error('회원 탈퇴 중 오류:', error);
       setDeleteError(error instanceof Error ? error.message : '회원 탈퇴 처리 중 오류가 발생했습니다.');
@@ -250,45 +248,45 @@ export default function Settings() {
       )}
 
       {/* 하단 네비게이션 */}
-      <nav 
-              className="fixed bottom-0 left-0 right-0 bg-white border-t py-3 shadow-lg transition-all duration-200 ease-in-out" 
-              role="navigation" 
-              aria-label="메인 네비게이션"
-            >
-              <div className="max-w-lg mx-auto px-6 flex justify-around items-center">
-                <button
-                  onClick={handleGoToHome}
-                  className="flex flex-col items-center text-[#636E72] hover:text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
-                  type="button"
-                  aria-label="홈으로 이동"
-                >
-                  <HomeIcon className="w-7 h-7" aria-hidden="true" />
-                  <span className="text-sm font-medium mt-1">홈</span>
-                </button>
-                <button
-                  onClick={() => router.push('/community')}
-                  className="flex flex-col items-center text-[#636E72] hover:text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
-                  type="button"
-                  aria-label="커뮤니티로 이동"
-                >
-                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-                  </svg>
-                  <span className="text-sm font-medium mt-1">커뮤니티</span>
-                </button>
-                <button
-                  onClick={handleGoToSettings}
-                  className="flex flex-col items-center text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
-                  type="button"
-                  aria-label="설정으로로 이동"
-                >
-                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  <span className="text-sm font-medium mt-1">설정</span>
-                </button>
-              </div>
-            </nav>
+      <nav
+        className="fixed bottom-0 left-0 right-0 bg-white border-t py-3 shadow-lg transition-all duration-200 ease-in-out"
+        role="navigation"
+        aria-label="메인 네비게이션"
+      >
+        <div className="max-w-lg mx-auto px-6 flex justify-around items-center">
+          <button
+            onClick={handleGoToHome}
+            className="flex flex-col items-center text-[#636E72] hover:text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
+            type="button"
+            aria-label="홈으로 이동"
+          >
+            <HomeIcon className="w-7 h-7" aria-hidden="true" />
+            <span className="text-sm font-medium mt-1">홈</span>
+          </button>
+          <button
+            onClick={() => router.push('/community')}
+            className="flex flex-col items-center text-[#636E72] hover:text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
+            type="button"
+            aria-label="커뮤니티로 이동"
+          >
+            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+            </svg>
+            <span className="text-sm font-medium mt-1">커뮤니티</span>
+          </button>
+          <button
+            onClick={handleGoToSettings}
+            className="flex flex-col items-center text-[#6C5CE7] transform hover:scale-105 transition-all duration-200"
+            type="button"
+            aria-label="설정으로로 이동"
+          >
+            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <span className="text-sm font-medium mt-1">설정</span>
+          </button>
+        </div>
+      </nav>
     </div>
   );
 } 

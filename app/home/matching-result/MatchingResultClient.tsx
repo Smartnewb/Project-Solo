@@ -9,7 +9,6 @@ import { HeartIcon as HeartIconOutline } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import { XMarkIcon, ChatBubbleLeftRightIcon, ExclamationCircleIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/utils/supabase/client';
 
 interface MatchedUser {
   id: string;
@@ -59,13 +58,13 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
   const [inviteeId, setInviteeId] = useState<string>('');
   const [inviteeName, setInviteeName] = useState<string>('');
   const [likedMatches, setLikedMatches] = useState<Record<string, boolean>>({});
-  
+
   // 알림 및 모달 관련 상태
   const [showRematchModal, setShowRematchModal] = useState<boolean>(false);
   const [showNotificationModal, setShowNotificationModal] = useState<boolean>(false);
   const [notificationMessage, setNotificationMessage] = useState<string>('');
   const [currentMatchingId, setCurrentMatchingId] = useState<string>('');
-  
+
   // 계좌번호 복사 관련
   const accountNumberRef = useRef<HTMLParagraphElement>(null);
   const [isCopied, setIsCopied] = useState<boolean>(false);
@@ -105,7 +104,7 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
     const isLiked = !likedMatches[matchingId];
     newState[matchingId] = isLiked;
     savelikedMatches(newState);
-    
+
     if (isLiked) {
       try {
         // 상대방에게 알림 전송
@@ -122,7 +121,7 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
               type: 'like'
             }),
           });
-          
+
           if (response.ok) {
             setNotificationMessage('상대방에게 관심 표시 알림을 보냈습니다.');
             setShowNotificationModal(true);
@@ -133,7 +132,7 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
       }
     }
   };
-  
+
   // 계좌번호 복사 기능
   const copyAccountNumber = () => {
     if (accountNumberRef.current) {
@@ -148,7 +147,7 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
         });
     }
   };
-  
+
   // 재매칭 요청 처리
   const handleRematchRequest = async () => {
     try {
@@ -162,7 +161,7 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
           matchingId: currentMatchingId
         }),
       });
-      
+
       if (response.ok) {
         setShowRematchModal(false);
         setNotificationMessage('재매칭 요청이 관리자에게 전송되었습니다. 입금 확인 후 처리됩니다.');
@@ -226,10 +225,10 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
     m => m.status === MatchStatus.PENDING && m.userDecision === null
   );
   const decidedMatchings = matchings.filter(
-    m => m.userDecision !== null && 
-    (m.status === MatchStatus.PENDING || 
-     m.status === MatchStatus.ACCEPTED || 
-     m.status === MatchStatus.REJECTED)
+    m => m.userDecision !== null &&
+      (m.status === MatchStatus.PENDING ||
+        m.status === MatchStatus.ACCEPTED ||
+        m.status === MatchStatus.REJECTED)
   );
 
   // 피드백 제출 함수 수정
@@ -239,72 +238,11 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
       setShowNotificationModal(true);
       return;
     }
-    
-    setIsSubmittingFeedback(true);
-    
-    try {
-      const supabase = createClient();
-      
-      // 랜덤 이모지 생성
-      const emojis = ['😊', '🥰', '😎', '🤗', '😇', '🦊', '🐰', '🐻', '🐼', '🐨', '🦁', '🐯', '🦒', '🦮', '🐶'];
-      const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-      
-      // 현재 선택된 매칭 찾기
-      const currentMatching = matchings.find(m => m.id === currentMatchingId);
-      
-      if (!currentMatching) {
-        throw new Error('매칭 정보를 찾을 수 없습니다.');
-      }
 
-      // UUID 생성 함수
-      const generateUUID = () => {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-          const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
-          return v.toString(16);
-        });
-      };
-      
-      // 현재 시간
-      const now = new Date().toISOString();
-      const postId = generateUUID();
-      
-      // 커뮤니티에 피드백 게시물 생성 - 'posts' 테이블 사용
-      const { data, error } = await supabase
-        .from('posts')
-        .insert([
-          {
-            user_id: postId,
-            author_id: userId,
-            content: `[매칭 피드백] ${feedbackText}`,
-            nickname: username || '익명 사용자',
-            emoji: randomEmoji,
-            created_at: now,
-            updated_at: now,
-            likes: [],
-            reports: [],
-            isEdited: false,
-            isdeleted: false,
-            is_matching_feedback: true,
-            matching_score: currentMatching.score,
-            matching_reasons: currentMatching.compatibility_reasons
-          }
-        ])
-        .select();
-      
-      if (error) {
-        throw error;
-      }
-      
-      setFeedbackText('');
-      setNotificationMessage('피드백이 커뮤니티에 공유되었습니다!');
-      setShowNotificationModal(true);
-    } catch (err) {
-      console.error('피드백 제출 중 오류 발생:', err);
-      setNotificationMessage('피드백 제출 중 오류가 발생했습니다.');
-      setShowNotificationModal(true);
-    } finally {
-      setIsSubmittingFeedback(false);
-    }
+    setIsSubmittingFeedback(true);
+
+    const emojis = ['😊', '🥰', '😎', '🤗', '😇', '🦊', '🐰', '🐻', '🐼', '🐨', '🦁', '🐯', '🦒', '🦮', '🐶'];
+    const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
   };
 
   // 커뮤니티로 이동
@@ -354,7 +292,7 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
                     <h3 className="text-lg font-medium">{matching.matchedUser.nickname}</h3>
                     <span className="text-xs text-gray-500">{formatRelativeTime(matching.created_at)}</span>
                   </div>
-                  
+
                   <div className="mb-4">
                     <p className="text-sm">
                       <span className="font-medium">나이:</span> {matching.matchedUser.age}
@@ -374,7 +312,7 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
                     <p className="text-sm">
                       <span className="font-medium">학년:</span> {matching.matchedUser.grade || '미입력'}
                     </p>
-                    
+
                     {/* 생활 스타일 정보 */}
                     <div className="mt-3 flex flex-wrap gap-2">
                       {matching.matchedUser.drinking && (
@@ -393,7 +331,7 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
                         </span>
                       )}
                     </div>
-                    
+
                     {matching.matchedUser.personalities && matching.matchedUser.personalities.length > 0 && (
                       <div className="mt-2">
                         <p className="text-sm font-medium mb-1">성격:</p>
@@ -406,7 +344,7 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
                         </div>
                       </div>
                     )}
-                    
+
                     {matching.matchedUser.dating_styles && matching.matchedUser.dating_styles.length > 0 && (
                       <div className="mt-2">
                         <p className="text-sm font-medium mb-1">데이트 스타일:</p>
@@ -419,7 +357,7 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
                         </div>
                       </div>
                     )}
-                    
+
                     {matching.matchedUser.lifestyles && matching.matchedUser.lifestyles.length > 0 && (
                       <div className="mt-2">
                         <p className="text-sm font-medium mb-1">생활 스타일:</p>
@@ -432,7 +370,7 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
                         </div>
                       </div>
                     )}
-                    
+
                     {matching.matchedUser.interests && matching.matchedUser.interests.length > 0 && (
                       <div className="mt-2">
                         <p className="text-sm font-medium mb-1">관심사:</p>
@@ -446,7 +384,7 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="flex space-x-2">
                     <button
                       onClick={() => handleMatchDecision(matching.id, true)}
@@ -476,29 +414,27 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
             {decidedMatchings.map((matching) => {
               const isAccepted = matching.userDecision === true;
               const isMatched = matching.status === MatchStatus.ACCEPTED;
-              
+
               return (
                 <div key={matching.id}>
                   {/* 매칭 카드 */}
-                  <div 
-                    className={`bg-white rounded-lg shadow-md overflow-hidden border-l-4 mb-4 ${
-                      isAccepted ? 'border-green-500' : 'border-red-500'
-                    }`}
+                  <div
+                    className={`bg-white rounded-lg shadow-md overflow-hidden border-l-4 mb-4 ${isAccepted ? 'border-green-500' : 'border-red-500'
+                      }`}
                   >
                     <div className="p-4">
                       <div className="flex justify-between items-start mb-3">
                         <h3 className="text-lg font-medium">{matching.matchedUser.nickname}</h3>
                         <div className="flex items-center">
-                          <span 
-                            className={`text-xs px-2 py-1 rounded ${
-                              isAccepted ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                            }`}
+                          <span
+                            className={`text-xs px-2 py-1 rounded ${isAccepted ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                              }`}
                           >
                             {isAccepted ? '수락됨' : '거절됨'}
                           </span>
                         </div>
                       </div>
-                      
+
                       <div className="mb-4">
                         <p className="text-sm">
                           <span className="font-medium">나이:</span> {matching.matchedUser.age}
@@ -518,7 +454,7 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
                         <p className="text-sm">
                           <span className="font-medium">학년:</span> {matching.matchedUser.grade || '미입력'}
                         </p>
-                        
+
                         {/* 생활 스타일 정보 */}
                         <div className="mt-3 flex flex-wrap gap-2">
                           {matching.matchedUser.drinking && (
@@ -537,7 +473,7 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
                             </span>
                           )}
                         </div>
-                        
+
                         {matching.matchedUser.personalities && matching.matchedUser.personalities.length > 0 && (
                           <div className="mt-2">
                             <p className="text-sm font-medium mb-1">성격:</p>
@@ -550,7 +486,7 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
                             </div>
                           </div>
                         )}
-                        
+
                         {matching.matchedUser.dating_styles && matching.matchedUser.dating_styles.length > 0 && (
                           <div className="mt-2">
                             <p className="text-sm font-medium mb-1">데이트 스타일:</p>
@@ -563,7 +499,7 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
                             </div>
                           </div>
                         )}
-                        
+
                         {matching.matchedUser.lifestyles && matching.matchedUser.lifestyles.length > 0 && (
                           <div className="mt-2">
                             <p className="text-sm font-medium mb-1">생활 스타일:</p>
@@ -576,7 +512,7 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
                             </div>
                           </div>
                         )}
-                        
+
                         {matching.matchedUser.interests && matching.matchedUser.interests.length > 0 && (
                           <div className="mt-2">
                             <p className="text-sm font-medium mb-1">관심사:</p>
@@ -590,13 +526,13 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
                           </div>
                         )}
                       </div>
-                      
+
                       {isMatched && (
                         <div className="flex flex-col space-y-2">
                           <div className="flex space-x-2">
                             <a
                               href={matching.matchedUser.instagram_id ? `https://www.instagram.com/${matching.matchedUser.instagram_id}` : '#'}
-                              target="_blank" 
+                              target="_blank"
                               rel="noopener noreferrer"
                               className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-2 px-4 rounded flex items-center justify-center"
                               onClick={(e) => {
@@ -612,11 +548,10 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
                             </a>
                             <button
                               onClick={() => toggleLike(matching.id)}
-                              className={`w-12 h-10 flex items-center justify-center rounded ${
-                                likedMatches[matching.id] 
-                                  ? 'bg-pink-100 text-pink-600' 
-                                  : 'bg-gray-100 text-gray-600'
-                              }`}
+                              className={`w-12 h-10 flex items-center justify-center rounded ${likedMatches[matching.id]
+                                ? 'bg-pink-100 text-pink-600'
+                                : 'bg-gray-100 text-gray-600'
+                                }`}
                               aria-label="관심 표시"
                               title={likedMatches[matching.id] ? "관심 표시 취소" : "관심 표시하기"}
                             >
@@ -641,7 +576,7 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
                       )}
                     </div>
                   </div>
-                  
+
                   {/* 피드백 작성 카드 (별도 카드로 제공) */}
                   {isMatched && (
                     <div className="bg-white rounded-lg shadow-md overflow-hidden p-4 mb-6">
@@ -652,7 +587,7 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
                         </div>
                         <p className="text-sm text-gray-600">이 매칭에 대한 솔직한 피드백을 작성해주세요.</p>
                       </div>
-                      
+
                       <div className="mb-3">
                         <textarea
                           value={matching.id === currentMatchingId ? feedbackText : ''}
@@ -665,7 +600,7 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
                           placeholder="매칭 경험은 어땠나요? 다른 사람들에게 도움이 될 만한 내용을 공유해주세요..."
                         />
                       </div>
-                      
+
                       <div className="flex justify-between items-center">
                         <button
                           onClick={goToCommunity}
@@ -676,11 +611,10 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
                         <button
                           onClick={submitFeedback}
                           disabled={isSubmittingFeedback || !feedbackText.trim() || currentMatchingId !== matching.id}
-                          className={`${
-                            isSubmittingFeedback || !feedbackText.trim() || currentMatchingId !== matching.id
-                              ? 'bg-indigo-400' 
-                              : 'bg-indigo-600 hover:bg-indigo-700'
-                          } text-white py-2 px-4 rounded`}
+                          className={`${isSubmittingFeedback || !feedbackText.trim() || currentMatchingId !== matching.id
+                            ? 'bg-indigo-400'
+                            : 'bg-indigo-600 hover:bg-indigo-700'
+                            } text-white py-2 px-4 rounded`}
                         >
                           {isSubmittingFeedback ? '제출 중...' : '피드백 공유하기'}
                         </button>
@@ -697,18 +631,18 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
       {matchings.length === 0 && (
         <div className="bg-white rounded-lg shadow-md p-6 text-center">
           <p className="text-gray-500 mb-4">아직 매칭 정보가 없습니다.</p>
-          <Link 
-            href="/home" 
+          <Link
+            href="/home"
             className="inline-block bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded"
           >
             홈으로 돌아가기
           </Link>
         </div>
       )}
-      
+
       <div className="mt-8 text-center">
-        <Link 
-          href="/home/my-profile/offline" 
+        <Link
+          href="/home/my-profile/offline"
           className="inline-block bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded"
         >
           오프라인 소개팅 관리
@@ -725,9 +659,9 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
             >
               <XMarkIcon className="h-6 w-6" />
             </button>
-            
+
             <h3 className="text-xl font-bold mb-4">리매칭 신청</h3>
-            
+
             <div className="mb-6">
               <p className="mb-3">매칭 결과에 만족하지 않으신가요?</p>
               <p className="mb-3">리매칭을 신청하시면 새로운 매칭을 받으실 수 있습니다.</p>
@@ -749,8 +683,8 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
                   </button>
                 </div>
                 <p className="text-sm text-gray-700 mt-2">예금주: 전준영</p>
-                <p 
-                  ref={accountNumberRef} 
+                <p
+                  ref={accountNumberRef}
                   className="absolute opacity-0 pointer-events-none"
                 >
                   카카오뱅크 3333-12-3456789
@@ -760,7 +694,7 @@ export default function MatchingResultClient({ matchings, userId, username }: Ma
                 * 입금 후 리매칭 신청이 완료됩니다. 매칭 시간에 새로운 매칭 결과를 확인해주세요.
               </p>
             </div>
-            
+
             <div className="flex space-x-3">
               <button
                 onClick={() => {

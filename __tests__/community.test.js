@@ -6,38 +6,6 @@ import { act } from 'react-dom/test-utils';
 import CommunityPage from '../app/community/page';
 import { AuthProvider } from '../contexts/AuthContext';
 
-// Supabase 모킹
-jest.mock('@/utils/supabase', () => ({
-  createClientSupabaseClient: jest.fn(() => ({
-    auth: {
-      getSession: jest.fn().mockResolvedValue({
-        data: {
-          session: {
-            user: { id: 'test-user-id' },
-            access_token: 'test-token',
-            refresh_token: 'test-refresh-token'
-          }
-        }
-      }),
-      setSession: jest.fn()
-    },
-    from: jest.fn().mockImplementation((table) => ({
-      select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      insert: jest.fn().mockReturnThis(),
-      single: jest.fn().mockResolvedValue({
-        data: table === 'profiles' ? { id: 'profile-id', student_id: 'test-student-id' } : [],
-        error: null
-      }),
-      order: jest.fn().mockReturnThis(),
-      range: jest.fn().mockResolvedValue({
-        data: [],
-        error: null
-      })
-    }))
-  }))
-}));
-
 // AuthContext 모킹
 jest.mock('../contexts/AuthContext', () => ({
   ...jest.requireActual('../contexts/AuthContext'),
@@ -103,7 +71,7 @@ describe('Community Page', () => {
 
     const textarea = screen.getByPlaceholderText('무슨 생각을 하고 계신가요?');
     const submitButton = screen.getByText('게시하기');
-    
+
     // UUID 추적을 위한 모킹
     const insertMock = jest.fn().mockResolvedValue({ error: null });
     jest.spyOn(global.console, 'log').mockImplementation((message, ...args) => {

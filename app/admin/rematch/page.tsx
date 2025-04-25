@@ -19,13 +19,9 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import PersonIcon from '@mui/icons-material/Person';
-import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { AdminService } from '@/app/services';
 import SearchIcon from '@mui/icons-material/Search';
-
-// supabase 클라이언트 초기화
-const supabase = createClient();
 
 // 프로필 모달 컴포넌트
 function UserProfileModal({ open, onClose, userData }: {
@@ -34,7 +30,7 @@ function UserProfileModal({ open, onClose, userData }: {
   userData: any;
 }) {
   if (!userData) return null;
-  
+
   return (
     <Modal
       open={open}
@@ -62,7 +58,7 @@ function UserProfileModal({ open, onClose, userData }: {
             <CloseIcon />
           </IconButton>
         </Box>
-        
+
         <Box mb={2} p={2} bgcolor="#f5f5f5" borderRadius={1}>
           <Typography variant="subtitle2" fontWeight="bold" mb={1}>기본 정보</Typography>
           <Typography variant="body2"><Box component="span" fontWeight="medium">이름:</Box> {userData.userName}</Typography>
@@ -70,13 +66,13 @@ function UserProfileModal({ open, onClose, userData }: {
           <Typography variant="body2"><Box component="span" fontWeight="medium">성별:</Box> {userData.gender || '남성'}</Typography>
           <Typography variant="body2"><Box component="span" fontWeight="medium">가입일:</Box> {new Date(userData.created_at).toLocaleDateString('ko-KR')}</Typography>
         </Box>
-        
+
         <Box mb={2} p={2} bgcolor="#f5f5f5" borderRadius={1}>
           <Typography variant="subtitle2" fontWeight="bold" mb={1}>매칭 정보</Typography>
           <Typography variant="body2">매칭 횟수: 2회</Typography>
           <Typography variant="body2">마지막 매칭: 2025-02-15</Typography>
         </Box>
-        
+
         {userData.matchedPartner && (
           <Box mb={2} p={2} bgcolor="#e3f2fd" borderRadius={1}>
             <Typography variant="subtitle2" fontWeight="bold" mb={1}>이전 매칭 파트너</Typography>
@@ -86,7 +82,7 @@ function UserProfileModal({ open, onClose, userData }: {
             </Link>
           </Box>
         )}
-        
+
         {userData.newPartner && (
           <Box mb={2} p={2} bgcolor="#e8f5e9" borderRadius={1}>
             <Typography variant="subtitle2" fontWeight="bold" mb={1}>새 매칭 파트너</Typography>
@@ -114,7 +110,7 @@ const calculateMatchScore = (profile1: any, profile2: any, preferences: any) => 
   // 1. 나이 선호도 점수 (35점)
   const ageDiff = Math.abs(profile2.age - profile1.age);
   let ageScore = 0;
-  
+
   switch (preferences.preferred_age_type) {
     case '동갑':
       ageScore = ageDiff === 0 ? 35 : Math.max(0, 25 - (ageDiff * 5));
@@ -137,14 +133,14 @@ const calculateMatchScore = (profile1: any, profile2: any, preferences: any) => 
   details['MBTI 점수'] = mbtiScore;
 
   // 3. 성격 매칭 점수 (20점)
-  const personalityScore = profile2.personalities?.filter((p: string) => 
+  const personalityScore = profile2.personalities?.filter((p: string) =>
     preferences.preferred_personalities?.includes(p)
   ).length * 5 || 0;
   score += Math.min(personalityScore, 20);
   details['성격 점수'] = Math.min(personalityScore, 20);
 
   // 4. 데이트 스타일 매칭 점수 (20점)
-  const styleScore = profile2.dating_styles?.filter((s: string) => 
+  const styleScore = profile2.dating_styles?.filter((s: string) =>
     preferences.preferred_dating_styles?.includes(s)
   ).length * 5 || 0;
   score += Math.min(styleScore, 20);
@@ -169,7 +165,7 @@ export default function RematchRequestPage() {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const router = useRouter(); 
+  const router = useRouter();
 
   const onFailureRedirectMain = () => {
     AdminService.auth.cleanup();
@@ -198,22 +194,22 @@ export default function RematchRequestPage() {
     await withErrorHandler(async () => {
       console.log('재매칭 요청 조회 시작');
       const response = await fetch('/api/admin/rematch-requests');
-      
+
       if (!response.ok) {
         throw new Error(`API 응답 오류: ${response.status}`);
       }
-      
+
       const data = await response.json();
       console.log('재매칭 요청 데이터:', data);
-      
+
       // API 응답에 필요한 상태 정보가 없을 경우를 위한 임시 처리
       const enhancedRequests = (data.requests || []).map((req: any) => ({
         ...req,
         depositConfirmed: req.depositConfirmed || false,
       }));
-      
+
       setRematchRequests(enhancedRequests);
-      
+
       if (enhancedRequests.length > 0) {
         setMessage({
           type: 'info',
@@ -234,13 +230,13 @@ export default function RematchRequestPage() {
     });
     setIsLoading(false);
   };
-  
+
   // 프로필 모달 열기
   const openProfileModal = (user: any) => {
     setSelectedUser(user);
     setProfileModalOpen(true);
   };
-  
+
   // 프로필 모달 닫기
   const closeProfileModal = () => {
     setProfileModalOpen(false);
@@ -250,12 +246,12 @@ export default function RematchRequestPage() {
   const confirmDeposit = async (requestId: string) => {
     await withErrorHandler(async () => {
       console.log('입금 확인 처리 시작:', requestId);
-      
+
       // 실제로는 API 호출이 필요하지만 테스트를 위해 로컬 상태만 업데이트
-      setRematchRequests(prevRequests => 
-        prevRequests.map(req => 
-          req.id === requestId 
-            ? {...req, status: 'deposit_confirmed', depositConfirmed: true} 
+      setRematchRequests(prevRequests =>
+        prevRequests.map(req =>
+          req.id === requestId
+            ? { ...req, status: 'deposit_confirmed', depositConfirmed: true }
             : req
         )
       );
@@ -275,233 +271,6 @@ export default function RematchRequestPage() {
 
   // 재매칭 처리
   const processRematch = async (userId: string) => {
-    await withErrorHandler(async () => {
-      console.log('재매칭 처리 시작:', userId);
-      const supabase = createClient();
-
-      // 1. 재매칭 요청한 유저의 정보와 선호도 가져오기
-      const { data: userProfile, error: userError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
-      if (userError || !userProfile) {
-        throw new Error('사용자 프로필을 찾을 수 없습니다.');
-      }
-
-      // 2. 유저의 선호도 정보 가져오기
-      const { data: userPreference, error: prefError } = await supabase
-        .from('user_preferences')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-
-      if (prefError) {
-        throw new Error('사용자 선호도 정보를 찾을 수 없습니다.');
-      }
-
-      // 3. 이전 매칭 파트너 ID 가져오기
-      const { data: previousMatch } = await supabase
-        .from('matches')
-        .select('user1_id, user2_id')
-        .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      const previousPartnerId = previousMatch
-        ? (previousMatch.user1_id === userId ? previousMatch.user2_id : previousMatch.user1_id)
-        : null;
-
-      // 4. 상대 성별의 프로필 가져오기
-      const oppositeGender = userProfile.gender === 'male' ? 'female' : 'male';
-
-      // 현재 매칭된 사용자들의 ID 가져오기
-      const { data: currentMatches } = await supabase
-        .from('matches')
-        .select('user1_id, user2_id')
-        .eq('status', 'active');  // 활성 상태인 매칭만 가져오기
-
-      // 이미 매칭된 사용자 ID 목록 생성
-      const matchedUserIds = new Set();
-      if (currentMatches) {
-        currentMatches.forEach(match => {
-          matchedUserIds.add(match.user1_id);
-          matchedUserIds.add(match.user2_id);
-        });
-      }
-
-      // 매칭 가능한 후보 조회
-      const { data: candidates, error: candidatesError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('gender', oppositeGender)
-        .neq('user_id', userId);  // id 대신 user_id 사용
-
-      if (candidatesError) {
-        throw new Error('매칭 후보 조회에 실패했습니다.');
-      }
-
-      // 5. 매칭 점수 계산 및 최적의 파트너 찾기
-      let bestMatch = null;
-      let highestScore = -1;
-
-      // 매칭되지 않은 후보들만 필터링
-      const availableCandidates = candidates.filter(candidate => 
-        !matchedUserIds.has(candidate.user_id) && // 이미 매칭된 사용자 제외
-        candidate.user_id !== previousPartnerId && // 이전 파트너 제외
-        candidate.department !== userProfile.department // 같은 학과 제외
-      );
-
-      for (const candidate of availableCandidates) {
-        const { score } = calculateMatchScore(
-          userProfile,
-          candidate,
-          userPreference
-        );
-
-        if (score > highestScore) {
-          highestScore = score;
-          bestMatch = candidate;
-        }
-      }
-
-      if (!bestMatch) {
-        throw new Error('적합한 매칭 상대를 찾을 수 없습니다.');
-      }
-
-      // 새로운 매칭을 rematches 테이블에 생성
-      const newMatch = {
-        user1_id: userProfile.gender === 'male' ? userProfile.user_id : bestMatch.user_id,
-        user2_id: userProfile.gender === 'male' ? bestMatch.user_id : userProfile.user_id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        score: highestScore
-      };
-
-      console.log('재매칭 데이터:', {
-        userProfile: {
-          id: userProfile.id,
-          user_id: userProfile.user_id,
-          gender: userProfile.gender
-        },
-        bestMatch: {
-          id: bestMatch.id,
-          user_id: bestMatch.user_id,
-          gender: bestMatch.gender
-        },
-        newMatch
-      });
-
-      const { data, error: insertError } = await supabase
-        .from('rematches')
-        .insert([newMatch])
-        .select();  // 추가된 데이터 반환₩
-
-      if (insertError) {
-        console.error('재매칭 저장 실패:', {
-          error: insertError,
-          errorMessage: insertError.message,
-          details: insertError.details,
-          hint: insertError.hint
-        });
-        throw new Error(`재매칭 정보 저장에 실패했습니다: ${insertError.message}`);
-      }
-
-      console.log('재매칭 저장 성공:', data);
-
-      // 재매칭 요청 상태를 matched로 업데이트
-      const { error: updateError } = await supabase
-        .from('matching_requests')
-        .update({ status: 'matched' })
-        .eq('user_id', userId);
-
-      if (updateError) {
-        console.error('재매칭 상태 업데이트 실패:', updateError);
-        throw new Error('재매칭 상태 업데이트에 실패했습니다.');
-      }
-
-      // 로컬 상태도 업데이트
-      setRematchRequests(prevRequests =>
-        prevRequests.map(req =>
-          req.user_id === userId
-            ? { ...req, status: 'matched' }
-            : req
-        )
-      );
-
-      // 매칭된 사용자들의 이름 조회
-      const { data: user1Data } = await supabase
-        .from('profiles')
-        .select('name')
-        .eq('user_id', newMatch.user1_id)
-        .single();
-
-      const { data: user2Data } = await supabase
-        .from('profiles')
-        .select('name')
-        .eq('user_id', newMatch.user2_id)
-        .single();
-
-      console.log('매칭된 사용자들:', {
-        user1: {
-          id: newMatch.user1_id,
-          name: user1Data?.name || '알 수 없음'
-        },
-        user2: {
-          id: newMatch.user2_id,
-          name: user2Data?.name || '알 수 없음'
-        },
-        score: highestScore
-      });
-
-      // 슬랙 알림 전송
-      try {
-        const slackResponse = await fetch('/api/slack/notify', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            text: `🔄 새로운 재매칭이 완료되었습니다!\n\n` +
-                  `매칭 점수: ${highestScore}점\n` +
-                  `매칭된 사용자:\n` +
-                  `- ${user1Data?.name || '알 수 없음'}\n` +
-                  `- ${user2Data?.name || '알 수 없음'}`
-          })
-        });
-
-        if (!slackResponse.ok) {
-          console.error('슬랙 알림 전송 실패:', await slackResponse.text());
-        } else {
-          console.log('슬랙 알림 전송 성공');
-        }
-      } catch (error) {
-        console.error('슬랙 알림 전송 중 오류:', error);
-      }
-
-      return {
-        success: true,
-        message: '재매칭이 성공적으로 처리되었습니다.',
-        match: {
-          id: newMatch.user1_id,
-          score: highestScore,
-          user1: {
-            id: newMatch.user1_id,
-            name: user1Data?.name || '알 수 없음'
-          },
-          user2: {
-            id: newMatch.user2_id,
-            name: user2Data?.name || '알 수 없음'
-          }
-        }
-      };
-
-    }, (error) => {
-      console.error('재매칭 처리 중 오류:', error);
-      alert("적합한 매칭 대상이 없습니다.");
-    });
   };
 
   // 검색어에 따라 필터링된 요청 목록을 반환하는 함수
@@ -519,16 +288,16 @@ export default function RematchRequestPage() {
         <Typography variant="h4" component="h1" gutterBottom>
           재매칭 요청 관리
         </Typography>
-        <Button 
-          variant="contained" 
-          color="primary" 
+        <Button
+          variant="contained"
+          color="primary"
           onClick={fetchRematchRequests}
           disabled={isLoading}
         >
           {isLoading ? <CircularProgress size={24} /> : '목록 새로고침'}
         </Button>
       </div>
-      
+
       {/* 검색 입력창 추가 */}
       <Box sx={{ mb: 3 }}>
         <TextField
@@ -557,24 +326,24 @@ export default function RematchRequestPage() {
           }}
         />
       </Box>
-      
+
       {message && (
-        <Alert 
-          severity={message.type} 
+        <Alert
+          severity={message.type}
           onClose={() => setMessage(null)}
           className="mb-4"
         >
           {message.content}
         </Alert>
       )}
-      
+
       {/* 사용자 프로필 모달 */}
-      <UserProfileModal 
-        open={profileModalOpen} 
-        onClose={closeProfileModal} 
-        userData={selectedUser} 
+      <UserProfileModal
+        open={profileModalOpen}
+        onClose={closeProfileModal}
+        userData={selectedUser}
       />
-      
+
       {isLoading ? (
         <div className="flex justify-center my-8">
           <CircularProgress />
@@ -591,7 +360,7 @@ export default function RematchRequestPage() {
                         <Typography variant="h6" component="div">
                           {request.userName || '이름 없음'} ({request.gender || '성별 미상'})
                         </Typography>
-                        
+
                         {/* 상태 표시 */}
                         {request.status === 'pending' && (
                           <Chip size="small" label="대기중" color="warning" sx={{ ml: 1 }} />
@@ -603,20 +372,20 @@ export default function RematchRequestPage() {
                           <Chip size="small" label="재매칭완료" color="primary" sx={{ ml: 1 }} />
                         )}
                       </Box>
-                      
+
                       <Typography variant="body2" color="textSecondary" mb={1}>
                         요청 시간: {new Date(request.created_at).toLocaleString('ko-KR')}
                       </Typography>
-                      
-                      <Button 
+
+                      <Button
                         startIcon={<PersonIcon />}
-                        size="small" 
+                        size="small"
                         sx={{ mb: 2, textTransform: 'none' }}
                         onClick={() => openProfileModal(request)}
                       >
                         상세 정보 보기
                       </Button>
-                      
+
                       {/* 매칭된 파트너 정보 */}
                       <Box p={1.5} mb={1} bgcolor="#e3f2fd" borderRadius={1}>
                         <Typography variant="body2" fontWeight="medium" mb={0.5}>
@@ -624,7 +393,7 @@ export default function RematchRequestPage() {
                         </Typography>
                         {request.matchedPartner ? (
                           <Typography variant="body2">
-                            {request.matchedPartner.name} - 
+                            {request.matchedPartner.name} -
                             <Link href={`https://instagram.com/${request.matchedPartner.instagramId}`} target="_blank" underline="hover">
                               @{request.matchedPartner.instagramId}
                             </Link>
@@ -635,7 +404,7 @@ export default function RematchRequestPage() {
                           </Typography>
                         )}
                       </Box>
-                      
+
                       {/* 새로 매칭된 파트너 정보 (재매칭 완료 시) */}
                       {request.status === 'matched' && request.newPartner && (
                         <Box p={1.5} mb={1} bgcolor="#e8f5e9" borderRadius={1}>
@@ -643,7 +412,7 @@ export default function RematchRequestPage() {
                             새 매칭 파트너:
                           </Typography>
                           <Typography variant="body2">
-                            {request.newPartner.name} - 
+                            {request.newPartner.name} -
                             <Link href={`https://instagram.com/${request.newPartner.instagramId}`} target="_blank" underline="hover">
                               @{request.newPartner.instagramId}
                             </Link>
@@ -651,30 +420,30 @@ export default function RematchRequestPage() {
                         </Box>
                       )}
                     </div>
-                    
+
                     <div>
                       {/* 대기 중인 경우 입금 확인 버튼 */}
                       {request.status === 'pending' && (
-                        <Button 
-                          variant="contained" 
-                          color="success" 
+                        <Button
+                          variant="contained"
+                          color="success"
                           onClick={() => confirmDeposit(request.id)}
                         >
                           입금 확인
                         </Button>
                       )}
-                      
+
                       {/* 입금 확인된 경우 재매칭 처리 버튼 */}
                       {request.status === 'deposit_confirmed' && (
-                        <Button 
-                          variant="contained" 
-                          color="primary" 
+                        <Button
+                          variant="contained"
+                          color="primary"
                           onClick={() => processRematch(request.user_id)}
                         >
                           재매칭 처리
                         </Button>
                       )}
-                      
+
                       {/* 처리 완료된 경우 */}
                       {request.status === 'matched' && (
                         <Typography variant="body2" color="success.main" fontWeight="medium">

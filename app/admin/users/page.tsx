@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { createClientSupabaseClient } from '@/utils/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import axiosServer from '@/utils/axios';
 
@@ -77,7 +76,6 @@ export default function UsersAdmin() {
   const [totalCount, setTotalCount] = useState(0);
 
   const { isAdmin } = useAuth();
-  const supabase = createClientSupabaseClient();
 
   useEffect(() => {
     if (isAdmin) {
@@ -85,14 +83,14 @@ export default function UsersAdmin() {
       fetchUsers();
     }
   }, [filter, isAdmin, selectedGender, selectedClass, searchTerm]);
-  
+
   // 페이지 변경 시 데이터 가져오기
   useEffect(() => {
     if (isAdmin && page > 0) {
       fetchUsers();
     }
   }, [page]);
-  
+
   // 검색어 입력 시 디바운스 적용
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -101,7 +99,7 @@ export default function UsersAdmin() {
         fetchUsers();
       }
     }, 500);
-    
+
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
@@ -109,7 +107,7 @@ export default function UsersAdmin() {
     try {
       setLoading(true);
       setError(null); // 오류 상태 초기화
-      
+
       // API 요청 파라미터 구성 (페이지네이션만)
       const params = new URLSearchParams({
         page: page.toString(),
@@ -122,7 +120,7 @@ export default function UsersAdmin() {
 
       setUsers(items);
       setTotalCount(meta.totalItems);
-      
+
     } catch (err: any) {
       console.error('사용자 목록 불러오기 오류:', err);
       setError(err.message || '사용자 목록을 불러오는 중 오류가 발생했습니다.');
@@ -140,139 +138,22 @@ export default function UsersAdmin() {
   };
 
   const handleBlockUser = async (userId: string) => {
-    if (!confirm('이 사용자를 차단하시겠습니까? 차단된 사용자는 로그인할 수 없습니다.')) {
-      return;
-    }
-    
-    try {
-      setLoading(true);
-      
-      // is_blocked 필드가 없으므로 임시로 role을 'blocked'로 변경
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: 'blocked' })
-        .eq('user_id', userId);
-        
-      if (error) {
-        throw error;
-      }
-      
-      // 목록 업데이트
-      setUsers(users.map(user => 
-        user.userId === userId ? { ...user, role: 'blocked' } : user
-      ));
-      
-      alert('사용자가 차단되었습니다.');
-      
-    } catch (err: any) {
-      console.error('사용자 차단 오류:', err);
-      alert('사용자 차단 중 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleUnblockUser = async (userId: string) => {
-    if (!confirm('이 사용자의 차단을 해제하시겠습니까?')) {
-      return;
-    }
-    
-    try {
-      setLoading(true);
-      
-      // is_blocked 필드가 없으므로 role을 'user'로 변경
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: 'user' })
-        .eq('user_id', userId);
-        
-      if (error) {
-        throw error;
-      }
-      
-      // 목록 업데이트
-      setUsers(users.map(user => 
-        user.userId === userId ? { ...user, role: 'user' } : user
-      ));
-      
-      alert('사용자 차단이 해제되었습니다.');
-      
-    } catch (err: any) {
-      console.error('사용자 차단 해제 오류:', err);
-      alert('사용자 차단 해제 중 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleClearReports = async (userId: string) => {
-    alert('신고 기능은 현재 준비중입니다.');
-    // reports_count 필드가 없으므로 기능 비활성화
-  };
-
-  const formatDateKorean = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('ko-KR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (error) {
-      return dateString;
-    }
   };
 
   const handleClassificationChange = async (userId: string, classification: string, gender: string) => {
     try {
       setLoading(true);
-      
+
       console.log('등급 변경 시작 - 사용자 ID:', userId);
       console.log('새 등급:', classification);
-      
-      // 빈 문자열이면 null로 변환 (미분류 처리)
-      const classificationValue = classification === '' ? null : classification;
-      
-      // 먼저 현재 프로필 정보 확인
-      const { data: currentProfile, error: fetchError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
-        
-      if (fetchError) {
-        console.error('현재 프로필 조회 오류:', fetchError);
-        throw fetchError;
-      }
-      
-      console.log('현재 프로필 정보:', currentProfile);
-      
-      // 프로필 테이블 업데이트
-      const { data, error } = await supabase
-        .from('profiles')
-        .update({ classification: classificationValue })
-        .eq('user_id', userId)
-        .select();
-        
+
       if (error) {
         console.error('등급 변경 중 오류:', error);
         throw error;
       }
-      
-      console.log('등급 변경 성공:', data);
-      
-      // 사용자 목록 업데이트
-      setUsers(prevUsers => prevUsers.map(user => 
-        user.userId === userId ? { ...user, classification: classificationValue } : user
-      ));
-      
-      // 선택된 사용자가 있고, 그 ID가 현재 업데이트하는 ID와 같다면 선택된 사용자 정보도 업데이트
-      if (selectedUser && selectedUser.userId === userId) {
-        setSelectedUser(prev => prev ? { ...prev, classification: classificationValue } : null);
-      }
-      
     } catch (err: any) {
       console.error('등급 변경 중 오류 발생:', err);
       alert(`등급 변경 중 오류가 발생했습니다: ${err.message}`);
@@ -286,29 +167,29 @@ export default function UsersAdmin() {
     setFilter(newFilter);
     setPage(1); // 필터 변경 시 페이지 초기화
   };
-  
+
   const handleGenderChange = (gender: 'all' | 'male' | 'female') => {
     setSelectedGender(gender);
     setPage(1); // 필터 변경 시 페이지 초기화
   };
-  
+
   const handleClassChange = (classType: 'all' | 'S' | 'A' | 'B' | 'C' | 'unclassified') => {
     setSelectedClass(classType);
     setPage(1); // 필터 변경 시 페이지 초기화
   };
-  
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
     // 검색어 변경 시 페이지 초기화는 디바운스된 useEffect에서 처리
   };
-  
+
   // 페이지 변경 핸들러
   const handlePageChange = (newPage: number) => {
     if (!loading && newPage > 0 && newPage <= Math.ceil(totalCount / pageSize)) {
       setPage(newPage);
     }
   };
-  
+
   // 페이지 버튼 렌더링
   const renderPagination = () => {
     const totalPages = Math.ceil(totalCount / pageSize);
@@ -320,22 +201,20 @@ export default function UsersAdmin() {
           <button
             onClick={() => setPage(page - 1)}
             disabled={page === 1}
-            className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
-              page === 1
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-white text-gray-700 hover:bg-gray-50'
-            }`}
+            className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${page === 1
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
           >
             이전
           </button>
           <button
             onClick={() => setPage(page + 1)}
             disabled={page === totalPages}
-            className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
-              page === totalPages
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-white text-gray-700 hover:bg-gray-50'
-            }`}
+            className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${page === totalPages
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
           >
             다음
           </button>
@@ -352,11 +231,10 @@ export default function UsersAdmin() {
               <button
                 onClick={() => setPage(page - 1)}
                 disabled={page === 1}
-                className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
-                  page === 1
-                    ? 'text-gray-300 cursor-not-allowed'
-                    : 'text-gray-500 hover:bg-gray-50'
-                }`}
+                className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${page === 1
+                  ? 'text-gray-300 cursor-not-allowed'
+                  : 'text-gray-500 hover:bg-gray-50'
+                  }`}
               >
                 <span className="sr-only">이전</span>
                 <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -367,11 +245,10 @@ export default function UsersAdmin() {
                 <button
                   key={pageNum}
                   onClick={() => setPage(pageNum)}
-                  className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                    page === pageNum
-                      ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                      : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                  }`}
+                  className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${page === pageNum
+                    ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                    }`}
                 >
                   {pageNum}
                 </button>
@@ -379,11 +256,10 @@ export default function UsersAdmin() {
               <button
                 onClick={() => setPage(page + 1)}
                 disabled={page === totalPages}
-                className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
-                  page === totalPages
-                    ? 'text-gray-300 cursor-not-allowed'
-                    : 'text-gray-500 hover:bg-gray-50'
-                }`}
+                className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${page === totalPages
+                  ? 'text-gray-300 cursor-not-allowed'
+                  : 'text-gray-500 hover:bg-gray-50'
+                  }`}
               >
                 <span className="sr-only">다음</span>
                 <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -403,8 +279,8 @@ export default function UsersAdmin() {
       return (
         <div className="py-8 text-center">
           <p className="text-red-500">데이터베이스 오류: {dbError}</p>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="mt-4 px-4 py-2 bg-primary-DEFAULT text-white rounded hover:bg-primary-dark"
           >
             다시 시도
@@ -412,7 +288,7 @@ export default function UsersAdmin() {
         </div>
       );
     }
-    
+
     if (users.length === 0 && !loading) {
       return (
         <div className="py-8 text-center">
@@ -420,7 +296,7 @@ export default function UsersAdmin() {
         </div>
       );
     }
-    
+
     return (
       <div className="bg-white rounded shadow overflow-hidden">
         <div className="overflow-x-auto">
@@ -455,10 +331,10 @@ export default function UsersAdmin() {
                 // 실제 필드가 없으므로 false로 처리
                 const isBlocked = false; // user.is_blocked;
                 const hasReports = false; // user.reports_count && user.reports_count > 0;
-                
+
                 return (
-                  <tr 
-                    key={user.userId} 
+                  <tr
+                    key={user.userId}
                     className={`hover:bg-gray-50 ${isBlocked ? 'bg-red-50' : hasReports ? 'bg-yellow-50' : ''}`}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -510,7 +386,6 @@ export default function UsersAdmin() {
                       ) : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {formatDateKorean(user.createdAt)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {user.role === 'blocked' ? (
@@ -535,7 +410,7 @@ export default function UsersAdmin() {
                         >
                           상세정보
                         </button>
-                        
+
                         {isBlocked ? (
                           <button
                             onClick={() => handleUnblockUser(user.userId)}
@@ -553,10 +428,9 @@ export default function UsersAdmin() {
                             차단
                           </button>
                         )}
-                        
+
                         {hasReports && (
                           <button
-                            onClick={() => handleClearReports(user.userId)}
                             className="text-yellow-500 hover:text-yellow-700"
                             disabled={loading}
                           >
@@ -571,10 +445,10 @@ export default function UsersAdmin() {
             </tbody>
           </table>
         </div>
-        
+
         {/* 페이지네이션 */}
         {renderPagination()}
-        
+
         {/* 페이지 정보 표시 */}
         <div className="px-4 py-3 bg-gray-50 text-right sm:px-6 text-sm text-gray-500">
           총 {totalCount}명의 사용자 중 {users.length}명 표시 중
@@ -603,11 +477,11 @@ export default function UsersAdmin() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">사용자 관리</h1>
-      
+
       <div className="bg-white p-4 rounded shadow mb-6">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex flex-wrap items-center gap-4">
-            <select 
+            <select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
               className="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-DEFAULT"
@@ -617,7 +491,7 @@ export default function UsersAdmin() {
               <option value="reported">신고된 사용자</option>
               <option value="active">활발한 사용자</option>
             </select>
-            
+
             <select
               value={selectedGender}
               onChange={(e) => setSelectedGender(e.target.value as 'all' | 'male' | 'female')}
@@ -640,7 +514,7 @@ export default function UsersAdmin() {
               <option value="B">B등급</option>
               <option value="C">C등급</option>
             </select>
-            
+
             <div className="relative">
               <input
                 type="text"
@@ -649,20 +523,20 @@ export default function UsersAdmin() {
                 onChange={handleSearchChange}
                 className="border rounded pl-10 pr-4 py-2 w-64 focus:outline-none focus:ring-2 focus:ring-primary-DEFAULT"
               />
-              <svg 
-                className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24" 
+              <svg
+                className="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
                 xmlns="http://www.w3.org/2000/svg"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
               </svg>
             </div>
           </div>
-          
+
           <div className="flex space-x-2">
-            <button 
+            <button
               onClick={fetchUsers}
               className="bg-primary-DEFAULT hover:bg-primary-dark text-white py-2 px-4 rounded"
               disabled={loading}
@@ -681,16 +555,16 @@ export default function UsersAdmin() {
                 className="hover:bg-blue-200 rounded-full p-1"
                 aria-label="성별 필터 제거"
               >
-                <svg 
-                  className="w-4 h-4" 
-                  fill="none" 
-                  stroke="currentColor" 
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth="2" 
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
                     d="M6 18L18 6M6 6l12 12"
                   />
                 </svg>
@@ -705,16 +579,16 @@ export default function UsersAdmin() {
                 className="hover:bg-purple-200 rounded-full p-1"
                 aria-label="등급 필터 제거"
               >
-                <svg 
-                  className="w-4 h-4" 
-                  fill="none" 
-                  stroke="currentColor" 
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth="2" 
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
                     d="M6 18L18 6M6 6l12 12"
                   />
                 </svg>
@@ -723,13 +597,13 @@ export default function UsersAdmin() {
           )}
         </div>
       </div>
-      
+
       <div className="bg-white p-4 rounded shadow mb-6">
         <p className="text-gray-700">총 {totalCount}명의 사용자가 등록되어 있습니다.</p>
       </div>
-      
+
       {renderUsersList()}
-      
+
       {/* 사용자 상세 정보 모달 */}
       {selectedUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
@@ -738,7 +612,7 @@ export default function UsersAdmin() {
             <div className="sticky top-0 bg-white z-10 pb-4 border-b mb-6">
               <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold">사용자 상세 정보</h2>
-                <button 
+                <button
                   onClick={handleCloseDetails}
                   className="text-gray-500 hover:text-gray-700 p-2"
                 >
@@ -748,7 +622,7 @@ export default function UsersAdmin() {
                 </button>
               </div>
             </div>
-            
+
             {/* 컨텐츠 */}
             <div className="overflow-y-auto max-h-[calc(100vh-16rem)]">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -757,8 +631,8 @@ export default function UsersAdmin() {
                   <div className="flex justify-center">
                     <div className="h-32 w-32 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 text-4xl">
                       {selectedUser.profileImages && selectedUser.profileImages.length > 0 ? (
-                        <img 
-                          src={selectedUser.profileImages[0].url} 
+                        <img
+                          src={selectedUser.profileImages[0].url}
                           alt={selectedUser.name}
                           className="h-full w-full object-cover rounded-full"
                         />
@@ -767,7 +641,7 @@ export default function UsersAdmin() {
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <h3 className="text-lg font-semibold mb-4">기본 정보</h3>
                     <div className="space-y-3">
@@ -775,17 +649,17 @@ export default function UsersAdmin() {
                         <p className="text-sm text-gray-500">이름</p>
                         <p className="font-medium">{selectedUser.name}</p>
                       </div>
-                      
+
                       <div>
                         <p className="text-sm text-gray-500">나이</p>
                         <p className="font-medium">{selectedUser.age}세</p>
                       </div>
-                      
+
                       <div>
                         <p className="text-sm text-gray-500">성별</p>
                         <p className="font-medium">{getGenderText(selectedUser.gender)}</p>
                       </div>
-                      
+
                       <div>
                         <p className="text-sm text-gray-500">인스타그램</p>
                         <p className="font-medium">
@@ -812,19 +686,18 @@ export default function UsersAdmin() {
                           <p className="text-sm text-gray-500">학교명</p>
                           <p className="font-medium">{selectedUser.universityDetails.name}</p>
                         </div>
-                        
+
                         <div>
                           <p className="text-sm text-gray-500">학과</p>
                           <p className="font-medium">{selectedUser.universityDetails.department}</p>
                         </div>
-                        
+
                         <div>
                           <p className="text-sm text-gray-500">인증 상태</p>
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            selectedUser.universityDetails.authentication
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}>
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${selectedUser.universityDetails.authentication
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                            }`}>
                             {selectedUser.universityDetails.authentication ? '인증됨' : '미인증'}
                           </span>
                         </div>
@@ -861,7 +734,7 @@ export default function UsersAdmin() {
                 </div>
               </div>
             </div>
-            
+
             {/* 하단 버튼 */}
             <div className="sticky bottom-0 bg-white pt-6 mt-6 border-t">
               <div className="flex justify-end">

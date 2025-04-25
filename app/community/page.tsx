@@ -17,8 +17,6 @@ import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { useAuth } from "@/contexts/AuthContext";
-import { createClient } from "@/utils/supabase/client";
-import Filter from "badwords-ko";
 import axiosServer from "@/utils/axios";
 import axios from "axios";
 
@@ -139,12 +137,7 @@ export default function Community() {
   // 디바운싱을 위한 타이머 참조 저장
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 비속어 필터 인스턴스 생성
-  const filter = new Filter();
-
-  // 비속어 필터링 함수
   const filterProfanity = (text: string) => {
-    return filter.clean(text);
   };
 
   // 컴포넌트 마운트 시 게시글과 사용자 정보 불러오기
@@ -159,7 +152,7 @@ export default function Community() {
       // 스크롤이 페이지 하단에서 200px 이내인 경우 추가 데이터 로드
       if (
         window.innerHeight + document.documentElement.scrollTop >=
-          document.documentElement.offsetHeight - 200 &&
+        document.documentElement.offsetHeight - 200 &&
         hasMore &&
         !isLoadingMore
       ) {
@@ -201,7 +194,7 @@ export default function Community() {
   }, [posts.length]);
 
   // 인기 게시글 불러오기
-  const fetchPopularPosts = async () => {};
+  const fetchPopularPosts = async () => { };
 
   // 게시글 불러오기
   const fetchPosts = async (page: number = 1, limit: number = postsPerPage) => {
@@ -558,7 +551,7 @@ export default function Community() {
                 {comment.author?.id === Checkuser?.id ? (
                   <div className="flex gap-2">
                     {editingComment?.postId === post.id &&
-                    editingComment?.commentId === comment.id ? (
+                      editingComment?.commentId === comment.id ? (
                       <>
                         <button
                           onClick={() => setEditingComment(null)}
@@ -615,7 +608,7 @@ export default function Community() {
             </div>
 
             {editingComment?.postId === post.id &&
-            editingComment?.commentId === comment.id ? (
+              editingComment?.commentId === comment.id ? (
               <input
                 type="text"
                 value={editCommentContent}
@@ -924,11 +917,10 @@ export default function Community() {
                         )
                       }
                       disabled={!newPostContent.trim()}
-                      className={`px-5 py-2 rounded-xl font-medium transition-all duration-200 ${
-                        !newPostContent.trim()
-                          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                          : "bg-gradient-to-r from-[#6C5CE7] to-[#5849BE] text-white hover:opacity-90 shadow-md"
-                      }`}
+                      className={`px-5 py-2 rounded-xl font-medium transition-all duration-200 ${!newPostContent.trim()
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-gradient-to-r from-[#6C5CE7] to-[#5849BE] text-white hover:opacity-90 shadow-md"
+                        }`}
                     >
                       작성하기
                     </button>
@@ -1038,9 +1030,8 @@ export default function Community() {
                     <div className="flex items-center gap-4">
                       <button
                         onClick={() => handleLike(post.id)}
-                        className={`flex items-center gap-1 ${
-                          post.isLiked ? "text-red-500" : "text-gray-500"
-                        }`}
+                        className={`flex items-center gap-1 ${post.isLiked ? "text-red-500" : "text-gray-500"
+                          }`}
                       >
                         <HeartIcon className="w-5 h-5" />
                         <span>{post.likeCount}</span>
@@ -1119,11 +1110,10 @@ export default function Community() {
                               )
                             }
                             disabled={!newComment.trim()}
-                            className={`px-4 py-2 rounded-lg transition-all duration-200 ${
-                              newComment.trim()
-                                ? "bg-gradient-to-r from-[#6C5CE7] to-[#5849BE] text-white hover:opacity-90 shadow-md"
-                                : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                            }`}
+                            className={`px-4 py-2 rounded-lg transition-all duration-200 ${newComment.trim()
+                              ? "bg-gradient-to-r from-[#6C5CE7] to-[#5849BE] text-white hover:opacity-90 shadow-md"
+                              : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                              }`}
                           >
                             작성
                           </button>
@@ -1240,11 +1230,10 @@ export default function Community() {
               {reportReasons.map((reason) => (
                 <label
                   key={reason}
-                  className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${
-                    reportReason === reason
-                      ? "border-[#6C5CE7] bg-[#6C5CE7] bg-opacity-5"
-                      : "border-gray-200 hover:border-[#6C5CE7]"
-                  }`}
+                  className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${reportReason === reason
+                    ? "border-[#6C5CE7] bg-[#6C5CE7] bg-opacity-5"
+                    : "border-gray-200 hover:border-[#6C5CE7]"
+                    }`}
                 >
                   <input
                     type="radio"
@@ -1255,11 +1244,10 @@ export default function Community() {
                     className="hidden"
                   />
                   <div
-                    className={`w-5 h-5 rounded-full border mr-3 flex items-center justify-center ${
-                      reportReason === reason
-                        ? "border-[#6C5CE7] bg-[#6C5CE7]"
-                        : "border-gray-300"
-                    }`}
+                    className={`w-5 h-5 rounded-full border mr-3 flex items-center justify-center ${reportReason === reason
+                      ? "border-[#6C5CE7] bg-[#6C5CE7]"
+                      : "border-gray-300"
+                      }`}
                   >
                     {reportReason === reason && (
                       <div className="w-2 h-2 rounded-full bg-white" />
@@ -1281,11 +1269,10 @@ export default function Community() {
               </button>
               <button
                 onClick={handleSubmitReport}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  reportReason
-                    ? "bg-[#6C5CE7] text-white hover:bg-[#5849BE]"
-                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                }`}
+                className={`px-4 py-2 rounded-lg transition-colors ${reportReason
+                  ? "bg-[#6C5CE7] text-white hover:bg-[#5849BE]"
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  }`}
                 disabled={!reportReason}
               >
                 신고하기

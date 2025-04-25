@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createClientSupabaseClient } from "@/utils/supabase";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -81,7 +80,6 @@ function PrivacyPolicyModal({
 
 export default function SignUp() {
   const router = useRouter();
-  const supabase = createClientSupabaseClient();
   const [showSignupForm, setShowSignupForm] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
@@ -100,12 +98,6 @@ export default function SignUp() {
   const [sensitiveAgreed, setSensitiveAgreed] = useState(false);
   const [marketingAgreed, setMarketingAgreed] = useState(false);
   const [allAgreed, setAllAgreed] = useState(false);
-  const [emailVerified, setEmailVerified] = useState(true);
-  const [verificationCode, setVerificationCode] = useState("");
-  const [showVerificationInput, setShowVerificationInput] = useState(false);
-  const [verificationError, setVerificationError] = useState<string | null>(null);
-  const [sendingEmail, setSendingEmail] = useState(false);
-  const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
     // 회원가입 상태 확인
@@ -218,7 +210,7 @@ export default function SignUp() {
       );
 
       console.log("회원가입 성공 응답:", signupResponse.data);
-      
+
       // 회원가입 성공 메시지 표시
       alert("회원가입에 성공했습니다.");
 
@@ -226,7 +218,7 @@ export default function SignUp() {
       router.push("/profile");
     } catch (err) {
       console.error("회원가입 중 오류:", err);
-      
+
       // 에러 메시지 추출
       if (axios.isAxiosError(err) && err.response?.data) {
         const errorData = err.response.data;
@@ -253,21 +245,21 @@ export default function SignUp() {
 
   // 개별 동의 상태 변경 시 전체 동의 상태 체크
   useEffect(() => {
-    const allChecked = 
-      privacyAgreed && 
-      termsAgreed && 
-      locationAgreed && 
-      sensitiveAgreed && 
+    const allChecked =
+      privacyAgreed &&
+      termsAgreed &&
+      locationAgreed &&
+      sensitiveAgreed &&
       marketingAgreed;
-    
+
     setAllAgreed(allChecked);
   }, [privacyAgreed, termsAgreed, locationAgreed, sensitiveAgreed, marketingAgreed]);
 
   // 필수 약관 동의 확인
-  const requiredAgreementsChecked = 
-    privacyAgreed && 
-    termsAgreed && 
-    locationAgreed && 
+  const requiredAgreementsChecked =
+    privacyAgreed &&
+    termsAgreed &&
+    locationAgreed &&
     sensitiveAgreed;
 
   const handleAgreementSubmit = (e: React.FormEvent) => {
@@ -487,11 +479,10 @@ export default function SignUp() {
 
               <button
                 type="submit"
-                className={`w-full py-3 px-4 ${
-                  requiredAgreementsChecked
-                    ? "bg-pink-500 hover:bg-pink-600"
-                    : "bg-gray-400 cursor-not-allowed"
-                } text-white font-medium rounded-md transition duration-200 text-lg`}
+                className={`w-full py-3 px-4 ${requiredAgreementsChecked
+                  ? "bg-pink-500 hover:bg-pink-600"
+                  : "bg-gray-400 cursor-not-allowed"
+                  } text-white font-medium rounded-md transition duration-200 text-lg`}
                 disabled={!requiredAgreementsChecked}
               >
                 다음
@@ -529,11 +520,10 @@ export default function SignUp() {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className={`input-field w-full ${
-                    formData.email && !validateEmail(formData.email)
-                      ? "border-red-300 focus:border-red-500"
-                      : ""
-                  }`}
+                  className={`input-field w-full ${formData.email && !validateEmail(formData.email)
+                    ? "border-red-300 focus:border-red-500"
+                    : ""
+                    }`}
                   placeholder="example@email.com"
                   required
                 />
@@ -624,11 +614,10 @@ export default function SignUp() {
 
             <button
               type="submit"
-              className={`w-full py-3 px-4 ${
-                requiredAgreementsChecked
-                  ? "bg-pink-500 hover:bg-pink-600"
-                  : "bg-gray-400 cursor-not-allowed"
-              } text-white font-medium rounded-md transition duration-200 text-lg`}
+              className={`w-full py-3 px-4 ${requiredAgreementsChecked
+                ? "bg-pink-500 hover:bg-pink-600"
+                : "bg-gray-400 cursor-not-allowed"
+                } text-white font-medium rounded-md transition duration-200 text-lg`}
               disabled={loading || !requiredAgreementsChecked}
             >
               {loading ? "가입 중..." : "가입하기"}

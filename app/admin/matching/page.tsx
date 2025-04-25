@@ -24,7 +24,6 @@ import {
   Alert,
   AlertTitle
 } from '@mui/material';
-import { createClient } from '@/utils/supabase/client';
 
 // 매칭된 유저 타입 정의
 interface MatchedUser {
@@ -102,29 +101,23 @@ export default function AdminMatching() {
     details: any;
   }>>([]);
 
-  useEffect(() => {
-    fetchMatchingTime();
-    fetchSignupStatus();
-    fetchMatchedUsers();
-  }, []);
-
   const fetchMatchingTime = async () => {
     try {
       setIsLoading(true);
       console.log('매칭 시간 조회 시작');
-      
+
       const response = await fetch('/api/admin/matching-time');
-      
+
       if (!response.ok) {
         throw new Error(`API 응답 오류: ${response.status}`);
       }
-      
+
       const data = await response.json();
       console.log('매칭 시간 데이터:', data);
-      
+
       // matchingTime 또는 matchingDateTime이 있는 경우 처리
       const matchingTimeValue = data.matchingTime || data.matchingDateTime;
-      
+
       if (matchingTimeValue) {
         // ISO 날짜 문자열을 로컬 시간으로 변환하여 datetime-local 입력창에 표시
         const date = new Date(matchingTimeValue);
@@ -148,9 +141,9 @@ export default function AdminMatching() {
       }
     } catch (error) {
       console.error('매칭 시간 조회 실패:', error);
-      setMessage({ 
-        type: 'error', 
-        content: '매칭 시간 조회에 실패했습니다. 다시 시도해 주세요.' 
+      setMessage({
+        type: 'error',
+        content: '매칭 시간 조회에 실패했습니다. 다시 시도해 주세요.'
       });
     } finally {
       setIsLoading(false);
@@ -161,14 +154,14 @@ export default function AdminMatching() {
     try {
       console.log('회원가입 상태 정보 가져오기 시작');
       const response = await fetch('/api/admin/signup-control');
-      
+
       if (!response.ok) {
         throw new Error(`API 응답 오류: ${response.status}`);
       }
-      
+
       const data = await response.json();
       console.log('회원가입 상태 정보:', data);
-      
+
       if (data.isSignupEnabled !== undefined) {
         setIsSignupEnabled(data.isSignupEnabled);
         setMessage({
@@ -183,20 +176,20 @@ export default function AdminMatching() {
       }
     } catch (error) {
       console.error('회원가입 상태 조회 실패:', error);
-      setMessage({ 
-        type: 'error', 
-        content: '회원가입 상태 조회에 실패했습니다.' 
+      setMessage({
+        type: 'error',
+        content: '회원가입 상태 조회에 실패했습니다.'
       });
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       setIsLoading(true);
       console.log('매칭 시간 설정 요청:', matchingDate);
-      
+
       const response = await fetch('/api/admin/matching-time', {
         method: 'POST',
         headers: {
@@ -242,7 +235,7 @@ export default function AdminMatching() {
     try {
       setIsLoading(true);
       console.log(`회원가입 상태 변경 요청: ${isSignupEnabled ? '비활성화' : '활성화'}`);
-      
+
       const response = await fetch('/api/admin/signup-control', {
         method: 'POST',
         headers: {
@@ -293,18 +286,18 @@ export default function AdminMatching() {
     const maleGradeVal = male.classification ? (gradeValues[male.classification] || 0) : 0;
     const gradeDiff = Math.abs(maleGradeVal - femaleGradeVal);
     const gradePenalty = gradeDiff * 2;
-    
+
     details.등급_점수 = {
       차감점수: -gradePenalty,
       여성등급: female.classification,
       남성등급: male.classification,
       등급차이: gradeDiff
     };
-    
+
     // 1. 나이 선호도 점수 (35점)
     const ageDiff = Math.abs(male.age - female.age);
     let ageScore = 0;
-    
+
     switch (femalePref.preferred_age_type) {
       case '동갑':
         ageScore = ageDiff === 0 ? 35 : Math.max(0, 25 - (ageDiff * 5));
@@ -319,15 +312,15 @@ export default function AdminMatching() {
         ageScore = Math.max(0, 25 - (ageDiff * 2));
         break;
     }
-    
+
     details.나이_점수 = { 점수: ageScore, 차이: ageDiff, 선호유형: femalePref.preferred_age_type };
     score += ageScore;
 
     // 2. 키 선호도 점수 (20점)
-    const heightScore = (male.height >= femalePref.preferred_height_min && 
-                        male.height <= femalePref.preferred_height_max) ? 20 : 0;
-    details.키_점수 = { 
-      점수: heightScore, 
+    const heightScore = (male.height >= femalePref.preferred_height_min &&
+      male.height <= femalePref.preferred_height_max) ? 20 : 0;
+    details.키_점수 = {
+      점수: heightScore,
       남성키: male.height,
       선호범위: `${femalePref.preferred_height_min}-${femalePref.preferred_height_max}cm`
     };
@@ -340,9 +333,9 @@ export default function AdminMatching() {
     } else if (!femalePref.disliked_mbti?.includes(male.mbti)) {
       mbtiScore = 10;
     }
-    
-    details.MBTI_점수 = { 
-      점수: mbtiScore, 
+
+    details.MBTI_점수 = {
+      점수: mbtiScore,
       남성MBTI: male.mbti,
       선호MBTI: femalePref.preferred_mbti,
       비선호MBTI: femalePref.disliked_mbti
@@ -350,24 +343,24 @@ export default function AdminMatching() {
     score += mbtiScore;
 
     // 4. 선호 성격 매칭 점수 (15점)
-    const matchedPersonalities = male.personalities.filter(p => 
+    const matchedPersonalities = male.personalities.filter(p =>
       femalePref.preferred_personalities.includes(p)
     );
     const personalityScore = Math.round((matchedPersonalities.length / femalePref.preferred_personalities.length) * 15);
-    details.성격_점수 = { 
-      점수: personalityScore, 
+    details.성격_점수 = {
+      점수: personalityScore,
       매칭성격: matchedPersonalities,
       선호성격: femalePref.preferred_personalities
     };
     score += personalityScore;
 
     // 5. 선호 데이트 스타일 매칭 점수 (10점)
-    const matchedDatingStyles = male.dating_styles.filter(s => 
+    const matchedDatingStyles = male.dating_styles.filter(s =>
       femalePref.preferred_dating_styles.includes(s)
     );
     const datingStyleScore = Math.round((matchedDatingStyles.length / femalePref.preferred_dating_styles.length) * 10);
-    details.데이트스타일_점수 = { 
-      점수: datingStyleScore, 
+    details.데이트스타일_점수 = {
+      점수: datingStyleScore,
       매칭스타일: matchedDatingStyles,
       선호스타일: femalePref.preferred_dating_styles
     };
@@ -439,197 +432,19 @@ export default function AdminMatching() {
   };
 
   const startMatching = async () => {
-  try {
-    setIsMatchingLoading(true);
-    console.log('=== 매칭 프로세스 시작 ===');
-
-    const supabase = createClient();
-
-    // 1. 여성 프로필
-    console.log('1. 여성 프로필 데이터 조회 중...');
-    const { data: femaleProfiles, error: femaleError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('role', 'user')
-      .eq('gender', 'female')
-      .not('name', 'is', null)
-      .not('age', 'is', null)
-      .not('department', 'is', null)
-      .not('mbti', 'is', null)
-      .not('height', 'is', null)
-      .not('personalities', 'is', null)
-      .not('dating_styles', 'is', null);
-
-    if (femaleError) throw femaleError;
-
-    const validFemaleProfiles = femaleProfiles?.filter(profile =>
-      profile.name?.trim() &&
-      profile.age > 0 &&
-      profile.department?.trim() &&
-      profile.mbti?.trim() &&
-      profile.height > 0 &&
-      Array.isArray(profile.personalities) && profile.personalities.length > 0 &&
-      Array.isArray(profile.dating_styles) && profile.dating_styles.length > 0
-    ) || [];
-
-    if (validFemaleProfiles.length === 0) {
-      throw new Error('매칭 가능한 여성 프로필이 없습니다.');
-    }
-
-    // 2. 여성 선호도
-    console.log('2. 여성 선호도 데이터 조회 중...');
-    const femaleUserIds = validFemaleProfiles.map(p => p.user_id);
-    const { data: femalePreferences, error: prefError } = await supabase
-      .from('user_preferences')
-      .select('*')
-      .in('user_id', femaleUserIds)
-      .not('preferred_age_type', 'is', null)
-      .not('preferred_height_min', 'is', null)
-      .not('preferred_height_max', 'is', null)
-      .not('preferred_mbti', 'is', null)
-      .not('preferred_personalities', 'is', null)
-      .not('preferred_dating_styles', 'is', null);
-
-    if (prefError) throw prefError;
-
-    const validFemales = validFemaleProfiles
-      .map(profile => {
-        const preferences = femalePreferences?.find(pref => pref.user_id === profile.user_id);
-        if (preferences && hasRequiredData(profile, preferences)) {
-          return { ...profile, preferences };
-        }
-        return null;
-      })
-      .filter((female): female is (typeof female & { preferences: UserPreference }) =>
-        female !== null
-      );
-
-    const matchResults: any[] = [];
-    const matchedUsers = new Set<string>();
-    const batchSize = 100;
-
-    console.log('5. 매칭 로직 실행 중...');
-    for (const female of validFemales) {
-      if (matchedUsers.has(female.user_id)) continue;
-
-      let offset = 0;
-      let bestMatch: any = null;
-      let highestScore = -1;
-
-      while (true) {
-        const { data: maleBatch, error: maleError } = await supabase
-          .from('profiles')
-          .select('id, user_id, name, age, department, mbti, height, personalities, dating_styles, smoking, drinking, tattoo')
-          .eq('role', 'user')
-          .eq('gender', 'male')
-          .not('name', 'is', null)
-          .not('age', 'is', null)
-          .not('department', 'is', null)
-          .not('mbti', 'is', null)
-          .not('height', 'is', null)
-          .not('personalities', 'is', null)
-          .not('dating_styles', 'is', null)
-          .range(offset, offset + batchSize - 1);
-
-        if (maleError) {
-          console.error('남성 프로필 조회 실패:', maleError);
-          break;
-        }
-
-        if (!maleBatch || maleBatch.length === 0) break;
-
-        const validMales = maleBatch.filter(male =>
-          male.name?.trim() &&
-          male.age > 0 &&
-          male.department?.trim() &&
-          male.mbti?.trim() &&
-          male.height > 0 &&
-          Array.isArray(male.personalities) && male.personalities.length > 0 &&
-          Array.isArray(male.dating_styles) && male.dating_styles.length > 0 &&
-          !matchedUsers.has(male.user_id)
-        );
-
-        for (const male of validMales) {
-          const { score, details } = calculateMatchScore(
-            { ...female, gender: female.gender === '남성' ? 'male' : 'female' },
-            { ...male, gender: 'male' },
-            female.preferences
-          );
-          if (score > highestScore) {
-            highestScore = score;
-            bestMatch = { male, score, details };
-          }
-        }
-
-        offset += batchSize;
-      }
-
-      if (bestMatch && highestScore > 0) {
-        try {
-          const { error: matchError } = await supabase
-            .from('matches')
-            .insert([{
-              user1_id: bestMatch.male.user_id,
-              user2_id: female.user_id,
-              score: bestMatch.score
-            }]);
-
-          if (matchError) {
-            console.error('매칭 결과 저장 실패:', matchError);
-          } else {
-            console.log(`✅ 매칭 성사: ${female.name} ↔ ${bestMatch.male.name}`);
-            matchResults.push({
-              female,
-              male: bestMatch.male,
-              score: bestMatch.score,
-              details: bestMatch.details
-            });
-            matchedUsers.add(female.user_id);
-            matchedUsers.add(bestMatch.male.user_id);
-          }
-        } catch (error) {
-          console.error('매칭 결과 저장 중 오류 발생:', error);
-        }
-      } else {
-        console.log(`❌ ${female.name}님과 매칭 가능한 남성이 없습니다.`);
-      }
-    }
-
-    console.log('\n=== 최종 매칭 결과 ===');
-    console.log(`총 매칭 성사 건수: ${matchResults.length}`);
-    console.log(`매칭된 사용자 수: ${matchedUsers.size}`);
-
-    setMatchResults(matchResults);
-    setMessage({
-      type: 'success',
-      content: `매칭이 완료되었습니다. 총 ${matchResults.length}쌍이 매칭되었습니다.`
-    });
-  } catch (error) {
-    console.error('매칭 프로세스 오류:', error);
-    setMessage({
-      type: 'error',
-      content: error instanceof Error ? error.message : '매칭 중 오류가 발생했습니다.'
-    });
-  } finally {
-    setIsMatchingLoading(false);
-  }
-};
-
-
-  const fetchMatchedUsers = async () => {
     try {
-      setIsMatchListLoading(true);
-      console.log('매칭된 유저 목록 조회 시작');
-      
+      setIsMatchingLoading(true);
+      console.log('=== 매칭 프로세스 시작 ===');
+
       const response = await fetch('/api/admin/matched-users');
-      
+
       if (!response.ok) {
         throw new Error(`API 응답 오류: ${response.status}`);
       }
-      
+
       const data = await response.json();
       console.log('매칭된 유저 데이터:', data);
-      
+
       setMatchedUsers(data.matches || []);
     } catch (error) {
       console.error('매칭된 유저 목록 조회 실패:', error);
@@ -665,7 +480,7 @@ export default function AdminMatching() {
                         required
                       />
                     </div>
-                    
+
                     <button
                       type="submit"
                       disabled={isLoading}
@@ -674,7 +489,7 @@ export default function AdminMatching() {
                       {isLoading ? '처리 중...' : '매칭 시간 설정'}
                     </button>
                   </form>
-                  
+
                   {/* 현재 설정된 시간 표시 */}
                   <div className={`bg-blue-50 border border-blue-200 p-4 rounded-lg shadow max-w-md ${!savedMatchingTime ? 'hidden' : ''}`}>
                     <h3 className="text-sm font-medium text-blue-800 mb-2">현재 설정된 매칭 시간</h3>
@@ -693,9 +508,9 @@ export default function AdminMatching() {
                             })}
                           </p>
                           <p className="text-sm text-gray-600">
-                            {new Date(savedMatchingTime).toLocaleString('ko-KR', { 
+                            {new Date(savedMatchingTime).toLocaleString('ko-KR', {
                               timeZone: 'Asia/Seoul',
-                              weekday: 'long' 
+                              weekday: 'long'
                             })}
                           </p>
                         </>
@@ -708,7 +523,7 @@ export default function AdminMatching() {
               </CardContent>
             </Card>
           </Grid>
-          
+
           {/* 회원 매칭 */}
           <Grid item xs={12} md={4}>
             <Card>
@@ -748,11 +563,10 @@ export default function AdminMatching() {
                     <button
                       onClick={toggleSignup}
                       disabled={isLoading}
-                      className={`px-4 py-2 rounded-md font-medium transition-colors ${
-                        isSignupEnabled
-                          ? 'bg-red-500 hover:bg-red-600 text-white'
-                          : 'bg-green-500 hover:bg-green-600 text-white'
-                      } disabled:opacity-50`}
+                      className={`px-4 py-2 rounded-md font-medium transition-colors ${isSignupEnabled
+                        ? 'bg-red-500 hover:bg-red-600 text-white'
+                        : 'bg-green-500 hover:bg-green-600 text-white'
+                        } disabled:opacity-50`}
                     >
                       {isLoading ? '처리 중...' : isSignupEnabled ? '비활성화하기' : '활성화하기'}
                     </button>
@@ -766,17 +580,16 @@ export default function AdminMatching() {
         <div className="mt-8">
           <h2 className="text-xl font-bold mb-4">매칭된 유저 리스트</h2>
           <div className="mb-4">
-            <Button 
-              variant="contained" 
-              color="primary" 
-              onClick={fetchMatchedUsers}
+            <Button
+              variant="contained"
+              color="primary"
               disabled={isMatchListLoading}
               className="mb-4"
             >
               {isMatchListLoading ? <CircularProgress size={24} /> : '목록 새로고침'}
             </Button>
           </div>
-          
+
           {isMatchListLoading ? (
             <div className="flex justify-center my-4">
               <CircularProgress />
@@ -802,21 +615,21 @@ export default function AdminMatching() {
                       <TableCell>{index + 1}</TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                          <Chip 
+                          <Chip
                             label={`여성: ${match.user2.classification || 'N/A'}`}
                             color={
                               match.user2.classification === 'S' ? 'primary' :
-                              match.user2.classification === 'A' ? 'success' :
-                              match.user2.classification === 'B' ? 'warning' : 'error'
+                                match.user2.classification === 'A' ? 'success' :
+                                  match.user2.classification === 'B' ? 'warning' : 'error'
                             }
                             size="small"
                           />
-                          <Chip 
+                          <Chip
                             label={`남성: ${match.user1.classification || 'N/A'}`}
                             color={
                               match.user1.classification === 'S' ? 'primary' :
-                              match.user1.classification === 'A' ? 'success' :
-                              match.user1.classification === 'B' ? 'warning' : 'error'
+                                match.user1.classification === 'A' ? 'success' :
+                                  match.user1.classification === 'B' ? 'warning' : 'error'
                             }
                             size="small"
                           />
@@ -893,28 +706,28 @@ export default function AdminMatching() {
                     <TableRow key={index}>
                       <TableCell>
                         <Typography variant="body2">
-                          {match.female.name} ({match.female.age}세)<br/>
-                          {match.female.department}<br/>
+                          {match.female.name} ({match.female.age}세)<br />
+                          {match.female.department}<br />
                           {match.female.mbti}
                         </Typography>
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">
-                          {match.male.name} ({match.male.age}세)<br/>
-                          {match.male.department}<br/>
+                          {match.male.name} ({match.male.age}세)<br />
+                          {match.male.department}<br />
                           {match.male.mbti}
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Chip 
-                          label={`${match.score}점`} 
-                          color={match.score >= 80 ? "success" : 
-                                 match.score >= 60 ? "primary" : 
-                                 "default"}
+                        <Chip
+                          label={`${match.score}점`}
+                          color={match.score >= 80 ? "success" :
+                            match.score >= 60 ? "primary" :
+                              "default"}
                         />
                       </TableCell>
                       <TableCell>
-                        <Typography variant="body2" component="pre" style={{whiteSpace: 'pre-wrap'}}>
+                        <Typography variant="body2" component="pre" style={{ whiteSpace: 'pre-wrap' }}>
                           {Object.entries(match.details)
                             .filter(([key]) => key !== '총점')
                             .map(([key, value]) => `${key}: ${JSON.stringify(value, null, 2)}`)
@@ -936,11 +749,10 @@ export default function AdminMatching() {
 
       {/* 메시지 표시 */}
       {message.content && (
-        <div className={`max-w-md p-4 rounded-lg ${
-          message.type === 'error' ? 'bg-red-100 text-red-700' :
+        <div className={`max-w-md p-4 rounded-lg ${message.type === 'error' ? 'bg-red-100 text-red-700' :
           message.type === 'success' ? 'bg-green-100 text-green-700' :
-          'bg-blue-100 text-blue-700'
-        }`}>
+            'bg-blue-100 text-blue-700'
+          }`}>
           {message.content}
         </div>
       )}
