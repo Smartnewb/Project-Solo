@@ -399,7 +399,7 @@ const userAppearance = {
   getUsersWithAppearanceGrade: async (params: {
     page?: number;
     limit?: number;
-    gender?: 'MALE' | 'FEMALE';
+    gender?: 'MALE' | 'FEMALE';  // 다시 대문자로 변경
     appearanceGrade?: 'S' | 'A' | 'B' | 'C' | 'UNKNOWN';
     universityName?: string;
     minAge?: number;
@@ -407,18 +407,21 @@ const userAppearance = {
     searchTerm?: string;
   }) => {
     try {
-      console.log('유저 목록 조회 요청 파라미터:', params);
+      console.log('유저 목록 조회 요청 파라미터:', JSON.stringify(params, null, 2));
 
       // URL 파라미터 구성
       const queryParams = new URLSearchParams();
 
       if (params.page) queryParams.append('page', params.page.toString());
       if (params.limit) queryParams.append('limit', params.limit.toString());
-      if (params.gender) queryParams.append('gender', params.gender);
+      if (params.gender) {
+        console.log('성별 파라미터 전송 전:', params.gender);
+        queryParams.append('gender', params.gender);
+      }
 
       // 외모 등급 파라미터 처리
       if (params.appearanceGrade) {
-        console.log(`외모 등급 필터: ${params.appearanceGrade}`);
+        console.log('외모 등급 파라미터 전송 전:', params.appearanceGrade);
         queryParams.append('appearanceGrade', params.appearanceGrade);
       }
 
@@ -428,38 +431,21 @@ const userAppearance = {
       if (params.searchTerm) queryParams.append('searchTerm', params.searchTerm);
 
       const url = `/admin/users/appearance?${queryParams.toString()}`;
-      console.log('API 요청 URL:', url);
+      console.log('최종 API 요청 URL:', url);
+      console.log('최종 쿼리 파라미터:', queryParams.toString());
 
-      const response = await axiosServer.get(url);
-
-      // 응답 데이터 로깅
-      console.log('응답 상태 코드:', response.status);
-      console.log('응답 데이터 샘플:', response.data?.items?.slice(0, 2));
-      console.log('총 아이템 수:', response.data?.meta?.totalItems);
-
-      // 대학교 정보 로깅
-      if (response.data?.items?.length > 0) {
-        const firstUser = response.data.items[0];
-        console.log('첫 번째 사용자 대학교 정보 (universityDetails):', firstUser.universityDetails);
-        console.log('첫 번째 사용자 대학교 정보 (university):', firstUser.university);
-        console.log('첫 번째 사용자 전체 정보:', JSON.stringify(firstUser, null, 2));
-
-        // 모든 대학교 관련 필드 확인
-        const universityFields = Object.keys(firstUser).filter(key =>
-          key.toLowerCase().includes('univ') ||
-          key.toLowerCase().includes('school') ||
-          key.toLowerCase().includes('college')
-        );
-
-        if (universityFields.length > 0) {
-          console.log('대학교 관련 필드:', universityFields);
-          universityFields.forEach(field => {
-            console.log(`${field}:`, firstUser[field]);
-          });
-        }
+      try {
+        const response = await axiosServer.get(url);
+        console.log('API 응답 상태:', response.status);
+        console.log('API 응답 헤더:', response.headers);
+        return response.data;
+      } catch (error: any) {
+        console.error('API 요청 실패:', error.message);
+        console.error('에러 응답:', error.response?.data);
+        console.error('에러 상태 코드:', error.response?.status);
+        console.error('에러 헤더:', error.response?.headers);
+        throw error;
       }
-
-      return response.data;
     } catch (error: any) {
       console.error('외모 등급 정보를 포함한 유저 목록 조회 중 오류:', error);
       console.error('오류 상세 정보:', error.response?.data || error.message);

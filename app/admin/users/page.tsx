@@ -68,7 +68,7 @@ export default function UsersAdmin() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [filter, setFilter] = useState<string>('all'); // 'all', 'blocked', 'reported', 'active'
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [selectedGender, setSelectedGender] = useState<'all' | 'male' | 'female'>('all');
+  const [selectedGender, setSelectedGender] = useState<'all' | 'MALE' | 'FEMALE'>('all');
   const [selectedClass, setSelectedClass] = useState<'all' | 'S' | 'A' | 'B' | 'C' | 'unclassified'>('all');
   const [dbError, setDbError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -165,10 +165,10 @@ export default function UsersAdmin() {
   /* 필터 변경 핸들러 - 이제 서버 측에서 처리됨 */
   const handleFilterChange = (newFilter: string) => {
     setFilter(newFilter);
-    setPage(1); // 필터 변경 시 페이지 초기화
+    setPage(1); // 필터 변경 시 페이지 초기화 
   };
 
-  const handleGenderChange = (gender: 'all' | 'male' | 'female') => {
+  const handleGenderChange = (gender: 'all' | 'MALE' | 'FEMALE') => {
     setSelectedGender(gender);
     setPage(1); // 필터 변경 시 페이지 초기화
   };
@@ -494,12 +494,12 @@ export default function UsersAdmin() {
 
             <select
               value={selectedGender}
-              onChange={(e) => setSelectedGender(e.target.value as 'all' | 'male' | 'female')}
+              onChange={(e) => setSelectedGender(e.target.value as 'all' | 'MALE' | 'FEMALE')}
               className="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-DEFAULT"
             >
               <option value="all">전체 성별</option>
-              <option value="male">남성</option>
-              <option value="female">여성</option>
+              <option value="MALE">남성</option>
+              <option value="FEMALE">여성</option>
             </select>
 
             <select
@@ -549,7 +549,7 @@ export default function UsersAdmin() {
         <div className="mt-4 flex flex-wrap gap-2">
           {selectedGender !== 'all' && (
             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 gap-2">
-              {selectedGender === 'male' ? '남성' : '여성'}
+              {selectedGender === 'MALE' ? '남성' : '여성'}
               <button
                 onClick={() => setSelectedGender('all')}
                 className="hover:bg-blue-200 rounded-full p-1"
