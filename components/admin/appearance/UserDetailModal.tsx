@@ -114,6 +114,9 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   // 관리 메뉴 상태
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(menuAnchorEl);
+  console.log({ userDetail });
+  const [selectedImage, setSelectedImage] = useState<string | undefined>(undefined);
+  console.log({ selectedImage });
 
   // 모달 상태
   const [accountStatusModalOpen, setAccountStatusModalOpen] = useState(false);
@@ -288,7 +291,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                   <Box sx={{ position: 'relative' }}>
                     <Box
                       component="img"
-                      src={userDetail.profileImages[0].url}
+                      src={selectedImage}
                       alt={userDetail.name}
                       sx={{
                         width: '100%',
@@ -300,7 +303,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                     />
                     {/* 메인 이미지 표시 */}
                     <Chip
-                      label="메인 이미지"
+                      label="선택 이미지"
                       color="primary"
                       size="small"
                       sx={{
@@ -315,7 +318,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                   // 단일 profileImageUrl이 있는 경우
                   <Box
                     component="img"
-                    src={userDetail.profileImageUrl}
+                    src={selectedImage}
                     alt={userDetail.name}
                     sx={{
                       width: '100%',
@@ -351,16 +354,17 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                   return (
                     <Box>
                       <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                        추가 이미지 ({userDetail.profileImages.length - 1}장)
+                        전체 이미지 ({userDetail.profileImages.length}장)
                       </Typography>
                       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
-                        {userDetail.profileImages.slice(1).map((image, index) => (
+                        {userDetail.profileImages.map((image, index) => (
                           <Box
                             key={image.id}
                             sx={{ position: 'relative' }}
                           >
                             <Box
                               component="img"
+                              onClick={() => setSelectedImage(image.url)}
                               src={image.url}
                               alt={`${userDetail.name} 프로필 이미지 ${index + 2}`}
                               sx={{
@@ -388,7 +392,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                                 padding: '2px 0'
                               }}
                             >
-                              {index + 2}번째
+                              {index + 1}번째
                             </Typography>
                           </Box>
                         ))}

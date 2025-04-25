@@ -66,6 +66,7 @@ export default function UsersAdmin() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>('all'); // 'all', 'blocked', 'reported', 'active'
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedGender, setSelectedGender] = useState<'all' | 'MALE' | 'FEMALE'>('all');
@@ -130,12 +131,53 @@ export default function UsersAdmin() {
   }
 
   const handleUserSelect = async (user: User) => {
+    console.log('사용자 상세 정보 모달 열림:', user);
+    console.log('사용자 ID:', user.id);
+    console.log('사용자 이름:', user.name);
+    console.log('사용자 프로필 이미지 배열:', user.profileImages);
+
+    if (user.profileImages) {
+      console.log('프로필 이미지 개수:', user.profileImages.length);
+      user.profileImages.forEach((img, index) => {
+        console.log(`이미지 ${index + 1}:`, img.id, img.url, img.isMain ? '(메인)' : '');
+      });
+
+      // 메인 이미지 찾기
+      const mainImage = user.profileImages.find(img => img.isMain === true);
+      console.log('메인 이미지:', mainImage);
+    }
+
     setSelectedUser(user);
+
+    // 사용자의 메인 이미지를 기본 선택 이미지로 설정, 없으면 첫 번째 이미지 사용
+    if (user.profileImages && user.profileImages.length > 0) {
+      // 메인 이미지 찾기
+      const mainImage = user.profileImages.find(img => img.isMain === true);
+
+      // 메인 이미지가 있으면 사용, 없으면 첫 번째 이미지 사용
+      const imageToUse = mainImage || user.profileImages[0];
+      const imageUrl = imageToUse.url;
+
+      console.log('기본 선택 이미지 설정:', imageUrl);
+      setSelectedImage(imageUrl);
+
+      // 상태 업데이트 후 확인을 위한 setTimeout
+      setTimeout(() => {
+        console.log('상태 업데이트 후 selectedImage:', selectedImage);
+      }, 100);
+    } else {
+      setSelectedImage(null);
+      console.log('프로필 이미지 없음');
+    }
   };
 
   const handleCloseDetails = () => {
+    console.log('사용자 상세 정보 모달 닫힘');
     setSelectedUser(null);
+    setSelectedImage(null);
   };
+
+  // 이미지 클릭 함수는 인라인으로 구현하여 직접 사용
 
   const handleBlockUser = async (userId: string) => {
   };
@@ -165,7 +207,7 @@ export default function UsersAdmin() {
   /* 필터 변경 핸들러 - 이제 서버 측에서 처리됨 */
   const handleFilterChange = (newFilter: string) => {
     setFilter(newFilter);
-    setPage(1); // 필터 변경 시 페이지 초기화 
+    setPage(1); // 필터 변경 시 페이지 초기화
   };
 
   const handleGenderChange = (gender: 'all' | 'MALE' | 'FEMALE') => {
@@ -628,18 +670,65 @@ export default function UsersAdmin() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* 왼쪽 컬럼 */}
                 <div className="space-y-6">
-                  <div className="flex justify-center">
-                    <div className="h-32 w-32 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 text-4xl">
-                      {selectedUser.profileImages && selectedUser.profileImages.length > 0 ? (
-                        <img
-                          src={selectedUser.profileImages[0].url}
-                          alt={selectedUser.name}
-                          className="h-full w-full object-cover rounded-full"
-                        />
-                      ) : (
-                        selectedUser.name.charAt(0).toUpperCase()
-                      )}
+                  <div className="space-y-4">
+                    {/* 메인 이미지 */}
+                    <div className="flex justify-center">
+                      <div
+                        className="h-48 w-48 rounded-lg bg-gray-200 flex items-center justify-center text-gray-600 text-4xl overflow-hidden"
+                        onClick={() => {
+                          console.log('현재 메인 이미지 상태:', selectedImage);
+                          console.log('사용자 프로필 이미지:', selectedUser.profileImages);
+
+                          // 메인 이미지 찾기
+                          const mainImage = selectedUser.profileImages.find(img => img.isMain === true);
+                          if (mainImage) {
+                            console.log('메인 이미지 정보:', mainImage.id, mainImage.url);
+                          }
+                        }}
+                      >
+                        {selectedImage ? (
+                          <img
+                            src={selectedImage}
+                            alt={selectedUser.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : selectedUser.profileImages && selectedUser.profileImages.length > 0 ? (
+                          <img
+                            src={selectedUser.profileImages[0].url}
+                            alt={selectedUser.name}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          selectedUser.name.charAt(0).toUpperCase()
+                        )}
+                      </div>
                     </div>
+
+                    {/* 이미지 썸네일 목록 */}
+                    {selectedUser.profileImages && selectedUser.profileImages.length > 1 && (
+                      <div className="flex justify-center gap-2 flex-wrap">
+                        {selectedUser.profileImages.map((image, index) => (
+                          <div
+                            key={image.id}
+                            className={`h-16 w-16 rounded-md overflow-hidden cursor-pointer border-2 ${
+                              (selectedImage === image.url) ? 'border-blue-500' : 'border-transparent'
+                            }`}
+                            onClick={() => {
+                              console.log('썸네일 이미지 클릭:', image.id, image.url, image.isMain ? '(메인)' : '');
+                              // 직접 상태 업데이트
+                              setSelectedImage(image.url);
+                              console.log('선택된 이미지 변경됨:', image.url);
+                            }}
+                          >
+                            <img
+                              src={image.url}
+                              alt={`${selectedUser.name} 프로필 이미지 ${index + 1}`}
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div className="bg-gray-50 p-4 rounded-lg">
@@ -751,4 +840,4 @@ export default function UsersAdmin() {
       )}
     </div>
   );
-} 
+}
