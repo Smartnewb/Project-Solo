@@ -710,7 +710,7 @@ const userAppearance = {
       console.log('외모 등급 통계 API 호출 시작');
 
       // API 엔드포인트 - API 문서에 명시된 경로 사용
-      const endpoint = '/api/admin/users/appearance/stats';
+      const endpoint = '/admin/users/appearance/stats';
       console.log(`API 엔드포인트: ${endpoint}`);
 
       // 토큰 확인

@@ -633,18 +633,20 @@ const UserAppearanceTable = forwardRef<
       </Dialog>
 
       {/* 유저 상세 정보 모달 */}
-      <UserDetailModal
-        open={userDetailModalOpen}
-        onClose={handleCloseUserDetailModal}
-        userId={selectedUserId}
-        userDetail={userDetail}
-        loading={loadingUserDetail}
-        error={userDetailError}
-        onRefresh={() => {
-          // 데이터 새로고침
-          fetchUsers();
-        }}
-      />
+      {!!userDetail && (
+        <UserDetailModal
+          open={userDetailModalOpen}
+          onClose={handleCloseUserDetailModal}
+          userId={selectedUserId}
+          userDetail={userDetail}
+          loading={loadingUserDetail}
+          error={userDetailError}
+          onRefresh={() => {
+            // 데이터 새로고침
+            fetchUsers();
+          }}
+        />
+      )}
     </Box>
   );
 });

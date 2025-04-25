@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -64,7 +64,7 @@ export interface UserDetail {
   name: string;
   age: number;
   gender: 'MALE' | 'FEMALE';
-  profileImages?: {
+  profileImages: {
     id: string;
     order: number;
     isMain: boolean;
@@ -96,7 +96,7 @@ interface UserDetailModalProps {
   open: boolean;
   onClose: () => void;
   userId: string | null;
-  userDetail: UserDetail | null;
+  userDetail: UserDetail;
   loading: boolean;
   error: string | null;
   onRefresh?: () => void; // 데이터 새로고침 콜백
@@ -115,8 +115,9 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(menuAnchorEl);
   console.log({ userDetail });
-  const [selectedImage, setSelectedImage] = useState<string | undefined>(undefined);
-  console.log({ selectedImage });
+  const [selectedImage, setSelectedImage] = useState<string>(
+    (() => userDetail.profileImages.find(img => img.isMain === true)!.url)()
+  );
 
   // 모달 상태
   const [accountStatusModalOpen, setAccountStatusModalOpen] = useState(false);
