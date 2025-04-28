@@ -24,7 +24,9 @@ import {
   TableBody,
   TableCell,
   TableContainer,
-  TableRow
+  TableRow,
+  ToggleButtonGroup,
+  ToggleButton
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import InstagramIcon from '@mui/icons-material/Instagram';
@@ -119,6 +121,12 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     (() => userDetail.profileImages.find(img => img.isMain === true)!.url)()
   );
 
+  // 외모 등급 상태
+  const [appearanceGrade, setAppearanceGrade] = useState<'S' | 'A' | 'B' | 'C' | 'UNKNOWN'>(
+    userDetail.appearanceGrade || userDetail.appearanceRank || 'UNKNOWN'
+  );
+  const [savingGrade, setSavingGrade] = useState(false);
+
   // 모달 상태
   const [accountStatusModalOpen, setAccountStatusModalOpen] = useState(false);
   const [warningMessageModalOpen, setWarningMessageModalOpen] = useState(false);
@@ -181,6 +189,32 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setActionError(error.message || '강제 로그아웃 처리 중 오류가 발생했습니다.');
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  // 외모 등급 변경 처리
+  const handleAppearanceGradeChange = async (
+    event: React.MouseEvent<HTMLElement>,
+    newGrade: 'S' | 'A' | 'B' | 'C' | 'UNKNOWN'
+  ) => {
+    if (!userId || !newGrade || newGrade === appearanceGrade) return;
+
+    try {
+      setSavingGrade(true);
+      setActionError(null);
+
+      await AdminService.userAppearance.setUserAppearanceGrade(userId, newGrade);
+
+      setAppearanceGrade(newGrade);
+      setActionSuccess(`외모 등급이 ${newGrade}로 변경되었습니다.`);
+
+      // 부모 컴포넌트에 변경 알림
+      if (onRefresh) onRefresh();
+    } catch (error: any) {
+      setActionError(error.message || '외모 등급 변경 중 오류가 발생했습니다.');
+      console.error('외모 등급 변경 중 오류:', error);
+    } finally {
+      setSavingGrade(false);
     }
   };
 
@@ -484,29 +518,74 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                       {userDetail.name}
                     </Typography>
 
-                    {/* 외모 등급 강조 표시 */}
-                    {(userDetail.appearanceGrade || userDetail.appearanceRank) && (
-                      <Chip
-                        label={`외모 등급: ${userDetail.appearanceGrade || userDetail.appearanceRank}`}
+                    {/* 외모 등급 토글 버튼 */}
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Typography variant="body2" sx={{ mr: 1, fontWeight: 'bold' }}>
+                        외모 등급:
+                      </Typography>
+                      <ToggleButtonGroup
+                        value={appearanceGrade}
+                        exclusive
+                        onChange={handleAppearanceGradeChange}
                         size="small"
-                        color={
-                          (userDetail.appearanceGrade === 'S' || userDetail.appearanceRank === 'S') ? 'success' :
-                          (userDetail.appearanceGrade === 'A' || userDetail.appearanceRank === 'A') ? 'primary' :
-                          (userDetail.appearanceGrade === 'B' || userDetail.appearanceRank === 'B') ? 'info' :
-                          (userDetail.appearanceGrade === 'C' || userDetail.appearanceRank === 'C') ? 'warning' : 'default'
-                        }
-                        sx={{
+                        disabled={savingGrade || actionLoading}
+                        aria-label="외모 등급"
+                      >
+                        <ToggleButton value="S" aria-label="S등급" sx={{
+                          bgcolor: appearanceGrade === 'S' ? '#8E44AD' : 'transparent',
+                          color: appearanceGrade === 'S' ? 'white' : '#8E44AD',
+                          '&:hover': { bgcolor: appearanceGrade === 'S' ? '#8E44AD' : 'rgba(142, 68, 173, 0.1)' },
                           fontWeight: 'bold',
-                          mr: 1,
-                          backgroundColor: (userDetail.appearanceGrade === 'S' || userDetail.appearanceRank === 'S') ? 'rgba(46, 204, 113, 0.9)' :
-                                          (userDetail.appearanceGrade === 'A' || userDetail.appearanceRank === 'A') ? 'rgba(52, 152, 219, 0.9)' :
-                                          (userDetail.appearanceGrade === 'B' || userDetail.appearanceRank === 'B') ? 'rgba(52, 152, 219, 0.7)' :
-                                          (userDetail.appearanceGrade === 'C' || userDetail.appearanceRank === 'C') ? 'rgba(241, 196, 15, 0.9)' :
-                                          'rgba(189, 195, 199, 0.9)',
-                          color: 'white'
-                        }}
-                      />
-                    )}
+                          minWidth: '36px',
+                          px: 1
+                        }}>
+                          S
+                        </ToggleButton>
+                        <ToggleButton value="A" aria-label="A등급" sx={{
+                          bgcolor: appearanceGrade === 'A' ? '#3498DB' : 'transparent',
+                          color: appearanceGrade === 'A' ? 'white' : '#3498DB',
+                          '&:hover': { bgcolor: appearanceGrade === 'A' ? '#3498DB' : 'rgba(52, 152, 219, 0.1)' },
+                          fontWeight: 'bold',
+                          minWidth: '36px',
+                          px: 1
+                        }}>
+                          A
+                        </ToggleButton>
+                        <ToggleButton value="B" aria-label="B등급" sx={{
+                          bgcolor: appearanceGrade === 'B' ? '#2ECC71' : 'transparent',
+                          color: appearanceGrade === 'B' ? 'white' : '#2ECC71',
+                          '&:hover': { bgcolor: appearanceGrade === 'B' ? '#2ECC71' : 'rgba(46, 204, 113, 0.1)' },
+                          fontWeight: 'bold',
+                          minWidth: '36px',
+                          px: 1
+                        }}>
+                          B
+                        </ToggleButton>
+                        <ToggleButton value="C" aria-label="C등급" sx={{
+                          bgcolor: appearanceGrade === 'C' ? '#F39C12' : 'transparent',
+                          color: appearanceGrade === 'C' ? 'white' : '#F39C12',
+                          '&:hover': { bgcolor: appearanceGrade === 'C' ? '#F39C12' : 'rgba(243, 156, 18, 0.1)' },
+                          fontWeight: 'bold',
+                          minWidth: '36px',
+                          px: 1
+                        }}>
+                          C
+                        </ToggleButton>
+                        <ToggleButton value="UNKNOWN" aria-label="미분류" sx={{
+                          bgcolor: appearanceGrade === 'UNKNOWN' ? '#95A5A6' : 'transparent',
+                          color: appearanceGrade === 'UNKNOWN' ? 'white' : '#95A5A6',
+                          '&:hover': { bgcolor: appearanceGrade === 'UNKNOWN' ? '#95A5A6' : 'rgba(149, 165, 166, 0.1)' },
+                          fontWeight: 'bold',
+                          minWidth: '36px',
+                          px: 1
+                        }}>
+                          미분류
+                        </ToggleButton>
+                      </ToggleButtonGroup>
+                      {savingGrade && (
+                        <CircularProgress size={16} sx={{ ml: 1 }} />
+                      )}
+                    </Box>
                   </Box>
 
                   {/* 나이, 성별 및 계정 상태 표시 */}
