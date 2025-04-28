@@ -673,6 +673,38 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                   </Box>
                 )}
 
+                {/* 자기소개 정보 */}
+                {(userDetail.title || userDetail.introduction) && (
+                  <Box sx={{ mt: 3, mb: 3 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+                      자기소개 정보
+                    </Typography>
+                    <Divider sx={{ mb: 2 }} />
+
+                    {userDetail.title && (
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                          한 줄 소개
+                        </Typography>
+                        <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                          {userDetail.title}
+                        </Typography>
+                      </Box>
+                    )}
+
+                    {userDetail.introduction && (
+                      <Box>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                          자기소개
+                        </Typography>
+                        <Typography variant="body1">
+                          {userDetail.introduction}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                )}
+
                 {/* 날짜 정보 */}
                 <Box sx={{ mt: 3, mb: 3 }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
@@ -722,51 +754,66 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                       </Typography>
                     </Grid>
 
-                    {/* 추가 필드 표시 - 가독성 개선 (불필요한 필드 제외) */}
+                    {/* 선호도 정보 표시 */}
+                    {userDetail.preferences && Array.isArray(userDetail.preferences) && userDetail.preferences.length > 0 && (
+                      <Grid item xs={12}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
+                          선호도 정보
+                        </Typography>
+                        <Divider sx={{ mb: 2 }} />
+                        <Box>
+                          {userDetail.preferences.map((pref: any, index: number) => (
+                            <Box key={index} sx={{ mb: 3 }}>
+                              <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'primary.main', mb: 1 }}>
+                                {pref.typeName}
+                              </Typography>
+                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8, mt: 0.5 }}>
+                                {pref.selectedOptions?.map((option: any, optIndex: number) => (
+                                  <Chip
+                                    key={optIndex}
+                                    label={option.displayName}
+                                    size="small"
+                                    color="primary"
+                                    variant="outlined"
+                                    sx={{ fontWeight: 'medium' }}
+                                  />
+                                ))}
+                              </Box>
+                            </Box>
+                          ))}
+                        </Box>
+                      </Grid>
+                    )}
+
+                    {/* 추가 필드 표시 - 가독성 개선 (불필요한 필드만 제외) */}
                     {Object.entries(userDetail)
                       .filter(([key]) => !['id', 'name', 'age', 'gender', 'profileImages', 'profileImageUrl',
                                           'phoneNumber', 'instagramId', 'instagramUrl', 'universityDetails',
                                           'university', 'email', 'createdAt', 'updatedAt', 'lastActiveAt',
-                                          'appearanceGrade', 'accountStatus', 'role', 'title', 'introduction',
+                                          'appearanceGrade', 'accountStatus', 'role', 'preferences',
                                           'appearanceRank', 'oauthProvider', 'deletedAt'].includes(key))
                       .map(([key, value]) => {
-                        // preferences 필드 특별 처리
-                        if (key === 'preferences' && Array.isArray(value)) {
-                          return (
-                            <Grid item xs={12} key={key}>
-                              <Typography variant="body2" color="text.secondary" sx={{ mb: 1, fontWeight: 'bold' }}>
-                                선호도 정보
-                              </Typography>
-                              <Box sx={{ pl: 2 }}>
-                                {value.map((pref: any, index: number) => (
-                                  <Box key={index} sx={{ mb: 2 }}>
-                                    <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                                      {pref.typeName}
-                                    </Typography>
-                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                                      {pref.selectedOptions?.map((option: any, optIndex: number) => (
-                                        <Chip
-                                          key={optIndex}
-                                          label={option.displayName}
-                                          size="small"
-                                          variant="outlined"
-                                        />
-                                      ))}
-                                    </Box>
-                                  </Box>
-                                ))}
-                              </Box>
-                            </Grid>
-                          );
+                        // 이미 별도로 표시된 필드는 제외
+                        if (key === 'title' || key === 'introduction') {
+                          return null;
                         }
-
-                        // 날짜 필드, role, title, introduction, appearanceRank, oauthProvider, deletedAt 필드는 상세 정보에서 제외
 
                         // 기본 필드 처리
                         return (
                           <Grid item xs={12} key={key}>
-                            <Typography variant="body2" color="text.secondary">
-                              {key}
+                            <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 'bold', mb: 0.5 }}>
+                              {key === 'height' ? '키' :
+                               key === 'bodyType' ? '체형' :
+                               key === 'religion' ? '종교' :
+                               key === 'drinking' ? '음주' :
+                               key === 'smoking' ? '흡연' :
+                               key === 'mbti' ? 'MBTI' :
+                               key === 'hobby' ? '취미' :
+                               key === 'job' ? '직업' :
+                               key === 'company' ? '회사' :
+                               key === 'school' ? '학교' :
+                               key === 'major' ? '전공' :
+                               key}
                             </Typography>
                             <Typography variant="body1" sx={{ wordBreak: 'break-all' }}>
                               {typeof value === 'object' ? JSON.stringify(value) : String(value)}

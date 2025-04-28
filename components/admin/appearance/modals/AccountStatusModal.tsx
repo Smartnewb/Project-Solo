@@ -44,12 +44,12 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
     try {
       setLoading(true);
       setError(null);
-      
+
       await AdminService.userAppearance.updateAccountStatus(userId, status, reason);
-      
+
       setSuccess(true);
       if (onSuccess) onSuccess();
-      
+
       // 성공 후 1초 후에 모달 닫기
       setTimeout(() => {
         handleClose();
@@ -78,6 +78,11 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
         {success ? (
           <Alert severity="success" sx={{ mt: 2 }}>
             계정 상태가 성공적으로 변경되었습니다.
+            {status !== 'ACTIVE' && (
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                사용자에게 상태 변경 알림 이메일이 발송되었습니다.
+              </Typography>
+            )}
           </Alert>
         ) : (
           <Box sx={{ pt: 2 }}>
@@ -86,7 +91,7 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
                 {error}
               </Alert>
             )}
-            
+
             <FormControl fullWidth sx={{ mb: 3 }}>
               <InputLabel id="account-status-label">계정 상태</InputLabel>
               <Select
@@ -101,7 +106,7 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
                 <MenuItem value="SUSPENDED">정지</MenuItem>
               </Select>
             </FormControl>
-            
+
             <TextField
               fullWidth
               label="사유"
@@ -112,16 +117,39 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
               disabled={loading}
               placeholder="상태 변경 사유를 입력하세요"
               helperText={
-                status !== 'ACTIVE' 
-                  ? '사용자에게 알림이 전송됩니다.' 
+                status !== 'ACTIVE'
+                  ? '사용자에게 이메일로 계정 상태 변경 알림과 사유가 전송됩니다.'
                   : '활성화 상태로 변경 시 사유는 선택사항입니다.'
               }
+              required={status !== 'ACTIVE'}
+              error={status !== 'ACTIVE' && !reason.trim()}
             />
-            
-            {status === 'SUSPENDED' && (
-              <Typography color="error" variant="body2" sx={{ mt: 2 }}>
-                주의: 계정 정지는 사용자가 앱에 로그인할 수 없게 됩니다.
-              </Typography>
+
+            {status !== 'ACTIVE' && (
+              <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(25, 118, 210, 0.08)', borderRadius: 1 }}>
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium', color: 'primary.main' }}>
+                  <strong>이메일 알림 안내</strong>
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                  계정 상태 변경 시 사용자에게 다음 정보가 포함된 이메일이 자동으로 발송됩니다:
+                </Typography>
+                <ul style={{ margin: '0', paddingLeft: '20px' }}>
+                  <li>
+                    <Typography variant="body2">변경된 계정 상태 ({status === 'INACTIVE' ? '비활성화' : '정지'})</Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">상태 변경 사유 (위에 입력한 내용)</Typography>
+                  </li>
+                  <li>
+                    <Typography variant="body2">변경 일시</Typography>
+                  </li>
+                </ul>
+                {status === 'SUSPENDED' && (
+                  <Typography color="error" variant="body2" sx={{ mt: 1, fontWeight: 'medium' }}>
+                    주의: 계정 정지는 사용자가 앱에 로그인할 수 없게 됩니다.
+                  </Typography>
+                )}
+              </Box>
             )}
           </Box>
         )}
@@ -130,11 +158,11 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
         <Button onClick={handleClose} disabled={loading}>
           취소
         </Button>
-        <Button 
-          onClick={handleSubmit} 
-          variant="contained" 
-          color="primary" 
-          disabled={loading || success}
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
+          color="primary"
+          disabled={loading || success || (status !== 'ACTIVE' && !reason.trim())}
           startIcon={loading ? <CircularProgress size={20} /> : null}
         >
           {loading ? '처리 중...' : '변경하기'}
