@@ -61,6 +61,138 @@ const getGenderText = (gender: string) => {
   return '미지정';
 };
 
+// 날짜 형식 변환 함수
+const getFormattedDate = (user: any) => {
+  // 직접 createdAt 필드 사용
+  if (user.createdAt) {
+    try {
+      // ISO 형식 문자열인 경우 (예: "2023-04-15T09:30:45.123Z")
+      const date = new Date(user.createdAt);
+      return date.toLocaleDateString();
+    } catch (error) {
+      console.error('날짜 변환 오류:', error);
+    }
+  }
+
+  // 타임스탬프 숫자인 경우 (예: 1681547445123)
+  if (typeof user.createdAt === 'number') {
+    try {
+      const date = new Date(user.createdAt);
+      return date.toLocaleDateString();
+    } catch (error) {
+      console.error('타임스탬프 변환 오류:', error);
+    }
+  }
+
+  // 다른 가능한 필드 시도
+  const dateFields = [
+    'registeredAt',
+    'created_at',
+    'registered_at',
+    'joinedAt',
+    'joined_at',
+    'signupAt',
+    'signup_at',
+    'registrationDate',
+    'registration_date'
+  ];
+
+  for (const field of dateFields) {
+    if (user[field]) {
+      try {
+        const date = new Date(user[field]);
+        return date.toLocaleDateString();
+      } catch (error) {
+        console.error(`${field} 변환 오류:`, error);
+      }
+    }
+  }
+
+  // 마지막 시도: 모든 필드 검사
+  for (const key in user) {
+    if (
+      typeof user[key] === 'string' &&
+      (key.includes('date') || key.includes('time') || key.includes('at')) &&
+      /\d{4}-\d{2}-\d{2}/.test(user[key])
+    ) {
+      try {
+        const date = new Date(user[key]);
+        return date.toLocaleDateString();
+      } catch (error) {
+        // 무시
+      }
+    }
+  }
+
+  return '-';
+};
+
+// 시간 형식 변환 함수
+const getFormattedTime = (user: any) => {
+  // 직접 createdAt 필드 사용
+  if (user.createdAt) {
+    try {
+      // ISO 형식 문자열인 경우 (예: "2023-04-15T09:30:45.123Z")
+      const date = new Date(user.createdAt);
+      return date.toLocaleTimeString();
+    } catch (error) {
+      console.error('시간 변환 오류:', error);
+    }
+  }
+
+  // 타임스탬프 숫자인 경우 (예: 1681547445123)
+  if (typeof user.createdAt === 'number') {
+    try {
+      const date = new Date(user.createdAt);
+      return date.toLocaleTimeString();
+    } catch (error) {
+      console.error('타임스탬프 변환 오류:', error);
+    }
+  }
+
+  // 다른 가능한 필드 시도
+  const dateFields = [
+    'registeredAt',
+    'created_at',
+    'registered_at',
+    'joinedAt',
+    'joined_at',
+    'signupAt',
+    'signup_at',
+    'registrationDate',
+    'registration_date'
+  ];
+
+  for (const field of dateFields) {
+    if (user[field]) {
+      try {
+        const date = new Date(user[field]);
+        return date.toLocaleTimeString();
+      } catch (error) {
+        console.error(`${field} 변환 오류:`, error);
+      }
+    }
+  }
+
+  // 마지막 시도: 모든 필드 검사
+  for (const key in user) {
+    if (
+      typeof user[key] === 'string' &&
+      (key.includes('date') || key.includes('time') || key.includes('at')) &&
+      /\d{4}-\d{2}-\d{2}/.test(user[key])
+    ) {
+      try {
+        const date = new Date(user[key]);
+        return date.toLocaleTimeString();
+      } catch (error) {
+        // 무시
+      }
+    }
+  }
+
+  return '';
+};
+
 export default function UsersAdmin() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -118,6 +250,54 @@ export default function UsersAdmin() {
       // Nest.js API 호출
       const response = await axiosServer.get<ApiResponse>(`/admin/users?${params}`);
       const { items, meta } = response.data;
+
+      // API 응답 구조 로깅 (첫 번째 사용자만)
+      if (items && items.length > 0) {
+        console.log('API 응답 첫 번째 사용자 데이터 구조:', items[0]);
+        console.log('API 응답 첫 번째 사용자 데이터 JSON:', JSON.stringify(items[0], null, 2));
+
+        // 날짜 필드 확인
+        const user = items[0];
+        const dateFields = ['createdAt', 'registeredAt', 'created_at', 'registered_at', 'joinedAt', 'joined_at', 'signupAt', 'signup_at', 'registrationDate', 'registration_date'];
+        const foundDateFields = dateFields.filter(field => user[field]);
+
+        if (foundDateFields.length > 0) {
+          console.log('발견된 날짜 필드:', foundDateFields);
+          foundDateFields.forEach(field => {
+            console.log(`${field} 값:`, user[field]);
+            console.log(`${field} 타입:`, typeof user[field]);
+
+            // 날짜 변환 테스트
+            try {
+              const date = new Date(user[field]);
+              console.log(`${field} 변환된 날짜:`, date);
+              console.log(`${field} 날짜 문자열:`, date.toLocaleDateString());
+              console.log(`${field} 시간 문자열:`, date.toLocaleTimeString());
+            } catch (error) {
+              console.error(`${field} 날짜 변환 오류:`, error);
+            }
+          });
+        } else {
+          console.log('날짜 관련 필드를 찾을 수 없습니다. 전체 필드 목록:', Object.keys(user));
+
+          // 모든 필드 값 출력
+          Object.keys(user).forEach(key => {
+            console.log(`필드 ${key}:`, user[key], `(타입: ${typeof user[key]})`);
+
+            // 문자열 필드에 대해 날짜 변환 시도
+            if (typeof user[key] === 'string' && (key.includes('date') || key.includes('time') || key.includes('at'))) {
+              try {
+                const date = new Date(user[key]);
+                console.log(`${key} 날짜 변환 시도:`, date.toISOString());
+                console.log(`${key} 날짜 문자열:`, date.toLocaleDateString());
+                console.log(`${key} 시간 문자열:`, date.toLocaleTimeString());
+              } catch (error) {
+                console.error(`${key} 날짜 변환 시도 오류:`, error);
+              }
+            }
+          });
+        }
+      }
 
       setUsers(items);
       setTotalCount(meta.totalItems);
@@ -428,6 +608,14 @@ export default function UsersAdmin() {
                       ) : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex flex-col">
+                        <div className="text-sm font-medium">
+                          {getFormattedDate(user)}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {getFormattedTime(user)}
+                        </div>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {user.role === 'blocked' ? (
