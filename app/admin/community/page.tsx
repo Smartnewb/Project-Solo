@@ -1,424 +1,870 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import React from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { HomeIcon, ChatBubbleLeftRightIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
-import { ADMIN_EMAIL } from '@/utils/config';
+import communityService from '@/app/services/community';
+import {
+  Box,
+  Typography,
+  Tabs,
+  Tab,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination,
+  Button,
+  Chip,
+  IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Alert,
+  CircularProgress,
+  Checkbox,
+  Tooltip
+} from '@mui/material';
+import {
+  Visibility as VisibilityIcon,
+  VisibilityOff as VisibilityOffIcon,
+  Delete as DeleteIcon,
+  Report as ReportIcon,
+  Comment as CommentIcon,
+  Warning as WarningIcon
+} from '@mui/icons-material';
 
-interface Post {
-  user_id: string;
-  author_id: string;
-  content: string;
-  created_at: string;
-  updated_at: string;
-  likes: string[];
-  isEdited: boolean;
-  isdeleted: boolean;
-  isBlinded?: boolean;
-  reports: string[];
-  nickname: string;
-  studentid: string;
-  emoji: string;
-  comments: Comment[];
-  username?: string;
+// 탭 패널 컴포넌트
+function TabPanel(props: {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`community-tabpanel-${index}`}
+      aria-labelledby={`community-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ p: 3 }}>
+          {children}
+        </Box>
+      )}
+    </div>
+  );
 }
 
-interface Comment {
-  id: string;
-  post_id: string;
-  author_id: string;
-  content: string;
-  created_at: string;
-  updated_at: string;
-  nickname: string;
-  studentid: string;
-  isEdited: boolean;
-  isdeleted: boolean;
-  isBlinded: boolean;
-  reports: string[];
-  name?: string;
+// 게시글 목록 컴포넌트
+function ArticleList() {
+  const router = useRouter();
+  const [articles, setArticles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [filter, setFilter] = useState<'all' | 'reported' | 'blinded'>('all');
+  const [totalCount, setTotalCount] = useState(0);
+  const [selectedArticles, setSelectedArticles] = useState<string[]>([]);
+  const [openBlindDialog, setOpenBlindDialog] = useState(false);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [blindReason, setBlindReason] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // 게시글 목록 조회
+  const fetchArticles = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await communityService.getArticles(filter, page + 1, rowsPerPage);
+      setArticles(response.items || []);
+      setTotalCount(response.total || 0);
+    } catch (error) {
+      console.error('게시글 목록 조회 중 오류:', error);
+      setError('게시글 목록을 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 페이지 변경 시
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  // 페이지당 행 수 변경 시
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  // 필터 변경 시
+  const handleFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setFilter(event.target.value as 'all' | 'reported' | 'blinded');
+    setPage(0);
+  };
+
+  // 게시글 선택 시
+  const handleSelectArticle = (id: string) => {
+    setSelectedArticles(prev => {
+      if (prev.includes(id)) {
+        return prev.filter(articleId => articleId !== id);
+      } else {
+        return [...prev, id];
+      }
+    });
+  };
+
+  // 전체 선택/해제
+  const handleSelectAll = () => {
+    if (selectedArticles.length === articles.length) {
+      setSelectedArticles([]);
+    } else {
+      setSelectedArticles(articles.map(article => article.id));
+    }
+  };
+
+  // 블라인드 처리 다이얼로그 열기
+  const handleOpenBlindDialog = () => {
+    setOpenBlindDialog(true);
+  };
+
+  // 블라인드 처리 다이얼로그 닫기
+  const handleCloseBlindDialog = () => {
+    setOpenBlindDialog(false);
+    setBlindReason('');
+  };
+
+  // 삭제 다이얼로그 열기
+  const handleOpenDeleteDialog = () => {
+    setOpenDeleteDialog(true);
+  };
+
+  // 삭제 다이얼로그 닫기
+  const handleCloseDeleteDialog = () => {
+    setOpenDeleteDialog(false);
+  };
+
+  // 블라인드 처리
+  const handleBlindArticles = async (isBlinded: boolean) => {
+    try {
+      setActionLoading(true);
+      await communityService.bulkBlindArticles(selectedArticles, isBlinded, blindReason);
+      setSuccessMessage(`선택한 게시글을 ${isBlinded ? '블라인드' : '블라인드 해제'} 처리했습니다.`);
+      setSelectedArticles([]);
+      fetchArticles();
+      handleCloseBlindDialog();
+    } catch (error) {
+      console.error('게시글 블라인드 처리 중 오류:', error);
+      setError(`게시글 ${isBlinded ? '블라인드' : '블라인드 해제'} 처리 중 오류가 발생했습니다.`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // 게시글 삭제
+  const handleDeleteArticles = async () => {
+    try {
+      setActionLoading(true);
+      await communityService.bulkDeleteArticles(selectedArticles);
+      setSuccessMessage('선택한 게시글을 삭제했습니다.');
+      setSelectedArticles([]);
+      fetchArticles();
+      handleCloseDeleteDialog();
+    } catch (error) {
+      console.error('게시글 삭제 중 오류:', error);
+      setError('게시글 삭제 중 오류가 발생했습니다.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // 성공 메시지 초기화
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  // 게시글 목록 조회
+  useEffect(() => {
+    fetchArticles();
+  }, [filter, page, rowsPerPage]);
+
+  return (
+    <Box>
+      {/* 필터 및 액션 버튼 */}
+      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <FormControl variant="outlined" size="small" sx={{ minWidth: 200 }}>
+          <InputLabel id="filter-label">필터</InputLabel>
+          <Select
+            labelId="filter-label"
+            value={filter}
+            onChange={handleFilterChange}
+            label="필터"
+          >
+            <MenuItem value="all">전체 게시글</MenuItem>
+            <MenuItem value="reported">신고된 게시글</MenuItem>
+            <MenuItem value="blinded">블라인드 게시글</MenuItem>
+          </Select>
+        </FormControl>
+
+        {selectedArticles.length > 0 && (
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={handleOpenBlindDialog}
+              startIcon={<VisibilityOffIcon />}
+              disabled={actionLoading}
+            >
+              블라인드 처리
+            </Button>
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={handleOpenDeleteDialog}
+              startIcon={<DeleteIcon />}
+              disabled={actionLoading}
+            >
+              삭제
+            </Button>
+          </Box>
+        )}
+      </Box>
+
+      {/* 성공/오류 메시지 */}
+      {successMessage && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          {successMessage}
+        </Alert>
+      )}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      {/* 게시글 목록 테이블 */}
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell padding="checkbox">
+                <Checkbox
+                  checked={articles.length > 0 && selectedArticles.length === articles.length}
+                  indeterminate={selectedArticles.length > 0 && selectedArticles.length < articles.length}
+                  onChange={handleSelectAll}
+                />
+              </TableCell>
+              <TableCell>작성자</TableCell>
+              <TableCell>내용</TableCell>
+              <TableCell>댓글</TableCell>
+              <TableCell>신고</TableCell>
+              <TableCell>상태</TableCell>
+              <TableCell>작성일</TableCell>
+              <TableCell>액션</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={8} align="center">
+                  <CircularProgress size={24} sx={{ my: 2 }} />
+                </TableCell>
+              </TableRow>
+            ) : articles.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} align="center">
+                  게시글이 없습니다.
+                </TableCell>
+              </TableRow>
+            ) : (
+              articles.map((article) => (
+                <TableRow key={article.id}>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      checked={selectedArticles.includes(article.id)}
+                      onChange={() => handleSelectArticle(article.id)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {article.isAnonymous ? (
+                      <Typography variant="body2">익명</Typography>
+                    ) : (
+                      <Typography variant="body2">{article.nickname}</Typography>
+                    )}
+                    <Typography variant="caption" color="textSecondary">
+                      {article.email}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        maxWidth: 300,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        ...(article.isBlinded && { color: 'text.disabled', textDecoration: 'line-through' })
+                      }}
+                    >
+                      {article.emoji} {article.content}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>{article.commentCount}</TableCell>
+                  <TableCell>
+                    {article.reportCount > 0 ? (
+                      <Chip
+                        icon={<ReportIcon />}
+                        label={article.reportCount}
+                        color="error"
+                        size="small"
+                      />
+                    ) : (
+                      0
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {article.isBlinded ? (
+                      <Chip label="블라인드" color="warning" size="small" />
+                    ) : article.isDeleted ? (
+                      <Chip label="삭제됨" color="error" size="small" />
+                    ) : (
+                      <Chip label="정상" color="success" size="small" />
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {new Date(article.createdAt).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    <Tooltip title="상세 보기">
+                      <IconButton
+                        size="small"
+                        color="primary"
+                        onClick={() => router.push(`/admin/community/${article.id}`)}
+                      >
+                        <VisibilityIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title={article.isBlinded ? "블라인드 해제" : "블라인드"}>
+                      <IconButton
+                        size="small"
+                        color={article.isBlinded ? "success" : "warning"}
+                        onClick={() => {
+                          setSelectedArticles([article.id]);
+                          setBlindReason(article.blindReason || '');
+                          setOpenBlindDialog(true);
+                        }}
+                      >
+                        {article.isBlinded ? (
+                          <VisibilityIcon fontSize="small" />
+                        ) : (
+                          <VisibilityOffIcon fontSize="small" />
+                        )}
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="삭제">
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => {
+                          setSelectedArticles([article.id]);
+                          setOpenDeleteDialog(true);
+                        }}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* 페이지네이션 */}
+      <TablePagination
+        component="div"
+        count={totalCount}
+        page={page}
+        onPageChange={handleChangePage}
+        rowsPerPage={rowsPerPage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        rowsPerPageOptions={[5, 10, 25, 50]}
+        labelRowsPerPage="페이지당 행 수:"
+      />
+
+      {/* 블라인드 처리 다이얼로그 */}
+      <Dialog open={openBlindDialog} onClose={handleCloseBlindDialog}>
+        <DialogTitle>게시글 블라인드 처리</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            선택한 {selectedArticles.length}개의 게시글을 블라인드 처리하시겠습니까?
+          </Typography>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="블라인드 사유"
+            fullWidth
+            variant="outlined"
+            value={blindReason}
+            onChange={(e) => setBlindReason(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseBlindDialog} disabled={actionLoading}>
+            취소
+          </Button>
+          <Button
+            onClick={() => handleBlindArticles(true)}
+            color="warning"
+            disabled={actionLoading}
+          >
+            {actionLoading ? <CircularProgress size={24} /> : '블라인드 처리'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 삭제 다이얼로그 */}
+      <Dialog open={openDeleteDialog} onClose={handleCloseDeleteDialog}>
+        <DialogTitle>게시글 삭제</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1">
+            선택한 {selectedArticles.length}개의 게시글을 삭제하시겠습니까?
+          </Typography>
+          <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+            <WarningIcon fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
+            이 작업은 되돌릴 수 없습니다.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteDialog} disabled={actionLoading}>
+            취소
+          </Button>
+          <Button
+            onClick={handleDeleteArticles}
+            color="error"
+            disabled={actionLoading}
+          >
+            {actionLoading ? <CircularProgress size={24} /> : '삭제'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+}
+
+// 신고 목록 컴포넌트
+function ReportList() {
+  const [reports, setReports] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [typeFilter, setTypeFilter] = useState<'all' | 'article' | 'comment'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'processed'>('pending');
+  const [totalCount, setTotalCount] = useState(0);
+  const [openProcessDialog, setOpenProcessDialog] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<any>(null);
+  const [processMemo, setProcessMemo] = useState('');
+  const [processResult, setProcessResult] = useState<'accepted' | 'rejected'>('accepted');
+  const [blindTarget, setBlindTarget] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // 신고 목록 조회
+  const fetchReports = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await communityService.getReports(
+        typeFilter,
+        statusFilter,
+        page + 1,
+        rowsPerPage
+      );
+      setReports(response.items || []);
+      setTotalCount(response.total || 0);
+    } catch (error) {
+      console.error('신고 목록 조회 중 오류:', error);
+      setError('신고 목록을 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 페이지 변경 시
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  // 페이지당 행 수 변경 시
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  // 타입 필터 변경 시
+  const handleTypeFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setTypeFilter(event.target.value as 'all' | 'article' | 'comment');
+    setPage(0);
+  };
+
+  // 상태 필터 변경 시
+  const handleStatusFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setStatusFilter(event.target.value as 'all' | 'pending' | 'processed');
+    setPage(0);
+  };
+
+  // 신고 처리 다이얼로그 열기
+  const handleOpenProcessDialog = (report: any) => {
+    setSelectedReport(report);
+    setProcessMemo('');
+    setProcessResult('accepted');
+    setBlindTarget(true);
+    setOpenProcessDialog(true);
+  };
+
+  // 신고 처리 다이얼로그 닫기
+  const handleCloseProcessDialog = () => {
+    setOpenProcessDialog(false);
+    setSelectedReport(null);
+  };
+
+  // 신고 처리
+  const handleProcessReport = async () => {
+    if (!selectedReport) return;
+
+    try {
+      setActionLoading(true);
+      await communityService.processReport(
+        selectedReport.id,
+        processResult,
+        processMemo,
+        processResult === 'accepted' && blindTarget
+      );
+      setSuccessMessage('신고를 처리했습니다.');
+      fetchReports();
+      handleCloseProcessDialog();
+    } catch (error) {
+      console.error('신고 처리 중 오류:', error);
+      setError('신고 처리 중 오류가 발생했습니다.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // 성공 메시지 초기화
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  // 신고 목록 조회
+  useEffect(() => {
+    fetchReports();
+  }, [typeFilter, statusFilter, page, rowsPerPage]);
+
+  return (
+    <Box>
+      {/* 필터 */}
+      <Box sx={{ mb: 2, display: 'flex', gap: 2 }}>
+        <FormControl variant="outlined" size="small" sx={{ minWidth: 200 }}>
+          <InputLabel id="type-filter-label">신고 대상</InputLabel>
+          <Select
+            labelId="type-filter-label"
+            value={typeFilter}
+            onChange={handleTypeFilterChange}
+            label="신고 대상"
+          >
+            <MenuItem value="all">전체</MenuItem>
+            <MenuItem value="article">게시글</MenuItem>
+            <MenuItem value="comment">댓글</MenuItem>
+          </Select>
+        </FormControl>
+
+        <FormControl variant="outlined" size="small" sx={{ minWidth: 200 }}>
+          <InputLabel id="status-filter-label">처리 상태</InputLabel>
+          <Select
+            labelId="status-filter-label"
+            value={statusFilter}
+            onChange={handleStatusFilterChange}
+            label="처리 상태"
+          >
+            <MenuItem value="all">전체</MenuItem>
+            <MenuItem value="pending">대기 중</MenuItem>
+            <MenuItem value="processed">처리 완료</MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
+
+      {/* 성공/오류 메시지 */}
+      {successMessage && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          {successMessage}
+        </Alert>
+      )}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      {/* 신고 목록 테이블 */}
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>신고 대상</TableCell>
+              <TableCell>신고 내용</TableCell>
+              <TableCell>신고자</TableCell>
+              <TableCell>신고 사유</TableCell>
+              <TableCell>신고일</TableCell>
+              <TableCell>상태</TableCell>
+              <TableCell>액션</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={7} align="center">
+                  <CircularProgress size={24} sx={{ my: 2 }} />
+                </TableCell>
+              </TableRow>
+            ) : reports.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} align="center">
+                  신고가 없습니다.
+                </TableCell>
+              </TableRow>
+            ) : (
+              reports.map((report) => (
+                <TableRow key={report.id}>
+                  <TableCell>
+                    <Chip
+                      label={report.targetType === 'article' ? '게시글' : '댓글'}
+                      color={report.targetType === 'article' ? 'primary' : 'secondary'}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        maxWidth: 300,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {report.targetContent}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>{report.reporterNickname}</TableCell>
+                  <TableCell>{report.reason}</TableCell>
+                  <TableCell>
+                    {new Date(report.createdAt).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    {report.status === 'pending' ? (
+                      <Chip label="대기 중" color="warning" size="small" />
+                    ) : report.result === 'accepted' ? (
+                      <Chip label="수락됨" color="success" size="small" />
+                    ) : (
+                      <Chip label="거절됨" color="error" size="small" />
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {report.status === 'pending' && (
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={() => handleOpenProcessDialog(report)}
+                      >
+                        처리
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* 페이지네이션 */}
+      <TablePagination
+        component="div"
+        count={totalCount}
+        page={page}
+        onPageChange={handleChangePage}
+        rowsPerPage={rowsPerPage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        rowsPerPageOptions={[5, 10, 25, 50]}
+        labelRowsPerPage="페이지당 행 수:"
+      />
+
+      {/* 신고 처리 다이얼로그 */}
+      <Dialog open={openProcessDialog} onClose={handleCloseProcessDialog}>
+        <DialogTitle>신고 처리</DialogTitle>
+        <DialogContent>
+          {selectedReport && (
+            <>
+              <Typography variant="subtitle1" gutterBottom>
+                신고 대상: {selectedReport.targetType === 'article' ? '게시글' : '댓글'}
+              </Typography>
+              <Typography variant="body2" gutterBottom>
+                내용: {selectedReport.targetContent}
+              </Typography>
+              <Typography variant="body2" gutterBottom>
+                신고 사유: {selectedReport.reason}
+              </Typography>
+              {selectedReport.description && (
+                <Typography variant="body2" gutterBottom>
+                  상세 설명: {selectedReport.description}
+                </Typography>
+              )}
+
+              <Box sx={{ mt: 2 }}>
+                <FormControl component="fieldset">
+                  <Typography variant="subtitle2" gutterBottom>
+                    처리 결과
+                  </Typography>
+                  <Select
+                    value={processResult}
+                    onChange={(e) => setProcessResult(e.target.value as 'accepted' | 'rejected')}
+                    fullWidth
+                    size="small"
+                    sx={{ mb: 2 }}
+                  >
+                    <MenuItem value="accepted">수락 (신고 인정)</MenuItem>
+                    <MenuItem value="rejected">거절 (신고 기각)</MenuItem>
+                  </Select>
+                </FormControl>
+
+                {processResult === 'accepted' && (
+                  <FormControl component="fieldset" sx={{ mt: 1 }}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      블라인드 처리
+                    </Typography>
+                    <Select
+                      value={blindTarget ? 'yes' : 'no'}
+                      onChange={(e) => setBlindTarget(e.target.value === 'yes')}
+                      fullWidth
+                      size="small"
+                      sx={{ mb: 2 }}
+                    >
+                      <MenuItem value="yes">블라인드 처리</MenuItem>
+                      <MenuItem value="no">블라인드 처리 안 함</MenuItem>
+                    </Select>
+                  </FormControl>
+                )}
+
+                <TextField
+                  margin="dense"
+                  label="처리 메모"
+                  fullWidth
+                  variant="outlined"
+                  value={processMemo}
+                  onChange={(e) => setProcessMemo(e.target.value)}
+                  multiline
+                  rows={3}
+                />
+              </Box>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseProcessDialog} disabled={actionLoading}>
+            취소
+          </Button>
+          <Button
+            onClick={handleProcessReport}
+            color="primary"
+            disabled={actionLoading}
+          >
+            {actionLoading ? <CircularProgress size={24} /> : '처리 완료'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
 }
 
 export default function AdminCommunity() {
   const router = useRouter();
-  const { user, loading } = useAuth();
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [showErrorModal, setShowErrorModal] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'reported' | 'blinded'>('all');
-  const [selectedPosts, setSelectedPosts] = useState<string[]>([]);
-  const [showReportDetails, setShowReportDetails] = useState<string | null>(null);
-  const [message, setMessage] = useState({ type: '', content: '' });
-  const [expandedPosts, setExpandedPosts] = useState<string[]>([]);
+  const { user, loading, isAdmin } = useAuth();
+  const [tabValue, setTabValue] = useState(0);
 
-
-
-  useEffect(() => {
-    if (loading) {
-      console.log('로딩 중...');
-      return;
-    }
-
-    if (!user) {
-      console.log('사용자 인증 정보 없음, 3초 후 리다이렉트');
-      const timer = setTimeout(() => {
-        console.log('리다이렉트 실행');
-        router.push('/');
-      }, 3000);
-
-      return () => clearTimeout(timer);
-    }
-
-    // 로그인 사용자 정보 로깅
-    console.log('로그인 사용자 정보:', {
-      id: user.id,
-      email: user.email,
-      defaultAdminEmail: process.env.NEXT_PUBLIC_DEFAULT_ADMIN_EMAIL,
-      matchesDefault: user.email === process.env.NEXT_PUBLIC_DEFAULT_ADMIN_EMAIL,
-      adminEmail: ADMIN_EMAIL,
-      matchesAdmin: user.email === ADMIN_EMAIL,
-    });
-
-    // 관리자 메일 주소인지 확인
-    const isAdminUser = user.email === process.env.NEXT_PUBLIC_DEFAULT_ADMIN_EMAIL ||
-      user.email === ADMIN_EMAIL;
-
-    if (!isAdminUser) {
-      console.log('관리자 아님, 홈으로 리다이렉트');
-      router.push('/');
-      return;
-    }
-
-    console.log('관리자 확인됨:', user.email);
-    // 이미 관리자임이 확인되었으므로 게시글 로드
-  }, [user, loading, router]);
-
-  // 필터 변경 시에만 게시글 다시 불러오기
-  useEffect(() => {
-    if (user && (user.email === process.env.NEXT_PUBLIC_DEFAULT_ADMIN_EMAIL ||
-      user.email === ADMIN_EMAIL)) {
-      console.log('필터 변경으로 게시글 다시 로드:', filterType);
-    }
-  }, [filterType]);
-
-  const toggleComments = (postId: string, index: number) => {
-    const uniqueId = `${postId}-${index}`;
-    setExpandedPosts(prev =>
-      prev.includes(uniqueId)
-        ? prev.filter(id => id !== uniqueId)
-        : [...prev, uniqueId]
-    );
+  // 탭 변경 핸들러
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
   };
+
+  // 관리자 권한 확인
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/');
+    } else if (!loading && user && !isAdmin) {
+      router.push('/');
+    }
+  }, [user, loading, isAdmin, router]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500">로딩 중...</p>
-      </div>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
     );
   }
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-500 mb-2">로그인이 필요합니다.</p>
-          <p className="text-gray-400 text-sm">3초 후 메인 페이지로 이동합니다...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // 관리자 권한 확인
-  const isAdmin = user.email === process.env.NEXT_PUBLIC_DEFAULT_ADMIN_EMAIL ||
-    user.email === ADMIN_EMAIL;
-
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500">접근 권한이 없습니다.</p>
-      </div>
-    )
+  if (!user || !isAdmin) {
+    return null;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-8">
-      {/* 상단 헤더 */}
-      <div className="bg-white border-b sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">커뮤니티 관리</h1>
-            <div className="flex items-center gap-4">
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value as 'all' | 'reported' | 'blinded')}
-                className="border rounded-lg px-3 py-2"
-              >
-                <option value="all">전체 게시글</option>
-                <option value="reported">신고된 게시글</option>
-                <option value="blinded">블라인드 게시글</option>
-              </select>
-              {selectedPosts.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">
-                    {selectedPosts.length}개 선택됨
-                  </span>
-                  <button
-                    className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                  >
-                    일괄 삭제
-                  </button>
-                  <button
-                    className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
-                  >
-                    일괄 블라인드
-                  </button>
-                  <button
-                    className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-                  >
-                    일괄 복구
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h4" gutterBottom>
+        커뮤니티 관리
+      </Typography>
 
-      {/* 메시지 표시 영역 */}
-      {message.content && (
-        <div className={`max-w-6xl mx-auto px-4 py-4 mt-4 rounded-lg ${message.type === 'error' ? 'bg-red-100 text-red-700' :
-          message.type === 'success' ? 'bg-green-100 text-green-700' :
-            'bg-blue-100 text-blue-700'
-          }`}>
-          {message.content}
-        </div>
-      )}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs value={tabValue} onChange={handleTabChange} aria-label="community management tabs">
+          <Tab label="게시글 관리" />
+          <Tab label="신고 관리" />
+        </Tabs>
+      </Box>
 
-      {/* 게시글 목록 */}
-      {posts.length > 0 ? (
-        <div className="max-w-6xl mx-auto px-4 mt-6">
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    순번
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    작성자/닉네임
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    내용
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    작성일시
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    상태
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    관리
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {posts.map((post, index) => {
-                  // 각 게시글마다 고유 ID 생성
-                  const uniqueId = `${post.user_id}-${index}`;
+      <TabPanel value={tabValue} index={0}>
+        <ArticleList />
+      </TabPanel>
 
-                  return (
-                    <React.Fragment key={uniqueId}>
-                      <tr className={post.isBlinded || post.isdeleted ? "bg-gray-50" : ""}>
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                          <span className="inline-flex items-center justify-center w-6 h-6 bg-gray-200 rounded-full text-sm font-medium">
-                            {index + 1}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="ml-0">
-                              <div className="text-sm font-medium text-gray-900">{post.nickname}</div>
-                              <div className="text-sm text-gray-500">{post.username}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900 max-w-md break-words">{post.content}</div>
-                          {post.comments && post.comments.length > 0 && (
-                            <button
-                              onClick={() => toggleComments(post.user_id, index)}
-                              className="mt-2 text-xs text-blue-600 hover:text-blue-800 flex items-center"
-                            >
-                              <svg
-                                className={`w-4 h-4 mr-1 transition-transform ${expandedPosts.includes(uniqueId) ? 'rotate-180' : ''}`}
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                              </svg>
-                              댓글 {post.comments.length}개 {expandedPosts.includes(uniqueId) ? '숨기기' : '보기'}
-                            </button>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(post.created_at).toLocaleString()}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex flex-col space-y-1">
-                            {post.isBlinded && (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                블라인드
-                              </span>
-                            )}
-                            {post.isdeleted && (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                삭제됨
-                              </span>
-                            )}
-                            {post.isEdited && (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                수정됨
-                              </span>
-                            )}
-
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex flex-col space-y-2">
-                            {post.isdeleted || post.isBlinded ? (
-                              <button
-                                className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors duration-200 text-xs flex items-center justify-center"
-                              >
-                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                </svg>
-                                복구
-                              </button>
-                            ) : (
-                              <>
-                                <button
-                                  className="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors duration-200 text-xs flex items-center justify-center"
-                                >
-                                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                                  </svg>
-                                  블라인드
-                                </button>
-                                <button
-                                  className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors duration-200 text-xs flex items-center justify-center"
-                                >
-                                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                  </svg>
-                                  삭제
-                                </button>
-                              </>
-                            )}
-                            <button
-                              className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors duration-200 text-xs flex items-center justify-center"
-                            >
-                              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                              </svg>
-                              댓글 {post.comments ? post.comments.length : 0}개
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                      {/* 댓글 섹션 */}
-                      {expandedPosts.includes(uniqueId) && post.comments && post.comments.length > 0 && (
-                        <tr>
-                          <td colSpan={6} className="px-6 py-4 bg-gray-50">
-                            <div className="space-y-3">
-                              <h3 className="font-medium text-gray-700">댓글 목록 ({post.comments.length}개)</h3>
-                              {post.comments.map((comment) => {
-                                return (
-                                  <div key={comment.id} className="bg-white p-3 rounded-lg shadow-sm border border-gray-200">
-                                    <div className="flex justify-between">
-                                      <div className="flex items-center">
-                                        <span className="font-medium text-gray-900 text-sm">{comment.nickname}</span>
-                                        <span className="ml-2 text-gray-600 text-xs">({comment.name || '이름 없음'})</span>
-                                        <span className="ml-2 text-gray-500 text-xs">{comment.studentid}</span>
-                                        {comment.isEdited && <span className="ml-2 text-xs text-gray-500">(수정됨)</span>}
-                                      </div>
-                                      <span className="text-xs text-gray-500">{new Date(comment.created_at).toLocaleString()}</span>
-                                    </div>
-                                    <p className="mt-1 text-gray-700 text-sm">{comment.content}</p>
-
-                                    <div className="mt-2 flex justify-between items-center">
-                                      <div className="flex space-x-1">
-                                        {comment.isBlinded && (
-                                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                                            블라인드
-                                          </span>
-                                        )}
-                                        {comment.isdeleted && (
-                                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                                            삭제됨
-                                          </span>
-                                        )}
-                                      </div>
-                                      <div className="flex space-x-2">
-                                        {comment.isdeleted || comment.isBlinded ? (
-                                          <button
-                                            className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200"
-                                          >
-                                            복구
-                                          </button>
-                                        ) : (
-                                          <>
-                                            <button
-                                              className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs hover:bg-yellow-200"
-                                            >
-                                              블라인드
-                                            </button>
-                                            <button
-                                              className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs hover:bg-red-200"
-                                            >
-                                              삭제
-                                            </button>
-                                          </>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ) : !message.type && (
-        <div className="flex items-center justify-center h-64">
-          <p className="text-gray-500">게시글을 불러오는 중...</p>
-        </div>
-      )}
-
-      {/* 에러 모달 */}
-      {showErrorModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-sm mx-4">
-            <p className="text-gray-700">{errorMessage}</p>
-            <button
-              onClick={() => setShowErrorModal(false)}
-              className="mt-4 w-full bg-primary-DEFAULT text-white py-2 rounded-lg hover:bg-primary-dark transition-colors"
-            >
-              확인
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+      <TabPanel value={tabValue} index={1}>
+        <ReportList />
+      </TabPanel>
+    </Box>
   );
-} 
+}
