@@ -39,6 +39,7 @@ import BlockIcon from '@mui/icons-material/Block';
 import WarningIcon from '@mui/icons-material/Warning';
 import LogoutIcon from '@mui/icons-material/Logout';
 import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import EmailIcon from '@mui/icons-material/Email';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
@@ -53,6 +54,7 @@ import AccountStatusModal from './modals/AccountStatusModal';
 import WarningMessageModal from './modals/WarningMessageModal';
 import ProfileUpdateRequestModal from './modals/ProfileUpdateRequestModal';
 import EditProfileModal from './modals/EditProfileModal';
+import DeleteUserModal from './modals/DeleteUserModal';
 
 // 성별 레이블
 const GENDER_LABELS = {
@@ -132,6 +134,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const [warningMessageModalOpen, setWarningMessageModalOpen] = useState(false);
   const [profileUpdateRequestModalOpen, setProfileUpdateRequestModalOpen] = useState(false);
   const [editProfileModalOpen, setEditProfileModalOpen] = useState(false);
+  const [deleteUserModalOpen, setDeleteUserModalOpen] = useState(false);
 
   // 작업 상태
   const [actionLoading, setActionLoading] = useState(false);
@@ -190,6 +193,12 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     } finally {
       setActionLoading(false);
     }
+  };
+
+  // 계정 삭제 모달 열기
+  const handleOpenDeleteUserModal = () => {
+    handleCloseMenu();
+    setDeleteUserModalOpen(true);
   };
 
   // 외모 등급 변경 처리
@@ -287,6 +296,12 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
             <LogoutIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText>강제 로그아웃</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleOpenDeleteUserModal}>
+          <ListItemIcon>
+            <DeleteIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>계정 삭제</ListItemText>
         </MenuItem>
         <Divider />
         <MenuItem onClick={handleOpenProfileUpdateRequestModal}>
@@ -889,6 +904,21 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
         onSuccess={() => {
           setActionSuccess('프로필이 수정되었습니다.');
           if (onRefresh) onRefresh();
+        }}
+      />
+
+      <DeleteUserModal
+        open={deleteUserModalOpen}
+        onClose={() => setDeleteUserModalOpen(false)}
+        userId={userId || ''}
+        userName={userDetail?.name}
+        onSuccess={() => {
+          setActionSuccess('계정이 삭제되었습니다.');
+          if (onRefresh) onRefresh();
+          // 계정 삭제 후 모달 닫기
+          setTimeout(() => {
+            onClose();
+          }, 1500);
         }}
       />
     </Dialog>

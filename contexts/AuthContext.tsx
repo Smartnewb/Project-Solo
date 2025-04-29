@@ -130,12 +130,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string) => {
     setState(prev => ({ ...prev, loading: true }));
     try {
+      console.log('로그인 시도:', { email });
+      console.log('API URL:', process.env.NEXT_PUBLIC_API_URL);
+
+      // API 요청 전 로깅
+      console.log('로그인 API 요청 URL:', `${process.env.NEXT_PUBLIC_API_URL}/auth/login`);
+
       const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
         email,
         password
       });
 
+      console.log('로그인 응답:', response.status);
       const data = response.data;
+      console.log('로그인 데이터:', {
+        hasToken: !!data.accessToken,
+        hasUser: !!data.user,
+        role: data.user?.role || data.role
+      });
 
       if (!data.accessToken) {
         throw new Error('토큰이 없습니다.');
@@ -147,6 +159,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // 사용자 정보 설정
       const userInfo = data.user || data;
       const isAdmin = userInfo.role === 'admin';
+
+      console.log('사용자 정보:', {
+        id: userInfo.id,
+        email: userInfo.email,
+        role: userInfo.role,
+        isAdmin
+      });
 
       // 관리자 여부 저장
       localStorage.setItem('isAdmin', isAdmin ? 'true' : 'false');
@@ -162,8 +181,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await fetchProfile();
 
       // 리다이렉트
-      router.push(userInfo.role === 'admin' ? '/admin/dashboard' : '/home');
+      console.log('리다이렉트 경로:', isAdmin ? '/admin/dashboard' : '/home');
+      router.push(isAdmin ? '/admin/dashboard' : '/home');
     } catch (error) {
+      console.error('로그인 오류 상세:', error);
+
+      if (axios.isAxiosError(error)) {
+        console.error('API 오류 상태:', error.response?.status);
+        console.error('API 오류 데이터:', error.response?.data);
+        console.error('API 오류 헤더:', error.response?.headers);
+      }
+
       setState(prev => ({ ...prev, loading: false }));
 
       // 에러 메시지 추출 및 전달

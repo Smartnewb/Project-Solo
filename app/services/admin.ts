@@ -479,7 +479,7 @@ const userAppearance = {
 
           // 세 번째 시도: 직접 fetch 사용
           try {
-            const url3 = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api'}/admin/users/appearance/grade`;
+            const url3 = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045/api'}/admin/users/appearance/grade`;
             console.log('세 번째 시도 URL (전체 경로):', url3);
 
             const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
@@ -679,6 +679,36 @@ const userAppearance = {
     } catch (error: any) {
       console.error('강제 로그아웃 중 오류:', error);
       console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // 계정 삭제
+  deleteUser: async (userId: string, reason: string) => {
+    try {
+      console.log('계정 삭제 요청:', { userId, reason });
+
+      // 새로운 API 엔드포인트 로깅
+      const endpoint = `/admin/users`;
+      console.log(`API 엔드포인트: ${endpoint}`);
+      console.log('요청 데이터:', { userId, reason });
+
+      // 전체 URL 로깅
+      console.log('전체 URL:', `${axiosServer.defaults.baseURL}${endpoint}`);
+
+      // DELETE 요청 수행
+      console.log('DELETE 요청 시도');
+      const response = await axiosServer.delete(endpoint, {
+        data: { userId, reason }
+      });
+      console.log('DELETE 요청 성공');
+
+      console.log('계정 삭제 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('계정 삭제 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      console.error('오류 상태 코드:', error.response?.status);
       throw error;
     }
   },

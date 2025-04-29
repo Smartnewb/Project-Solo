@@ -10,6 +10,28 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [serverStatus, setServerStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+
+  // 백엔드 서버 상태 확인
+  useEffect(() => {
+    const checkServerStatus = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/health`, {
+          method: 'GET',
+          mode: 'no-cors',
+          cache: 'no-cache',
+        });
+        console.log('서버 상태 확인 응답:', response.status);
+        setServerStatus('online');
+      } catch (error) {
+        console.error('서버 연결 확인 중 오류:', error);
+        setServerStatus('offline');
+        setError('백엔드 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
+      }
+    };
+
+    checkServerStatus();
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,10 +41,21 @@ export default function Login() {
     setIsLoading(true);
 
     try {
+      console.log('로그인 시도 중...', { email: email.trim() });
       await login(email.trim(), password);
+      console.log('로그인 성공!');
     } catch (err: any) {
       console.error('로그인 중 오류:', err);
-      setError(err.message);
+
+      // 오류 메시지 설정
+      let errorMessage = err.message || '로그인에 실패했습니다.';
+
+      // 네트워크 오류인 경우
+      if (err.message?.includes('Network Error')) {
+        errorMessage = '서버에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.';
+      }
+
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
