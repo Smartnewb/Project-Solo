@@ -647,6 +647,148 @@ const communityService = {
       console.error('댓글 일괄 삭제 중 오류:', error);
       throw error;
     }
+  },
+
+  // 휴지통 게시글 목록 조회
+  getTrashArticles: async (page = 1, limit = 10): Promise<PaginatedResponse<Article>> => {
+    try {
+      console.log('휴지통 게시글 목록 조회 요청:', { page, limit });
+
+      // 실제 API 호출 (주석 처리)
+      /*
+      const response = await axiosServer.get(`/api/admin/community/trash/articles`, {
+        params: { page, limit }
+      });
+      console.log('휴지통 게시글 목록 조회 응답:', response.data);
+      return response.data;
+      */
+
+      // 목업 데이터 사용
+      console.log('목업 데이터 사용 중');
+
+      // 목업 데이터 생성
+      const mockArticles = Array.from({ length: 15 }, (_, i) => ({
+        id: `trash-article-${i + 1}`,
+        userId: `user-${Math.floor(Math.random() * 10) + 1}`,
+        nickname: `사용자${Math.floor(Math.random() * 100) + 1}`,
+        email: `user${Math.floor(Math.random() * 100) + 1}@example.com`,
+        content: `이것은 삭제된 게시글 ${i + 1}입니다. 휴지통에 있는 게시글입니다.`,
+        emoji: ['😊', '🥰', '😎', '🤗', '😇', '🥱', '🤒', '😡', '😍', '🤣'][Math.floor(Math.random() * 10)],
+        isAnonymous: Math.random() > 0.5,
+        likeCount: Math.floor(Math.random() * 50),
+        commentCount: Math.floor(Math.random() * 10),
+        reportCount: Math.floor(Math.random() * 3),
+        isBlinded: Math.random() < 0.2,
+        isDeleted: true,
+        isEdited: Math.random() > 0.7,
+        createdAt: new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000),
+        updatedAt: new Date(),
+        deletedAt: new Date(Date.now() - Math.floor(Math.random() * 10) * 24 * 60 * 60 * 1000)
+      }));
+
+      // 페이지네이션 적용
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const paginatedArticles = mockArticles.slice(startIndex, endIndex);
+
+      return {
+        items: paginatedArticles,
+        total: mockArticles.length,
+        page,
+        limit,
+        totalPages: Math.ceil(mockArticles.length / limit)
+      };
+    } catch (error) {
+      console.error('휴지통 게시글 목록 조회 중 오류:', error);
+      throw error;
+    }
+  },
+
+  // 휴지통 비우기
+  emptyTrash: async (): Promise<any> => {
+    try {
+      console.log('휴지통 비우기 요청');
+
+      // 실제 API 호출 (주석 처리)
+      /*
+      const response = await axiosServer.delete(`/api/admin/community/trash/articles`);
+      console.log('휴지통 비우기 응답:', response.data);
+      return response.data;
+      */
+
+      // 목업 데이터 사용
+      console.log('목업 데이터 사용 중');
+
+      // 성공 응답 시뮬레이션
+      return {
+        success: true,
+        message: '휴지통이 비워졌습니다.',
+      };
+    } catch (error) {
+      console.error('휴지통 비우기 중 오류:', error);
+      throw error;
+    }
+  },
+
+  // 게시글 영구 삭제
+  permanentDeleteArticle: async (id: string): Promise<any> => {
+    try {
+      console.log('게시글 영구 삭제 요청:', id);
+
+      // 실제 API 호출 (주석 처리)
+      /*
+      const response = await axiosServer.delete(`/api/admin/community/articles/${id}/permanent`);
+      console.log('게시글 영구 삭제 응답:', response.data);
+      return response.data;
+      */
+
+      // 목업 데이터 사용
+      console.log('목업 데이터 사용 중');
+
+      // 성공 응답 시뮬레이션
+      return {
+        success: true,
+        message: '게시글이 영구적으로 삭제되었습니다.',
+        article: {
+          id,
+          permanentlyDeleted: true
+        }
+      };
+    } catch (error) {
+      console.error('게시글 영구 삭제 중 오류:', error);
+      throw error;
+    }
+  },
+
+  // 게시글 복원
+  restoreArticle: async (id: string): Promise<any> => {
+    try {
+      console.log('게시글 복원 요청:', id);
+
+      // 실제 API 호출 (주석 처리)
+      /*
+      const response = await axiosServer.patch(`/api/admin/community/articles/${id}/restore`);
+      console.log('게시글 복원 응답:', response.data);
+      return response.data;
+      */
+
+      // 목업 데이터 사용
+      console.log('목업 데이터 사용 중');
+
+      // 성공 응답 시뮬레이션
+      return {
+        success: true,
+        message: '게시글이 복원되었습니다.',
+        article: {
+          id,
+          isDeleted: false,
+          updatedAt: new Date()
+        }
+      };
+    } catch (error) {
+      console.error('게시글 복원 중 오류:', error);
+      throw error;
+    }
   }
 };
 

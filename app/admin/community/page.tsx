@@ -38,9 +38,18 @@ import {
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
   Delete as DeleteIcon,
+  DeleteForever as DeleteForeverIcon,
+  DeleteSweep as DeleteSweepIcon,
+  Restore as RestoreIcon,
   Report as ReportIcon,
   Comment as CommentIcon,
-  Warning as WarningIcon
+  Warning as WarningIcon,
+  Forum as ForumIcon,
+  Article as ArticleIcon,
+  ReportProblem as ReportProblemIcon,
+  Dashboard as DashboardIcon,
+  FilterList as FilterListIcon,
+  Refresh as RefreshIcon
 } from '@mui/icons-material';
 
 // 탭 패널 컴포넌트
@@ -60,7 +69,22 @@ function TabPanel(props: {
       {...other}
     >
       {value === index && (
-        <Box sx={{ p: 3 }}>
+        <Box
+          sx={{
+            p: 3,
+            animation: value === index ? 'fadeIn 0.5s ease-in-out' : 'none',
+            '@keyframes fadeIn': {
+              '0%': {
+                opacity: 0,
+                transform: 'translateY(10px)'
+              },
+              '100%': {
+                opacity: 1,
+                transform: 'translateY(0)'
+              }
+            }
+          }}
+        >
           {children}
         </Box>
       )}
@@ -211,38 +235,105 @@ function ArticleList() {
   return (
     <Box>
       {/* 필터 및 액션 버튼 */}
-      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <FormControl variant="outlined" size="small" sx={{ minWidth: 200 }}>
-          <InputLabel id="filter-label">필터</InputLabel>
-          <Select
-            labelId="filter-label"
-            value={filter}
-            onChange={handleFilterChange}
-            label="필터"
+      <Box
+        sx={{
+          mb: 3,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          backgroundColor: 'rgba(0, 0, 0, 0.02)',
+          borderRadius: 2,
+          p: 2,
+          boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.05)'
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <FormControl
+            variant="outlined"
+            size="small"
+            sx={{
+              minWidth: 200,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                backgroundColor: '#fff',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                '&:hover': {
+                  boxShadow: '0 2px 5px rgba(0, 0, 0, 0.15)'
+                }
+              }
+            }}
           >
-            <MenuItem value="all">전체 게시글</MenuItem>
-            <MenuItem value="reported">신고된 게시글</MenuItem>
-            <MenuItem value="blinded">블라인드 게시글</MenuItem>
-          </Select>
-        </FormControl>
+            <InputLabel id="filter-label">
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <FilterListIcon fontSize="small" />
+                필터
+              </Box>
+            </InputLabel>
+            <Select
+              labelId="filter-label"
+              value={filter}
+              onChange={handleFilterChange}
+              label={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <FilterListIcon fontSize="small" />
+                  필터
+                </Box>
+              }
+            >
+              <MenuItem value="all">전체 게시글</MenuItem>
+              <MenuItem value="reported">신고된 게시글</MenuItem>
+              <MenuItem value="blinded">블라인드 게시글</MenuItem>
+            </Select>
+          </FormControl>
+
+          <Button
+            variant="outlined"
+            color="primary"
+            onClick={fetchArticles}
+            startIcon={<RefreshIcon />}
+            sx={{
+              borderRadius: 2,
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+              '&:hover': {
+                boxShadow: '0 2px 5px rgba(0, 0, 0, 0.15)'
+              }
+            }}
+          >
+            새로고침
+          </Button>
+        </Box>
 
         {selectedArticles.length > 0 && (
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button
-              variant="outlined"
+              variant="contained"
               color="primary"
               onClick={handleOpenBlindDialog}
               startIcon={<VisibilityOffIcon />}
               disabled={actionLoading}
+              sx={{
+                borderRadius: 2,
+                boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
+                '&:hover': {
+                  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.15)'
+                }
+              }}
             >
               블라인드 처리
             </Button>
             <Button
-              variant="outlined"
+              variant="contained"
               color="error"
               onClick={handleOpenDeleteDialog}
               startIcon={<DeleteIcon />}
               disabled={actionLoading}
+              sx={{
+                borderRadius: 2,
+                boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)',
+                '&:hover': {
+                  boxShadow: '0 4px 8px rgba(0, 0, 0, 0.15)'
+                }
+              }}
             >
               삭제
             </Button>
@@ -263,6 +354,614 @@ function ArticleList() {
       )}
 
       {/* 게시글 목록 테이블 */}
+      <TableContainer
+        component={Paper}
+        sx={{
+          borderRadius: 2,
+          overflow: 'hidden',
+          boxShadow: 'none',
+          border: '1px solid rgba(0, 0, 0, 0.08)'
+        }}
+      >
+        <Table>
+          <TableHead>
+            <TableRow sx={{ backgroundColor: 'rgba(0, 0, 0, 0.03)' }}>
+              <TableCell
+                padding="checkbox"
+                sx={{
+                  borderBottom: '2px solid rgba(0, 0, 0, 0.1)',
+                  py: 1.5
+                }}
+              >
+                <Checkbox
+                  checked={articles.length > 0 && selectedArticles.length === articles.length}
+                  indeterminate={selectedArticles.length > 0 && selectedArticles.length < articles.length}
+                  onChange={handleSelectAll}
+                  sx={{
+                    '&.Mui-checked': {
+                      color: 'primary.main',
+                    },
+                    '&.MuiCheckbox-indeterminate': {
+                      color: 'primary.main',
+                    }
+                  }}
+                />
+              </TableCell>
+              <TableCell sx={{ fontWeight: 600, borderBottom: '2px solid rgba(0, 0, 0, 0.1)', py: 1.5 }}>작성자</TableCell>
+              <TableCell sx={{ fontWeight: 600, borderBottom: '2px solid rgba(0, 0, 0, 0.1)', py: 1.5 }}>내용</TableCell>
+              <TableCell sx={{ fontWeight: 600, borderBottom: '2px solid rgba(0, 0, 0, 0.1)', py: 1.5 }}>댓글</TableCell>
+              <TableCell sx={{ fontWeight: 600, borderBottom: '2px solid rgba(0, 0, 0, 0.1)', py: 1.5 }}>신고</TableCell>
+              <TableCell sx={{ fontWeight: 600, borderBottom: '2px solid rgba(0, 0, 0, 0.1)', py: 1.5 }}>상태</TableCell>
+              <TableCell sx={{ fontWeight: 600, borderBottom: '2px solid rgba(0, 0, 0, 0.1)', py: 1.5 }}>작성일</TableCell>
+              <TableCell sx={{ fontWeight: 600, borderBottom: '2px solid rgba(0, 0, 0, 0.1)', py: 1.5 }}>액션</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={8} align="center" sx={{ py: 5 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                    <CircularProgress size={32} sx={{ color: 'primary.main' }} />
+                    <Typography variant="body2" color="text.secondary">데이터를 불러오는 중...</Typography>
+                  </Box>
+                </TableCell>
+              </TableRow>
+            ) : articles.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} align="center" sx={{ py: 5 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                    <ArticleIcon sx={{ fontSize: 48, color: 'text.disabled' }} />
+                    <Typography variant="body1" color="text.secondary">게시글이 없습니다.</Typography>
+                  </Box>
+                </TableCell>
+              </TableRow>
+            ) : (
+              articles.map((article, index) => (
+                <TableRow
+                  key={article.id}
+                  sx={{
+                    '&:hover': {
+                      backgroundColor: 'rgba(0, 0, 0, 0.02)'
+                    },
+                    backgroundColor: index % 2 === 0 ? 'white' : 'rgba(0, 0, 0, 0.01)',
+                    transition: 'background-color 0.2s'
+                  }}
+                >
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      checked={selectedArticles.includes(article.id)}
+                      onChange={() => handleSelectArticle(article.id)}
+                      sx={{
+                        '&.Mui-checked': {
+                          color: 'primary.main',
+                        }
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                      {article.isAnonymous ? (
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>익명</Typography>
+                      ) : (
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>{article.nickname}</Typography>
+                      )}
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                        {article.email}
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        maxWidth: 300,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        ...(article.isBlinded && { color: 'text.disabled', textDecoration: 'line-through' }),
+                        cursor: 'pointer',
+                        '&:hover': {
+                          color: 'primary.main'
+                        },
+                        transition: 'color 0.2s'
+                      }}
+                      onClick={() => router.push(`/admin/community/${article.id}`)}
+                    >
+                      {article.emoji} {article.content}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <CommentIcon fontSize="small" color="action" />
+                      <Typography variant="body2">{article.commentCount}</Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    {article.reportCount > 0 ? (
+                      <Chip
+                        icon={<ReportIcon />}
+                        label={article.reportCount}
+                        color="error"
+                        size="small"
+                        sx={{
+                          fontWeight: 500,
+                          borderRadius: '12px',
+                          '& .MuiChip-icon': {
+                            fontSize: '0.8rem'
+                          }
+                        }}
+                      />
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">0</Typography>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {article.isBlinded ? (
+                      <Chip
+                        label="블라인드"
+                        color="warning"
+                        size="small"
+                        sx={{
+                          fontWeight: 500,
+                          borderRadius: '12px'
+                        }}
+                      />
+                    ) : article.isDeleted ? (
+                      <Chip
+                        label="삭제됨"
+                        color="error"
+                        size="small"
+                        sx={{
+                          fontWeight: 500,
+                          borderRadius: '12px'
+                        }}
+                      />
+                    ) : (
+                      <Chip
+                        label="정상"
+                        color="success"
+                        size="small"
+                        sx={{
+                          fontWeight: 500,
+                          borderRadius: '12px'
+                        }}
+                      />
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">
+                      {new Date(article.createdAt).toLocaleDateString()}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      <Tooltip title="상세 보기">
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={() => router.push(`/admin/community/${article.id}`)}
+                          sx={{
+                            backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                            '&:hover': {
+                              backgroundColor: 'rgba(33, 150, 243, 0.2)'
+                            }
+                          }}
+                        >
+                          <VisibilityIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title={article.isBlinded ? "블라인드 해제" : "블라인드"}>
+                        <IconButton
+                          size="small"
+                          color={article.isBlinded ? "success" : "warning"}
+                          onClick={() => {
+                            setSelectedArticles([article.id]);
+                            setBlindReason(article.blindReason || '');
+                            setOpenBlindDialog(true);
+                          }}
+                          sx={{
+                            backgroundColor: article.isBlinded
+                              ? 'rgba(76, 175, 80, 0.1)'
+                              : 'rgba(255, 152, 0, 0.1)',
+                            '&:hover': {
+                              backgroundColor: article.isBlinded
+                                ? 'rgba(76, 175, 80, 0.2)'
+                                : 'rgba(255, 152, 0, 0.2)'
+                            }
+                          }}
+                        >
+                          {article.isBlinded ? (
+                            <VisibilityIcon fontSize="small" />
+                          ) : (
+                            <VisibilityOffIcon fontSize="small" />
+                          )}
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="삭제">
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => {
+                            setSelectedArticles([article.id]);
+                            setOpenDeleteDialog(true);
+                          }}
+                          sx={{
+                            backgroundColor: 'rgba(244, 67, 54, 0.1)',
+                            '&:hover': {
+                              backgroundColor: 'rgba(244, 67, 54, 0.2)'
+                            }
+                          }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* 페이지네이션 */}
+      <TablePagination
+        component={Paper}
+        count={totalCount}
+        page={page}
+        onPageChange={handleChangePage}
+        rowsPerPage={rowsPerPage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        rowsPerPageOptions={[5, 10, 25, 50]}
+        labelRowsPerPage="페이지당 행 수:"
+        sx={{
+          mt: 2,
+          borderRadius: 2,
+          boxShadow: 'none',
+          border: '1px solid rgba(0, 0, 0, 0.08)',
+          '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+            margin: 0
+          },
+          '& .MuiTablePagination-select': {
+            backgroundColor: 'rgba(0, 0, 0, 0.02)',
+            borderRadius: 1,
+            p: 0.5
+          },
+          '& .MuiTablePagination-actions': {
+            '& .MuiIconButton-root': {
+              backgroundColor: 'rgba(0, 0, 0, 0.02)',
+              borderRadius: 1,
+              mx: 0.5,
+              '&:hover': {
+                backgroundColor: 'rgba(0, 0, 0, 0.05)'
+              }
+            }
+          }
+        }}
+      />
+
+      {/* 블라인드 처리 다이얼로그 */}
+      <Dialog
+        open={openBlindDialog}
+        onClose={handleCloseBlindDialog}
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            maxWidth: 500
+          }
+        }}
+      >
+        <DialogTitle sx={{
+          borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
+          py: 2,
+          backgroundColor: 'rgba(0, 0, 0, 0.02)'
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <VisibilityOffIcon color="warning" />
+            <Typography variant="h6">게시글 블라인드 처리</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3, pb: 2, px: 3 }}>
+          <Typography variant="body1" sx={{ mb: 3 }}>
+            선택한 <strong>{selectedArticles.length}개</strong>의 게시글을 블라인드 처리하시겠습니까?
+          </Typography>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="블라인드 사유"
+            fullWidth
+            variant="outlined"
+            value={blindReason}
+            onChange={(e) => setBlindReason(e.target.value)}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                '&:hover fieldset': {
+                  borderColor: 'primary.main',
+                },
+              }
+            }}
+            placeholder="블라인드 처리 사유를 입력해주세요"
+            helperText="사용자에게 표시될 블라인드 처리 사유입니다"
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0, 0, 0, 0.08)' }}>
+          <Button
+            onClick={handleCloseBlindDialog}
+            disabled={actionLoading}
+            sx={{
+              borderRadius: 2,
+              px: 2
+            }}
+          >
+            취소
+          </Button>
+          <Button
+            onClick={() => handleBlindArticles(true)}
+            color="warning"
+            variant="contained"
+            disabled={actionLoading}
+            sx={{
+              borderRadius: 2,
+              px: 2,
+              boxShadow: '0 2px 8px rgba(255, 152, 0, 0.2)'
+            }}
+          >
+            {actionLoading ? <CircularProgress size={24} /> : '블라인드 처리'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 삭제 다이얼로그 */}
+      <Dialog open={openDeleteDialog} onClose={handleCloseDeleteDialog}>
+        <DialogTitle>게시글 삭제</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1">
+            선택한 {selectedArticles.length}개의 게시글을 삭제하시겠습니까?
+          </Typography>
+          <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+            <WarningIcon fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
+            이 작업은 되돌릴 수 없습니다.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteDialog} disabled={actionLoading}>
+            취소
+          </Button>
+          <Button
+            onClick={handleDeleteArticles}
+            color="error"
+            disabled={actionLoading}
+          >
+            {actionLoading ? <CircularProgress size={24} /> : '삭제'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
+}
+
+// 휴지통 컴포넌트
+function TrashList() {
+  const router = useRouter();
+  const [articles, setArticles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
+  const [selectedArticles, setSelectedArticles] = useState<string[]>([]);
+  const [openRestoreDialog, setOpenRestoreDialog] = useState(false);
+  const [openPermanentDeleteDialog, setOpenPermanentDeleteDialog] = useState(false);
+  const [openEmptyTrashDialog, setOpenEmptyTrashDialog] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // 휴지통 게시글 목록 조회
+  const fetchTrashArticles = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await communityService.getTrashArticles(page + 1, rowsPerPage);
+      setArticles(response.items || []);
+      setTotalCount(response.total || 0);
+    } catch (error) {
+      console.error('휴지통 게시글 목록 조회 중 오류:', error);
+      setError('휴지통 게시글 목록을 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 페이지 변경 시
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  // 페이지당 행 수 변경 시
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  // 게시글 선택 시
+  const handleSelectArticle = (id: string) => {
+    setSelectedArticles(prev => {
+      if (prev.includes(id)) {
+        return prev.filter(articleId => articleId !== id);
+      } else {
+        return [...prev, id];
+      }
+    });
+  };
+
+  // 전체 선택/해제
+  const handleSelectAll = () => {
+    if (selectedArticles.length === articles.length) {
+      setSelectedArticles([]);
+    } else {
+      setSelectedArticles(articles.map(article => article.id));
+    }
+  };
+
+  // 복원 다이얼로그 열기
+  const handleOpenRestoreDialog = () => {
+    setOpenRestoreDialog(true);
+  };
+
+  // 복원 다이얼로그 닫기
+  const handleCloseRestoreDialog = () => {
+    setOpenRestoreDialog(false);
+  };
+
+  // 영구 삭제 다이얼로그 열기
+  const handleOpenPermanentDeleteDialog = () => {
+    setOpenPermanentDeleteDialog(true);
+  };
+
+  // 영구 삭제 다이얼로그 닫기
+  const handleClosePermanentDeleteDialog = () => {
+    setOpenPermanentDeleteDialog(false);
+  };
+
+  // 휴지통 비우기 다이얼로그 열기
+  const handleOpenEmptyTrashDialog = () => {
+    setOpenEmptyTrashDialog(true);
+  };
+
+  // 휴지통 비우기 다이얼로그 닫기
+  const handleCloseEmptyTrashDialog = () => {
+    setOpenEmptyTrashDialog(false);
+  };
+
+  // 게시글 복원
+  const handleRestoreArticles = async () => {
+    try {
+      setActionLoading(true);
+      for (const id of selectedArticles) {
+        await communityService.restoreArticle(id);
+      }
+      setSuccessMessage(`선택한 게시글을 복원했습니다.`);
+      setSelectedArticles([]);
+      fetchTrashArticles();
+      handleCloseRestoreDialog();
+    } catch (error) {
+      console.error('게시글 복원 중 오류:', error);
+      setError('게시글 복원 중 오류가 발생했습니다.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // 게시글 영구 삭제
+  const handlePermanentDeleteArticles = async () => {
+    try {
+      setActionLoading(true);
+      for (const id of selectedArticles) {
+        await communityService.permanentDeleteArticle(id);
+      }
+      setSuccessMessage('선택한 게시글을 영구 삭제했습니다.');
+      setSelectedArticles([]);
+      fetchTrashArticles();
+      handleClosePermanentDeleteDialog();
+    } catch (error) {
+      console.error('게시글 영구 삭제 중 오류:', error);
+      setError('게시글 영구 삭제 중 오류가 발생했습니다.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // 휴지통 비우기
+  const handleEmptyTrash = async () => {
+    try {
+      setActionLoading(true);
+      await communityService.emptyTrash();
+      setSuccessMessage('휴지통을 비웠습니다.');
+      setSelectedArticles([]);
+      fetchTrashArticles();
+      handleCloseEmptyTrashDialog();
+    } catch (error) {
+      console.error('휴지통 비우기 중 오류:', error);
+      setError('휴지통 비우기 중 오류가 발생했습니다.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // 성공 메시지 초기화
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  // 휴지통 게시글 목록 조회
+  useEffect(() => {
+    fetchTrashArticles();
+  }, [page, rowsPerPage]);
+
+  return (
+    <Box>
+      {/* 액션 버튼 */}
+      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="h6">
+          삭제된 게시글 ({totalCount})
+        </Typography>
+
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          {selectedArticles.length > 0 ? (
+            <>
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={handleOpenRestoreDialog}
+                startIcon={<RestoreIcon />}
+                disabled={actionLoading}
+              >
+                복원
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={handleOpenPermanentDeleteDialog}
+                startIcon={<DeleteForeverIcon />}
+                disabled={actionLoading}
+              >
+                영구 삭제
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="outlined"
+              color="error"
+              onClick={handleOpenEmptyTrashDialog}
+              startIcon={<DeleteSweepIcon />}
+              disabled={actionLoading || totalCount === 0}
+            >
+              휴지통 비우기
+            </Button>
+          )}
+        </Box>
+      </Box>
+
+      {/* 성공/오류 메시지 */}
+      {successMessage && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          {successMessage}
+        </Alert>
+      )}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      {/* 휴지통 게시글 목록 테이블 */}
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -277,23 +976,21 @@ function ArticleList() {
               <TableCell>작성자</TableCell>
               <TableCell>내용</TableCell>
               <TableCell>댓글</TableCell>
-              <TableCell>신고</TableCell>
-              <TableCell>상태</TableCell>
-              <TableCell>작성일</TableCell>
+              <TableCell>삭제일</TableCell>
               <TableCell>액션</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={8} align="center">
+                <TableCell colSpan={6} align="center">
                   <CircularProgress size={24} sx={{ my: 2 }} />
                 </TableCell>
               </TableRow>
             ) : articles.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} align="center">
-                  게시글이 없습니다.
+                <TableCell colSpan={6} align="center">
+                  휴지통이 비어 있습니다.
                 </TableCell>
               </TableRow>
             ) : (
@@ -323,7 +1020,8 @@ function ArticleList() {
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
-                        ...(article.isBlinded && { color: 'text.disabled', textDecoration: 'line-through' })
+                        color: 'text.disabled',
+                        textDecoration: 'line-through'
                       }}
                     >
                       {article.emoji} {article.content}
@@ -331,66 +1029,31 @@ function ArticleList() {
                   </TableCell>
                   <TableCell>{article.commentCount}</TableCell>
                   <TableCell>
-                    {article.reportCount > 0 ? (
-                      <Chip
-                        icon={<ReportIcon />}
-                        label={article.reportCount}
-                        color="error"
-                        size="small"
-                      />
-                    ) : (
-                      0
-                    )}
+                    {article.deletedAt ? new Date(article.deletedAt).toLocaleDateString() : new Date(article.updatedAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
-                    {article.isBlinded ? (
-                      <Chip label="블라인드" color="warning" size="small" />
-                    ) : article.isDeleted ? (
-                      <Chip label="삭제됨" color="error" size="small" />
-                    ) : (
-                      <Chip label="정상" color="success" size="small" />
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {new Date(article.createdAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    <Tooltip title="상세 보기">
+                    <Tooltip title="복원">
                       <IconButton
                         size="small"
                         color="primary"
-                        onClick={() => router.push(`/admin/community/${article.id}`)}
-                      >
-                        <VisibilityIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title={article.isBlinded ? "블라인드 해제" : "블라인드"}>
-                      <IconButton
-                        size="small"
-                        color={article.isBlinded ? "success" : "warning"}
                         onClick={() => {
                           setSelectedArticles([article.id]);
-                          setBlindReason(article.blindReason || '');
-                          setOpenBlindDialog(true);
+                          setOpenRestoreDialog(true);
                         }}
                       >
-                        {article.isBlinded ? (
-                          <VisibilityIcon fontSize="small" />
-                        ) : (
-                          <VisibilityOffIcon fontSize="small" />
-                        )}
+                        <RestoreIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
-                    <Tooltip title="삭제">
+                    <Tooltip title="영구 삭제">
                       <IconButton
                         size="small"
                         color="error"
                         onClick={() => {
                           setSelectedArticles([article.id]);
-                          setOpenDeleteDialog(true);
+                          setOpenPermanentDeleteDialog(true);
                         }}
                       >
-                        <DeleteIcon fontSize="small" />
+                        <DeleteForeverIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
                   </TableCell>
@@ -413,59 +1076,76 @@ function ArticleList() {
         labelRowsPerPage="페이지당 행 수:"
       />
 
-      {/* 블라인드 처리 다이얼로그 */}
-      <Dialog open={openBlindDialog} onClose={handleCloseBlindDialog}>
-        <DialogTitle>게시글 블라인드 처리</DialogTitle>
+      {/* 복원 다이얼로그 */}
+      <Dialog open={openRestoreDialog} onClose={handleCloseRestoreDialog}>
+        <DialogTitle>게시글 복원</DialogTitle>
         <DialogContent>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            선택한 {selectedArticles.length}개의 게시글을 블라인드 처리하시겠습니까?
+          <Typography variant="body1">
+            선택한 {selectedArticles.length}개의 게시글을 복원하시겠습니까?
           </Typography>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="블라인드 사유"
-            fullWidth
-            variant="outlined"
-            value={blindReason}
-            onChange={(e) => setBlindReason(e.target.value)}
-          />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseBlindDialog} disabled={actionLoading}>
+          <Button onClick={handleCloseRestoreDialog} disabled={actionLoading}>
             취소
           </Button>
           <Button
-            onClick={() => handleBlindArticles(true)}
-            color="warning"
+            onClick={handleRestoreArticles}
+            color="primary"
             disabled={actionLoading}
           >
-            {actionLoading ? <CircularProgress size={24} /> : '블라인드 처리'}
+            {actionLoading ? <CircularProgress size={24} /> : '복원'}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* 삭제 다이얼로그 */}
-      <Dialog open={openDeleteDialog} onClose={handleCloseDeleteDialog}>
-        <DialogTitle>게시글 삭제</DialogTitle>
+      {/* 영구 삭제 다이얼로그 */}
+      <Dialog open={openPermanentDeleteDialog} onClose={handleClosePermanentDeleteDialog}>
+        <DialogTitle>게시글 영구 삭제</DialogTitle>
         <DialogContent>
           <Typography variant="body1">
-            선택한 {selectedArticles.length}개의 게시글을 삭제하시겠습니까?
+            선택한 {selectedArticles.length}개의 게시글을 영구적으로 삭제하시겠습니까?
           </Typography>
           <Typography variant="body2" color="error" sx={{ mt: 1 }}>
             <WarningIcon fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
-            이 작업은 되돌릴 수 없습니다.
+            이 작업은 되돌릴 수 없으며, 관련된 모든 댓글과 좋아요도 함께 삭제됩니다.
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseDeleteDialog} disabled={actionLoading}>
+          <Button onClick={handleClosePermanentDeleteDialog} disabled={actionLoading}>
             취소
           </Button>
           <Button
-            onClick={handleDeleteArticles}
+            onClick={handlePermanentDeleteArticles}
             color="error"
             disabled={actionLoading}
           >
-            {actionLoading ? <CircularProgress size={24} /> : '삭제'}
+            {actionLoading ? <CircularProgress size={24} /> : '영구 삭제'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 휴지통 비우기 다이얼로그 */}
+      <Dialog open={openEmptyTrashDialog} onClose={handleCloseEmptyTrashDialog}>
+        <DialogTitle>휴지통 비우기</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1">
+            휴지통의 모든 게시글을 영구적으로 삭제하시겠습니까?
+          </Typography>
+          <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+            <WarningIcon fontSize="small" sx={{ verticalAlign: 'middle', mr: 0.5 }} />
+            이 작업은 되돌릴 수 없으며, 관련된 모든 댓글과 좋아요도 함께 삭제됩니다.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseEmptyTrashDialog} disabled={actionLoading}>
+            취소
+          </Button>
+          <Button
+            onClick={handleEmptyTrash}
+            color="error"
+            disabled={actionLoading}
+          >
+            {actionLoading ? <CircularProgress size={24} /> : '휴지통 비우기'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -835,8 +1515,18 @@ export default function AdminCommunity() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        flexDirection: 'column',
+        gap: 2
+      }}>
+        <CircularProgress color="primary" />
+        <Typography variant="body1" color="text.secondary">
+          로딩 중...
+        </Typography>
       </Box>
     );
   }
@@ -846,25 +1536,102 @@ export default function AdminCommunity() {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        커뮤니티 관리
-      </Typography>
-
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={tabValue} onChange={handleTabChange} aria-label="community management tabs">
-          <Tab label="게시글 관리" />
-          <Tab label="신고 관리" />
-        </Tabs>
+    <Box sx={{
+      p: 4,
+      maxWidth: '100%',
+      background: 'linear-gradient(to right bottom, #ffffff, #f8f9fa)',
+      borderRadius: 2,
+      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
+      minHeight: 'calc(100vh - 100px)'
+    }}>
+      <Box sx={{
+        display: 'flex',
+        alignItems: 'center',
+        mb: 4,
+        pb: 2,
+        borderBottom: '1px solid rgba(0, 0, 0, 0.06)'
+      }}>
+        <ForumIcon sx={{ fontSize: 36, mr: 2, color: 'primary.main' }} />
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 600,
+            background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent'
+          }}
+        >
+          커뮤니티 관리
+        </Typography>
       </Box>
 
-      <TabPanel value={tabValue} index={0}>
-        <ArticleList />
-      </TabPanel>
+      <Paper
+        elevation={0}
+        sx={{
+          borderRadius: 2,
+          overflow: 'hidden',
+          mb: 4,
+          boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)'
+        }}
+      >
+        <Tabs
+          value={tabValue}
+          onChange={handleTabChange}
+          aria-label="community management tabs"
+          variant="fullWidth"
+          sx={{
+            '& .MuiTabs-indicator': {
+              height: 3,
+              borderRadius: '3px 3px 0 0'
+            },
+            '& .MuiTab-root': {
+              py: 2,
+              fontWeight: 500,
+              transition: 'all 0.2s',
+              '&:hover': {
+                backgroundColor: 'rgba(0, 0, 0, 0.02)'
+              }
+            }
+          }}
+        >
+          <Tab
+            label="게시글 관리"
+            icon={<ArticleIcon />}
+            iconPosition="start"
+            sx={{ borderRight: 1, borderColor: 'divider' }}
+          />
+          <Tab
+            label="신고 관리"
+            icon={<ReportProblemIcon />}
+            iconPosition="start"
+            sx={{ borderRight: 1, borderColor: 'divider' }}
+          />
+          <Tab
+            label="휴지통"
+            icon={<DeleteIcon />}
+            iconPosition="start"
+          />
+        </Tabs>
+      </Paper>
 
-      <TabPanel value={tabValue} index={1}>
-        <ReportList />
-      </TabPanel>
+      <Box sx={{
+        backgroundColor: '#fff',
+        borderRadius: 2,
+        p: 0,
+        boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)'
+      }}>
+        <TabPanel value={tabValue} index={0}>
+          <ArticleList />
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={1}>
+          <ReportList />
+        </TabPanel>
+
+        <TabPanel value={tabValue} index={2}>
+          <TrashList />
+        </TabPanel>
+      </Box>
     </Box>
   );
 }
