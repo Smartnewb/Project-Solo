@@ -49,7 +49,9 @@ import {
   ReportProblem as ReportProblemIcon,
   Dashboard as DashboardIcon,
   FilterList as FilterListIcon,
-  Refresh as RefreshIcon
+  Refresh as RefreshIcon,
+  CalendarMonth as CalendarMonthIcon,
+  CalendarToday as CalendarTodayIcon
 } from '@mui/icons-material';
 
 // 탭 패널 컴포넌트
@@ -105,18 +107,52 @@ function ArticleList() {
   const [selectedArticles, setSelectedArticles] = useState<string[]>([]);
   const [openBlindDialog, setOpenBlindDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [openDateFilterDialog, setOpenDateFilterDialog] = useState(false);
   const [blindReason, setBlindReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<{
+    startDate: Date | null;
+    endDate: Date | null;
+  }>({
+    startDate: null,
+    endDate: null
+  });
 
   // 게시글 목록 조회
   const fetchArticles = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await communityService.getArticles(filter, page + 1, rowsPerPage);
-      setArticles(response.items || []);
-      setTotalCount(response.total || 0);
+      const response = await communityService.getArticles(
+        filter,
+        page + 1,
+        rowsPerPage,
+        dateRange.startDate,
+        dateRange.endDate
+      );
+
+      // 날짜 필터링이 백엔드에서 지원되지 않는 경우, 프론트엔드에서 필터링
+      let filteredArticles = response.items || [];
+
+      if (dateRange.startDate || dateRange.endDate) {
+        filteredArticles = filteredArticles.filter(article => {
+          const articleDate = new Date(article.createdAt);
+
+          if (dateRange.startDate && dateRange.endDate) {
+            return articleDate >= dateRange.startDate && articleDate <= dateRange.endDate;
+          } else if (dateRange.startDate) {
+            return articleDate >= dateRange.startDate;
+          } else if (dateRange.endDate) {
+            return articleDate <= dateRange.endDate;
+          }
+
+          return true;
+        });
+      }
+
+      setArticles(filteredArticles);
+      setTotalCount(filteredArticles.length || 0);
     } catch (error) {
       console.error('게시글 목록 조회 중 오류:', error);
       setError('게시글 목록을 불러오는 중 오류가 발생했습니다.');
@@ -181,6 +217,34 @@ function ArticleList() {
   // 삭제 다이얼로그 닫기
   const handleCloseDeleteDialog = () => {
     setOpenDeleteDialog(false);
+  };
+
+  // 날짜 필터 다이얼로그 열기
+  const handleOpenDateFilterDialog = () => {
+    setOpenDateFilterDialog(true);
+  };
+
+  // 날짜 필터 다이얼로그 닫기
+  const handleCloseDateFilterDialog = () => {
+    setOpenDateFilterDialog(false);
+  };
+
+  // 날짜 필터 적용
+  const handleApplyDateFilter = () => {
+    setPage(0);
+    fetchArticles();
+    handleCloseDateFilterDialog();
+  };
+
+  // 날짜 필터 초기화
+  const handleResetDateFilter = () => {
+    setDateRange({
+      startDate: null,
+      endDate: null
+    });
+    setPage(0);
+    fetchArticles();
+    handleCloseDateFilterDialog();
   };
 
   // 블라인드 처리
@@ -285,6 +349,30 @@ function ArticleList() {
               <MenuItem value="blinded">블라인드 게시글</MenuItem>
             </Select>
           </FormControl>
+
+          <Button
+            variant="outlined"
+            color="primary"
+            onClick={handleOpenDateFilterDialog}
+            startIcon={<CalendarMonthIcon />}
+            sx={{
+              borderRadius: 2,
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+              '&:hover': {
+                boxShadow: '0 2px 5px rgba(0, 0, 0, 0.15)'
+              },
+              ...(dateRange.startDate || dateRange.endDate ? {
+                backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                borderColor: 'primary.main',
+                color: 'primary.main',
+                fontWeight: 'bold'
+              } : {})
+            }}
+          >
+            {dateRange.startDate || dateRange.endDate ?
+              `${dateRange.startDate ? new Date(dateRange.startDate).toLocaleDateString() : '전체'} ~ ${dateRange.endDate ? new Date(dateRange.endDate).toLocaleDateString() : '전체'}` :
+              '날짜 필터'}
+          </Button>
 
           <Button
             variant="outlined"
@@ -443,9 +531,34 @@ function ArticleList() {
                       {article.isAnonymous ? (
                         <Typography variant="body2" sx={{ fontWeight: 500 }}>익명</Typography>
                       ) : (
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>{article.nickname}</Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            '&:hover': {
+                              color: 'primary.main',
+                              textDecoration: 'underline'
+                            }
+                          }}
+                          onClick={() => router.push(`/admin/users`)}
+                        >
+                          {article.nickname}
+                        </Typography>
                       )}
-                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{
+                          fontSize: '0.7rem',
+                          cursor: 'pointer',
+                          '&:hover': {
+                            color: 'primary.main',
+                            textDecoration: 'underline'
+                          }
+                        }}
+                        onClick={() => router.push(`/admin/users`)}
+                      >
                         {article.email}
                       </Typography>
                     </Box>
@@ -471,7 +584,22 @@ function ArticleList() {
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        cursor: 'pointer',
+                        borderRadius: 1,
+                        p: 0.5,
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                          color: 'primary.main'
+                        }
+                      }}
+                      onClick={() => router.push(`/admin/community/${article.id}?tab=comments`)}
+                    >
                       <CommentIcon fontSize="small" color="action" />
                       <Typography variant="body2">{article.commentCount}</Typography>
                     </Box>
@@ -529,9 +657,14 @@ function ArticleList() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2">
-                      {new Date(article.createdAt).toLocaleDateString()}
-                    </Typography>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {new Date(article.createdAt).toLocaleDateString()}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
+                        {new Date(article.createdAt).toLocaleTimeString()}
+                      </Typography>
+                    </Box>
                   </TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -735,6 +868,208 @@ function ArticleList() {
             disabled={actionLoading}
           >
             {actionLoading ? <CircularProgress size={24} /> : '삭제'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 날짜 필터 다이얼로그 */}
+      <Dialog
+        open={openDateFilterDialog}
+        onClose={handleCloseDateFilterDialog}
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            maxWidth: 500
+          }
+        }}
+      >
+        <DialogTitle sx={{
+          borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
+          py: 2,
+          backgroundColor: 'rgba(0, 0, 0, 0.02)'
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <CalendarMonthIcon color="primary" />
+            <Typography variant="h6">날짜 필터</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 3, pb: 2, px: 3 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Typography variant="body1" sx={{ mb: 1 }}>
+              게시글 작성 날짜 범위를 선택하세요
+            </Typography>
+
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+              <TextField
+                label="시작 날짜"
+                type="date"
+                value={dateRange.startDate ? new Date(dateRange.startDate).toISOString().split('T')[0] : ''}
+                onChange={(e) => {
+                  const date = e.target.value ? new Date(e.target.value) : null;
+                  setDateRange(prev => ({
+                    ...prev,
+                    startDate: date
+                  }));
+                }}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+                fullWidth
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    '&:hover fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                  }
+                }}
+              />
+
+              <Typography variant="body1" sx={{ mx: 1 }}>~</Typography>
+
+              <TextField
+                label="종료 날짜"
+                type="date"
+                value={dateRange.endDate ? new Date(dateRange.endDate).toISOString().split('T')[0] : ''}
+                onChange={(e) => {
+                  const date = e.target.value ? new Date(e.target.value) : null;
+                  // 종료일이 있는 경우 23:59:59로 설정
+                  if (date) {
+                    date.setHours(23, 59, 59, 999);
+                  }
+                  setDateRange(prev => ({
+                    ...prev,
+                    endDate: date
+                  }));
+                }}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+                fullWidth
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    '&:hover fieldset': {
+                      borderColor: 'primary.main',
+                    },
+                  }
+                }}
+              />
+            </Box>
+
+            <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const endOfDay = new Date();
+                  endOfDay.setHours(23, 59, 59, 999);
+                  setDateRange({
+                    startDate: today,
+                    endDate: endOfDay
+                  });
+                }}
+                sx={{ borderRadius: 2, flex: 1 }}
+              >
+                오늘
+              </Button>
+
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => {
+                  const today = new Date();
+                  const yesterday = new Date(today);
+                  yesterday.setDate(yesterday.getDate() - 1);
+                  yesterday.setHours(0, 0, 0, 0);
+                  const endOfYesterday = new Date(today);
+                  endOfYesterday.setDate(endOfYesterday.getDate() - 1);
+                  endOfYesterday.setHours(23, 59, 59, 999);
+                  setDateRange({
+                    startDate: yesterday,
+                    endDate: endOfYesterday
+                  });
+                }}
+                sx={{ borderRadius: 2, flex: 1 }}
+              >
+                어제
+              </Button>
+
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => {
+                  const today = new Date();
+                  const weekAgo = new Date(today);
+                  weekAgo.setDate(weekAgo.getDate() - 7);
+                  weekAgo.setHours(0, 0, 0, 0);
+                  const endOfToday = new Date();
+                  endOfToday.setHours(23, 59, 59, 999);
+                  setDateRange({
+                    startDate: weekAgo,
+                    endDate: endOfToday
+                  });
+                }}
+                sx={{ borderRadius: 2, flex: 1 }}
+              >
+                일주일
+              </Button>
+
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => {
+                  const today = new Date();
+                  const monthAgo = new Date(today);
+                  monthAgo.setMonth(monthAgo.getMonth() - 1);
+                  monthAgo.setHours(0, 0, 0, 0);
+                  const endOfToday = new Date();
+                  endOfToday.setHours(23, 59, 59, 999);
+                  setDateRange({
+                    startDate: monthAgo,
+                    endDate: endOfToday
+                  });
+                }}
+                sx={{ borderRadius: 2, flex: 1 }}
+              >
+                한달
+              </Button>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2, borderTop: '1px solid rgba(0, 0, 0, 0.08)' }}>
+          <Button
+            onClick={handleResetDateFilter}
+            sx={{
+              borderRadius: 2,
+              px: 2
+            }}
+          >
+            초기화
+          </Button>
+          <Button
+            onClick={handleCloseDateFilterDialog}
+            sx={{
+              borderRadius: 2,
+              px: 2
+            }}
+          >
+            취소
+          </Button>
+          <Button
+            onClick={handleApplyDateFilter}
+            color="primary"
+            variant="contained"
+            sx={{
+              borderRadius: 2,
+              px: 2,
+              boxShadow: '0 2px 8px rgba(33, 150, 243, 0.2)'
+            }}
+          >
+            적용
           </Button>
         </DialogActions>
       </Dialog>

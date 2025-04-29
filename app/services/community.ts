@@ -77,13 +77,25 @@ export interface ArticleDetail extends Article {
 // 커뮤니티 관리 API 서비스
 const communityService = {
   // 게시글 목록 조회
-  getArticles: async (filter: 'all' | 'reported' | 'blinded' = 'all', page = 1, limit = 10): Promise<PaginatedResponse<Article>> => {
+  getArticles: async (
+    filter: 'all' | 'reported' | 'blinded' = 'all',
+    page = 1,
+    limit = 10,
+    startDate: Date | null = null,
+    endDate: Date | null = null
+  ): Promise<PaginatedResponse<Article>> => {
     try {
-      console.log('게시글 목록 조회 요청:', { filter, page, limit });
+      console.log('게시글 목록 조회 요청:', { filter, page, limit, startDate, endDate });
 
       // 실제 API 호출 (백엔드 준비되면 주석 해제)
       // const response = await axiosServer.get(`/admin/community/articles`, {
-      //   params: { filter, page, limit }
+      //   params: {
+      //     filter,
+      //     page,
+      //     limit,
+      //     startDate: startDate ? startDate.toISOString() : undefined,
+      //     endDate: endDate ? endDate.toISOString() : undefined
+      //   }
       // });
       // console.log('게시글 목록 조회 응답:', response.data);
       // return response.data;
