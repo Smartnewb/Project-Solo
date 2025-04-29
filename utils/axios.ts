@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // axios 인스턴스 생성
 const axiosServer = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045/api',
   timeout: 15000,  // 15초
   headers: {
     'Content-Type': 'application/json',
