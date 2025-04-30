@@ -268,7 +268,7 @@ function ArticleList() {
   const handleDeleteArticles = async () => {
     try {
       setActionLoading(true);
-      await communityService.bulkDeleteArticles(selectedArticles);
+      await communityService.bulkDeleteArticles(selectedArticles, '관리자에 의한 일괄 삭제');
       setSuccessMessage('선택한 게시글을 삭제했습니다.');
       setSelectedArticles([]);
       fetchArticles();

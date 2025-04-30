@@ -683,7 +683,7 @@ const userAppearance = {
     }
   },
 
-  // 계정 삭제
+  // 계정 삭제 (새로운 API 엔드포인트 사용)
   deleteUser: async (userId: string, reason: string) => {
     try {
       console.log('계정 삭제 요청:', { userId, reason });
@@ -709,7 +709,27 @@ const userAppearance = {
       console.error('계정 삭제 중 오류:', error);
       console.error('오류 상세 정보:', error.response?.data || error.message);
       console.error('오류 상태 코드:', error.response?.status);
-      throw error;
+
+      // 오류 발생 시 다른 API 엔드포인트 시도
+      try {
+        console.log('대체 API 엔드포인트 시도');
+        const alternativeEndpoint = `/admin/users/${userId}`;
+        console.log(`대체 API 엔드포인트: ${alternativeEndpoint}`);
+
+        const response = await axiosServer.delete(alternativeEndpoint, {
+          data: { reason }
+        });
+
+        console.log('대체 API 요청 성공');
+        console.log('계정 삭제 응답:', response.data);
+        return response.data;
+      } catch (alternativeError: any) {
+        console.error('대체 API 요청 실패:', alternativeError);
+        console.error('대체 API 오류 상세 정보:', alternativeError.response?.data || alternativeError.message);
+
+        // 원래 오류 던지기
+        throw error;
+      }
     }
   },
 

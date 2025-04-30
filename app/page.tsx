@@ -16,13 +16,44 @@ export default function Login() {
   useEffect(() => {
     const checkServerStatus = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/health`, {
-          method: 'GET',
-          mode: 'no-cors',
-          cache: 'no-cache',
-        });
-        console.log('서버 상태 확인 응답:', response.status);
-        setServerStatus('online');
+        console.log('백엔드 서버 상태 확인 시작');
+        console.log('API URL:', process.env.NEXT_PUBLIC_API_URL);
+
+        // 여러 엔드포인트 시도
+        const endpoints = ['/health', '/api/health', '/'];
+        let connected = false;
+
+        for (const endpoint of endpoints) {
+          try {
+            console.log(`엔드포인트 시도: ${endpoint}`);
+            const url = `${process.env.NEXT_PUBLIC_API_URL}${endpoint}`;
+            console.log(`전체 URL: ${url}`);
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+            const response = await fetch(url, {
+              method: 'GET',
+              cache: 'no-cache',
+              signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+            console.log(`서버 응답 (${endpoint}):`, response.status);
+
+            connected = true;
+            break;
+          } catch (endpointError) {
+            console.error(`엔드포인트 ${endpoint} 연결 실패:`, endpointError);
+          }
+        }
+
+        if (connected) {
+          console.log('서버 연결 성공');
+          setServerStatus('online');
+        } else {
+          throw new Error('모든 엔드포인트 연결 실패');
+        }
       } catch (error) {
         console.error('서버 연결 확인 중 오류:', error);
         setServerStatus('offline');
@@ -37,11 +68,31 @@ export default function Login() {
     e.preventDefault();
     if (isLoading) return;
 
+    // 서버 상태가 오프라인인 경우
+    if (serverStatus === 'offline') {
+      setError('백엔드 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.');
+      return;
+    }
+
     setError(null);
     setIsLoading(true);
 
     try {
       console.log('로그인 시도 중...', { email: email.trim() });
+
+      // 서버 상태 재확인
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/health`, {
+          method: 'GET',
+          cache: 'no-cache',
+          signal: AbortSignal.timeout(3000) // 3초 타임아웃
+        });
+        console.log('로그인 전 서버 상태 확인:', response.status);
+      } catch (healthError) {
+        console.error('로그인 전 서버 상태 확인 실패:', healthError);
+        throw new Error('서버에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.');
+      }
+
       await login(email.trim(), password);
       console.log('로그인 성공!');
     } catch (err: any) {
@@ -51,8 +102,11 @@ export default function Login() {
       let errorMessage = err.message || '로그인에 실패했습니다.';
 
       // 네트워크 오류인 경우
-      if (err.message?.includes('Network Error')) {
+      if (err.message?.includes('Network Error') ||
+          err.message?.includes('Failed to fetch') ||
+          err.message?.includes('연결할 수 없습니다')) {
         errorMessage = '서버에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.';
+        setServerStatus('offline');
       }
 
       setError(errorMessage);
