@@ -2,15 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 
 export default function AdminLogin() {
+  const router = useRouter();
   const { login, user, loading } = useAdminAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [serverStatus, setServerStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+  const [animationTriggered, setAnimationTriggered] = useState(false);
 
   // 백엔드 서버 상태 확인
   useEffect(() => {
@@ -104,6 +107,15 @@ export default function AdminLogin() {
 
       await login(email.trim(), password);
       console.log('어드민 로그인 성공!');
+
+      // 로그인 성공 시 애니메이션 트리거
+      setAnimationTriggered(true);
+
+      // 애니메이션 후 페이지 이동
+      setTimeout(() => {
+        router.push('/admin/dashboard');
+      }, 2000);
+
     } catch (err: any) {
       console.error('어드민 로그인 중 오류:', err);
 
@@ -119,7 +131,6 @@ export default function AdminLogin() {
       }
 
       setError(errorMessage);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -134,51 +145,88 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[#0f111a] p-4 relative overflow-hidden">
+      {/* 배경 효과 - 움직이는 그리드 */}
+      <div className="absolute inset-0 z-0 opacity-20">
+        <div className="grid-background"></div>
+      </div>
+
+      {/* 로그인 애니메이션 효과 */}
+      {animationTriggered && (
+        <>
+          <div className="glow-effect"></div>
+          <div className="access-granted font-tech">ACCESS GRANTED</div>
+        </>
+      )}
+
+      {/* 메인 콘텐츠 */}
+      <div className="w-full max-w-md z-10">
         <div className="text-center mb-8">
-          <h1 className="text-5xl font-bold text-gray-800">Admin</h1>
-          <p className="text-gray-600 mt-2 text-lg">어드민 로그인</p>
+          <h1 className="text-5xl font-bold text-[#00ffe0] tracking-wider font-tech">SMART NEWBIE</h1>
+          <p className="text-gray-300 mt-2 text-lg font-tech">ACCESS CONTROL TOWER</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-8 space-y-6">
+        <div className="bg-black/30 backdrop-blur-md rounded-lg border border-[#00ffe0]/20 p-8 space-y-6 shadow-glow">
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label className="block text-gray-700 mb-1 text-base">이메일</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
-                placeholder="이메일을 입력하세요"
-                required
-              />
+              <label className="block text-gray-300 mb-1 text-base font-tech">NEURAL ID</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <svg className="w-5 h-5 text-[#00ffe0]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path>
+                  </svg>
+                </div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-10 px-4 py-3 rounded-md bg-black/50 border border-[#00ffe0]/30 text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#00ffe0] focus:border-transparent transition-all duration-300"
+                  placeholder="Enter Neural ID"
+                  required
+                  disabled={animationTriggered}
+                />
+              </div>
             </div>
 
             <div>
-              <label className="block text-gray-700 mb-1 text-base">비밀번호</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent"
-                placeholder="비밀번호를 입력하세요"
-                required
-              />
+              <label className="block text-gray-300 mb-1 text-base font-tech">ACCESS CODE</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <svg className="w-5 h-5 text-[#00ffe0]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                  </svg>
+                </div>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-10 px-4 py-3 rounded-md bg-black/50 border border-[#00ffe0]/30 text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#00ffe0] focus:border-transparent transition-all duration-300"
+                  placeholder="Input Access Code"
+                  required
+                  disabled={animationTriggered}
+                />
+              </div>
             </div>
 
-            {error && <div className="text-red-500 text-sm">{error}</div>}
+            {error && <div className="text-red-400 text-sm font-tech">{error}</div>}
 
             <button
               type="submit"
-              className="w-full py-3 px-4 bg-pink-500 hover:bg-pink-600 text-white font-medium rounded-md transition duration-200 text-lg"
-              disabled={isLoading}
+              className="w-full py-3 px-4 bg-gradient-to-r from-[#00ffe0] to-[#0099ff] text-black font-bold rounded-md transition-all duration-300 hover:shadow-[0_0_15px_rgba(0,255,224,0.7)] text-lg font-tech"
+              disabled={isLoading || animationTriggered}
             >
-              {isLoading ? '로그인 중...' : '로그인'}
+              {isLoading ? 'AUTHENTICATING...' : animationTriggered ? 'ACCESS GRANTED' : 'ENGAGE SYSTEM'}
             </button>
           </form>
 
           {/* 회원가입 링크 제거 - 어드민 전용 로그인 */}
+        </div>
+
+        {/* 시스템 상태 표시 */}
+        <div className="mt-4 text-center">
+          <p className="text-xs text-[#00ffe0]/70 font-tech">
+            SYSTEM STATUS: {serverStatus === 'online' ? 'CONNECTED' : serverStatus === 'offline' ? 'DISCONNECTED' : 'INITIALIZING'}
+          </p>
         </div>
       </div>
     </div>

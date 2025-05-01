@@ -3,6 +3,8 @@
 @tailwind utilities;
 
 @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap');
 
 :root {
   /* Color Variables - Wippy Style */
@@ -402,4 +404,130 @@
   body {
     @apply bg-background;
   }
+}
+
+/* 미래지향적 UI 스타일 */
+.font-tech {
+  font-family: 'Orbitron', 'Rajdhani', sans-serif;
+  letter-spacing: 0.05em;
+}
+
+/* 그리드 배경 효과 */
+.grid-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: 50px 50px;
+  background-image:
+    linear-gradient(to right, rgba(0, 255, 224, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 255, 224, 0.1) 1px, transparent 1px);
+  animation: grid-move 20s linear infinite;
+}
+
+@keyframes grid-move {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 50px 50px;
+  }
+}
+
+/* 글로우 효과 */
+.shadow-glow {
+  box-shadow: 0 0 15px rgba(0, 255, 224, 0.2);
+}
+
+/* 입력 필드 포커스 애니메이션 */
+@keyframes input-focus-glow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 255, 224, 0);
+  }
+  50% {
+    box-shadow: 0 0 10px 2px rgba(0, 255, 224, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 255, 224, 0);
+  }
+}
+
+input:focus {
+  animation: input-focus-glow 2s ease-in-out infinite;
+}
+
+/* 버튼 글로우 효과 */
+@keyframes button-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 255, 224, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 10px 10px rgba(0, 255, 224, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 255, 224, 0);
+  }
+}
+
+button:not(:disabled):hover {
+  animation: button-pulse 1.5s infinite;
+}
+
+/* 로그인 애니메이션 효과 */
+.login-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  overflow: hidden;
+}
+
+.glow-effect {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 2000px;
+  height: 2000px;
+  background: radial-gradient(circle, #00ffe0 0%, transparent 70%);
+  transform: translate(-50%, -50%);
+  animation: expandGlow 1.5s ease-out forwards;
+  opacity: 0.6;
+  z-index: 100;
+}
+
+@keyframes expandGlow {
+  0% {
+    width: 0;
+    height: 0;
+    opacity: 0.7;
+  }
+  100% {
+    width: 2000px;
+    height: 2000px;
+    opacity: 0;
+  }
+}
+
+.access-granted {
+  position: fixed;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #00ffe0;
+  text-shadow: 0 0 10px rgba(0, 255, 224, 0.7);
+  animation: fadeInOut 2s ease-in-out forwards;
+  z-index: 101;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
 }
