@@ -21,6 +21,80 @@ interface FormattedData {
   genderStats: GenderStatItem[];
 }
 
+// 성별 통계 목업 데이터 생성 함수
+const getMockGenderStats = () => {
+  return {
+    maleCount: 60,
+    femaleCount: 60,
+    totalCount: 120,
+    malePercentage: 50,
+    femalePercentage: 50,
+    genderRatio: '1:1'
+  };
+};
+
+// 대학별 통계 목업 데이터 생성 함수
+const getMockUniversityStats = () => {
+  // 대학 목록
+  const universities = [
+    '건양대학교(메디컬캠퍼스)',
+    '대전대학교',
+    '목원대학교',
+    '배재대학교',
+    '우송대학교',
+    '한남대학교',
+    '충남대학교',
+    'KAIST',
+    '한밭대학교',
+    '을지대학교',
+    '대전보건대학교',
+    '대덕대학교'
+  ];
+
+  // 총 회원 수 (임의 설정)
+  const totalCount = 1200;
+
+  // 대학별 통계 데이터 생성
+  const universitiesData = universities.map(uni => {
+    // 임의의 회원 수 생성 (50~300 사이)
+    const totalUsers = Math.floor(Math.random() * 250) + 50;
+
+    // 임의의 성별 비율 생성
+    const maleRatio = Math.random() * 0.6 + 0.2; // 20%~80% 사이
+    const maleUsers = Math.floor(totalUsers * maleRatio);
+    const femaleUsers = totalUsers - maleUsers;
+
+    // 전체 대비 비율 계산
+    const percentage = (totalUsers / totalCount) * 100;
+
+    // 성비 계산 (남:여)
+    const gcdValue = gcd(maleUsers, femaleUsers);
+    const maleRatioSimplified = maleUsers / gcdValue || 0;
+    const femaleRatioSimplified = femaleUsers / gcdValue || 0;
+    const genderRatio = `${maleRatioSimplified}:${femaleRatioSimplified}`;
+
+    return {
+      university: uni,
+      totalUsers,
+      maleUsers,
+      femaleUsers,
+      percentage,
+      genderRatio
+    };
+  });
+
+  return {
+    universities: universitiesData,
+    totalCount
+  };
+};
+
+// 최대공약수 계산 함수 (성비 계산에 사용)
+const gcd = (a: number, b: number): number => {
+  if (!b) return a;
+  return gcd(b, a % b);
+};
+
 const auth = {
   cleanup: () => {
     localStorage.removeItem('admin_access_token');
@@ -83,21 +157,107 @@ const stats = {
   },
   getDailySignupCount: async () => {
     try {
+      console.log('오늘 가입한 회원 수 API 요청 시작');
+
+      // 토큰 확인
+      const token = localStorage.getItem('admin_access_token');
+      if (!token) {
+        console.warn('어드민 토큰이 없습니다. 기본값을 반환합니다.');
+        return { dailySignups: 4 };
+      }
+
+      // API 요청 전 로깅
+      console.log('오늘 가입한 회원 수 API 요청 URL:', '/api/admin/stats/users/daily');
+      console.log('인증 토큰 존재 여부:', !!token);
+
       const response = await axiosServer.get('/api/admin/stats/users/daily');
       console.log('오늘 가입한 회원 수 API 응답:', response.data);
-      return response.data || { dailySignups: 4 };
-    } catch (error) {
-      console.error('오늘 가입한 회원 수 조회 중 오류:', error);
+
+      // 응답 데이터 확인 및 필드명 변환
+      if (response.data) {
+        // 가능한 필드명 확인
+        const possibleFields = ['dailySignups', 'dailyCount', 'count', 'total'];
+
+        // 응답 데이터에서 값 찾기
+        let dailySignups = 4; // 기본값
+
+        for (const field of possibleFields) {
+          if (typeof response.data[field] === 'number') {
+            dailySignups = response.data[field];
+            console.log(`필드 '${field}'에서 값을 찾았습니다:`, dailySignups);
+            break;
+          }
+        }
+
+        // 응답 데이터가 직접 숫자인 경우
+        if (typeof response.data === 'number') {
+          dailySignups = response.data;
+          console.log('응답 데이터가 직접 숫자입니다:', dailySignups);
+        }
+
+        return { dailySignups };
+      }
+
+      return { dailySignups: 4 }; // 기본값 반환
+    } catch (error: any) {
+      console.error('오늘 가입한 회원 수 조회 중 오류:', error.message);
+      if (error.response) {
+        console.error('오류 상태 코드:', error.response.status);
+        console.error('오류 응답 데이터:', error.response.data);
+      }
       return { dailySignups: 4 }; // 오류 발생 시 기본값 반환
     }
   },
   getWeeklySignupCount: async () => {
     try {
+      console.log('이번 주 가입한 회원 수 API 요청 시작');
+
+      // 토큰 확인
+      const token = localStorage.getItem('admin_access_token');
+      if (!token) {
+        console.warn('어드민 토큰이 없습니다. 기본값을 반환합니다.');
+        return { weeklySignups: 12 };
+      }
+
+      // API 요청 전 로깅
+      console.log('이번 주 가입한 회원 수 API 요청 URL:', '/api/admin/stats/users/weekly');
+      console.log('인증 토큰 존재 여부:', !!token);
+
       const response = await axiosServer.get('/api/admin/stats/users/weekly');
       console.log('이번 주 가입한 회원 수 API 응답:', response.data);
-      return response.data || { weeklySignups: 12 };
-    } catch (error) {
-      console.error('이번 주 가입한 회원 수 조회 중 오류:', error);
+
+      // 응답 데이터 확인 및 필드명 변환
+      if (response.data) {
+        // 가능한 필드명 확인
+        const possibleFields = ['weeklySignups', 'weeklyCount', 'count', 'total'];
+
+        // 응답 데이터에서 값 찾기
+        let weeklySignups = 12; // 기본값
+
+        for (const field of possibleFields) {
+          if (typeof response.data[field] === 'number') {
+            weeklySignups = response.data[field];
+            console.log(`필드 '${field}'에서 값을 찾았습니다:`, weeklySignups);
+            break;
+          }
+        }
+
+        // 응답 데이터가 직접 숫자인 경우
+        if (typeof response.data === 'number') {
+          weeklySignups = response.data;
+          console.log('응답 데이터가 직접 숫자입니다:', weeklySignups);
+        }
+
+        return { weeklySignups };
+      }
+
+      return { weeklySignups: 12 }; // 기본값 반환
+    } catch (error: any) {
+      console.error('이번 주 가입한 회원 수 조회 중 오류:', error.message);
+      if (error.response) {
+        console.error('오류 상태 코드:', error.response.status);
+        console.error('오류 응답 데이터:', error.response.data);
+      }
       return { weeklySignups: 12 }; // 오류 발생 시 기본값 반환
     }
   },
@@ -172,38 +332,100 @@ const stats = {
   // 성별 통계 조회
   getGenderStats: async () => {
     try {
+      console.log('성별 통계 API 요청 시작');
+
+      // 토큰 확인
+      const token = localStorage.getItem('admin_access_token');
+      if (!token) {
+        console.warn('어드민 토큰이 없습니다. 기본값을 반환합니다.');
+        return getMockGenderStats();
+      }
+
+      // API 요청 전 로깅
+      console.log('성별 통계 API 요청 URL:', '/api/admin/stats/users/gender');
+      console.log('인증 토큰 존재 여부:', !!token);
+
       const response = await axiosServer.get('/api/admin/stats/users/gender');
       console.log('성별 통계 API 응답:', response.data);
 
-      // 임시 데이터 생성
-      const mockData = {
-        maleCount: 60,
-        femaleCount: 60,
-        totalCount: 120,
-        malePercentage: 50,
-        femalePercentage: 50,
-        genderRatio: '1:1'
-      };
+      // 응답 데이터 확인 및 필드명 변환
+      if (response.data) {
+        // 필드명 매핑 정의
+        const fieldMappings: Record<string, string> = {
+          'male': 'maleCount',
+          'female': 'femaleCount',
+          'total': 'totalCount',
+          'maleRatio': 'malePercentage',
+          'femaleRatio': 'femalePercentage',
+          'ratio': 'genderRatio'
+        };
 
-      return response.data || mockData;
-    } catch (error) {
-      console.error('성별 통계 조회 중 오류:', error);
+        // 변환된 데이터 객체 생성
+        const transformedData: Record<string, any> = {};
 
-      // 오류 발생 시 기본값 반환
-      return {
-        maleCount: 60,
-        femaleCount: 60,
-        totalCount: 120,
-        malePercentage: 50,
-        femalePercentage: 50,
-        genderRatio: '1:1'
-      };
+        // 응답 데이터의 각 필드 확인
+        for (const [apiField, expectedField] of Object.entries(fieldMappings)) {
+          if (response.data[apiField] !== undefined) {
+            transformedData[expectedField] = response.data[apiField];
+            console.log(`필드 '${apiField}'를 '${expectedField}'로 변환했습니다:`, response.data[apiField]);
+          }
+        }
+
+        // 필수 필드가 있는지 확인
+        const requiredFields = ['maleCount', 'femaleCount', 'totalCount'];
+        const hasAllRequiredFields = requiredFields.every(field => transformedData[field] !== undefined);
+
+        if (hasAllRequiredFields) {
+          // 백분율 계산 (없는 경우)
+          if (transformedData.malePercentage === undefined && transformedData.totalCount > 0) {
+            transformedData.malePercentage = (transformedData.maleCount / transformedData.totalCount) * 100;
+          }
+
+          if (transformedData.femalePercentage === undefined && transformedData.totalCount > 0) {
+            transformedData.femalePercentage = (transformedData.femaleCount / transformedData.totalCount) * 100;
+          }
+
+          // 성비 계산 (없는 경우)
+          if (transformedData.genderRatio === undefined) {
+            const gcdValue = gcd(transformedData.maleCount, transformedData.femaleCount);
+            const maleRatio = transformedData.maleCount / gcdValue || 0;
+            const femaleRatio = transformedData.femaleCount / gcdValue || 0;
+            transformedData.genderRatio = `${maleRatio}:${femaleRatio}`;
+          }
+
+          return transformedData;
+        }
+      }
+
+      // 데이터가 없거나 형식이 다른 경우 목업 데이터 반환
+      console.warn('API 응답에 성별 통계 데이터가 없거나 형식이 다릅니다. 기본값을 반환합니다.');
+      return getMockGenderStats();
+    } catch (error: any) {
+      console.error('성별 통계 조회 중 오류:', error.message);
+      if (error.response) {
+        console.error('오류 상태 코드:', error.response.status);
+        console.error('오류 응답 데이터:', error.response.data);
+      }
+      return getMockGenderStats(); // 오류 발생 시 기본값 반환
     }
   },
 
   // 대학별 통계 조회
   getUniversityStats: async () => {
     try {
+      console.log('대학별 통계 조회 시작');
+
+      // 토큰 확인
+      const token = localStorage.getItem('admin_access_token');
+      if (!token) {
+        console.warn('어드민 토큰이 없습니다. 기본값을 반환합니다.');
+        return getMockUniversityStats();
+      }
+
+      // API 요청 전 로깅
+      console.log('대학별 통계 API 요청 URL:', '/api/admin/stats/users/universities');
+      console.log('인증 토큰 존재 여부:', !!token);
+
       const response = await axiosServer.get('/api/admin/stats/users/universities');
       console.log('서비스에서 받은 대학별 통계 데이터:', response.data);
       console.log('서비스에서 받은 데이터 구조:', JSON.stringify(response.data, null, 2));
@@ -222,12 +444,34 @@ const stats = {
         console.log('- 여성 회원수:', firstUni.femaleCount);
         console.log('- 사용자 비율:', firstUni.percentage);
         console.log('- 성비:', firstUni.genderRatio);
+
+        // 필드명 변환
+        const transformedData = {
+          universities: response.data.universities.map(uni => ({
+            university: uni.universityName,
+            totalUsers: uni.totalCount,
+            maleUsers: uni.maleCount,
+            femaleUsers: uni.femaleCount,
+            percentage: uni.percentage,
+            genderRatio: uni.genderRatio
+          })),
+          totalCount: response.data.totalCount
+        };
+
+        console.log('변환된 대학별 통계 데이터:', transformedData);
+        return transformedData;
       }
 
-      return response.data;
-    } catch (error) {
-      console.error('대학별 통계 조회 중 오류:', error);
-      throw error;
+      // 데이터가 없거나 형식이 다른 경우 목업 데이터 반환
+      console.warn('API 응답에 대학별 통계 데이터가 없거나 형식이 다릅니다. 기본값을 반환합니다.');
+      return getMockUniversityStats();
+    } catch (error: any) {
+      console.error('대학별 통계 조회 중 오류:', error.message);
+      if (error.response) {
+        console.error('오류 상태 코드:', error.response.status);
+        console.error('오류 응답 데이터:', error.response.data);
+      }
+      return getMockUniversityStats(); // 오류 발생 시 기본값 반환
     }
   },
 
