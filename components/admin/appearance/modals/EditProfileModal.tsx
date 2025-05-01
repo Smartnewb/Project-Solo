@@ -30,7 +30,7 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import AdminService from '@/app/services/admin';
 import { UserDetail } from '../UserDetailModal';
-import axiosServer from '@/utils/axios';
+import adminAxios from '@/utils/adminAxios';
 
 interface EditProfileModalProps {
   open: boolean;

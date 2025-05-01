@@ -13,6 +13,7 @@ import GenderStatsCard from '@/components/admin/dashboard/GenderStatsCard';
 import UniversityStatsCard from '@/components/admin/dashboard/UniversityStatsCard';
 import UserActivityDashboard from '@/components/admin/dashboard/UserActivityDashboard';
 import SignupStatsDashboard from '@/components/admin/dashboard/SignupStatsDashboard';
+import AdminService from '@/app/services/admin';
 
 // 회원 탈퇴 통계 컴포넌트
 import WithdrawalStatsCard from '@/components/admin/dashboard/WithdrawalStatsCard';
@@ -30,7 +31,7 @@ export default function AdminDashboard() {
   const [authChecking, setAuthChecking] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // 관리자 인증 확인
+  // 관리자 인증 확인 - 이제 layout.tsx에서 처리하므로 간소화
   useEffect(() => {
     // 클라이언트 사이드에서만 실행
     if (typeof window === 'undefined') return;
@@ -38,31 +39,17 @@ export default function AdminDashboard() {
     const checkAuth = async () => {
       try {
         setAuthChecking(true);
-        // 로컬 스토리지에서 토큰과 관리자 여부 확인
-        const token = localStorage.getItem('accessToken');
-        const isAdmin = localStorage.getItem('isAdmin');
-
-        console.log('관리자 인증 확인:', { token: !!token, isAdmin });
-
-        if (!token || isAdmin !== 'true') {
-          setAuthError('관리자 권한이 없습니다. 로그인 페이지로 이동합니다.');
-          setTimeout(() => {
-            router.push('/');
-          }, 2000);
-          return;
-        }
-
+        console.log('대시보드 페이지 로드됨');
         setAuthError(null);
       } catch (error) {
-        console.error('인증 확인 오류:', error);
-        setAuthError('인증 확인 중 오류가 발생했습니다.');
+        console.error('대시보드 초기화 오류:', error);
       } finally {
         setAuthChecking(false);
       }
     };
 
     checkAuth();
-  }, [router]);
+  }, []);
 
   // 통계 데이터 가져오기
   useEffect(() => {
@@ -77,17 +64,23 @@ export default function AdminDashboard() {
         setLoading(true);
         console.log('대시보드 통계 데이터 요청 시작');
 
-        // 토큰 확인
-        const token = localStorage.getItem('accessToken');
+        // 어드민 토큰 확인
+        const token = localStorage.getItem('admin_access_token');
         if (!token) {
-          console.error('토큰이 없어 통계 데이터를 가져올 수 없습니다.');
+          console.error('어드민 토큰이 없어 통계 데이터를 가져올 수 없습니다.');
           return;
         }
 
-        const response = await fetch('/api/admin/stats', {
+        // API 요청 URL 수정 (백엔드 서버 URL 사용)
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045';
+        console.log('통계 데이터 요청 URL:', `${apiUrl}/api/admin/stats`);
+
+        const response = await fetch(`${apiUrl}/api/admin/stats`, {
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          credentials: 'include' // 쿠키 전송을 위해 필요
         });
 
         if (response.ok) {

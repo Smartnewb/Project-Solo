@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { CommunityService } from '@/app/services';
 import {
   Box,
@@ -40,7 +40,7 @@ import {
 
 export default function ReportManagement() {
   const router = useRouter();
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isAuthenticated } = useAdminAuth();
   const [reports, setReports] = useState<any[]>([]);
   const [reportsLoading, setReportsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -151,19 +151,19 @@ export default function ReportManagement() {
 
   // 신고 목록 조회
   useEffect(() => {
-    if (!loading && user && isAdmin) {
+    if (!loading && user && isAuthenticated) {
       fetchReports();
     }
-  }, [typeFilter, statusFilter, page, rowsPerPage, loading, user, isAdmin]);
+  }, [typeFilter, statusFilter, page, rowsPerPage, loading, user, isAuthenticated]);
 
   // 관리자 권한 확인
   useEffect(() => {
     if (!loading && !user) {
       router.push('/');
-    } else if (!loading && user && !isAdmin) {
+    } else if (!loading && user && !isAuthenticated) {
       router.push('/');
     }
-  }, [user, loading, isAdmin, router]);
+  }, [user, loading, isAuthenticated, router]);
 
   if (loading || reportsLoading) {
     return (
@@ -173,7 +173,7 @@ export default function ReportManagement() {
     );
   }
 
-  if (!user || !isAdmin) {
+  if (!user || !isAuthenticated) {
     return null;
   }
 

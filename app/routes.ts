@@ -13,6 +13,5 @@ export const publicRoutes = [
   '/',
   '/signup',
   '/login',
-  '/api/admin/signup-control',
   '/admin/rematch-test'
-]; 
+];

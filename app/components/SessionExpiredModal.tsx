@@ -2,7 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 
 interface SessionExpiredModalProps {
   isOpen: boolean;
@@ -12,7 +12,7 @@ interface SessionExpiredModalProps {
 
 export default function SessionExpiredModal({ isOpen, onClose, error = 'session_expired' }: SessionExpiredModalProps) {
   const router = useRouter();
-  const { signOut } = useAuth();
+  const { logout } = useAdminAuth();
 
   const messages = {
     timeout: '로그인 시간이 초과되었습니다.',
@@ -21,7 +21,7 @@ export default function SessionExpiredModal({ isOpen, onClose, error = 'session_
 
   const handleLogout = async () => {
     try {
-      await signOut(); // AuthContext의 signOut 함수 사용 (쿠키, 로컬스토리지 정리 포함)
+      await logout(); // AdminAuthContext의 logout 함수 사용
       onClose();
       router.push('/');
     } catch (error) {
@@ -69,4 +69,4 @@ export default function SessionExpiredModal({ isOpen, onClose, error = 'session_
       )}
     </AnimatePresence>
   );
-} 
+}

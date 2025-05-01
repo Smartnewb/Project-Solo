@@ -45,10 +45,10 @@ export default function UniversityStatsCard() {
   // 실제 API 응답 구조에 맞게 타입 설정
   const [stats, setStats] = useState<{
     universities: Array<{
-      universityName: string;
-      totalCount: number;
-      maleCount: number;
-      femaleCount: number;
+      university: string;
+      totalUsers: number;
+      maleUsers: number;
+      femaleUsers: number;
       percentage: number;
       genderRatio: string;
     }>;
@@ -117,12 +117,12 @@ export default function UniversityStatsCard() {
   // 차트 데이터 생성
   const chartData = stats?.universities?.map((uni, index) => {
     // 대학명 가져오기
-    const universityName = uni.universityName || '-';
+    const universityName = uni.university || '-';
 
     // 데이터 가져오기 - 실제 API 응답 구조에 맞게 처리
-    const maleCount = uni.maleCount || 0;
-    const femaleCount = uni.femaleCount || 0;
-    const totalCount = uni.totalCount || 0;
+    const maleCount = uni.maleUsers || 0;
+    const femaleCount = uni.femaleUsers || 0;
+    const totalCount = uni.totalUsers || 0;
 
     const result = {
       name: universityName,
@@ -211,21 +211,21 @@ export default function UniversityStatsCard() {
                     console.log(`테이블 행 ${index}:`, uni);
 
                     // 데이터 가져오기 - 실제 API 응답 구조에 맞게 처리
-                    const universityName = uni.universityName || '-';
+                    const universityName = uni.university || '-';
 
                     // 데이터 값 확인 및 디버깅
                     console.log(`테이블 행 ${index} 상세 데이터:`);
-                    console.log('- universityName:', uni.universityName);
-                    console.log('- totalCount:', uni.totalCount);
-                    console.log('- maleCount:', uni.maleCount);
-                    console.log('- femaleCount:', uni.femaleCount);
+                    console.log('- university:', uni.university);
+                    console.log('- totalUsers:', uni.totalUsers);
+                    console.log('- maleUsers:', uni.maleUsers);
+                    console.log('- femaleUsers:', uni.femaleUsers);
                     console.log('- percentage:', uni.percentage);
                     console.log('- genderRatio:', uni.genderRatio);
 
                     // 데이터 가져오기
-                    const maleCount = uni.maleCount || 0;
-                    const femaleCount = uni.femaleCount || 0;
-                    const totalCount = uni.totalCount || 0;
+                    const maleCount = uni.maleUsers || 0;
+                    const femaleCount = uni.femaleUsers || 0;
+                    const totalCount = uni.totalUsers || 0;
                     const percentage = uni.percentage || 0;
                     const genderRatio = uni.genderRatio || '0:0';
 

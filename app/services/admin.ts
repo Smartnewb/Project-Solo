@@ -1,4 +1,7 @@
-import axiosServer from '@/utils/axios';
+import adminAxios from '@/utils/adminAxios';
+
+// axiosServer 변수 정의 (adminAxios와 동일하게 사용)
+const axiosServer = adminAxios;
 
 // 상단에 타입 정의 추가
 interface StatItem {
@@ -20,28 +23,67 @@ interface FormattedData {
 
 const auth = {
   cleanup: () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('isAdmin');
+    localStorage.removeItem('admin_access_token');
+  },
+
+  // 어드민 로그인 상태 확인
+  checkAuth: async () => {
+    try {
+      const token = localStorage.getItem('admin_access_token');
+      if (!token) {
+        return { isAuthenticated: false };
+      }
+
+      const response = await adminAxios.get('/api/auth/me');
+      return {
+        isAuthenticated: true,
+        user: response.data
+      };
+    } catch (error) {
+      console.error('어드민 인증 확인 오류:', error);
+      return { isAuthenticated: false };
+    }
   },
 };
 
 const stats = {
   getTotalUsersCount: async () => {
     try {
-      const response = await axiosServer.get('/admin/stats/users/total');
+      console.log('총 회원 수 API 요청 시작');
+
+      // 토큰 확인
+      const token = localStorage.getItem('admin_access_token');
+      if (!token) {
+        console.warn('어드민 토큰이 없습니다. 기본값을 반환합니다.');
+        return { totalUsers: 120 };
+      }
+
+      // API 요청 전 로깅
+      console.log('총 회원 수 API 요청 URL:', '/api/admin/stats/users/total');
+      console.log('인증 토큰 존재 여부:', !!token);
+
+      const response = await adminAxios.get('/api/admin/stats/users/total');
       console.log('총 회원 수 API 응답:', response.data);
 
-      // 실제 사용자 수를 반환하도록 수정
-      // 임시 수정: 실제 사용자 수를 임의로 설정 (API가 완성되면 제거)
-      return { totalUsers: response.data.totalUsers }; // 임시 값으로 설정
-    } catch (error) {
-      console.error('총 회원 수 조회 중 오류:', error);
+      // 응답 데이터 확인
+      if (response.data && typeof response.data.totalUsers === 'number') {
+        return { totalUsers: response.data.totalUsers };
+      } else {
+        console.warn('API 응답에 totalUsers가 없습니다. 기본값을 반환합니다.');
+        return { totalUsers: 120 };
+      }
+    } catch (error: any) {
+      console.error('총 회원 수 조회 중 오류:', error.message);
+      if (error.response) {
+        console.error('오류 상태 코드:', error.response.status);
+        console.error('오류 응답 데이터:', error.response.data);
+      }
       return { totalUsers: 120 }; // 오류 발생 시 기본값 반환
     }
   },
   getDailySignupCount: async () => {
     try {
-      const response = await axiosServer.get('/admin/stats/users/daily');
+      const response = await axiosServer.get('/api/admin/stats/users/daily');
       console.log('오늘 가입한 회원 수 API 응답:', response.data);
       return response.data || { dailySignups: 4 };
     } catch (error) {
@@ -51,7 +93,7 @@ const stats = {
   },
   getWeeklySignupCount: async () => {
     try {
-      const response = await axiosServer.get('/admin/stats/users/weekly');
+      const response = await axiosServer.get('/api/admin/stats/users/weekly');
       console.log('이번 주 가입한 회원 수 API 응답:', response.data);
       return response.data || { weeklySignups: 12 };
     } catch (error) {
@@ -61,7 +103,7 @@ const stats = {
   },
   getDailySignupTrend: async () => {
     try {
-      const response = await axiosServer.get('/admin/stats/users/trend/daily');
+      const response = await axiosServer.get('/api/admin/stats/users/trend/daily');
       return response.data;
     } catch (error) {
       console.error('일별 회원가입 추이 조회 중 오류:', error);
@@ -70,7 +112,7 @@ const stats = {
   },
   getWeeklySignupTrend: async () => {
     try {
-      const response = await axiosServer.get('/admin/stats/users/trend/weekly');
+      const response = await axiosServer.get('/api/admin/stats/users/trend/weekly');
       return response.data;
     } catch (error) {
       console.error('주별 회원가입 추이 조회 중 오류:', error);
@@ -79,7 +121,7 @@ const stats = {
   },
   getMonthlySignupTrend: async () => {
     try {
-      const response = await axiosServer.get('/admin/stats/users/trend/monthly');
+      const response = await axiosServer.get('/api/admin/stats/users/trend/monthly');
       return response.data;
     } catch (error) {
       console.error('월별 회원가입 추이 조회 중 오류:', error);
@@ -91,7 +133,7 @@ const stats = {
   getCustomPeriodSignupCount: async (startDate: string, endDate: string) => {
     try {
       console.log('사용자 지정 기간 조회:', startDate, endDate);
-      const response = await axiosServer.post('/admin/stats/users/custom-period', {
+      const response = await axiosServer.post('/api/admin/stats/users/custom-period', {
         startDate,
         endDate
       });
@@ -111,7 +153,7 @@ const stats = {
   getCustomPeriodSignupTrend: async (startDate: string, endDate: string) => {
     try {
       console.log('사용자 지정 기간 추이 조회:', startDate, endDate);
-      const response = await axiosServer.post('/admin/stats/users/trend/custom-period', {
+      const response = await axiosServer.post('/api/admin/stats/users/trend/custom-period', {
         startDate,
         endDate
       });
@@ -130,7 +172,7 @@ const stats = {
   // 성별 통계 조회
   getGenderStats: async () => {
     try {
-      const response = await axiosServer.get('/admin/stats/users/gender');
+      const response = await axiosServer.get('/api/admin/stats/users/gender');
       console.log('성별 통계 API 응답:', response.data);
 
       // 임시 데이터 생성
@@ -162,7 +204,7 @@ const stats = {
   // 대학별 통계 조회
   getUniversityStats: async () => {
     try {
-      const response = await axiosServer.get('/admin/stats/users/universities');
+      const response = await axiosServer.get('/api/admin/stats/users/universities');
       console.log('서비스에서 받은 대학별 통계 데이터:', response.data);
       console.log('서비스에서 받은 데이터 구조:', JSON.stringify(response.data, null, 2));
 
@@ -192,7 +234,7 @@ const stats = {
   // 사용자 활동 지표 조회
   getUserActivityStats: async () => {
     try {
-      const response = await axiosServer.get('/admin/stats/users/activity');
+      const response = await axiosServer.get('/api/admin/stats/users/activity');
       console.log('사용자 활동 지표 응답:', response.data);
 
       return response.data;
@@ -206,7 +248,7 @@ const stats = {
   // 총 탈퇴자 수 조회
   getTotalWithdrawalsCount: async () => {
     try {
-      const response = await axiosServer.get('/admin/stats/withdrawals/total');
+      const response = await axiosServer.get('/api/admin/stats/withdrawals/total');
       return response.data || { totalWithdrawals: 0 };
     } catch (error) {
       console.error('총 탈퇴자 수 조회 중 오류:', error);
@@ -217,7 +259,7 @@ const stats = {
   // 일간 탈퇴자 수 조회
   getDailyWithdrawalCount: async () => {
     try {
-      const response = await axiosServer.get('/admin/stats/withdrawals/daily');
+      const response = await axiosServer.get('/api/admin/stats/withdrawals/daily');
       return response.data || { dailyWithdrawals: 0 };
     } catch (error) {
       console.error('오늘 탈퇴한 회원 수 조회 중 오류:', error);
@@ -228,7 +270,7 @@ const stats = {
   // 주간 탈퇴자 수 조회
   getWeeklyWithdrawalCount: async () => {
     try {
-      const response = await axiosServer.get('/admin/stats/withdrawals/weekly');
+      const response = await axiosServer.get('/api/admin/stats/withdrawals/weekly');
       return response.data || { weeklyWithdrawals: 0 };
     } catch (error) {
       console.error('이번 주 탈퇴한 회원 수 조회 중 오류:', error);
@@ -239,7 +281,7 @@ const stats = {
   // 월간 탈퇴자 수 조회
   getMonthlyWithdrawalCount: async () => {
     try {
-      const response = await axiosServer.get('/admin/stats/withdrawals/monthly');
+      const response = await axiosServer.get('/api/admin/stats/withdrawals/monthly');
       return response.data || { monthlyWithdrawals: 0 };
     } catch (error) {
       console.error('이번 달 탈퇴한 회원 수 조회 중 오류:', error);
@@ -251,7 +293,7 @@ const stats = {
   getCustomPeriodWithdrawalCount: async (startDate: string, endDate: string) => {
     try {
       console.log('사용자 지정 기간 탈퇴자 수 조회:', startDate, endDate);
-      const response = await axiosServer.post('/admin/stats/withdrawals/custom-period', {
+      const response = await axiosServer.post('/api/admin/stats/withdrawals/custom-period', {
         startDate,
         endDate
       });
@@ -265,7 +307,7 @@ const stats = {
   // 일별 탈퇴 추이 조회
   getDailyWithdrawalTrend: async () => {
     try {
-      const response = await axiosServer.get('/admin/stats/withdrawals/trend/daily');
+      const response = await axiosServer.get('/api/admin/stats/withdrawals/trend/daily');
       return response.data || { data: [] };
     } catch (error) {
       console.error('일별 탈퇴 추이 조회 중 오류:', error);
@@ -276,7 +318,7 @@ const stats = {
   // 주별 탈퇴 추이 조회
   getWeeklyWithdrawalTrend: async () => {
     try {
-      const response = await axiosServer.get('/admin/stats/withdrawals/trend/weekly');
+      const response = await axiosServer.get('/api/admin/stats/withdrawals/trend/weekly');
       return response.data || { data: [] };
     } catch (error) {
       console.error('주별 탈퇴 추이 조회 중 오류:', error);
@@ -287,7 +329,7 @@ const stats = {
   // 월별 탈퇴 추이 조회
   getMonthlyWithdrawalTrend: async () => {
     try {
-      const response = await axiosServer.get('/admin/stats/withdrawals/trend/monthly');
+      const response = await axiosServer.get('/api/admin/stats/withdrawals/trend/monthly');
       return response.data || { data: [] };
     } catch (error) {
       console.error('월별 탈퇴 추이 조회 중 오류:', error);
@@ -299,7 +341,7 @@ const stats = {
   getCustomPeriodWithdrawalTrend: async (startDate: string, endDate: string) => {
     try {
       console.log('사용자 지정 기간 탈퇴 추이 조회:', startDate, endDate);
-      const response = await axiosServer.post('/admin/stats/withdrawals/trend/custom-period', {
+      const response = await axiosServer.post('/api/admin/stats/withdrawals/trend/custom-period', {
         startDate,
         endDate
       });
@@ -313,7 +355,7 @@ const stats = {
   // 탈퇴 사유 통계 조회
   getWithdrawalReasonStats: async () => {
     try {
-      const response = await axiosServer.get('/admin/stats/withdrawals/reasons');
+      const response = await axiosServer.get('/api/admin/stats/withdrawals/reasons');
       return response.data || { reasons: [] };
     } catch (error) {
       console.error('탈퇴 사유 통계 조회 중 오류:', error);
@@ -324,7 +366,7 @@ const stats = {
   // 서비스 사용 기간 통계 조회
   getServiceDurationStats: async () => {
     try {
-      const response = await axiosServer.get('/admin/stats/withdrawals/service-duration');
+      const response = await axiosServer.get('/api/admin/stats/withdrawals/service-duration');
       return response.data || { durations: [], averageDuration: 0 };
     } catch (error) {
       console.error('서비스 사용 기간 통계 조회 중 오류:', error);
@@ -335,7 +377,7 @@ const stats = {
   // 이탈률 조회
   getChurnRate: async () => {
     try {
-      const response = await axiosServer.get('/admin/stats/withdrawals/churn-rate');
+      const response = await axiosServer.get('/api/admin/stats/withdrawals/churn-rate');
       return response.data || { dailyChurnRate: 0, weeklyChurnRate: 0, monthlyChurnRate: 0 };
     } catch (error) {
       console.error('이탈률 조회 중 오류:', error);
@@ -381,7 +423,7 @@ const userAppearance = {
       if (params.maxAge) queryParams.append('maxAge', params.maxAge.toString());
       if (params.searchTerm) queryParams.append('searchTerm', params.searchTerm);
 
-      const url = `/admin/users/appearance?${queryParams.toString()}`;
+      const url = `/api/admin/users/appearance?${queryParams.toString()}`;
       console.log('최종 API 요청 URL:', url);
       console.log('최종 쿼리 파라미터:', queryParams.toString());
 
@@ -409,7 +451,7 @@ const userAppearance = {
   // 미분류 유저 목록 조회
   getUnclassifiedUsers: async (page: number, limit: number) => {
     try {
-      const response = await axiosServer.get(`/admin/users/appearance/unclassified?page=${page}&limit=${limit}`);
+      const response = await axiosServer.get(`/api/admin/users/appearance/unclassified?page=${page}&limit=${limit}`);
 
       // 응답 데이터 로깅
       console.log('미분류 사용자 데이터 샘플:', response.data?.items?.slice(0, 2));
@@ -450,7 +492,7 @@ const userAppearance = {
 
       // 첫 번째 시도: /admin/users/appearance/grade
       try {
-        const url1 = '/admin/users/appearance/grade';
+        const url1 = '/api/admin/users/appearance/grade';
         console.log('첫 번째 시도 URL (상대 경로):', url1);
         console.log('첫 번째 시도 URL (전체 경로):', process.env.NEXT_PUBLIC_API_URL + url1);
 
@@ -468,7 +510,7 @@ const userAppearance = {
 
         // 두 번째 시도: /users/appearance/grade
         try {
-          const url2 = '/users/appearance/grade';
+          const url2 = '/api/users/appearance/grade';
           console.log('두 번째 시도 URL (상대 경로):', url2);
           console.log('두 번째 시도 URL (전체 경로):', process.env.NEXT_PUBLIC_API_URL + url2);
 
@@ -511,7 +553,7 @@ const userAppearance = {
       console.error('오류 상세 정보:', error.response?.data || error.message);
       console.error('오류 상태 코드:', error.response?.status);
       console.error('오류 헤더:', error.response?.headers);
-      console.error('요청 URL:', '/admin/users/appearance/grade');
+      console.error('요청 URL:', '/api/admin/users/appearance/grade');
       console.error('요청 데이터:', JSON.stringify({ userId, grade }));
       throw error;
     }
@@ -522,7 +564,7 @@ const userAppearance = {
     console.log('일괄 등급 설정 요청:', { userIds: userIds.length, grade });
 
     try {
-      const response = await axiosServer.post('/admin/users/appearance/grade/bulk', {
+      const response = await axiosServer.post('/api/admin/users/appearance/grade/bulk', {
         userIds,
         grade
       });
@@ -540,7 +582,7 @@ const userAppearance = {
 
       // API 엔드포인트 (API 문서에서 확인한 정확한 경로)
       // API 문서 확인 결과, 정확한 경로는 /admin/users/detail/{userId}
-      const endpoint = `/admin/users/detail/${userId}`;
+      const endpoint = `/api/admin/users/detail/${userId}`;
       console.log(`API 엔드포인트: ${endpoint}`);
 
       // axios 설정 확인
@@ -567,7 +609,7 @@ const userAppearance = {
       console.log('프로필 수정 데이터:', profileData);
 
       // API 엔드포인트 (API 문서에서 확인한 정확한 경로)
-      const endpoint = `/admin/users/profile`;
+      const endpoint = `/api/admin/users/profile`;
       console.log(`API 엔드포인트: ${endpoint}`);
 
       // 요청 데이터 구성 (API 스키마에 맞게 조정)
@@ -595,7 +637,7 @@ const userAppearance = {
 
         // 두 번째 시도: /admin/users/detail/profile
         try {
-          const url2 = '/admin/users/detail/profile';
+          const url2 = '/api/admin/users/detail/profile';
           console.log('두 번째 시도 URL:', url2);
           response = await axiosServer.post(url2, requestData);
           console.log('두 번째 시도 성공!');
@@ -604,7 +646,7 @@ const userAppearance = {
 
           // 세 번째 시도: /admin/profile
           try {
-            const url3 = '/admin/profile';
+            const url3 = '/api/admin/profile';
             console.log('세 번째 시도 URL:', url3);
             response = await axiosServer.post(url3, requestData);
             console.log('세 번째 시도 성공!');
@@ -631,7 +673,7 @@ const userAppearance = {
     try {
       console.log('계정 상태 변경 요청:', { userId, status, reason });
 
-      const response = await axiosServer.post('/admin/users/detail/status', {
+      const response = await axiosServer.post('/api/admin/users/detail/status', {
         userId,
         status,
         reason
@@ -651,7 +693,7 @@ const userAppearance = {
     try {
       console.log('경고 메시지 발송 요청:', { userId, message });
 
-      const response = await axiosServer.post('/admin/users/detail/warning', {
+      const response = await axiosServer.post('/api/admin/users/detail/warning', {
         userId,
         message
       });
@@ -670,7 +712,7 @@ const userAppearance = {
     try {
       console.log('강제 로그아웃 요청:', { userId });
 
-      const response = await axiosServer.post('/admin/users/detail/logout', {
+      const response = await axiosServer.post('/api/admin/users/detail/logout', {
         userId
       });
 
@@ -689,7 +731,7 @@ const userAppearance = {
       console.log('계정 삭제 요청:', { userId, reason });
 
       // 새로운 API 엔드포인트 로깅
-      const endpoint = `/admin/users`;
+      const endpoint = `/api/admin/users`;
       console.log(`API 엔드포인트: ${endpoint}`);
       console.log('요청 데이터:', { userId, reason });
 
@@ -713,7 +755,7 @@ const userAppearance = {
       // 오류 발생 시 다른 API 엔드포인트 시도
       try {
         console.log('대체 API 엔드포인트 시도');
-        const alternativeEndpoint = `/admin/users/${userId}`;
+        const alternativeEndpoint = `/api/admin/users/${userId}`;
         console.log(`대체 API 엔드포인트: ${alternativeEndpoint}`);
 
         const response = await axiosServer.delete(alternativeEndpoint, {
@@ -738,7 +780,7 @@ const userAppearance = {
     try {
       console.log('프로필 수정 요청 발송:', { userId, message });
 
-      const response = await axiosServer.post('/admin/users/detail/profile-update-request', {
+      const response = await axiosServer.post('/api/admin/users/detail/profile-update-request', {
         userId,
         message
       });
@@ -760,7 +802,7 @@ const userAppearance = {
       console.log('외모 등급 통계 API 호출 시작');
 
       // API 엔드포인트 - API 문서에 명시된 경로 사용
-      const endpoint = '/admin/users/appearance/stats';
+      const endpoint = '/api/admin/users/appearance/stats';
       console.log(`API 엔드포인트: ${endpoint}`);
 
       // 토큰 확인
@@ -1085,7 +1127,7 @@ const universities = {
   getUniversities: async () => {
     try {
       console.log('대학교 목록 조회 시작');
-      const response = await axiosServer.get('/universities');
+      const response = await axiosServer.get('/api/universities');
       console.log('대학교 목록 조회 응답:', response.data);
       return response.data;
     } catch (error: any) {
@@ -1116,7 +1158,7 @@ const universities = {
   getDepartments: async (university: string) => {
     try {
       console.log('학과 목록 조회 시작:', university);
-      const response = await axiosServer.get('/universities/departments', {
+      const response = await axiosServer.get('/api/universities/departments', {
         params: { university }
       });
       console.log('학과 목록 조회 응답:', response.data);
@@ -1235,7 +1277,7 @@ const matching = {
         ...options
       };
 
-      const response = await axiosServer.post('/admin/matching/user/read', requestData);
+      const response = await axiosServer.post('/api/admin/matching/user/read', requestData);
       console.log('사용자 매칭 결과 응답:', response.data);
 
       return response.data;
@@ -1251,7 +1293,7 @@ const matching = {
     try {
       console.log('매칭되지 않은 사용자 조회 요청:', { page, limit });
 
-      const response = await axiosServer.get('/admin/matching/unmatched-users', {
+      const response = await axiosServer.get('/api/admin/matching/unmatched-users', {
         params: { page, limit }
       });
       console.log('매칭되지 않은 사용자 응답:', response.data);
@@ -1269,7 +1311,7 @@ const matching = {
     try {
       console.log('배치 매칭 처리 요청');
 
-      const response = await axiosServer.post('/admin/matching/batch');
+      const response = await axiosServer.post('/api/admin/matching/batch');
       console.log('배치 매칭 처리 응답:', response.data);
 
       return response.data;
@@ -1289,7 +1331,7 @@ const matching = {
         userId
       };
 
-      const response = await axiosServer.post('/admin/matching/user', requestData);
+      const response = await axiosServer.post('/api/admin/matching/user', requestData);
       console.log('단일 사용자 매칭 처리 응답:', response.data);
 
       return response.data;

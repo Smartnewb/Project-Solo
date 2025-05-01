@@ -3,9 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth } from '@/contexts/AuthContext';
-import { ADMIN_EMAIL } from '@/utils/config';
-
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 
 export default function AdminLayout({
   children,
@@ -14,14 +12,7 @@ export default function AdminLayout({
 }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const { user, isAdmin } = useAuth();
-  const [adminState, setAdminState] = useState({
-    isVerified: false,
-    lastVerified: 0
-  });
-
-  useEffect(() => {
-  }, []);
+  const { user, isAuthenticated, logout } = useAdminAuth();
 
   useEffect(() => {
     let mounted = true;
@@ -30,31 +21,24 @@ export default function AdminLayout({
       try {
         if (!mounted) return;
 
-        console.log('관리자 권한 확인 시작');
+        console.log('어드민 권한 확인 시작');
 
-        // 로딩 중이 아닐 때만 상태 체크
-        if (!loading) {
-          // 인증되지 않은 경우
-          if (!user) {
-            console.warn('인증된 세션이 없음 - 관리자 페이지 접근 거부');
-            router.replace('/');
-            return;
-          }
+        // 토큰 확인 (디버깅)
+        const token = localStorage.getItem('admin_access_token');
+        console.log('어드민 레이아웃에서 토큰 확인:', !!token);
 
-          console.log('로그인 사용자:', user.email);
-          console.log('관리자 여부:', isAdmin);
-
-          // 관리자가 아닌 경우
-          if (!isAdmin) {
-            console.warn('관리자가 아닌 사용자의 접근 시도:', user.email);
-            router.replace('/');
-            return;
-          }
-
-          console.log('관리자 권한 확인됨');
+        // 인증되지 않은 경우
+        if (!isAuthenticated || !user) {
+          console.warn('어드민 인증된 세션이 없음 - 관리자 페이지 접근 거부');
+          router.replace('/');
+          return;
         }
+
+        console.log('어드민 로그인 사용자:', user.email);
+        console.log('어드민 권한 확인됨');
+
       } catch (error) {
-        console.error('관리자 확인 중 오류:', error);
+        console.error('어드민 확인 중 오류:', error);
         if (mounted) {
           router.replace('/');
         }
@@ -70,15 +54,16 @@ export default function AdminLayout({
     return () => {
       mounted = false;
     };
-  }, [router, user, isAdmin, loading]);
+  }, [router, user, isAuthenticated]);
 
   const handleLogout = async () => {
     try {
-      console.log('로그아웃 시도');
-      console.log('로그아웃 성공 - 로그인 페이지로 리디렉션');
-      router.push('/');
+      console.log('어드민 로그아웃 시도');
+      await logout();
+      console.log('어드민 로그아웃 성공 - 로그인 페이지로 리디렉션');
     } catch (error) {
-      console.error('로그아웃 처리 중 예외 발생:', error);
+      console.error('어드민 로그아웃 처리 중 예외 발생:', error);
+      router.push('/');
     }
   };
 
@@ -95,7 +80,7 @@ export default function AdminLayout({
   }
 
   // 관리자가 아닐 때의 UI
-  if (!isAdmin) {
+  if (!isAuthenticated) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
         <div className="text-center bg-white p-8 rounded-lg shadow-md">

@@ -1,7 +1,11 @@
-/* 'use client';
+'use client';
 
-import { AuthProvider } from '@/contexts/AuthContext';
+import { AdminAuthProvider } from '@/contexts/AdminAuthContext';
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  return <AuthProvider>{children}</AuthProvider>;
-}  */
+  return (
+    <AdminAuthProvider>
+      {children}
+    </AdminAuthProvider>
+  );
+}

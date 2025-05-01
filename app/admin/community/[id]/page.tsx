@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import communityService from '@/app/services/community';
 import {
   Box,
@@ -42,7 +42,7 @@ import {
 export default function ArticleDetail() {
   const router = useRouter();
   const params = useParams();
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isAuthenticated } = useAdminAuth();
   const [article, setArticle] = useState<any>(null);
   const [articleLoading, setArticleLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -208,10 +208,10 @@ export default function ArticleDetail() {
   useEffect(() => {
     if (!loading && !user) {
       router.push('/');
-    } else if (!loading && user && !isAdmin) {
+    } else if (!loading && user && !isAuthenticated) {
       router.push('/');
     }
-  }, [user, loading, isAdmin, router]);
+  }, [user, loading, isAuthenticated, router]);
 
   if (loading || articleLoading) {
     return (
@@ -221,7 +221,7 @@ export default function ArticleDetail() {
     );
   }
 
-  if (!user || !isAdmin) {
+  if (!user || !isAuthenticated) {
     return null;
   }
 

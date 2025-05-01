@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { ADMIN_EMAIL } from '@/utils/config';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import AdminService from '@/app/services/admin';
 import {
   Box,
@@ -82,7 +81,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'
 
 export default function MatchingAnalytics() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isAuthenticated } = useAdminAuth();
   const [selectedPeriod, setSelectedPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [selectedUniversity, setSelectedUniversity] = useState<string>('');
   const [matchingStats, setMatchingStats] = useState<MatchingStats | null>(null);
@@ -142,7 +141,7 @@ export default function MatchingAnalytics() {
     );
   }
 
-  if (!user || (user.email !== process.env.NEXT_PUBLIC_DEFAULT_ADMIN_EMAIL && user.email !== ADMIN_EMAIL)) {
+  if (!user || !isAuthenticated) {
     router.push('/');
     return null;
   }

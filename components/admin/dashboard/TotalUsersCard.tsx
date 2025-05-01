@@ -14,7 +14,8 @@ export default function TotalUsersCard() {
       try {
         setLoading(true);
         const data = await AdminService.stats.getTotalUsersCount();
-        setTotalUsers(data.totalUsers);
+        console.log('총 회원 수 응답 데이터:', data);
+        setTotalUsers(data.totalUsers || data.total || 0);
         setError(null);
       } catch (err) {
         console.error('총 회원 수 조회 중 오류:', err);
@@ -27,7 +28,7 @@ export default function TotalUsersCard() {
     fetchTotalUsers();
     // 1분마다 데이터 갱신
     const interval = setInterval(fetchTotalUsers, 60000);
-    
+
     return () => clearInterval(interval);
   }, []);
 

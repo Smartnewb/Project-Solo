@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import axiosServer from '@/utils/axios';
 
 export default function ActiveUsersCounter() {
   const [actualCount, setActualCount] = useState(0);
@@ -9,8 +10,7 @@ export default function ActiveUsersCounter() {
   const [prevCount, setPrevCount] = useState(0);
   const [floatingNumbers, setFloatingNumbers] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  const fetchUserCount = async () => { }
+  const [showAnimation, setShowAnimation] = useState(false);
 
   useEffect(() => {
     // 초기 로드 시 사용자 수 가져오기
@@ -73,4 +73,4 @@ export default function ActiveUsersCounter() {
       </motion.div>
     </div>
   );
-} 
+}

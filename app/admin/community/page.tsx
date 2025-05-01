@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import communityService from '@/app/services/community';
 import {
   Box,
@@ -1831,7 +1831,7 @@ function ReportList() {
 
 export default function AdminCommunity() {
   const router = useRouter();
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isAuthenticated } = useAdminAuth();
   const [tabValue, setTabValue] = useState(0);
 
   // 탭 변경 핸들러
@@ -1843,10 +1843,10 @@ export default function AdminCommunity() {
   useEffect(() => {
     if (!loading && !user) {
       router.push('/');
-    } else if (!loading && user && !isAdmin) {
+    } else if (!loading && user && !isAuthenticated) {
       router.push('/');
     }
-  }, [user, loading, isAdmin, router]);
+  }, [user, loading, isAuthenticated, router]);
 
   if (loading) {
     return (
@@ -1866,7 +1866,7 @@ export default function AdminCommunity() {
     );
   }
 
-  if (!user || !isAdmin) {
+  if (!user || !isAuthenticated) {
     return null;
   }
 

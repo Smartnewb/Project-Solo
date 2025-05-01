@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import axiosServer from '@/utils/axios';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
+import adminAxios from '@/utils/adminAxios';
 
 type ProfileImage = {
   id: string;
@@ -208,18 +208,18 @@ export default function UsersAdmin() {
   const [pageSize] = useState(10); // 페이지당 표시 개수 고정
   const [totalCount, setTotalCount] = useState(0);
 
-  const { isAdmin } = useAuth();
+  const { isAuthenticated } = useAdminAuth();
 
   useEffect(() => {
-    if (isAdmin) {
+    if (isAuthenticated) {
       setPage(1); // 필터 변경 시 페이지 초기화
       fetchUsers();
     }
-  }, [filter, isAdmin, selectedGender, selectedClass, searchTerm]);
+  }, [filter, isAuthenticated, selectedGender, selectedClass, searchTerm]);
 
   // 페이지 변경 시 데이터 가져오기
   useEffect(() => {
-    if (isAdmin && page > 0) {
+    if (isAuthenticated && page > 0) {
       fetchUsers();
     }
   }, [page]);
@@ -227,7 +227,7 @@ export default function UsersAdmin() {
   // 검색어 입력 시 디바운스 적용
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (isAdmin) {
+      if (isAuthenticated) {
         setPage(1);
         fetchUsers();
       }
@@ -248,7 +248,7 @@ export default function UsersAdmin() {
       });
 
       // Nest.js API 호출
-      const response = await axiosServer.get<ApiResponse>(`/admin/users?${params}`);
+      const response = await adminAxios.get<ApiResponse>(`/api/admin/users?${params}`);
       const { items, meta } = response.data;
 
       // API 응답 구조 로깅 (첫 번째 사용자만)

@@ -189,7 +189,7 @@ export default function SignUp() {
     try {
       // 1. 이메일 중복 확인
       const checkEmailResponse = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/check/email`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/check/email`,
         { email: formData.email }
       );
 
@@ -205,7 +205,7 @@ export default function SignUp() {
       console.log("회원가입 요청 데이터:", signupData);
 
       const signupResponse = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/signup`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/signup`,
         signupData
       );
 

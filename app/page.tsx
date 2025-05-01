@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAdminAuth } from '@/contexts/AdminAuthContext';
 
-export default function Login() {
-  const { login, user, loading } = useAuth();
+export default function AdminLogin() {
+  const { login, user, loading } = useAdminAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -17,16 +17,17 @@ export default function Login() {
     const checkServerStatus = async () => {
       try {
         console.log('백엔드 서버 상태 확인 시작');
-        console.log('API URL:', process.env.NEXT_PUBLIC_API_URL);
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045';
+        console.log('API URL:', apiUrl);
 
         // 여러 엔드포인트 시도
-        const endpoints = ['/health', '/api/health', '/'];
+        const endpoints = ['/api/auth/me', '/api/health', '/api'];
         let connected = false;
 
         for (const endpoint of endpoints) {
           try {
             console.log(`엔드포인트 시도: ${endpoint}`);
-            const url = `${process.env.NEXT_PUBLIC_API_URL}${endpoint}`;
+            const url = `${apiUrl}${endpoint}`;
             console.log(`전체 URL: ${url}`);
 
             const controller = new AbortController();
@@ -35,7 +36,10 @@ export default function Login() {
             const response = await fetch(url, {
               method: 'GET',
               cache: 'no-cache',
-              signal: controller.signal
+              signal: controller.signal,
+              // CORS 문제 해결을 위한 추가 옵션
+              mode: 'cors',
+              credentials: 'include'
             });
 
             clearTimeout(timeoutId);
@@ -78,28 +82,33 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      console.log('로그인 시도 중...', { email: email.trim() });
+      console.log('어드민 로그인 시도 중...', { email: email.trim() });
 
       // 서버 상태 재확인
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/health`, {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045';
+        console.log('어드민 로그인 전 서버 상태 확인 URL:', `${apiUrl}/api/health`);
+
+        const response = await fetch(`${apiUrl}/api/health`, {
           method: 'GET',
           cache: 'no-cache',
-          signal: AbortSignal.timeout(3000) // 3초 타임아웃
+          signal: AbortSignal.timeout(3000), // 3초 타임아웃
+          mode: 'cors',
+          credentials: 'include'
         });
-        console.log('로그인 전 서버 상태 확인:', response.status);
+        console.log('어드민 로그인 전 서버 상태 확인:', response.status);
       } catch (healthError) {
-        console.error('로그인 전 서버 상태 확인 실패:', healthError);
+        console.error('어드민 로그인 전 서버 상태 확인 실패:', healthError);
         throw new Error('서버에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.');
       }
 
       await login(email.trim(), password);
-      console.log('로그인 성공!');
+      console.log('어드민 로그인 성공!');
     } catch (err: any) {
-      console.error('로그인 중 오류:', err);
+      console.error('어드민 로그인 중 오류:', err);
 
       // 오류 메시지 설정
-      let errorMessage = err.message || '로그인에 실패했습니다.';
+      let errorMessage = err.message || '어드민 로그인에 실패했습니다.';
 
       // 네트워크 오류인 경우
       if (err.message?.includes('Network Error') ||
@@ -128,8 +137,8 @@ export default function Login() {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-5xl font-bold text-gray-800">Sometime</h1>
-          <p className="text-gray-600 mt-2 text-lg">나의 이상형을 찾아서</p>
+          <h1 className="text-5xl font-bold text-gray-800">Admin</h1>
+          <p className="text-gray-600 mt-2 text-lg">어드민 로그인</p>
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-8 space-y-6">
@@ -169,11 +178,7 @@ export default function Login() {
             </button>
           </form>
 
-          <div className="text-center">
-            <Link href="/signup" className="text-gray-700 hover:text-gray-900 text-base">
-              회원가입
-            </Link>
-          </div>
+          {/* 회원가입 링크 제거 - 어드민 전용 로그인 */}
         </div>
 
         {/* 회사 정보 추가 */}

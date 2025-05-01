@@ -3,7 +3,7 @@
 import './globals.css'
 import type { Metadata } from 'next'
 // next/font 제거 - Babel 설정과 충돌 방지
-import { AuthProvider } from '../contexts/AuthContext'
+import { Providers } from './providers'
 // import Navbar from '@/components/Navbar'
 import { ModalProvider } from '@/shared/ui/modal/context'
 // export const metadata: Metadata = {
@@ -20,14 +20,14 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body>
-        <AuthProvider>
+        <Providers>
           <ModalProvider>
             {/* <Navbar /> */}
             <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
               {children}
             </main>
           </ModalProvider>
-        </AuthProvider>
+        </Providers>
       </body>
     </html>
   )
