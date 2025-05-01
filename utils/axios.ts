@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // axios 인스턴스 생성
 const axiosServer = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045',
   timeout: 15000,  // 15초
   headers: {
     'Content-Type': 'application/json',
@@ -61,7 +61,7 @@ axiosServer.interceptors.response.use(
           console.log('토큰 만료 감지, 새로고침 시도');
 
           // 토큰 새로고침 요청
-          const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`, {}, {
+          const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045'}/auth/refresh`, {}, {
             withCredentials: true
           });
 
