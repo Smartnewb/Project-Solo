@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import adminAxios from '@/utils/adminAxios';
+import { hooks } from '@/lib/query';
 
 type ProfileImage = {
   id: string;
@@ -194,9 +194,6 @@ const getFormattedTime = (user: any) => {
 };
 
 export default function UsersAdmin() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>('all'); // 'all', 'blocked', 'reported', 'active'
@@ -206,109 +203,24 @@ export default function UsersAdmin() {
   const [dbError, setDbError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10); // 페이지당 표시 개수 고정
-  const [totalCount, setTotalCount] = useState(0);
 
   const { isAuthenticated } = useAdminAuth();
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      setPage(1); // 필터 변경 시 페이지 초기화
-      fetchUsers();
-    }
-  }, [filter, isAuthenticated, selectedGender, selectedClass, searchTerm]);
+  // React Query 훅 사용
+  const { data, isLoading: loading, error } = hooks.useAdminUsers({
+    page,
+    limit: pageSize,
+    status: filter !== 'all' ? filter : undefined,
+    searchTerm: searchTerm || undefined,
+    gender: selectedGender !== 'all' ? selectedGender : undefined,
+    appearanceGrade: selectedClass !== 'all' ? selectedClass : undefined
+  });
 
-  // 페이지 변경 시 데이터 가져오기
-  useEffect(() => {
-    if (isAuthenticated && page > 0) {
-      fetchUsers();
-    }
-  }, [page]);
+  // 데이터 추출
+  const users = data?.items || [];
+  const totalCount = data?.meta?.totalItems || 0;
 
-  // 검색어 입력 시 디바운스 적용
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (isAuthenticated) {
-        setPage(1);
-        fetchUsers();
-      }
-    }, 500);
 
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
-  async function fetchUsers() {
-    try {
-      setLoading(true);
-      setError(null); // 오류 상태 초기화
-
-      // API 요청 파라미터 구성 (페이지네이션만)
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: pageSize.toString()
-      });
-
-      // Nest.js API 호출
-      const response = await adminAxios.get<ApiResponse>(`/api/admin/users?${params}`);
-      const { items, meta } = response.data;
-
-      // API 응답 구조 로깅 (첫 번째 사용자만)
-      if (items && items.length > 0) {
-        console.log('API 응답 첫 번째 사용자 데이터 구조:', items[0]);
-        console.log('API 응답 첫 번째 사용자 데이터 JSON:', JSON.stringify(items[0], null, 2));
-
-        // 날짜 필드 확인
-        const user = items[0];
-        const dateFields = ['createdAt', 'registeredAt', 'created_at', 'registered_at', 'joinedAt', 'joined_at', 'signupAt', 'signup_at', 'registrationDate', 'registration_date'];
-        const foundDateFields = dateFields.filter(field => user[field]);
-
-        if (foundDateFields.length > 0) {
-          console.log('발견된 날짜 필드:', foundDateFields);
-          foundDateFields.forEach(field => {
-            console.log(`${field} 값:`, user[field]);
-            console.log(`${field} 타입:`, typeof user[field]);
-
-            // 날짜 변환 테스트
-            try {
-              const date = new Date(user[field]);
-              console.log(`${field} 변환된 날짜:`, date);
-              console.log(`${field} 날짜 문자열:`, date.toLocaleDateString());
-              console.log(`${field} 시간 문자열:`, date.toLocaleTimeString());
-            } catch (error) {
-              console.error(`${field} 날짜 변환 오류:`, error);
-            }
-          });
-        } else {
-          console.log('날짜 관련 필드를 찾을 수 없습니다. 전체 필드 목록:', Object.keys(user));
-
-          // 모든 필드 값 출력
-          Object.keys(user).forEach(key => {
-            console.log(`필드 ${key}:`, user[key], `(타입: ${typeof user[key]})`);
-
-            // 문자열 필드에 대해 날짜 변환 시도
-            if (typeof user[key] === 'string' && (key.includes('date') || key.includes('time') || key.includes('at'))) {
-              try {
-                const date = new Date(user[key]);
-                console.log(`${key} 날짜 변환 시도:`, date.toISOString());
-                console.log(`${key} 날짜 문자열:`, date.toLocaleDateString());
-                console.log(`${key} 시간 문자열:`, date.toLocaleTimeString());
-              } catch (error) {
-                console.error(`${key} 날짜 변환 시도 오류:`, error);
-              }
-            }
-          });
-        }
-      }
-
-      setUsers(items);
-      setTotalCount(meta.totalItems);
-
-    } catch (err: any) {
-      console.error('사용자 목록 불러오기 오류:', err);
-      setError(err.message || '사용자 목록을 불러오는 중 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  }
 
   const handleUserSelect = async (user: User) => {
     console.log('사용자 상세 정보 모달 열림:', user);
@@ -365,22 +277,23 @@ export default function UsersAdmin() {
   const handleUnblockUser = async (userId: string) => {
   };
 
+  // React Query 훅 사용
+  const setAppearanceGradeMutation = hooks.useSetUserAppearanceGrade();
+
   const handleClassificationChange = async (userId: string, classification: string, gender: string) => {
     try {
-      setLoading(true);
-
       console.log('등급 변경 시작 - 사용자 ID:', userId);
       console.log('새 등급:', classification);
 
-      if (error) {
-        console.error('등급 변경 중 오류:', error);
-        throw error;
-      }
+      await setAppearanceGradeMutation.mutateAsync({
+        userId,
+        grade: classification || 'UNKNOWN'
+      });
+
+      console.log('등급 변경 완료');
     } catch (err: any) {
       console.error('등급 변경 중 오류 발생:', err);
       alert(`등급 변경 중 오류가 발생했습니다: ${err.message}`);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -767,7 +680,7 @@ export default function UsersAdmin() {
 
           <div className="flex space-x-2">
             <button
-              onClick={fetchUsers}
+              onClick={() => window.location.reload()}
               className="bg-primary-DEFAULT hover:bg-primary-dark text-white py-2 px-4 rounded"
               disabled={loading}
             >

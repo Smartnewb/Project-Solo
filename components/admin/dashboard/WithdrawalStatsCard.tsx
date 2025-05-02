@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -10,71 +9,22 @@ import {
   Alert,
   Grid
 } from '@mui/material';
-import AdminService from '@/app/services/admin';
+import { hooks } from '@/lib/query';
 
 export default function WithdrawalStatsCard() {
-  const [stats, setStats] = useState<{
-    totalWithdrawals: number | null;
-    dailyWithdrawals: number | null;
-    weeklyWithdrawals: number | null;
-    monthlyWithdrawals: number | null;
-  }>({
-    totalWithdrawals: null,
-    dailyWithdrawals: null,
-    weeklyWithdrawals: null,
-    monthlyWithdrawals: null,
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // React Query 훅 사용
+  const { data, isLoading: loading, error } = hooks.useDashboardData();
 
-  useEffect(() => {
-    const fetchWithdrawalStats = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  // 에러 메시지 처리
+  const errorMessage = error instanceof Error ? error.message : '데이터를 불러오는데 실패했습니다.';
 
-        // 병렬로 모든 API 호출
-        try {
-          const [totalResponse, dailyResponse, weeklyResponse, monthlyResponse] = await Promise.all([
-            AdminService.stats.getTotalWithdrawalsCount(),
-            AdminService.stats.getDailyWithdrawalCount(),
-            AdminService.stats.getWeeklyWithdrawalCount(),
-            AdminService.stats.getMonthlyWithdrawalCount()
-          ]);
-
-          console.log('탈퇴 통계 응답:', { totalResponse, dailyResponse, weeklyResponse, monthlyResponse });
-
-          // 응답 값이 유효한지 확인
-          setStats({
-            totalWithdrawals: totalResponse?.totalWithdrawals || 0,
-            dailyWithdrawals: dailyResponse?.dailyWithdrawals || 0,
-            weeklyWithdrawals: weeklyResponse?.weeklyWithdrawals || 0,
-            monthlyWithdrawals: monthlyResponse?.monthlyWithdrawals || 0
-          });
-        } catch (apiError) {
-          console.error('API 호출 오류:', apiError);
-          // 오류 발생 시 기본값 설정
-          setStats({
-            totalWithdrawals: 0,
-            dailyWithdrawals: 0,
-            weeklyWithdrawals: 0,
-            monthlyWithdrawals: 0
-          });
-        }
-      } catch (err) {
-        console.error('회원 탈퇴 통계 조회 중 오류:', err);
-        setError('데이터를 불러오는데 실패했습니다.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchWithdrawalStats();
-    // 1분마다 데이터 갱신
-    const interval = setInterval(fetchWithdrawalStats, 60000);
-
-    return () => clearInterval(interval);
-  }, []);
+  // 데이터 추출
+  const stats = {
+    totalWithdrawals: data?.withdrawals?.total || 0,
+    dailyWithdrawals: data?.withdrawals?.daily || 0,
+    weeklyWithdrawals: data?.withdrawals?.weekly || 0,
+    monthlyWithdrawals: data?.withdrawals?.monthly || 0
+  };
 
   if (loading) {
     return (
@@ -95,7 +45,7 @@ export default function WithdrawalStatsCard() {
     return (
       <Card>
         <CardContent>
-          <Alert severity="error">{error}</Alert>
+          <Alert severity="error">{errorMessage}</Alert>
         </CardContent>
       </Card>
     );
@@ -116,7 +66,7 @@ export default function WithdrawalStatsCard() {
                   총 탈퇴자 수
                 </Typography>
                 <Typography variant="h4">
-                  {stats.totalWithdrawals !== null ? stats.totalWithdrawals.toLocaleString() : '로딩 중...'}
+                  {stats.totalWithdrawals.toLocaleString()}
                 </Typography>
               </CardContent>
             </Card>
@@ -129,7 +79,7 @@ export default function WithdrawalStatsCard() {
                   오늘 탈퇴자 수
                 </Typography>
                 <Typography variant="h4">
-                  {stats.dailyWithdrawals !== null ? stats.dailyWithdrawals.toLocaleString() : '로딩 중...'}
+                  {stats.dailyWithdrawals.toLocaleString()}
                 </Typography>
               </CardContent>
             </Card>
@@ -142,7 +92,7 @@ export default function WithdrawalStatsCard() {
                   이번 주 탈퇴자 수
                 </Typography>
                 <Typography variant="h4">
-                  {stats.weeklyWithdrawals !== null ? stats.weeklyWithdrawals.toLocaleString() : '로딩 중...'}
+                  {stats.weeklyWithdrawals.toLocaleString()}
                 </Typography>
               </CardContent>
             </Card>
@@ -155,7 +105,7 @@ export default function WithdrawalStatsCard() {
                   이번 달 탈퇴자 수
                 </Typography>
                 <Typography variant="h4">
-                  {stats.monthlyWithdrawals !== null ? stats.monthlyWithdrawals.toLocaleString() : '로딩 중...'}
+                  {stats.monthlyWithdrawals.toLocaleString()}
                 </Typography>
               </CardContent>
             </Card>

@@ -1,4 +1,6 @@
 import adminAxios from '@/utils/adminAxios';
+import { adminApiClient } from '@/lib/api';
+import { adminService } from '@/lib/services';
 
 // axiosServer 변수 정의 (adminAxios와 동일하게 사용)
 const axiosServer = adminAxios;
@@ -21,79 +23,7 @@ interface FormattedData {
   genderStats: GenderStatItem[];
 }
 
-// 성별 통계 목업 데이터 생성 함수
-const getMockGenderStats = () => {
-  return {
-    maleCount: 60,
-    femaleCount: 60,
-    totalCount: 120,
-    malePercentage: 50,
-    femalePercentage: 50,
-    genderRatio: '1:1'
-  };
-};
 
-// 대학별 통계 목업 데이터 생성 함수
-const getMockUniversityStats = () => {
-  // 대학 목록
-  const universities = [
-    '건양대학교(메디컬캠퍼스)',
-    '대전대학교',
-    '목원대학교',
-    '배재대학교',
-    '우송대학교',
-    '한남대학교',
-    '충남대학교',
-    'KAIST',
-    '한밭대학교',
-    '을지대학교',
-    '대전보건대학교',
-    '대덕대학교'
-  ];
-
-  // 총 회원 수 (임의 설정)
-  const totalCount = 1200;
-
-  // 대학별 통계 데이터 생성
-  const universitiesData = universities.map(uni => {
-    // 임의의 회원 수 생성 (50~300 사이)
-    const totalUsers = Math.floor(Math.random() * 250) + 50;
-
-    // 임의의 성별 비율 생성
-    const maleRatio = Math.random() * 0.6 + 0.2; // 20%~80% 사이
-    const maleUsers = Math.floor(totalUsers * maleRatio);
-    const femaleUsers = totalUsers - maleUsers;
-
-    // 전체 대비 비율 계산
-    const percentage = (totalUsers / totalCount) * 100;
-
-    // 성비 계산 (남:여)
-    const gcdValue = gcd(maleUsers, femaleUsers);
-    const maleRatioSimplified = maleUsers / gcdValue || 0;
-    const femaleRatioSimplified = femaleUsers / gcdValue || 0;
-    const genderRatio = `${maleRatioSimplified}:${femaleRatioSimplified}`;
-
-    return {
-      university: uni,
-      totalUsers,
-      maleUsers,
-      femaleUsers,
-      percentage,
-      genderRatio
-    };
-  });
-
-  return {
-    universities: universitiesData,
-    totalCount
-  };
-};
-
-// 최대공약수 계산 함수 (성비 계산에 사용)
-const gcd = (a: number, b: number): number => {
-  if (!b) return a;
-  return gcd(b, a % b);
-};
 
 const auth = {
   cleanup: () => {
@@ -333,80 +263,18 @@ const stats = {
   getGenderStats: async () => {
     try {
       console.log('성별 통계 API 요청 시작');
-
-      // 토큰 확인
-      const token = localStorage.getItem('admin_access_token');
-      if (!token) {
-        console.warn('어드민 토큰이 없습니다. 기본값을 반환합니다.');
-        return getMockGenderStats();
-      }
-
-      // API 요청 전 로깅
-      console.log('성별 통계 API 요청 URL:', '/api/admin/stats/users/gender');
-      console.log('인증 토큰 존재 여부:', !!token);
-
-      const response = await axiosServer.get('/api/admin/stats/users/gender');
-      console.log('성별 통계 API 응답:', response.data);
-
-      // 응답 데이터 확인 및 필드명 변환
-      if (response.data) {
-        // 필드명 매핑 정의
-        const fieldMappings: Record<string, string> = {
-          'male': 'maleCount',
-          'female': 'femaleCount',
-          'total': 'totalCount',
-          'maleRatio': 'malePercentage',
-          'femaleRatio': 'femalePercentage',
-          'ratio': 'genderRatio'
-        };
-
-        // 변환된 데이터 객체 생성
-        const transformedData: Record<string, any> = {};
-
-        // 응답 데이터의 각 필드 확인
-        for (const [apiField, expectedField] of Object.entries(fieldMappings)) {
-          if (response.data[apiField] !== undefined) {
-            transformedData[expectedField] = response.data[apiField];
-            console.log(`필드 '${apiField}'를 '${expectedField}'로 변환했습니다:`, response.data[apiField]);
-          }
-        }
-
-        // 필수 필드가 있는지 확인
-        const requiredFields = ['maleCount', 'femaleCount', 'totalCount'];
-        const hasAllRequiredFields = requiredFields.every(field => transformedData[field] !== undefined);
-
-        if (hasAllRequiredFields) {
-          // 백분율 계산 (없는 경우)
-          if (transformedData.malePercentage === undefined && transformedData.totalCount > 0) {
-            transformedData.malePercentage = (transformedData.maleCount / transformedData.totalCount) * 100;
-          }
-
-          if (transformedData.femalePercentage === undefined && transformedData.totalCount > 0) {
-            transformedData.femalePercentage = (transformedData.femaleCount / transformedData.totalCount) * 100;
-          }
-
-          // 성비 계산 (없는 경우)
-          if (transformedData.genderRatio === undefined) {
-            const gcdValue = gcd(transformedData.maleCount, transformedData.femaleCount);
-            const maleRatio = transformedData.maleCount / gcdValue || 0;
-            const femaleRatio = transformedData.femaleCount / gcdValue || 0;
-            transformedData.genderRatio = `${maleRatio}:${femaleRatio}`;
-          }
-
-          return transformedData;
-        }
-      }
-
-      // 데이터가 없거나 형식이 다른 경우 목업 데이터 반환
-      console.warn('API 응답에 성별 통계 데이터가 없거나 형식이 다릅니다. 기본값을 반환합니다.');
-      return getMockGenderStats();
+      return await adminService.stats.getGenderStats();
     } catch (error: any) {
       console.error('성별 통계 조회 중 오류:', error.message);
-      if (error.response) {
-        console.error('오류 상태 코드:', error.response.status);
-        console.error('오류 응답 데이터:', error.response.data);
-      }
-      return getMockGenderStats(); // 오류 발생 시 기본값 반환
+      // 오류 발생 시 빈 데이터 반환
+      return {
+        maleCount: 0,
+        femaleCount: 0,
+        totalCount: 0,
+        malePercentage: 0,
+        femalePercentage: 0,
+        genderRatio: '0:0'
+      };
     }
   },
 
@@ -414,74 +282,144 @@ const stats = {
   getUniversityStats: async () => {
     try {
       console.log('대학별 통계 조회 시작');
-
-      // 토큰 확인
-      const token = localStorage.getItem('admin_access_token');
-      if (!token) {
-        console.warn('어드민 토큰이 없습니다. 기본값을 반환합니다.');
-        return getMockUniversityStats();
-      }
-
-      // API 요청 전 로깅
-      console.log('대학별 통계 API 요청 URL:', '/api/admin/stats/users/universities');
-      console.log('인증 토큰 존재 여부:', !!token);
-
-      const response = await axiosServer.get('/api/admin/stats/users/universities');
-      console.log('서비스에서 받은 대학별 통계 데이터:', response.data);
-      console.log('서비스에서 받은 데이터 구조:', JSON.stringify(response.data, null, 2));
-
-      // 대학명 확인
-      if (response.data && response.data.universities && response.data.universities.length > 0) {
-        console.log('첫 번째 대학 데이터:', response.data.universities[0]);
-        console.log('대학 데이터 키:', Object.keys(response.data.universities[0]));
-
-        // 데이터 값 확인
-        const firstUni = response.data.universities[0];
-        console.log('첫 번째 대학 상세 데이터:');
-        console.log('- 대학명:', firstUni.universityName);
-        console.log('- 전체 회원수:', firstUni.totalCount);
-        console.log('- 남성 회원수:', firstUni.maleCount);
-        console.log('- 여성 회원수:', firstUni.femaleCount);
-        console.log('- 사용자 비율:', firstUni.percentage);
-        console.log('- 성비:', firstUni.genderRatio);
-
-        // 필드명 변환
-        const transformedData = {
-          universities: response.data.universities.map(uni => ({
-            university: uni.universityName,
-            totalUsers: uni.totalCount,
-            maleUsers: uni.maleCount,
-            femaleUsers: uni.femaleCount,
-            percentage: uni.percentage,
-            genderRatio: uni.genderRatio
-          })),
-          totalCount: response.data.totalCount
-        };
-
-        console.log('변환된 대학별 통계 데이터:', transformedData);
-        return transformedData;
-      }
-
-      // 데이터가 없거나 형식이 다른 경우 목업 데이터 반환
-      console.warn('API 응답에 대학별 통계 데이터가 없거나 형식이 다릅니다. 기본값을 반환합니다.');
-      return getMockUniversityStats();
+      return await adminService.stats.getUniversityStats();
     } catch (error: any) {
       console.error('대학별 통계 조회 중 오류:', error.message);
-      if (error.response) {
-        console.error('오류 상태 코드:', error.response.status);
-        console.error('오류 응답 데이터:', error.response.data);
-      }
-      return getMockUniversityStats(); // 오류 발생 시 기본값 반환
+      // 오류 발생 시 빈 데이터 반환
+      return {
+        universities: [],
+        totalCount: 0
+      };
     }
   },
 
   // 사용자 활동 지표 조회
   getUserActivityStats: async () => {
     try {
-      const response = await axiosServer.get('/api/admin/stats/users/activity');
-      console.log('사용자 활동 지표 응답:', response.data);
+      console.log('사용자 활동 지표 API 요청 시작');
 
-      return response.data;
+      // 사용자 활동 지표 API 직접 호출
+      try {
+        console.log('사용자 활동 지표 API 요청 URL:', '/api/admin/stats/users/activity');
+        const activityStatsRes = await axiosServer.get('/api/admin/stats/users/activity');
+        console.log('사용자 활동 지표 API 응답:', activityStatsRes);
+
+        if (activityStatsRes?.data) {
+          return activityStatsRes.data;
+        }
+      } catch (error) {
+        console.error('사용자 활동 지표 API 호출 오류:', error);
+        // 사용자 활동 지표 API 호출 실패 시 개별 API 호출로 대체
+      }
+
+      // 각 API 호출을 개별적으로 시도하고 오류 처리
+      let totalUsers = 0;
+      let activeUsers = 0;
+      let dau = 0;
+      let wau = 0;
+      let mau = 0;
+
+      // 총 사용자 수 조회
+      try {
+        console.log('총 사용자 수 API 요청 URL:', '/api/admin/stats/users/total');
+        const totalUsersRes = await axiosServer.get('/api/admin/stats/users/total');
+        console.log('총 사용자 수 API 응답:', totalUsersRes);
+
+        if (totalUsersRes?.data) {
+          totalUsers = totalUsersRes.data.count || 0;
+        }
+      } catch (error) {
+        console.error('총 사용자 수 조회 중 오류:', error);
+      }
+
+      // 활성 사용자 수 조회
+      try {
+        console.log('활성 사용자 수 API 요청 URL:', '/api/admin/analytics/active-users');
+        const activeUsersRes = await axiosServer.get('/api/admin/analytics/active-users');
+        console.log('활성 사용자 수 API 응답:', activeUsersRes);
+
+        if (activeUsersRes?.data) {
+          activeUsers = activeUsersRes.data.count || 0;
+        }
+      } catch (error) {
+        console.error('활성 사용자 수 조회 중 오류:', error);
+      }
+
+      // DAU 조회
+      try {
+        console.log('DAU API 요청 URL:', '/api/admin/stats/users/daily');
+        const dauRes = await axiosServer.get('/api/admin/stats/users/daily');
+        console.log('DAU API 응답:', dauRes);
+
+        if (dauRes?.data) {
+          dau = dauRes.data.count || 0;
+        }
+      } catch (error) {
+        console.error('DAU 조회 중 오류:', error);
+      }
+
+      // WAU 조회
+      try {
+        console.log('WAU API 요청 URL:', '/api/admin/stats/users/weekly');
+        const wauRes = await axiosServer.get('/api/admin/stats/users/weekly');
+        console.log('WAU API 응답:', wauRes);
+
+        if (wauRes?.data) {
+          wau = wauRes.data.count || 0;
+        }
+      } catch (error) {
+        console.error('WAU 조회 중 오류:', error);
+      }
+
+      // MAU 조회
+      try {
+        console.log('MAU API 요청 URL:', '/api/admin/stats/users/monthly');
+        const mauRes = await axiosServer.get('/api/admin/stats/users/monthly');
+        console.log('MAU API 응답:', mauRes);
+
+        if (mauRes?.data) {
+          mau = mauRes.data.count || 0;
+        }
+      } catch (error) {
+        console.error('MAU 조회 중 오류:', error);
+
+        // 대체 API 시도
+        try {
+          console.log('MAU 대체 API 요청 URL:', '/api/admin/stats/users/this-week');
+          const mauAltRes = await axiosServer.get('/api/admin/stats/users/this-week');
+          console.log('MAU 대체 API 응답:', mauAltRes);
+
+          if (mauAltRes?.data) {
+            mau = mauAltRes.data.count || 0;
+          }
+        } catch (altError) {
+          console.error('MAU 대체 API 조회 중 오류:', altError);
+        }
+      }
+
+      // 활성화율 및 Stickiness 계산
+      const activationRate = totalUsers > 0 ? (activeUsers / totalUsers) * 100 : 0;
+      const stickiness = mau > 0 ? (dau / mau) * 100 : 0;
+
+      // 시간대별 활성 사용자 분포 (실제 데이터가 없으므로 0으로 초기화)
+      const hourlyDistribution = {};
+      for (let i = 0; i < 24; i++) {
+        hourlyDistribution[i] = 0;
+      }
+
+      const result = {
+        activeUsers,
+        realtimeActiveUsers: 0, // 실시간 데이터가 없으므로 0으로 설정
+        dau,
+        wau,
+        mau,
+        activationRate,
+        stickiness,
+        hourlyDistribution
+      };
+
+      console.log('사용자 활동 지표 최종 데이터:', result);
+      return result;
     } catch (error) {
       console.error('사용자 활동 지표 조회 중 오류:', error);
       throw error;
@@ -940,317 +878,40 @@ const userAppearance = {
   getAppearanceGradeStats: async () => {
     try {
       console.log('외모 등급 통계 API 호출 시작');
-
-      // 백엔드 API 변경에 따라 경로 수정
-      const endpoint = '/api/admin/stats/appearance';
-      console.log(`API 엔드포인트: ${endpoint}`);
-
-      // 토큰 확인
-      const token = typeof window !== 'undefined' ? localStorage.getItem('admin_access_token') : null;
-      console.log('토큰 존재 여부:', !!token);
-
-      // 캐싱 방지를 위한 타임스탬프 추가
-      const timestamp = new Date().getTime();
-
-      // API 호출 (캐싱 방지를 위한 쿼리 파라미터 추가)
-      console.log('API 요청 URL:', `${endpoint}?_t=${timestamp}`);
-      console.log('API 요청 헤더:', {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      });
-
-      // 테스트 데이터 (API 응답 예시)
-      const testData = {
-        all: {
-          S: 623,
-          A: 622,
-          B: 619,
-          C: 619,
-          UNKNOWN: 619,
-          total: 3102
-        },
-        male: {
-          S: 289,
-          A: 308,
-          B: 310,
-          C: 311,
-          UNKNOWN: 326,
-          total: 1544
-        },
-        female: {
-          S: 334,
-          A: 314,
-          B: 309,
-          C: 308,
-          UNKNOWN: 293,
-          total: 1558
-        }
-      };
-
-      let responseData;
-
-      try {
-        // Axios를 사용한 API 호출
-        const response = await axiosServer.get(`${endpoint}?_t=${timestamp}`);
-        console.log('Axios API 응답 상태 코드:', response.status);
-        console.log('Axios API 응답 데이터 전체:', response.data);
-        console.log('Axios API 응답 데이터 (JSON):', JSON.stringify(response.data, null, 2));
-
-        // 응답 데이터가 비어있거나 형식이 맞지 않는 경우 테스트 데이터 사용
-        if (!response.data || Object.keys(response.data).length === 0) {
-          console.log('API 응답이 비어있어 테스트 데이터를 사용합니다.');
-          responseData = testData;
-        } else {
-          responseData = response.data;
-        }
-      } catch (error) {
-        console.error('API 호출 오류:', error);
-        console.log('API 호출 오류로 테스트 데이터를 사용합니다.');
-        responseData = testData;
-      }
-
-      console.log('처리할 응답 데이터:', responseData);
-
-      // 응답 데이터 구조 변환
-      const formattedData: FormattedData = {
-        total: 0,
-        stats: [],
-        genderStats: []
-      };
-
-      // 응답 데이터가 객체인지 확인
-      if (typeof responseData === 'object' && responseData !== null) {
-        console.log('응답 데이터 처리 시작');
-        console.log('응답 데이터 구조:', Object.keys(responseData));
-
-        // 새로운 API 응답 구조 처리 (제공된 예시 구조)
-        if (responseData.all && responseData.male && responseData.female) {
-          console.log('새로운 API 응답 구조 감지');
-
-          // 전체 통계 처리
-          const allStats = responseData.all;
-          formattedData.total = allStats.total || 0;
-
-          // 등급별 통계 처리
-          const grades = ['S', 'A', 'B', 'C', 'UNKNOWN'];
-          formattedData.stats = grades.map(grade => {
-            const count = allStats[grade] || 0;
-            const percentage = allStats.total > 0 ? (count / allStats.total) * 100 : 0;
-
-            return {
-              grade,
-              count,
-              percentage
-            };
-          });
-
-          // 성별 통계 처리
-          formattedData.genderStats = [
-            {
-              gender: 'MALE',
-              stats: grades.map(grade => {
-                const count = responseData.male[grade] || 0;
-                const percentage = responseData.male.total > 0 ? (count / responseData.male.total) * 100 : 0;
-
-                return {
-                  grade,
-                  count,
-                  percentage
-                };
-              })
-            },
-            {
-              gender: 'FEMALE',
-              stats: grades.map(grade => {
-                const count = responseData.female[grade] || 0;
-                const percentage = responseData.female.total > 0 ? (count / responseData.female.total) * 100 : 0;
-
-                return {
-                  grade,
-                  count,
-                  percentage
-                };
-              })
-            }
-          ];
-
-          console.log('처리된 전체 통계:', formattedData.stats);
-          console.log('처리된 성별 통계:', formattedData.genderStats);
-        } else {
-          console.log('기존 API 응답 구조 처리 시도');
-
-          // 총 사용자 수 처리
-          if ('total' in responseData) {
-            formattedData.total = responseData.total || 0;
-          } else if ('data' in responseData && 'total' in responseData.data) {
-            formattedData.total = responseData.data.total || 0;
-          }
-          console.log('총 사용자 수 (처리 후):', formattedData.total);
-
-          // 등급별 통계 처리
-          let statsData = [];
-          if (Array.isArray(responseData.stats)) {
-            statsData = responseData.stats;
-          } else if (responseData.data && Array.isArray(responseData.data.stats)) {
-            statsData = responseData.data.stats;
-          }
-
-          console.log('등급별 통계 데이터:', statsData);
-
-          // 백분율 계산이 되어 있지 않은 경우 계산
-          formattedData.stats = statsData.map((stat: { count: number; percentage: number; grade: string }) => {
-            const count = stat.count || 0;
-            let percentage = stat.percentage;
-
-            if (typeof percentage !== 'number' && formattedData.total > 0) {
-              percentage = (count / formattedData.total) * 100;
-            }
-
-            return {
-              grade: stat.grade,
-              count: count,
-              percentage: percentage || 0
-            };
-          });
-
-          console.log('처리된 등급별 통계:', formattedData.stats);
-
-          // 성별 통계 처리
-          let genderStatsData = [];
-          if (Array.isArray(responseData.genderStats)) {
-            genderStatsData = responseData.genderStats;
-          } else if (responseData.data && Array.isArray(responseData.data.genderStats)) {
-            genderStatsData = responseData.data.genderStats;
-          }
-
-          console.log('성별 통계 데이터:', genderStatsData);
-
-          formattedData.genderStats = genderStatsData.map((genderStat: { stats: any[]; gender: string }) => {
-            // 각 성별별 총 사용자 수 계산
-            const genderStatsArray = Array.isArray(genderStat.stats) ? genderStat.stats : [];
-            const genderTotal = genderStatsArray.reduce((sum: number, stat: { count: number }) => sum + (stat.count || 0), 0);
-
-            // 백분율 계산이 되어 있지 않은 경우 계산
-            const stats = genderStatsArray.map((stat: { count: number; percentage: number; grade: string }) => {
-              const count = stat.count || 0;
-              let percentage = stat.percentage;
-
-              if (typeof percentage !== 'number' && genderTotal > 0) {
-                percentage = (count / genderTotal) * 100;
-              }
-
-              return {
-                grade: stat.grade,
-                count: count,
-                percentage: percentage || 0
-              };
-            });
-
-            return {
-              gender: genderStat.gender,
-              stats
-            };
-          });
-
-          console.log('처리된 성별 통계:', formattedData.genderStats);
-        }
-      } else {
-        console.error('응답 데이터가 객체가 아닙니다:', responseData);
-      }
-
-      // 모든 등급이 포함되어 있는지 확인하고, 없는 등급은 추가
-      const allGrades = ['S', 'A', 'B', 'C', 'UNKNOWN'];
-
-      // 전체 통계에 모든 등급 포함
-      allGrades.forEach(grade => {
-        if (!formattedData.stats.some(stat => stat.grade === grade)) {
-          formattedData.stats.push({
-            grade,
-            count: 0,
-            percentage: 0
-          });
-        }
-      });
-
-      // 성별 통계에 모든 등급 포함
-      formattedData.genderStats.forEach(genderStat => {
-        allGrades.forEach(grade => {
-          if (!genderStat.stats.some(stat => stat.grade === grade)) {
-            genderStat.stats.push({
-              grade,
-              count: 0,
-              percentage: 0
-            });
-          }
-        });
-      });
-
-      console.log('변환된 데이터:', formattedData);
-      return formattedData;
+      return await adminService.stats.getAppearanceGradeStats();
     } catch (error: any) {
       console.error('외모 등급 통계 조회 중 오류:', error);
       console.error('오류 상세 정보:', error.response?.data || error.message);
-      console.error('오류 상태 코드:', error.response?.status);
 
-      // 테스트 데이터 (API 응답 예시)
-      const testData = {
-        all: {
-          S: 623,
-          A: 622,
-          B: 619,
-          C: 619,
-          UNKNOWN: 619,
-          total: 3102
-        },
-        male: {
-          S: 289,
-          A: 308,
-          B: 310,
-          C: 311,
-          UNKNOWN: 326,
-          total: 1544
-        },
-        female: {
-          S: 334,
-          A: 314,
-          B: 309,
-          C: 308,
-          UNKNOWN: 293,
-          total: 1558
-        }
-      };
-
-      console.log('오류 발생으로 테스트 데이터 반환');
-
-      // 테스트 데이터를 formattedData 형식으로 변환
-      const formattedData = {
-        total: testData.all.total,
+      // 오류 발생 시 빈 데이터 반환
+      const formattedData: FormattedData = {
+        total: 0,
         stats: [
-          { grade: 'S', count: testData.all.S, percentage: (testData.all.S / testData.all.total) * 100 },
-          { grade: 'A', count: testData.all.A, percentage: (testData.all.A / testData.all.total) * 100 },
-          { grade: 'B', count: testData.all.B, percentage: (testData.all.B / testData.all.total) * 100 },
-          { grade: 'C', count: testData.all.C, percentage: (testData.all.C / testData.all.total) * 100 },
-          { grade: 'UNKNOWN', count: testData.all.UNKNOWN, percentage: (testData.all.UNKNOWN / testData.all.total) * 100 }
+          { grade: 'S', count: 0, percentage: 0 },
+          { grade: 'A', count: 0, percentage: 0 },
+          { grade: 'B', count: 0, percentage: 0 },
+          { grade: 'C', count: 0, percentage: 0 },
+          { grade: 'UNKNOWN', count: 0, percentage: 0 }
         ],
         genderStats: [
           {
             gender: 'MALE',
             stats: [
-              { grade: 'S', count: testData.male.S, percentage: (testData.male.S / testData.male.total) * 100 },
-              { grade: 'A', count: testData.male.A, percentage: (testData.male.A / testData.male.total) * 100 },
-              { grade: 'B', count: testData.male.B, percentage: (testData.male.B / testData.male.total) * 100 },
-              { grade: 'C', count: testData.male.C, percentage: (testData.male.C / testData.male.total) * 100 },
-              { grade: 'UNKNOWN', count: testData.male.UNKNOWN, percentage: (testData.male.UNKNOWN / testData.male.total) * 100 }
+              { grade: 'S', count: 0, percentage: 0 },
+              { grade: 'A', count: 0, percentage: 0 },
+              { grade: 'B', count: 0, percentage: 0 },
+              { grade: 'C', count: 0, percentage: 0 },
+              { grade: 'UNKNOWN', count: 0, percentage: 0 }
             ]
           },
           {
             gender: 'FEMALE',
             stats: [
-              { grade: 'S', count: testData.female.S, percentage: (testData.female.S / testData.female.total) * 100 },
-              { grade: 'A', count: testData.female.A, percentage: (testData.female.A / testData.female.total) * 100 },
-              { grade: 'B', count: testData.female.B, percentage: (testData.female.B / testData.female.total) * 100 },
-              { grade: 'C', count: testData.female.C, percentage: (testData.female.C / testData.female.total) * 100 },
-              { grade: 'UNKNOWN', count: testData.female.UNKNOWN, percentage: (testData.female.UNKNOWN / testData.female.total) * 100 }
+              { grade: 'S', count: 0, percentage: 0 },
+              { grade: 'A', count: 0, percentage: 0 },
+              { grade: 'B', count: 0, percentage: 0 },
+              { grade: 'C', count: 0, percentage: 0 },
+              { grade: 'UNKNOWN', count: 0, percentage: 0 }
             ]
           }
         ]

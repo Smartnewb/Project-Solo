@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
-import communityService from '@/app/services/community';
+import { hooks } from '@/lib/query';
 import {
   Box,
   Typography,
@@ -97,13 +97,9 @@ function TabPanel(props: {
 // 게시글 목록 컴포넌트
 function ArticleList() {
   const router = useRouter();
-  const [articles, setArticles] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [filter, setFilter] = useState<'all' | 'reported' | 'blinded'>('all');
-  const [totalCount, setTotalCount] = useState(0);
   const [selectedArticles, setSelectedArticles] = useState<string[]>([]);
   const [openBlindDialog, setOpenBlindDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
@@ -119,47 +115,32 @@ function ArticleList() {
     endDate: null
   });
 
-  // 게시글 목록 조회
-  const fetchArticles = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await communityService.getArticles(
-        filter,
-        page + 1,
-        rowsPerPage,
-        dateRange.startDate,
-        dateRange.endDate
-      );
+  // React Query 훅 사용
+  const {
+    data,
+    isLoading: loading,
+    error: queryError
+  } = hooks.useCommunityArticles(
+    filter,
+    page + 1,
+    rowsPerPage,
+    dateRange.startDate?.toISOString(),
+    dateRange.endDate?.toISOString()
+  );
 
-      // 날짜 필터링이 백엔드에서 지원되지 않는 경우, 프론트엔드에서 필터링
-      let filteredArticles = response.items || [];
+  // 데이터 추출
+  const articles = data?.items || [];
+  const totalCount = data?.meta?.totalItems || 0;
+  const error = queryError ? (queryError instanceof Error ? queryError.message : '게시글 목록을 불러오는 중 오류가 발생했습니다.') : null;
 
-      if (dateRange.startDate || dateRange.endDate) {
-        filteredArticles = filteredArticles.filter(article => {
-          const articleDate = new Date(article.createdAt);
-
-          if (dateRange.startDate && dateRange.endDate) {
-            return articleDate >= dateRange.startDate && articleDate <= dateRange.endDate;
-          } else if (dateRange.startDate) {
-            return articleDate >= dateRange.startDate;
-          } else if (dateRange.endDate) {
-            return articleDate <= dateRange.endDate;
-          }
-
-          return true;
-        });
-      }
-
-      setArticles(filteredArticles);
-      setTotalCount(filteredArticles.length || 0);
-    } catch (error) {
-      console.error('게시글 목록 조회 중 오류:', error);
-      setError('게시글 목록을 불러오는 중 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // React Query 리패치 함수
+  const { refetch: fetchArticles } = hooks.useCommunityArticles(
+    filter,
+    page + 1,
+    rowsPerPage,
+    dateRange.startDate?.toISOString(),
+    dateRange.endDate?.toISOString()
+  );
 
   // 페이지 변경 시
   const handleChangePage = (event: unknown, newPage: number) => {
@@ -232,7 +213,6 @@ function ArticleList() {
   // 날짜 필터 적용
   const handleApplyDateFilter = () => {
     setPage(0);
-    fetchArticles();
     handleCloseDateFilterDialog();
   };
 
@@ -243,39 +223,51 @@ function ArticleList() {
       endDate: null
     });
     setPage(0);
-    fetchArticles();
     handleCloseDateFilterDialog();
   };
+
+  // React Query 훅 사용
+  const bulkBlindMutation = hooks.useBulkBlindArticles();
 
   // 블라인드 처리
   const handleBlindArticles = async (isBlinded: boolean) => {
     try {
       setActionLoading(true);
-      await communityService.bulkBlindArticles(selectedArticles, isBlinded, blindReason);
+      await bulkBlindMutation.mutateAsync({
+        ids: selectedArticles,
+        isBlinded,
+        reason: blindReason
+      });
       setSuccessMessage(`선택한 게시글을 ${isBlinded ? '블라인드' : '블라인드 해제'} 처리했습니다.`);
       setSelectedArticles([]);
-      fetchArticles();
       handleCloseBlindDialog();
     } catch (error) {
       console.error('게시글 블라인드 처리 중 오류:', error);
-      setError(`게시글 ${isBlinded ? '블라인드' : '블라인드 해제'} 처리 중 오류가 발생했습니다.`);
+      const errorMessage = error instanceof Error ? error.message : `게시글 ${isBlinded ? '블라인드' : '블라인드 해제'} 처리 중 오류가 발생했습니다.`;
+      alert(errorMessage);
     } finally {
       setActionLoading(false);
     }
   };
 
+  // React Query 훅 사용
+  const bulkDeleteMutation = hooks.useBulkDeleteArticles();
+
   // 게시글 삭제
   const handleDeleteArticles = async () => {
     try {
       setActionLoading(true);
-      await communityService.bulkDeleteArticles(selectedArticles, '관리자에 의한 일괄 삭제');
+      await bulkDeleteMutation.mutateAsync({
+        ids: selectedArticles,
+        reason: '관리자에 의한 일괄 삭제'
+      });
       setSuccessMessage('선택한 게시글을 삭제했습니다.');
       setSelectedArticles([]);
-      fetchArticles();
       handleCloseDeleteDialog();
     } catch (error) {
       console.error('게시글 삭제 중 오류:', error);
-      setError('게시글 삭제 중 오류가 발생했습니다.');
+      const errorMessage = error instanceof Error ? error.message : '게시글 삭제 중 오류가 발생했습니다.';
+      alert(errorMessage);
     } finally {
       setActionLoading(false);
     }
@@ -291,10 +283,7 @@ function ArticleList() {
     }
   }, [successMessage]);
 
-  // 게시글 목록 조회
-  useEffect(() => {
-    fetchArticles();
-  }, [filter, page, rowsPerPage]);
+  // 게시글 목록은 React Query에서 자동으로 조회됨
 
   return (
     <Box>
@@ -377,7 +366,7 @@ function ArticleList() {
           <Button
             variant="outlined"
             color="primary"
-            onClick={fetchArticles}
+            onClick={() => fetchArticles()}
             startIcon={<RefreshIcon />}
             sx={{
               borderRadius: 2,
@@ -1080,12 +1069,8 @@ function ArticleList() {
 // 휴지통 컴포넌트
 function TrashList() {
   const router = useRouter();
-  const [articles, setArticles] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [totalCount, setTotalCount] = useState(0);
   const [selectedArticles, setSelectedArticles] = useState<string[]>([]);
   const [openRestoreDialog, setOpenRestoreDialog] = useState(false);
   const [openPermanentDeleteDialog, setOpenPermanentDeleteDialog] = useState(false);
@@ -1093,21 +1078,18 @@ function TrashList() {
   const [actionLoading, setActionLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // 휴지통 게시글 목록 조회
-  const fetchTrashArticles = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await communityService.getTrashArticles(page + 1, rowsPerPage);
-      setArticles(response.items || []);
-      setTotalCount(response.total || 0);
-    } catch (error) {
-      console.error('휴지통 게시글 목록 조회 중 오류:', error);
-      setError('휴지통 게시글 목록을 불러오는 중 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // React Query 훅 사용
+  const {
+    data,
+    isLoading: loading,
+    error: queryError,
+    refetch: fetchTrashArticles
+  } = hooks.useTrashArticles(page + 1, rowsPerPage);
+
+  // 데이터 추출
+  const articles = data?.items || [];
+  const totalCount = data?.meta?.totalItems || 0;
+  const error = queryError ? (queryError instanceof Error ? queryError.message : '휴지통 게시글 목록을 불러오는 중 오류가 발생했습니다.') : null;
 
   // 페이지 변경 시
   const handleChangePage = (event: unknown, newPage: number) => {
@@ -1170,56 +1152,65 @@ function TrashList() {
     setOpenEmptyTrashDialog(false);
   };
 
+  // React Query 훅 사용
+  const restoreMutation = hooks.useRestoreArticle();
+
   // 게시글 복원
   const handleRestoreArticles = async () => {
     try {
       setActionLoading(true);
       for (const id of selectedArticles) {
-        await communityService.restoreArticle(id);
+        await restoreMutation.mutateAsync(id);
       }
       setSuccessMessage(`선택한 게시글을 복원했습니다.`);
       setSelectedArticles([]);
-      fetchTrashArticles();
       handleCloseRestoreDialog();
     } catch (error) {
       console.error('게시글 복원 중 오류:', error);
-      setError('게시글 복원 중 오류가 발생했습니다.');
+      const errorMessage = error instanceof Error ? error.message : '게시글 복원 중 오류가 발생했습니다.';
+      alert(errorMessage);
     } finally {
       setActionLoading(false);
     }
   };
+
+  // React Query 훅 사용
+  const permanentDeleteMutation = hooks.usePermanentDeleteArticle();
 
   // 게시글 영구 삭제
   const handlePermanentDeleteArticles = async () => {
     try {
       setActionLoading(true);
       for (const id of selectedArticles) {
-        await communityService.permanentDeleteArticle(id);
+        await permanentDeleteMutation.mutateAsync(id);
       }
       setSuccessMessage('선택한 게시글을 영구 삭제했습니다.');
       setSelectedArticles([]);
-      fetchTrashArticles();
       handleClosePermanentDeleteDialog();
     } catch (error) {
       console.error('게시글 영구 삭제 중 오류:', error);
-      setError('게시글 영구 삭제 중 오류가 발생했습니다.');
+      const errorMessage = error instanceof Error ? error.message : '게시글 영구 삭제 중 오류가 발생했습니다.';
+      alert(errorMessage);
     } finally {
       setActionLoading(false);
     }
   };
 
+  // React Query 훅 사용
+  const emptyTrashMutation = hooks.useEmptyTrash();
+
   // 휴지통 비우기
   const handleEmptyTrash = async () => {
     try {
       setActionLoading(true);
-      await communityService.emptyTrash();
+      await emptyTrashMutation.mutateAsync();
       setSuccessMessage('휴지통을 비웠습니다.');
       setSelectedArticles([]);
-      fetchTrashArticles();
       handleCloseEmptyTrashDialog();
     } catch (error) {
       console.error('휴지통 비우기 중 오류:', error);
-      setError('휴지통 비우기 중 오류가 발생했습니다.');
+      const errorMessage = error instanceof Error ? error.message : '휴지통 비우기 중 오류가 발생했습니다.';
+      alert(errorMessage);
     } finally {
       setActionLoading(false);
     }
@@ -1235,10 +1226,7 @@ function TrashList() {
     }
   }, [successMessage]);
 
-  // 휴지통 게시글 목록 조회
-  useEffect(() => {
-    fetchTrashArticles();
-  }, [page, rowsPerPage]);
+  // 휴지통 게시글 목록은 React Query에서 자동으로 조회됨
 
   return (
     <Box>
@@ -1490,14 +1478,10 @@ function TrashList() {
 
 // 신고 목록 컴포넌트
 function ReportList() {
-  const [reports, setReports] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [typeFilter, setTypeFilter] = useState<'all' | 'article' | 'comment'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'processed'>('pending');
-  const [totalCount, setTotalCount] = useState(0);
   const [openProcessDialog, setOpenProcessDialog] = useState(false);
   const [selectedReport, setSelectedReport] = useState<any>(null);
   const [processMemo, setProcessMemo] = useState('');
@@ -1506,26 +1490,23 @@ function ReportList() {
   const [actionLoading, setActionLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // 신고 목록 조회
-  const fetchReports = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await communityService.getReports(
-        typeFilter,
-        statusFilter,
-        page + 1,
-        rowsPerPage
-      );
-      setReports(response.items || []);
-      setTotalCount(response.total || 0);
-    } catch (error) {
-      console.error('신고 목록 조회 중 오류:', error);
-      setError('신고 목록을 불러오는 중 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // React Query 훅 사용
+  const {
+    data,
+    isLoading: loading,
+    error: queryError,
+    refetch: fetchReports
+  } = hooks.useCommunityReports(
+    typeFilter,
+    statusFilter,
+    page + 1,
+    rowsPerPage
+  );
+
+  // 데이터 추출
+  const reports = data?.items || [];
+  const totalCount = data?.meta?.totalItems || 0;
+  const error = queryError ? (queryError instanceof Error ? queryError.message : '신고 목록을 불러오는 중 오류가 발생했습니다.') : null;
 
   // 페이지 변경 시
   const handleChangePage = (event: unknown, newPage: number) => {
@@ -1565,24 +1546,27 @@ function ReportList() {
     setSelectedReport(null);
   };
 
+  // React Query 훅 사용
+  const processReportMutation = hooks.useProcessReport();
+
   // 신고 처리
   const handleProcessReport = async () => {
     if (!selectedReport) return;
 
     try {
       setActionLoading(true);
-      await communityService.processReport(
-        selectedReport.id,
-        processResult,
-        processMemo,
-        processResult === 'accepted' && blindTarget
-      );
+      await processReportMutation.mutateAsync({
+        id: selectedReport.id,
+        result: processResult,
+        memo: processMemo,
+        blind: processResult === 'accepted' && blindTarget
+      });
       setSuccessMessage('신고를 처리했습니다.');
-      fetchReports();
       handleCloseProcessDialog();
     } catch (error) {
       console.error('신고 처리 중 오류:', error);
-      setError('신고 처리 중 오류가 발생했습니다.');
+      const errorMessage = error instanceof Error ? error.message : '신고 처리 중 오류가 발생했습니다.';
+      alert(errorMessage);
     } finally {
       setActionLoading(false);
     }
@@ -1598,10 +1582,7 @@ function ReportList() {
     }
   }, [successMessage]);
 
-  // 신고 목록 조회
-  useEffect(() => {
-    fetchReports();
-  }, [typeFilter, statusFilter, page, rowsPerPage]);
+  // 신고 목록은 React Query에서 자동으로 조회됨
 
   return (
     <Box>

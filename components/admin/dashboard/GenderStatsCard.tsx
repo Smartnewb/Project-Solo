@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -12,7 +11,7 @@ import {
   Divider
 } from '@mui/material';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import AdminService from '@/app/services/admin';
+import { hooks } from '@/lib/query';
 
 // API 응답 타입 정의
 interface GenderStats {
@@ -26,35 +25,8 @@ interface GenderStats {
 
 // 성별 통계 카드 컴포넌트
 export default function GenderStatsCard() {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState<GenderStats | null>(null);
-
-  // 데이터 조회
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const response = await AdminService.stats.getGenderStats();
-        console.log('성별 통계 응답:', response);
-
-        setStats(response);
-      } catch (error: any) {
-        console.error('성별 통계 조회 중 오류:', error);
-        setError(
-          error.response?.data?.message ||
-          error.message ||
-          '데이터를 불러오는데 실패했습니다.'
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  // React Query 훅 사용
+  const { data: stats, isLoading: loading, error } = hooks.useGenderStats();
 
   // 차트 데이터 생성
   const chartData = stats ? [
@@ -64,6 +36,9 @@ export default function GenderStatsCard() {
 
   // 차트 색상
   const COLORS = ['#0088FE', '#FF8042'];
+
+  // 에러 메시지 처리
+  const errorMessage = error instanceof Error ? error.message : '데이터를 불러오는데 실패했습니다.';
 
   return (
     <Card>
@@ -83,7 +58,7 @@ export default function GenderStatsCard() {
 
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
+            {errorMessage}
           </Alert>
         )}
 

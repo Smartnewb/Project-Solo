@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -20,7 +19,7 @@ import {
   Tooltip
 } from '@mui/material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
-import AdminService from '@/app/services/admin';
+import { hooks } from '@/lib/query';
 
 // 대학 목록 (정렬된 상태로 유지)
 const UNIVERSITIES = [
@@ -40,79 +39,8 @@ const UNIVERSITIES = [
 
 // 대학별 통계 카드 컴포넌트
 export default function UniversityStatsCard() {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  // 실제 API 응답 구조에 맞게 타입 설정
-  const [stats, setStats] = useState<{
-    universities: Array<{
-      university: string;
-      totalUsers: number;
-      maleUsers: number;
-      femaleUsers: number;
-      percentage: number;
-      genderRatio: string;
-    }>;
-    totalCount: number;
-  } | null>(null);
-
-  // 데이터 조회
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // API 호출
-        const response = await AdminService.stats.getUniversityStats();
-        console.log('대학별 통계 응답:', response);
-        console.log('대학별 통계 데이터 구조:', JSON.stringify(response, null, 2));
-
-        // API 응답 구조 확인
-        console.log('실제 API 응답 구조 확인:');
-        console.log('response 타입:', typeof response);
-        console.log('response 키:', Object.keys(response));
-
-        if (response && response.universities) {
-          console.log('universities 타입:', typeof response.universities);
-          console.log('universities 길이:', response.universities.length);
-
-          if (response.universities.length > 0) {
-            console.log('첫 번째 대학 데이터 키:', Object.keys(response.universities[0]));
-
-            // 데이터 값 확인
-            const firstUni = response.universities[0];
-            console.log('첫 번째 대학 상세 데이터:');
-            for (const key in firstUni) {
-              console.log(`- ${key}:`, firstUni[key], typeof firstUni[key]);
-            }
-
-            // 모든 대학 데이터 확인
-            response.universities.forEach((uni, index) => {
-              console.log(`대학 ${index}:`, uni);
-              console.log(`대학명: ${uni.university}, 전체 회원: ${uni.totalUsers}, 남성: ${uni.maleUsers}, 여성: ${uni.femaleUsers}`);
-            });
-          }
-
-          // 실제 API 데이터 사용
-          setStats(response);
-        } else {
-          console.log('대학 데이터가 없습니다.');
-          setError('대학별 통계 데이터가 없습니다.');
-        }
-      } catch (error: any) {
-        console.error('대학별 통계 조회 중 오류:', error);
-        setError(
-          error.response?.data?.message ||
-          error.message ||
-          '데이터를 불러오는데 실패했습니다.'
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
+  // React Query 훅 사용
+  const { data: stats, isLoading: loading, error } = hooks.useUniversityStats();
 
   // 차트 데이터 생성
   const chartData = stats?.universities?.map((uni, index) => {
@@ -124,19 +52,16 @@ export default function UniversityStatsCard() {
     const femaleCount = uni.femaleUsers || 0;
     const totalCount = uni.totalUsers || 0;
 
-    const result = {
+    return {
       name: universityName,
       남성: maleCount,
       여성: femaleCount,
       총회원수: totalCount
     };
-
-    console.log(`차트 데이터 ${index}:`, result);
-    return result;
   }) || [];
 
-  // 디버깅용 로그
-  console.log('차트 데이터:', chartData);
+  // 에러 메시지 처리
+  const errorMessage = error instanceof Error ? error.message : '데이터를 불러오는데 실패했습니다.';
 
   return (
     <Card>
@@ -156,7 +81,7 @@ export default function UniversityStatsCard() {
 
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
+            {errorMessage}
           </Alert>
         )}
 
@@ -207,41 +132,17 @@ export default function UniversityStatsCard() {
                 <TableBody>
                   {/* 테이블 표시 */}
                   {stats?.universities?.map((uni, index) => {
-                    // 디버깅용 로그
-                    console.log(`테이블 행 ${index}:`, uni);
-
-                    // 데이터 가져오기 - 실제 API 응답 구조에 맞게 처리
-                    const universityName = uni.university || '-';
-
-                    // 데이터 값 확인 및 디버깅
-                    console.log(`테이블 행 ${index} 상세 데이터:`);
-                    console.log('- university:', uni.university);
-                    console.log('- totalUsers:', uni.totalUsers);
-                    console.log('- maleUsers:', uni.maleUsers);
-                    console.log('- femaleUsers:', uni.femaleUsers);
-                    console.log('- percentage:', uni.percentage);
-                    console.log('- genderRatio:', uni.genderRatio);
-
                     // 데이터 가져오기
+                    const universityName = uni.university || '-';
                     const maleCount = uni.maleUsers || 0;
                     const femaleCount = uni.femaleUsers || 0;
                     const totalCount = uni.totalUsers || 0;
                     const percentage = uni.percentage || 0;
                     const genderRatio = uni.genderRatio || '0:0';
 
-                    console.log(`행 ${index} 처리된 데이터:`, {
-                      universityName,
-                      totalCount,
-                      maleCount,
-                      femaleCount,
-                      percentage,
-                      genderRatio
-                    });
-
                     return (
                       <TableRow key={index}>
                         <TableCell component="th" scope="row">
-                          {/* 대학명 표시 - 인덱스를 사용하여 하드코딩된 목록에서 가져옴 */}
                           {universityName}
                         </TableCell>
                         <TableCell align="right">

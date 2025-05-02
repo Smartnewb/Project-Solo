@@ -3,7 +3,7 @@
 import { Card, CardContent, Typography, Box, CircularProgress } from '@mui/material';
 import { hooks } from '@/lib/query';
 
-export default function TotalUsersCard() {
+export default function TotalMatchesCard() {
   // React Query 훅 사용
   const { data, isLoading, error } = hooks.useDashboardData();
 
@@ -11,7 +11,7 @@ export default function TotalUsersCard() {
     <Card variant="outlined">
       <CardContent>
         <Typography color="textSecondary" gutterBottom>
-          총 회원 수
+          총 매칭 수
         </Typography>
         {isLoading ? (
           <Box display="flex" justifyContent="center" alignItems="center" height="40px">
@@ -23,7 +23,7 @@ export default function TotalUsersCard() {
           </Typography>
         ) : (
           <Typography variant="h4">
-            {(data?.overview?.totalUsers || 0).toLocaleString()}
+            {(data?.overview?.totalMatches || 0).toLocaleString()}
           </Typography>
         )}
       </CardContent>
