@@ -646,33 +646,12 @@ const userAppearance = {
     try {
       console.log('유저 목록 조회 요청 파라미터:', JSON.stringify(params, null, 2));
 
-      // URL 파라미터 구성
-      const queryParams = new URLSearchParams();
-
-      if (params.page) queryParams.append('page', params.page.toString());
-      if (params.limit) queryParams.append('limit', params.limit.toString());
-      if (params.gender) {
-        console.log('성별 파라미터 전송 전:', params.gender);
-        queryParams.append('gender', params.gender);
-      }
-
-      // 외모 등급 파라미터 처리
-      if (params.appearanceGrade) {
-        console.log('외모 등급 파라미터 전송 전:', params.appearanceGrade);
-        queryParams.append('appearanceGrade', params.appearanceGrade);
-      }
-
-      if (params.universityName) queryParams.append('universityName', params.universityName);
-      if (params.minAge) queryParams.append('minAge', params.minAge.toString());
-      if (params.maxAge) queryParams.append('maxAge', params.maxAge.toString());
-      if (params.searchTerm) queryParams.append('searchTerm', params.searchTerm);
-
-      const url = `/api/admin/users/appearance?${queryParams.toString()}`;
-      console.log('최종 API 요청 URL:', url);
-      console.log('최종 쿼리 파라미터:', queryParams.toString());
+      // 백엔드 API 변경에 따라 경로 수정
+      const url = `/api/admin/users/appearance`;
+      console.log('API 엔드포인트:', url);
 
       try {
-        const response = await axiosServer.get(url);
+        const response = await axiosServer.get(url, { params });
         console.log('API 응답 상태:', response.status);
         console.log('API 응답 헤더:', response.headers);
         return response.data;
@@ -695,7 +674,14 @@ const userAppearance = {
   // 미분류 유저 목록 조회
   getUnclassifiedUsers: async (page: number, limit: number) => {
     try {
-      const response = await axiosServer.get(`/api/admin/users/appearance/unclassified?page=${page}&limit=${limit}`);
+      // 백엔드 API 변경에 따라 경로 수정
+      const response = await axiosServer.get(`/api/admin/users/appearance`, {
+        params: {
+          page,
+          limit,
+          appearanceGrade: 'UNKNOWN'
+        }
+      });
 
       // 응답 데이터 로깅
       console.log('미분류 사용자 데이터 샘플:', response.data?.items?.slice(0, 2));
@@ -725,71 +711,21 @@ const userAppearance = {
     try {
       // 요청 데이터 로깅
       const requestData = {
-        userId: userId,
         grade: grade
       };
       console.log('요청 데이터 (JSON):', JSON.stringify(requestData));
 
-      // 여러 URL 경로 시도
-      let response;
-      let error;
+      // 백엔드 API 변경에 따라 경로 수정
+      const url = `/api/admin/users/${userId}/appearance`;
+      console.log('API 엔드포인트:', url);
 
-      // 첫 번째 시도: /admin/users/appearance/grade
-      try {
-        const url1 = '/api/admin/users/appearance/grade';
-        console.log('첫 번째 시도 URL (상대 경로):', url1);
-        console.log('첫 번째 시도 URL (전체 경로):', process.env.NEXT_PUBLIC_API_URL + url1);
+      // 요청 헤더 로깅
+      console.log('요청 헤더:', {
+        'Content-Type': 'application/json',
+        'Authorization': typeof window !== 'undefined' ? `Bearer ${localStorage.getItem('admin_access_token')}` : 'N/A'
+      });
 
-        // 요청 헤더 로깅
-        console.log('요청 헤더:', {
-          'Content-Type': 'application/json',
-          'Authorization': typeof window !== 'undefined' ? `Bearer ${localStorage.getItem('accessToken')}` : 'N/A'
-        });
-
-        response = await axiosServer.post(url1, requestData);
-        console.log('첫 번째 시도 성공!');
-      } catch (err) {
-        console.error('첫 번째 시도 실패:', err);
-        error = err;
-
-        // 두 번째 시도: /users/appearance/grade
-        try {
-          const url2 = '/api/users/appearance/grade';
-          console.log('두 번째 시도 URL (상대 경로):', url2);
-          console.log('두 번째 시도 URL (전체 경로):', process.env.NEXT_PUBLIC_API_URL + url2);
-
-          response = await axiosServer.post(url2, requestData);
-          console.log('두 번째 시도 성공!');
-        } catch (err2) {
-          console.error('두 번째 시도 실패:', err2);
-
-          // 세 번째 시도: 직접 fetch 사용
-          try {
-            const url3 = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045/api'}/admin/users/appearance/grade`;
-            console.log('세 번째 시도 URL (전체 경로):', url3);
-
-            const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-            const fetchResponse = await fetch(url3, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-              },
-              body: JSON.stringify(requestData)
-            });
-
-            if (!fetchResponse.ok) {
-              throw new Error(`HTTP error! status: ${fetchResponse.status}`);
-            }
-
-            response = { data: await fetchResponse.json() };
-            console.log('세 번째 시도 성공!');
-          } catch (err3) {
-            console.error('세 번째 시도 실패:', err3);
-            throw error; // 원래 오류 다시 던지기
-          }
-        }
-      }
+      const response = await axiosServer.patch(url, requestData);
       console.log('등급 설정 응답:', response.data);
       return response.data;
     } catch (error: any) {
@@ -797,8 +733,8 @@ const userAppearance = {
       console.error('오류 상세 정보:', error.response?.data || error.message);
       console.error('오류 상태 코드:', error.response?.status);
       console.error('오류 헤더:', error.response?.headers);
-      console.error('요청 URL:', '/api/admin/users/appearance/grade');
-      console.error('요청 데이터:', JSON.stringify({ userId, grade }));
+      console.error('요청 URL:', `/api/admin/users/${userId}/appearance`);
+      console.error('요청 데이터:', JSON.stringify({ grade }));
       throw error;
     }
   },
@@ -808,7 +744,8 @@ const userAppearance = {
     console.log('일괄 등급 설정 요청:', { userIds: userIds.length, grade });
 
     try {
-      const response = await axiosServer.post('/api/admin/users/appearance/grade/bulk', {
+      // 백엔드 API 변경에 따라 경로 수정
+      const response = await axiosServer.patch('/api/admin/users/appearance/bulk', {
         userIds,
         grade
       });
@@ -825,8 +762,8 @@ const userAppearance = {
       console.log('유저 상세 정보 조회 시작:', userId);
 
       // API 엔드포인트 (API 문서에서 확인한 정확한 경로)
-      // API 문서 확인 결과, 정확한 경로는 /admin/users/detail/{userId}
-      const endpoint = `/api/admin/users/detail/${userId}`;
+      // 백엔드 API 변경에 따라 경로 수정
+      const endpoint = `/api/admin/users/${userId}`;
       console.log(`API 엔드포인트: ${endpoint}`);
 
       // axios 설정 확인
@@ -853,12 +790,12 @@ const userAppearance = {
       console.log('프로필 수정 데이터:', profileData);
 
       // API 엔드포인트 (API 문서에서 확인한 정확한 경로)
-      const endpoint = `/api/admin/users/profile`;
+      // 백엔드 API 변경에 따라 경로 수정
+      const endpoint = `/api/admin/users/${userId}`;
       console.log(`API 엔드포인트: ${endpoint}`);
 
       // 요청 데이터 구성 (API 스키마에 맞게 조정)
       const requestData = {
-        userId: userId,
         ...profileData,
         // 필요한 경우 추가 필드 변환
         reason: '관리자에 의한 프로필 직접 수정'
@@ -866,42 +803,10 @@ const userAppearance = {
 
       console.log('API 요청 데이터:', requestData);
 
-      // 여러 API 경로 시도
-      let response;
-      let error;
-
-      // 첫 번째 시도: /admin/users/profile
-      try {
-        console.log('첫 번째 시도 URL:', endpoint);
-        response = await axiosServer.post(endpoint, requestData);
-        console.log('첫 번째 시도 성공!');
-      } catch (err) {
-        console.error('첫 번째 시도 실패:', err);
-        error = err;
-
-        // 두 번째 시도: /admin/users/detail/profile
-        try {
-          const url2 = '/api/admin/users/detail/profile';
-          console.log('두 번째 시도 URL:', url2);
-          response = await axiosServer.post(url2, requestData);
-          console.log('두 번째 시도 성공!');
-        } catch (err2) {
-          console.error('두 번째 시도 실패:', err2);
-
-          // 세 번째 시도: /admin/profile
-          try {
-            const url3 = '/api/admin/profile';
-            console.log('세 번째 시도 URL:', url3);
-            response = await axiosServer.post(url3, requestData);
-            console.log('세 번째 시도 성공!');
-          } catch (err3) {
-            console.error('세 번째 시도 실패:', err3);
-            throw error; // 원래 오류 다시 던지기
-          }
-        }
-      }
-
+      // PATCH 요청 수행
+      const response = await axiosServer.patch(endpoint, requestData);
       console.log('유저 프로필 수정 응답:', response.data);
+
       return response.data;
     } catch (error: any) {
       console.error('유저 프로필 수정 중 오류:', error);
@@ -917,8 +822,11 @@ const userAppearance = {
     try {
       console.log('계정 상태 변경 요청:', { userId, status, reason });
 
-      const response = await axiosServer.post('/api/admin/users/detail/status', {
-        userId,
+      // 백엔드 API 변경에 따라 경로 수정
+      const endpoint = `/api/admin/users/${userId}/status`;
+      console.log(`API 엔드포인트: ${endpoint}`);
+
+      const response = await axiosServer.patch(endpoint, {
         status,
         reason
       });
@@ -937,8 +845,11 @@ const userAppearance = {
     try {
       console.log('경고 메시지 발송 요청:', { userId, message });
 
-      const response = await axiosServer.post('/api/admin/users/detail/warning', {
-        userId,
+      // 백엔드 API 변경에 따라 경로 수정
+      const endpoint = `/api/admin/users/${userId}/warning`;
+      console.log(`API 엔드포인트: ${endpoint}`);
+
+      const response = await axiosServer.post(endpoint, {
         message
       });
 
@@ -956,9 +867,11 @@ const userAppearance = {
     try {
       console.log('강제 로그아웃 요청:', { userId });
 
-      const response = await axiosServer.post('/api/admin/users/detail/logout', {
-        userId
-      });
+      // 백엔드 API 변경에 따라 경로 수정
+      const endpoint = `/api/admin/users/${userId}/logout`;
+      console.log(`API 엔드포인트: ${endpoint}`);
+
+      const response = await axiosServer.post(endpoint, {});
 
       console.log('강제 로그아웃 응답:', response.data);
       return response.data;
@@ -974,10 +887,10 @@ const userAppearance = {
     try {
       console.log('계정 삭제 요청:', { userId, reason });
 
-      // 새로운 API 엔드포인트 로깅
-      const endpoint = `/api/admin/users`;
+      // 백엔드 API 변경에 따라 경로 수정
+      const endpoint = `/api/admin/users/${userId}`;
       console.log(`API 엔드포인트: ${endpoint}`);
-      console.log('요청 데이터:', { userId, reason });
+      console.log('요청 데이터:', { reason });
 
       // 전체 URL 로깅
       console.log('전체 URL:', `${axiosServer.defaults.baseURL}${endpoint}`);
@@ -985,7 +898,7 @@ const userAppearance = {
       // DELETE 요청 수행
       console.log('DELETE 요청 시도');
       const response = await axiosServer.delete(endpoint, {
-        data: { userId, reason }
+        data: { reason }
       });
       console.log('DELETE 요청 성공');
 
@@ -995,27 +908,7 @@ const userAppearance = {
       console.error('계정 삭제 중 오류:', error);
       console.error('오류 상세 정보:', error.response?.data || error.message);
       console.error('오류 상태 코드:', error.response?.status);
-
-      // 오류 발생 시 다른 API 엔드포인트 시도
-      try {
-        console.log('대체 API 엔드포인트 시도');
-        const alternativeEndpoint = `/api/admin/users/${userId}`;
-        console.log(`대체 API 엔드포인트: ${alternativeEndpoint}`);
-
-        const response = await axiosServer.delete(alternativeEndpoint, {
-          data: { reason }
-        });
-
-        console.log('대체 API 요청 성공');
-        console.log('계정 삭제 응답:', response.data);
-        return response.data;
-      } catch (alternativeError: any) {
-        console.error('대체 API 요청 실패:', alternativeError);
-        console.error('대체 API 오류 상세 정보:', alternativeError.response?.data || alternativeError.message);
-
-        // 원래 오류 던지기
-        throw error;
-      }
+      throw error;
     }
   },
 
@@ -1024,8 +917,11 @@ const userAppearance = {
     try {
       console.log('프로필 수정 요청 발송:', { userId, message });
 
-      const response = await axiosServer.post('/api/admin/users/detail/profile-update-request', {
-        userId,
+      // 백엔드 API 변경에 따라 경로 수정
+      const endpoint = `/api/admin/users/${userId}/profile-update-request`;
+      console.log(`API 엔드포인트: ${endpoint}`);
+
+      const response = await axiosServer.post(endpoint, {
         message
       });
 
@@ -1045,12 +941,12 @@ const userAppearance = {
     try {
       console.log('외모 등급 통계 API 호출 시작');
 
-      // API 엔드포인트 - API 문서에 명시된 경로 사용
-      const endpoint = '/api/admin/users/appearance/stats';
+      // 백엔드 API 변경에 따라 경로 수정
+      const endpoint = '/api/admin/stats/appearance';
       console.log(`API 엔드포인트: ${endpoint}`);
 
       // 토큰 확인
-      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      const token = typeof window !== 'undefined' ? localStorage.getItem('admin_access_token') : null;
       console.log('토큰 존재 여부:', !!token);
 
       // 캐싱 방지를 위한 타임스탬프 추가

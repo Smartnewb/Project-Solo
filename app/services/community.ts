@@ -106,21 +106,34 @@ const communityService = {
     try {
       console.log('게시글 목록 조회 요청:', { filter, page, limit, startDate, endDate });
 
-      // 실제 API 호출
-      let endpoint = '/api/admin/community/articles';
+      // 백엔드 API 변경에 따라 경로 수정
+      let endpoint = '/api/admin/community/posts';
 
       // 필터에 따라 다른 엔드포인트 사용
       if (filter === 'reported') {
         endpoint = '/api/admin/community/reports';
       }
 
-      const response = await adminAxios.get(endpoint, {
-        params: {
-          page,
-          limit,
-          includeDeleted: filter === 'blinded' ? true : false
-        }
-      });
+      // 쿼리 파라미터 구성
+      const params: any = {
+        page,
+        limit
+      };
+
+      // 날짜 필터 추가
+      if (startDate) {
+        params.startDate = startDate.toISOString();
+      }
+      if (endDate) {
+        params.endDate = endDate.toISOString();
+      }
+
+      // 블라인드 필터 추가
+      if (filter === 'blinded') {
+        params.isBlinded = true;
+      }
+
+      const response = await adminAxios.get(endpoint, { params });
       console.log('게시글 목록 조회 응답:', response.data);
 
       // 백엔드 응답 형식에 맞게 변환
@@ -159,17 +172,22 @@ const communityService = {
     try {
       console.log('게시글 상세 조회 요청:', id);
 
-      // 실제 API 호출
-      const articleResponse = await adminAxios.get(`/api/admin/community/articles/${id}`);
+      // 백엔드 API 변경에 따라 경로 수정
+      const articleResponse = await adminAxios.get(`/api/admin/community/posts/${id}`);
       console.log('게시글 상세 조회 응답:', articleResponse.data);
 
       // 댓글 조회
-      const commentsResponse = await adminAxios.get(`/api/admin/community/articles/${id}/comments`);
+      const commentsResponse = await adminAxios.get(`/api/admin/community/posts/${id}/comments`);
       console.log('댓글 목록 조회 응답:', commentsResponse.data);
+
+      // 신고 조회
+      const reportsResponse = await adminAxios.get(`/api/admin/community/posts/${id}/reports`);
+      console.log('신고 목록 조회 응답:', reportsResponse.data);
 
       // 백엔드 응답 형식에 맞게 변환
       const article = articleResponse.data;
-      const comments = commentsResponse.data || [];
+      const comments = commentsResponse.data.items || [];
+      const reports = reportsResponse.data.items || [];
 
       // 프론트엔드에서 필요한 추가 필드 설정
       const transformedArticle = {
@@ -183,7 +201,13 @@ const communityService = {
           isDeleted: comment.deletedAt !== null,
           articleId: article.id
         })),
-        reports: [] // 현재 API에서는 신고 정보를 별도로 제공하지 않음
+        reports: reports.map((report: any) => ({
+          ...report,
+          targetType: 'article',
+          targetId: article.id,
+          reporterNickname: report.reporter?.name || '익명',
+          targetContent: article.content
+        }))
       };
 
       return transformedArticle;
@@ -198,15 +222,16 @@ const communityService = {
     try {
       console.log('게시글 블라인드 처리 요청:', { id, isBlinded, reason });
 
+      // 백엔드 API 변경에 따라 경로 수정
       let response;
       if (isBlinded) {
         // 블라인드 처리
-        response = await adminAxios.patch(`/api/admin/community/articles/${id}/blind`, {
+        response = await adminAxios.patch(`/api/admin/community/posts/${id}/blind`, {
           reason
         });
       } else {
         // 블라인드 해제
-        response = await adminAxios.patch(`/api/admin/community/articles/${id}/unblind`);
+        response = await adminAxios.patch(`/api/admin/community/posts/${id}/unblind`);
       }
 
       console.log('게시글 블라인드 처리 응답:', response.data);
@@ -222,8 +247,8 @@ const communityService = {
     try {
       console.log('게시글 삭제 요청:', { id, reason });
 
-      // 실제 API 호출
-      const response = await adminAxios.delete(`/api/admin/community/articles/${id}`, {
+      // 백엔드 API 변경에 따라 경로 수정
+      const response = await adminAxios.delete(`/api/admin/community/posts/${id}`, {
         data: { reason }
       });
       console.log('게시글 삭제 응답:', response.data);
@@ -239,16 +264,18 @@ const communityService = {
     try {
       console.log('댓글 목록 조회 요청:', { articleId, filter, page, limit });
 
-      // 실제 API 호출
-      const response = await adminAxios.get(`/api/admin/community/articles/${articleId}/comments`, {
+      // 백엔드 API 변경에 따라 경로 수정
+      const response = await adminAxios.get(`/api/admin/community/posts/${articleId}/comments`, {
         params: {
-          includeDeleted: filter === 'blinded' ? true : false
+          page,
+          limit,
+          isBlinded: filter === 'blinded' ? true : undefined
         }
       });
       console.log('댓글 목록 조회 응답:', response.data);
 
       // 백엔드 응답 형식에 맞게 변환
-      const comments = response.data || [];
+      const comments = response.data.items || [];
 
       // 프론트엔드에서 필요한 추가 필드 설정
       const transformedComments = comments.map((comment: any) => ({
@@ -259,27 +286,51 @@ const communityService = {
         reportCount: 0 // 기본값 설정
       }));
 
-      // 필터링 적용
+      // 필터링 적용 (백엔드에서 처리되지 않는 경우에만)
       let filteredComments = [...transformedComments];
       if (filter === 'reported') {
-        // 백엔드에서 신고된 댓글 필터링 기능이 없으므로 클라이언트에서 처리
-        filteredComments = transformedComments.filter(comment => comment.reportCount > 0);
-      } else if (filter === 'blinded') {
-        // 블라인드 처리된 댓글 필터링
-        filteredComments = transformedComments.filter(comment => comment.isBlinded);
+        // 신고된 댓글 조회를 위한 별도 API 호출
+        try {
+          const reportsResponse = await adminAxios.get(`/api/admin/community/comments/reports`, {
+            params: { postId: articleId, page, limit }
+          });
+          console.log('신고된 댓글 목록 조회 응답:', reportsResponse.data);
+
+          const reportedComments = reportsResponse.data.items || [];
+          filteredComments = reportedComments.map((report: any) => ({
+            ...report.comment,
+            articleId: articleId,
+            isBlinded: report.comment.blindedAt !== null,
+            isDeleted: report.comment.deletedAt !== null,
+            reportCount: 1 // 신고가 있으므로 최소 1개
+          }));
+
+          return {
+            items: filteredComments,
+            total: reportsResponse.data.meta?.totalItems || 0,
+            page: reportsResponse.data.meta?.currentPage || page,
+            limit: reportsResponse.data.meta?.itemsPerPage || limit,
+            totalPages: reportsResponse.data.meta?.totalPages || 1
+          };
+        } catch (reportError) {
+          console.error('신고된 댓글 목록 조회 중 오류:', reportError);
+          // 오류 발생 시 빈 배열 반환
+          return {
+            items: [],
+            total: 0,
+            page,
+            limit,
+            totalPages: 0
+          };
+        }
       }
 
-      // 페이지네이션 적용
-      const startIndex = (page - 1) * limit;
-      const endIndex = startIndex + limit;
-      const paginatedComments = filteredComments.slice(startIndex, endIndex);
-
       return {
-        items: paginatedComments,
-        total: filteredComments.length,
-        page,
-        limit,
-        totalPages: Math.ceil(filteredComments.length / limit)
+        items: filteredComments,
+        total: response.data.meta?.totalItems || 0,
+        page: response.data.meta?.currentPage || page,
+        limit: response.data.meta?.itemsPerPage || limit,
+        totalPages: response.data.meta?.totalPages || 1
       };
     } catch (error) {
       console.error('댓글 목록 조회 중 오류:', error);
@@ -287,25 +338,25 @@ const communityService = {
     }
   },
 
-  // 댓글 블라인드 처리/해제 (백엔드에서 지원하지 않음 - 목업 데이터 사용)
+  // 댓글 블라인드 처리/해제
   blindComment: async (id: string, isBlinded: boolean, reason?: string): Promise<any> => {
     try {
       console.log('댓글 블라인드 처리 요청:', { id, isBlinded, reason });
 
-      // 백엔드에서 댓글 블라인드 처리/해제 API가 없으므로 목업 데이터 반환
-      console.log('목업 데이터 사용 중');
+      // 백엔드 API 변경에 따라 경로 수정
+      let response;
+      if (isBlinded) {
+        // 블라인드 처리
+        response = await adminAxios.patch(`/api/admin/community/comments/${id}/blind`, {
+          reason
+        });
+      } else {
+        // 블라인드 해제
+        response = await adminAxios.patch(`/api/admin/community/comments/${id}/unblind`);
+      }
 
-      // 성공 응답 시뮬레이션
-      return {
-        success: true,
-        message: `댓글 ${isBlinded ? '블라인드' : '블라인드 해제'} 처리가 완료되었습니다.`,
-        comment: {
-          id,
-          isBlinded,
-          blindReason: reason,
-          updatedAt: new Date()
-        }
-      };
+      console.log('댓글 블라인드 처리 응답:', response.data);
+      return response.data;
     } catch (error) {
       console.error('댓글 블라인드 처리 중 오류:', error);
       throw error;
@@ -317,7 +368,7 @@ const communityService = {
     try {
       console.log('댓글 삭제 요청:', { id, reason });
 
-      // 실제 API 호출
+      // 백엔드 API 변경에 따라 경로 수정
       const response = await adminAxios.delete(`/api/admin/community/comments/${id}`, {
         data: { reason }
       });
@@ -334,38 +385,48 @@ const communityService = {
     try {
       console.log('신고 목록 조회 요청:', { type, status, page, limit });
 
-      // 실제 API 호출
-      const response = await adminAxios.get(`/api/admin/community/reports`, {
-        params: { page, limit }
-      });
+      // 백엔드 API 변경에 따라 경로 수정
+      const params: any = {
+        page,
+        limit
+      };
+
+      // 타입 필터 추가
+      if (type !== 'all') {
+        params.type = type === 'article' ? 'post' : 'comment';
+      }
+
+      // 상태 필터 추가
+      if (status !== 'all') {
+        params.status = status;
+      }
+
+      const response = await adminAxios.get(`/api/admin/community/reports`, { params });
       console.log('신고 목록 조회 응답:', response.data);
 
       // 백엔드 응답 형식에 맞게 변환
       const reports = response.data.items || [];
 
       // 프론트엔드에서 필요한 추가 필드 설정
-      const transformedReports = reports.map((report: any) => ({
-        ...report,
-        targetType: 'article', // 현재 백엔드에서는 게시글 신고만 지원
-        targetId: report.postId,
-        reporterNickname: report.reporter?.name || '익명',
-        targetContent: report.post?.content || '',
-        // 상태 정보 설정
-        status: report.status || 'pending',
-        result: report.status === 'processed' ? 'accepted' : undefined
-      }));
+      const transformedReports = reports.map((report: any) => {
+        // 타입 확인 (post 또는 comment)
+        const isPost = report.post && !report.comment;
+        const targetObject = isPost ? report.post : report.comment;
 
-      // 필터링 적용
-      let filteredReports = [...transformedReports];
-      if (type !== 'all') {
-        filteredReports = transformedReports.filter(report => report.targetType === type);
-      }
-      if (status !== 'all') {
-        filteredReports = filteredReports.filter(report => report.status === status);
-      }
+        return {
+          ...report,
+          targetType: isPost ? 'article' : 'comment',
+          targetId: isPost ? report.postId : report.commentId,
+          reporterNickname: report.reporter?.name || '익명',
+          targetContent: targetObject?.content || '',
+          // 상태 정보 설정
+          status: report.status || 'pending',
+          result: report.status === 'processed' ? (report.result || 'accepted') : undefined
+        };
+      });
 
       return {
-        items: filteredReports,
+        items: transformedReports,
         total: response.data.meta?.totalItems || 0,
         page: response.data.meta?.currentPage || page,
         limit: response.data.meta?.itemsPerPage || limit,
@@ -382,8 +443,8 @@ const communityService = {
     try {
       console.log('신고 처리 요청:', { id, result, memo, blind });
 
-      // 실제 API 호출
-      const response = await adminAxios.patch(`/api/admin/community/reports/${id}`, {
+      // 백엔드 API 변경에 따라 경로 수정
+      const response = await adminAxios.patch(`/api/admin/community/reports/${id}/process`, {
         result,
         memo,
         blind
@@ -401,10 +462,10 @@ const communityService = {
     try {
       console.log('게시글 일괄 블라인드 처리 요청:', { ids, isBlinded, reason });
 
-      // 실제 API 호출
+      // 백엔드 API 변경에 따라 경로 수정
       let endpoint = isBlinded
-        ? '/api/admin/community/articles/bulk/blind'
-        : '/api/admin/community/articles/bulk/unblind';
+        ? '/api/admin/community/posts/bulk/blind'
+        : '/api/admin/community/posts/bulk/unblind';
 
       const response = await adminAxios.patch(endpoint, {
         ids,
@@ -424,8 +485,8 @@ const communityService = {
     try {
       console.log('게시글 일괄 삭제 요청:', { ids, reason });
 
-      // 실제 API 호출
-      const response = await adminAxios.delete(`/api/admin/community/articles/bulk`, {
+      // 백엔드 API 변경에 따라 경로 수정
+      const response = await adminAxios.delete(`/api/admin/community/posts/bulk`, {
         data: {
           ids,
           reason
@@ -440,25 +501,23 @@ const communityService = {
     }
   },
 
-  // 여러 댓글 일괄 블라인드 처리/해제 (백엔드에서 지원하지 않음 - 목업 데이터 사용)
+  // 여러 댓글 일괄 블라인드 처리/해제
   bulkBlindComments: async (ids: string[], isBlinded: boolean, reason?: string): Promise<any> => {
     try {
       console.log('댓글 일괄 블라인드 처리 요청:', { ids, isBlinded, reason });
 
-      // 백엔드에서 일괄 블라인드 처리 API가 없으므로 목업 데이터 반환
-      console.log('목업 데이터 사용 중');
+      // 백엔드 API 변경에 따라 경로 수정
+      let endpoint = isBlinded
+        ? '/api/admin/community/comments/bulk/blind'
+        : '/api/admin/community/comments/bulk/unblind';
 
-      // 성공 응답 시뮬레이션
-      return {
-        success: true,
-        message: `${ids.length}개의 댓글이 ${isBlinded ? '블라인드' : '블라인드 해제'} 처리되었습니다.`,
-        comments: ids.map(id => ({
-          id,
-          isBlinded,
-          blindReason: reason,
-          updatedAt: new Date()
-        }))
-      };
+      const response = await adminAxios.patch(endpoint, {
+        ids,
+        reason: isBlinded ? reason : undefined // 블라인드 해제 시에는 reason이 필요 없음
+      });
+
+      console.log('댓글 일괄 블라인드 처리 응답:', response.data);
+      return response.data;
     } catch (error) {
       console.error('댓글 일괄 블라인드 처리 중 오류:', error);
       throw error;
@@ -470,7 +529,7 @@ const communityService = {
     try {
       console.log('댓글 일괄 삭제 요청:', { ids, reason });
 
-      // 실제 API 호출
+      // 백엔드 API 변경에 따라 경로 수정
       const response = await adminAxios.delete(`/api/admin/community/comments/bulk`, {
         data: {
           ids,
@@ -491,8 +550,8 @@ const communityService = {
     try {
       console.log('휴지통 게시글 목록 조회 요청:', { page, limit });
 
-      // 실제 API 호출
-      const response = await adminAxios.get(`/api/admin/community/trash/articles`, {
+      // 백엔드 API 변경에 따라 경로 수정
+      const response = await adminAxios.get(`/api/admin/community/trash/posts`, {
         params: { page, limit }
       });
       console.log('휴지통 게시글 목록 조회 응답:', response.data);
@@ -526,8 +585,8 @@ const communityService = {
     try {
       console.log('휴지통 비우기 요청');
 
-      // 실제 API 호출
-      const response = await adminAxios.delete(`/api/admin/community/trash/articles`);
+      // 백엔드 API 변경에 따라 경로 수정
+      const response = await adminAxios.delete(`/api/admin/community/trash/posts`);
       console.log('휴지통 비우기 응답:', response.data);
       return response.data;
     } catch (error) {
@@ -541,8 +600,8 @@ const communityService = {
     try {
       console.log('게시글 영구 삭제 요청:', id);
 
-      // 실제 API 호출
-      const response = await adminAxios.delete(`/api/admin/community/articles/${id}/permanent`);
+      // 백엔드 API 변경에 따라 경로 수정
+      const response = await adminAxios.delete(`/api/admin/community/posts/${id}/permanent`);
       console.log('게시글 영구 삭제 응답:', response.data);
       return response.data;
     } catch (error) {
@@ -556,8 +615,8 @@ const communityService = {
     try {
       console.log('게시글 복원 요청:', id);
 
-      // 실제 API 호출
-      const response = await adminAxios.patch(`/api/admin/community/articles/${id}/restore`);
+      // 백엔드 API 변경에 따라 경로 수정
+      const response = await adminAxios.patch(`/api/admin/community/posts/${id}/restore`);
       console.log('게시글 복원 응답:', response.data);
       return response.data;
     } catch (error) {
