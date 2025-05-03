@@ -40,6 +40,28 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
     isAuthenticated: false
   });
 
+  // JWT 토큰에서 사용자 ID 추출
+  const extractUserIdFromToken = (token: string): string => {
+    try {
+      // JWT 토큰은 header.payload.signature 형식
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        console.error('유효하지 않은 JWT 토큰 형식');
+        return '';
+      }
+
+      // Base64 디코딩
+      const payload = JSON.parse(atob(parts[1]));
+      console.log('토큰 페이로드:', payload);
+
+      // 페이로드에서 ID 추출
+      return payload.id || '';
+    } catch (error) {
+      console.error('토큰 디코딩 중 오류:', error);
+      return '';
+    }
+  };
+
   // 토큰 관리 함수들
   const getAccessToken = () => localStorage.getItem('admin_access_token');
   const setAccessToken = (token: string) => {
@@ -70,6 +92,20 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (response.data && response.data.accessToken) {
         setAccessToken(response.data.accessToken);
+
+        // 토큰 갱신 후 사용자 정보 업데이트
+        const userInfo: AdminUser = {
+          id: extractUserIdFromToken(response.data.accessToken),
+          email: state.user?.email || '',
+          role: 'ADMIN'
+        };
+
+        setState(prev => ({
+          ...prev,
+          user: userInfo,
+          isAuthenticated: true
+        }));
+
         return true;
       } else {
         console.error('토큰 갱신 응답에 accessToken이 없습니다:', response.data);
@@ -123,10 +159,14 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
 
       // 사용자 정보 설정
       // 백엔드 응답 형식에 맞게 처리
+      console.log('백엔드 응답 데이터:', data);
+
+      // 사용자 정보 생성
       const userInfo: AdminUser = {
-        id: data.id || '',
-        email: data.email || '',
-        role: data.role || ''
+        // JWT 토큰에서 정보 추출
+        id: extractUserIdFromToken(data.accessToken),
+        email: email, // 로그인 요청에서 이메일 사용
+        role: 'ADMIN' // 관리자 역할 하드코딩
       };
 
       console.log('어드민 사용자 정보:', {
@@ -235,16 +275,21 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
           withCredentials: true // 쿠키 전송을 위해 필요
         });
 
-        const userData = response.data;
+        // 토큰에서 사용자 정보 추출
+        const userInfo: AdminUser = {
+          id: extractUserIdFromToken(token || ''),
+          email: response.data.email || '',
+          role: 'ADMIN'
+        };
 
         setState(prev => ({
           ...prev,
-          user: userData,
+          user: userInfo,
           isAuthenticated: true,
           loading: false
         }));
 
-        console.log('어드민 사용자 정보 가져오기 성공:', userData);
+        console.log('어드민 사용자 정보 가져오기 성공:', userInfo);
       } catch (userError) {
         console.error('어드민 사용자 정보 가져오기 실패:', userError);
 
@@ -265,11 +310,17 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
           withCredentials: true // 쿠키 전송을 위해 필요
         });
 
-        const userData = response.data;
+        // 토큰에서 사용자 정보 추출
+        const token = getAccessToken();
+        const userInfo: AdminUser = {
+          id: extractUserIdFromToken(token || ''),
+          email: response.data.email || '',
+          role: 'ADMIN'
+        };
 
         setState(prev => ({
           ...prev,
-          user: userData,
+          user: userInfo,
           isAuthenticated: true,
           loading: false
         }));
