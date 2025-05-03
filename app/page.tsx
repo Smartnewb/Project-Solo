@@ -24,7 +24,7 @@ export default function AdminLogin() {
         console.log('API URL:', apiUrl);
 
         // 여러 엔드포인트 시도
-        const endpoints = ['/api/auth/me', '/api/health', '/api'];
+        const endpoints = ['/api/admin/auth/login', '/api/admin/auth/check', '/api'];
         let connected = false;
 
         for (const endpoint of endpoints) {
@@ -90,9 +90,9 @@ export default function AdminLogin() {
       // 서버 상태 재확인
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045';
-        console.log('어드민 로그인 전 서버 상태 확인 URL:', `${apiUrl}/api/health`);
+        console.log('어드민 로그인 전 서버 상태 확인 URL:', `${apiUrl}/api`);
 
-        const response = await fetch(`${apiUrl}/api/health`, {
+        const response = await fetch(`${apiUrl}/api`, {
           method: 'GET',
           cache: 'no-cache',
           signal: AbortSignal.timeout(3000), // 3초 타임아웃

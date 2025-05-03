@@ -27,7 +27,7 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts';
-import AdminService from '@/app/services/admin';
+import { adminService } from '@/lib/services';
 
 export default function ServiceDurationStats() {
   const [loading, setLoading] = useState(true);
@@ -42,21 +42,21 @@ export default function ServiceDurationStats() {
         setError(null);
 
         try {
-          const response = await AdminService.stats.getServiceDurationStats();
+          const response = await adminService.withdrawal.getServiceDurationStats();
           console.log('서비스 사용 기간 통계 응답:', response);
 
-          if (response?.durations && Array.isArray(response.durations) && response.durations.length > 0) {
-            setDurationStats(response.durations);
+          if (response?.stats && Array.isArray(response.stats) && response.stats.length > 0) {
+            setDurationStats(response.stats);
             setAverageDuration(response.averageDuration || null);
           } else {
             // 데이터가 없는 경우 기본 데이터 생성
             const sampleData = [
-              { range: '0-7일', count: 0, percentage: 0 },
-              { range: '8-30일', count: 0, percentage: 0 },
-              { range: '1-3개월', count: 0, percentage: 0 },
-              { range: '3-6개월', count: 0, percentage: 0 },
-              { range: '6-12개월', count: 0, percentage: 0 },
-              { range: '1년 이상', count: 0, percentage: 0 }
+              { duration: '7일 미만', count: 0, percentage: 0 },
+              { duration: '7일~30일', count: 0, percentage: 0 },
+              { duration: '1개월~3개월', count: 0, percentage: 0 },
+              { duration: '3개월~6개월', count: 0, percentage: 0 },
+              { duration: '6개월~1년', count: 0, percentage: 0 },
+              { duration: '1년 이상', count: 0, percentage: 0 }
             ];
             setDurationStats(sampleData);
             setAverageDuration(0);
@@ -66,12 +66,12 @@ export default function ServiceDurationStats() {
           console.error('API 호출 오류:', apiError);
           // 오류 발생 시 기본 데이터 생성
           const sampleData = [
-            { range: '0-7일', count: 0, percentage: 0 },
-            { range: '8-30일', count: 0, percentage: 0 },
-            { range: '1-3개월', count: 0, percentage: 0 },
-            { range: '3-6개월', count: 0, percentage: 0 },
-            { range: '6-12개월', count: 0, percentage: 0 },
-            { range: '1년 이상', count: 0, percentage: 0 }
+            { duration: '7일 미만', count: 0, percentage: 0 },
+            { duration: '7일~30일', count: 0, percentage: 0 },
+            { duration: '1개월~3개월', count: 0, percentage: 0 },
+            { duration: '3개월~6개월', count: 0, percentage: 0 },
+            { duration: '6개월~1년', count: 0, percentage: 0 },
+            { duration: '1년 이상', count: 0, percentage: 0 }
           ];
           setDurationStats(sampleData);
           setAverageDuration(0);
@@ -91,7 +91,7 @@ export default function ServiceDurationStats() {
   // 차트 데이터 포맷팅
   const formatChartData = () => {
     return durationStats.map(item => ({
-      name: item.range,
+      name: item.duration,
       '사용자수': item.count,
       percentage: item.percentage
     }));
@@ -188,7 +188,7 @@ export default function ServiceDurationStats() {
                   {durationStats.map((row, index) => (
                     <TableRow key={index}>
                       <TableCell component="th" scope="row">
-                        {row.range}
+                        {row.duration}
                       </TableCell>
                       <TableCell align="right">{row.count.toLocaleString()}명</TableCell>
                       <TableCell align="right">{row.percentage.toFixed(1)}%</TableCell>

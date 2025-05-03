@@ -122,7 +122,12 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       console.log('어드민 토큰 저장 완료:', data.accessToken.substring(0, 10) + '...');
 
       // 사용자 정보 설정
-      const userInfo = data.user || data;
+      // 백엔드 응답 형식에 맞게 처리
+      const userInfo: AdminUser = {
+        id: data.id || '',
+        email: data.email || '',
+        role: data.role || ''
+      };
 
       console.log('어드민 사용자 정보:', {
         id: userInfo.id,

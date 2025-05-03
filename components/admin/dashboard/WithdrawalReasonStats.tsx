@@ -25,7 +25,7 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts';
-import AdminService from '@/app/services/admin';
+import { adminService } from '@/lib/services';
 
 // 색상 배열
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#8dd1e1'];
@@ -42,19 +42,19 @@ export default function WithdrawalReasonStats() {
         setError(null);
 
         try {
-          const response = await AdminService.stats.getWithdrawalReasonStats();
+          const response = await adminService.withdrawal.getWithdrawalReasonStats();
           console.log('탈퇴 사유 통계 응답:', response);
 
-          if (response?.reasons && Array.isArray(response.reasons) && response.reasons.length > 0) {
-            setReasonStats(response.reasons);
+          if (response?.stats && Array.isArray(response.stats) && response.stats.length > 0) {
+            setReasonStats(response.stats);
           } else {
             // 데이터가 없는 경우 기본 데이터 생성
             setReasonStats([
-              { reason: '서비스 불만족', count: 0, percentage: 0 },
-              { reason: '다른 서비스 이용', count: 0, percentage: 0 },
-              { reason: '개인정보 우려', count: 0, percentage: 0 },
-              { reason: '사용빈도 낮음', count: 0, percentage: 0 },
-              { reason: '기타', count: 0, percentage: 0 }
+              { category: '서비스 불만족', count: 0, percentage: 0 },
+              { category: '다른 서비스 이용', count: 0, percentage: 0 },
+              { category: '개인정보 우려', count: 0, percentage: 0 },
+              { category: '사용빈도 낮음', count: 0, percentage: 0 },
+              { category: '기타', count: 0, percentage: 0 }
             ]);
             setError('탈퇴 사유 데이터가 없습니다. 샘플 데이터를 표시합니다.');
           }
@@ -62,11 +62,11 @@ export default function WithdrawalReasonStats() {
           console.error('API 호출 오류:', apiError);
           // 오류 발생 시 기본 데이터 생성
           setReasonStats([
-            { reason: '서비스 불만족', count: 0, percentage: 0 },
-            { reason: '다른 서비스 이용', count: 0, percentage: 0 },
-            { reason: '개인정보 우려', count: 0, percentage: 0 },
-            { reason: '사용빈도 낮음', count: 0, percentage: 0 },
-            { reason: '기타', count: 0, percentage: 0 }
+            { category: '서비스 불만족', count: 0, percentage: 0 },
+            { category: '다른 서비스 이용', count: 0, percentage: 0 },
+            { category: '개인정보 우려', count: 0, percentage: 0 },
+            { category: '사용빈도 낮음', count: 0, percentage: 0 },
+            { category: '기타', count: 0, percentage: 0 }
           ]);
           setError('데이터를 불러오는데 실패했습니다. 샘플 데이터를 표시합니다.');
         }
@@ -84,7 +84,7 @@ export default function WithdrawalReasonStats() {
   // 차트 데이터 포맷팅
   const formatChartData = () => {
     return reasonStats.map(item => ({
-      name: item.reason,
+      name: item.category,
       value: item.count,
       percentage: item.percentage
     }));
@@ -187,7 +187,7 @@ export default function WithdrawalReasonStats() {
                   {reasonStats.map((row, index) => (
                     <TableRow key={index}>
                       <TableCell component="th" scope="row">
-                        {row.reason}
+                        {row.category}
                       </TableCell>
                       <TableCell align="right">{row.count.toLocaleString()}명</TableCell>
                       <TableCell align="right">{row.percentage.toFixed(1)}%</TableCell>
