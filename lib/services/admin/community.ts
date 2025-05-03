@@ -412,7 +412,35 @@ const communityService = {
 
   // 게시글 복원
   restoreArticle: async (id: string): Promise<{ success: boolean }> => {
-    return adminApiClient.patch(`/api/admin/community/articles/${id}/restore`);
+    try {
+      console.log(`게시글 복원 요청: id=${id}`);
+
+      // 먼저 기존 경로로 시도
+      try {
+        const response = await adminApiClient.patch(`/api/admin/community/articles/${id}/restore`);
+        console.log('게시글 복원 응답:', response);
+        return {
+          success: true,
+          ...response
+        };
+      } catch (error) {
+        if (error.response && error.response.status === 404) {
+          console.warn('기존 경로로 게시글 복원 실패. 휴지통 경로로 시도합니다.');
+
+          // 휴지통 경로로 시도
+          const trashResponse = await adminApiClient.patch(`/api/admin/community/trash/articles/${id}/restore`);
+          console.log('휴지통 경로로 게시글 복원 응답:', trashResponse);
+          return {
+            success: true,
+            ...trashResponse
+          };
+        }
+        throw error;
+      }
+    } catch (error) {
+      console.error('게시글 복원 중 오류:', error);
+      throw error;
+    }
   }
 };
 

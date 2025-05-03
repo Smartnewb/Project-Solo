@@ -653,12 +653,13 @@ const userAppearance = {
     try {
       // 요청 데이터 로깅
       const requestData = {
+        userId: userId,
         grade: grade
       };
       console.log('요청 데이터 (JSON):', JSON.stringify(requestData));
 
-      // 백엔드 API 변경에 따라 경로 수정
-      const url = `/api/admin/users/${userId}/appearance`;
+      // 백엔드 API 엔드포인트 수정 - 올바른 경로 사용
+      const url = `/api/admin/users/appearance/grade`;
       console.log('API 엔드포인트:', url);
 
       // 요청 헤더 로깅
@@ -667,7 +668,8 @@ const userAppearance = {
         'Authorization': typeof window !== 'undefined' ? `Bearer ${localStorage.getItem('admin_access_token')}` : 'N/A'
       });
 
-      const response = await axiosServer.patch(url, requestData);
+      // POST 메서드로 변경
+      const response = await axiosServer.post(url, requestData);
       console.log('등급 설정 응답:', response.data);
       return response.data;
     } catch (error: any) {
@@ -675,9 +677,20 @@ const userAppearance = {
       console.error('오류 상세 정보:', error.response?.data || error.message);
       console.error('오류 상태 코드:', error.response?.status);
       console.error('오류 헤더:', error.response?.headers);
-      console.error('요청 URL:', `/api/admin/users/${userId}/appearance`);
-      console.error('요청 데이터:', JSON.stringify({ grade }));
-      throw error;
+      console.error('요청 URL:', `/api/admin/users/appearance/grade`);
+      console.error('요청 데이터:', JSON.stringify({ userId, grade }));
+
+      // 백업 방법으로 이전 API 경로 시도
+      try {
+        console.log('백업 API 경로로 시도합니다.');
+        const backupUrl = `/api/admin/users/${userId}/appearance`;
+        const backupResponse = await axiosServer.patch(backupUrl, { grade });
+        console.log('백업 API 응답:', backupResponse.data);
+        return backupResponse.data;
+      } catch (backupError: any) {
+        console.error('백업 API 호출도 실패:', backupError);
+        throw error; // 원래 오류 던지기
+      }
     }
   },
 
@@ -686,15 +699,39 @@ const userAppearance = {
     console.log('일괄 등급 설정 요청:', { userIds: userIds.length, grade });
 
     try {
-      // 백엔드 API 변경에 따라 경로 수정
-      const response = await axiosServer.patch('/api/admin/users/appearance/bulk', {
+      // 요청 데이터 로깅
+      const requestData = {
         userIds,
         grade
-      });
+      };
+      console.log('요청 데이터 (JSON):', JSON.stringify(requestData));
+
+      // 백엔드 API 엔드포인트 수정 - 올바른 경로 사용
+      const url = `/api/admin/users/appearance/grade/bulk`;
+      console.log('API 엔드포인트:', url);
+
+      // POST 메서드로 변경
+      const response = await axiosServer.post(url, requestData);
+      console.log('일괄 등급 설정 응답:', response.data);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('유저 외모 등급 일괄 설정 중 오류:', error);
-      throw error;
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      console.error('오류 상태 코드:', error.response?.status);
+      console.error('요청 URL:', `/api/admin/users/appearance/grade/bulk`);
+      console.error('요청 데이터:', JSON.stringify({ userIds, grade }));
+
+      // 백업 방법으로 이전 API 경로 시도
+      try {
+        console.log('백업 API 경로로 시도합니다.');
+        const backupUrl = `/api/admin/users/appearance/bulk`;
+        const backupResponse = await axiosServer.patch(backupUrl, { userIds, grade });
+        console.log('백업 API 응답:', backupResponse.data);
+        return backupResponse.data;
+      } catch (backupError: any) {
+        console.error('백업 API 호출도 실패:', backupError);
+        throw error; // 원래 오류 던지기
+      }
     }
   },
 

@@ -107,12 +107,65 @@ const userService = {
 
   // 사용자 외모 등급 설정
   setUserAppearanceGrade: async (userId: string, grade: AppearanceGrade): Promise<{ success: boolean }> => {
-    return adminApiClient.patch(`/api/admin/users/${userId}/appearance`, { grade });
+    try {
+      console.log(`사용자 외모 등급 설정 요청: userId=${userId}, grade=${grade}`);
+
+      // 요청 데이터 로깅
+      const requestData = { userId, grade };
+      console.log('요청 데이터:', requestData);
+
+      // 백엔드 API 엔드포인트
+      const response = await adminApiClient.post('/admin/users/appearance/grade', requestData);
+      console.log('사용자 외모 등급 설정 응답:', response);
+
+      // 응답 형식 변환
+      return {
+        success: true,
+        ...response
+      };
+    } catch (error) {
+      console.error('사용자 외모 등급 설정 오류:', error);
+
+      // 오류 상세 정보 로깅
+      if (error.response) {
+        console.error('오류 상태 코드:', error.response.status);
+        console.error('오류 응답 데이터:', error.response.data);
+      }
+
+      throw error;
+    }
   },
 
   // 사용자 외모 등급 일괄 설정
   bulkSetUserAppearanceGrade: async (userIds: string[], grade: AppearanceGrade): Promise<{ success: boolean; count: number }> => {
-    return adminApiClient.patch('/api/admin/users/appearance/bulk', { userIds, grade });
+    try {
+      console.log(`사용자 외모 등급 일괄 설정 요청: userIds=${userIds.length}개, grade=${grade}`);
+
+      // 요청 데이터 로깅
+      const requestData = { userIds, grade };
+      console.log('요청 데이터:', requestData);
+
+      // 백엔드 API 엔드포인트
+      const response = await adminApiClient.post('/admin/users/appearance/grade/bulk', requestData);
+      console.log('사용자 외모 등급 일괄 설정 응답:', response);
+
+      // 응답 형식 변환
+      return {
+        success: true,
+        count: userIds.length,
+        ...response
+      };
+    } catch (error) {
+      console.error('사용자 외모 등급 일괄 설정 오류:', error);
+
+      // 오류 상세 정보 로깅
+      if (error.response) {
+        console.error('오류 상태 코드:', error.response.status);
+        console.error('오류 응답 데이터:', error.response.data);
+      }
+
+      throw error;
+    }
   }
 };
 

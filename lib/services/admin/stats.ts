@@ -19,9 +19,9 @@ const statsService = {
       console.log('외모 등급 통계 API 요청 시작');
 
       // API 요청 전 로깅
-      console.log('외모 등급 통계 API 요청 URL:', '/api/admin/users/appearance/stats');
+      console.log('외모 등급 통계 API 요청 URL:', '/admin/users/appearance/stats');
 
-      const response = await adminApiClient.get('/api/admin/users/appearance/stats');
+      const response = await adminApiClient.get('/admin/users/appearance/stats');
       console.log('외모 등급 통계 API 응답:', response);
 
       // 응답 데이터 확인

@@ -308,33 +308,54 @@ class ApiClient {
     );
   }
 
+  // URL 경로 처리 (자동으로 /api 접두사 추가)
+  private processUrl(url: string): string {
+    // 이미 /api로 시작하는 경우 그대로 반환
+    if (url.startsWith('/api')) {
+      return url;
+    }
+
+    // 그렇지 않은 경우 /api 접두사 추가
+    return `/api${url}`;
+  }
+
   // GET 요청
   public async get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    const response = await this.client.get<T>(url, config);
+    const processedUrl = this.processUrl(url);
+    this.logger.debug(`GET 요청 URL 처리: ${url} -> ${processedUrl}`);
+    const response = await this.client.get<T>(processedUrl, config);
     return response.data;
   }
 
   // POST 요청
   public async post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-    const response = await this.client.post<T>(url, data, config);
+    const processedUrl = this.processUrl(url);
+    this.logger.debug(`POST 요청 URL 처리: ${url} -> ${processedUrl}`);
+    const response = await this.client.post<T>(processedUrl, data, config);
     return response.data;
   }
 
   // PUT 요청
   public async put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-    const response = await this.client.put<T>(url, data, config);
+    const processedUrl = this.processUrl(url);
+    this.logger.debug(`PUT 요청 URL 처리: ${url} -> ${processedUrl}`);
+    const response = await this.client.put<T>(processedUrl, data, config);
     return response.data;
   }
 
   // PATCH 요청
   public async patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-    const response = await this.client.patch<T>(url, data, config);
+    const processedUrl = this.processUrl(url);
+    this.logger.debug(`PATCH 요청 URL 처리: ${url} -> ${processedUrl}`);
+    const response = await this.client.patch<T>(processedUrl, data, config);
     return response.data;
   }
 
   // DELETE 요청
   public async delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    const response = await this.client.delete<T>(url, config);
+    const processedUrl = this.processUrl(url);
+    this.logger.debug(`DELETE 요청 URL 처리: ${url} -> ${processedUrl}`);
+    const response = await this.client.delete<T>(processedUrl, config);
     return response.data;
   }
 
