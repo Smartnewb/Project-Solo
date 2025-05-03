@@ -1,8 +1,8 @@
 import { adminApiClient } from '@/lib/api';
-import { 
-  UserBasicInfo, 
-  UserDetailInfo, 
-  UserStatus, 
+import {
+  UserBasicInfo,
+  UserDetailInfo,
+  UserStatus,
   PaginatedResponse,
   AppearanceGrade
 } from '@/lib/types/api';
@@ -30,7 +30,7 @@ const userService = {
 
   // 사용자 상세 정보 조회
   getUserDetails: async (userId: string): Promise<UserDetailInfo> => {
-    return adminApiClient.get(`/api/admin/users/${userId}`);
+    return adminApiClient.get(`/api/admin/users/${userId}/detail`);
   },
 
   // 사용자 프로필 수정
@@ -55,8 +55,8 @@ const userService = {
 
   // 사용자 계정 삭제
   deleteUser: async (userId: string, reason: string): Promise<{ success: boolean }> => {
-    return adminApiClient.delete(`/api/admin/users/${userId}`, { 
-      data: { reason } 
+    return adminApiClient.delete(`/api/admin/users/${userId}`, {
+      data: { reason }
     });
   },
 

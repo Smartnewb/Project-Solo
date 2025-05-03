@@ -55,9 +55,11 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   const refreshToken = async (): Promise<boolean> => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045';
-      console.log('토큰 갱신 요청 URL:', `${apiUrl}/api/auth/refresh`);
+      console.log('토큰 갱신 요청 URL:', `${apiUrl}/api/admin/auth/refresh`);
 
-      const response = await axios.post(`${apiUrl}/api/auth/refresh`, {}, {
+      // 쿠키에서 리프레시 토큰을 가져오는 대신 백엔드 API 요구사항에 맞게 요청 바디에 포함
+      // 백엔드에서는 쿠키에서 토큰을 가져오므로 빈 객체를 보내도 됨
+      const response = await axios.post(`${apiUrl}/api/admin/auth/refresh`, {}, {
         withCredentials: true,
         headers: {
           'Content-Type': 'application/json'
@@ -88,7 +90,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       console.log('API URL:', apiUrl);
 
       // API 요청 전 로깅
-      console.log('어드민 로그인 API 요청 URL:', `${apiUrl}/api/auth/login`);
+      console.log('어드민 로그인 API 요청 URL:', `${apiUrl}/api/admin/auth/login`);
 
       // 요청 설정
       const config = {
@@ -99,7 +101,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       };
 
       // 로그인 요청
-      const response = await axios.post(`${apiUrl}/api/auth/login`, {
+      const response = await axios.post(`${apiUrl}/api/admin/auth/login`, {
         email,
         password
       }, config);
@@ -175,9 +177,9 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         const token = getAccessToken();
         if (token) {
           const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045';
-          console.log('로그아웃 요청 URL:', `${apiUrl}/api/auth/logout`);
+          console.log('로그아웃 요청 URL:', `${apiUrl}/api/admin/auth/logout`);
 
-          await axios.post(`${apiUrl}/api/auth/logout`, {}, {
+          await axios.post(`${apiUrl}/api/admin/auth/logout`, {}, {
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
@@ -219,9 +221,9 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         // 토큰에서 사용자 정보 가져오기 시도
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045';
-        console.log('사용자 정보 요청 URL:', `${apiUrl}/api/auth/me`);
+        console.log('사용자 정보 요청 URL:', `${apiUrl}/api/admin/auth/check`);
 
-        const response = await axios.get(`${apiUrl}/api/auth/me`, {
+        const response = await axios.post(`${apiUrl}/api/admin/auth/check`, {}, {
           headers: {
             'Authorization': `Bearer ${token}`
           },
@@ -249,9 +251,9 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
 
         // 토큰 갱신 후 다시 사용자 정보 요청
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045';
-        console.log('토큰 갱신 후 사용자 정보 요청 URL:', `${apiUrl}/api/auth/me`);
+        console.log('토큰 갱신 후 사용자 정보 요청 URL:', `${apiUrl}/api/admin/auth/check`);
 
-        const response = await axios.get(`${apiUrl}/api/auth/me`, {
+        const response = await axios.post(`${apiUrl}/api/admin/auth/check`, {}, {
           headers: {
             'Authorization': `Bearer ${getAccessToken()}`
           },

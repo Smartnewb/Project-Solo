@@ -133,8 +133,12 @@ class ApiClient {
               this.logger.info('토큰 만료 감지, 새로고침 시도');
 
               // 토큰 새로고침 요청
+              const refreshUrl = this.type === 'admin'
+                ? `${defaultConfig.baseURL}/api/admin/auth/refresh`
+                : `${defaultConfig.baseURL}/api/auth/refresh`;
+
               const response = await axios.post(
-                `${defaultConfig.baseURL}/api/auth/refresh`,
+                refreshUrl,
                 {},
                 { withCredentials: true }
               );

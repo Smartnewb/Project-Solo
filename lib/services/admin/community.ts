@@ -77,13 +77,13 @@ const communityService = {
   // 게시글 상세 조회
   getArticleDetail: async (id: string): Promise<ArticleDetail> => {
     // 게시글 정보 조회
-    const article = await adminApiClient.get(`/api/admin/community/posts/${id}`);
+    const article = await adminApiClient.get(`/api/admin/community/articles/${id}`);
 
     // 댓글 목록 조회
-    const commentsResponse = await adminApiClient.get(`/api/admin/community/posts/${id}/comments`);
+    const commentsResponse = await adminApiClient.get(`/api/admin/community/articles/${id}/comments`);
 
     // 신고 목록 조회
-    const reportsResponse = await adminApiClient.get(`/api/admin/community/posts/${id}/reports`);
+    const reportsResponse = await adminApiClient.get(`/api/admin/community/articles/${id}/reports`);
 
     // 데이터 변환
     return {
@@ -110,22 +110,22 @@ const communityService = {
   // 게시글 블라인드 처리/해제
   blindArticle: async (id: string, isBlinded: boolean, reason?: string): Promise<{ success: boolean }> => {
     if (isBlinded) {
-      return adminApiClient.patch(`/api/admin/community/posts/${id}/blind`, { reason });
+      return adminApiClient.patch(`/api/admin/community/articles/${id}/blind`, { reason });
     } else {
-      return adminApiClient.patch(`/api/admin/community/posts/${id}/unblind`);
+      return adminApiClient.patch(`/api/admin/community/articles/${id}/unblind`);
     }
   },
 
   // 게시글 삭제
   deleteArticle: async (id: string, reason?: string): Promise<{ success: boolean }> => {
-    return adminApiClient.delete(`/api/admin/community/posts/${id}`, {
+    return adminApiClient.delete(`/api/admin/community/articles/${id}`, {
       data: { reason }
     });
   },
 
   // 댓글 목록 조회
   getComments: async (articleId: string, params: { page?: number; limit?: number; isBlinded?: boolean } = {}): Promise<PaginatedResponse<Comment>> => {
-    const response = await adminApiClient.get(`/api/admin/community/posts/${articleId}/comments`, { params });
+    const response = await adminApiClient.get(`/api/admin/community/articles/${articleId}/comments`, { params });
 
     // 백엔드 응답 형식에 맞게 변환
     return {
@@ -231,8 +231,8 @@ const communityService = {
   // 여러 게시글 일괄 블라인드 처리/해제
   bulkBlindArticles: async (ids: string[], isBlinded: boolean, reason?: string): Promise<{ success: boolean; count: number }> => {
     const endpoint = isBlinded
-      ? '/api/admin/community/posts/bulk/blind'
-      : '/api/admin/community/posts/bulk/unblind';
+      ? '/api/admin/community/articles/bulk/blind'
+      : '/api/admin/community/articles/bulk/unblind';
 
     return adminApiClient.patch(endpoint, {
       ids,
@@ -242,7 +242,7 @@ const communityService = {
 
   // 여러 게시글 일괄 삭제
   bulkDeleteArticles: async (ids: string[], reason?: string): Promise<{ success: boolean; count: number }> => {
-    return adminApiClient.delete('/api/admin/community/posts/bulk', {
+    return adminApiClient.delete('/api/admin/community/articles/bulk', {
       data: {
         ids,
         reason
@@ -295,45 +295,23 @@ const communityService = {
       };
     } catch (error) {
       console.error('휴지통 게시글 목록 조회 중 오류:', error);
-
-      // 백엔드 API 경로가 변경되었을 수 있으므로 대체 경로로 시도
-      try {
-        console.log('대체 API 경로로 시도: /api/admin/community/trash/posts');
-        const response = await adminApiClient.get('/api/admin/community/trash/posts', {
-          params: { page, limit }
-        });
-        console.log('대체 API 응답:', response);
-
-        // 백엔드 응답 형식에 맞게 변환
-        return {
-          items: response.items.map((article: any) => ({
-            ...article,
-            isBlinded: article.blindedAt !== null,
-            isDeleted: true,
-            commentCount: article.comments?.length || 0,
-          })),
-          meta: response.meta
-        };
-      } catch (fallbackError) {
-        console.error('대체 API 경로로도 실패:', fallbackError);
-        throw error; // 원래 오류를 다시 던짐
-      }
+      throw error;
     }
   },
 
   // 휴지통 비우기
   emptyTrash: async (): Promise<{ success: boolean; count: number }> => {
-    return adminApiClient.delete('/api/admin/community/trash/posts');
+    return adminApiClient.delete('/api/admin/community/trash/articles');
   },
 
   // 게시글 영구 삭제
   permanentDeleteArticle: async (id: string): Promise<{ success: boolean }> => {
-    return adminApiClient.delete(`/api/admin/community/posts/${id}/permanent`);
+    return adminApiClient.delete(`/api/admin/community/articles/${id}/permanent`);
   },
 
   // 게시글 복원
   restoreArticle: async (id: string): Promise<{ success: boolean }> => {
-    return adminApiClient.patch(`/api/admin/community/posts/${id}/restore`);
+    return adminApiClient.patch(`/api/admin/community/articles/${id}/restore`);
   }
 };
 

@@ -107,7 +107,7 @@ const communityService = {
       console.log('게시글 목록 조회 요청:', { filter, page, limit, startDate, endDate });
 
       // 백엔드 API 변경에 따라 경로 수정
-      let endpoint = '/api/admin/community/posts';
+      let endpoint = '/api/admin/community/articles';
 
       // 필터에 따라 다른 엔드포인트 사용
       if (filter === 'reported') {
@@ -173,15 +173,15 @@ const communityService = {
       console.log('게시글 상세 조회 요청:', id);
 
       // 백엔드 API 변경에 따라 경로 수정
-      const articleResponse = await adminAxios.get(`/api/admin/community/posts/${id}`);
+      const articleResponse = await adminAxios.get(`/api/admin/community/articles/${id}`);
       console.log('게시글 상세 조회 응답:', articleResponse.data);
 
       // 댓글 조회
-      const commentsResponse = await adminAxios.get(`/api/admin/community/posts/${id}/comments`);
+      const commentsResponse = await adminAxios.get(`/api/admin/community/articles/${id}/comments`);
       console.log('댓글 목록 조회 응답:', commentsResponse.data);
 
       // 신고 조회
-      const reportsResponse = await adminAxios.get(`/api/admin/community/posts/${id}/reports`);
+      const reportsResponse = await adminAxios.get(`/api/admin/community/articles/${id}/reports`);
       console.log('신고 목록 조회 응답:', reportsResponse.data);
 
       // 백엔드 응답 형식에 맞게 변환
@@ -248,7 +248,7 @@ const communityService = {
       console.log('게시글 삭제 요청:', { id, reason });
 
       // 백엔드 API 변경에 따라 경로 수정
-      const response = await adminAxios.delete(`/api/admin/community/posts/${id}`, {
+      const response = await adminAxios.delete(`/api/admin/community/articles/${id}`, {
         data: { reason }
       });
       console.log('게시글 삭제 응답:', response.data);
@@ -265,7 +265,7 @@ const communityService = {
       console.log('댓글 목록 조회 요청:', { articleId, filter, page, limit });
 
       // 백엔드 API 변경에 따라 경로 수정
-      const response = await adminAxios.get(`/api/admin/community/posts/${articleId}/comments`, {
+      const response = await adminAxios.get(`/api/admin/community/articles/${articleId}/comments`, {
         params: {
           page,
           limit,
@@ -551,7 +551,7 @@ const communityService = {
       console.log('휴지통 게시글 목록 조회 요청:', { page, limit });
 
       // 백엔드 API 변경에 따라 경로 수정
-      const response = await adminAxios.get(`/api/admin/community/trash/posts`, {
+      const response = await adminAxios.get(`/api/admin/community/trash/articles`, {
         params: { page, limit }
       });
       console.log('휴지통 게시글 목록 조회 응답:', response.data);

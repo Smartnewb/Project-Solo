@@ -106,7 +106,7 @@ export default function AdminMatching() {
       setIsLoading(true);
       console.log('매칭 시간 조회 시작');
 
-      const response = await fetch('/api/admin/matching-time');
+      const response = await fetch('/api/admin/matching/time');
 
       if (!response.ok) {
         throw new Error(`API 응답 오류: ${response.status}`);
@@ -153,7 +153,7 @@ export default function AdminMatching() {
   const fetchSignupStatus = async () => {
     try {
       console.log('회원가입 상태 정보 가져오기 시작');
-      const response = await fetch('/api/admin/signup-control');
+      const response = await fetch('/api/admin/matching/signup-control');
 
       if (!response.ok) {
         throw new Error(`API 응답 오류: ${response.status}`);
@@ -190,7 +190,7 @@ export default function AdminMatching() {
       setIsLoading(true);
       console.log('매칭 시간 설정 요청:', matchingDate);
 
-      const response = await fetch('/api/admin/matching-time', {
+      const response = await fetch('/api/admin/matching/time', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -236,7 +236,7 @@ export default function AdminMatching() {
       setIsLoading(true);
       console.log(`회원가입 상태 변경 요청: ${isSignupEnabled ? '비활성화' : '활성화'}`);
 
-      const response = await fetch('/api/admin/signup-control', {
+      const response = await fetch('/api/admin/matching/signup-control', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -436,7 +436,7 @@ export default function AdminMatching() {
       setIsMatchingLoading(true);
       console.log('=== 매칭 프로세스 시작 ===');
 
-      const response = await fetch('/api/admin/matched-users');
+      const response = await fetch('/api/admin/matching/batch');
 
       if (!response.ok) {
         throw new Error(`API 응답 오류: ${response.status}`);
@@ -758,4 +758,4 @@ export default function AdminMatching() {
       )}
     </div>
   );
-} 
+}

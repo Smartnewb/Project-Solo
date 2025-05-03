@@ -38,7 +38,7 @@ const auth = {
         return { isAuthenticated: false };
       }
 
-      const response = await adminAxios.get('/api/auth/me');
+      const response = await adminAxios.post('/api/admin/auth/check');
       return {
         isAuthenticated: true,
         user: response.data
@@ -334,12 +334,12 @@ const stats = {
 
       // 활성 사용자 수 조회
       try {
-        console.log('활성 사용자 수 API 요청 URL:', '/api/admin/analytics/active-users');
-        const activeUsersRes = await axiosServer.get('/api/admin/analytics/active-users');
+        console.log('활성 사용자 수 API 요청 URL:', '/api/admin/stats/users/activity');
+        const activeUsersRes = await axiosServer.get('/api/admin/stats/users/activity');
         console.log('활성 사용자 수 API 응답:', activeUsersRes);
 
         if (activeUsersRes?.data) {
-          activeUsers = activeUsersRes.data.count || 0;
+          activeUsers = activeUsersRes.data.activeUsers || 0;
         }
       } catch (error) {
         console.error('활성 사용자 수 조회 중 오류:', error);
@@ -430,7 +430,7 @@ const stats = {
   // 총 탈퇴자 수 조회
   getTotalWithdrawalsCount: async () => {
     try {
-      const response = await axiosServer.get('/api/admin/stats/withdrawals/total');
+      const response = await axiosServer.get('/api/admin/stats/withdrawal/total');
       return response.data || { totalWithdrawals: 0 };
     } catch (error) {
       console.error('총 탈퇴자 수 조회 중 오류:', error);
@@ -441,7 +441,7 @@ const stats = {
   // 일간 탈퇴자 수 조회
   getDailyWithdrawalCount: async () => {
     try {
-      const response = await axiosServer.get('/api/admin/stats/withdrawals/daily');
+      const response = await axiosServer.get('/api/admin/stats/withdrawal/daily');
       return response.data || { dailyWithdrawals: 0 };
     } catch (error) {
       console.error('오늘 탈퇴한 회원 수 조회 중 오류:', error);
@@ -452,7 +452,7 @@ const stats = {
   // 주간 탈퇴자 수 조회
   getWeeklyWithdrawalCount: async () => {
     try {
-      const response = await axiosServer.get('/api/admin/stats/withdrawals/weekly');
+      const response = await axiosServer.get('/api/admin/stats/withdrawal/weekly');
       return response.data || { weeklyWithdrawals: 0 };
     } catch (error) {
       console.error('이번 주 탈퇴한 회원 수 조회 중 오류:', error);
@@ -463,7 +463,7 @@ const stats = {
   // 월간 탈퇴자 수 조회
   getMonthlyWithdrawalCount: async () => {
     try {
-      const response = await axiosServer.get('/api/admin/stats/withdrawals/monthly');
+      const response = await axiosServer.get('/api/admin/stats/withdrawal/monthly');
       return response.data || { monthlyWithdrawals: 0 };
     } catch (error) {
       console.error('이번 달 탈퇴한 회원 수 조회 중 오류:', error);
@@ -475,7 +475,7 @@ const stats = {
   getCustomPeriodWithdrawalCount: async (startDate: string, endDate: string) => {
     try {
       console.log('사용자 지정 기간 탈퇴자 수 조회:', startDate, endDate);
-      const response = await axiosServer.post('/api/admin/stats/withdrawals/custom-period', {
+      const response = await axiosServer.post('/api/admin/stats/withdrawal/custom-period', {
         startDate,
         endDate
       });
@@ -489,7 +489,7 @@ const stats = {
   // 일별 탈퇴 추이 조회
   getDailyWithdrawalTrend: async () => {
     try {
-      const response = await axiosServer.get('/api/admin/stats/withdrawals/trend/daily');
+      const response = await axiosServer.get('/api/admin/stats/withdrawal/trend');
       return response.data || { data: [] };
     } catch (error) {
       console.error('일별 탈퇴 추이 조회 중 오류:', error);
@@ -500,7 +500,9 @@ const stats = {
   // 주별 탈퇴 추이 조회
   getWeeklyWithdrawalTrend: async () => {
     try {
-      const response = await axiosServer.get('/api/admin/stats/withdrawals/trend/weekly');
+      const response = await axiosServer.get('/api/admin/stats/withdrawal/trend', {
+        params: { period: 'weekly' }
+      });
       return response.data || { data: [] };
     } catch (error) {
       console.error('주별 탈퇴 추이 조회 중 오류:', error);
@@ -511,7 +513,9 @@ const stats = {
   // 월별 탈퇴 추이 조회
   getMonthlyWithdrawalTrend: async () => {
     try {
-      const response = await axiosServer.get('/api/admin/stats/withdrawals/trend/monthly');
+      const response = await axiosServer.get('/api/admin/stats/withdrawal/trend', {
+        params: { period: 'monthly' }
+      });
       return response.data || { data: [] };
     } catch (error) {
       console.error('월별 탈퇴 추이 조회 중 오류:', error);
@@ -523,7 +527,7 @@ const stats = {
   getCustomPeriodWithdrawalTrend: async (startDate: string, endDate: string) => {
     try {
       console.log('사용자 지정 기간 탈퇴 추이 조회:', startDate, endDate);
-      const response = await axiosServer.post('/api/admin/stats/withdrawals/trend/custom-period', {
+      const response = await axiosServer.post('/api/admin/stats/withdrawal/trend/custom-period', {
         startDate,
         endDate
       });
@@ -537,7 +541,7 @@ const stats = {
   // 탈퇴 사유 통계 조회
   getWithdrawalReasonStats: async () => {
     try {
-      const response = await axiosServer.get('/api/admin/stats/withdrawals/reasons');
+      const response = await axiosServer.get('/api/admin/stats/withdrawal/reasons');
       return response.data || { reasons: [] };
     } catch (error) {
       console.error('탈퇴 사유 통계 조회 중 오류:', error);
@@ -548,7 +552,7 @@ const stats = {
   // 서비스 사용 기간 통계 조회
   getServiceDurationStats: async () => {
     try {
-      const response = await axiosServer.get('/api/admin/stats/withdrawals/service-duration');
+      const response = await axiosServer.get('/api/admin/stats/withdrawal/usage-period');
       return response.data || { durations: [], averageDuration: 0 };
     } catch (error) {
       console.error('서비스 사용 기간 통계 조회 중 오류:', error);
@@ -559,7 +563,7 @@ const stats = {
   // 이탈률 조회
   getChurnRate: async () => {
     try {
-      const response = await axiosServer.get('/api/admin/stats/withdrawals/churn-rate');
+      const response = await axiosServer.get('/api/admin/stats/withdrawal/churn-rate');
       return response.data || { dailyChurnRate: 0, weeklyChurnRate: 0, monthlyChurnRate: 0 };
     } catch (error) {
       console.error('이탈률 조회 중 오류:', error);
@@ -701,7 +705,7 @@ const userAppearance = {
 
       // API 엔드포인트 (API 문서에서 확인한 정확한 경로)
       // 백엔드 API 변경에 따라 경로 수정
-      const endpoint = `/api/admin/users/${userId}`;
+      const endpoint = `/api/admin/users/${userId}/detail`;
       console.log(`API 엔드포인트: ${endpoint}`);
 
       // axios 설정 확인

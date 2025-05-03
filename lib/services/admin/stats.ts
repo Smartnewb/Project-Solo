@@ -242,6 +242,7 @@ const statsService = {
       totalUsers: number;
       activeUsers: number;
       newUsers: number;
+      weeklySignups: number;
       totalMatches: number;
     };
     userGrowth: {
@@ -256,20 +257,6 @@ const statsService = {
     try {
       console.log('대시보드 데이터 조회 시작');
 
-      // 대시보드 API 직접 호출
-      try {
-        console.log('대시보드 API 요청 URL:', '/api/admin/analytics/dashboard');
-        const dashboardData = await adminApiClient.get('/api/admin/analytics/dashboard');
-        console.log('대시보드 API 응답:', dashboardData);
-
-        if (dashboardData) {
-          return dashboardData;
-        }
-      } catch (error) {
-        console.error('대시보드 API 호출 오류:', error);
-        // 대시보드 API 호출 실패 시 개별 API 호출로 대체
-      }
-
       // 개별 API 호출로 대시보드 데이터 구성
       const result = {
         overview: {
@@ -283,148 +270,64 @@ const statsService = {
         matchingStats: []
       };
 
-      // 총 사용자 수 조회
+      // 총 회원 수 조회
       try {
-        console.log('총 사용자 수 API 요청 URL:', '/api/admin/stats/users/total');
+        console.log('총 회원 수 API 요청 URL:', '/api/admin/stats/users/total');
         const totalUsersRes = await adminApiClient.get('/api/admin/stats/users/total');
-        console.log('총 사용자 수 API 응답:', totalUsersRes);
+        console.log('총 회원 수 API 응답:', totalUsersRes);
 
         if (totalUsersRes) {
           // 다양한 필드 이름 처리
-          if (totalUsersRes.count !== undefined) {
-            result.overview.totalUsers = totalUsersRes.count;
-          } else if (totalUsersRes.totalUsers !== undefined) {
+          if (totalUsersRes.totalUsers !== undefined) {
             result.overview.totalUsers = totalUsersRes.totalUsers;
           } else if (typeof totalUsersRes === 'number') {
             result.overview.totalUsers = totalUsersRes;
           }
-          console.log('설정된 총 사용자 수:', result.overview.totalUsers);
+          console.log('설정된 총 회원 수:', result.overview.totalUsers);
         }
       } catch (error) {
-        console.error('총 사용자 수 조회 오류:', error);
+        console.error('총 회원 수 조회 오류:', error);
       }
 
-      // 활성 사용자 수 조회
+      // 오늘의 신규 가입 조회
       try {
-        console.log('활성 사용자 수 API 요청 URL:', '/api/admin/analytics/active-users');
-        const activeUsersRes = await adminApiClient.get('/api/admin/analytics/active-users');
-        console.log('활성 사용자 수 API 응답:', activeUsersRes);
+        console.log('오늘의 신규 가입 API 요청 URL:', '/api/admin/stats/users/daily');
+        const dailySignupsRes = await adminApiClient.get('/api/admin/stats/users/daily');
+        console.log('오늘의 신규 가입 API 응답:', dailySignupsRes);
 
-        if (activeUsersRes) {
+        if (dailySignupsRes) {
           // 다양한 필드 이름 처리
-          if (activeUsersRes.count !== undefined) {
-            result.overview.activeUsers = activeUsersRes.count;
-          } else if (activeUsersRes.activeUsers !== undefined) {
-            result.overview.activeUsers = activeUsersRes.activeUsers;
-          } else if (typeof activeUsersRes === 'number') {
-            result.overview.activeUsers = activeUsersRes;
+          if (dailySignupsRes.dailySignups !== undefined) {
+            result.overview.newUsers = dailySignupsRes.dailySignups;
+          } else if (typeof dailySignupsRes === 'number') {
+            result.overview.newUsers = dailySignupsRes;
           }
-          console.log('설정된 활성 사용자 수:', result.overview.activeUsers);
+          console.log('설정된 오늘의 신규 가입:', result.overview.newUsers);
         }
       } catch (error) {
-        console.error('활성 사용자 수 조회 오류:', error);
+        console.error('오늘의 신규 가입 조회 오류:', error);
       }
 
-      // 신규 사용자 수 조회
+      // 이번 주 가입자 수 조회
       try {
-        console.log('신규 사용자 수 API 요청 URL:', '/api/admin/stats/users/daily');
-        const newUsersRes = await adminApiClient.get('/api/admin/stats/users/daily');
-        console.log('신규 사용자 수 API 응답:', newUsersRes);
-
-        if (newUsersRes) {
-          // 다양한 필드 이름 처리
-          if (newUsersRes.count !== undefined) {
-            result.overview.newUsers = newUsersRes.count;
-          } else if (newUsersRes.dailySignups !== undefined) {
-            result.overview.newUsers = newUsersRes.dailySignups;
-          } else if (newUsersRes.newUsers !== undefined) {
-            result.overview.newUsers = newUsersRes.newUsers;
-          } else if (typeof newUsersRes === 'number') {
-            result.overview.newUsers = newUsersRes;
-          }
-          console.log('설정된 신규 사용자 수:', result.overview.newUsers);
-        }
-      } catch (error) {
-        console.error('신규 사용자 수 조회 오류:', error);
-      }
-
-      // 주간 가입자 수 조회
-      try {
-        console.log('주간 가입자 수 API 요청 URL:', '/api/admin/stats/users/weekly');
+        console.log('이번 주 가입자 API 요청 URL:', '/api/admin/stats/users/weekly');
         const weeklySignupsRes = await adminApiClient.get('/api/admin/stats/users/weekly');
-        console.log('주간 가입자 수 API 응답:', weeklySignupsRes);
+        console.log('이번 주 가입자 API 응답:', weeklySignupsRes);
 
         if (weeklySignupsRes) {
           // 다양한 필드 이름 처리
-          if (weeklySignupsRes.count !== undefined) {
-            result.overview.weeklySignups = weeklySignupsRes.count;
-          } else if (weeklySignupsRes.weeklySignups !== undefined) {
+          if (weeklySignupsRes.weeklySignups !== undefined) {
             result.overview.weeklySignups = weeklySignupsRes.weeklySignups;
-          } else if (weeklySignupsRes.weekly !== undefined) {
-            result.overview.weeklySignups = weeklySignupsRes.weekly;
           } else if (typeof weeklySignupsRes === 'number') {
             result.overview.weeklySignups = weeklySignupsRes;
           }
-          console.log('설정된 주간 가입자 수:', result.overview.weeklySignups);
+          console.log('설정된 이번 주 가입자:', result.overview.weeklySignups);
         }
       } catch (error) {
-        console.error('주간 가입자 수 조회 오류:', error);
+        console.error('이번 주 가입자 조회 오류:', error);
       }
 
-      // 매칭 통계 조회
-      try {
-        console.log('매칭 통계 API 요청 URL:', '/api/admin/matching/match-stats');
-        const matchStatsRes = await adminApiClient.get('/api/admin/matching/match-stats');
-        console.log('매칭 통계 API 응답:', matchStatsRes);
-
-        if (matchStatsRes) {
-          // 다양한 필드 이름 처리
-          if (matchStatsRes.totalMatches !== undefined) {
-            result.overview.totalMatches = matchStatsRes.totalMatches;
-          } else if (matchStatsRes.total !== undefined) {
-            result.overview.totalMatches = matchStatsRes.total;
-          } else if (matchStatsRes.count !== undefined) {
-            result.overview.totalMatches = matchStatsRes.count;
-          } else if (typeof matchStatsRes === 'number') {
-            result.overview.totalMatches = matchStatsRes;
-          }
-
-          // 일별 매칭 통계 처리
-          if (Array.isArray(matchStatsRes.dailyMatches)) {
-            result.matchingStats = matchStatsRes.dailyMatches;
-          } else if (Array.isArray(matchStatsRes.data)) {
-            result.matchingStats = matchStatsRes.data;
-          } else if (Array.isArray(matchStatsRes)) {
-            result.matchingStats = matchStatsRes;
-          }
-
-          console.log('설정된 총 매칭 수:', result.overview.totalMatches);
-          console.log('설정된 매칭 통계:', result.matchingStats);
-        }
-      } catch (error) {
-        console.error('매칭 통계 조회 오류:', error);
-      }
-
-      // 사용자 성장 추이 데이터 조회
-      try {
-        console.log('사용자 성장 추이 API 요청 URL:', '/api/admin/stats/users/trend/daily');
-        const userGrowthRes = await adminApiClient.get('/api/admin/stats/users/trend/daily');
-        console.log('사용자 성장 추이 API 응답:', userGrowthRes);
-
-        if (userGrowthRes) {
-          // 다양한 필드 이름 처리
-          if (Array.isArray(userGrowthRes.data)) {
-            result.userGrowth = userGrowthRes.data;
-          } else if (Array.isArray(userGrowthRes)) {
-            result.userGrowth = userGrowthRes;
-          } else if (userGrowthRes.userGrowth && Array.isArray(userGrowthRes.userGrowth)) {
-            result.userGrowth = userGrowthRes.userGrowth;
-          }
-          console.log('설정된 사용자 성장 추이:', result.userGrowth);
-        }
-      } catch (error) {
-        console.error('사용자 성장 추이 조회 오류:', error);
-      }
+      // 기타 통계 데이터는 필요에 따라 추가할 수 있습니다.
 
       console.log('최종 대시보드 데이터:', result);
       return result;
