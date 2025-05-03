@@ -26,7 +26,78 @@ const statsService = {
 
       // 응답 데이터 확인
       if (response) {
-        // 등급 목록 추출
+        console.log('백엔드 응답 구조:', {
+          hasAll: !!response.all,
+          hasMale: !!response.male,
+          hasFemale: !!response.female
+        });
+
+        // 백엔드 응답 구조 (all, male, female)를 프론트엔드 구조로 변환
+        if (response.all) {
+          // 전체 등급 통계 변환
+          const allStats = response.all;
+          const total = allStats.total || 0;
+
+          // 등급별 통계 배열 생성
+          const stats = Object.entries(allStats)
+            .filter(([key]) => key !== 'total') // total 필드 제외
+            .map(([grade, count]) => ({
+              grade,
+              count: Number(count) || 0,
+              percentage: total > 0 ? (Number(count) / total) * 100 : 0
+            }));
+
+          // 성별 통계 배열 생성
+          const genderStats = [];
+
+          // 남성 통계 추가
+          if (response.male) {
+            const maleTotal = response.male.total || 0;
+            const maleStats = Object.entries(response.male)
+              .filter(([key]) => key !== 'total') // total 필드 제외
+              .map(([grade, count]) => ({
+                grade,
+                count: Number(count) || 0,
+                percentage: maleTotal > 0 ? (Number(count) / maleTotal) * 100 : 0
+              }));
+
+            genderStats.push({
+              gender: 'MALE',
+              stats: maleStats
+            });
+          }
+
+          // 여성 통계 추가
+          if (response.female) {
+            const femaleTotal = response.female.total || 0;
+            const femaleStats = Object.entries(response.female)
+              .filter(([key]) => key !== 'total') // total 필드 제외
+              .map(([grade, count]) => ({
+                grade,
+                count: Number(count) || 0,
+                percentage: femaleTotal > 0 ? (Number(count) / femaleTotal) * 100 : 0
+              }));
+
+            genderStats.push({
+              gender: 'FEMALE',
+              stats: femaleStats
+            });
+          }
+
+          console.log('변환된 통계 데이터:', {
+            total,
+            statsCount: stats.length,
+            genderStatsCount: genderStats.length
+          });
+
+          return {
+            total,
+            stats,
+            genderStats
+          };
+        }
+
+        // 다른 응답 구조 처리 (이전 코드 유지)
         let grades = [];
         let total = 0;
 
@@ -81,14 +152,16 @@ const statsService = {
 
         return {
           total,
-          grades
+          stats: grades,
+          genderStats: []
         };
       }
 
       // 데이터가 없는 경우 기본값 반환
       return {
         total: 0,
-        grades: []
+        stats: [],
+        genderStats: []
       };
     } catch (error) {
       console.error('외모 등급 통계 조회 중 오류:', error);
@@ -96,7 +169,8 @@ const statsService = {
       // 오류 발생 시 기본값 반환
       return {
         total: 0,
-        grades: []
+        stats: [],
+        genderStats: []
       };
     }
   },
