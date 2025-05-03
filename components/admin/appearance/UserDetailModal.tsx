@@ -606,7 +606,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                   {/* 나이, 성별 및 계정 상태 표시 */}
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     <Chip
-                      label={`${userDetail.age}세 / ${GENDER_LABELS[userDetail.gender]}`}
+                      label={`${typeof userDetail.age === 'number' && userDetail.age ? userDetail.age : userDetail.profile?.age || '?'}세 / ${userDetail.gender && GENDER_LABELS[userDetail.gender] ? GENDER_LABELS[userDetail.gender] : userDetail.profile?.gender === 'MALE' ? '남성' : userDetail.profile?.gender === 'FEMALE' ? '여성' : '미지정'}`}
                       size="small"
                       color="primary"
                       variant="outlined"
@@ -631,19 +631,20 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                       {userDetail.universityDetails ? (
                         <>
                           <Typography variant="body1">
-                            {userDetail.universityDetails.name}{' '}
+                            {typeof userDetail.universityDetails.name === 'string' ? userDetail.universityDetails.name : '대학교 정보'}{' '}
                             {userDetail.universityDetails.authentication && (
                               <span style={{ color: '#2ECC71', marginLeft: '4px' }}>✓</span>
                             )}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                            {userDetail.universityDetails.department} {userDetail.universityDetails.grade}학년
-                            {userDetail.universityDetails.studentNumber && ` (${userDetail.universityDetails.studentNumber})`}
+                            {typeof userDetail.universityDetails.department === 'string' ? userDetail.universityDetails.department : ''}
+                            {typeof userDetail.universityDetails.grade === 'string' ? `${userDetail.universityDetails.grade}학년` : ''}
+                            {typeof userDetail.universityDetails.studentNumber === 'string' && ` (${userDetail.universityDetails.studentNumber})`}
                           </Typography>
                         </>
                       ) : (
                         <Typography variant="body1">
-                          {userDetail.university}
+                          {typeof userDetail.university === 'string' ? userDetail.university : '대학교 정보'}
                         </Typography>
                       )}
                     </Box>
@@ -735,6 +736,18 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                           가입일: {new Date(userDetail.createdAt).toLocaleDateString('ko-KR', {
                             year: 'numeric', month: 'long', day: 'numeric'
                           })}
+                        </Typography>
+                      </Box>
+                    )}
+
+                    {userDetail.lastLoginAt && (
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <AccessTimeIcon sx={{ mr: 1, fontSize: 18, color: 'text.secondary' }} />
+                        <Typography variant="body2">
+                          마지막 로그인: {userDetail.lastLoginAt && userDetail.lastLoginAt !== 'null' ?
+                            new Date(userDetail.lastLoginAt).toLocaleDateString('ko-KR', {
+                              year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                            }) : '없음'}
                         </Typography>
                       </Box>
                     )}
@@ -831,7 +844,36 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                                key}
                             </Typography>
                             <Typography variant="body1" sx={{ wordBreak: 'break-all' }}>
-                              {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                              {typeof value === 'object' ? (
+                                key === 'profile' ? (
+                                  <Box>
+                                    {value && typeof value === 'object' && Object.entries(value).map(([profileKey, profileValue]) => (
+                                      <Box key={profileKey} sx={{ mb: 1 }}>
+                                        <Typography variant="body2" color="text.secondary">
+                                          {profileKey === 'age' ? '나이' :
+                                           profileKey === 'gender' ? '성별' :
+                                           profileKey === 'instagramId' ? '인스타그램' :
+                                           profileKey === 'mbti' ? 'MBTI' :
+                                           profileKey === 'height' ? '키' :
+                                           profileKey === 'smoke' ? '흡연' :
+                                           profileKey === 'drink' ? '음주' :
+                                           profileKey === 'religion' ? '종교' :
+                                           profileKey === 'introduction' ? '소개' :
+                                           profileKey === 'appearanceGrade' ? '외모 등급' :
+                                           profileKey}
+                                        </Typography>
+                                        <Typography variant="body1">
+                                          {profileValue === null ? '-' :
+                                           profileKey === 'gender' && profileValue === 'MALE' ? '남성' :
+                                           profileKey === 'gender' && profileValue === 'FEMALE' ? '여성' :
+                                           profileKey === 'smoke' || profileKey === 'drink' ? (profileValue ? '예' : '아니오') :
+                                           String(profileValue)}
+                                        </Typography>
+                                      </Box>
+                                    ))}
+                                  </Box>
+                                ) : JSON.stringify(value)
+                              ) : value === null ? '-' : String(value)}
                             </Typography>
                           </Grid>
                         );
