@@ -55,13 +55,66 @@ class ApiClient {
   private setupRequestInterceptor(): void {
     this.client.interceptors.request.use(
       (config) => {
-        // 클라이언트 사이드에서만 localStorage에 접근
+        // 클라이언트 사이드에서만 토큰 접근
         if (typeof window !== 'undefined') {
           // 토큰 키 결정 (일반 사용자 또는 관리자)
           const tokenKey = this.type === 'admin' ? 'admin_access_token' : 'accessToken';
 
+          // 여러 저장소에서 토큰 가져오기 시도
+          let token = null;
+
+          // 1. localStorage에서 토큰 가져오기 시도
+          try {
+            token = localStorage.getItem(tokenKey);
+          } catch (localStorageError) {
+            this.logger.error('localStorage에서 토큰 가져오기 실패:', localStorageError);
+          }
+
+          // 2. localStorage에 토큰이 없으면 sessionStorage에서 가져오기 시도
+          if (!token) {
+            try {
+              token = sessionStorage.getItem(tokenKey);
+              if (token) {
+                this.logger.debug('sessionStorage에서 토큰 발견');
+
+                // sessionStorage에서 발견한 토큰을 localStorage에도 저장
+                try {
+                  localStorage.setItem(tokenKey, token);
+                } catch (storageError) {
+                  this.logger.error('sessionStorage에서 가져온 토큰을 localStorage에 저장 실패:', storageError);
+                }
+              }
+            } catch (sessionStorageError) {
+              this.logger.error('sessionStorage에서 토큰 가져오기 실패:', sessionStorageError);
+            }
+          }
+
+          // 3. 아직도 토큰이 없으면 쿠키에서 가져오기 시도
+          if (!token) {
+            try {
+              const cookies = document.cookie.split(';');
+              for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.startsWith(`${tokenKey}=`)) {
+                  token = cookie.substring(tokenKey.length + 1);
+                  this.logger.debug('쿠키에서 토큰 발견');
+
+                  // 쿠키에서 발견한 토큰을 localStorage와 sessionStorage에도 저장
+                  try {
+                    localStorage.setItem(tokenKey, token);
+                    sessionStorage.setItem(tokenKey, token);
+                  } catch (storageError) {
+                    this.logger.error('쿠키에서 가져온 토큰을 저장소에 저장 실패:', storageError);
+                  }
+                  break;
+                }
+              }
+            } catch (cookieError) {
+              this.logger.error('쿠키에서 토큰 가져오기 실패:', cookieError);
+            }
+          }
+
           // 토큰이 있다면 헤더에 추가
-          const token = localStorage.getItem(tokenKey);
           if (token) {
             config.headers.Authorization = `Bearer ${token}`;
           }

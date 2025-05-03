@@ -107,6 +107,7 @@ export default function AdminLayout({
 
   useEffect(() => {
     let mounted = true;
+    let checkTimeout = null;
 
     async function checkAccess() {
       try {
@@ -114,15 +115,75 @@ export default function AdminLayout({
 
         console.log('어드민 권한 확인 시작');
 
-        // 토큰 확인 (디버깅)
-        const token = localStorage.getItem('admin_access_token');
+        // 토큰 확인 (여러 저장소에서 확인)
+        let token = null;
+
+        // 1. localStorage에서 확인
+        try {
+          token = localStorage.getItem('admin_access_token');
+        } catch (e) {
+          console.error('localStorage에서 토큰 가져오기 실패:', e);
+        }
+
+        // 2. sessionStorage에서 확인
+        if (!token) {
+          try {
+            token = sessionStorage.getItem('admin_access_token');
+          } catch (e) {
+            console.error('sessionStorage에서 토큰 가져오기 실패:', e);
+          }
+        }
+
+        // 3. 쿠키에서 확인
+        if (!token && typeof document !== 'undefined') {
+          try {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+              const cookie = cookies[i].trim();
+              if (cookie.startsWith('admin_access_token=')) {
+                token = cookie.substring('admin_access_token='.length);
+                break;
+              }
+            }
+          } catch (e) {
+            console.error('쿠키에서 토큰 가져오기 실패:', e);
+          }
+        }
+
         console.log('어드민 레이아웃에서 토큰 확인:', !!token);
 
-        // 인증되지 않은 경우
+        // 인증 상태 확인 (isAuthenticated가 아직 설정되지 않았을 수 있음)
         if (!isAuthenticated || !user) {
-          console.warn('어드민 인증된 세션이 없음 - 관리자 페이지 접근 거부');
-          router.replace('/');
-          return;
+          // 토큰이 있지만 인증 상태가 설정되지 않은 경우, 약간 지연 후 다시 확인
+          if (token) {
+            console.log('토큰은 있지만 인증 상태가 설정되지 않음. 잠시 후 다시 확인...');
+
+            if (mounted) {
+              // 로딩 상태 유지
+              setLoading(true);
+
+              // 0.5초 후 다시 확인
+              checkTimeout = setTimeout(() => {
+                if (mounted) {
+                  // 여전히 인증되지 않았다면 로그인 페이지로 이동
+                  if (!isAuthenticated || !user) {
+                    console.warn('어드민 인증된 세션이 없음 - 관리자 페이지 접근 거부');
+                    router.replace('/');
+                  } else {
+                    console.log('지연 후 인증 상태 확인됨');
+                    setLoading(false);
+                  }
+                }
+              }, 500);
+
+              return;
+            }
+          } else {
+            // 토큰이 없는 경우 로그인 페이지로 이동
+            console.warn('어드민 인증된 세션이 없음 - 관리자 페이지 접근 거부');
+            router.replace('/');
+            return;
+          }
         }
 
         console.log('어드민 로그인 사용자:', user.email);
@@ -144,6 +205,9 @@ export default function AdminLayout({
 
     return () => {
       mounted = false;
+      if (checkTimeout) {
+        clearTimeout(checkTimeout);
+      }
     };
   }, [router, user, isAuthenticated]);
 

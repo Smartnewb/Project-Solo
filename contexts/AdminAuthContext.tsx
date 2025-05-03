@@ -65,44 +65,95 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   // 토큰 관리 함수들
   const getAccessToken = () => {
     try {
-      return localStorage.getItem('admin_access_token');
+      // 먼저 localStorage에서 토큰 가져오기 시도
+      const localToken = localStorage.getItem('admin_access_token');
+
+      // localStorage에 토큰이 있으면 반환
+      if (localToken) {
+        console.log('localStorage에서 어드민 토큰 발견');
+        return localToken;
+      }
+
+      // localStorage에 토큰이 없으면 쿠키에서 가져오기 시도
+      if (typeof document !== 'undefined') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.startsWith('admin_access_token=')) {
+            const cookieToken = cookie.substring('admin_access_token='.length);
+            console.log('쿠키에서 어드민 토큰 발견');
+
+            // 쿠키에서 발견한 토큰을 localStorage에도 저장
+            try {
+              localStorage.setItem('admin_access_token', cookieToken);
+            } catch (storageError) {
+              console.error('쿠키에서 가져온 토큰을 localStorage에 저장 실패:', storageError);
+            }
+
+            return cookieToken;
+          }
+        }
+      }
+
+      console.log('어드민 토큰을 찾을 수 없음');
+      return null;
     } catch (error) {
-      console.error('로컬 스토리지에서 토큰 가져오기 실패:', error);
+      console.error('토큰 가져오기 실패:', error);
       return null;
     }
   };
 
   const setAccessToken = (token: string) => {
     try {
+      // localStorage에 저장
       localStorage.setItem('admin_access_token', token);
+      console.log('localStorage에 어드민 토큰 저장 완료');
 
       // 쿠키에도 저장 (8시간 = 28800초)
       try {
-        document.cookie = `admin_access_token=${token}; path=/; max-age=28800; SameSite=Lax`;
+        // 보안 강화를 위한 쿠키 옵션 설정
+        const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+        document.cookie = `admin_access_token=${token}; path=/; max-age=28800; SameSite=Lax${secure}`;
+        console.log('쿠키에 어드민 토큰 저장 완료');
       } catch (cookieError) {
         console.error('쿠키에 토큰 저장 실패:', cookieError);
       }
 
-      console.log('어드민 토큰 저장 완료');
+      // sessionStorage에도 저장 (브라우저 탭 닫을 때까지만 유지)
+      try {
+        sessionStorage.setItem('admin_access_token', token);
+        console.log('sessionStorage에 어드민 토큰 저장 완료');
+      } catch (sessionError) {
+        console.error('sessionStorage에 토큰 저장 실패:', sessionError);
+      }
     } catch (error) {
-      console.error('로컬 스토리지에 토큰 저장 실패:', error);
+      console.error('토큰 저장 실패:', error);
     }
   };
 
   const removeAccessToken = () => {
     try {
+      // localStorage에서 제거
       localStorage.removeItem('admin_access_token');
+      console.log('localStorage에서 어드민 토큰 제거 완료');
 
       // 쿠키에서도 제거
       try {
         document.cookie = 'admin_access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        console.log('쿠키에서 어드민 토큰 제거 완료');
       } catch (cookieError) {
         console.error('쿠키에서 토큰 제거 실패:', cookieError);
       }
 
-      console.log('어드민 토큰 제거 완료');
+      // sessionStorage에서도 제거
+      try {
+        sessionStorage.removeItem('admin_access_token');
+        console.log('sessionStorage에서 어드민 토큰 제거 완료');
+      } catch (sessionError) {
+        console.error('sessionStorage에서 토큰 제거 실패:', sessionError);
+      }
     } catch (error) {
-      console.error('로컬 스토리지에서 토큰 제거 실패:', error);
+      console.error('토큰 제거 실패:', error);
     }
   };
 
@@ -326,7 +377,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
     setState(prev => ({ ...prev, loading: true }));
 
     try {
-      // 로컬 스토리지에서 토큰 가져오기
+      // 여러 저장소에서 토큰 가져오기 시도
       const token = getAccessToken();
 
       if (!token) {
@@ -337,14 +388,61 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
 
       console.log('저장된 어드민 토큰 발견');
 
-      // 토큰 유효성 검사 및 사용자 정보 가져오기
+      // 토큰 유효성 검증 (JWT 형식 확인)
+      try {
+        // JWT 형식 검증 (간단한 형식 검증만 수행)
+        const tokenParts = token.split('.');
+        if (tokenParts.length !== 3) {
+          console.error('유효하지 않은 JWT 형식');
+          throw new Error('유효하지 않은 JWT 형식');
+        }
+
+        // 토큰 만료 시간 확인
+        const payload = JSON.parse(atob(tokenParts[1]));
+        const expiryTime = payload.exp * 1000; // 초를 밀리초로 변환
+        const currentTime = Date.now();
+
+        console.log('토큰 만료 시간:', new Date(expiryTime).toLocaleString());
+        console.log('현재 시간:', new Date(currentTime).toLocaleString());
+
+        if (expiryTime <= currentTime) {
+          console.warn('토큰이 만료되었습니다. 갱신 시도 중...');
+          const refreshSuccess = await refreshToken();
+          if (!refreshSuccess) {
+            throw new Error('만료된 토큰 갱신 실패');
+          }
+          // 갱신된 토큰 가져오기
+          const newToken = getAccessToken();
+          if (!newToken) {
+            throw new Error('갱신된 토큰이 없습니다.');
+          }
+          // 갱신된 토큰으로 계속 진행
+          console.log('토큰 갱신 성공, 갱신된 토큰으로 계속 진행');
+        }
+      } catch (tokenError) {
+        console.error('토큰 검증 중 오류:', tokenError);
+        // 토큰 검증 실패 시 갱신 시도
+        console.log('토큰 검증 실패, 갱신 시도 중...');
+        const refreshSuccess = await refreshToken();
+        if (!refreshSuccess) {
+          throw new Error('토큰 검증 실패 및 갱신 실패');
+        }
+      }
+
+      // 현재 유효한 토큰 (원래 토큰 또는 갱신된 토큰)
+      const currentToken = getAccessToken();
+      if (!currentToken) {
+        throw new Error('유효한 토큰이 없습니다.');
+      }
+
+      // 사용자 정보 가져오기
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045';
         console.log('사용자 정보 요청 URL:', `${apiUrl}/api/admin/auth/check`);
 
         const response = await axios.post(`${apiUrl}/api/admin/auth/check`, {}, {
           headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${currentToken}`
           },
           withCredentials: true
         });
@@ -352,7 +450,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         console.log('어드민 사용자 정보 응답:', response.data);
 
         // 토큰에서 사용자 ID 추출
-        const userId = extractUserIdFromToken(token);
+        const userId = extractUserIdFromToken(currentToken);
 
         // 사용자 정보 생성
         const userInfo: AdminUser = {
@@ -362,6 +460,9 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         };
 
         console.log('어드민 사용자 정보 설정:', userInfo);
+
+        // 토큰 재저장 (여러 저장소에 동기화)
+        setAccessToken(currentToken);
 
         setState(prev => ({
           ...prev,
@@ -374,53 +475,66 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       } catch (userError) {
         console.error('어드민 사용자 정보 가져오기 실패:', userError);
 
-        // 토큰이 유효하지 않은 경우 토큰 갱신 시도
-        console.log('토큰 갱신 시도 중...');
-        const refreshSuccess = await refreshToken();
+        // API 오류 코드 확인
+        if (axios.isAxiosError(userError) && userError.response) {
+          const statusCode = userError.response.status;
 
-        if (!refreshSuccess) {
-          console.error('어드민 토큰 갱신 실패');
-          throw new Error('어드민 토큰 갱신 실패');
+          // 401 또는 403 오류인 경우 토큰 갱신 시도
+          if (statusCode === 401 || statusCode === 403) {
+            console.log('인증 오류 (401/403), 토큰 갱신 시도 중...');
+            const refreshSuccess = await refreshToken();
+
+            if (!refreshSuccess) {
+              console.error('어드민 토큰 갱신 실패');
+              throw new Error('어드민 토큰 갱신 실패');
+            }
+
+            console.log('토큰 갱신 성공, 사용자 정보 다시 요청 중...');
+
+            // 토큰 갱신 후 다시 사용자 정보 요청
+            const newToken = getAccessToken();
+            if (!newToken) {
+              throw new Error('갱신된 토큰이 없습니다.');
+            }
+
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045';
+            const response = await axios.post(`${apiUrl}/api/admin/auth/check`, {}, {
+              headers: {
+                'Authorization': `Bearer ${newToken}`
+              },
+              withCredentials: true
+            });
+
+            console.log('갱신된 토큰으로 사용자 정보 응답:', response.data);
+
+            // 토큰에서 사용자 ID 추출
+            const userId = extractUserIdFromToken(newToken);
+
+            // 사용자 정보 생성
+            const userInfo: AdminUser = {
+              id: userId || 'unknown-id',
+              email: response.data?.email || '',
+              role: response.data?.role || 'ADMIN'
+            };
+
+            console.log('갱신된 토큰으로 사용자 정보 설정:', userInfo);
+
+            setState(prev => ({
+              ...prev,
+              user: userInfo,
+              isAuthenticated: true,
+              loading: false
+            }));
+
+            console.log('어드민 인증 초기화 성공 (토큰 갱신 후)');
+          } else {
+            // 다른 API 오류인 경우
+            throw new Error(`API 오류: ${statusCode}`);
+          }
+        } else {
+          // 네트워크 오류 등 다른 오류인 경우
+          throw userError;
         }
-
-        console.log('토큰 갱신 성공, 사용자 정보 다시 요청 중...');
-
-        // 토큰 갱신 후 다시 사용자 정보 요청
-        const newToken = getAccessToken();
-        if (!newToken) {
-          throw new Error('갱신된 토큰이 없습니다.');
-        }
-
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045';
-        const response = await axios.post(`${apiUrl}/api/admin/auth/check`, {}, {
-          headers: {
-            'Authorization': `Bearer ${newToken}`
-          },
-          withCredentials: true
-        });
-
-        console.log('갱신된 토큰으로 사용자 정보 응답:', response.data);
-
-        // 토큰에서 사용자 ID 추출
-        const userId = extractUserIdFromToken(newToken);
-
-        // 사용자 정보 생성
-        const userInfo: AdminUser = {
-          id: userId || 'unknown-id',
-          email: response.data?.email || '',
-          role: response.data?.role || 'ADMIN'
-        };
-
-        console.log('갱신된 토큰으로 사용자 정보 설정:', userInfo);
-
-        setState(prev => ({
-          ...prev,
-          user: userInfo,
-          isAuthenticated: true,
-          loading: false
-        }));
-
-        console.log('어드민 인증 초기화 성공 (토큰 갱신 후)');
       }
     } catch (error) {
       console.error('어드민 인증 초기화 오류:', error);
