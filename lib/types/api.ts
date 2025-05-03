@@ -37,6 +37,13 @@ export interface UserBasicInfo {
   appearanceGrade?: AppearanceGrade;
 }
 
+// 프로필 이미지 타입
+export interface ProfileImage {
+  id: string;
+  url: string;
+  isMain: boolean;
+}
+
 // 사용자 상세 정보 타입
 export interface UserDetailInfo extends UserBasicInfo {
   phoneNumber?: string;
@@ -46,6 +53,7 @@ export interface UserDetailInfo extends UserBasicInfo {
   isVerified: boolean;
   suspendedReason?: string;
   suspendedUntil?: string;
+  profileImages?: ProfileImage[]; // 모든 프로필 이미지 배열
 }
 
 // 게시글 타입

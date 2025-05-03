@@ -197,12 +197,12 @@ export default function AppearanceGradeStatsCard({ stats }: AppearanceGradeStats
                       data={chartData}
                       cx="50%"
                       cy="50%"
-                      labelLine={false}
+                      labelLine={true}
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
                       nameKey="name"
-                      label={(entry) => entry.name}
+                      label={({ name, value, percentage }) => `${percentage.toFixed(1)}% (${value}명)`}
                     >
                       {chartData.map((entry, index) => (
                         <Cell
@@ -234,12 +234,12 @@ export default function AppearanceGradeStatsCard({ stats }: AppearanceGradeStats
                       data={maleChartData}
                       cx="50%"
                       cy="50%"
-                      labelLine={false}
+                      labelLine={true}
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
                       nameKey="name"
-                      label={(entry) => entry.name}
+                      label={({ name, value, percentage }) => `${percentage.toFixed(1)}% (${value}명)`}
                     >
                       {maleChartData.map((entry, index) => (
                         <Cell
@@ -271,12 +271,12 @@ export default function AppearanceGradeStatsCard({ stats }: AppearanceGradeStats
                       data={femaleChartData}
                       cx="50%"
                       cy="50%"
-                      labelLine={false}
+                      labelLine={true}
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
                       nameKey="name"
-                      label={(entry) => entry.name}
+                      label={({ name, value, percentage }) => `${percentage.toFixed(1)}% (${value}명)`}
                     >
                       {femaleChartData.map((entry, index) => (
                         <Cell
