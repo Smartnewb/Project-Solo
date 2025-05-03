@@ -25,8 +25,11 @@ interface GenderStats {
 
 // 성별 통계 카드 컴포넌트
 export default function GenderStatsCard() {
-  // React Query 훅 사용
-  const { data: stats, isLoading: loading, error } = hooks.useGenderStats();
+  // React Query 훅 사용 - 대시보드 데이터에서 성별 통계 가져오기
+  const { data, isLoading: loading, error } = hooks.useDashboardData();
+
+  // 대시보드 데이터에서 성별 통계 추출
+  const stats: GenderStats | null = data?.genderStats || null;
 
   // 차트 데이터 생성
   const chartData = stats ? [

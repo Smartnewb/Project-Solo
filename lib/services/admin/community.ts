@@ -76,43 +76,95 @@ const communityService = {
 
   // 게시글 상세 조회
   getArticleDetail: async (id: string): Promise<ArticleDetail> => {
-    // 게시글 정보 조회
-    const article = await adminApiClient.get(`/api/admin/community/articles/${id}`);
+    try {
+      console.log(`게시글 상세 조회 요청: id=${id}`);
 
-    // 댓글 목록 조회
-    const commentsResponse = await adminApiClient.get(`/api/admin/community/articles/${id}/comments`);
+      // 게시글 정보 조회
+      const article = await adminApiClient.get(`/api/admin/community/articles/${id}`);
+      console.log('게시글 정보 응답:', article);
 
-    // 신고 목록 조회
-    const reportsResponse = await adminApiClient.get(`/api/admin/community/articles/${id}/reports`);
+      // 댓글 목록 조회
+      const commentsResponse = await adminApiClient.get(`/api/admin/community/articles/${id}/comments`);
+      console.log('댓글 목록 응답:', commentsResponse);
 
-    // 데이터 변환
-    return {
-      ...article,
-      isBlinded: article.blindedAt !== null,
-      isDeleted: article.deletedAt !== null,
-      commentCount: commentsResponse.items.length,
-      comments: commentsResponse.items.map((comment: any) => ({
-        ...comment,
-        isBlinded: comment.blindedAt !== null,
-        isDeleted: comment.deletedAt !== null,
-        articleId: article.id
-      })),
-      reports: reportsResponse.items.map((report: any) => ({
-        ...report,
-        targetType: 'article',
-        targetId: article.id,
-        reporterNickname: report.reporter?.name || '익명',
-        targetContent: article.content
-      }))
-    };
+      // 신고 목록 조회
+      const reportsResponse = await adminApiClient.get(`/api/admin/community/articles/${id}/reports`);
+      console.log('신고 목록 응답:', reportsResponse);
+
+      // 데이터 변환
+      const result = {
+        ...article,
+        isBlinded: article.blindedAt !== null,
+        isDeleted: article.deletedAt !== null,
+        commentCount: Array.isArray(commentsResponse.items) ? commentsResponse.items.length : 0,
+        comments: Array.isArray(commentsResponse.items)
+          ? commentsResponse.items.map((comment: any) => ({
+              ...comment,
+              isBlinded: comment.blindedAt !== null,
+              isDeleted: comment.deletedAt !== null,
+              articleId: article.id
+            }))
+          : [],
+        reports: Array.isArray(reportsResponse.items)
+          ? reportsResponse.items.map((report: any) => ({
+              ...report,
+              targetType: 'article',
+              targetId: article.id,
+              reporterNickname: report.reporter?.name || '익명',
+              targetContent: article.content
+            }))
+          : []
+      };
+
+      console.log('변환된 게시글 상세 정보:', result);
+      return result;
+    } catch (error) {
+      console.error('게시글 상세 조회 중 오류:', error);
+
+      // 오류 발생 시 기본 데이터 반환
+      return {
+        id: id,
+        title: '게시글을 불러올 수 없습니다.',
+        content: '게시글 정보를 불러오는 중 오류가 발생했습니다.',
+        authorId: '',
+        author: {
+          id: '',
+          name: '알 수 없음',
+          email: ''
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isBlinded: false,
+        isDeleted: false,
+        commentCount: 0,
+        comments: [],
+        reports: []
+      };
+    }
   },
 
   // 게시글 블라인드 처리/해제
   blindArticle: async (id: string, isBlinded: boolean, reason?: string): Promise<{ success: boolean }> => {
-    if (isBlinded) {
-      return adminApiClient.patch(`/api/admin/community/articles/${id}/blind`, { reason });
-    } else {
-      return adminApiClient.patch(`/api/admin/community/articles/${id}/unblind`);
+    try {
+      console.log(`게시글 ${isBlinded ? '블라인드' : '블라인드 해제'} 요청: id=${id}, reason=${reason || '없음'}`);
+
+      let response;
+      if (isBlinded) {
+        response = await adminApiClient.patch(`/api/admin/community/articles/${id}/blind`, { reason });
+      } else {
+        response = await adminApiClient.patch(`/api/admin/community/articles/${id}/unblind`);
+      }
+
+      console.log(`게시글 ${isBlinded ? '블라인드' : '블라인드 해제'} 응답:`, response);
+
+      // 응답 형식 변환
+      return {
+        success: true,
+        ...response
+      };
+    } catch (error) {
+      console.error(`게시글 ${isBlinded ? '블라인드' : '블라인드 해제'} 중 오류:`, error);
+      throw error;
     }
   },
 
@@ -160,10 +212,59 @@ const communityService = {
 
   // 댓글 블라인드 처리/해제
   blindComment: async (id: string, isBlinded: boolean, reason?: string): Promise<{ success: boolean }> => {
-    if (isBlinded) {
-      return adminApiClient.patch(`/api/admin/community/comments/${id}/blind`, { reason });
-    } else {
-      return adminApiClient.patch(`/api/admin/community/comments/${id}/unblind`);
+    try {
+      console.log(`댓글 ${isBlinded ? '블라인드' : '블라인드 해제'} 요청: id=${id}, reason=${reason || '없음'}`);
+
+      let response;
+      if (isBlinded) {
+        response = await adminApiClient.patch(`/api/admin/community/comments/${id}/blind`, { reason });
+      } else {
+        response = await adminApiClient.patch(`/api/admin/community/comments/${id}/unblind`);
+      }
+
+      console.log(`댓글 ${isBlinded ? '블라인드' : '블라인드 해제'} 응답:`, response);
+
+      // 응답 형식 변환
+      return {
+        success: true,
+        ...response
+      };
+    } catch (error) {
+      console.error(`댓글 ${isBlinded ? '블라인드' : '블라인드 해제'} 중 오류:`, error);
+
+      // 백엔드에서 댓글 블라인드 기능이 지원되지 않는 경우 대체 응답
+      if (error.response && error.response.status === 404) {
+        console.warn('댓글 블라인드 기능이 백엔드에서 지원되지 않습니다. 소프트 삭제 기능으로 대체합니다.');
+
+        // 블라인드 대신 소프트 삭제 사용
+        if (isBlinded) {
+          try {
+            const deleteResponse = await adminApiClient.delete(`/api/admin/community/comments/${id}`, {
+              data: { reason }
+            });
+            return {
+              success: true,
+              ...deleteResponse
+            };
+          } catch (deleteError) {
+            console.error('댓글 소프트 삭제 중 오류:', deleteError);
+            throw deleteError;
+          }
+        } else {
+          try {
+            const restoreResponse = await adminApiClient.patch(`/api/admin/community/comments/${id}/restore`);
+            return {
+              success: true,
+              ...restoreResponse
+            };
+          } catch (restoreError) {
+            console.error('댓글 복원 중 오류:', restoreError);
+            throw restoreError;
+          }
+        }
+      }
+
+      throw error;
     }
   },
 

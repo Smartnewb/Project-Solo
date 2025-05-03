@@ -88,27 +88,62 @@ class ApiClient {
   private setupResponseInterceptor(): void {
     this.client.interceptors.response.use(
       (response) => {
-        // 응답 로깅
-        apiLogger.debug('API 응답', {
-          url: response.config.url,
-          status: response.status,
-          data: response.data
-        });
+        // 응답 로깅 (데이터 크기에 따라 로깅 수준 조정)
+        const responseSize = JSON.stringify(response.data).length;
+
+        if (responseSize > 10000) {
+          // 대용량 응답은 요약 정보만 로깅
+          apiLogger.debug('API 응답 (대용량)', {
+            url: response.config.url,
+            status: response.status,
+            size: `${Math.round(responseSize / 1024)} KB`,
+            type: typeof response.data,
+            isArray: Array.isArray(response.data)
+          });
+        } else {
+          // 일반 응답은 전체 데이터 로깅
+          apiLogger.debug('API 응답', {
+            url: response.config.url,
+            status: response.status,
+            data: response.data
+          });
+        }
 
         return response;
       },
       async (error: AxiosError) => {
-        // 오류 로깅
-        apiLogger.error('API 오류', {
+        // 오류 로깅 (상세 정보 포함)
+        const errorDetails = {
           url: error.config?.url,
+          method: error.config?.method,
           status: error.response?.status,
+          statusText: error.response?.statusText,
           data: error.response?.data,
           message: error.message
-        });
+        };
+
+        // 오류 유형에 따라 로깅 수준 조정
+        if (error.response?.status === 401) {
+          // 인증 오류는 경고 수준으로 로깅 (자주 발생할 수 있음)
+          apiLogger.warn('인증 오류 (401)', errorDetails);
+        } else if (error.response?.status === 404) {
+          // 리소스 없음 오류는 경고 수준으로 로깅
+          apiLogger.warn('리소스 없음 오류 (404)', errorDetails);
+        } else if (!error.response) {
+          // 서버 연결 오류는 심각한 오류로 로깅
+          apiLogger.error('서버 연결 오류', {
+            ...errorDetails,
+            code: error.code,
+            isAxiosError: error.isAxiosError,
+            stack: error.stack
+          });
+        } else {
+          // 기타 오류는 일반 오류로 로깅
+          apiLogger.error('API 오류', errorDetails);
+        }
 
         // 서버가 응답하지 않는 경우
         if (!error.response) {
-          apiLogger.error('서버 연결 오류', error.message);
           return Promise.reject(error);
         }
 
@@ -137,38 +172,75 @@ class ApiClient {
                 ? `${defaultConfig.baseURL}/api/admin/auth/refresh`
                 : `${defaultConfig.baseURL}/api/auth/refresh`;
 
+              this.logger.debug(`토큰 새로고침 요청 URL: ${refreshUrl}`);
+
+              // 토큰 새로고침 요청 시 쿠키 포함
               const response = await axios.post(
                 refreshUrl,
                 {},
-                { withCredentials: true }
+                {
+                  withCredentials: true,
+                  headers: {
+                    'Content-Type': 'application/json'
+                  }
+                }
               );
+
+              this.logger.debug('토큰 새로고침 응답:', response.data);
+
+              // 새 토큰 확인
+              if (!response.data || !response.data.accessToken) {
+                throw new Error('토큰 새로고침 응답에 accessToken이 없습니다.');
+              }
 
               // 새 토큰 저장
               const newToken = response.data.accessToken;
-              localStorage.setItem(tokenKey, newToken);
 
-              // 쿠키에도 저장 (8시간 = 28800초)
-              document.cookie = `${tokenKey}=${newToken}; path=/; max-age=28800; SameSite=Lax`;
+              try {
+                localStorage.setItem(tokenKey, newToken);
 
-              this.logger.info('토큰 새로고침 성공');
+                // 쿠키에도 저장 (8시간 = 28800초)
+                document.cookie = `${tokenKey}=${newToken}; path=/; max-age=28800; SameSite=Lax`;
+
+                this.logger.info('토큰 새로고침 성공 및 저장 완료');
+              } catch (storageError) {
+                this.logger.error('토큰 저장 중 오류 발생:', storageError);
+                // 저장 오류가 발생해도 계속 진행
+              }
 
               // 원래 요청의 헤더 업데이트
               originalRequest.headers.Authorization = `Bearer ${newToken}`;
 
               // 원래 요청 재시도
+              this.logger.debug('원래 요청 재시도:', {
+                url: originalRequest.url,
+                method: originalRequest.method
+              });
+
               return this.client(originalRequest);
             } catch (refreshError) {
-              this.logger.error('토큰 새로고침 실패', refreshError);
+              this.logger.error('토큰 새로고침 실패:', refreshError);
 
               // 토큰 리프레시 실패 시 세션 정보 삭제
               if (typeof window !== 'undefined') {
-                localStorage.removeItem(tokenKey);
+                try {
+                  localStorage.removeItem(tokenKey);
+
+                  // 쿠키에서도 제거
+                  document.cookie = `${tokenKey}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+
+                  this.logger.info('토큰 삭제 완료');
+                } catch (removeError) {
+                  this.logger.error('토큰 삭제 중 오류 발생:', removeError);
+                }
 
                 // 관리자인 경우 로그인 페이지로 리다이렉트
                 if (this.type === 'admin') {
+                  this.logger.info('관리자 로그인 페이지로 리다이렉트');
+
                   // 새로고침 시 자동 리다이렉트를 방지하기 위해 지연 추가
                   setTimeout(() => {
-                    window.location.href = '/';
+                    window.location.href = '/admin/login';
                   }, 100);
                 }
               }

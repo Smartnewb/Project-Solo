@@ -39,8 +39,11 @@ const UNIVERSITIES = [
 
 // 대학별 통계 카드 컴포넌트
 export default function UniversityStatsCard() {
-  // React Query 훅 사용
-  const { data: stats, isLoading: loading, error } = hooks.useUniversityStats();
+  // React Query 훅 사용 - 대시보드 데이터에서 대학별 통계 가져오기
+  const { data, isLoading: loading, error } = hooks.useDashboardData();
+
+  // 대시보드 데이터에서 대학별 통계 추출
+  const stats = data?.universityStats || null;
 
   // 차트 데이터 생성
   const chartData = stats?.universities?.map((uni, index) => {

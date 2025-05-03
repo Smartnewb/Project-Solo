@@ -31,6 +31,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { ko } from 'date-fns/locale';
 import { format, isAfter, isBefore, addDays } from 'date-fns';
 import AdminService from '@/app/services/admin';
+import { hooks } from '@/lib/query';
 
 // 탭 패널 컴포넌트
 interface TabPanelProps {
@@ -280,76 +281,149 @@ export default function SignupStatsDashboard() {
     });
   };
 
-  // 회원가입 추이 데이터 조회
-  useEffect(() => {
-    const fetchTrendData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+  // 대시보드 데이터 사용
+  const { data: dashboardData, isLoading: dashboardLoading, error: dashboardError } = hooks.useDashboardData();
 
-        // 일별 데이터 조회
-        try {
-          const dailyResponse = await AdminService.stats.getDailySignupTrend();
-          console.log('일별 데이터 응답:', dailyResponse);
-          if (dailyResponse && dailyResponse.data && dailyResponse.data.length > 0) {
-            setDailyData(dailyResponse.data);
-          } else {
-            // 데이터가 없는 경우 비어있는 데이터 생성
-            setDailyData(generateEmptyDailyData());
-          }
-        } catch (err) {
-          console.error('일별 데이터 조회 오류:', err);
+  // 대시보드 데이터에서 회원가입 추이 데이터 추출
+  useEffect(() => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      if (dashboardData) {
+        console.log('대시보드 데이터:', dashboardData);
+
+        // 일별 데이터 추출
+        if (dashboardData.userGrowth && dashboardData.userGrowth.length > 0) {
+          const dailyTrendData = dashboardData.userGrowth.map(item => ({
+            date: item.date,
+            count: item.count
+          }));
+          setDailyData(dailyTrendData);
+        } else {
+          // 데이터가 없는 경우 비어있는 데이터 생성
           setDailyData(generateEmptyDailyData());
         }
 
-        // 주별 데이터 조회
+        // 주별 데이터는 일별 데이터를 주별로 집계
         try {
-          const weeklyResponse = await AdminService.stats.getWeeklySignupTrend();
-          console.log('주별 데이터 응답:', weeklyResponse);
-          if (weeklyResponse && weeklyResponse.data && weeklyResponse.data.length > 0) {
-            setWeeklyData(weeklyResponse.data);
+          // 일별 데이터가 있는 경우 주별로 집계
+          if (dashboardData.userGrowth && dashboardData.userGrowth.length > 0) {
+            // 주별 데이터 생성을 위한 임시 맵
+            const weekMap = new Map();
+
+            // 일별 데이터를 주별로 집계
+            dashboardData.userGrowth.forEach(item => {
+              try {
+                const date = new Date(item.date);
+                if (!isNaN(date.getTime())) {
+                  // 해당 주의 시작일 계산 (일요일 기준)
+                  const day = date.getDay(); // 0: 일요일, 1: 월요일, ...
+                  const diff = date.getDate() - day;
+                  const weekStart = new Date(date);
+                  weekStart.setDate(diff);
+
+                  // 해당 주의 종료일 계산 (토요일 기준)
+                  const weekEnd = new Date(weekStart);
+                  weekEnd.setDate(weekStart.getDate() + 6);
+
+                  // 주 식별자 생성 (시작일 기준)
+                  const weekId = weekStart.toISOString().split('T')[0];
+
+                  // 해당 주에 데이터 추가
+                  if (weekMap.has(weekId)) {
+                    const weekData = weekMap.get(weekId);
+                    weekData.count += item.count;
+                  } else {
+                    weekMap.set(weekId, {
+                      weekStart: weekStart.toISOString().split('T')[0],
+                      weekEnd: weekEnd.toISOString().split('T')[0],
+                      count: item.count
+                    });
+                  }
+                }
+              } catch (e) {
+                console.error('주별 데이터 변환 오류:', e);
+              }
+            });
+
+            // 맵을 배열로 변환하고 정렬
+            const weeklyTrendData = Array.from(weekMap.values())
+              .sort((a, b) => a.weekStart.localeCompare(b.weekStart));
+
+            setWeeklyData(weeklyTrendData);
           } else {
             // 데이터가 없는 경우 비어있는 데이터 생성
             setWeeklyData(generateEmptyWeeklyData());
           }
         } catch (err) {
-          console.error('주별 데이터 조회 오류:', err);
+          console.error('주별 데이터 변환 오류:', err);
           setWeeklyData(generateEmptyWeeklyData());
         }
 
-        // 월별 데이터 조회
+        // 월별 데이터는 일별 데이터를 월별로 집계
         try {
-          const monthlyResponse = await AdminService.stats.getMonthlySignupTrend();
-          console.log('월별 데이터 응답:', monthlyResponse);
-          if (monthlyResponse && monthlyResponse.data && monthlyResponse.data.length > 0) {
-            setMonthlyData(monthlyResponse.data);
+          // 일별 데이터가 있는 경우 월별로 집계
+          if (dashboardData.userGrowth && dashboardData.userGrowth.length > 0) {
+            // 월별 데이터 생성을 위한 임시 맵
+            const monthMap = new Map();
+
+            // 일별 데이터를 월별로 집계
+            dashboardData.userGrowth.forEach(item => {
+              try {
+                const date = new Date(item.date);
+                if (!isNaN(date.getTime())) {
+                  // 월 식별자 생성 (YYYY-MM)
+                  const monthId = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+                  // 해당 월에 데이터 추가
+                  if (monthMap.has(monthId)) {
+                    const monthData = monthMap.get(monthId);
+                    monthData.count += item.count;
+                  } else {
+                    monthMap.set(monthId, {
+                      month: monthId,
+                      count: item.count
+                    });
+                  }
+                }
+              } catch (e) {
+                console.error('월별 데이터 변환 오류:', e);
+              }
+            });
+
+            // 맵을 배열로 변환하고 정렬
+            const monthlyTrendData = Array.from(monthMap.values())
+              .sort((a, b) => a.month.localeCompare(b.month));
+
+            setMonthlyData(monthlyTrendData);
           } else {
             // 데이터가 없는 경우 비어있는 데이터 생성
             setMonthlyData(generateEmptyMonthlyData());
           }
         } catch (err) {
-          console.error('월별 데이터 조회 오류:', err);
+          console.error('월별 데이터 변환 오류:', err);
           setMonthlyData(generateEmptyMonthlyData());
         }
-
-      } catch (err) {
-        console.error('회원가입 추이 데이터 조회 중 오류:', err);
+      } else if (dashboardError) {
+        console.error('대시보드 데이터 오류:', dashboardError);
         // 오류가 발생해도 비어있는 데이터 생성
         setDailyData(generateEmptyDailyData());
         setWeeklyData(generateEmptyWeeklyData());
         setMonthlyData(generateEmptyMonthlyData());
         setError('데이터를 불러오는데 실패했습니다. 임시 데이터를 표시합니다.');
-      } finally {
-        setLoading(false);
       }
-    };
-
-    fetchTrendData();
-    // 5분마다 데이터 갱신
-    const interval = setInterval(fetchTrendData, 5 * 60 * 1000);
-
-    return () => clearInterval(interval);
-  }, []);
+    } catch (err) {
+      console.error('회원가입 추이 데이터 처리 중 오류:', err);
+      // 오류가 발생해도 비어있는 데이터 생성
+      setDailyData(generateEmptyDailyData());
+      setWeeklyData(generateEmptyWeeklyData());
+      setMonthlyData(generateEmptyMonthlyData());
+      setError('데이터를 불러오는데 실패했습니다. 임시 데이터를 표시합니다.');
+    } finally {
+      setLoading(dashboardLoading);
+    }
+  }, [dashboardData, dashboardLoading, dashboardError]);
 
   // 날짜 유효성 검사
   const isDateRangeValid = () => {
@@ -519,7 +593,7 @@ export default function SignupStatsDashboard() {
         ) : (
           <>
             {error && activeTab < 3 && <Alert severity="warning" sx={{ mt: 2, mb: 2 }}>{error}</Alert>}
-            
+
             {/* 일별 탭 */}
             <TabPanel value={activeTab} index={0}>
               <Box sx={{ height: 400 }}>

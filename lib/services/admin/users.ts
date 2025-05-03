@@ -30,7 +30,15 @@ const userService = {
 
   // 사용자 상세 정보 조회
   getUserDetails: async (userId: string): Promise<UserDetailInfo> => {
-    return adminApiClient.get(`/api/admin/users/${userId}/detail`);
+    try {
+      console.log(`사용자 상세 정보 조회 요청: userId=${userId}`);
+      const response = await adminApiClient.get(`/api/admin/users/${userId}/detail`);
+      console.log('사용자 상세 정보 응답:', response);
+      return response;
+    } catch (error) {
+      console.error('사용자 상세 정보 조회 오류:', error);
+      throw error;
+    }
   },
 
   // 사용자 프로필 수정
@@ -40,7 +48,15 @@ const userService = {
 
   // 사용자 계정 상태 변경
   updateAccountStatus: async (userId: string, status: UserStatus, reason?: string): Promise<UserDetailInfo> => {
-    return adminApiClient.patch(`/api/admin/users/${userId}/status`, { status, reason });
+    try {
+      console.log(`사용자 계정 상태 변경 요청: userId=${userId}, status=${status}, reason=${reason || '없음'}`);
+      const response = await adminApiClient.patch(`/api/admin/users/${userId}/status`, { status, reason });
+      console.log('사용자 계정 상태 변경 응답:', response);
+      return response;
+    } catch (error) {
+      console.error('사용자 계정 상태 변경 오류:', error);
+      throw error;
+    }
   },
 
   // 사용자 경고 메시지 발송
@@ -54,10 +70,18 @@ const userService = {
   },
 
   // 사용자 계정 삭제
-  deleteUser: async (userId: string, reason: string): Promise<{ success: boolean }> => {
-    return adminApiClient.delete(`/api/admin/users/${userId}`, {
-      data: { reason }
-    });
+  deleteUser: async (userId: string, reason: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      console.log(`사용자 계정 삭제 요청: userId=${userId}, reason=${reason}`);
+      const response = await adminApiClient.delete(`/api/admin/users/${userId}`, {
+        data: { reason }
+      });
+      console.log('사용자 계정 삭제 응답:', response);
+      return response;
+    } catch (error) {
+      console.error('사용자 계정 삭제 오류:', error);
+      throw error;
+    }
   },
 
   // 사용자 프로필 수정 요청 발송
