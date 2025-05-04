@@ -172,16 +172,53 @@ const communityService = {
     try {
       console.log('게시글 상세 조회 요청:', id);
 
-      // 백엔드 API 변경에 따라 경로 수정
-      const articleResponse = await adminAxios.get(`/api/admin/community/articles/${id}`);
+      // 백엔드 API 경로 시도 (여러 가능한 경로 시도)
+      let articleResponse;
+      try {
+        // 첫 번째 경로 시도
+        articleResponse = await adminAxios.get(`/api/admin/community/articles/${id}`);
+      } catch (err) {
+        console.log('첫 번째 경로 실패, 대체 경로 시도:', err);
+        try {
+          // 두 번째 경로 시도
+          articleResponse = await adminAxios.get(`/api/admin/community/posts/${id}`);
+        } catch (err2) {
+          console.log('두 번째 경로 실패, 세 번째 경로 시도:', err2);
+          // 세 번째 경로 시도
+          articleResponse = await adminAxios.get(`/api/admin/community/posts/${id}/detail`);
+        }
+      }
+
       console.log('게시글 상세 조회 응답:', articleResponse.data);
 
-      // 댓글 조회
-      const commentsResponse = await adminAxios.get(`/api/admin/community/articles/${id}/comments`);
+      // 댓글 조회 (여러 가능한 경로 시도)
+      let commentsResponse;
+      try {
+        commentsResponse = await adminAxios.get(`/api/admin/community/articles/${id}/comments`);
+      } catch (err) {
+        console.log('댓글 첫 번째 경로 실패, 대체 경로 시도:', err);
+        try {
+          commentsResponse = await adminAxios.get(`/api/admin/community/posts/${id}/comments`);
+        } catch (err2) {
+          console.log('댓글 두 번째 경로 실패, 빈 배열 사용:', err2);
+          commentsResponse = { data: { items: [] } };
+        }
+      }
       console.log('댓글 목록 조회 응답:', commentsResponse.data);
 
-      // 신고 조회
-      const reportsResponse = await adminAxios.get(`/api/admin/community/articles/${id}/reports`);
+      // 신고 조회 (여러 가능한 경로 시도)
+      let reportsResponse;
+      try {
+        reportsResponse = await adminAxios.get(`/api/admin/community/articles/${id}/reports`);
+      } catch (err) {
+        console.log('신고 첫 번째 경로 실패, 대체 경로 시도:', err);
+        try {
+          reportsResponse = await adminAxios.get(`/api/admin/community/posts/${id}/reports`);
+        } catch (err2) {
+          console.log('신고 두 번째 경로 실패, 빈 배열 사용:', err2);
+          reportsResponse = { data: { items: [] } };
+        }
+      }
       console.log('신고 목록 조회 응답:', reportsResponse.data);
 
       // 백엔드 응답 형식에 맞게 변환
@@ -192,21 +229,30 @@ const communityService = {
       // 프론트엔드에서 필요한 추가 필드 설정
       const transformedArticle = {
         ...article,
+        // 필수 필드가 없는 경우 기본값 제공
+        id: article.id || id,
+        content: article.content || '',
+        emoji: article.emoji || null,
+        author: article.author || { id: '', name: '알 수 없음' },
         isBlinded: article.blindedAt !== null,
         isDeleted: article.deletedAt !== null,
         commentCount: comments.length,
         comments: comments.map((comment: any) => ({
           ...comment,
+          id: comment.id || '',
+          content: comment.content || '',
+          emoji: comment.emoji || null,
           isBlinded: comment.blindedAt !== null,
           isDeleted: comment.deletedAt !== null,
-          articleId: article.id
+          articleId: article.id || id
         })),
         reports: reports.map((report: any) => ({
           ...report,
+          id: report.id || '',
           targetType: 'article',
-          targetId: article.id,
+          targetId: article.id || id,
           reporterNickname: report.reporter?.name || '익명',
-          targetContent: article.content
+          targetContent: article.content || ''
         }))
       };
 
@@ -222,16 +268,33 @@ const communityService = {
     try {
       console.log('게시글 블라인드 처리 요청:', { id, isBlinded, reason });
 
-      // 백엔드 API 변경에 따라 경로 수정
+      // 백엔드 API 경로 시도 (여러 가능한 경로 시도)
       let response;
+
       if (isBlinded) {
         // 블라인드 처리
-        response = await adminAxios.patch(`/api/admin/community/posts/${id}/blind`, {
-          reason
-        });
+        try {
+          // 첫 번째 경로 시도
+          response = await adminAxios.patch(`/api/admin/community/articles/${id}/blind`, {
+            reason
+          });
+        } catch (err) {
+          console.log('블라인드 첫 번째 경로 실패, 대체 경로 시도:', err);
+          // 두 번째 경로 시도
+          response = await adminAxios.patch(`/api/admin/community/posts/${id}/blind`, {
+            reason
+          });
+        }
       } else {
         // 블라인드 해제
-        response = await adminAxios.patch(`/api/admin/community/posts/${id}/unblind`);
+        try {
+          // 첫 번째 경로 시도
+          response = await adminAxios.patch(`/api/admin/community/articles/${id}/unblind`);
+        } catch (err) {
+          console.log('블라인드 해제 첫 번째 경로 실패, 대체 경로 시도:', err);
+          // 두 번째 경로 시도
+          response = await adminAxios.patch(`/api/admin/community/posts/${id}/unblind`);
+        }
       }
 
       console.log('게시글 블라인드 처리 응답:', response.data);
@@ -247,10 +310,21 @@ const communityService = {
     try {
       console.log('게시글 삭제 요청:', { id, reason });
 
-      // 백엔드 API 변경에 따라 경로 수정
-      const response = await adminAxios.delete(`/api/admin/community/articles/${id}`, {
-        data: { reason }
-      });
+      // 백엔드 API 경로 시도 (여러 가능한 경로 시도)
+      let response;
+      try {
+        // 첫 번째 경로 시도
+        response = await adminAxios.delete(`/api/admin/community/articles/${id}`, {
+          data: { reason }
+        });
+      } catch (err) {
+        console.log('삭제 첫 번째 경로 실패, 대체 경로 시도:', err);
+        // 두 번째 경로 시도
+        response = await adminAxios.delete(`/api/admin/community/posts/${id}`, {
+          data: { reason }
+        });
+      }
+
       console.log('게시글 삭제 응답:', response.data);
       return response.data;
     } catch (error) {

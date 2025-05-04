@@ -343,7 +343,7 @@ export default function ArticleDetail() {
               <Typography variant="subtitle2" color="textSecondary">내용</Typography>
               <Paper variant="outlined" sx={{ p: 2, mt: 1, whiteSpace: 'pre-wrap' }}>
                 <Typography variant="body1">
-                  {article.emoji} {article.content}
+                  {article.emoji && article.emoji} {article.content}
                 </Typography>
               </Paper>
             </Box>
@@ -485,7 +485,7 @@ export default function ArticleDetail() {
                           ...(comment.isBlinded && { color: 'text.disabled', textDecoration: 'line-through' })
                         }}
                       >
-                        {comment.emoji} {comment.content}
+                        {comment.emoji && comment.emoji} {comment.content}
                       </Typography>
                     </CardContent>
                   </Card>
