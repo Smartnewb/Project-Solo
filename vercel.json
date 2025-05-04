@@ -12,6 +12,16 @@
   ],
   "env": {
     "SKIP_INSTALL_DEPS": "1",
-    "NPM_FLAGS": "--no-frozen-lockfile"
+    "NPM_FLAGS": "--no-frozen-lockfile",
+    "VERCEL_FORCE_NO_BUILD_CACHE": "1"
+  },
+  "github": {
+    "enabled": true,
+    "silent": false
+  },
+  "git": {
+    "deploymentEnabled": {
+      "main": true
+    }
   }
 }
