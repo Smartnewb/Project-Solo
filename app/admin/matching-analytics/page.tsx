@@ -134,6 +134,8 @@ export default function MatchingAnalytics() {
   const [historyLoading, setHistoryLoading] = useState<boolean>(false);
   const [searchName, setSearchName] = useState<string>('');
   const [appliedSearchName, setAppliedSearchName] = useState<string>('');
+  const [matchType, setMatchType] = useState<string>('all');
+  const [appliedMatchType, setAppliedMatchType] = useState<string>('all');
 
   // 대학교 목록 가져오기
   useEffect(() => {
@@ -186,7 +188,8 @@ export default function MatchingAnalytics() {
           selectedDate,
           historyPage,
           historyLimit,
-          appliedSearchName
+          appliedSearchName,
+          appliedMatchType !== 'all' ? appliedMatchType : undefined
         );
 
         setMatchHistory(data);
@@ -199,12 +202,23 @@ export default function MatchingAnalytics() {
     };
 
     fetchMatchHistory();
-  }, [tabValue, selectedDate, historyPage, historyLimit, appliedSearchName]);
+  }, [tabValue, selectedDate, historyPage, historyLimit, appliedSearchName, appliedMatchType]);
 
   // 검색 실행 함수
   const handleSearch = () => {
     setHistoryPage(1); // 검색 시 첫 페이지로 이동
     setAppliedSearchName(searchName);
+    setAppliedMatchType(matchType);
+  };
+
+  // 필터 초기화 함수
+  const handleResetFilters = () => {
+    setHistoryPage(1);
+    setSelectedDate(new Date().toISOString().split('T')[0]);
+    setSearchName('');
+    setAppliedSearchName('');
+    setMatchType('all');
+    setAppliedMatchType('all');
   };
 
   // 탭 변경 핸들러
@@ -521,7 +535,7 @@ export default function MatchingAnalytics() {
       <TabPanel value={tabValue} index={2}>
         <Paper sx={{ p: 3, mb: 3 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>매칭 내역 검색</Typography>
-          <Grid container spacing={2} alignItems="center">
+          <Grid container spacing={2} alignItems="flex-end">
             <Grid item xs={12} sm={6} md={3}>
               <Typography variant="subtitle2" sx={{ mb: 1 }}>날짜 선택</Typography>
               <input
@@ -545,39 +559,40 @@ export default function MatchingAnalytics() {
             </Grid>
             <Grid item xs={12} sm={6} md={3}>
               <Typography variant="subtitle2" sx={{ mb: 1 }}>사용자 이름 검색</Typography>
-              <div style={{ display: 'flex' }}>
-                <input
-                  type="text"
-                  value={searchName}
-                  onChange={(e) => setSearchName(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      handleSearch();
-                    }
-                  }}
-                  placeholder="이름으로 검색"
-                  style={{
-                    padding: '10px 14px',
-                    border: '1px solid rgba(0, 0, 0, 0.23)',
-                    borderRadius: '4px 0 0 4px',
-                    width: '100%',
-                    fontSize: '1rem',
-                    boxSizing: 'border-box'
-                  }}
-                />
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleSearch}
-                  sx={{
-                    height: '42px',
-                    borderRadius: '0 4px 4px 0',
-                    minWidth: '64px'
-                  }}
-                >
-                  검색
-                </Button>
-              </div>
+              <input
+                type="text"
+                value={searchName}
+                onChange={(e) => setSearchName(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearch();
+                  }
+                }}
+                placeholder="이름으로 검색"
+                style={{
+                  padding: '10px 14px',
+                  border: '1px solid rgba(0, 0, 0, 0.23)',
+                  borderRadius: '4px',
+                  width: '100%',
+                  fontSize: '1rem',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={2}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>매칭 유형</Typography>
+              <Select
+                value={matchType}
+                onChange={(e) => setMatchType(e.target.value)}
+                fullWidth
+                size="small"
+                sx={{ height: '42px' }}
+              >
+                <MenuItem value="all">전체</MenuItem>
+                <MenuItem value="scheduled">무료매칭</MenuItem>
+                <MenuItem value="admin">관리자 수동매칭</MenuItem>
+                <MenuItem value="rematching">재매칭(과금)</MenuItem>
+              </Select>
             </Grid>
             <Grid item xs={12} sm={6} md={2}>
               <Typography variant="subtitle2" sx={{ mb: 1 }}>표시 개수</Typography>
@@ -594,19 +609,20 @@ export default function MatchingAnalytics() {
                 <MenuItem value={50}>50개</MenuItem>
               </Select>
             </Grid>
-            <Grid item xs={12} sm={6} md={2}>
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>필터 초기화</Typography>
+            <Grid item xs={12} sm={6} md={2} sx={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleSearch}
+                sx={{ height: '42px', flex: 1, mr: 1 }}
+              >
+                검색
+              </Button>
               <Button
                 variant="outlined"
                 color="primary"
-                onClick={() => {
-                  setHistoryPage(1);
-                  setSelectedDate(new Date().toISOString().split('T')[0]);
-                  setSearchName('');
-                  setAppliedSearchName('');
-                }}
-                fullWidth
-                sx={{ height: '42px' }}
+                onClick={handleResetFilters}
+                sx={{ height: '42px', flex: 1 }}
               >
                 초기화
               </Button>
@@ -629,8 +645,8 @@ export default function MatchingAnalytics() {
                       <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>매칭 점수</th>
                       <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>매칭 유형</th>
                       <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>매칭 시간</th>
-                      <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>사용자 1</th>
-                      <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>사용자 2</th>
+                      <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>사용자</th>
+                      <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>매칭상대</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -655,8 +671,7 @@ export default function MatchingAnalytics() {
                           >
                             {item.type === 'scheduled' ? '무료매칭' :
                              item.type === 'admin' ? '관리자 수동매칭' :
-                             item.type === 'rematching' ? '재매칭(과금)' :
-                             item.type === 'matching' ? '일반 매칭' : item.type}
+                             item.type === 'rematching' ? '재매칭(과금)' : item.type}
                           </span>
                         </td>
                         <td style={{ padding: '16px' }}>
@@ -766,8 +781,17 @@ export default function MatchingAnalytics() {
                     {Math.min(historyPage * (matchHistory.itemsPerPage || historyLimit), matchHistory.totalItems || matchHistory.total || 0)}개를 표시하고 있습니다.
                   </>
                 )}
-                {appliedSearchName && (
-                  <span> (검색어: "{appliedSearchName}")</span>
+                {(appliedSearchName || appliedMatchType !== 'all') && (
+                  <span>
+                    {appliedSearchName && <span> (검색어: "{appliedSearchName}")</span>}
+                    {appliedMatchType !== 'all' && (
+                      <span> (매칭 유형: {
+                        appliedMatchType === 'scheduled' ? '무료매칭' :
+                        appliedMatchType === 'admin' ? '관리자 수동매칭' :
+                        appliedMatchType === 'rematching' ? '재매칭(과금)' : appliedMatchType
+                      })</span>
+                    )}
+                  </span>
                 )}
               </Typography>
             </Box>

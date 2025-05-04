@@ -1302,16 +1302,17 @@ const matching = {
   },
 
   // 매칭 내역 조회
-  getMatchHistory: async (date: string, page: number = 1, limit: number = 10, searchName: string = '') => {
+  getMatchHistory: async (date: string, page: number = 1, limit: number = 10, searchName: string = '', matchType?: string) => {
     try {
-      console.log('매칭 내역 조회 요청:', { date, page, limit, searchName });
+      console.log('매칭 내역 조회 요청:', { date, page, limit, searchName, matchType });
 
       const response = await axiosServer.get('/api/admin/matching/match-history', {
         params: {
           date,
           page,
           limit,
-          searchName
+          searchName,
+          matchType
         }
       });
       console.log('매칭 내역 조회 응답:', response.data);
@@ -1481,10 +1482,15 @@ const matching = {
       let filteredItems = mockItems;
       if (searchName) {
         const searchLower = searchName.toLowerCase();
-        filteredItems = mockItems.filter(item =>
+        filteredItems = filteredItems.filter(item =>
           item.user1.name.toLowerCase().includes(searchLower) ||
           item.user2.name.toLowerCase().includes(searchLower)
         );
+      }
+
+      // 매칭 유형으로 필터링
+      if (matchType) {
+        filteredItems = filteredItems.filter(item => item.type === matchType);
       }
 
       // 전체 아이템 수
