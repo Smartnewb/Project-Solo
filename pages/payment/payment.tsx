@@ -1,9 +1,9 @@
 'use client';
 
-import MobileLayout from "@/features/layouts/mobile";
-import { Payment } from "@/features/payment";
-import { useLocalStorage, useRouteMemory } from "@/shared/hooks";
-import { PaymentProduct } from "@/types/pay";
+import MobileLayout from "../../features/layouts/mobile";
+import { Payment } from "../../features/payment";
+import { useLocalStorage, useRouteMemory } from "../../shared/hooks";
+import { PaymentProduct } from "../../types/pay";
 import { Button } from "../../shared/ui/button";
 import { useRouter } from "next/navigation";
 import { Counter } from "../../shared/ui";

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { cn } from "@/shared/utils";
+import { cn } from "../../utils";
 import { X } from "lucide-react"; // X 아이콘을 위해 lucide-react 사용
 
 interface ModalProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -15,8 +15,8 @@ const Modal = React.forwardRef<HTMLDivElement, ModalProps>(
     return (
       <>
         {/* 오버레이 */}
-        <div 
-          className="fixed inset-0 bg-black/50 z-50" 
+        <div
+          className="fixed inset-0 bg-black/50 z-50"
           onClick={onClose}
           aria-hidden="true"
         />
@@ -93,4 +93,4 @@ const ModalFooter = React.forwardRef<
 ));
 ModalFooter.displayName = "ModalFooter";
 
-export { Modal, ModalHeader, ModalContent, ModalFooter }; 
+export { Modal, ModalHeader, ModalContent, ModalFooter };
