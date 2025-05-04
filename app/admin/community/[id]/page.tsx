@@ -308,31 +308,35 @@ export default function ArticleDetail() {
               </Grid>
               <Grid item xs={12} md={6}>
                 <Typography variant="subtitle2" color="textSecondary">상태</Typography>
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  {article.isBlinded ? (
-                    <Chip label="블라인드" color="warning" />
-                  ) : article.isDeleted ? (
-                    <Chip label="삭제됨" color="error" />
-                  ) : (
-                    <Chip label="정상" color="success" />
-                  )}
-                  {article.isEdited && (
-                    <Chip label="수정됨" color="info" variant="outlined" />
-                  )}
-                </Box>
+                <Typography variant="body1" component="div">
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    {article.isBlinded ? (
+                      <Chip label="블라인드" color="warning" />
+                    ) : article.isDeleted ? (
+                      <Chip label="삭제됨" color="error" />
+                    ) : (
+                      <Chip label="정상" color="success" />
+                    )}
+                    {article.isEdited && (
+                      <Chip label="수정됨" color="info" variant="outlined" />
+                    )}
+                  </Box>
+                </Typography>
               </Grid>
               <Grid item xs={12} md={6}>
                 <Typography variant="subtitle2" color="textSecondary">통계</Typography>
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Chip label={`좋아요 ${article.likeCount}`} color="primary" variant="outlined" />
-                  <Chip label={`댓글 ${article.commentCount}`} color="primary" variant="outlined" />
-                  <Chip
-                    label={`신고 ${article.reportCount}`}
-                    color={article.reportCount > 0 ? "error" : "default"}
-                    variant="outlined"
-                    icon={article.reportCount > 0 ? <ReportIcon /> : undefined}
-                  />
-                </Box>
+                <Typography variant="body1" component="div">
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Chip label={`좋아요 ${article.likeCount}`} color="primary" variant="outlined" />
+                    <Chip label={`댓글 ${article.commentCount}`} color="primary" variant="outlined" />
+                    <Chip
+                      label={`신고 ${article.reportCount}`}
+                      color={article.reportCount > 0 ? "error" : "default"}
+                      variant="outlined"
+                      icon={article.reportCount > 0 ? <ReportIcon /> : undefined}
+                    />
+                  </Box>
+                </Typography>
               </Grid>
             </Grid>
 
@@ -422,7 +426,7 @@ export default function ArticleDetail() {
                       }
                       title={
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant="subtitle2">
+                          <Typography variant="subtitle2" component="div">
                             {comment.anonymous || comment.isAnonymous ? '익명' :
                              (comment.nickname || comment.author?.name || '알 수 없음')}
                           </Typography>
