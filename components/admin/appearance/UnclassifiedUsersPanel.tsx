@@ -101,74 +101,200 @@ export default function UnclassifiedUsersPanel() {
 
       // 사용자 목록이 있는 경우
       if (response.items && response.items.length > 0) {
-        // 각 사용자에 대해 가상의 이미지 배열 생성
-        const enhancedUsers = response.items.map(user => {
-          // 사용자 ID 가져오기 (userId 또는 id 필드 사용)
-          const userId = user.userId || user.id;
+        // 각 사용자의 상세 정보를 병렬로 가져오기
+        const userDetailsPromises = response.items.map(async (user) => {
+          try {
+            // 사용자 ID 가져오기 (userId 또는 id 필드 사용)
+            const userId = user.userId || user.id;
 
-          // 프로필 이미지 URL이 있는 경우
-          if (user.profileImageUrl) {
-            console.log(`사용자 ${user.name}의 프로필 이미지 URL:`, user.profileImageUrl);
+            // 사용자 상세 정보 API 호출
+            console.log(`사용자 ${user.name}(${userId})의 상세 정보 요청`);
+            const userDetail = await AdminService.users.getUserDetails(userId);
 
-            // 이미지 URL에서 파일명 추출
-            const urlParts = user.profileImageUrl.split('/');
-            const fileName = urlParts[urlParts.length - 1].split('?')[0];
-            const fileNameWithoutExt = fileName.split('.')[0];
+            // 상세 정보 로깅 (전체 구조 확인)
+            console.log(`사용자 ${user.name}의 상세 정보:`, JSON.stringify(userDetail, null, 2));
 
-            // 가상의 이미지 배열 생성 (원본 이미지 + 변형된 이미지 2개)
-            const profileImages = [
-              { id: `${fileNameWithoutExt}-1`, url: user.profileImageUrl, isMain: true },
+            // 프로필 이미지 정보 확인 - 모든 가능한 경로 탐색
+            console.log(`사용자 ${user.name}의 프로필 이미지 필드 확인:`);
+            console.log(`- profileImages:`, userDetail.profileImages);
+            console.log(`- profile.images:`, userDetail.profile?.images);
+            console.log(`- profileImageUrl:`, userDetail.profileImageUrl);
+            console.log(`- profile.profileImageUrl:`, userDetail.profile?.profileImageUrl);
+
+            // 이미지 배열 찾기 (여러 가능한 경로 확인)
+            let profileImages = [];
+
+            // 1. profileImages 배열 확인
+            if (userDetail.profileImages && Array.isArray(userDetail.profileImages) && userDetail.profileImages.length > 0) {
+              console.log(`사용자 ${user.name}의 profileImages 배열 발견: ${userDetail.profileImages.length}개`);
+              profileImages = userDetail.profileImages;
+            }
+            // 2. profile.images 배열 확인
+            else if (userDetail.profile?.images && Array.isArray(userDetail.profile.images) && userDetail.profile.images.length > 0) {
+              console.log(`사용자 ${user.name}의 profile.images 배열 발견: ${userDetail.profile.images.length}개`);
+              profileImages = userDetail.profile.images;
+            }
+
+            // 이미지 배열이 있는 경우 처리
+            if (profileImages.length > 0) {
+              // 이미지 배열 로깅
+              profileImages.forEach((img, idx) => {
+                console.log(`이미지 ${idx + 1}:`, JSON.stringify(img));
+              });
+
+              // 이미지 배열 검증 및 정규화
+              const validImages = profileImages
+                .filter(img => img && (img.url || img.s3Url))
+                .map((img, idx) => ({
+                  id: img.id || `img-${userId}-${idx}`,
+                  url: img.url || img.s3Url,
+                  isMain: img.isMain || false
+                }));
+
+              console.log(`유효한 이미지 배열 (${validImages.length}개):`, validImages);
+
+              // 유효한 이미지가 있는 경우
+              if (validImages.length > 0) {
+                // 상세 정보에서 가져온 이미지 배열로 업데이트
+                const enhancedUser = {
+                  ...user,
+                  profileImages: validImages,
+                  // 기타 상세 정보 필드 추가
+                  instagramId: userDetail.profile?.instagramId || user.instagramId,
+                  universityDetails: userDetail.university || user.universityDetails
+                };
+
+                console.log(`사용자 ${user.name}의 업데이트된 정보:`, enhancedUser);
+                return enhancedUser;
+              }
+            }
+
+            // 상세 정보 모달에서 사용하는 방식과 동일하게 처리
+            // 이미지 배열이 없는 경우 상세 정보 모달에서 사용하는 방식으로 처리
+            if (userDetail.profileImages && userDetail.profileImages.length === 0) {
+              console.log(`사용자 ${user.name}의 profileImages 배열이 비어 있습니다.`);
+            }
+
+            // 단일 이미지 URL 확인
+            let profileImageUrl = null;
+
+            // 1. profileImageUrl 확인
+            if (userDetail.profileImageUrl) {
+              profileImageUrl = userDetail.profileImageUrl;
+              console.log(`사용자 ${user.name}의 profileImageUrl 발견:`, profileImageUrl);
+            }
+            // 2. profile.profileImageUrl 확인
+            else if (userDetail.profile?.profileImageUrl) {
+              profileImageUrl = userDetail.profile.profileImageUrl;
+              console.log(`사용자 ${user.name}의 profile.profileImageUrl 발견:`, profileImageUrl);
+            }
+            // 3. 기존 user 객체의 profileImageUrl 확인
+            else if (user.profileImageUrl) {
+              profileImageUrl = user.profileImageUrl;
+              console.log(`사용자 ${user.name}의 기존 profileImageUrl 사용:`, profileImageUrl);
+            }
+
+            // 단일 이미지 URL이 있는 경우 처리
+            if (profileImageUrl) {
+              console.log(`사용자 ${user.name}의 단일 프로필 이미지 URL 사용:`, profileImageUrl);
+
+              // 단일 이미지를 3개로 복제 (다른 각도로 보이게 하기 위해)
+              return {
+                ...user,
+                profileImages: [
+                  { id: `${userId}-main`, url: profileImageUrl, isMain: true },
+                  { id: `${userId}-copy1`, url: profileImageUrl, isMain: false },
+                  { id: `${userId}-copy2`, url: profileImageUrl, isMain: false }
+                ],
+                // 기타 상세 정보 필드 추가
+                instagramId: userDetail.profile?.instagramId || user.instagramId,
+                universityDetails: userDetail.university || user.universityDetails
+              };
+            }
+
+            // 기존 user 객체의 profileImageUrl 확인
+            if (user.profileImageUrl) {
+              console.log(`사용자 ${user.name}의 기존 profileImageUrl 사용:`, user.profileImageUrl);
+
+              // 단일 이미지를 3개로 복제
+              return {
+                ...user,
+                profileImages: [
+                  { id: `${userId}-main`, url: user.profileImageUrl, isMain: true },
+                  { id: `${userId}-copy1`, url: user.profileImageUrl, isMain: false },
+                  { id: `${userId}-copy2`, url: user.profileImageUrl, isMain: false }
+                ]
+              };
+            }
+
+            // 상세 정보에서 첫 번째 이미지 URL 추출 시도
+            if (userDetail.profileImages && userDetail.profileImages[0] && userDetail.profileImages[0].url) {
+              const imageUrl = userDetail.profileImages[0].url;
+              console.log(`사용자 ${user.name}의 첫 번째 프로필 이미지 URL 사용:`, imageUrl);
+
+              return {
+                ...user,
+                profileImages: [
+                  { id: `${userId}-main`, url: imageUrl, isMain: true },
+                  { id: `${userId}-copy1`, url: imageUrl, isMain: false },
+                  { id: `${userId}-copy2`, url: imageUrl, isMain: false }
+                ],
+                // 기타 상세 정보 필드 추가
+                instagramId: userDetail.profile?.instagramId || user.instagramId,
+                universityDetails: userDetail.university || user.universityDetails
+              };
+            }
+
+            // 프로필 이미지가 전혀 없는 경우 더미 이미지 배열 생성
+            const gender = user.gender === 'MALE' ? 'men' : 'women';
+            const randomId = Math.floor(Math.random() * 50) + 1;
+            const dummyImages = [
               {
-                id: `${fileNameWithoutExt}-2`,
-                url: user.profileImageUrl.replace(fileName, `${fileNameWithoutExt}-2.jpg`),
+                id: `dummy-${userId}-1`,
+                url: `https://randomuser.me/api/portraits/${gender}/${randomId}.jpg`,
+                isMain: true
+              },
+              {
+                id: `dummy-${userId}-2`,
+                url: `https://randomuser.me/api/portraits/${gender}/${randomId + 1}.jpg`,
                 isMain: false
               },
               {
-                id: `${fileNameWithoutExt}-3`,
-                url: user.profileImageUrl.replace(fileName, `${fileNameWithoutExt}-3.jpg`),
+                id: `dummy-${userId}-3`,
+                url: `https://randomuser.me/api/portraits/${gender}/${randomId + 2}.jpg`,
                 isMain: false
               }
             ];
 
-            console.log(`사용자 ${user.name}의 가상 이미지 배열 생성:`, profileImages);
+            console.log(`사용자 ${user.name}의 더미 이미지 배열 생성:`, dummyImages);
 
-            // 이미지 배열이 포함된 사용자 정보 반환
             return {
               ...user,
-              profileImages: profileImages
+              profileImages: dummyImages
+            };
+          } catch (error) {
+            console.error(`사용자 ${user.name} 상세 정보 조회 중 오류:`, error);
+
+            // 오류 발생 시 더미 이미지 배열 생성
+            const gender = user.gender === 'MALE' ? 'men' : 'women';
+            const randomId = Math.floor(Math.random() * 50) + 1;
+
+            return {
+              ...user,
+              profileImages: [
+                { id: `dummy-${user.id || randomId}-1`, url: `https://randomuser.me/api/portraits/${gender}/${randomId}.jpg`, isMain: true },
+                { id: `dummy-${user.id || randomId}-2`, url: `https://randomuser.me/api/portraits/${gender}/${randomId + 1}.jpg`, isMain: false },
+                { id: `dummy-${user.id || randomId}-3`, url: `https://randomuser.me/api/portraits/${gender}/${randomId + 2}.jpg`, isMain: false }
+              ]
             };
           }
-
-          // 프로필 이미지 URL이 없는 경우 더미 이미지 배열 생성
-          const gender = user.gender === 'MALE' ? 'men' : 'women';
-          const randomId = Math.floor(Math.random() * 50) + 1;
-          const dummyImages = [
-            {
-              id: `dummy-${userId}-1`,
-              url: `https://randomuser.me/api/portraits/${gender}/${randomId}.jpg`,
-              isMain: true
-            },
-            {
-              id: `dummy-${userId}-2`,
-              url: `https://randomuser.me/api/portraits/${gender}/${randomId + 1}.jpg`,
-              isMain: false
-            },
-            {
-              id: `dummy-${userId}-3`,
-              url: `https://randomuser.me/api/portraits/${gender}/${randomId + 2}.jpg`,
-              isMain: false
-            }
-          ];
-
-          console.log(`사용자 ${user.name}의 더미 이미지 배열 생성:`, dummyImages);
-
-          return {
-            ...user,
-            profileImages: dummyImages
-          };
         });
 
-        console.log('이미지 배열이 포함된 사용자 목록:', enhancedUsers);
+        // 모든 상세 정보 요청이 완료될 때까지 대기
+        const enhancedUsers = await Promise.all(userDetailsPromises);
+        console.log('상세 정보가 포함된 사용자 목록:', enhancedUsers);
+
+        // 상태 업데이트
         setUsers(enhancedUsers);
       } else {
         // 사용자가 없는 경우 빈 배열 설정
@@ -213,8 +339,10 @@ export default function UnclassifiedUsersPanel() {
   // 사용자 카드 이미지 슬라이더 핸들러
   const handlePrevImage = (userId: string, images: any[]) => {
     console.log('이전 이미지 버튼 클릭:', { userId, imagesLength: images.length });
+    console.log('이미지 배열:', images);
 
-    if (!images || images.length <= 1) {
+    // 이미지 배열 유효성 검사
+    if (!images || !Array.isArray(images) || images.length <= 1) {
       console.log('이미지가 없거나 하나뿐입니다.');
       return;
     }
@@ -223,7 +351,7 @@ export default function UnclassifiedUsersPanel() {
     const currentIndex = userCardImageIndices[userId] || 0;
     console.log('현재 이미지 인덱스:', currentIndex);
 
-    // 새 인덱스 계산
+    // 새 인덱스 계산 (순환)
     const newIndex = currentIndex === 0 ? images.length - 1 : currentIndex - 1;
     console.log('새 이미지 인덱스:', newIndex);
 
@@ -235,8 +363,10 @@ export default function UnclassifiedUsersPanel() {
     setUserCardImageIndices(newIndices);
 
     // 이미지 URL 직접 확인
-    if (images[newIndex]) {
+    if (images[newIndex] && images[newIndex].url) {
       console.log('새 이미지 URL:', images[newIndex].url);
+    } else {
+      console.warn('새 이미지에 URL이 없습니다:', images[newIndex]);
     }
 
     // 특정 사용자에 대해서만 리렌더링 트리거 업데이트
@@ -244,12 +374,20 @@ export default function UnclassifiedUsersPanel() {
       ...prev,
       [userId]: (prev[userId] || 0) + 1
     }));
+
+    // 디버깅: 상태 업데이트 후 확인
+    setTimeout(() => {
+      console.log('업데이트된 인덱스:', userCardImageIndices[userId]);
+      console.log('업데이트된 리렌더링 트리거:', refreshTrigger[userId]);
+    }, 0);
   };
 
   const handleNextImage = (userId: string, images: any[]) => {
     console.log('다음 이미지 버튼 클릭:', { userId, imagesLength: images.length });
+    console.log('이미지 배열:', images);
 
-    if (!images || images.length <= 1) {
+    // 이미지 배열 유효성 검사
+    if (!images || !Array.isArray(images) || images.length <= 1) {
       console.log('이미지가 없거나 하나뿐입니다.');
       return;
     }
@@ -258,7 +396,7 @@ export default function UnclassifiedUsersPanel() {
     const currentIndex = userCardImageIndices[userId] || 0;
     console.log('현재 이미지 인덱스:', currentIndex);
 
-    // 새 인덱스 계산
+    // 새 인덱스 계산 (순환)
     const newIndex = currentIndex === images.length - 1 ? 0 : currentIndex + 1;
     console.log('새 이미지 인덱스:', newIndex);
 
@@ -270,8 +408,10 @@ export default function UnclassifiedUsersPanel() {
     setUserCardImageIndices(newIndices);
 
     // 이미지 URL 직접 확인
-    if (images[newIndex]) {
+    if (images[newIndex] && images[newIndex].url) {
       console.log('새 이미지 URL:', images[newIndex].url);
+    } else {
+      console.warn('새 이미지에 URL이 없습니다:', images[newIndex]);
     }
 
     // 특정 사용자에 대해서만 리렌더링 트리거 업데이트
@@ -279,6 +419,12 @@ export default function UnclassifiedUsersPanel() {
       ...prev,
       [userId]: (prev[userId] || 0) + 1
     }));
+
+    // 디버깅: 상태 업데이트 후 확인
+    setTimeout(() => {
+      console.log('업데이트된 인덱스:', userCardImageIndices[userId]);
+      console.log('업데이트된 리렌더링 트리거:', refreshTrigger[userId]);
+    }, 0);
   };
 
   // 사용자의 이미지 개수 가져오기
@@ -295,26 +441,66 @@ export default function UnclassifiedUsersPanel() {
   const handleOpenImageModal = (user: UserProfileWithAppearance) => {
     setSelectedUser(user);
 
+    console.log('이미지 모달 열기 - 사용자:', user.name);
+    console.log('사용자 프로필 이미지 배열:', user.profileImages);
+
     // 사용자의 이미지 목록 설정
     let images = [];
 
     // 실제 프로필 이미지가 있는 경우
-    if (user.profileImages && user.profileImages.length > 0) {
-      images = user.profileImages.map(img => ({ url: img.url, isMain: img.isMain }));
+    if (user.profileImages && Array.isArray(user.profileImages) && user.profileImages.length > 0) {
+      console.log(`사용자 ${user.name}의 프로필 이미지 ${user.profileImages.length}개 사용`);
+
+      // 유효한 URL이 있는 이미지만 필터링
+      images = user.profileImages
+        .filter(img => img && img.url)
+        .map(img => ({
+          id: img.id || 'unknown',
+          url: img.url,
+          isMain: img.isMain || false
+        }));
+
+      console.log('필터링된 이미지 배열:', images);
     }
     // 단일 프로필 이미지 URL만 있는 경우
     else if (user.profileImageUrl) {
-      images = [{ url: user.profileImageUrl, isMain: true }];
-    }
-    // 이미지가 없는 경우 성별에 따라 랜덤 이미지 생성 (실제 구현에서는 필요 없을 수 있음)
-    else {
+      console.log(`사용자 ${user.name}의 단일 프로필 이미지 URL 사용:`, user.profileImageUrl);
+
+      // 더미 이미지 추가 (원본 + 더미 2개)
       const gender = user.gender === 'MALE' ? 'men' : 'women';
       const randomId = Math.floor(Math.random() * 50) + 1;
-      images = [{ url: `https://randomuser.me/api/portraits/${gender}/${randomId}.jpg`, isMain: true }];
+
+      images = [
+        { id: 'main', url: user.profileImageUrl, isMain: true },
+        { id: 'dummy-1', url: `https://randomuser.me/api/portraits/${gender}/${randomId}.jpg`, isMain: false },
+        { id: 'dummy-2', url: `https://randomuser.me/api/portraits/${gender}/${randomId + 1}.jpg`, isMain: false }
+      ];
+    }
+    // 이미지가 없는 경우 성별에 따라 랜덤 이미지 생성
+    else {
+      console.log(`사용자 ${user.name}의 이미지가 없습니다. 더미 이미지 사용`);
+
+      const gender = user.gender === 'MALE' ? 'men' : 'women';
+      const randomId = Math.floor(Math.random() * 50) + 1;
+
+      images = [
+        { id: 'dummy-1', url: `https://randomuser.me/api/portraits/${gender}/${randomId}.jpg`, isMain: true },
+        { id: 'dummy-2', url: `https://randomuser.me/api/portraits/${gender}/${randomId + 1}.jpg`, isMain: false },
+        { id: 'dummy-3', url: `https://randomuser.me/api/portraits/${gender}/${randomId + 2}.jpg`, isMain: false }
+      ];
     }
 
+    console.log('모달에 표시할 이미지 배열:', images);
+
+    // 현재 카드에서 선택된 이미지 인덱스 가져오기
+    const userId = user.userId || user.id;
+    const currentIndex = userCardImageIndices[userId] || 0;
+    const safeIndex = Math.min(currentIndex, images.length - 1);
+
+    console.log(`현재 선택된 이미지 인덱스: ${currentIndex}, 안전한 인덱스: ${safeIndex}`);
+
     setSelectedUserImages(images);
-    setCurrentImageIndex(userCardImageIndices[user.userId || user.id] || 0);
+    setCurrentImageIndex(safeIndex);
     setImageModalOpen(true);
   };
 
@@ -485,17 +671,39 @@ export default function UnclassifiedUsersPanel() {
                             // 이미지 URL 결정
                             let imageUrl = '';
 
+                            // 디버깅 로그 추가
+                            console.log(`사용자 ${user.name}의 렌더링 시점 프로필 이미지 배열:`, user.profileImages);
+
                             // 실제 프로필 이미지가 있는 경우
-                            if (user.profileImages && user.profileImages.length > 0) {
+                            if (user.profileImages && Array.isArray(user.profileImages) && user.profileImages.length > 0) {
+                              console.log(`사용자 ${user.name}의 프로필 이미지 배열 길이: ${user.profileImages.length}`);
+                              console.log(`현재 인덱스: ${currentIndex}`);
+
+                              // 현재 인덱스가 배열 범위를 벗어나지 않도록 조정
                               const safeIndex = Math.min(currentIndex, user.profileImages.length - 1);
-                              imageUrl = user.profileImages[safeIndex].url;
+                              console.log(`안전한 인덱스: ${safeIndex}`);
+
+                              // 선택된 이미지 객체
+                              const selectedImage = user.profileImages[safeIndex];
+                              console.log(`선택된 이미지:`, selectedImage);
+
+                              if (selectedImage && selectedImage.url) {
+                                imageUrl = selectedImage.url;
+                                console.log(`이미지 URL 설정: ${imageUrl}`);
+                              } else {
+                                console.log(`선택된 이미지에 URL이 없습니다. 기본 이미지 사용`);
+                                const dummyIndex = currentIndex % 3;
+                                imageUrl = dummyImages[dummyIndex];
+                              }
                             }
                             // 단일 프로필 이미지 URL만 있는 경우
                             else if (user.profileImageUrl) {
+                              console.log(`사용자 ${user.name}의 단일 프로필 이미지 URL 사용: ${user.profileImageUrl}`);
                               imageUrl = user.profileImageUrl;
                             }
                             // 이미지가 없는 경우 더미 이미지 사용
                             else {
+                              console.log(`사용자 ${user.name}의 이미지가 없습니다. 더미 이미지 사용`);
                               const dummyIndex = currentIndex % 3;
                               imageUrl = dummyImages[dummyIndex];
                             }
@@ -503,11 +711,63 @@ export default function UnclassifiedUsersPanel() {
                             // 사용자별 리렌더링 트리거 값 가져오기
                             const userRefreshTrigger = refreshTrigger[userId] || 0;
 
-                            // 캐시 방지를 위한 쿼리 파라미터 추가
-                            const cacheBuster = `?v=${userRefreshTrigger}-${currentIndex}`;
-                            const finalUrl = `${imageUrl}${imageUrl.includes('?') ? '&' : cacheBuster}`;
+                            // 이미지 URL 유효성 확인
+                            if (!imageUrl) {
+                              console.error(`사용자 ${user.name}의 이미지 URL이 없습니다.`);
+                              const gender = user.gender === 'MALE' ? 'men' : 'women';
+                              const randomId = Math.floor(Math.random() * 50) + 1;
+                              imageUrl = `https://randomuser.me/api/portraits/${gender}/${randomId}.jpg`;
+                            }
 
-                            console.log(`사용자 ${user.name}의 이미지 URL:`, finalUrl);
+                            // 이미지 URL 정규화
+                            try {
+                              // 이미지 URL이 상대 경로인 경우 절대 경로로 변환
+                              if (imageUrl.startsWith('/')) {
+                                imageUrl = `${window.location.origin}${imageUrl}`;
+                                console.log(`상대 경로를 절대 경로로 변환: ${imageUrl}`);
+                              }
+
+                              // 이미지 URL에 프로토콜이 없는 경우 추가
+                              if (imageUrl.startsWith('//')) {
+                                imageUrl = `https:${imageUrl}`;
+                                console.log(`프로토콜 추가: ${imageUrl}`);
+                              }
+
+                              // URL 객체 생성 시도 (유효한 URL인지 확인)
+                              new URL(imageUrl);
+                            } catch (error) {
+                              console.error(`사용자 ${user.name}의 이미지 URL이 유효하지 않습니다:`, imageUrl);
+                              console.error('오류:', error);
+
+                              // 유효하지 않은 URL인 경우 더미 이미지로 대체
+                              const gender = user.gender === 'MALE' ? 'men' : 'women';
+                              const randomId = Math.floor(Math.random() * 50) + 1;
+                              imageUrl = `https://randomuser.me/api/portraits/${gender}/${randomId}.jpg`;
+                              console.log(`유효하지 않은 URL을 더미 이미지로 대체: ${imageUrl}`);
+                            }
+
+                            // 캐시 방지를 위한 쿼리 파라미터 추가
+                            let finalUrl = imageUrl;
+
+                            try {
+                              // URL 객체 생성
+                              const urlObj = new URL(imageUrl);
+
+                              // 쿼리 파라미터 추가
+                              urlObj.searchParams.append('refresh', `${userRefreshTrigger}-${currentIndex}`);
+                              finalUrl = urlObj.toString();
+                            } catch (error) {
+                              console.error(`쿼리 파라미터 추가 중 오류:`, error);
+
+                              // 쿼리 파라미터 수동 추가
+                              if (imageUrl.includes('?')) {
+                                finalUrl = `${imageUrl}&refresh=${userRefreshTrigger}-${currentIndex}`;
+                              } else {
+                                finalUrl = `${imageUrl}?refresh=${userRefreshTrigger}-${currentIndex}`;
+                              }
+                            }
+
+                            console.log(`사용자 ${user.name}의 최종 이미지 URL:`, finalUrl);
 
                             return (
                               <Box
@@ -519,6 +779,48 @@ export default function UnclassifiedUsersPanel() {
                                   width: '100%',
                                   height: '100%',
                                   objectFit: 'cover'
+                                }}
+                                onError={(e) => {
+                                  console.error(`이미지 로드 실패: ${finalUrl}`);
+
+                                  // 이미지 로드 실패 시 더미 이미지로 대체
+                                  const target = e.target as HTMLImageElement;
+                                  const gender = user.gender === 'MALE' ? 'men' : 'women';
+                                  const randomId = Math.floor(Math.random() * 50) + 1;
+
+                                  // 이미지 로드 실패 횟수 추적 (무한 루프 방지)
+                                  target.dataset.retryCount = (parseInt(target.dataset.retryCount || '0') + 1).toString();
+                                  const retryCount = parseInt(target.dataset.retryCount || '0');
+
+                                  console.log(`이미지 로드 실패 횟수: ${retryCount}`);
+
+                                  // 최대 3번까지만 재시도
+                                  if (retryCount > 3) {
+                                    console.error(`이미지 로드 최대 재시도 횟수 초과: ${finalUrl}`);
+                                    // 기본 아바타 이미지로 대체
+                                    target.src = gender === 'MALE'
+                                      ? 'https://cdn.pixabay.com/photo/2016/08/08/09/17/avatar-1577909_960_720.png'
+                                      : 'https://cdn.pixabay.com/photo/2016/08/08/09/17/avatar-1577909_960_720.png';
+
+                                    // 더 이상 오류 이벤트 처리 안함
+                                    target.onerror = null;
+                                    return;
+                                  }
+
+                                  // 이미 더미 이미지인 경우 다른 더미 이미지로 교체
+                                  if (target.src.includes('randomuser.me')) {
+                                    const newRandomId = randomId + (retryCount * 10); // 다른 이미지 사용
+                                    target.src = `https://randomuser.me/api/portraits/${gender}/${newRandomId}.jpg`;
+                                  } else if (target.src.includes('pixabay.com')) {
+                                    // 이미 기본 아바타 이미지인 경우 다시 시도하지 않음
+                                    target.onerror = null;
+                                  } else {
+                                    // 원본 이미지가 로드 실패한 경우 더미 이미지로 대체
+                                    target.src = `https://randomuser.me/api/portraits/${gender}/${randomId}.jpg`;
+                                  }
+
+                                  // 콘솔에 대체 이미지 URL 출력
+                                  console.log(`대체 이미지 URL: ${target.src}`);
                                 }}
                               />
                             );

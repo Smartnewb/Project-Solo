@@ -9,8 +9,6 @@ import {
   Grid,
   CircularProgress,
   Alert,
-  Tabs,
-  Tab,
   Divider
 } from '@mui/material';
 import AdminService from '@/app/services/admin';
@@ -18,7 +16,6 @@ import { UserAppearanceGradeStatsResponse } from './types';
 import AppearanceGradeStatsCard from '@/components/admin/appearance/AppearanceGradeStatsCard';
 import UserAppearanceTable from '@/components/admin/appearance/UserAppearanceTable';
 import AppearanceFilterPanel from '@/components/admin/appearance/AppearanceFilterPanel';
-import UnclassifiedUsersPanel from '@/components/admin/appearance/UnclassifiedUsersPanel';
 
 // 전역 이벤트 버스 생성 (등급 변경 이벤트 처리용)
 export const appearanceGradeEventBus = {
@@ -33,7 +30,6 @@ export const appearanceGradeEventBus = {
 };
 
 export default function AppearanceGradePage() {
-  const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<UserAppearanceGradeStatsResponse | null>(null);
@@ -144,9 +140,7 @@ export default function AppearanceGradePage() {
     };
   }, []);
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
-  };
+
 
   return (
     <Box>
@@ -173,41 +167,26 @@ export default function AppearanceGradePage() {
 
       <Divider sx={{ my: 3 }} />
 
-      {/* 탭 메뉴 */}
-      <Box sx={{ mb: 3 }}>
-        <Tabs value={activeTab} onChange={handleTabChange} aria-label="사용자 관리 탭">
-          <Tab label="전체 사용자" />
-          <Tab label="미분류 사용자" />
-        </Tabs>
-      </Box>
-
-      {/* 탭 컨텐츠 */}
+      {/* 사용자 목록 */}
       <Box>
-        {activeTab === 0 && (
-          <Box>
-            <AppearanceFilterPanel
-              onFilter={(filters) => {
-                // 필터가 변경되면 UserAppearanceTable의 handleApplyFilter 함수 호출
-                console.log('필터 변경됨:', filters);
-                console.log('tableRef.current 존재 여부:', !!tableRef.current);
+        <AppearanceFilterPanel
+          onFilter={(filters) => {
+            // 필터가 변경되면 UserAppearanceTable의 handleApplyFilter 함수 호출
+            console.log('필터 변경됨:', filters);
+            console.log('tableRef.current 존재 여부:', !!tableRef.current);
 
-                if (tableRef.current) {
-                  console.log('필터 적용 시도');
-                  tableRef.current.handleApplyFilter(filters);
-                } else {
-                  console.error('tableRef.current가 없습니다. 필터를 적용할 수 없습니다.');
-                }
-              }}
-            />
-            <UserAppearanceTable
-              initialFilters={{}}
-              ref={tableRef}
-            />
-          </Box>
-        )}
-        {activeTab === 1 && (
-          <UnclassifiedUsersPanel />
-        )}
+            if (tableRef.current) {
+              console.log('필터 적용 시도');
+              tableRef.current.handleApplyFilter(filters);
+            } else {
+              console.error('tableRef.current가 없습니다. 필터를 적용할 수 없습니다.');
+            }
+          }}
+        />
+        <UserAppearanceTable
+          initialFilters={{}}
+          ref={tableRef}
+        />
       </Box>
     </Box>
   );
