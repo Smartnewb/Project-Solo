@@ -23,9 +23,5 @@
     "deploymentEnabled": {
       "main": true
     }
-  },
-  "mcp": {
-    "enabled": true,
-    "configPath": "./mcp.config.js"
   }
 }

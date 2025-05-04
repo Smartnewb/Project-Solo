@@ -1,7 +1,4 @@
 /** @type {import('next').NextConfig} */
-// MCP 설정 불러오기
-const mcpConfig = require('./mcp.config.js');
-
 const nextConfig = {
   images: {
     remotePatterns: [
@@ -66,11 +63,7 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '2mb',
     },
-    // MCP 설정 활성화
-    mcp: {
-      enabled: true,
-      regions: mcpConfig.regions
-    },
+
   },
 };
 
