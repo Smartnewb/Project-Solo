@@ -1,6 +1,17 @@
 {
+  "version": 2,
   "buildCommand": "pnpm install --no-frozen-lockfile && pnpm build",
   "outputDirectory": ".next",
   "framework": "nextjs",
-  "installCommand": "pnpm install --no-frozen-lockfile"
+  "installCommand": "pnpm install --no-frozen-lockfile",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "env": {
+    "SKIP_INSTALL_DEPS": "1",
+    "NPM_FLAGS": "--no-frozen-lockfile"
+  }
 }
