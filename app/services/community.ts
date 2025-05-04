@@ -200,11 +200,38 @@ const communityService = {
         try {
           commentsResponse = await adminAxios.get(`/api/admin/community/posts/${id}/comments`);
         } catch (err2) {
-          console.log('댓글 두 번째 경로 실패, 빈 배열 사용:', err2);
-          commentsResponse = { data: { items: [] } };
+          console.log('댓글 두 번째 경로 실패, 세 번째 경로 시도:', err2);
+          try {
+            // 세 번째 경로 시도 - 일부 API는 다른 형식의 응답을 반환할 수 있음
+            commentsResponse = await adminAxios.get(`/api/admin/community/comments`, {
+              params: { postId: id }
+            });
+          } catch (err3) {
+            console.log('댓글 세 번째 경로 실패, 빈 배열 사용:', err3);
+            commentsResponse = { data: { items: [] } };
+          }
         }
       }
-      console.log('댓글 목록 조회 응답:', commentsResponse.data);
+
+      // 응답 구조 확인 및 정규화
+      let comments = [];
+      if (commentsResponse.data) {
+        if (Array.isArray(commentsResponse.data)) {
+          // 배열 형태로 직접 반환된 경우
+          comments = commentsResponse.data;
+        } else if (commentsResponse.data.items && Array.isArray(commentsResponse.data.items)) {
+          // items 배열로 반환된 경우
+          comments = commentsResponse.data.items;
+        } else if (commentsResponse.data.comments && Array.isArray(commentsResponse.data.comments)) {
+          // comments 배열로 반환된 경우
+          comments = commentsResponse.data.comments;
+        } else if (commentsResponse.data.data && Array.isArray(commentsResponse.data.data)) {
+          // data 배열로 반환된 경우
+          comments = commentsResponse.data.data;
+        }
+      }
+
+      console.log('댓글 목록 조회 응답 (정규화):', comments);
 
       // 신고 조회 (여러 가능한 경로 시도)
       let reportsResponse;
@@ -223,7 +250,6 @@ const communityService = {
 
       // 백엔드 응답 형식에 맞게 변환
       const article = articleResponse.data;
-      const comments = commentsResponse.data.items || [];
       const reports = reportsResponse.data.items || [];
 
       // 프론트엔드에서 필요한 추가 필드 설정

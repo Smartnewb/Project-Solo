@@ -417,13 +417,14 @@ export default function ArticleDetail() {
                     <CardHeader
                       avatar={
                         <Avatar>
-                          {comment.nickname?.charAt(0) || 'U'}
+                          {(comment.nickname || comment.author?.name || '')?.charAt(0) || 'U'}
                         </Avatar>
                       }
                       title={
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <Typography variant="subtitle2">
-                            {comment.isAnonymous ? '익명' : comment.nickname}
+                            {comment.anonymous || comment.isAnonymous ? '익명' :
+                             (comment.nickname || comment.author?.name || '알 수 없음')}
                           </Typography>
                           {comment.isBlinded && (
                             <Chip label="블라인드" size="small" color="warning" />
@@ -431,7 +432,7 @@ export default function ArticleDetail() {
                           {comment.isDeleted && (
                             <Chip label="삭제됨" size="small" color="error" />
                           )}
-                          {comment.reportCount > 0 && (
+                          {(comment.reportCount > 0) && (
                             <Chip
                               icon={<ReportIcon />}
                               label={comment.reportCount}
@@ -443,7 +444,7 @@ export default function ArticleDetail() {
                       }
                       subheader={
                         <Typography variant="caption" color="textSecondary">
-                          {new Date(comment.createdAt).toLocaleString()}
+                          {comment.createdAt ? new Date(comment.createdAt).toLocaleString() : '알 수 없음'}
                           {comment.isEdited && ' (수정됨)'}
                         </Typography>
                       }
@@ -489,7 +490,7 @@ export default function ArticleDetail() {
                           ...(comment.isBlinded && { color: 'text.disabled', textDecoration: 'line-through' })
                         }}
                       >
-                        {comment.emoji && comment.emoji} {comment.content}
+                        {comment.emoji && comment.emoji} {comment.content || '(내용 없음)'}
                       </Typography>
                     </CardContent>
                   </Card>
