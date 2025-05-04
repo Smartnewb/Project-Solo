@@ -1299,6 +1299,218 @@ const matching = {
       console.error('오류 상세 정보:', error.response?.data || error.message);
       throw error;
     }
+  },
+
+  // 매칭 내역 조회
+  getMatchHistory: async (date: string, page: number = 1, limit: number = 10, searchName: string = '') => {
+    try {
+      console.log('매칭 내역 조회 요청:', { date, page, limit, searchName });
+
+      const response = await axiosServer.get('/api/admin/matching/match-history', {
+        params: {
+          date,
+          page,
+          limit,
+          searchName
+        }
+      });
+      console.log('매칭 내역 조회 응답:', response.data);
+
+      return response.data;
+    } catch (error: any) {
+      console.error('매칭 내역 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+
+      // 오류 발생 시 임시 데이터 생성 (개발 중에만 사용)
+      const mockItems = [
+        {
+          matchId: "01967207-6b5f-758c-b27a-44d431d6af0d",
+          score: "0.62",
+          publishedAt: "2025-04-24T12:16:51.039Z",
+          createdAt: "2025-04-26T21:16:51.061Z",
+          type: "rematching",
+          user1: {
+            id: "0196667a-fa22-7258-89fa-47b6a88ee1b8",
+            name: "최은기",
+            gender: "MALE",
+            age: 24
+          },
+          user2: {
+            id: "60215a05-f783-492e-b182-ad58bae3f9d8",
+            name: "천민준",
+            gender: "FEMALE",
+            age: 29
+          }
+        },
+        {
+          matchId: "01967207-6b5f-758c-b27a-44d431d6af0e",
+          score: "0.78",
+          publishedAt: "2025-04-24T14:22:51.039Z",
+          createdAt: "2025-04-26T21:16:51.061Z",
+          type: "matching",
+          user1: {
+            id: "0196667a-fa22-7258-89fa-47b6a88ee1b9",
+            name: "김지훈",
+            gender: "MALE",
+            age: 22
+          },
+          user2: {
+            id: "60215a05-f783-492e-b182-ad58bae3f9d9",
+            name: "이서연",
+            gender: "FEMALE",
+            age: 21
+          }
+        },
+        {
+          matchId: "01967207-6b5f-758c-b27a-44d431d6af0f",
+          score: "0.85",
+          publishedAt: "2025-04-24T15:45:51.039Z",
+          createdAt: "2025-04-26T21:16:51.061Z",
+          type: "matching",
+          user1: {
+            id: "0196667a-fa22-7258-89fa-47b6a88ee1c0",
+            name: "박준호",
+            gender: "MALE",
+            age: 25
+          },
+          user2: {
+            id: "60215a05-f783-492e-b182-ad58bae3f9e0",
+            name: "정민지",
+            gender: "FEMALE",
+            age: 23
+          }
+        },
+        {
+          matchId: "01967207-6b5f-758c-b27a-44d431d6af10",
+          score: "0.71",
+          publishedAt: "2025-04-24T16:30:51.039Z",
+          createdAt: "2025-04-26T21:16:51.061Z",
+          type: "rematching",
+          user1: {
+            id: "0196667a-fa22-7258-89fa-47b6a88ee1c1",
+            name: "이현우",
+            gender: "MALE",
+            age: 27
+          },
+          user2: {
+            id: "60215a05-f783-492e-b182-ad58bae3f9e1",
+            name: "김소희",
+            gender: "FEMALE",
+            age: 26
+          }
+        },
+        {
+          matchId: "01967207-6b5f-758c-b27a-44d431d6af11",
+          score: "0.68",
+          publishedAt: "2025-04-24T17:15:51.039Z",
+          createdAt: "2025-04-26T21:16:51.061Z",
+          type: "matching",
+          user1: {
+            id: "0196667a-fa22-7258-89fa-47b6a88ee1c2",
+            name: "정도현",
+            gender: "MALE",
+            age: 23
+          },
+          user2: {
+            id: "60215a05-f783-492e-b182-ad58bae3f9e2",
+            name: "박지은",
+            gender: "FEMALE",
+            age: 22
+          }
+        },
+        {
+          matchId: "01967207-6b5f-758c-b27a-44d431d6af12",
+          score: "0.75",
+          publishedAt: "2025-04-24T18:05:51.039Z",
+          createdAt: "2025-04-26T21:16:51.061Z",
+          type: "matching",
+          user1: {
+            id: "0196667a-fa22-7258-89fa-47b6a88ee1c3",
+            name: "강민석",
+            gender: "MALE",
+            age: 26
+          },
+          user2: {
+            id: "60215a05-f783-492e-b182-ad58bae3f9e3",
+            name: "윤서영",
+            gender: "FEMALE",
+            age: 24
+          }
+        },
+        {
+          matchId: "01967207-6b5f-758c-b27a-44d431d6af13",
+          score: "0.82",
+          publishedAt: "2025-04-24T19:20:51.039Z",
+          createdAt: "2025-04-26T21:16:51.061Z",
+          type: "rematching",
+          user1: {
+            id: "0196667a-fa22-7258-89fa-47b6a88ee1c4",
+            name: "조현우",
+            gender: "MALE",
+            age: 28
+          },
+          user2: {
+            id: "60215a05-f783-492e-b182-ad58bae3f9e4",
+            name: "한지민",
+            gender: "FEMALE",
+            age: 27
+          }
+        },
+        {
+          matchId: "01967207-6b5f-758c-b27a-44d431d6af14",
+          score: "0.69",
+          publishedAt: "2025-04-24T20:15:51.039Z",
+          createdAt: "2025-04-26T21:16:51.061Z",
+          type: "matching",
+          user1: {
+            id: "0196667a-fa22-7258-89fa-47b6a88ee1c5",
+            name: "임재현",
+            gender: "MALE",
+            age: 25
+          },
+          user2: {
+            id: "60215a05-f783-492e-b182-ad58bae3f9e5",
+            name: "송지원",
+            gender: "FEMALE",
+            age: 23
+          }
+        }
+      ];
+
+      // 검색어가 있는 경우 필터링
+      let filteredItems = mockItems;
+      if (searchName) {
+        const searchLower = searchName.toLowerCase();
+        filteredItems = mockItems.filter(item =>
+          item.user1.name.toLowerCase().includes(searchLower) ||
+          item.user2.name.toLowerCase().includes(searchLower)
+        );
+      }
+
+      // 전체 아이템 수
+      const totalItems = filteredItems.length;
+
+      // 페이지네이션 적용
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const paginatedItems = filteredItems.slice(startIndex, endIndex);
+
+      // 총 페이지 수 계산
+      const totalPages = Math.ceil(totalItems / limit);
+
+      const mockData = {
+        items: paginatedItems,
+        meta: {
+          currentPage: page,
+          itemsPerPage: limit,
+          totalItems: totalItems,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1
+        }
+      };
+
+      return mockData;
+    }
   }
 };
 

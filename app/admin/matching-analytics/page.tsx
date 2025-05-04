@@ -49,6 +49,42 @@ interface MatchingStats {
   femaleThirdRematchRate: number;
 }
 
+interface MatchUser {
+  id: string;
+  name: string;
+  gender: string;
+  age: number;
+}
+
+interface MatchHistoryItem {
+  matchId: string;
+  score: string;
+  publishedAt: string;
+  createdAt: string;
+  type: string;
+  user1: MatchUser;
+  user2: MatchUser;
+}
+
+interface MatchHistoryMeta {
+  currentPage: number;
+  itemsPerPage: number;
+  totalItems: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+interface MatchHistoryResponse {
+  items: MatchHistoryItem[];
+  total?: number;
+  totalItems?: number;
+  page?: number;
+  limit?: number;
+  itemsPerPage?: number;
+  totalPages?: number;
+  meta?: MatchHistoryMeta; // 백엔드에서 반환하는 메타데이터
+}
+
 // 탭 패널 컴포넌트
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -90,6 +126,15 @@ export default function MatchingAnalytics() {
   const [universities, setUniversities] = useState<string[]>([]);
   const [tabValue, setTabValue] = useState(0);
 
+  // 매칭 내역 관련 상태
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [matchHistory, setMatchHistory] = useState<MatchHistoryResponse | null>(null);
+  const [historyPage, setHistoryPage] = useState<number>(1);
+  const [historyLimit, setHistoryLimit] = useState<number>(10);
+  const [historyLoading, setHistoryLoading] = useState<boolean>(false);
+  const [searchName, setSearchName] = useState<string>('');
+  const [appliedSearchName, setAppliedSearchName] = useState<string>('');
+
   // 대학교 목록 가져오기
   useEffect(() => {
     const fetchUniversities = async () => {
@@ -127,6 +172,40 @@ export default function MatchingAnalytics() {
 
     fetchMatchingStats();
   }, [selectedPeriod, selectedUniversity]);
+
+  // 매칭 내역 가져오기
+  useEffect(() => {
+    const fetchMatchHistory = async () => {
+      if (tabValue !== 2) return; // 매칭 내역 탭이 아니면 실행하지 않음
+
+      try {
+        setHistoryLoading(true);
+        setError(null);
+
+        const data = await AdminService.matching.getMatchHistory(
+          selectedDate,
+          historyPage,
+          historyLimit,
+          appliedSearchName
+        );
+
+        setMatchHistory(data);
+      } catch (err: any) {
+        console.error('매칭 내역 조회 중 오류:', err);
+        setError(err.message || '매칭 내역을 불러오는 중 오류가 발생했습니다.');
+      } finally {
+        setHistoryLoading(false);
+      }
+    };
+
+    fetchMatchHistory();
+  }, [tabValue, selectedDate, historyPage, historyLimit, appliedSearchName]);
+
+  // 검색 실행 함수
+  const handleSearch = () => {
+    setHistoryPage(1); // 검색 시 첫 페이지로 이동
+    setAppliedSearchName(searchName);
+  };
 
   // 탭 변경 핸들러
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -260,6 +339,7 @@ export default function MatchingAnalytics() {
         <Tabs value={tabValue} onChange={handleTabChange} aria-label="매칭 분석 탭">
           <Tab label="매칭 성과" />
           <Tab label="재매칭 분석" />
+          <Tab label="매칭 내역" />
         </Tabs>
       </Box>
 
@@ -434,6 +514,277 @@ export default function MatchingAnalytics() {
               </Grid>
             </Grid>
           </>
+        )}
+      </TabPanel>
+
+      {/* 매칭 내역 탭 */}
+      <TabPanel value={tabValue} index={2}>
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>매칭 내역 검색</Typography>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} sm={6} md={3}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>날짜 선택</Typography>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearch();
+                  }
+                }}
+                style={{
+                  padding: '10px 14px',
+                  border: '1px solid rgba(0, 0, 0, 0.23)',
+                  borderRadius: '4px',
+                  width: '100%',
+                  fontSize: '1rem',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>사용자 이름 검색</Typography>
+              <div style={{ display: 'flex' }}>
+                <input
+                  type="text"
+                  value={searchName}
+                  onChange={(e) => setSearchName(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSearch();
+                    }
+                  }}
+                  placeholder="이름으로 검색"
+                  style={{
+                    padding: '10px 14px',
+                    border: '1px solid rgba(0, 0, 0, 0.23)',
+                    borderRadius: '4px 0 0 4px',
+                    width: '100%',
+                    fontSize: '1rem',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleSearch}
+                  sx={{
+                    height: '42px',
+                    borderRadius: '0 4px 4px 0',
+                    minWidth: '64px'
+                  }}
+                >
+                  검색
+                </Button>
+              </div>
+            </Grid>
+            <Grid item xs={12} sm={6} md={2}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>표시 개수</Typography>
+              <Select
+                value={historyLimit}
+                onChange={(e) => setHistoryLimit(Number(e.target.value))}
+                fullWidth
+                size="small"
+                sx={{ height: '42px' }}
+              >
+                <MenuItem value={5}>5개</MenuItem>
+                <MenuItem value={10}>10개</MenuItem>
+                <MenuItem value={20}>20개</MenuItem>
+                <MenuItem value={50}>50개</MenuItem>
+              </Select>
+            </Grid>
+            <Grid item xs={12} sm={6} md={2}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>필터 초기화</Typography>
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={() => {
+                  setHistoryPage(1);
+                  setSelectedDate(new Date().toISOString().split('T')[0]);
+                  setSearchName('');
+                  setAppliedSearchName('');
+                }}
+                fullWidth
+                sx={{ height: '42px' }}
+              >
+                초기화
+              </Button>
+            </Grid>
+          </Grid>
+        </Paper>
+
+        {historyLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : matchHistory && matchHistory.items.length > 0 ? (
+          <>
+            <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+              <Box sx={{ width: '100%', overflow: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f5f5f5' }}>
+                      <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>매칭 ID</th>
+                      <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>매칭 점수</th>
+                      <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>매칭 유형</th>
+                      <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>매칭 시간</th>
+                      <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>사용자 1</th>
+                      <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>사용자 2</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {matchHistory.items.map((item) => (
+                      <tr key={item.matchId} style={{ borderBottom: '1px solid #ddd' }}>
+                        <td style={{ padding: '16px' }}>{item.matchId.substring(0, 8)}...</td>
+                        <td style={{ padding: '16px' }}>{parseFloat(item.score) * 100}%</td>
+                        <td style={{ padding: '16px' }}>
+                          <span
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              backgroundColor:
+                                item.type === 'scheduled' ? '#e3f2fd' :
+                                item.type === 'admin' ? '#e8f5e9' :
+                                item.type === 'rematching' ? '#fff8e1' : '#f3e5f5',
+                              color:
+                                item.type === 'scheduled' ? '#1976d2' :
+                                item.type === 'admin' ? '#2e7d32' :
+                                item.type === 'rematching' ? '#ff9800' : '#9c27b0'
+                            }}
+                          >
+                            {item.type === 'scheduled' ? '무료매칭' :
+                             item.type === 'admin' ? '관리자 수동매칭' :
+                             item.type === 'rematching' ? '재매칭(과금)' :
+                             item.type === 'matching' ? '일반 매칭' : item.type}
+                          </span>
+                        </td>
+                        <td style={{ padding: '16px' }}>
+                          {new Date(item.publishedAt).toLocaleString('ko-KR', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </td>
+                        <td style={{ padding: '16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <div
+                              style={{
+                                width: '24px',
+                                height: '24px',
+                                borderRadius: '50%',
+                                backgroundColor: item.user1.gender === 'MALE' ? '#1976d2' : '#e91e63',
+                                marginRight: '8px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'white',
+                                fontSize: '12px'
+                              }}
+                            >
+                              {item.user1.gender === 'MALE' ? 'M' : 'F'}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 'bold' }}>{item.user1.name}</div>
+                              <div style={{ fontSize: '12px', color: '#666' }}>{item.user1.age}세</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '16px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <div
+                              style={{
+                                width: '24px',
+                                height: '24px',
+                                borderRadius: '50%',
+                                backgroundColor: item.user2.gender === 'MALE' ? '#1976d2' : '#e91e63',
+                                marginRight: '8px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'white',
+                                fontSize: '12px'
+                              }}
+                            >
+                              {item.user2.gender === 'MALE' ? 'M' : 'F'}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 'bold' }}>{item.user2.name}</div>
+                              <div style={{ fontSize: '12px', color: '#666' }}>{item.user2.age}세</div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </Box>
+
+              {/* 페이지네이션 */}
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+                <Button
+                  disabled={matchHistory.meta ? !matchHistory.meta.hasPreviousPage : historyPage <= 1}
+                  onClick={() => {
+                    const newPage = historyPage - 1;
+                    setHistoryPage(newPage);
+                  }}
+                  sx={{ mx: 1 }}
+                >
+                  이전
+                </Button>
+                <Typography sx={{ mx: 2, display: 'flex', alignItems: 'center' }}>
+                  {matchHistory.meta ? matchHistory.meta.currentPage : historyPage} /
+                  {matchHistory.meta
+                    ? Math.ceil(matchHistory.meta.totalItems / matchHistory.meta.itemsPerPage)
+                    : (matchHistory.totalPages || Math.ceil((matchHistory.totalItems || matchHistory.total || 0) / (matchHistory.itemsPerPage || historyLimit)) || 1)}
+                </Typography>
+                <Button
+                  disabled={matchHistory.meta ? !matchHistory.meta.hasNextPage : (historyPage >= (matchHistory.totalPages || Math.ceil((matchHistory.totalItems || matchHistory.total || 0) / (matchHistory.itemsPerPage || historyLimit)) || 1))}
+                  onClick={() => {
+                    const newPage = historyPage + 1;
+                    setHistoryPage(newPage);
+                  }}
+                  sx={{ mx: 1 }}
+                >
+                  다음
+                </Button>
+              </Box>
+            </Paper>
+
+            <Box sx={{ mt: 3 }}>
+              <Typography variant="body2" color="text.secondary">
+                {matchHistory.meta ? (
+                  <>
+                    총 {matchHistory.meta.totalItems}개의 매칭 내역 중 {(matchHistory.meta.currentPage - 1) * matchHistory.meta.itemsPerPage + 1}-
+                    {Math.min(matchHistory.meta.currentPage * matchHistory.meta.itemsPerPage, matchHistory.meta.totalItems)}개를 표시하고 있습니다.
+                  </>
+                ) : (
+                  <>
+                    총 {matchHistory.totalItems || matchHistory.total || 0}개의 매칭 내역 중 {(historyPage - 1) * (matchHistory.itemsPerPage || historyLimit) + 1}-
+                    {Math.min(historyPage * (matchHistory.itemsPerPage || historyLimit), matchHistory.totalItems || matchHistory.total || 0)}개를 표시하고 있습니다.
+                  </>
+                )}
+                {appliedSearchName && (
+                  <span> (검색어: "{appliedSearchName}")</span>
+                )}
+              </Typography>
+            </Box>
+          </>
+        ) : (
+          <Paper sx={{ p: 4, textAlign: 'center' }}>
+            <Typography variant="h6" color="text.secondary">
+              {appliedSearchName
+                ? `"${appliedSearchName}" 검색 결과가 없습니다.`
+                : '매칭 내역이 없습니다.'}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              {appliedSearchName
+                ? '다른 검색어를 입력하거나 필터를 초기화해 보세요.'
+                : '다른 날짜를 선택하거나 필터를 초기화해 보세요.'}
+            </Typography>
+          </Paper>
         )}
       </TabPanel>
     </Box>
