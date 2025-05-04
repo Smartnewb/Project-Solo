@@ -1,8 +1,8 @@
 import { useEffect, useCallback } from "react";
 import { ModalHeader, ModalContent, ModalFooter } from "./index";
 import { Button } from "../button";
-import { useModal } from "../../hooks/use-modal";
-import { useTossPayments } from "../../../features/toss-payment";
+import { useModal } from "@/shared/hooks/use-modal";
+import { useTossPayments } from "@/features/toss-payment";
 
 interface PaymentModalProps {
   amount: number;

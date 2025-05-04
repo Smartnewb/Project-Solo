@@ -1,5 +1,5 @@
 import * as React from "react";
-import { cn } from "../../utils";
+import { cn } from "@/shared/utils";
 import { X } from "lucide-react"; // X 아이콘을 위해 lucide-react 사용
 
 interface ModalProps extends React.HTMLAttributes<HTMLDivElement> {

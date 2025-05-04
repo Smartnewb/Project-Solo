@@ -1,5 +1,5 @@
 import { Button } from './button';
-import { cn } from '../utils';
+import { cn } from '@/shared/utils';
 
 type CounterSize = 'md' | 'lg' | 'xl';
 

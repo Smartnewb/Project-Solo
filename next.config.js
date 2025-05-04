@@ -1,3 +1,5 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -16,6 +18,9 @@ const nextConfig = {
       test: /\.svg$/,
       use: ['@svgr/webpack'],
     });
+
+    // 경로 별칭 설정 추가
+    config.resolve.alias['@'] = path.resolve(__dirname);
 
     // 개발 환경에서 React DevTools 관련 설정
     if (dev && !isServer) {
