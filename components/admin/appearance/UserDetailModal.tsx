@@ -45,8 +45,6 @@ import EmailIcon from '@mui/icons-material/Email';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import StarIcon from '@mui/icons-material/Star';
-import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
-import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import AdminService from '@/app/services/admin';
 import { format, formatDistance } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -121,24 +119,8 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(menuAnchorEl);
   console.log({ userDetail });
-  // 선택된 이미지 URL
   const [selectedImage, setSelectedImage] = useState<string>(
-    (() => {
-      // 메인 이미지 찾기
-      const mainImage = userDetail.profileImages.find(img => img.isMain === true);
-      // 메인 이미지가 있으면 해당 URL 반환, 없으면 첫 번째 이미지 URL 반환
-      return mainImage ? mainImage.url : userDetail.profileImages[0]?.url;
-    })()
-  );
-
-  // 현재 이미지 인덱스
-  const [currentImageIndex, setCurrentImageIndex] = useState<number>(
-    (() => {
-      // 메인 이미지의 인덱스 찾기
-      const mainImageIndex = userDetail.profileImages.findIndex(img => img.isMain === true);
-      // 메인 이미지가 있으면 해당 인덱스 반환, 없으면 0 반환
-      return mainImageIndex >= 0 ? mainImageIndex : 0;
-    })()
+    (() => userDetail.profileImages.find(img => img.isMain === true)!.url)()
   );
 
   // 외모 등급 상태
@@ -217,36 +199,6 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const handleOpenDeleteUserModal = () => {
     handleCloseMenu();
     setDeleteUserModalOpen(true);
-  };
-
-  // 이전 이미지로 이동
-  const handlePrevImage = () => {
-    // 이미지 배열 확인
-    const images = userDetail.profileImages || [];
-    if (!images || images.length <= 1) return;
-
-    // 새 인덱스 계산 (순환)
-    const newIndex = currentImageIndex === 0 ? images.length - 1 : currentImageIndex - 1;
-    console.log(`이전 이미지로 이동: ${currentImageIndex} → ${newIndex}`);
-
-    // 상태 업데이트
-    setCurrentImageIndex(newIndex);
-    setSelectedImage(images[newIndex].url);
-  };
-
-  // 다음 이미지로 이동
-  const handleNextImage = () => {
-    // 이미지 배열 확인
-    const images = userDetail.profileImages || [];
-    if (!images || images.length <= 1) return;
-
-    // 새 인덱스 계산 (순환)
-    const newIndex = currentImageIndex === images.length - 1 ? 0 : currentImageIndex + 1;
-    console.log(`다음 이미지로 이동: ${currentImageIndex} → ${newIndex}`);
-
-    // 상태 업데이트
-    setCurrentImageIndex(newIndex);
-    setSelectedImage(images[newIndex].url);
   };
 
   // 외모 등급 변경 처리
@@ -385,9 +337,8 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
               <Box sx={{ position: 'relative', mb: 2 }}>
                 {/* 프로필 이미지 표시 */}
                 {userDetail.profileImages && userDetail.profileImages.length > 0 ? (
-                  // 이미지 슬라이더 컨테이너
+                  // 메인 이미지 표시
                   <Box sx={{ position: 'relative' }}>
-                    {/* 메인 이미지 */}
                     <Box
                       component="img"
                       src={selectedImage}
@@ -400,10 +351,9 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
                       }}
                     />
-
-                    {/* 이미지 인덱스 표시 */}
+                    {/* 메인 이미지 표시 */}
                     <Chip
-                      label={`${currentImageIndex + 1} / ${userDetail.profileImages.length}`}
+                      label="선택 이미지"
                       color="primary"
                       size="small"
                       sx={{
@@ -413,47 +363,6 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                         backgroundColor: 'rgba(25, 118, 210, 0.8)',
                       }}
                     />
-
-                    {/* 이미지가 2개 이상인 경우에만 좌우 화살표 표시 */}
-                    {userDetail.profileImages.length > 1 && (
-                      <>
-                        {/* 왼쪽 화살표 */}
-                        <IconButton
-                          onClick={handlePrevImage}
-                          sx={{
-                            position: 'absolute',
-                            left: 10,
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                            color: 'white',
-                            '&:hover': {
-                              backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                            }
-                          }}
-                        >
-                          <ArrowBackIosNewIcon />
-                        </IconButton>
-
-                        {/* 오른쪽 화살표 */}
-                        <IconButton
-                          onClick={handleNextImage}
-                          sx={{
-                            position: 'absolute',
-                            right: 10,
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                            color: 'white',
-                            '&:hover': {
-                              backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                            }
-                          }}
-                        >
-                          <ArrowForwardIosIcon />
-                        </IconButton>
-                      </>
-                    )}
                   </Box>
                 ) : userDetail.profileImageUrl ? (
                   // 단일 profileImageUrl이 있는 경우
@@ -505,22 +414,17 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                           >
                             <Box
                               component="img"
-                              onClick={() => {
-                                setSelectedImage(image.url);
-                                setCurrentImageIndex(index);
-                              }}
+                              onClick={() => setSelectedImage(image.url)}
                               src={image.url}
-                              alt={`${userDetail.name} 프로필 이미지 ${index + 1}`}
+                              alt={`${userDetail.name} 프로필 이미지 ${index + 2}`}
                               sx={{
                                 width: 100,
                                 height: 100,
                                 objectFit: 'cover',
                                 borderRadius: 1,
                                 cursor: 'pointer',
-                                border: currentImageIndex === index ? '3px solid #1976d2' : 'none',
-                                opacity: currentImageIndex === index ? 1 : 0.8,
                                 '&:hover': {
-                                  opacity: 1,
+                                  opacity: 0.8,
                                   boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
                                 }
                               }}
