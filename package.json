@@ -8,7 +8,7 @@
     "build": "pnpm install --no-frozen-lockfile && next build",
     "start": "next start",
     "lint": "next lint",
-    "vercel-build": "pnpm install --no-frozen-lockfile && next build"
+    "vercel-build": "pnpm install --no-frozen-lockfile --production=false && next build"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -21,7 +21,9 @@
     "@portone/browser-sdk": "^0.0.18",
     "@radix-ui/react-slot": "^1.1.2",
     "@svgr/webpack": "^8.1.0",
+    "@tailwindcss/forms": "^0.5.10",
     "@tanstack/react-query": "^5.75.0",
+    "autoprefixer": "^10.4.21",
     "axios": "^1.8.4",
     "chart.js": "^4.4.8",
     "class-variance-authority": "^0.7.1",
@@ -30,6 +32,7 @@
     "framer-motion": "^12.5.0",
     "lucide-react": "^0.487.0",
     "next": "14.1.3",
+    "postcss": "^8.5.3",
     "react": "^18",
     "react-chartjs-2": "^5.3.0",
     "react-dom": "^18",
@@ -37,22 +40,19 @@
     "recharts": "^2.15.1",
     "slick-carousel": "^1.8.1",
     "tailwind-merge": "^3.2.0",
+    "tailwindcss": "^3.4.17",
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
-    "@tailwindcss/forms": "^0.5.10",
     "@types/node": "^20",
     "@types/node-cron": "^3.0.11",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/react-slick": "^0.23.13",
     "@types/uuid": "^9.0.8",
-    "autoprefixer": "^10.4.21",
     "dotenv": "^16.4.7",
     "eslint": "^8",
     "eslint-config-next": "14.1.3",
-    "postcss": "^8.5.3",
-    "tailwindcss": "^3.4.17",
     "ts-node": "^10.9.2",
     "typescript": "4.9.5",
     "uuid": "^9.0.1"
