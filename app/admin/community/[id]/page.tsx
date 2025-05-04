@@ -295,25 +295,29 @@ export default function ArticleDetail() {
               <Grid item xs={12} md={6}>
                 <Typography variant="subtitle2" color="textSecondary">작성자</Typography>
                 <Typography variant="body1">
-                  {article.isAnonymous ? '익명' : article.nickname} ({article.email})
+                  {article.anonymous ? '익명' : (article.author?.name || '알 수 없음')}
+                  {article.author?.email && `(${article.author.email})`}
                 </Typography>
               </Grid>
               <Grid item xs={12} md={6}>
                 <Typography variant="subtitle2" color="textSecondary">작성일</Typography>
                 <Typography variant="body1">
-                  {new Date(article.createdAt).toLocaleString()}
+                  {article.createdAt ? new Date(article.createdAt).toLocaleString() : '알 수 없음'}
                   {article.isEdited && ' (수정됨)'}
                 </Typography>
               </Grid>
               <Grid item xs={12} md={6}>
                 <Typography variant="subtitle2" color="textSecondary">상태</Typography>
-                <Box>
+                <Box sx={{ display: 'flex', gap: 1 }}>
                   {article.isBlinded ? (
                     <Chip label="블라인드" color="warning" />
                   ) : article.isDeleted ? (
                     <Chip label="삭제됨" color="error" />
                   ) : (
                     <Chip label="정상" color="success" />
+                  )}
+                  {article.isEdited && (
+                    <Chip label="수정됨" color="info" variant="outlined" />
                   )}
                 </Box>
               </Grid>

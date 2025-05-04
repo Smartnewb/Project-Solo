@@ -227,25 +227,86 @@ const communityService = {
       const reports = reportsResponse.data.items || [];
 
       // 프론트엔드에서 필요한 추가 필드 설정
+      // 백엔드 응답 구조 로깅
+      console.log('백엔드 응답 구조:', JSON.stringify(article, null, 2));
+
+      // 작성자 정보 처리
+      let authorInfo = { id: '', name: '알 수 없음', email: '' };
+      if (article.author) {
+        authorInfo = {
+          id: article.author.id || '',
+          name: article.author.name || '알 수 없음',
+          email: article.author.email || ''
+        };
+      } else if (article.authorId) {
+        authorInfo = {
+          id: article.authorId,
+          name: '사용자 ' + article.authorId.substring(0, 5),
+          email: ''
+        };
+      }
+
+      // 게시글 상태 정보
+      const isBlinded = article.blindedAt !== null && article.blindedAt !== undefined;
+      const isDeleted = article.deletedAt !== null && article.deletedAt !== undefined;
+      const isEdited = article.updatedAt !== null && article.updatedAt !== undefined &&
+                      article.updatedAt !== article.createdAt;
+
       const transformedArticle = {
         ...article,
         // 필수 필드가 없는 경우 기본값 제공
         id: article.id || id,
         content: article.content || '',
         emoji: article.emoji || null,
-        author: article.author || { id: '', name: '알 수 없음' },
-        isBlinded: article.blindedAt !== null,
-        isDeleted: article.deletedAt !== null,
+        author: authorInfo,
+        authorId: article.authorId || '',
+        nickname: article.nickname || authorInfo.name,
+        email: article.email || authorInfo.email,
+        anonymous: article.anonymous || false,
+        isAnonymous: article.anonymous || false,
+        isBlinded: isBlinded,
+        isDeleted: isDeleted,
+        isEdited: isEdited,
+        blindedAt: article.blindedAt || null,
+        deletedAt: article.deletedAt || null,
+        updatedAt: article.updatedAt || null,
+        createdAt: article.createdAt || new Date().toISOString(),
+        likeCount: article.likeCount || 0,
         commentCount: comments.length,
-        comments: comments.map((comment: any) => ({
-          ...comment,
-          id: comment.id || '',
-          content: comment.content || '',
-          emoji: comment.emoji || null,
-          isBlinded: comment.blindedAt !== null,
-          isDeleted: comment.deletedAt !== null,
-          articleId: article.id || id
-        })),
+        reportCount: reports.length,
+        comments: comments.map((comment: any) => {
+          // 댓글 작성자 정보 처리
+          let commentAuthorInfo = { id: '', name: '알 수 없음', email: '' };
+          if (comment.author) {
+            commentAuthorInfo = {
+              id: comment.author.id || '',
+              name: comment.author.name || '알 수 없음',
+              email: comment.author.email || ''
+            };
+          } else if (comment.authorId) {
+            commentAuthorInfo = {
+              id: comment.authorId,
+              name: comment.nickname || ('사용자 ' + comment.authorId.substring(0, 5)),
+              email: ''
+            };
+          }
+
+          return {
+            ...comment,
+            id: comment.id || '',
+            content: comment.content || '',
+            emoji: comment.emoji || null,
+            author: commentAuthorInfo,
+            nickname: comment.nickname || commentAuthorInfo.name,
+            isBlinded: comment.blindedAt !== null && comment.blindedAt !== undefined,
+            isDeleted: comment.deletedAt !== null && comment.deletedAt !== undefined,
+            isEdited: comment.updatedAt !== null && comment.updatedAt !== undefined &&
+                     comment.updatedAt !== comment.createdAt,
+            articleId: article.id || id,
+            createdAt: comment.createdAt || new Date().toISOString(),
+            reportCount: 0
+          };
+        }),
         reports: reports.map((report: any) => ({
           ...report,
           id: report.id || '',
