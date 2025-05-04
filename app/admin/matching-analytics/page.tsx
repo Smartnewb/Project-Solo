@@ -353,7 +353,7 @@ export default function MatchingAnalytics() {
         <Tabs value={tabValue} onChange={handleTabChange} aria-label="매칭 분석 탭">
           <Tab label="매칭 성과" />
           <Tab label="재매칭 분석" />
-          <Tab label="매칭 내역" />
+          <Tab label="매칭 성공내역 조회" />
         </Tabs>
       </Box>
 
