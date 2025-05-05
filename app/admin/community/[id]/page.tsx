@@ -295,40 +295,48 @@ export default function ArticleDetail() {
               <Grid item xs={12} md={6}>
                 <Typography variant="subtitle2" color="textSecondary">작성자</Typography>
                 <Typography variant="body1">
-                  {article.isAnonymous ? '익명' : article.nickname} ({article.email})
+                  {article.anonymous ? '익명' : (article.author?.name || '알 수 없음')}
+                  {article.author?.email && `(${article.author.email})`}
                 </Typography>
               </Grid>
               <Grid item xs={12} md={6}>
                 <Typography variant="subtitle2" color="textSecondary">작성일</Typography>
                 <Typography variant="body1">
-                  {new Date(article.createdAt).toLocaleString()}
+                  {article.createdAt ? new Date(article.createdAt).toLocaleString() : '알 수 없음'}
                   {article.isEdited && ' (수정됨)'}
                 </Typography>
               </Grid>
               <Grid item xs={12} md={6}>
                 <Typography variant="subtitle2" color="textSecondary">상태</Typography>
-                <Box>
-                  {article.isBlinded ? (
-                    <Chip label="블라인드" color="warning" />
-                  ) : article.isDeleted ? (
-                    <Chip label="삭제됨" color="error" />
-                  ) : (
-                    <Chip label="정상" color="success" />
-                  )}
-                </Box>
+                <Typography variant="body1" component="div">
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    {article.isBlinded ? (
+                      <Chip label="블라인드" color="warning" />
+                    ) : article.isDeleted ? (
+                      <Chip label="삭제됨" color="error" />
+                    ) : (
+                      <Chip label="정상" color="success" />
+                    )}
+                    {article.isEdited && (
+                      <Chip label="수정됨" color="info" variant="outlined" />
+                    )}
+                  </Box>
+                </Typography>
               </Grid>
               <Grid item xs={12} md={6}>
                 <Typography variant="subtitle2" color="textSecondary">통계</Typography>
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Chip label={`좋아요 ${article.likeCount}`} color="primary" variant="outlined" />
-                  <Chip label={`댓글 ${article.commentCount}`} color="primary" variant="outlined" />
-                  <Chip
-                    label={`신고 ${article.reportCount}`}
-                    color={article.reportCount > 0 ? "error" : "default"}
-                    variant="outlined"
-                    icon={article.reportCount > 0 ? <ReportIcon /> : undefined}
-                  />
-                </Box>
+                <Typography variant="body1" component="div">
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Chip label={`좋아요 ${article.likeCount}`} color="primary" variant="outlined" />
+                    <Chip label={`댓글 ${article.commentCount}`} color="primary" variant="outlined" />
+                    <Chip
+                      label={`신고 ${article.reportCount}`}
+                      color={article.reportCount > 0 ? "error" : "default"}
+                      variant="outlined"
+                      icon={article.reportCount > 0 ? <ReportIcon /> : undefined}
+                    />
+                  </Box>
+                </Typography>
               </Grid>
             </Grid>
 
@@ -343,7 +351,7 @@ export default function ArticleDetail() {
               <Typography variant="subtitle2" color="textSecondary">내용</Typography>
               <Paper variant="outlined" sx={{ p: 2, mt: 1, whiteSpace: 'pre-wrap' }}>
                 <Typography variant="body1">
-                  {article.emoji} {article.content}
+                  {article.emoji && article.emoji} {article.content}
                 </Typography>
               </Paper>
             </Box>
@@ -413,13 +421,14 @@ export default function ArticleDetail() {
                     <CardHeader
                       avatar={
                         <Avatar>
-                          {comment.nickname?.charAt(0) || 'U'}
+                          {(comment.nickname || comment.author?.name || '')?.charAt(0) || 'U'}
                         </Avatar>
                       }
                       title={
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography variant="subtitle2">
-                            {comment.isAnonymous ? '익명' : comment.nickname}
+                          <Typography variant="subtitle2" component="div">
+                            {comment.anonymous || comment.isAnonymous ? '익명' :
+                             (comment.nickname || comment.author?.name || '알 수 없음')}
                           </Typography>
                           {comment.isBlinded && (
                             <Chip label="블라인드" size="small" color="warning" />
@@ -427,7 +436,7 @@ export default function ArticleDetail() {
                           {comment.isDeleted && (
                             <Chip label="삭제됨" size="small" color="error" />
                           )}
-                          {comment.reportCount > 0 && (
+                          {(comment.reportCount > 0) && (
                             <Chip
                               icon={<ReportIcon />}
                               label={comment.reportCount}
@@ -439,7 +448,7 @@ export default function ArticleDetail() {
                       }
                       subheader={
                         <Typography variant="caption" color="textSecondary">
-                          {new Date(comment.createdAt).toLocaleString()}
+                          {comment.createdAt ? new Date(comment.createdAt).toLocaleString() : '알 수 없음'}
                           {comment.isEdited && ' (수정됨)'}
                         </Typography>
                       }
@@ -485,7 +494,7 @@ export default function ArticleDetail() {
                           ...(comment.isBlinded && { color: 'text.disabled', textDecoration: 'line-through' })
                         }}
                       >
-                        {comment.emoji} {comment.content}
+                        {comment.emoji && comment.emoji} {comment.content || '(내용 없음)'}
                       </Typography>
                     </CardContent>
                   </Card>

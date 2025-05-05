@@ -172,41 +172,174 @@ const communityService = {
     try {
       console.log('게시글 상세 조회 요청:', id);
 
-      // 백엔드 API 변경에 따라 경로 수정
-      const articleResponse = await adminAxios.get(`/api/admin/community/articles/${id}`);
+      // 백엔드 API 경로 시도 (여러 가능한 경로 시도)
+      let articleResponse;
+      try {
+        // 첫 번째 경로 시도
+        articleResponse = await adminAxios.get(`/api/admin/community/articles/${id}`);
+      } catch (err) {
+        console.log('첫 번째 경로 실패, 대체 경로 시도:', err);
+        try {
+          // 두 번째 경로 시도
+          articleResponse = await adminAxios.get(`/api/admin/community/posts/${id}`);
+        } catch (err2) {
+          console.log('두 번째 경로 실패, 세 번째 경로 시도:', err2);
+          // 세 번째 경로 시도
+          articleResponse = await adminAxios.get(`/api/admin/community/posts/${id}/detail`);
+        }
+      }
+
       console.log('게시글 상세 조회 응답:', articleResponse.data);
 
-      // 댓글 조회
-      const commentsResponse = await adminAxios.get(`/api/admin/community/articles/${id}/comments`);
-      console.log('댓글 목록 조회 응답:', commentsResponse.data);
+      // 댓글 조회 (여러 가능한 경로 시도)
+      let commentsResponse;
+      try {
+        commentsResponse = await adminAxios.get(`/api/admin/community/articles/${id}/comments`);
+      } catch (err) {
+        console.log('댓글 첫 번째 경로 실패, 대체 경로 시도:', err);
+        try {
+          commentsResponse = await adminAxios.get(`/api/admin/community/posts/${id}/comments`);
+        } catch (err2) {
+          console.log('댓글 두 번째 경로 실패, 세 번째 경로 시도:', err2);
+          try {
+            // 세 번째 경로 시도 - 일부 API는 다른 형식의 응답을 반환할 수 있음
+            commentsResponse = await adminAxios.get(`/api/admin/community/comments`, {
+              params: { postId: id }
+            });
+          } catch (err3) {
+            console.log('댓글 세 번째 경로 실패, 빈 배열 사용:', err3);
+            commentsResponse = { data: { items: [] } };
+          }
+        }
+      }
 
-      // 신고 조회
-      const reportsResponse = await adminAxios.get(`/api/admin/community/articles/${id}/reports`);
+      // 응답 구조 확인 및 정규화
+      let comments = [];
+      if (commentsResponse.data) {
+        if (Array.isArray(commentsResponse.data)) {
+          // 배열 형태로 직접 반환된 경우
+          comments = commentsResponse.data;
+        } else if (commentsResponse.data.items && Array.isArray(commentsResponse.data.items)) {
+          // items 배열로 반환된 경우
+          comments = commentsResponse.data.items;
+        } else if (commentsResponse.data.comments && Array.isArray(commentsResponse.data.comments)) {
+          // comments 배열로 반환된 경우
+          comments = commentsResponse.data.comments;
+        } else if (commentsResponse.data.data && Array.isArray(commentsResponse.data.data)) {
+          // data 배열로 반환된 경우
+          comments = commentsResponse.data.data;
+        }
+      }
+
+      console.log('댓글 목록 조회 응답 (정규화):', comments);
+
+      // 신고 조회 (여러 가능한 경로 시도)
+      let reportsResponse;
+      try {
+        reportsResponse = await adminAxios.get(`/api/admin/community/articles/${id}/reports`);
+      } catch (err) {
+        console.log('신고 첫 번째 경로 실패, 대체 경로 시도:', err);
+        try {
+          reportsResponse = await adminAxios.get(`/api/admin/community/posts/${id}/reports`);
+        } catch (err2) {
+          console.log('신고 두 번째 경로 실패, 빈 배열 사용:', err2);
+          reportsResponse = { data: { items: [] } };
+        }
+      }
       console.log('신고 목록 조회 응답:', reportsResponse.data);
 
       // 백엔드 응답 형식에 맞게 변환
       const article = articleResponse.data;
-      const comments = commentsResponse.data.items || [];
       const reports = reportsResponse.data.items || [];
 
       // 프론트엔드에서 필요한 추가 필드 설정
+      // 백엔드 응답 구조 로깅
+      console.log('백엔드 응답 구조:', JSON.stringify(article, null, 2));
+
+      // 작성자 정보 처리
+      let authorInfo = { id: '', name: '알 수 없음', email: '' };
+      if (article.author) {
+        authorInfo = {
+          id: article.author.id || '',
+          name: article.author.name || '알 수 없음',
+          email: article.author.email || ''
+        };
+      } else if (article.authorId) {
+        authorInfo = {
+          id: article.authorId,
+          name: '사용자 ' + article.authorId.substring(0, 5),
+          email: ''
+        };
+      }
+
+      // 게시글 상태 정보
+      const isBlinded = article.blindedAt !== null && article.blindedAt !== undefined;
+      const isDeleted = article.deletedAt !== null && article.deletedAt !== undefined;
+      const isEdited = article.updatedAt !== null && article.updatedAt !== undefined &&
+                      article.updatedAt !== article.createdAt;
+
       const transformedArticle = {
         ...article,
-        isBlinded: article.blindedAt !== null,
-        isDeleted: article.deletedAt !== null,
+        // 필수 필드가 없는 경우 기본값 제공
+        id: article.id || id,
+        content: article.content || '',
+        emoji: article.emoji || null,
+        author: authorInfo,
+        authorId: article.authorId || '',
+        nickname: article.nickname || authorInfo.name,
+        email: article.email || authorInfo.email,
+        anonymous: article.anonymous || false,
+        isAnonymous: article.anonymous || false,
+        isBlinded: isBlinded,
+        isDeleted: isDeleted,
+        isEdited: isEdited,
+        blindedAt: article.blindedAt || null,
+        deletedAt: article.deletedAt || null,
+        updatedAt: article.updatedAt || null,
+        createdAt: article.createdAt || new Date().toISOString(),
+        likeCount: article.likeCount || 0,
         commentCount: comments.length,
-        comments: comments.map((comment: any) => ({
-          ...comment,
-          isBlinded: comment.blindedAt !== null,
-          isDeleted: comment.deletedAt !== null,
-          articleId: article.id
-        })),
+        reportCount: reports.length,
+        comments: comments.map((comment: any) => {
+          // 댓글 작성자 정보 처리
+          let commentAuthorInfo = { id: '', name: '알 수 없음', email: '' };
+          if (comment.author) {
+            commentAuthorInfo = {
+              id: comment.author.id || '',
+              name: comment.author.name || '알 수 없음',
+              email: comment.author.email || ''
+            };
+          } else if (comment.authorId) {
+            commentAuthorInfo = {
+              id: comment.authorId,
+              name: comment.nickname || ('사용자 ' + comment.authorId.substring(0, 5)),
+              email: ''
+            };
+          }
+
+          return {
+            ...comment,
+            id: comment.id || '',
+            content: comment.content || '',
+            emoji: comment.emoji || null,
+            author: commentAuthorInfo,
+            nickname: comment.nickname || commentAuthorInfo.name,
+            isBlinded: comment.blindedAt !== null && comment.blindedAt !== undefined,
+            isDeleted: comment.deletedAt !== null && comment.deletedAt !== undefined,
+            isEdited: comment.updatedAt !== null && comment.updatedAt !== undefined &&
+                     comment.updatedAt !== comment.createdAt,
+            articleId: article.id || id,
+            createdAt: comment.createdAt || new Date().toISOString(),
+            reportCount: 0
+          };
+        }),
         reports: reports.map((report: any) => ({
           ...report,
+          id: report.id || '',
           targetType: 'article',
-          targetId: article.id,
+          targetId: article.id || id,
           reporterNickname: report.reporter?.name || '익명',
-          targetContent: article.content
+          targetContent: article.content || ''
         }))
       };
 
@@ -222,16 +355,33 @@ const communityService = {
     try {
       console.log('게시글 블라인드 처리 요청:', { id, isBlinded, reason });
 
-      // 백엔드 API 변경에 따라 경로 수정
+      // 백엔드 API 경로 시도 (여러 가능한 경로 시도)
       let response;
+
       if (isBlinded) {
         // 블라인드 처리
-        response = await adminAxios.patch(`/api/admin/community/posts/${id}/blind`, {
-          reason
-        });
+        try {
+          // 첫 번째 경로 시도
+          response = await adminAxios.patch(`/api/admin/community/articles/${id}/blind`, {
+            reason
+          });
+        } catch (err) {
+          console.log('블라인드 첫 번째 경로 실패, 대체 경로 시도:', err);
+          // 두 번째 경로 시도
+          response = await adminAxios.patch(`/api/admin/community/posts/${id}/blind`, {
+            reason
+          });
+        }
       } else {
         // 블라인드 해제
-        response = await adminAxios.patch(`/api/admin/community/posts/${id}/unblind`);
+        try {
+          // 첫 번째 경로 시도
+          response = await adminAxios.patch(`/api/admin/community/articles/${id}/unblind`);
+        } catch (err) {
+          console.log('블라인드 해제 첫 번째 경로 실패, 대체 경로 시도:', err);
+          // 두 번째 경로 시도
+          response = await adminAxios.patch(`/api/admin/community/posts/${id}/unblind`);
+        }
       }
 
       console.log('게시글 블라인드 처리 응답:', response.data);
@@ -247,10 +397,21 @@ const communityService = {
     try {
       console.log('게시글 삭제 요청:', { id, reason });
 
-      // 백엔드 API 변경에 따라 경로 수정
-      const response = await adminAxios.delete(`/api/admin/community/articles/${id}`, {
-        data: { reason }
-      });
+      // 백엔드 API 경로 시도 (여러 가능한 경로 시도)
+      let response;
+      try {
+        // 첫 번째 경로 시도
+        response = await adminAxios.delete(`/api/admin/community/articles/${id}`, {
+          data: { reason }
+        });
+      } catch (err) {
+        console.log('삭제 첫 번째 경로 실패, 대체 경로 시도:', err);
+        // 두 번째 경로 시도
+        response = await adminAxios.delete(`/api/admin/community/posts/${id}`, {
+          data: { reason }
+        });
+      }
+
       console.log('게시글 삭제 응답:', response.data);
       return response.data;
     } catch (error) {

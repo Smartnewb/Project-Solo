@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAdminAuth } from '@/contexts/AdminAuthContext';
 import { hooks } from '@/lib/query';
+import { adminService } from '@/lib/services';
 
 type ProfileImage = {
   id: string;
@@ -224,42 +225,84 @@ export default function UsersAdmin() {
 
   const handleUserSelect = async (user: User) => {
     console.log('사용자 상세 정보 모달 열림:', user);
-    console.log('사용자 ID:', user.id);
+    console.log('사용자 ID:', user.userId || user.id);
     console.log('사용자 이름:', user.name);
-    console.log('사용자 프로필 이미지 배열:', user.profileImages);
 
-    if (user.profileImages) {
-      console.log('프로필 이미지 개수:', user.profileImages.length);
-      user.profileImages.forEach((img, index) => {
-        console.log(`이미지 ${index + 1}:`, img.id, img.url, img.isMain ? '(메인)' : '');
-      });
+    try {
+      // 사용자 상세 정보 조회
+      const userId = user.userId || user.id;
+      console.log('사용자 상세 정보 조회 시작:', userId);
 
-      // 메인 이미지 찾기
-      const mainImage = user.profileImages.find(img => img.isMain === true);
-      console.log('메인 이미지:', mainImage);
-    }
+      // 상세 정보 조회 전에 기본 정보로 먼저 설정
+      setSelectedUser(user);
 
-    setSelectedUser(user);
+      // 상세 정보 조회
+      const userDetailQuery = hooks.useUserDetails(userId);
+      const userDetail = await userDetailQuery.refetch();
 
-    // 사용자의 메인 이미지를 기본 선택 이미지로 설정, 없으면 첫 번째 이미지 사용
-    if (user.profileImages && user.profileImages.length > 0) {
-      // 메인 이미지 찾기
-      const mainImage = user.profileImages.find(img => img.isMain === true);
+      console.log('사용자 상세 정보 조회 결과:', userDetail.data);
 
-      // 메인 이미지가 있으면 사용, 없으면 첫 번째 이미지 사용
-      const imageToUse = mainImage || user.profileImages[0];
-      const imageUrl = imageToUse.url;
+      if (userDetail.data) {
+        // 상세 정보로 업데이트
+        const detailedUser = {
+          ...user,
+          ...userDetail.data
+        };
 
-      console.log('기본 선택 이미지 설정:', imageUrl);
-      setSelectedImage(imageUrl);
+        console.log('병합된 사용자 정보:', detailedUser);
 
-      // 상태 업데이트 후 확인을 위한 setTimeout
-      setTimeout(() => {
-        console.log('상태 업데이트 후 selectedImage:', selectedImage);
-      }, 100);
-    } else {
-      setSelectedImage(null);
-      console.log('프로필 이미지 없음');
+        // 대학교 정보 처리
+        if (!detailedUser.universityDetails && (detailedUser.university || detailedUser.universityName)) {
+          detailedUser.universityDetails = {
+            name: detailedUser.university?.name || detailedUser.universityName || '',
+            department: detailedUser.university?.department || detailedUser.universityDepartment || '',
+            authentication: detailedUser.university?.authentication || detailedUser.universityAuthentication || false
+          };
+          console.log('대학교 정보 생성:', detailedUser.universityDetails);
+        }
+
+        // 상태 업데이트
+        setSelectedUser(detailedUser);
+
+        // 프로필 이미지 처리
+        if (detailedUser.profileImages && detailedUser.profileImages.length > 0) {
+          console.log('프로필 이미지 개수:', detailedUser.profileImages.length);
+          detailedUser.profileImages.forEach((img, index) => {
+            console.log(`이미지 ${index + 1}:`, img.id, img.url, img.isMain ? '(메인)' : '');
+          });
+
+          // 메인 이미지 찾기
+          const mainImage = detailedUser.profileImages.find(img => img.isMain === true);
+          console.log('메인 이미지:', mainImage);
+
+          // 메인 이미지가 있으면 사용, 없으면 첫 번째 이미지 사용
+          const imageToUse = mainImage || detailedUser.profileImages[0];
+          const imageUrl = imageToUse.url;
+
+          console.log('기본 선택 이미지 설정:', imageUrl);
+          setSelectedImage(imageUrl);
+        } else if (detailedUser.profileImage) {
+          // 단일 프로필 이미지가 있는 경우
+          console.log('단일 프로필 이미지 사용:', detailedUser.profileImage);
+          setSelectedImage(detailedUser.profileImage);
+        } else {
+          setSelectedImage(null);
+          console.log('프로필 이미지 없음');
+        }
+      }
+    } catch (error) {
+      console.error('사용자 상세 정보 조회 중 오류:', error);
+
+      // 오류가 발생해도 기본 정보는 표시
+      if (user.profileImages && user.profileImages.length > 0) {
+        const mainImage = user.profileImages.find(img => img.isMain === true);
+        const imageToUse = mainImage || user.profileImages[0];
+        setSelectedImage(imageToUse.url);
+      } else if (user.profileImage) {
+        setSelectedImage(user.profileImage);
+      } else {
+        setSelectedImage(null);
+      }
     }
   };
 
@@ -271,10 +314,99 @@ export default function UsersAdmin() {
 
   // 이미지 클릭 함수는 인라인으로 구현하여 직접 사용
 
-  const handleBlockUser = async (userId: string) => {
+  // 계정 상태 변경 훅 사용
+  const updateAccountStatusMutation = hooks.useUpdateAccountStatus();
+
+  // 사용자 차단 처리
+  const handleBlockUser = async (userId: string, reason: string = '관리자에 의한 차단') => {
+    try {
+      console.log('사용자 차단 시작:', userId);
+      console.log('차단 사유:', reason);
+
+      // 여러 가능한 상태값 시도
+      const statusOptions = ['SUSPENDED', 'BLOCKED', 'BANNED', 'INACTIVE'];
+
+      let success = false;
+      let lastError = null;
+
+      // 모든 가능한 상태값 시도
+      for (const status of statusOptions) {
+        try {
+          console.log(`상태값 시도: ${status}`);
+
+          await updateAccountStatusMutation.mutateAsync({
+            userId,
+            status: status as any,
+            reason
+          });
+
+          console.log(`사용자 차단 완료 (상태: ${status})`);
+          success = true;
+          break;
+        } catch (err) {
+          console.log(`상태값 ${status} 실패:`, err);
+          lastError = err;
+
+          // 다음 상태값 시도
+          continue;
+        }
+      }
+
+      if (success) {
+        console.log('사용자 차단 성공');
+        return true;
+      } else {
+        throw lastError || new Error('모든 상태값 시도 실패');
+      }
+    } catch (error) {
+      console.error('사용자 차단 중 오류 발생:', error);
+      throw error;
+    }
   };
 
+  // 사용자 차단 해제
   const handleUnblockUser = async (userId: string) => {
+    try {
+      console.log('사용자 차단 해제 시작:', userId);
+
+      // 여러 가능한 상태값 시도
+      const statusOptions = ['ACTIVE', 'NORMAL', 'ENABLED'];
+
+      let success = false;
+      let lastError = null;
+
+      // 모든 가능한 상태값 시도
+      for (const status of statusOptions) {
+        try {
+          console.log(`상태값 시도: ${status}`);
+
+          await updateAccountStatusMutation.mutateAsync({
+            userId,
+            status: status as any
+          });
+
+          console.log(`사용자 차단 해제 완료 (상태: ${status})`);
+          success = true;
+          break;
+        } catch (err) {
+          console.log(`상태값 ${status} 실패:`, err);
+          lastError = err;
+
+          // 다음 상태값 시도
+          continue;
+        }
+      }
+
+      if (success) {
+        console.log('사용자 차단 해제 성공');
+        return true;
+      } else {
+        throw lastError || new Error('모든 상태값 시도 실패');
+      }
+    } catch (error) {
+      console.error('사용자 차단 해제 중 오류 발생:', error);
+      throw error;
+    }
   };
 
   // React Query 훅 사용
@@ -531,7 +663,7 @@ export default function UsersAdmin() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {user.role === 'blocked' ? (
+                      {user.role === 'blocked' || user.status === 'SUSPENDED' ? (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                           차단됨
                         </span>
@@ -539,9 +671,13 @@ export default function UsersAdmin() {
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           관리자
                         </span>
+                      ) : user.status === 'INACTIVE' ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          비활성
+                        </span>
                       ) : (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          사용자
+                          활성
                         </span>
                       )}
                     </td>
@@ -554,21 +690,42 @@ export default function UsersAdmin() {
                           상세정보
                         </button>
 
-                        {isBlocked ? (
+                        {user.role === 'blocked' || user.status === 'SUSPENDED' ? (
                           <button
-                            onClick={() => handleUnblockUser(user.userId)}
+                            onClick={async () => {
+                              if (window.confirm('정말로 이 사용자의 차단을 해제하시겠습니까?')) {
+                                try {
+                                  await handleUnblockUser(user.userId);
+                                  alert('사용자 차단이 해제되었습니다.');
+                                } catch (error) {
+                                  console.error('차단 해제 중 오류:', error);
+                                  alert(`차단 해제 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`);
+                                }
+                              }
+                            }}
                             className="text-green-500 hover:text-green-700"
-                            disabled={loading}
+                            disabled={loading || updateAccountStatusMutation.isPending}
                           >
-                            차단해제
+                            {updateAccountStatusMutation.isPending && updateAccountStatusMutation.variables?.userId === user.userId ? '처리 중...' : '차단해제'}
                           </button>
                         ) : (
                           <button
-                            onClick={() => handleBlockUser(user.userId)}
+                            onClick={async () => {
+                              const reason = window.prompt('차단 사유를 입력하세요:', '관리자에 의한 차단');
+                              if (reason !== null) {
+                                try {
+                                  await handleBlockUser(user.userId, reason);
+                                  alert('사용자가 차단되었습니다.');
+                                } catch (error) {
+                                  console.error('차단 처리 중 오류:', error);
+                                  alert(`차단 처리 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`);
+                                }
+                              }
+                            }}
                             className="text-red-500 hover:text-red-700"
-                            disabled={loading}
+                            disabled={loading || updateAccountStatusMutation.isPending}
                           >
-                            차단
+                            {updateAccountStatusMutation.isPending && updateAccountStatusMutation.variables?.userId === user.userId ? '처리 중...' : '차단'}
                           </button>
                         )}
 
@@ -852,7 +1009,7 @@ export default function UsersAdmin() {
 
                       <div>
                         <p className="text-sm text-gray-500">인스타그램</p>
-                        <p className="font-medium">
+                        <div className="font-medium">
                           {selectedUser.instagramId ? (
                             <a
                               href={`https://www.instagram.com/${selectedUser.instagramId}`}
@@ -863,33 +1020,53 @@ export default function UsersAdmin() {
                               @{selectedUser.instagramId}
                             </a>
                           ) : '-'}
-                        </p>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {selectedUser.universityDetails && (
+                  {/* 대학교 정보 */}
+                  {(selectedUser.universityDetails || selectedUser.university || selectedUser.universityName) && (
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <h3 className="text-lg font-semibold mb-4">대학교 정보</h3>
                       <div className="space-y-3">
                         <div>
                           <p className="text-sm text-gray-500">학교명</p>
-                          <p className="font-medium">{selectedUser.universityDetails.name}</p>
+                          <p className="font-medium">
+                            {selectedUser.universityDetails?.name ||
+                             selectedUser.university?.name ||
+                             selectedUser.universityName ||
+                             '정보 없음'}
+                          </p>
                         </div>
 
                         <div>
                           <p className="text-sm text-gray-500">학과</p>
-                          <p className="font-medium">{selectedUser.universityDetails.department}</p>
+                          <p className="font-medium">
+                            {selectedUser.universityDetails?.department ||
+                             selectedUser.university?.department ||
+                             selectedUser.universityDepartment ||
+                             '정보 없음'}
+                          </p>
                         </div>
 
                         <div>
                           <p className="text-sm text-gray-500">인증 상태</p>
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${selectedUser.universityDetails.authentication
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                            }`}>
-                            {selectedUser.universityDetails.authentication ? '인증됨' : '미인증'}
-                          </span>
+                          <div>
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              (selectedUser.universityDetails?.authentication ||
+                               selectedUser.university?.authentication ||
+                               selectedUser.universityAuthentication)
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-red-100 text-red-800'
+                              }`}>
+                              {(selectedUser.universityDetails?.authentication ||
+                                selectedUser.university?.authentication ||
+                                selectedUser.universityAuthentication)
+                                  ? '인증됨'
+                                  : '미인증'}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -927,7 +1104,95 @@ export default function UsersAdmin() {
 
             {/* 하단 버튼 */}
             <div className="sticky bottom-0 bg-white pt-6 mt-6 border-t">
-              <div className="flex justify-end">
+              <div className="flex justify-between">
+                <div className="flex space-x-2">
+                  {/* 계정 상태 변경 버튼 */}
+                  {selectedUser.role === 'blocked' || selectedUser.status === 'SUSPENDED' ? (
+                    <button
+                      onClick={async () => {
+                        if (window.confirm('정말로 이 사용자의 차단을 해제하시겠습니까?')) {
+                          try {
+                            await handleUnblockUser(selectedUser.userId);
+                            alert('사용자 차단이 해제되었습니다.');
+                            // 성공 시 사용자 정보 다시 로드
+                            await hooks.useUserDetails(selectedUser.userId).refetch();
+                            // 사용자 목록 다시 로드
+                            await hooks.useUsers().refetch();
+                          } catch (error) {
+                            console.error('차단 해제 중 오류:', error);
+                            alert(`차단 해제 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`);
+                          }
+                        }
+                      }}
+                      className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
+                      disabled={updateAccountStatusMutation.isPending}
+                    >
+                      {updateAccountStatusMutation.isPending ? '처리 중...' : '차단 해제'}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={async () => {
+                        const reason = window.prompt('차단 사유를 입력하세요:', '관리자에 의한 차단');
+                        if (reason !== null) {
+                          try {
+                            // 차단 사유를 전달하여 차단 처리
+                            await handleBlockUser(selectedUser.userId, reason);
+                            alert('사용자가 차단되었습니다.');
+                            // 성공 시 사용자 정보 다시 로드
+                            await hooks.useUserDetails(selectedUser.userId).refetch();
+                            // 사용자 목록 다시 로드
+                            await hooks.useUsers().refetch();
+                          } catch (error) {
+                            console.error('차단 처리 중 오류:', error);
+                            alert(`차단 처리 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`);
+                          }
+                        }
+                      }}
+                      className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+                      disabled={updateAccountStatusMutation.isPending}
+                    >
+                      {updateAccountStatusMutation.isPending ? '처리 중...' : '계정 차단'}
+                    </button>
+                  )}
+
+                  {/* 강제 로그아웃 버튼 */}
+                  <button
+                    onClick={async () => {
+                      if (window.confirm('정말로 이 사용자를 강제 로그아웃 시키겠습니까?')) {
+                        try {
+                          console.log('강제 로그아웃 시작:', selectedUser.userId);
+
+                          // 로딩 상태 표시
+                          const button = event.target as HTMLButtonElement;
+                          const originalText = button.textContent;
+                          button.disabled = true;
+                          button.textContent = '처리 중...';
+
+                          await adminService.users.forceLogout(selectedUser.userId);
+
+                          console.log('강제 로그아웃 완료');
+                          alert('사용자가 강제 로그아웃되었습니다.');
+
+                          // 버튼 상태 복원
+                          button.disabled = false;
+                          button.textContent = originalText;
+                        } catch (error) {
+                          console.error('강제 로그아웃 중 오류:', error);
+                          alert(`강제 로그아웃 중 오류가 발생했습니다: ${error.message || '알 수 없는 오류'}`);
+
+                          // 오류 발생 시에도 버튼 상태 복원
+                          const button = event.target as HTMLButtonElement;
+                          button.disabled = false;
+                          button.textContent = '강제 로그아웃';
+                        }
+                      }
+                    }}
+                    className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors"
+                  >
+                    강제 로그아웃
+                  </button>
+                </div>
+
                 <button
                   onClick={handleCloseDetails}
                   className="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors"
