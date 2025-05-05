@@ -1517,6 +1517,114 @@ const matching = {
 
       return mockData;
     }
+  },
+
+  // 매칭 실패한 사용자 목록 조회
+  getUnmatchedUsers: async (date: string, page: number = 1, limit: number = 10) => {
+    try {
+      console.log('매칭 실패 사용자 조회 요청:', { date, page, limit });
+
+      const response = await axiosServer.get('/api/admin/matching/unmatched-users', {
+        params: {
+          date,
+          page,
+          limit
+        }
+      });
+      console.log('매칭 실패 사용자 조회 응답:', response.data);
+
+      return response.data;
+    } catch (error: any) {
+      console.error('매칭 실패 사용자 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+
+      // 오류 발생 시 임시 데이터 반환 (개발 중에만 사용)
+      const mockData = {
+        items: [
+          { id: "unmatched-id-1", userId: "user-id-1", createdAt: "2025-04-24T12:16:51.039Z", reason: "적합한 매칭 파트너를 찾을 수 없음" },
+          { id: "unmatched-id-2", userId: "user-id-2", createdAt: "2025-04-24T13:22:51.039Z", reason: "나이 범위 초과" },
+          { id: "unmatched-id-3", userId: "user-id-3", createdAt: "2025-04-24T14:45:51.039Z", reason: "지역 불일치" },
+          { id: "unmatched-id-4", userId: "user-id-4", createdAt: "2025-04-24T15:30:51.039Z", reason: "매칭 점수 미달" },
+          { id: "unmatched-id-5", userId: "user-id-5", createdAt: "2025-04-24T16:15:51.039Z", reason: "활성 사용자 부족" }
+        ],
+        meta: {
+          currentPage: page,
+          itemsPerPage: limit,
+          totalItems: 15,
+          hasNextPage: page < 2,
+          hasPreviousPage: page > 1
+        }
+      };
+
+      return mockData;
+    }
+  },
+
+  // 사용자 상세 정보 조회 (기존 API)
+  getUserDetail: async (userId: string) => {
+    try {
+      console.log('사용자 상세 정보 조회 요청:', { userId });
+
+      const response = await axiosServer.get(`/api/admin/users/${userId}/detail`);
+      console.log('사용자 상세 정보 조회 응답:', response.data);
+
+      return response.data;
+    } catch (error: any) {
+      console.error('사용자 상세 정보 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+
+      // 오류 발생 시 임시 데이터 반환 (개발 중에만 사용)
+      const mockData = {
+        id: userId,
+        name: `사용자 ${userId.substring(0, 5)}`,
+        gender: Math.random() > 0.5 ? "MALE" : "FEMALE",
+        age: Math.floor(Math.random() * 10) + 20,
+        university: ["충남대학교", "KAIST", "한밭대학교", "한남대학교", "배재대학교"][Math.floor(Math.random() * 5)],
+        major: ["컴퓨터공학", "경영학", "심리학", "기계공학", "화학공학"][Math.floor(Math.random() * 5)],
+        mbti: ["INTJ", "ENFP", "ISFJ", "ESTP", "INFP"][Math.floor(Math.random() * 5)],
+        height: Math.floor(Math.random() * 30) + 160,
+        createdAt: new Date().toISOString()
+      };
+
+      return mockData;
+    }
+  },
+
+  // 사용자 프로필 조회 (새로운 API)
+  getUserProfile: async (userId: string) => {
+    try {
+      console.log('사용자 프로필 조회 요청:', { userId });
+
+      const response = await axiosServer.get('/api/profile', {
+        params: { userId }
+      });
+      console.log('사용자 프로필 조회 응답:', response.data);
+
+      return response.data;
+    } catch (error: any) {
+      console.error('사용자 프로필 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+
+      // 오류 발생 시 임시 데이터 반환 (개발 중에만 사용)
+      const mockData = {
+        id: userId,
+        name: `사용자 ${userId.substring(0, 5)}`,
+        gender: Math.random() > 0.5 ? "MALE" : "FEMALE",
+        age: Math.floor(Math.random() * 10) + 20,
+        university: ["충남대학교", "KAIST", "한밭대학교", "한남대학교", "배재대학교"][Math.floor(Math.random() * 5)],
+        profileImages: Math.random() > 0.3 ? [
+          {
+            id: `profile-${Math.random().toString(36).substring(2, 10)}`,
+            order: 1,
+            isMain: true,
+            url: `https://sometimes-resources.s3.ap-northeast-2.amazonaws.com/resources/mock_${Math.random() > 0.5 ? 'woman' : 'man'}_${Math.floor(Math.random() * 10)}.png`
+          }
+        ] : [],
+        createdAt: new Date().toISOString()
+      };
+
+      return mockData;
+    }
   }
 };
 

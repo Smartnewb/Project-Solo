@@ -85,6 +85,42 @@ interface MatchHistoryResponse {
   meta?: MatchHistoryMeta; // 백엔드에서 반환하는 메타데이터
 }
 
+interface UnmatchedUser {
+  id: string;
+  userId: string; // 사용자 ID
+  createdAt: string;
+  reason?: string; // 매칭 실패 사유
+}
+
+interface UnmatchedUsersResponse {
+  items: UnmatchedUser[];
+  total?: number;
+  totalItems?: number;
+  page?: number;
+  limit?: number;
+  itemsPerPage?: number;
+  totalPages?: number;
+  meta?: MatchHistoryMeta;
+}
+
+interface ProfileImage {
+  id: string;
+  order: number;
+  isMain: boolean;
+  url: string;
+}
+
+interface UserDetail {
+  id: string;
+  name: string;
+  gender: string;
+  age: number;
+  university?: string;
+  profileImages?: ProfileImage[];
+  createdAt: string;
+  [key: string]: any; // 추가 필드를 위한 인덱스 시그니처
+}
+
 // 탭 패널 컴포넌트
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -137,6 +173,16 @@ export default function MatchingAnalytics() {
   const [matchType, setMatchType] = useState<string>('all');
   const [appliedMatchType, setAppliedMatchType] = useState<string>('all');
 
+  // 매칭 실패 내역 관련 상태
+  const [unmatchedDate, setUnmatchedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [unmatchedUsers, setUnmatchedUsers] = useState<UnmatchedUser[]>([]);
+  const [unmatchedUserDetails, setUnmatchedUserDetails] = useState<Record<string, UserDetail>>({});
+  const [unmatchedPage, setUnmatchedPage] = useState<number>(1);
+  const [unmatchedLimit, setUnmatchedLimit] = useState<number>(10);
+  const [unmatchedLoading, setUnmatchedLoading] = useState<boolean>(false);
+  const [unmatchedTotal, setUnmatchedTotal] = useState<number>(0);
+  const [unmatchedTotalPages, setUnmatchedTotalPages] = useState<number>(1);
+
   // 대학교 목록 가져오기
   useEffect(() => {
     const fetchUniversities = async () => {
@@ -175,40 +221,94 @@ export default function MatchingAnalytics() {
     fetchMatchingStats();
   }, [selectedPeriod, selectedUniversity]);
 
-  // 매칭 내역 가져오기
+  // 매칭 내역 가져오기 함수
+  const fetchMatchHistory = async () => {
+    if (tabValue !== 2) return; // 매칭 내역 탭이 아니면 실행하지 않음
+
+    try {
+      setHistoryLoading(true);
+      setError(null);
+
+      const data = await AdminService.matching.getMatchHistory(
+        selectedDate,
+        historyPage,
+        historyLimit,
+        appliedSearchName,
+        appliedMatchType !== 'all' ? appliedMatchType : undefined
+      );
+
+      setMatchHistory(data);
+    } catch (err: any) {
+      console.error('매칭 내역 조회 중 오류:', err);
+      setError(err.message || '매칭 내역을 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  // 탭 변경 시 매칭 내역 초기 로딩
   useEffect(() => {
-    const fetchMatchHistory = async () => {
-      if (tabValue !== 2) return; // 매칭 내역 탭이 아니면 실행하지 않음
+    if (tabValue === 2) {
+      // 탭이 처음 선택되었을 때만 데이터 로드
+      fetchMatchHistory();
+    }
+  }, [tabValue]);
 
-      try {
-        setHistoryLoading(true);
-        setError(null);
+  // 매칭 실패 내역 가져오기 함수
+  const fetchUnmatchedUsers = async () => {
+    if (tabValue !== 3) return; // 매칭 실패 내역 탭이 아니면 실행하지 않음
 
-        const data = await AdminService.matching.getMatchHistory(
-          selectedDate,
-          historyPage,
-          historyLimit,
-          appliedSearchName,
-          appliedMatchType !== 'all' ? appliedMatchType : undefined
-        );
+    try {
+      setUnmatchedLoading(true);
+      setError(null);
 
-        setMatchHistory(data);
-      } catch (err: any) {
-        console.error('매칭 내역 조회 중 오류:', err);
-        setError(err.message || '매칭 내역을 불러오는 중 오류가 발생했습니다.');
-      } finally {
-        setHistoryLoading(false);
-      }
-    };
+      const data = await AdminService.matching.getUnmatchedUsers(
+        unmatchedDate,
+        unmatchedPage,
+        unmatchedLimit
+      );
 
-    fetchMatchHistory();
-  }, [tabValue, selectedDate, historyPage, historyLimit, appliedSearchName, appliedMatchType]);
+      setUnmatchedUsers(data.items);
+      setUnmatchedTotal(data.meta?.totalItems || data.total || 0);
+      setUnmatchedTotalPages(data.meta?.totalPages || Math.ceil((data.meta?.totalItems || data.total || 0) / unmatchedLimit) || 1);
+
+      // 사용자 상세 정보 가져오기
+      const userDetails: Record<string, UserDetail> = {};
+
+      await Promise.all(
+        data.items.map(async (user) => {
+          try {
+            const userDetail = await AdminService.matching.getUserProfile(user.userId);
+            userDetails[user.id] = userDetail;
+          } catch (error) {
+            console.error(`사용자 ${user.userId} 프로필 조회 중 오류:`, error);
+          }
+        })
+      );
+
+      setUnmatchedUserDetails(userDetails);
+    } catch (err: any) {
+      console.error('매칭 실패 내역 조회 중 오류:', err);
+      setError(err.message || '매칭 실패 내역을 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setUnmatchedLoading(false);
+    }
+  };
+
+  // 탭 변경 시 매칭 실패 내역 초기 로딩
+  useEffect(() => {
+    if (tabValue === 3) {
+      // 탭이 처음 선택되었을 때만 데이터 로드
+      fetchUnmatchedUsers();
+    }
+  }, [tabValue]);
 
   // 검색 실행 함수
   const handleSearch = () => {
     setHistoryPage(1); // 검색 시 첫 페이지로 이동
     setAppliedSearchName(searchName);
     setAppliedMatchType(matchType);
+    fetchMatchHistory(); // 검색 버튼 클릭 시 조회
   };
 
   // 필터 초기화 함수
@@ -219,6 +319,7 @@ export default function MatchingAnalytics() {
     setAppliedSearchName('');
     setMatchType('all');
     setAppliedMatchType('all');
+    // 초기화 후 바로 조회하지 않음
   };
 
   // 탭 변경 핸들러
@@ -354,6 +455,7 @@ export default function MatchingAnalytics() {
           <Tab label="매칭 성과" />
           <Tab label="재매칭 분석" />
           <Tab label="매칭 성공내역 조회" />
+          <Tab label="매칭 실패내역 조회" />
         </Tabs>
       </Box>
 
@@ -541,7 +643,10 @@ export default function MatchingAnalytics() {
               <input
                 type="date"
                 value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
+                onChange={(e) => {
+                  setSelectedDate(e.target.value);
+                  // 날짜 변경 시 자동 조회하지 않음
+                }}
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
                     handleSearch();
@@ -598,7 +703,10 @@ export default function MatchingAnalytics() {
               <Typography variant="subtitle2" sx={{ mb: 1 }}>표시 개수</Typography>
               <Select
                 value={historyLimit}
-                onChange={(e) => setHistoryLimit(Number(e.target.value))}
+                onChange={(e) => {
+                  setHistoryLimit(Number(e.target.value));
+                  // 표시 개수 변경 시 자동 조회하지 않음
+                }}
                 fullWidth
                 size="small"
                 sx={{ height: '42px' }}
@@ -744,6 +852,7 @@ export default function MatchingAnalytics() {
                   onClick={() => {
                     const newPage = historyPage - 1;
                     setHistoryPage(newPage);
+                    fetchMatchHistory(); // 페이지 변경 후 조회
                   }}
                   sx={{ mx: 1 }}
                 >
@@ -760,6 +869,7 @@ export default function MatchingAnalytics() {
                   onClick={() => {
                     const newPage = historyPage + 1;
                     setHistoryPage(newPage);
+                    fetchMatchHistory(); // 페이지 변경 후 조회
                   }}
                   sx={{ mx: 1 }}
                 >
@@ -807,6 +917,226 @@ export default function MatchingAnalytics() {
               {appliedSearchName
                 ? '다른 검색어를 입력하거나 필터를 초기화해 보세요.'
                 : '다른 날짜를 선택하거나 필터를 초기화해 보세요.'}
+            </Typography>
+          </Paper>
+        )}
+      </TabPanel>
+
+      {/* 매칭 실패 내역 탭 */}
+      <TabPanel value={tabValue} index={3}>
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>매칭 실패 내역 검색</Typography>
+          <Grid container spacing={2} alignItems="flex-end">
+            <Grid item xs={12} sm={6} md={3}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>날짜 선택</Typography>
+              <input
+                type="date"
+                value={unmatchedDate}
+                onChange={(e) => {
+                  setUnmatchedDate(e.target.value);
+                  // 날짜 변경 시 자동 조회하지 않음
+                }}
+                style={{
+                  padding: '10px 14px',
+                  border: '1px solid rgba(0, 0, 0, 0.23)',
+                  borderRadius: '4px',
+                  width: '100%',
+                  fontSize: '1rem',
+                  boxSizing: 'border-box'
+                }}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>표시 개수</Typography>
+              <Select
+                value={unmatchedLimit}
+                onChange={(e) => {
+                  setUnmatchedLimit(Number(e.target.value));
+                  // 표시 개수 변경 시 자동 조회하지 않음
+                }}
+                fullWidth
+                size="small"
+                sx={{ height: '42px' }}
+              >
+                <MenuItem value={5}>5개</MenuItem>
+                <MenuItem value={10}>10개</MenuItem>
+                <MenuItem value={20}>20개</MenuItem>
+                <MenuItem value={50}>50개</MenuItem>
+              </Select>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => {
+                  setUnmatchedPage(1);
+                  fetchUnmatchedUsers();
+                }}
+                sx={{ height: '42px', mr: 1 }}
+                fullWidth
+              >
+                검색
+              </Button>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={() => {
+                  setUnmatchedPage(1);
+                  setUnmatchedDate(new Date().toISOString().split('T')[0]);
+                  // 초기화 후 바로 조회하지 않음
+                }}
+                sx={{ height: '42px' }}
+                fullWidth
+              >
+                초기화
+              </Button>
+            </Grid>
+          </Grid>
+        </Paper>
+
+        {unmatchedLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : unmatchedUsers.length > 0 ? (
+          <>
+            <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+              <Box sx={{ width: '100%', overflow: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f5f5f5' }}>
+                      <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>프로필</th>
+                      <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>이름</th>
+                      <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>성별</th>
+                      <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>나이</th>
+                      <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>대학교</th>
+                      <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>매칭 실패 사유</th>
+                      <th style={{ padding: '16px', textAlign: 'left', borderBottom: '1px solid #ddd' }}>날짜</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {unmatchedUsers.map((user) => {
+                      const userDetail = unmatchedUserDetails[user.id] || {};
+                      return (
+                        <tr key={user.id} style={{ borderBottom: '1px solid #ddd' }}>
+                          <td style={{ padding: '16px' }}>
+                            <div
+                              style={{
+                                width: '40px',
+                                height: '40px',
+                                borderRadius: '50%',
+                                backgroundColor: '#f0f0f0',
+                                backgroundImage: userDetail.profileImages?.length && userDetail.profileImages.find(img => img.isMain)
+                                  ? `url(${userDetail.profileImages.find(img => img.isMain)?.url})`
+                                  : 'none',
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#999',
+                                fontSize: '14px',
+                                fontWeight: 'bold'
+                              }}
+                            >
+                              {(!userDetail.profileImages?.length || !userDetail.profileImages.find(img => img.isMain)) &&
+                                (userDetail.name ? userDetail.name.charAt(0) : '?')}
+                            </div>
+                          </td>
+                          <td style={{ padding: '16px' }}>{userDetail.name || '-'}</td>
+                          <td style={{ padding: '16px' }}>
+                            <div
+                              style={{
+                                width: '24px',
+                                height: '24px',
+                                borderRadius: '50%',
+                                backgroundColor: userDetail.gender === 'MALE' ? '#1976d2' : '#e91e63',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: 'white',
+                                fontSize: '12px'
+                              }}
+                            >
+                              {userDetail.gender === 'MALE' ? 'M' : userDetail.gender === 'FEMALE' ? 'F' : '?'}
+                            </div>
+                          </td>
+                          <td style={{ padding: '16px' }}>{userDetail.age || '-'}</td>
+                          <td style={{ padding: '16px' }}>{userDetail.university || '-'}</td>
+                          <td style={{ padding: '16px' }}>
+                            <span
+                              style={{
+                                padding: '4px 8px',
+                                borderRadius: '4px',
+                                backgroundColor: '#f5f5f5',
+                                color: '#333'
+                              }}
+                            >
+                              {user.reason || '알 수 없음'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '16px' }}>
+                            {new Date(user.createdAt).toLocaleString('ko-KR', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </Box>
+
+              {/* 페이지네이션 */}
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+                <Button
+                  disabled={unmatchedPage <= 1}
+                  onClick={() => {
+                    const newPage = unmatchedPage - 1;
+                    setUnmatchedPage(newPage);
+                    fetchUnmatchedUsers(); // 페이지 변경 후 조회
+                  }}
+                  sx={{ mx: 1 }}
+                >
+                  이전
+                </Button>
+                <Typography sx={{ mx: 2, display: 'flex', alignItems: 'center' }}>
+                  {unmatchedPage} / {unmatchedTotalPages}
+                </Typography>
+                <Button
+                  disabled={unmatchedPage >= unmatchedTotalPages}
+                  onClick={() => {
+                    const newPage = unmatchedPage + 1;
+                    setUnmatchedPage(newPage);
+                    fetchUnmatchedUsers(); // 페이지 변경 후 조회
+                  }}
+                  sx={{ mx: 1 }}
+                >
+                  다음
+                </Button>
+              </Box>
+            </Paper>
+
+            <Box sx={{ mt: 3 }}>
+              <Typography variant="body2" color="text.secondary">
+                총 {unmatchedTotal}개의 매칭 실패 내역 중 {(unmatchedPage - 1) * unmatchedLimit + 1}-
+                {Math.min(unmatchedPage * unmatchedLimit, unmatchedTotal)}개를 표시하고 있습니다.
+              </Typography>
+            </Box>
+          </>
+        ) : (
+          <Paper sx={{ p: 4, textAlign: 'center' }}>
+            <Typography variant="h6" color="text.secondary">
+              매칭 실패 내역이 없습니다.
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              다른 날짜를 선택하거나 필터를 초기화해 보세요.
             </Typography>
           </Paper>
         )}
