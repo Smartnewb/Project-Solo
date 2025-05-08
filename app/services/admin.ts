@@ -1175,6 +1175,35 @@ const universities = {
 
 // 매칭 관련 API
 const matching = {
+  // 매칭 내역 조회
+  getMatchHistory: async (date: string, page: number = 1, limit: number = 10, name?: string, type?: string) => {
+    try {
+      console.log('매칭 내역 조회 요청:', { date, page, limit, name, type });
+
+      // 파라미터 객체 생성
+      const params: any = { date, page, limit };
+
+      // 이름 검색어가 있는 경우 추가
+      if (name && name.trim() !== '') {
+        params.name = name.trim();
+      }
+
+      // 매칭 타입이 있는 경우 추가
+      if (type && type !== 'all') {
+        params.type = type;
+      }
+
+      const response = await axiosServer.get('/admin/matching/match-history', { params });
+
+      console.log('매칭 내역 조회 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('매칭 내역 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
   // 특정 사용자의 매칭 결과만 조회
   findMatches: async (userId: string, options?: any) => {
     try {
