@@ -102,6 +102,28 @@ interface MatchHistoryResponse {
   };
 }
 
+// 매칭 실패 로그 아이템 인터페이스
+interface FailureLogItem {
+  id: string;
+  userId: string;
+  userName: string;
+  reason: string;
+  createdAt: string;
+}
+
+// 매칭 실패 로그 응답 인터페이스
+interface FailureLogResponse {
+  items: FailureLogItem[];
+  meta: {
+    currentPage: number;
+    itemsPerPage: number;
+    totalItems: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+}
+
 // 탭 패널 컴포넌트
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -152,6 +174,14 @@ export default function MatchingAnalytics() {
   const [searchName, setSearchName] = useState<string>('');
   const [matchType, setMatchType] = useState<string>('all');
   const [isSearchMode, setIsSearchMode] = useState<boolean>(false);
+
+  // 매칭 실패 내역 관련 상태
+  const [failureLogs, setFailureLogs] = useState<FailureLogResponse | null>(null);
+  const [failureLogsPage, setFailureLogsPage] = useState<number>(1);
+  const [failureLogsLimit, setFailureLogsLimit] = useState<number>(10);
+  const [failureLogsLoading, setFailureLogsLoading] = useState<boolean>(false);
+  const [failureSearchName, setFailureSearchName] = useState<string>('');
+  const [isFailureSearchMode, setIsFailureSearchMode] = useState<boolean>(false);
 
   // 대학교 목록 가져오기
   useEffect(() => {
@@ -227,7 +257,7 @@ export default function MatchingAnalytics() {
     }
   }, [selectedDate, historyPage, historyLimit, tabValue, isSearchMode]);
 
-  // 검색 실행 함수
+  // 매칭 내역 검색 실행 함수
   const handleSearch = async () => {
     if (!selectedDate) return;
 
@@ -254,6 +284,71 @@ export default function MatchingAnalytics() {
       setError(err.message || '매칭 내역을 검색하는 중 오류가 발생했습니다.');
     } finally {
       setHistoryLoading(false);
+    }
+  };
+
+  // 매칭 실패 내역 가져오기
+  useEffect(() => {
+    const fetchFailureLogs = async () => {
+      if (!selectedDate) return;
+
+      try {
+        setFailureLogsLoading(true);
+        setError(null);
+
+        // 날짜 형식 변환 (YYYY-MM-DD)
+        const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+
+        // 검색 모드가 아닌 경우에만 자동으로 데이터 가져오기
+        if (!isFailureSearchMode) {
+          const data = await AdminService.matching.getFailureLogs(
+            formattedDate,
+            failureLogsPage,
+            failureLogsLimit
+          );
+
+          setFailureLogs(data);
+        }
+      } catch (err: any) {
+        console.error('매칭 실패 내역 조회 중 오류:', err);
+        setError(err.message || '매칭 실패 내역을 불러오는 중 오류가 발생했습니다.');
+      } finally {
+        setFailureLogsLoading(false);
+      }
+    };
+
+    // 매칭 실패 내역 탭이 선택된 경우에만 데이터 가져오기
+    if (tabValue === 3) {
+      fetchFailureLogs();
+    }
+  }, [selectedDate, failureLogsPage, failureLogsLimit, tabValue, isFailureSearchMode]);
+
+  // 매칭 실패 내역 검색 실행 함수
+  const handleFailureSearch = async () => {
+    if (!selectedDate) return;
+
+    try {
+      setFailureLogsLoading(true);
+      setError(null);
+      setFailureLogsPage(1); // 검색 시 첫 페이지로 이동
+
+      // 날짜 형식 변환 (YYYY-MM-DD)
+      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+
+      const data = await AdminService.matching.getFailureLogs(
+        formattedDate,
+        1,
+        failureLogsLimit,
+        failureSearchName
+      );
+
+      setFailureLogs(data);
+      setIsFailureSearchMode(true);
+    } catch (err: any) {
+      console.error('매칭 실패 내역 검색 중 오류:', err);
+      setError(err.message || '매칭 실패 내역을 검색하는 중 오류가 발생했습니다.');
+    } finally {
+      setFailureLogsLoading(false);
     }
   };
 
@@ -390,6 +485,7 @@ export default function MatchingAnalytics() {
           <Tab label="매칭 성과" />
           <Tab label="재매칭 분석" />
           <Tab label="매칭 내역 조회" />
+          <Tab label="매칭 실패 내역" />
         </Tabs>
       </Box>
 
@@ -730,19 +826,25 @@ export default function MatchingAnalytics() {
                         </TableCell>
                         <TableCell>
                           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            {item.user.profileImageUrl ? (
+                            {item.user && item.user.profileImageUrl ? (
                               <Avatar src={item.user.profileImageUrl} sx={{ mr: 1, width: 32, height: 32 }} />
                             ) : (
                               <Avatar sx={{ mr: 1, width: 32, height: 32 }}>
-                                {item.user.name.charAt(0)}
+                                {item.user && item.user.name ? item.user.name.charAt(0) : '?'}
                               </Avatar>
                             )}
                             <Box>
-                              <Typography variant="body2">{item.user.name} ({item.user.age}세)</Typography>
-                              {item.user.universityDetails && (
-                                <Typography variant="caption" color="text.secondary">
-                                  {item.user.universityDetails.name} {item.user.universityDetails.department}
-                                </Typography>
+                              {item.user ? (
+                                <>
+                                  <Typography variant="body2">{item.user.name} ({item.user.age}세)</Typography>
+                                  {item.user.universityDetails && (
+                                    <Typography variant="caption" color="text.secondary">
+                                      {item.user.universityDetails.name} {item.user.universityDetails.department}
+                                    </Typography>
+                                  )}
+                                </>
+                              ) : (
+                                <Typography variant="body2" color="text.secondary">사용자 정보 없음</Typography>
                               )}
                             </Box>
                           </Box>
@@ -754,7 +856,7 @@ export default function MatchingAnalytics() {
                                 <Avatar src={item.matcher.profileImageUrl} sx={{ mr: 1, width: 32, height: 32 }} />
                               ) : (
                                 <Avatar sx={{ mr: 1, width: 32, height: 32 }}>
-                                  {item.matcher.name.charAt(0)}
+                                  {item.matcher.name ? item.matcher.name.charAt(0) : '?'}
                                 </Avatar>
                               )}
                               <Box>
@@ -845,6 +947,223 @@ export default function MatchingAnalytics() {
             </Typography>
             <Typography variant="body1" color="text.secondary">
               날짜를 선택하고 조회 버튼을 클릭하여 매칭 내역을 확인하세요.
+            </Typography>
+          </Paper>
+        )}
+      </TabPanel>
+
+      {/* 매칭 실패 내역 탭 */}
+      <TabPanel value={tabValue} index={3}>
+        <Box sx={{ mb: 3 }}>
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              매칭 실패 내역 검색
+            </Typography>
+            <Grid container spacing={2} alignItems="center">
+              <Grid item xs={12} md={4}>
+                <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ko}>
+                  <DatePicker
+                    label="날짜 선택"
+                    value={selectedDate}
+                    onChange={(newDate) => {
+                      setSelectedDate(newDate);
+                      setIsFailureSearchMode(false); // 날짜 변경 시 검색 모드 해제
+                    }}
+                    format="yyyy-MM-dd"
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        variant: 'outlined',
+                        size: 'small',
+                        helperText: '매칭 실패 내역을 조회할 날짜를 선택하세요'
+                      }
+                    }}
+                  />
+                </LocalizationProvider>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <TextField
+                  label="이름 검색"
+                  value={failureSearchName}
+                  onChange={(e) => setFailureSearchName(e.target.value)}
+                  fullWidth
+                  size="small"
+                  placeholder="사용자 이름으로 검색"
+                  helperText="이름의 일부만 입력해도 검색됩니다"
+                />
+              </Grid>
+              <Grid item xs={12} md={2}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>페이지당 항목 수</InputLabel>
+                  <Select
+                    value={failureLogsLimit}
+                    label="페이지당 항목 수"
+                    onChange={(e) => setFailureLogsLimit(Number(e.target.value))}
+                  >
+                    <MenuItem value={5}>5개</MenuItem>
+                    <MenuItem value={10}>10개</MenuItem>
+                    <MenuItem value={20}>20개</MenuItem>
+                    <MenuItem value={50}>50개</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} md={2}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleFailureSearch}
+                  fullWidth
+                  startIcon={<span role="img" aria-label="search">🔍</span>}
+                >
+                  검색하기
+                </Button>
+              </Grid>
+              {isFailureSearchMode && (
+                <Grid item xs={12}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                    <Chip
+                      label={`검색 조건: 이름 '${failureSearchName}'`}
+                      color="primary"
+                      variant="outlined"
+                      onDelete={() => {
+                        setFailureSearchName('');
+                        setIsFailureSearchMode(false);
+                      }}
+                      sx={{ mr: 1 }}
+                    />
+                    <Typography variant="body2" color="text.secondary">
+                      검색 모드 활성화됨
+                    </Typography>
+                  </Box>
+                </Grid>
+              )}
+            </Grid>
+          </Paper>
+        </Box>
+
+        {/* 로딩 표시 */}
+        {failureLogsLoading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+            <CircularProgress />
+          </Box>
+        )}
+
+        {/* 매칭 실패 내역 테이블 */}
+        {!failureLogsLoading && failureLogs && (
+          <>
+            <TableContainer component={Paper}>
+              <Table sx={{ minWidth: 650 }}>
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                    <TableCell>실패 ID</TableCell>
+                    <TableCell>사용자 정보</TableCell>
+                    <TableCell>실패 사유</TableCell>
+                    <TableCell>발생 시간</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {failureLogs.items.length > 0 ? (
+                    failureLogs.items.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>{item.id}</TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Avatar sx={{ mr: 1, width: 32, height: 32 }}>
+                              {item.userName ? item.userName.charAt(0) : '?'}
+                            </Avatar>
+                            <Box>
+                              <Typography variant="body2">{item.userName || '이름 없음'}</Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                ID: {item.userId}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">{item.reason}</Typography>
+                        </TableCell>
+                        <TableCell>
+                          {new Date(item.createdAt).toLocaleString('ko-KR', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={4} align="center">
+                        <Typography variant="body1" sx={{ py: 2 }}>
+                          해당 날짜에 매칭 실패 내역이 없습니다.
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            {/* 페이지네이션 */}
+            {failureLogs.items.length > 0 && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                <TablePagination
+                  component="div"
+                  count={failureLogs.meta.totalItems}
+                  page={failureLogs.meta.currentPage - 1}
+                  onPageChange={(_, newPage) => {
+                    setFailureLogsPage(newPage + 1);
+
+                    // 검색 모드인 경우 검색 파라미터를 유지하면서 페이지 변경
+                    if (isFailureSearchMode && selectedDate) {
+                      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+                      AdminService.matching.getFailureLogs(
+                        formattedDate,
+                        newPage + 1,
+                        failureLogsLimit,
+                        failureSearchName
+                      )
+                        .then(data => setFailureLogs(data))
+                        .catch(err => setError(err.message || '매칭 실패 내역을 불러오는 중 오류가 발생했습니다.'));
+                    }
+                  }}
+                  rowsPerPage={failureLogs.meta.itemsPerPage}
+                  onRowsPerPageChange={(e) => {
+                    const newLimit = parseInt(e.target.value, 10);
+                    setFailureLogsLimit(newLimit);
+                    setFailureLogsPage(1);
+
+                    // 검색 모드인 경우 검색 파라미터를 유지하면서 페이지당 항목 수 변경
+                    if (isFailureSearchMode && selectedDate) {
+                      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+                      AdminService.matching.getFailureLogs(
+                        formattedDate,
+                        1,
+                        newLimit,
+                        failureSearchName
+                      )
+                        .then(data => setFailureLogs(data))
+                        .catch(err => setError(err.message || '매칭 실패 내역을 불러오는 중 오류가 발생했습니다.'));
+                    }
+                  }}
+                  labelRowsPerPage="페이지당 항목 수"
+                  labelDisplayedRows={({ from, to, count }) => `${from}-${to} / ${count}`}
+                />
+              </Box>
+            )}
+          </>
+        )}
+
+        {/* 데이터가 없는 경우 */}
+        {!failureLogsLoading && !failureLogs && !error && (
+          <Paper sx={{ p: 4, textAlign: 'center' }}>
+            <Typography variant="h6" gutterBottom>
+              매칭 실패 내역 조회
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              날짜를 선택하고 조회 버튼을 클릭하여 매칭 실패 내역을 확인하세요.
             </Typography>
           </Paper>
         )}
