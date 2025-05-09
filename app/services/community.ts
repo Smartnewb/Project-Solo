@@ -87,62 +87,21 @@ const communityService = {
     try {
       console.log('게시글 목록 조회 요청:', { filter, page, limit, startDate, endDate });
 
-      // 실제 API 호출 (백엔드 준비되면 주석 해제)
-      // const response = await axiosServer.get(`/admin/community/articles`, {
-      //   params: {
-      //     filter,
-      //     page,
-      //     limit,
-      //     startDate: startDate ? startDate.toISOString() : undefined,
-      //     endDate: endDate ? endDate.toISOString() : undefined
-      //   }
-      // });
-      // console.log('게시글 목록 조회 응답:', response.data);
-      // return response.data;
+      // 날짜 파라미터 설정 (startDate가 있으면 해당 날짜 사용, 없으면 현재 날짜)
+      const date = startDate ?
+        startDate.toISOString().split('T')[0] :
+        new Date().toISOString().split('T')[0];
 
-      // 목업 데이터 반환
-      console.log('목업 데이터 사용 중');
-
-      // 목업 데이터 생성
-      const mockArticles = Array.from({ length: 20 }, (_, i) => ({
-        id: `article-${i + 1}`,
-        userId: `user-${Math.floor(Math.random() * 10) + 1}`,
-        nickname: `사용자${Math.floor(Math.random() * 100) + 1}`,
-        email: `user${Math.floor(Math.random() * 100) + 1}@example.com`,
-        content: `이것은 테스트 게시글 ${i + 1}입니다. 여기에 게시글 내용이 들어갑니다. 이 게시글은 목업 데이터로 생성되었습니다.`,
-        emoji: ['😊', '🥰', '😎', '🤗', '😇', '🥱', '🤒', '😡', '😍', '🤣'][Math.floor(Math.random() * 10)],
-        isAnonymous: Math.random() > 0.5,
-        likeCount: Math.floor(Math.random() * 50),
-        commentCount: Math.floor(Math.random() * 10),
-        reportCount: filter === 'reported' ? Math.floor(Math.random() * 5) + 1 : Math.floor(Math.random() * 3),
-        isBlinded: filter === 'blinded' ? true : Math.random() < 0.2,
-        blindReason: filter === 'blinded' ? '커뮤니티 가이드라인 위반' : undefined,
-        isDeleted: Math.random() < 0.1,
-        isEdited: Math.random() > 0.7,
-        createdAt: new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000),
-        updatedAt: new Date()
-      }));
-
-      // 필터링 적용
-      let filteredArticles = [...mockArticles];
-      if (filter === 'reported') {
-        filteredArticles = mockArticles.filter(article => article.reportCount > 0);
-      } else if (filter === 'blinded') {
-        filteredArticles = mockArticles.filter(article => article.isBlinded);
-      }
-
-      // 페이지네이션 적용
-      const startIndex = (page - 1) * limit;
-      const endIndex = startIndex + limit;
-      const paginatedArticles = filteredArticles.slice(startIndex, endIndex);
-
-      return {
-        items: paginatedArticles,
-        total: filteredArticles.length,
-        page,
-        limit,
-        totalPages: Math.ceil(filteredArticles.length / limit)
-      };
+      // 실제 API 호출
+      const response = await axiosServer.get(`/admin/community/articles`, {
+        params: {
+          date,
+          page,
+          limit
+        }
+      });
+      console.log('게시글 목록 조회 응답:', response.data);
+      return response.data;
     } catch (error) {
       console.error('게시글 목록 조회 중 오류:', error);
       throw error;
