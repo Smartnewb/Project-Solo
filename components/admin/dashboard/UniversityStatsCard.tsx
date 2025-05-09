@@ -24,7 +24,7 @@ import AdminService from '@/app/services/admin';
 
 // 대학 목록 (정렬된 상태로 유지)
 const UNIVERSITIES = [
-  '건양대학교(메디컬캠퍼스)',
+  '건양대학교',
   '대전대학교',
   '목원대학교',
   '배재대학교',
