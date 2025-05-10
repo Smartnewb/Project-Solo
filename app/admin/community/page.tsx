@@ -167,15 +167,18 @@ function ArticleList() {
         throw new Error('게시글을 찾을 수 없습니다.');
       }
 
-      // 게시글 상세 정보 구성 (댓글 제외, likeCount와 author 정보 포함)
+      // 게시글 ID를 이용해 댓글 정보 가져오기
+      const commentsResponse = await communityService.getComments(id);
+
+      // 게시글 상세 정보 구성
       const articleDetail = {
         ...selectedArticle,
-        likeCount: selectedArticle.likeCount || 0,
+        likeCount: selectedArticle.likeCount ?? 0,
         author: {
-          id: selectedArticle.userId || '',
-          name: selectedArticle.nickname || '익명',
+          id: selectedArticle.userId ?? '',
+          name: selectedArticle.nickname ?? '익명',
         },
-        comments: [], // 댓글은 빈 배열로 초기화
+        comments: commentsResponse?.items ?? [], // 댓글 API 응답에서 items 배열 사용
         reports: [] // 신고 정보는 필요한 경우 추가
       };
 
@@ -344,11 +347,11 @@ function ArticleList() {
                       <Typography variant="body2">익명</Typography>
                     ) : (
                       <Typography variant="body2">
-                        {article.author?.name || article.nickname}
+                        {article.author?.name ?? article.nickname}
                       </Typography>
                     )}
                     <Typography variant="caption" color="textSecondary">
-                      ID: {article.author?.id || article.userId}
+                      ID: {article.author?.id ?? article.userId}
                     </Typography>
                   </TableCell>
                   <TableCell>
@@ -367,7 +370,7 @@ function ArticleList() {
                     </Typography>
                   </TableCell>
                   <TableCell>{article.commentCount}</TableCell>
-                  <TableCell>{article.likeCount || 0}</TableCell>
+                  <TableCell>{article.likeCount ?? 0}</TableCell>
                   <TableCell>
                     {article.reportCount > 0 ? (
                       <Chip
@@ -495,10 +498,10 @@ function ArticleList() {
             <Box sx={{ mt: 1 }}>
               <Typography variant="subtitle1">작성자 정보</Typography>
               <Typography variant="body2">
-                {selectedArticleDetail.isAnonymous ? '익명' : (selectedArticleDetail.author?.name || selectedArticleDetail.nickname)}
+                {selectedArticleDetail.isAnonymous ? '익명' : (selectedArticleDetail.author?.name ?? selectedArticleDetail.nickname)}
               </Typography>
               <Typography variant="caption" display="block">
-                ID: {selectedArticleDetail.author?.id || selectedArticleDetail.userId}
+                ID: {selectedArticleDetail.author?.id ?? selectedArticleDetail.userId}
               </Typography>
               <Typography variant="caption" display="block" sx={{ mb: 2 }}>
                 작성일: {new Date(selectedArticleDetail.createdAt).toLocaleString()}
@@ -520,7 +523,7 @@ function ArticleList() {
                 />
                 <Chip
                   icon={<FavoriteIcon />}
-                  label={`좋아요 ${selectedArticleDetail.likeCount || 0}개`}
+                  label={`좋아요 ${selectedArticleDetail.likeCount ?? 0}개`}
                   variant="outlined"
                   color="primary"
                 />
@@ -545,7 +548,7 @@ function ArticleList() {
                 <Alert severity="warning" sx={{ mb: 2 }}>
                   <Typography variant="subtitle2">블라인드 사유</Typography>
                   <Typography variant="body2">
-                    {selectedArticleDetail.blindReason || '사유가 지정되지 않았습니다.'}
+                    {selectedArticleDetail.blindReason ?? '사유가 지정되지 않았습니다.'}
                   </Typography>
                 </Alert>
               )}
@@ -586,7 +589,7 @@ function ArticleList() {
                       </Typography>
                       {comment.isBlinded && (
                         <Typography variant="caption" color="error">
-                          (블라인드 처리됨: {comment.blindReason || '사유 없음'})
+                          (블라인드 처리됨: {comment.blindReason ?? '사유 없음'})
                         </Typography>
                       )}
                     </Box>

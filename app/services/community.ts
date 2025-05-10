@@ -191,11 +191,7 @@ const communityService = {
       console.log('댓글 목록 조회 요청:', { articleId, filter, page, limit });
 
       // 실제 API 호출
-      const response = await axiosServer.get(`/admin/community/comments`, {
-        params: {
-          articleId
-        }
-      });
+      const response = await axiosServer.get(`/admin/community/comments?articleId=${articleId}`);
       console.log('댓글 목록 조회 응답:', response.data);
       return response.data;
     } catch (error) {
