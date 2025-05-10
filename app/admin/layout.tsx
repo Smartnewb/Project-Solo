@@ -4,24 +4,17 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { ADMIN_EMAIL } from '@/utils/config';
+
 
 
 export default function AdminLayout({
   children,
 }: {
-  children: React.ReactNode
+  readonly children: React.ReactNode
 }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const { user, isAdmin } = useAuth();
-  const [adminState, setAdminState] = useState({
-    isVerified: false,
-    lastVerified: 0
-  });
-
-  useEffect(() => {
-  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -138,24 +131,8 @@ export default function AdminLayout({
               </Link>
             </li>
             <li>
-              <Link href="/admin/matching" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
-                매칭 설정
-              </Link>
-            </li>
-            <li>
               <Link href="/admin/matching-analytics" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
                 매칭 분석
-              </Link>
-            </li>
-
-            <li>
-              <Link href="/admin/analytics" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
-                트래픽 분석
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/rematch" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
-                재매칭 요청 관리
               </Link>
             </li>
             <li>
