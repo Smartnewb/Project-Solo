@@ -74,8 +74,9 @@ function ArticleList() {
       setLoading(true);
       setError(null);
       const response = await communityService.getArticles(filter, page + 1, rowsPerPage, selectedDate);
-      setArticles(response.items || []);
-      setTotalCount(response.total || 0);
+      setArticles(response.items ?? []);
+      setTotalCount(response.meta?.totalItems ?? 0);
+      console.log('페이지네이션 정보:', response.meta);
     } catch (error) {
       console.error('게시글 목록 조회 중 오류:', error);
       setError('게시글 목록을 불러오는 중 오류가 발생했습니다.');
@@ -91,7 +92,7 @@ function ArticleList() {
   };
 
   // 페이지 변경 시
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage);
   };
 

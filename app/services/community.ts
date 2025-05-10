@@ -67,13 +67,24 @@ export interface Report {
   targetContent?: string;
 }
 
+// 페이지네이션 메타 정보 타입
+export interface PaginationMeta {
+  currentPage: number;
+  itemsPerPage: number;
+  totalItems: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
 // 페이지네이션 응답 타입
 export interface PaginatedResponse<T> {
   items: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+  total?: number;
+  page?: number;
+  limit?: number;
+  totalPages?: number;
+  meta?: PaginationMeta;
 }
 
 // 게시글 상세 타입
@@ -109,7 +120,19 @@ const communityService = {
         }
       });
       console.log('게시글 목록 조회 응답:', response.data);
-      return response.data;
+
+      // API 응답 구조에 맞게 데이터 반환
+      return {
+        items: response.data.items ?? [],
+        meta: response.data.meta ?? {
+          currentPage: page,
+          itemsPerPage: limit,
+          totalItems: response.data.items?.length ?? 0,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPreviousPage: page > 1
+        }
+      };
     } catch (error) {
       console.error('게시글 목록 조회 중 오류:', error);
       throw error;
@@ -193,7 +216,19 @@ const communityService = {
       // 실제 API 호출
       const response = await axiosServer.get(`/admin/community/comments?articleId=${articleId}`);
       console.log('댓글 목록 조회 응답:', response.data);
-      return response.data;
+
+      // API 응답 구조에 맞게 데이터 반환
+      return {
+        items: response.data.items ?? [],
+        meta: response.data.meta ?? {
+          currentPage: page,
+          itemsPerPage: limit,
+          totalItems: response.data.items?.length ?? 0,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPreviousPage: page > 1
+        }
+      };
     } catch (error) {
       console.error('댓글 목록 조회 중 오류:', error);
       throw error;
@@ -243,7 +278,19 @@ const communityService = {
         params: { type, status, page, limit }
       });
       console.log('신고 목록 조회 응답:', response.data);
-      return response.data;
+
+      // API 응답 구조에 맞게 데이터 반환
+      return {
+        items: response.data.items ?? [],
+        meta: response.data.meta ?? {
+          currentPage: page,
+          itemsPerPage: limit,
+          totalItems: response.data.items?.length ?? 0,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPreviousPage: page > 1
+        }
+      };
     } catch (error) {
       console.error('신고 목록 조회 중 오류:', error);
       throw error;
