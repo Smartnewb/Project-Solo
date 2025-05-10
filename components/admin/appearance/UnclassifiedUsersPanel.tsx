@@ -34,6 +34,7 @@ import {
   AppearanceGrade,
   Gender
 } from '@/app/admin/users/appearance/types';
+import UserDetailModal, { UserDetail } from './UserDetailModal';
 
 // 등급 색상 정의
 const GRADE_COLORS: Record<AppearanceGrade, string> = {
@@ -74,6 +75,13 @@ export default function UnclassifiedUsersPanel() {
   const [gradeMenuAnchorEl, setGradeMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [activeUserId, setActiveUserId] = useState<string | null>(null);
 
+  // 유저 상세 정보 모달 상태
+  const [userDetailModalOpen, setUserDetailModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [userDetail, setUserDetail] = useState<UserDetail | null>(null);
+  const [loadingUserDetail, setLoadingUserDetail] = useState(false);
+  const [userDetailError, setUserDetailError] = useState<string | null>(null);
+
   // 미분류 사용자 목록 조회
   const fetchUnclassifiedUsers = async () => {
     try {
@@ -86,7 +94,7 @@ export default function UnclassifiedUsersPanel() {
       setTotalPages(response.meta.totalPages);
     } catch (err: any) {
       console.error('미분류 사용자 목록 조회 중 오류:', err);
-      setError(err.message || '미분류 사용자 목록을 불러오는 중 오류가 발생했습니다.');
+      setError(err.message ?? '미분류 사용자 목록을 불러오는 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
@@ -107,13 +115,40 @@ export default function UnclassifiedUsersPanel() {
     setGradeMenuAnchorEl(event.currentTarget);
     setSelectedUser(user);
     setSelectedGrade(user.appearanceGrade);
-    setActiveUserId(user.userId);
+    setActiveUserId(user.userId ?? user.id);
   };
 
   // 등급 토글 메뉴 닫기
   const handleCloseGradeMenu = () => {
     setGradeMenuAnchorEl(null);
     setActiveUserId(null);
+  };
+
+  // 유저 상세 정보 모달 열기
+  const handleOpenUserDetailModal = async (userId: string) => {
+    try {
+      setSelectedUserId(userId);
+      setUserDetailModalOpen(true);
+      setLoadingUserDetail(true);
+      setUserDetailError(null);
+      setUserDetail(null);
+
+      console.log('유저 상세 정보 조회 요청:', userId);
+      const data = await AdminService.userAppearance.getUserDetails(userId);
+      console.log('유저 상세 정보 응답:', data);
+
+      setUserDetail(data);
+    } catch (error: any) {
+      console.error('유저 상세 정보 조회 중 오류:', error);
+      setUserDetailError(error.message ?? '유저 상세 정보를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setLoadingUserDetail(false);
+    }
+  };
+
+  // 유저 상세 정보 모달 닫기
+  const handleCloseUserDetailModal = () => {
+    setUserDetailModalOpen(false);
   };
 
   // 등급 설정 저장
@@ -128,7 +163,7 @@ export default function UnclassifiedUsersPanel() {
     }
 
     // userId가 없는 경우 id를 사용
-    const userId = selectedUser.userId || selectedUser.id;
+    const userId = selectedUser.userId ?? selectedUser.id;
 
     if (!userId) {
       console.error('미분류 패널 - 선택된 사용자의 ID가 없습니다.');
@@ -146,13 +181,13 @@ export default function UnclassifiedUsersPanel() {
       // 목록 업데이트 (미분류에서 제거)
       if (newGrade !== 'UNKNOWN') {
         setUsers(users.filter(user => {
-          const userIdToCompare = user.userId || user.id;
+          const userIdToCompare = user.userId ?? user.id;
           return userIdToCompare !== userId;
         }));
       } else {
         // 미분류로 다시 설정한 경우는 상태만 업데이트
         setUsers(users.map(user => {
-          const userIdToCompare = user.userId || user.id;
+          const userIdToCompare = user.userId ?? user.id;
           return userIdToCompare === userId
             ? { ...user, appearanceGrade: newGrade }
             : user;
@@ -162,7 +197,7 @@ export default function UnclassifiedUsersPanel() {
       handleCloseGradeMenu();
     } catch (err: any) {
       console.error('미분류 패널 - 등급 설정 중 오류:', err);
-      setError(err.message || '등급 설정 중 오류가 발생했습니다.');
+      setError(err.message ?? '등급 설정 중 오류가 발생했습니다.');
     } finally {
       setSavingGrade(false);
     }
@@ -205,11 +240,23 @@ export default function UnclassifiedUsersPanel() {
                   <CardContent>
                     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                       <Avatar
-                        src={user.profileImages?.[0]?.url}
+                        src={user.profileImageUrl ?? user.profileImages?.[0]?.url ??
+                             (user.gender === 'MALE'
+                              ? `https://randomuser.me/api/portraits/men/${Math.floor(Math.random() * 50) + 1}.jpg`
+                              : `https://randomuser.me/api/portraits/women/${Math.floor(Math.random() * 50) + 1}.jpg`)}
                         alt={user.name}
-                        sx={{ width: 80, height: 80, mb: 2 }}
+                        sx={{
+                          width: 80,
+                          height: 80,
+                          mb: 2,
+                          cursor: 'pointer',
+                          '&:hover': {
+                            boxShadow: '0 0 0 2px #3f51b5'
+                          }
+                        }}
+                        onClick={() => handleOpenUserDetailModal(user.id)}
                       >
-                        {user.name?.charAt(0) || '?'}
+                        {user.name?.charAt(0) ?? '?'}
                       </Avatar>
 
                       <Typography variant="h6" gutterBottom>
@@ -343,6 +390,22 @@ export default function UnclassifiedUsersPanel() {
           미분류
         </MenuItem>
       </Menu>
+
+      {/* 유저 상세 정보 모달 */}
+      {!!userDetail && (
+        <UserDetailModal
+          open={userDetailModalOpen}
+          onClose={handleCloseUserDetailModal}
+          userId={selectedUserId}
+          userDetail={userDetail}
+          loading={loadingUserDetail}
+          error={userDetailError}
+          onRefresh={() => {
+            // 데이터 새로고침
+            fetchUnclassifiedUsers();
+          }}
+        />
+      )}
     </Box>
   );
 }
