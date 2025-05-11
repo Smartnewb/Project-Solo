@@ -685,6 +685,25 @@ const userAppearance = {
     }
   },
 
+  // SMS 발송
+  sendSmsNotification: async (userId: string, message: string) => {
+    try {
+      console.log('SMS 발송 요청:', { userId, message });
+
+      const response = await axiosServer.post('/admin/notification/sms', {
+        userId,
+        message
+      });
+
+      console.log('SMS 발송 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('SMS 발송 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
   // 강제 로그아웃
   forceLogout: async (userId: string) => {
     try {

@@ -54,6 +54,7 @@ import WarningMessageModal from './modals/WarningMessageModal';
 import ProfileUpdateRequestModal from './modals/ProfileUpdateRequestModal';
 import EditProfileModal from './modals/EditProfileModal';
 import EmailNotificationModal from './modals/EmailNotificationModal';
+import SmsNotificationModal from './modals/SmsNotificationModal';
 
 // 성별 레이블
 const GENDER_LABELS = {
@@ -134,6 +135,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const [profileUpdateRequestModalOpen, setProfileUpdateRequestModalOpen] = useState(false);
   const [editProfileModalOpen, setEditProfileModalOpen] = useState(false);
   const [emailNotificationModalOpen, setEmailNotificationModalOpen] = useState(false);
+  const [smsNotificationModalOpen, setSmsNotificationModalOpen] = useState(false);
 
   // 작업 상태
   const [actionLoading, setActionLoading] = useState(false);
@@ -174,10 +176,16 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     setEditProfileModalOpen(true);
   };
 
-  // 이메일 공지사항 모달 열기
+  // 이메일 발송 모달 열기
   const handleOpenEmailNotificationModal = () => {
     handleCloseMenu();
     setEmailNotificationModalOpen(true);
+  };
+
+  // SMS 발송 모달 열기
+  const handleOpenSmsNotificationModal = () => {
+    handleCloseMenu();
+    setSmsNotificationModalOpen(true);
   };
 
   // 강제 로그아웃 처리
@@ -315,6 +323,12 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
             <EmailIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText>이메일 발송</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleOpenSmsNotificationModal}>
+          <ListItemIcon>
+            <PhoneIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>SMS 발송</ListItemText>
         </MenuItem>
       </Menu>
       <DialogContent sx={{ p: 3 }}>
@@ -915,6 +929,18 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
         userName={userDetail?.name}
         onSuccess={() => {
           setActionSuccess('이메일이 발송되었습니다.');
+          if (onRefresh) onRefresh();
+        }}
+      />
+
+      <SmsNotificationModal
+        open={smsNotificationModalOpen}
+        onClose={() => setSmsNotificationModalOpen(false)}
+        userId={userId || ''}
+        phoneNumber={userDetail?.phoneNumber}
+        userName={userDetail?.name}
+        onSuccess={() => {
+          setActionSuccess('SMS가 발송되었습니다.');
           if (onRefresh) onRefresh();
         }}
       />
