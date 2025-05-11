@@ -53,6 +53,7 @@ import AccountStatusModal from './modals/AccountStatusModal';
 import WarningMessageModal from './modals/WarningMessageModal';
 import ProfileUpdateRequestModal from './modals/ProfileUpdateRequestModal';
 import EditProfileModal from './modals/EditProfileModal';
+import EmailNotificationModal from './modals/EmailNotificationModal';
 
 // 성별 레이블
 const GENDER_LABELS = {
@@ -132,6 +133,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const [warningMessageModalOpen, setWarningMessageModalOpen] = useState(false);
   const [profileUpdateRequestModalOpen, setProfileUpdateRequestModalOpen] = useState(false);
   const [editProfileModalOpen, setEditProfileModalOpen] = useState(false);
+  const [emailNotificationModalOpen, setEmailNotificationModalOpen] = useState(false);
 
   // 작업 상태
   const [actionLoading, setActionLoading] = useState(false);
@@ -170,6 +172,12 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const handleOpenEditProfileModal = () => {
     handleCloseMenu();
     setEditProfileModalOpen(true);
+  };
+
+  // 이메일 공지사항 모달 열기
+  const handleOpenEmailNotificationModal = () => {
+    handleCloseMenu();
+    setEmailNotificationModalOpen(true);
   };
 
   // 강제 로그아웃 처리
@@ -300,6 +308,13 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
             <EditIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText>프로필 직접 수정</ListItemText>
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={handleOpenEmailNotificationModal}>
+          <ListItemIcon>
+            <EmailIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>이메일 발송</ListItemText>
         </MenuItem>
       </Menu>
       <DialogContent sx={{ p: 3 }}>
@@ -888,6 +903,18 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
         userDetail={userDetail}
         onSuccess={() => {
           setActionSuccess('프로필이 수정되었습니다.');
+          if (onRefresh) onRefresh();
+        }}
+      />
+
+      <EmailNotificationModal
+        open={emailNotificationModalOpen}
+        onClose={() => setEmailNotificationModalOpen(false)}
+        userId={userId || ''}
+        userEmail={userDetail?.email}
+        userName={userDetail?.name}
+        onSuccess={() => {
+          setActionSuccess('이메일이 발송되었습니다.');
           if (onRefresh) onRefresh();
         }}
       />
