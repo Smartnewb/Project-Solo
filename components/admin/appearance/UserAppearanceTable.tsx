@@ -43,6 +43,7 @@ import {
 } from '@/app/admin/users/appearance/types';
 import { appearanceGradeEventBus } from '@/app/admin/users/appearance/page';
 import UserDetailModal, { UserDetail } from './UserDetailModal';
+import BulkEmailNotificationModal from './modals/BulkEmailNotificationModal';
 
 // 등급 색상 정의
 const GRADE_COLORS: Record<AppearanceGrade, string> = {
@@ -111,6 +112,9 @@ const UserAppearanceTable = forwardRef<
   const [bulkEditModalOpen, setBulkEditModalOpen] = useState(false);
   const [bulkSelectedGrade, setBulkSelectedGrade] = useState<AppearanceGrade>('UNKNOWN');
   const [savingBulkGrade, setSavingBulkGrade] = useState(false);
+
+  // 일괄 이메일 발송 상태
+  const [bulkEmailModalOpen, setBulkEmailModalOpen] = useState(false);
 
   // 유저 상세 정보 모달 상태
   const [userDetailModalOpen, setUserDetailModalOpen] = useState(false);
@@ -269,6 +273,17 @@ const UserAppearanceTable = forwardRef<
     setBulkEditModalOpen(false);
   };
 
+  // 일괄 이메일 발송 모달 열기
+  const handleOpenBulkEmailModal = () => {
+    if (selectedUsers.length === 0) return;
+    setBulkEmailModalOpen(true);
+  };
+
+  // 일괄 이메일 발송 모달 닫기
+  const handleCloseBulkEmailModal = () => {
+    setBulkEmailModalOpen(false);
+  };
+
   // 유저 상세 정보 모달 열기
   const handleOpenUserDetailModal = async (userId: string) => {
     try {
@@ -336,21 +351,31 @@ const UserAppearanceTable = forwardRef<
         </Alert>
       )}
 
-      {/* 일괄 등급 설정 버튼 */}
+      {/* 일괄 작업 버튼 */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
         <Typography variant="subtitle1">
           {selectedUsers.length > 0
             ? `${selectedUsers.length}명의 사용자 선택됨`
-            : '사용자를 선택하여 일괄 등급 설정'}
+            : '사용자를 선택하여 일괄 작업 수행'}
         </Typography>
-        <Button
-          variant="contained"
-          color="primary"
-          disabled={selectedUsers.length === 0}
-          onClick={handleOpenBulkEditModal}
-        >
-          일괄 등급 설정
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            variant="contained"
+            color="primary"
+            disabled={selectedUsers.length === 0}
+            onClick={handleOpenBulkEditModal}
+          >
+            일괄 등급 설정
+          </Button>
+          <Button
+            variant="contained"
+            color="info"
+            disabled={selectedUsers.length === 0}
+            onClick={handleOpenBulkEmailModal}
+          >
+            일괄 이메일 발송
+          </Button>
+        </Box>
       </Box>
 
       <TableContainer component={Paper}>
@@ -631,6 +656,19 @@ const UserAppearanceTable = forwardRef<
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* 일괄 이메일 발송 모달 */}
+      <BulkEmailNotificationModal
+        open={bulkEmailModalOpen}
+        onClose={handleCloseBulkEmailModal}
+        userIds={selectedUsers}
+        onSuccess={() => {
+          // 데이터 새로고침
+          fetchUsers();
+          // 선택 초기화
+          setSelectedUsers([]);
+        }}
+      />
 
       {/* 유저 상세 정보 모달 */}
       {!!userDetail && (

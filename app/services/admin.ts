@@ -741,7 +741,41 @@ const userAppearance = {
     }
   },
 
+  // 인스타그램 오류 상태 설정
+  setInstagramError: async (userId: string) => {
+    try {
+      console.log('인스타그램 오류 상태 설정 요청:', { userId });
 
+      const response = await axiosServer.post('/admin/users/detail/instagram-error', {
+        userId
+      });
+
+      console.log('인스타그램 오류 상태 설정 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('인스타그램 오류 상태 설정 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // 인스타그램 오류 상태 해제
+  resetInstagramError: async (userId: string) => {
+    try {
+      console.log('인스타그램 오류 상태 해제 요청:', { userId });
+
+      const response = await axiosServer.post('/admin/users/detail/instagram-reset', {
+        userId
+      });
+
+      console.log('인스타그램 오류 상태 해제 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('인스타그램 오류 상태 해제 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
 
   // 외모 등급 통계 조회
   getAppearanceGradeStats: async () => {

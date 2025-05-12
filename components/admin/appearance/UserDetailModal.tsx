@@ -234,6 +234,44 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     }
   };
 
+  // 인스타그램 오류 상태 설정
+  const handleSetInstagramError = async () => {
+    if (!userId) return;
+
+    try {
+      setActionLoading(true);
+      setActionError(null);
+
+      await AdminService.userAppearance.setInstagramError(userId);
+
+      setActionSuccess('인스타그램 오류 상태가 설정되었습니다.');
+      if (onRefresh) onRefresh();
+    } catch (error: any) {
+      setActionError(error.message ?? '인스타그램 오류 상태 설정 중 오류가 발생했습니다.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // 인스타그램 오류 상태 해제
+  const handleResetInstagramError = async () => {
+    if (!userId) return;
+
+    try {
+      setActionLoading(true);
+      setActionError(null);
+
+      await AdminService.userAppearance.resetInstagramError(userId);
+
+      setActionSuccess('인스타그램 오류 상태가 해제되었습니다.');
+      if (onRefresh) onRefresh();
+    } catch (error: any) {
+      setActionError(error.message ?? '인스타그램 오류 상태 해제 중 오류가 발생했습니다.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   return (
     <Dialog
       open={open}
@@ -684,21 +722,62 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                 {(userDetail.instagramId || userDetail.instagramUrl) && (
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                     <InstagramIcon sx={{ mr: 1, color: '#E1306C' }} />
-                    <Link
-                      href={userDetail.instagramUrl || `https://instagram.com/${userDetail.instagramId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        textDecoration: 'none',
-                        color: 'primary.main',
-                        '&:hover': { textDecoration: 'underline' }
-                      }}
-                    >
-                      {userDetail.instagramId || userDetail.instagramUrl?.split('/').pop()}
-                      <OpenInNewIcon sx={{ ml: 0.5, fontSize: 16 }} />
-                    </Link>
+                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Link
+                          href={userDetail.instagramUrl || `https://instagram.com/${userDetail.instagramId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            textDecoration: 'none',
+                            color: 'primary.main',
+                            '&:hover': { textDecoration: 'underline' }
+                          }}
+                        >
+                          {userDetail.instagramId || userDetail.instagramUrl?.split('/').pop()}
+                          <OpenInNewIcon sx={{ ml: 0.5, fontSize: 16 }} />
+                        </Link>
+
+                        {/* 인스타그램 오류 상태 표시 */}
+                        {userDetail.statusAt === 'instagramerror' && (
+                          <Chip
+                            label="인스타그램 오류"
+                            size="small"
+                            color="error"
+                            sx={{ ml: 1 }}
+                          />
+                        )}
+                      </Box>
+
+                      {/* 인스타그램 오류 설정/해제 버튼 */}
+                      <Box sx={{ mt: 1 }}>
+                        {userDetail.statusAt === null || userDetail.statusAt !== 'instagramerror' ? (
+                          <Button
+                            variant="outlined"
+                            color="error"
+                            size="small"
+                            onClick={handleSetInstagramError}
+                            disabled={actionLoading}
+                            sx={{ fontSize: '0.75rem' }}
+                          >
+                            인스타그램 오류 설정
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outlined"
+                            color="success"
+                            size="small"
+                            onClick={handleResetInstagramError}
+                            disabled={actionLoading}
+                            sx={{ fontSize: '0.75rem' }}
+                          >
+                            인스타그램 오류 해제
+                          </Button>
+                        )}
+                      </Box>
+                    </Box>
                   </Box>
                 )}
 
