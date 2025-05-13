@@ -171,6 +171,19 @@ function ArticleList() {
       // 게시글 ID를 이용해 댓글 정보 가져오기
       const commentsResponse = await communityService.getComments(id);
 
+      console.log('댓글 원본 데이터:', commentsResponse?.items);
+
+      const commentsWithAuthor = commentsResponse?.items?.map((comment: any) => {
+        console.log('댓글 정보:', comment);
+        return {
+          ...comment,
+          author: {
+            id: comment.author_id ?? comment.userId ?? '',
+            name: comment.author_name ?? comment.author?.name ?? comment.nickname ?? '익명',
+          }
+        };
+      }) ?? [];
+
       // 게시글 상세 정보 구성
       const articleDetail = {
         ...selectedArticle,
@@ -179,8 +192,8 @@ function ArticleList() {
           id: selectedArticle.userId ?? '',
           name: selectedArticle.nickname ?? '익명',
         },
-        comments: commentsResponse?.items ?? [], // 댓글 API 응답에서 items 배열 사용
-        reports: [] // 신고 정보는 필요한 경우 추가
+        comments: commentsWithAuthor,
+        reports: []
       };
 
       console.log('게시글 상세 정보:', articleDetail);
@@ -312,6 +325,7 @@ function ArticleList() {
                 />
               </TableCell>
               <TableCell>작성자</TableCell>
+              <TableCell>제목</TableCell>
               <TableCell>내용</TableCell>
               <TableCell>댓글</TableCell>
               <TableCell>좋아요</TableCell>
@@ -324,13 +338,13 @@ function ArticleList() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={8} align="center">
+                <TableCell colSpan={9} align="center">
                   <CircularProgress size={24} sx={{ my: 2 }} />
                 </TableCell>
               </TableRow>
             ) : articles.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} align="center">
+                <TableCell colSpan={9} align="center">
                   게시글이 없습니다.
                 </TableCell>
               </TableRow>
@@ -359,7 +373,22 @@ function ArticleList() {
                     <Typography
                       variant="body2"
                       sx={{
-                        maxWidth: 300,
+                        maxWidth: 200,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        textDecoration: article.isBlinded ? 'line-through' : 'none',
+                        color: article.isBlinded ? 'text.disabled' : 'text.primary'
+                      }}
+                    >
+                      {article.title ?? '제목 없음'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        maxWidth: 200,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
@@ -509,6 +538,13 @@ function ArticleList() {
                 {selectedArticleDetail.isEdited && ' (수정됨)'}
               </Typography>
 
+              <Typography variant="subtitle1">게시글 제목</Typography>
+              <Paper variant="outlined" sx={{ p: 2, mb: 2, bgcolor: 'background.default' }}>
+                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+                  {selectedArticleDetail.title ?? '제목 없음'}
+                </Typography>
+              </Paper>
+
               <Typography variant="subtitle1">게시글 내용</Typography>
               <Paper variant="outlined" sx={{ p: 2, mb: 2, bgcolor: 'background.default' }}>
                 <Typography variant="body1">
@@ -571,9 +607,14 @@ function ArticleList() {
                       }}
                     >
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                          {comment.isAnonymous ? '익명' : comment.nickname}
-                        </Typography>
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {comment.isAnonymous ? '익명' : (comment.author?.name ?? comment.author_name ?? comment.nickname)}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            ID: {comment.author?.id ?? comment.author_id ?? comment.userId}
+                          </Typography>
+                        </Box>
                         <Typography variant="caption">
                           {new Date(comment.createdAt).toLocaleString()}
                         </Typography>

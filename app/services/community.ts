@@ -13,6 +13,7 @@ export interface Article {
   userId: string;
   nickname: string;
   email?: string;
+  title?: string;
   content: string;
   emoji: string;
   isAnonymous: boolean;
@@ -25,7 +26,7 @@ export interface Article {
   isEdited: boolean;
   createdAt: Date;
   updatedAt: Date;
-  author?: Author; // 작성자 정보
+  author?: Author;
 }
 
 // 댓글 타입 정의
