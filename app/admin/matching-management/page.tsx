@@ -1,150 +1,96 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { ADMIN_EMAIL } from '@/utils/config';
-import AdminService from '@/app/services/admin';
-import axiosServer from '@/utils/axios';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
-  Paper,
-  TextField,
-  Button,
-  CircularProgress,
-  Alert,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
-  Avatar,
-  Divider,
-  Card,
-  CardContent,
-  Grid,
-  Chip,
   Tabs,
-  Tab,
-  Slider,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow
+  Tab
 } from '@mui/material';
-import PersonIcon from '@mui/icons-material/Person';
+import axiosServer from '@/utils/axios';
 
-// 사용자 검색 결과 타입 (외모 등급 API 응답 구조에 맞춤)
-interface UserSearchResult {
-  id: string;
-  name: string;
-  email?: string;
-  profileImageUrl?: string;
-  age: number;
-  gender: 'MALE' | 'FEMALE';
-  appearanceGrade?: 'S' | 'A' | 'B' | 'C' | 'UNKNOWN';
-  university?: string | {
-    id: string;
-    name: string;
-    emailDomain: string;
-    isVerified: boolean;
-  };
-  universityDetails?: {
-    name: string;
-    department?: string;
-  };
+// 컴포넌트 임포트
+import UserSearch from './components/UserSearch';
+import SingleMatching from './components/SingleMatching';
+import MatchingSimulation from './components/MatchingSimulation';
+import UnmatchedUsers from './components/UnmatchedUsers';
+
+// 타입 임포트
+import { UserSearchResult, MatchingResult, MatchingSimulationResult, UnmatchedUser } from './types';
+
+// 탭 인터페이스
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
 }
 
-// 매칭 결과 타입
-interface MatchingResult {
-  success: boolean;
-  partner: UserProfile;
-  requester: UserProfile;
-  similarity: number;
+// 탭 패널 컴포넌트
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`matching-tabpanel-${index}`}
+      aria-labelledby={`matching-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ pt: 3 }}>
+          {children}
+        </Box>
+      )}
+    </div>
+  );
 }
 
-// 매칭 시뮬레이션 결과 타입 (API 응답 구조에 맞게 수정)
-interface MatchingSimulationResult {
-  success: boolean;
-  message: string;
-  requester: UserProfile;
-  potentialPartners: {
-    profile: UserProfile;
-    similarity: number;
-  }[];
-  selectedPartner: {
-    profile: UserProfile;
-    similarity: number;
-  };
-}
+export default function MatchingManagementPage() {
+  const [activeTab, setActiveTab] = useState(0);
 
-// 사용자 프로필 타입
-interface UserProfile {
-  id: string;
-  mbti?: string;
-  name: string;
-  age: number;
-  gender: string;
-  rank?: string;
-  profileImages?: {
-    id: string;
-    order: number;
-    isMain: boolean;
-    url: string;
-  }[];
-  instagramId?: string;
-  universityDetails?: {
-    name: string;
-    authentication: boolean;
-    department: string;
-    grade: string;
-    studentNumber: string;
-  };
-  preferences?: {
-    typeName: string;
-    selectedOptions: {
-      id: string;
-      displayName: string;
-    }[];
-  }[];
-}
-
-export default function MatchingManagement() {
-  const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState<number>(0);
-
-  // 공통 상태
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
-  const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(null);
-  const [searchLoading, setSearchLoading] = useState<boolean>(false);
+  // 로딩 상태
   const [error, setError] = useState<string | null>(null);
 
+  // 사용자 검색 상태
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(null);
+
   // 단일 매칭 상태
+  const [matchingLoading, setMatchingLoading] = useState(false);
   const [matchingResult, setMatchingResult] = useState<MatchingResult | null>(null);
-  const [matchingLoading, setMatchingLoading] = useState<boolean>(false);
 
   // 매칭 시뮬레이션 상태
+  const [matchLimit, setMatchLimit] = useState(5);
+  const [simulationLoading, setSimulationLoading] = useState(false);
   const [simulationResult, setSimulationResult] = useState<MatchingSimulationResult | null>(null);
-  const [simulationLoading, setSimulationLoading] = useState<boolean>(false);
-  const [matchLimit, setMatchLimit] = useState<number>(5);
   const [selectedPartnerIndex, setSelectedPartnerIndex] = useState<number | null>(null);
 
+  // 매칭 대기 사용자 상태
+  const [unmatchedUsers, setUnmatchedUsers] = useState<UnmatchedUser[]>([]);
+  const [unmatchedUsersLoading, setUnmatchedUsersLoading] = useState(false);
+  const [unmatchedUsersError, setUnmatchedUsersError] = useState<string | null>(null);
+  const [unmatchedUsersTotalCount, setUnmatchedUsersTotalCount] = useState(0);
+  const [unmatchedUsersPage, setUnmatchedUsersPage] = useState(0);
+  const [unmatchedUsersLimit, setUnmatchedUsersLimit] = useState(10);
+  const [unmatchedUsersSearchTerm, setUnmatchedUsersSearchTerm] = useState('');
+  const [unmatchedUsersGenderFilter, setUnmatchedUsersGenderFilter] = useState('all');
+  const [selectedUnmatchedUser, setSelectedUnmatchedUser] = useState<UnmatchedUser | null>(null);
+
+  // 페이지 초기화
+  useEffect(() => {
+    // 필요한 초기화 작업 수행
+  }, []);
+
   // 탭 변경 핸들러
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
-    // 탭 변경 시 결과 초기화
-    if (newValue === 0) {
-      setSimulationResult(null);
-    } else {
-      setMatchingResult(null);
+
+    // 매칭 대기 사용자 탭으로 이동할 때 데이터 로드
+    if (newValue === 2 && unmatchedUsers.length === 0) {
+      fetchUnmatchedUsers();
     }
   };
 
@@ -155,35 +101,59 @@ export default function MatchingManagement() {
       return;
     }
 
-    try {
-      setSearchLoading(true);
-      setError(null);
+    setSearchLoading(true);
+    setError(null);
 
-      // 사용자 검색 API 호출 - 올바른 엔드포인트와 파라미터 사용
+    try {
+      // API 요청 시 axiosServer 사용
       const response = await axiosServer.get('/admin/users/appearance', {
         params: {
           page: 1,
           limit: 10,
-          searchTerm: searchTerm.trim()
+          searchTerm: searchTerm
         }
       });
 
       console.log('사용자 검색 응답:', response.data);
 
-      // 응답 데이터 구조에 맞게 처리
-      const users = response.data.items || [];
-      setSearchResults(users);
+      let results = [];
 
-      if (users.length === 0) {
-        setError('검색 결과가 없습니다.');
+      if (response.data && response.data.items && Array.isArray(response.data.items)) {
+        // API가 { items: [...] } 형태로 응답할 경우
+        results = response.data.items;
+      } else if (response.data && Array.isArray(response.data)) {
+        results = response.data;
+      }
+
+      setSearchResults(results);
+
+      // 검색 결과가 없는 경우 명확한 메시지 표시
+      if (results.length === 0) {
+        setError(`"${searchTerm}" 검색 결과가 없습니다. 다른 이름으로 검색해보세요.`);
+      } else {
+        setError(null); // 검색 결과가 있으면 에러 메시지 초기화
       }
     } catch (err: any) {
-      console.error('사용자 검색 중 오류:', err);
-      setError(err.message || '사용자 검색 중 오류가 발생했습니다.');
+      console.error('사용자 검색 오류:', err);
+
+      // 서버에서 받은 에러 메시지 표시
+      const errorMessage = err.response?.data?.message ||
+                          err.response?.data?.error ||
+                          err.message ||
+                          '사용자 검색 중 오류가 발생했습니다.';
+
+      setError(errorMessage);
       setSearchResults([]);
     } finally {
       setSearchLoading(false);
     }
+  };
+
+  // 사용자 선택 핸들러
+  const handleUserSelect = (user: UserSearchResult) => {
+    setSelectedUser(user);
+    setMatchingResult(null);
+    setSimulationResult(null);
   };
 
   // 단일 매칭 처리 함수
@@ -193,615 +163,239 @@ export default function MatchingManagement() {
       return;
     }
 
-    try {
-      setMatchingLoading(true);
-      setError(null);
-      setMatchingResult(null);
+    setMatchingLoading(true);
+    setError(null);
 
-      // 단일 매칭 API 호출
-      const result = await AdminService.matching.processSingleMatching(selectedUser.id);
-      setMatchingResult(result);
+    try {
+      const response = await axiosServer.post('/admin/matching/user', {
+        userId: selectedUser.id
+      });
+
+      console.log('매칭 처리 응답:', response.data);
+      setMatchingResult(response.data);
     } catch (err: any) {
-      console.error('매칭 처리 중 오류:', err);
-      setError(err.message || '매칭 처리 중 오류가 발생했습니다.');
+      console.error('매칭 처리 오류:', err);
+
+      // 서버에서 받은 에러 메시지 표시
+      const errorMessage = err.response?.data?.message ||
+                          err.response?.data?.error ||
+                          err.message ||
+                          '매칭 처리 중 오류가 발생했습니다.';
+
+      setError(errorMessage);
     } finally {
       setMatchingLoading(false);
     }
   };
 
-  // 매칭 시뮬레이션 함수
+  // 매칭 시뮬레이션 실행 함수
   const runMatchingSimulation = async () => {
     if (!selectedUser) {
-      setError('매칭 시뮬레이션할 사용자를 선택해주세요.');
+      setError('매칭 시뮬레이션을 실행할 사용자를 선택해주세요.');
       return;
     }
 
-    try {
-      setSimulationLoading(true);
-      setError(null);
-      setSimulationResult(null);
-      setSelectedPartnerIndex(null); // 선택된 파트너 인덱스 초기화
+    setSimulationLoading(true);
+    setError(null);
+    setSelectedPartnerIndex(null);
 
-      // 매칭 시뮬레이션 API 호출
+    try {
+      // POST 메서드로 변경하고 요청 본문에 파라미터 포함
       const response = await axiosServer.post('/admin/matching/user/read', {
         userId: selectedUser.id,
         limit: matchLimit
       });
 
       console.log('매칭 시뮬레이션 응답:', response.data);
-
-      // API 응답 데이터를 그대로 사용
       setSimulationResult(response.data);
     } catch (err: any) {
-      console.error('매칭 시뮬레이션 중 오류:', err);
-      setError(err.message || '매칭 시뮬레이션 중 오류가 발생했습니다.');
+      console.error('매칭 시뮬레이션 오류:', err);
+
+      // 서버에서 받은 에러 메시지 표시
+      const errorMessage = err.response?.data?.message ||
+                          err.response?.data?.error ||
+                          err.message ||
+                          '매칭 시뮬레이션 중 오류가 발생했습니다.';
+
+      setError(errorMessage);
     } finally {
       setSimulationLoading(false);
     }
   };
 
-  // 파트너 선택 핸들러
+  // 매칭 파트너 선택 핸들러
   const handlePartnerSelect = (index: number) => {
-    setSelectedPartnerIndex(index);
+    setSelectedPartnerIndex(index === -1 ? null : index);
   };
 
-  // 사용자 선택 함수
-  const handleUserSelect = (user: UserSearchResult) => {
-    setSelectedUser(user);
-    setMatchingResult(null); // 새 사용자 선택 시 이전 매칭 결과 초기화
+  // 매칭 대기 사용자 조회 함수
+  const fetchUnmatchedUsers = async () => {
+    setUnmatchedUsersLoading(true);
+    setUnmatchedUsersError(null);
+
+    try {
+      const response = await axiosServer.get('/admin/matching/unmatched-users', {
+        params: {
+          page: unmatchedUsersPage,
+          limit: unmatchedUsersLimit,
+          name: unmatchedUsersSearchTerm || undefined,
+          gender: unmatchedUsersGenderFilter !== 'all' ? unmatchedUsersGenderFilter : undefined
+        }
+      });
+
+      console.log('매칭 대기 사용자 조회 응답:', response.data);
+      setUnmatchedUsers(response.data.users || []);
+      setUnmatchedUsersTotalCount(response.data.totalCount || 0);
+    } catch (err: any) {
+      console.error('매칭 대기 사용자 조회 오류:', err);
+
+      // 서버에서 받은 에러 메시지 표시
+      const errorMessage = err.response?.data?.message ||
+                          err.response?.data?.error ||
+                          err.message ||
+                          '매칭 대기 사용자 조회 중 오류가 발생했습니다.';
+
+      setUnmatchedUsersError(errorMessage);
+      setUnmatchedUsers([]);
+    } finally {
+      setUnmatchedUsersLoading(false);
+    }
   };
 
-  // 인증 확인
-  if (authLoading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  // 매칭 대기 사용자 검색 핸들러
+  const handleUnmatchedUsersSearch = () => {
+    setUnmatchedUsersPage(0);
+    fetchUnmatchedUsers();
+  };
 
-  if (!user || (user.email !== process.env.NEXT_PUBLIC_DEFAULT_ADMIN_EMAIL && user.email !== ADMIN_EMAIL)) {
-    router.push('/');
-    return null;
-  }
+  // 매칭 대기 사용자 페이지 변경 핸들러
+  const handleUnmatchedUsersPageChange = (_: unknown, newPage: number) => {
+    setUnmatchedUsersPage(newPage);
+    fetchUnmatchedUsers();
+  };
+
+  // 매칭 대기 사용자 페이지당 항목 수 변경 핸들러
+  const handleUnmatchedUsersLimitChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setUnmatchedUsersLimit(parseInt(event.target.value, 10));
+    setUnmatchedUsersPage(0);
+    fetchUnmatchedUsers();
+  };
+
+  // 매칭 대기 사용자 선택 핸들러
+  const handleUnmatchedUserSelect = (user: UnmatchedUser) => {
+    setSelectedUnmatchedUser(user);
+  };
+
+  // 매칭 대기 사용자 매칭 처리 함수
+  const processUnmatchedUserMatching = async () => {
+    if (!selectedUnmatchedUser) {
+      setUnmatchedUsersError('매칭할 사용자를 선택해주세요.');
+      return;
+    }
+
+    setUnmatchedUsersLoading(true);
+    setUnmatchedUsersError(null);
+
+    try {
+      const response = await axiosServer.post('/admin/matching/user', {
+        userId: selectedUnmatchedUser.id
+      });
+
+      console.log('매칭 대기 사용자 매칭 처리 응답:', response.data);
+
+      // 매칭 성공 후 목록 새로고침
+      fetchUnmatchedUsers();
+      setSelectedUnmatchedUser(null);
+    } catch (err: any) {
+      console.error('매칭 처리 오류:', err);
+
+      // 서버에서 받은 에러 메시지 표시
+      const errorMessage = err.response?.data?.message ||
+                          err.response?.data?.error ||
+                          err.message ||
+                          '매칭 처리 중 오류가 발생했습니다.';
+
+      setUnmatchedUsersError(errorMessage);
+    } finally {
+      setUnmatchedUsersLoading(false);
+    }
+  };
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h4" gutterBottom>
+      <Typography variant="h5" gutterBottom>
         매칭 관리
       </Typography>
 
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={activeTab} onChange={handleTabChange} aria-label="매칭 관리 탭">
-          <Tab label="단일 매칭 처리" />
-          <Tab label="매칭 시뮬레이션" />
-        </Tabs>
-      </Box>
+      <Tabs value={activeTab} onChange={handleTabChange} aria-label="매칭 관리 탭">
+        <Tab label="단일 매칭" />
+        <Tab label="매칭 시뮬레이션" />
+        <Tab label="매칭 대기 사용자" />
+      </Tabs>
 
-      {/* 공통 검색 영역 */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <TextField
-            label="사용자 이름 검색"
-            variant="outlined"
-            size="small"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            sx={{ mr: 2, flexGrow: 1 }}
-          />
-          <Button
-            variant="contained"
-            onClick={searchUsers}
-            disabled={searchLoading}
-          >
-            {searchLoading ? <CircularProgress size={24} /> : '검색'}
-          </Button>
-        </Box>
+      <TabPanel value={activeTab} index={0}>
+        <UserSearch
+          searchTerm={searchTerm}
+          searchLoading={searchLoading}
+          error={error}
+          searchResults={searchResults}
+          selectedUser={selectedUser}
+          setSearchTerm={setSearchTerm}
+          searchUsers={searchUsers}
+          handleUserSelect={handleUserSelect}
+        />
+        <SingleMatching
+          selectedUser={selectedUser}
+          matchingLoading={matchingLoading}
+          matchingResult={matchingResult}
+          processSingleMatching={processSingleMatching}
+        />
+      </TabPanel>
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
+      <TabPanel value={activeTab} index={1}>
+        <UserSearch
+          searchTerm={searchTerm}
+          searchLoading={searchLoading}
+          error={error}
+          searchResults={searchResults}
+          selectedUser={selectedUser}
+          setSearchTerm={setSearchTerm}
+          searchUsers={searchUsers}
+          handleUserSelect={handleUserSelect}
+        />
+        <MatchingSimulation
+          selectedUser={selectedUser}
+          simulationLoading={simulationLoading}
+          simulationResult={simulationResult}
+          matchLimit={matchLimit}
+          selectedPartnerIndex={selectedPartnerIndex}
+          setMatchLimit={setMatchLimit}
+          runMatchingSimulation={runMatchingSimulation}
+          handlePartnerSelect={handlePartnerSelect}
+        />
+      </TabPanel>
 
-        {/* 검색 결과 목록 */}
-        {searchResults.length > 0 && (
-          <Paper variant="outlined" sx={{ mb: 3, maxHeight: 300, overflow: 'auto' }}>
-            <List>
-              {searchResults.map((user) => (
-                <ListItem
-                  key={user.id}
-                  button
-                  selected={selectedUser?.id === user.id}
-                  onClick={() => handleUserSelect(user)}
-                >
-                  <ListItemAvatar>
-                    <Avatar src={user.profileImageUrl}>
-                      <PersonIcon />
-                    </Avatar>
-                  </ListItemAvatar>
-                  <ListItemText
-                    primary={
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Typography component="span">
-                          {user.name} ({user.age}세, {user.gender === 'MALE' ? '남성' : '여성'})
-                        </Typography>
-                        {user.appearanceGrade && (
-                          <Chip
-                            size="small"
-                            label={user.appearanceGrade}
-                            color={
-                              user.appearanceGrade === 'S' ? 'secondary' :
-                              user.appearanceGrade === 'A' ? 'primary' :
-                              user.appearanceGrade === 'B' ? 'success' :
-                              user.appearanceGrade === 'C' ? 'warning' : 'default'
-                            }
-                            sx={{ ml: 1, height: 20, fontSize: '0.7rem' }}
-                          />
-                        )}
-                      </Box>
-                    }
-                    secondary={
-                      // 대학교 정보 표시 (여러 필드 구조 지원)
-                      user.university ? (
-                        typeof user.university === 'string' ? user.university : user.university.name
-                      ) : user.universityDetails?.name ?
-                        `${user.universityDetails.name} ${user.universityDetails.department || ''}` :
-                        '대학 정보 없음'
-                    }
-                  />
-                </ListItem>
-              ))}
-            </List>
-          </Paper>
-        )}
-
-        {/* 선택된 사용자 정보 */}
-        {selectedUser && (
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              선택된 사용자:
-            </Typography>
-            <Paper variant="outlined" sx={{ p: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Avatar src={selectedUser.profileImageUrl} sx={{ mr: 2 }}>
-                  <PersonIcon />
-                </Avatar>
-                <Box sx={{ flexGrow: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Typography variant="body1">
-                      {selectedUser.name} ({selectedUser.age}세, {selectedUser.gender === 'MALE' ? '남성' : '여성'})
-                    </Typography>
-                    {selectedUser.appearanceGrade && (
-                      <Chip
-                        size="small"
-                        label={selectedUser.appearanceGrade}
-                        color={
-                          selectedUser.appearanceGrade === 'S' ? 'secondary' :
-                          selectedUser.appearanceGrade === 'A' ? 'primary' :
-                          selectedUser.appearanceGrade === 'B' ? 'success' :
-                          selectedUser.appearanceGrade === 'C' ? 'warning' : 'default'
-                        }
-                        sx={{ ml: 1, height: 20, fontSize: '0.7rem' }}
-                      />
-                    )}
-                  </Box>
-                  <Typography variant="body2" color="textSecondary">
-                    {selectedUser.university ? (
-                      typeof selectedUser.university === 'string' ?
-                        selectedUser.university :
-                        selectedUser.university.name
-                    ) : selectedUser.universityDetails?.name ?
-                      `${selectedUser.universityDetails.name} ${selectedUser.universityDetails.department || ''}` :
-                      '대학 정보 없음'}
-                  </Typography>
-                </Box>
-              </Box>
-            </Paper>
-
-            {/* 탭에 따라 다른 버튼 표시 */}
-            {activeTab === 0 ? (
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={processSingleMatching}
-                disabled={matchingLoading}
-                sx={{ mt: 2 }}
-                fullWidth
-              >
-                {matchingLoading ? <CircularProgress size={24} /> : '매칭 실행'}
-              </Button>
-            ) : (
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="subtitle2" gutterBottom>
-                  매칭 결과 수 제한 (1-20):
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Slider
-                    value={matchLimit}
-                    onChange={(_, newValue) => setMatchLimit(newValue as number)}
-                    min={1}
-                    max={20}
-                    step={1}
-                    valueLabelDisplay="auto"
-                    sx={{ mr: 2, flexGrow: 1 }}
-                  />
-                  <Typography variant="body2" sx={{ minWidth: 40, textAlign: 'right' }}>
-                    {matchLimit}명
-                  </Typography>
-                </Box>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={runMatchingSimulation}
-                  disabled={simulationLoading}
-                  fullWidth
-                >
-                  {simulationLoading ? <CircularProgress size={24} /> : '매칭 시뮬레이션 실행'}
-                </Button>
-              </Box>
-            )}
-          </Box>
-        )}
-
-        {/* 단일 매칭 결과 - 첫 번째 탭에서만 표시 */}
-        {activeTab === 0 && matchingResult && (
-          <Box sx={{ mt: 4 }}>
-            <Typography variant="h6" gutterBottom>
-              매칭 결과
-            </Typography>
-            {matchingResult.success ? (
-              <>
-                <Alert severity="success" sx={{ mb: 2 }}>
-                  매칭 성공! 유사도: {(matchingResult.similarity * 100).toFixed(1)}%
-                </Alert>
-                <Grid container spacing={3}>
-                  {/* 요청자 정보 */}
-                  <Grid item xs={12} md={6}>
-                    <Card>
-                      <CardContent>
-                        <Typography variant="h6" gutterBottom>
-                          요청자 정보
-                        </Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                          <Avatar
-                            src={matchingResult.requester.profileImages?.find(img => img.isMain)?.url}
-                            sx={{ width: 64, height: 64, mr: 2 }}
-                          >
-                            <PersonIcon />
-                          </Avatar>
-                          <Box>
-                            <Typography variant="body1">
-                              {matchingResult.requester.name} ({matchingResult.requester.age}세)
-                            </Typography>
-                            <Typography variant="body2" color="textSecondary">
-                              {matchingResult.requester.gender === 'MALE' ? '남성' : '여성'}
-                              {matchingResult.requester.rank && ` • ${matchingResult.requester.rank}등급`}
-                              {matchingResult.requester.mbti && ` • ${matchingResult.requester.mbti}`}
-                            </Typography>
-                          </Box>
-                        </Box>
-                        <Divider sx={{ mb: 2 }} />
-                        <Typography variant="body2">
-                          {matchingResult.requester.universityDetails?.name} {matchingResult.requester.universityDetails?.department}
-                        </Typography>
-                        <Typography variant="body2" color="textSecondary" gutterBottom>
-                          {matchingResult.requester.universityDetails?.grade} {matchingResult.requester.universityDetails?.studentNumber}
-                        </Typography>
-
-                        {/* 선호 조건 */}
-                        {matchingResult.requester.preferences && matchingResult.requester.preferences.length > 0 && (
-                          <Box sx={{ mt: 2 }}>
-                            <Typography variant="subtitle2" gutterBottom>
-                              선호 조건:
-                            </Typography>
-                            {matchingResult.requester.preferences.map((pref, index) => (
-                              <Box key={index} sx={{ mb: 1 }}>
-                                <Typography variant="body2" color="textSecondary">
-                                  {pref.typeName}:
-                                </Typography>
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                  {pref.selectedOptions.map(option => (
-                                    <Chip
-                                      key={option.id}
-                                      label={option.displayName}
-                                      size="small"
-                                      sx={{ mb: 0.5 }}
-                                    />
-                                  ))}
-                                </Box>
-                              </Box>
-                            ))}
-                          </Box>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </Grid>
-
-                  {/* 매칭 상대 정보 */}
-                  <Grid item xs={12} md={6}>
-                    <Card>
-                      <CardContent>
-                        <Typography variant="h6" gutterBottom>
-                          매칭 상대 정보
-                        </Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                          <Avatar
-                            src={matchingResult.partner.profileImages?.find(img => img.isMain)?.url}
-                            sx={{ width: 64, height: 64, mr: 2 }}
-                          >
-                            <PersonIcon />
-                          </Avatar>
-                          <Box>
-                            <Typography variant="body1">
-                              {matchingResult.partner.name} ({matchingResult.partner.age}세)
-                            </Typography>
-                            <Typography variant="body2" color="textSecondary">
-                              {matchingResult.partner.gender === 'MALE' ? '남성' : '여성'}
-                              {matchingResult.partner.rank && ` • ${matchingResult.partner.rank}등급`}
-                              {matchingResult.partner.mbti && ` • ${matchingResult.partner.mbti}`}
-                            </Typography>
-                          </Box>
-                        </Box>
-                        <Divider sx={{ mb: 2 }} />
-                        <Typography variant="body2">
-                          {matchingResult.partner.universityDetails?.name} {matchingResult.partner.universityDetails?.department}
-                        </Typography>
-                        <Typography variant="body2" color="textSecondary" gutterBottom>
-                          {matchingResult.partner.universityDetails?.grade} {matchingResult.partner.universityDetails?.studentNumber}
-                        </Typography>
-
-                        {/* 선호 조건 */}
-                        {matchingResult.partner.preferences && matchingResult.partner.preferences.length > 0 && (
-                          <Box sx={{ mt: 2 }}>
-                            <Typography variant="subtitle2" gutterBottom>
-                              선호 조건:
-                            </Typography>
-                            {matchingResult.partner.preferences.map((pref, index) => (
-                              <Box key={index} sx={{ mb: 1 }}>
-                                <Typography variant="body2" color="textSecondary">
-                                  {pref.typeName}:
-                                </Typography>
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                  {pref.selectedOptions.map(option => (
-                                    <Chip
-                                      key={option.id}
-                                      label={option.displayName}
-                                      size="small"
-                                      sx={{ mb: 0.5 }}
-                                    />
-                                  ))}
-                                </Box>
-                              </Box>
-                            ))}
-                          </Box>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                </Grid>
-              </>
-            ) : (
-              <Alert severity="error">
-                매칭 실패: {matchingResult.success === false ? '적합한 매칭 상대를 찾을 수 없습니다.' : '알 수 없는 오류가 발생했습니다.'}
-              </Alert>
-            )}
-          </Box>
-        )}
-
-        {/* 매칭 시뮬레이션 결과 - 두 번째 탭에서만 표시 */}
-        {activeTab === 1 && simulationResult && (
-          <Box sx={{ mt: 4 }}>
-            <Typography variant="h6" gutterBottom>
-              매칭 시뮬레이션 결과
-            </Typography>
-
-            {simulationResult.success ? (
-              <>
-                <Alert severity="info" sx={{ mb: 2 }}>
-                  {simulationResult.message}
-                </Alert>
-
-                {/* 선택된 매칭 상대 (최적 매칭 또는 사용자가 선택한 매칭) */}
-                <Box sx={{ mb: 4 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography variant="subtitle1">
-                      {selectedPartnerIndex === null ? '최적 매칭 상대:' : `선택한 매칭 상대 (#${selectedPartnerIndex + 1}):`}
-                    </Typography>
-                    {selectedPartnerIndex !== null && (
-                      <Button
-                        size="small"
-                        variant="outlined"
-                        onClick={() => setSelectedPartnerIndex(null)}
-                      >
-                        최적 매칭 상대로 돌아가기
-                      </Button>
-                    )}
-                  </Box>
-                  <Card>
-                    <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-                        {/* 선택된 파트너 정보 표시 */}
-                        {(() => {
-                          // 표시할 파트너 정보 결정
-                          const partnerInfo = selectedPartnerIndex !== null && simulationResult.potentialPartners[selectedPartnerIndex]
-                            ? simulationResult.potentialPartners[selectedPartnerIndex]
-                            : simulationResult.selectedPartner;
-
-                          return (
-                            <>
-                              <Avatar
-                                src={partnerInfo.profile.profileImages?.find(img => img.isMain)?.url}
-                                sx={{ width: 80, height: 80, mr: 2 }}
-                              >
-                                <PersonIcon />
-                              </Avatar>
-                              <Box sx={{ flexGrow: 1 }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                  <Typography variant="h6">
-                                    {partnerInfo.profile.name}
-                                  </Typography>
-                                  <Chip
-                                    size="small"
-                                    label={partnerInfo.profile.rank}
-                                    color={
-                                      partnerInfo.profile.rank === 'S' ? 'secondary' :
-                                      partnerInfo.profile.rank === 'A' ? 'primary' :
-                                      partnerInfo.profile.rank === 'B' ? 'success' :
-                                      partnerInfo.profile.rank === 'C' ? 'warning' : 'default'
-                                    }
-                                    sx={{ ml: 1, height: 20, fontSize: '0.7rem' }}
-                                  />
-                                  <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center' }}>
-                                    <Typography variant="body2" fontWeight="bold" color="primary">
-                                      유사도: {(partnerInfo.similarity * 100).toFixed(1)}%
-                                    </Typography>
-                                  </Box>
-                                </Box>
-
-                                <Typography variant="body2" sx={{ mb: 1 }}>
-                                  {partnerInfo.profile.age}세 / {partnerInfo.profile.gender === 'MALE' ? '남성' : '여성'}
-                                  {partnerInfo.profile.mbti && ` • ${partnerInfo.profile.mbti}`}
-                                </Typography>
-
-                                <Typography variant="body2" sx={{ mb: 1 }}>
-                                  {partnerInfo.profile.universityDetails?.name} {partnerInfo.profile.universityDetails?.department}
-                                  {partnerInfo.profile.universityDetails?.grade && ` • ${partnerInfo.profile.universityDetails?.grade}`}
-                                  {partnerInfo.profile.universityDetails?.studentNumber && ` • ${partnerInfo.profile.universityDetails?.studentNumber}`}
-                                </Typography>
-
-                                {/* 선호 조건 */}
-                                {partnerInfo.profile.preferences && partnerInfo.profile.preferences.length > 0 && (
-                                  <Box sx={{ mt: 2 }}>
-                                    <Typography variant="subtitle2" gutterBottom>
-                                      선호 조건:
-                                    </Typography>
-                                    <Grid container spacing={1}>
-                                      {partnerInfo.profile.preferences.map((pref, index) => (
-                                        <Grid item xs={12} sm={6} key={index}>
-                                          <Typography variant="body2" color="textSecondary">
-                                            {pref.typeName}:
-                                          </Typography>
-                                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                            {pref.selectedOptions.map(option => (
-                                              <Chip
-                                                key={option.id}
-                                                label={option.displayName}
-                                                size="small"
-                                                sx={{ mb: 0.5 }}
-                                              />
-                                            ))}
-                                          </Box>
-                                        </Grid>
-                                      ))}
-                                    </Grid>
-                                  </Box>
-                                )}
-                              </Box>
-                            </>
-                          );
-                        })()}
-                      </Box>
-                    </CardContent>
-                  </Card>
-                </Box>
-
-                {/* 잠재적 매칭 상대 목록 */}
-                {simulationResult.potentialPartners && simulationResult.potentialPartners.length > 0 && (
-                  <Box>
-                    <Typography variant="subtitle1" gutterBottom>
-                      잠재적 매칭 상대 목록:
-                    </Typography>
-                    <TableContainer component={Paper}>
-                      <Table>
-                        <TableHead>
-                          <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                            <TableCell>순위</TableCell>
-                            <TableCell>프로필</TableCell>
-                            <TableCell>이름</TableCell>
-                            <TableCell>나이/성별</TableCell>
-                            <TableCell>대학교</TableCell>
-                            <TableCell>유사도</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {simulationResult.potentialPartners.map((partner, index) => (
-                            <TableRow
-                              key={partner.profile.id}
-                              hover
-                              onClick={() => handlePartnerSelect(index)}
-                              sx={{
-                                cursor: 'pointer',
-                                backgroundColor: selectedPartnerIndex === index ? 'rgba(25, 118, 210, 0.08)' : 'inherit'
-                              }}
-                            >
-                              <TableCell>{index + 1}</TableCell>
-                              <TableCell>
-                                <Avatar src={partner.profile.profileImages?.find(img => img.isMain)?.url}>
-                                  <PersonIcon />
-                                </Avatar>
-                              </TableCell>
-                              <TableCell>
-                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                  {partner.profile.name}
-                                  {partner.profile.rank && (
-                                    <Chip
-                                      size="small"
-                                      label={partner.profile.rank}
-                                      color={
-                                        partner.profile.rank === 'S' ? 'secondary' :
-                                        partner.profile.rank === 'A' ? 'primary' :
-                                        partner.profile.rank === 'B' ? 'success' :
-                                        partner.profile.rank === 'C' ? 'warning' : 'default'
-                                      }
-                                      sx={{ ml: 1, height: 20, fontSize: '0.7rem' }}
-                                    />
-                                  )}
-                                </Box>
-                              </TableCell>
-                              <TableCell>{partner.profile.age}세 / {partner.profile.gender === 'MALE' ? '남성' : '여성'}</TableCell>
-                              <TableCell>{partner.profile.universityDetails?.name || '정보 없음'}</TableCell>
-                              <TableCell>
-                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                  <Box
-                                    sx={{
-                                      width: 60,
-                                      bgcolor: 'grey.300',
-                                      mr: 1,
-                                      borderRadius: 1,
-                                      position: 'relative'
-                                    }}
-                                  >
-                                    <Box
-                                      sx={{
-                                        width: `${partner.similarity * 100}%`,
-                                        height: 8,
-                                        bgcolor: partner.similarity > 0.7 ? 'success.main' : partner.similarity > 0.5 ? 'primary.main' : 'warning.main',
-                                        borderRadius: 1
-                                      }}
-                                    />
-                                  </Box>
-                                  <Typography variant="body2">
-                                    {(partner.similarity * 100).toFixed(1)}%
-                                  </Typography>
-                                </Box>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-                  </Box>
-                )}
-              </>
-            ) : (
-              <Alert severity="warning">
-                {simulationResult.message || '매칭 가능한 사용자를 찾을 수 없습니다.'}
-              </Alert>
-            )}
-          </Box>
-        )}
-      </Paper>
+      <TabPanel value={activeTab} index={2}>
+        <UnmatchedUsers
+          unmatchedUsers={unmatchedUsers}
+          unmatchedUsersLoading={unmatchedUsersLoading}
+          unmatchedUsersError={unmatchedUsersError}
+          unmatchedUsersTotalCount={unmatchedUsersTotalCount}
+          unmatchedUsersPage={unmatchedUsersPage}
+          unmatchedUsersLimit={unmatchedUsersLimit}
+          unmatchedUsersSearchTerm={unmatchedUsersSearchTerm}
+          unmatchedUsersGenderFilter={unmatchedUsersGenderFilter}
+          selectedUnmatchedUser={selectedUnmatchedUser}
+          setUnmatchedUsersSearchTerm={setUnmatchedUsersSearchTerm}
+          setUnmatchedUsersGenderFilter={setUnmatchedUsersGenderFilter}
+          handleUnmatchedUsersSearch={handleUnmatchedUsersSearch}
+          handleUnmatchedUsersPageChange={handleUnmatchedUsersPageChange}
+          handleUnmatchedUsersLimitChange={handleUnmatchedUsersLimitChange}
+          handleUnmatchedUserSelect={handleUnmatchedUserSelect}
+          processUnmatchedUserMatching={processUnmatchedUserMatching}
+          fetchUnmatchedUsers={fetchUnmatchedUsers}
+        />
+      </TabPanel>
     </Box>
   );
 }
