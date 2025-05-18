@@ -73,7 +73,7 @@ export default function MatchingManagementPage() {
   const [unmatchedUsersLoading, setUnmatchedUsersLoading] = useState(false);
   const [unmatchedUsersError, setUnmatchedUsersError] = useState<string | null>(null);
   const [unmatchedUsersTotalCount, setUnmatchedUsersTotalCount] = useState(0);
-  const [unmatchedUsersPage, setUnmatchedUsersPage] = useState(0);
+  const [unmatchedUsersPage, setUnmatchedUsersPage] = useState(1);
   const [unmatchedUsersLimit, setUnmatchedUsersLimit] = useState(10);
   const [unmatchedUsersSearchTerm, setUnmatchedUsersSearchTerm] = useState('');
   const [unmatchedUsersGenderFilter, setUnmatchedUsersGenderFilter] = useState('all');
@@ -244,8 +244,23 @@ export default function MatchingManagementPage() {
       });
 
       console.log('매칭 대기 사용자 조회 응답:', response.data);
-      setUnmatchedUsers(response.data.users || []);
-      setUnmatchedUsersTotalCount(response.data.totalCount || 0);
+
+      // 새로운 응답 형식에 맞게 처리
+      if (response.data.items && Array.isArray(response.data.items)) {
+        setUnmatchedUsers(response.data.items);
+      } else if (response.data.users && Array.isArray(response.data.users)) {
+        // 이전 형식 지원
+        setUnmatchedUsers(response.data.users);
+      } else {
+        setUnmatchedUsers([]);
+      }
+
+      // 메타 정보 처리
+      if (response.data.meta) {
+        setUnmatchedUsersTotalCount(response.data.meta.totalItems || 0);
+      } else {
+        setUnmatchedUsersTotalCount(response.data.totalCount || 0);
+      }
     } catch (err: any) {
       console.error('매칭 대기 사용자 조회 오류:', err);
 
@@ -264,7 +279,7 @@ export default function MatchingManagementPage() {
 
   // 매칭 대기 사용자 검색 핸들러
   const handleUnmatchedUsersSearch = () => {
-    setUnmatchedUsersPage(0);
+    setUnmatchedUsersPage(1); // 페이지 번호를 1로 설정
     fetchUnmatchedUsers();
   };
 
@@ -277,7 +292,7 @@ export default function MatchingManagementPage() {
   // 매칭 대기 사용자 페이지당 항목 수 변경 핸들러
   const handleUnmatchedUsersLimitChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setUnmatchedUsersLimit(parseInt(event.target.value, 10));
-    setUnmatchedUsersPage(0);
+    setUnmatchedUsersPage(1); // 페이지 번호를 1로 설정
     fetchUnmatchedUsers();
   };
 

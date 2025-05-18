@@ -52,8 +52,12 @@ export interface UnmatchedUser {
   profileImageUrl?: string;
   university?: string;
   department?: string;
-  createdAt: string;
-  waitingSince: string;
+  joinedAt: string;  // 새로운 필드
+  failureReason?: string;  // 새로운 필드
+  failureDate?: string | null;  // 새로운 필드
+  // 이전 필드들도 지원
+  createdAt?: string;
+  waitingSince?: string;
   appearanceGrade?: string;
 }
 

@@ -6,7 +6,6 @@ import {
   Alert,
   CircularProgress,
   Avatar,
-  Chip,
   Paper,
   TextField,
   FormControl,
@@ -28,8 +27,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import SearchIcon from '@mui/icons-material/Search';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import FilterListIcon from '@mui/icons-material/FilterList';
-import { format, formatDistance } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { format } from 'date-fns';
 import { UnmatchedUser } from '../types';
 
 interface UnmatchedUsersProps {
@@ -155,10 +153,9 @@ const UnmatchedUsers: React.FC<UnmatchedUsersProps> = ({
                   <TableCell>ID</TableCell>
                   <TableCell>이름</TableCell>
                   <TableCell>나이/성별</TableCell>
-                  <TableCell>대학교/학과</TableCell>
                   <TableCell>가입일</TableCell>
-                  <TableCell>대기 기간</TableCell>
-                  <TableCell>등급</TableCell>
+                  <TableCell>실패 사유</TableCell>
+                  <TableCell>실패 일시</TableCell>
                   <TableCell>액션</TableCell>
                 </TableRow>
               </TableHead>
@@ -182,24 +179,15 @@ const UnmatchedUsers: React.FC<UnmatchedUsersProps> = ({
                         </Box>
                       </TableCell>
                       <TableCell>{user.age}세 / {user.gender === 'MALE' ? '남성' : '여성'}</TableCell>
-                      <TableCell>{user.university} {user.department ? `/ ${user.department}` : ''}</TableCell>
-                      <TableCell>{format(new Date(user.createdAt), 'yyyy-MM-dd')}</TableCell>
                       <TableCell>
-                        {formatDistance(new Date(user.waitingSince), new Date(), { locale: ko, addSuffix: true })}
+                        {user.joinedAt ? format(new Date(user.joinedAt), 'yyyy-MM-dd') :
+                         user.createdAt ? format(new Date(user.createdAt), 'yyyy-MM-dd') : '정보 없음'}
                       </TableCell>
                       <TableCell>
-                        {user.appearanceGrade && (
-                          <Chip
-                            size="small"
-                            label={user.appearanceGrade}
-                            color={
-                              user.appearanceGrade === 'S' ? 'secondary' :
-                              user.appearanceGrade === 'A' ? 'primary' :
-                              user.appearanceGrade === 'B' ? 'success' :
-                              user.appearanceGrade === 'C' ? 'warning' : 'default'
-                            }
-                          />
-                        )}
+                        {user.failureReason || '정보 없음'}
+                      </TableCell>
+                      <TableCell>
+                        {user.failureDate ? format(new Date(user.failureDate), 'yyyy-MM-dd HH:mm') : '없음'}
                       </TableCell>
                       <TableCell>
                         <Button
@@ -231,8 +219,8 @@ const UnmatchedUsers: React.FC<UnmatchedUsersProps> = ({
           <TablePagination
             component="div"
             count={unmatchedUsersTotalCount}
-            page={unmatchedUsersPage}
-            onPageChange={handleUnmatchedUsersPageChange}
+            page={unmatchedUsersPage - 1} // MUI는 0부터 시작하므로 1을 빼줌
+            onPageChange={(_, newPage) => handleUnmatchedUsersPageChange(_, newPage + 1)} // MUI는 0부터 시작하므로 1을 더해줌
             rowsPerPage={unmatchedUsersLimit}
             onRowsPerPageChange={handleUnmatchedUsersLimitChange}
             rowsPerPageOptions={[5, 10, 25, 50]}
@@ -263,20 +251,35 @@ const UnmatchedUsers: React.FC<UnmatchedUsersProps> = ({
                   </Typography>
                 </Box>
               </Box>
-              <Typography variant="body2" gutterBottom>
-                <strong>대학교:</strong> {selectedUnmatchedUser.university}
-              </Typography>
+              {selectedUnmatchedUser.university && (
+                <Typography variant="body2" gutterBottom>
+                  <strong>대학교:</strong> {selectedUnmatchedUser.university}
+                </Typography>
+              )}
               {selectedUnmatchedUser.department && (
                 <Typography variant="body2" gutterBottom>
                   <strong>학과:</strong> {selectedUnmatchedUser.department}
                 </Typography>
               )}
               <Typography variant="body2" gutterBottom>
-                <strong>가입일:</strong> {format(new Date(selectedUnmatchedUser.createdAt), 'yyyy년 MM월 dd일')}
+                <strong>가입일:</strong> {
+                  selectedUnmatchedUser.joinedAt
+                    ? format(new Date(selectedUnmatchedUser.joinedAt), 'yyyy년 MM월 dd일')
+                    : selectedUnmatchedUser.createdAt
+                      ? format(new Date(selectedUnmatchedUser.createdAt), 'yyyy년 MM월 dd일')
+                      : '정보 없음'
+                }
               </Typography>
-              <Typography variant="body2" gutterBottom>
-                <strong>매칭 대기 기간:</strong> {formatDistance(new Date(selectedUnmatchedUser.waitingSince), new Date(), { locale: ko })}
-              </Typography>
+              {selectedUnmatchedUser.failureReason && (
+                <Typography variant="body2" gutterBottom>
+                  <strong>실패 사유:</strong> {selectedUnmatchedUser.failureReason}
+                </Typography>
+              )}
+              {selectedUnmatchedUser.failureDate && (
+                <Typography variant="body2" gutterBottom>
+                  <strong>실패 일시:</strong> {format(new Date(selectedUnmatchedUser.failureDate), 'yyyy년 MM월 dd일 HH:mm')}
+                </Typography>
+              )}
             </Grid>
             <Grid item xs={12} sm={6} md={8}>
               <Button
