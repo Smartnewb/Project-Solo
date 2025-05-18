@@ -131,10 +131,16 @@ export default function AdminLayout({
               </Link>
             </li>
             <li>
+              <Link href="/admin/matching-management" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
+                매칭 관리
+              </Link>
+            </li>
+            <li>
               <Link href="/admin/matching-analytics" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
                 매칭 분석
               </Link>
             </li>
+            
             <li>
               <button
                 onClick={handleLogout}
