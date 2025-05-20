@@ -567,54 +567,21 @@ const userAppearance = {
       console.log('프로필 수정 데이터:', profileData);
 
       // API 엔드포인트 (API 문서에서 확인한 정확한 경로)
-      const endpoint = `/admin/users/profile`;
+      const endpoint = `/admin/users/detail/profile`;
       console.log(`API 엔드포인트: ${endpoint}`);
 
       // 요청 데이터 구성 (API 스키마에 맞게 조정)
       const requestData = {
         userId: userId,
-        ...profileData,
-        // 필요한 경우 추가 필드 변환
-        reason: '관리자에 의한 프로필 직접 수정'
+        name: profileData.name,
+        email: profileData.email,
+        phoneNumber: profileData.phoneNumber,
+        instagramId: profileData.instagramId
       };
 
       console.log('API 요청 데이터:', requestData);
 
-      // 여러 API 경로 시도
-      let response;
-      let error;
-
-      // 첫 번째 시도: /admin/users/profile
-      try {
-        console.log('첫 번째 시도 URL:', endpoint);
-        response = await axiosServer.post(endpoint, requestData);
-        console.log('첫 번째 시도 성공!');
-      } catch (err) {
-        console.error('첫 번째 시도 실패:', err);
-        error = err;
-
-        // 두 번째 시도: /admin/users/detail/profile
-        try {
-          const url2 = '/admin/users/detail/profile';
-          console.log('두 번째 시도 URL:', url2);
-          response = await axiosServer.post(url2, requestData);
-          console.log('두 번째 시도 성공!');
-        } catch (err2) {
-          console.error('두 번째 시도 실패:', err2);
-
-          // 세 번째 시도: /admin/profile
-          try {
-            const url3 = '/admin/profile';
-            console.log('세 번째 시도 URL:', url3);
-            response = await axiosServer.post(url3, requestData);
-            console.log('세 번째 시도 성공!');
-          } catch (err3) {
-            console.error('세 번째 시도 실패:', err3);
-            throw error; // 원래 오류 다시 던지기
-          }
-        }
-      }
-
+      const response = await axiosServer.post(endpoint, requestData);
       console.log('유저 프로필 수정 응답:', response.data);
       return response.data;
     } catch (error: any) {
