@@ -398,9 +398,10 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                       sx={{
                         width: '100%',
                         height: 400,
-                        objectFit: 'cover',
+                        objectFit: 'contain',
                         borderRadius: 2,
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                        backgroundColor: '#f5f5f5'
                       }}
                     />
                     {/* 메인 이미지 표시 */}
@@ -425,9 +426,10 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                     sx={{
                       width: '100%',
                       height: 400,
-                      objectFit: 'cover',
+                      objectFit: 'contain',
                       borderRadius: 2,
-                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                      backgroundColor: '#f5f5f5'
                     }}
                   />
                 ) : (
@@ -441,9 +443,10 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                     sx={{
                       width: '100%',
                       height: 400,
-                      objectFit: 'cover',
+                      objectFit: 'contain',
                       borderRadius: 2,
-                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                      backgroundColor: '#f5f5f5'
                     }}
                   />
                 )}
