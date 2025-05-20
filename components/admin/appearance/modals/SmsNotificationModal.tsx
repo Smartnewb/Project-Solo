@@ -36,13 +36,30 @@ const SmsNotificationModal: React.FC<SmsNotificationModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [charCount, setCharCount] = useState(0);
-  
-  const MAX_CHAR_COUNT = 90; // SMS 최대 글자수 제한
+  // 문자열의 바이트 수 계산 함수 (한글: 2바이트, 영어/숫자/공백/특수문자: 1바이트)
+  const getByteLength = (str: string): number => {
+    let byte = 0;
+    for (let i = 0; i < str.length; i++) {
+      // 한글 체크 (유니코드 범위: AC00-D7A3, 가-힣)
+      const charCode = str.charCodeAt(i);
+      if (charCode >= 0xAC00 && charCode <= 0xD7A3) {
+        byte += 2; // 한글은 2바이트
+      } else {
+        byte += 1; // 그 외 문자는 1바이트
+      }
+    }
+    return byte;
+  };
+
+  const [byteCount, setByteCount] = useState(0);
+
+  const MAX_USER_INPUT_BYTE = 69; // 사용자가 입력할 수 있는 최대 바이트 (기본 템플릿 제외)
+  const SMS_PREFIX = "[web발신]\n[썸타임]\n"; // SMS 기본 템플릿
 
   const handleMessageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newMessage = e.target.value;
-    setCharCount(newMessage.length);
+    const messageByte = getByteLength(newMessage);
+    setByteCount(messageByte);
     setMessage(newMessage);
   };
 
@@ -52,20 +69,20 @@ const SmsNotificationModal: React.FC<SmsNotificationModalProps> = ({
       return;
     }
 
-    if (message.length > MAX_CHAR_COUNT) {
-      setError(`메시지는 ${MAX_CHAR_COUNT}자를 초과할 수 없습니다.`);
+    if (byteCount > MAX_USER_INPUT_BYTE) {
+      setError(`메시지는 ${MAX_USER_INPUT_BYTE}바이트를 초과할 수 없습니다. (현재: ${byteCount}바이트)`);
       return;
     }
 
     try {
       setLoading(true);
       setError(null);
-      
+
       await AdminService.userAppearance.sendSmsNotification(userId, message);
-      
+
       setSuccess(true);
       if (onSuccess) onSuccess();
-      
+
       // 성공 후 1초 후에 모달 닫기
       setTimeout(() => {
         handleClose();
@@ -81,7 +98,7 @@ const SmsNotificationModal: React.FC<SmsNotificationModalProps> = ({
     setMessage('');
     setError(null);
     setSuccess(false);
-    setCharCount(0);
+    setByteCount(0);
     onClose();
   };
 
@@ -129,8 +146,8 @@ const SmsNotificationModal: React.FC<SmsNotificationModalProps> = ({
             disabled={loading}
             placeholder="SMS 내용을 입력하세요"
             InputLabelProps={{ shrink: true }}
-            error={charCount > MAX_CHAR_COUNT}
-            helperText={`${charCount}/${MAX_CHAR_COUNT}자 ${charCount > MAX_CHAR_COUNT ? '(글자 수 초과)' : ''}`}
+            error={byteCount > MAX_USER_INPUT_BYTE}
+            helperText={`${byteCount}/${MAX_USER_INPUT_BYTE}바이트 (한글: 2바이트, 영어/숫자/공백: 1바이트)`}
           />
 
           {error && (
@@ -159,7 +176,7 @@ const SmsNotificationModal: React.FC<SmsNotificationModalProps> = ({
           onClick={handleSubmit}
           variant="contained"
           color="primary"
-          disabled={loading || !message.trim() || charCount > MAX_CHAR_COUNT}
+          disabled={loading || !message.trim() || byteCount > MAX_USER_INPUT_BYTE}
           sx={{ borderRadius: 2, position: 'relative' }}
         >
           {loading ? (
