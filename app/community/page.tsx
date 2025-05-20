@@ -37,8 +37,8 @@ interface Comment {
 }
 
 interface Post {
-  id: string;
-  content: string;
+    id: string;
+    content: string;
   anonymous: boolean;
   emoji: string;
   createdAt: string;
@@ -344,7 +344,7 @@ export default function Community() {
         })
       );
 
-      setEditingPost(null);
+    setEditingPost(null);
       setEditContent("");
     } catch (error) {
       console.error("게시글 수정 중 오류가 발생했습니다:", error);
@@ -451,7 +451,7 @@ export default function Community() {
       // 로컬 상태 업데이트 (즉각적인 UI 반응을 위해)
       setPosts((prevPosts) =>
         prevPosts.map((post) => {
-          if (post.id === postId) {
+      if (post.id === postId) {
             return {
               ...post,
               isLiked: newLikeStatus,
@@ -459,8 +459,8 @@ export default function Community() {
                 ? post.likeCount + 1
                 : post.likeCount - 1,
             };
-          }
-          return post;
+      }
+      return post;
         })
       );
     } catch (error) {
@@ -531,29 +531,29 @@ export default function Community() {
             key={`comment-${comment.id}`}
             className="bg-gray-50 p-3 rounded-lg"
           >
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
                 <span className="text-xl">{comment.emoji}</span>
-                <div>
+            <div>
                   <p className="font-medium text-sm">
                     {comment.author.name || "익명"}
                   </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500">
                   {formatTime(comment.createdAt)}
-                </span>
+            </span>
                 {comment.updatedAt &&
                   comment.updatedAt !== comment.createdAt && (
-                    <span className="text-xs text-gray-500">(수정됨)</span>
-                  )}
+              <span className="text-xs text-gray-500">(수정됨)</span>
+            )}
                 {comment.author?.id === Checkuser?.id ? (
-                  <div className="flex gap-2">
+              <div className="flex gap-2">
                     {editingComment?.postId === post.id &&
                       editingComment?.commentId === comment.id ? (
                       <>
-                        <button
+                <button
                           onClick={() => setEditingComment(null)}
                           className="text-xs text-gray-500 hover:text-gray-600"
                         >
@@ -582,18 +582,18 @@ export default function Community() {
                           });
                           setEditCommentContent(comment.content);
                         }}
-                        className="text-xs text-blue-500 hover:text-blue-600"
-                      >
-                        수정
-                      </button>
+                  className="text-xs text-blue-500 hover:text-blue-600"
+                >
+                  수정
+                </button>
                     )}
-                    <button
-                      onClick={() => handleDeleteComment(post.id, comment.id)}
-                      className="text-xs text-red-500 hover:text-red-600"
-                    >
-                      삭제
-                    </button>
-                  </div>
+                <button
+                  onClick={() => handleDeleteComment(post.id, comment.id)}
+                  className="text-xs text-red-500 hover:text-red-600"
+                >
+                  삭제
+                </button>
+              </div>
                 ) : (
                   <button
                     onClick={() =>
@@ -603,16 +603,16 @@ export default function Community() {
                   >
                     🚨신고
                   </button>
-                )}
-              </div>
-            </div>
-
-            {editingComment?.postId === post.id &&
-              editingComment?.commentId === comment.id ? (
-              <input
-                type="text"
-                value={editCommentContent}
-                onChange={(e) => setEditCommentContent(e.target.value)}
+            )}
+          </div>
+        </div>
+        
+        {editingComment?.postId === post.id && 
+         editingComment?.commentId === comment.id ? (
+            <input
+              type="text"
+              value={editCommentContent}
+              onChange={(e) => setEditCommentContent(e.target.value)}
                 className="w-full p-2 border rounded"
               />
             ) : (
@@ -621,20 +621,20 @@ export default function Community() {
           </div>
         ))}
         {!showAll && post.comments?.length > 3 && (
-          <button
+            <button
             onClick={() => setShowAllComments(post.id)}
             className="text-sm text-gray-500 hover:text-gray-700"
-          >
+            >
             댓글 {post.comments.length - 3}개 더 보기
-          </button>
+            </button>
         )}
         {showAll && post.comments?.length > 3 && (
-          <button
+            <button
             onClick={() => setShowAllComments(null)}
             className="text-sm text-gray-500 hover:text-gray-700"
-          >
+            >
             댓글 접기
-          </button>
+            </button>
         )}
       </div>
     );
@@ -747,8 +747,8 @@ export default function Community() {
               ...post,
               comments: response.data,
             };
-          }
-          return post;
+      }
+      return post;
         });
         return updatedPosts;
       });
@@ -883,8 +883,8 @@ export default function Community() {
               </div>
               <div className="flex-grow">
                 <div className="space-y-3">
-                  <textarea
-                    placeholder="무슨 생각을 하고 계신가요?"
+          <textarea
+            placeholder="무슨 생각을 하고 계신가요?"
                     className="w-full p-3 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-[#6C5CE7] focus:border-transparent min-h-[120px] text-gray-700 placeholder-gray-400 bg-gray-50/50"
                     value={newPostContent}
                     onChange={(e) => setNewPostContent(e.target.value)}
@@ -923,7 +923,7 @@ export default function Community() {
                         }`}
                     >
                       작성하기
-                    </button>
+          </button>
                   </div>
                 </div>
               </div>
@@ -935,17 +935,17 @@ export default function Community() {
         <div className="space-y-4">
           {posts.length > 0 ? (
             <>
-              {posts.map((post) => (
-                <div
-                  key={post.id}
-                  id={`post-${post.id}`}
+          {posts.map((post) => (
+            <div 
+              key={post.id} 
+              id={`post-${post.id}`}
                   className={`bg-white rounded-lg shadow-md p-5 mb-4 `}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center">
                       <div className="w-10 h-10 flex items-center justify-center bg-gray-200 rounded-full mr-3">
                         <span className="text-xl">{post.emoji}</span>
-                      </div>
+                  </div>
                       <div>
                         <h3 className="font-medium">
                           {post.author.name || "익명"}
@@ -954,16 +954,16 @@ export default function Community() {
                           {formatTime(post.createdAt)}
                         </p>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
+                </div>
+                <div className="flex items-center gap-2">
                       {post.updatedAt && post.updatedAt !== post.createdAt && (
                         <span className="text-sm text-gray-500">(수정됨)</span>
                       )}
                       {post.author?.id === Checkuser?.id && !post.deletedAt ? (
-                        <div className="flex gap-2">
+                    <div className="flex gap-2">
                           {editingPost === post.id ? (
                             <>
-                              <button
+                      <button 
                                 onClick={() => setEditingPost(null)}
                                 className="text-sm text-gray-500 hover:text-gray-600"
                               >
@@ -988,75 +988,75 @@ export default function Community() {
                                 setEditingPost(post.id);
                                 setEditContent(post.content);
                               }}
-                              className="text-sm text-blue-500 hover:text-blue-600"
-                            >
-                              수정
-                            </button>
+                        className="text-sm text-blue-500 hover:text-blue-600"
+                      >
+                        수정
+                      </button>
                           )}
-                          <button
+                      <button 
                             onClick={() => handlePostDelete(post.id)}
-                            className="text-sm text-red-500 hover:text-red-600"
-                          >
-                            삭제
-                          </button>
-                        </div>
+                        className="text-sm text-red-500 hover:text-red-600"
+                      >
+                        삭제
+                      </button>
+                    </div>
                       ) : (
                         !post.deletedAt &&
                         user &&
                         post.author?.id !== Checkuser?.id && (
-                          <button
+                    <button
                             onClick={() => handleOpenReport("post", post.id)}
-                            className="text-sm text-gray-500 hover:text-gray-600"
-                          >
+                      className="text-sm text-gray-500 hover:text-gray-600"
+                    >
                             🚨신고
-                          </button>
+                    </button>
                         )
-                      )}
-                    </div>
-                  </div>
-
+                  )}
+                </div>
+              </div>
+              
                   {/* 게시물 내용 */}
                   <div className="mb-4">
-                    {editingPost === post.id ? (
-                      <textarea
+              {editingPost === post.id ? (
+                  <textarea
                         className="w-full border rounded p-2"
-                        value={editContent}
-                        onChange={(e) => setEditContent(e.target.value)}
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
                       />
                     ) : (
                       <p className="whitespace-pre-wrap">{post.content}</p>
                     )}
 
-                    <div className="flex items-center gap-4">
-                      <button
-                        onClick={() => handleLike(post.id)}
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={() => handleLike(post.id)}
                         className={`flex items-center gap-1 ${post.isLiked ? "text-red-500" : "text-gray-500"
-                          }`}
-                      >
-                        <HeartIcon className="w-5 h-5" />
+                      }`}
+                    >
+                      <HeartIcon className="w-5 h-5" />
                         <span>{post.likeCount}</span>
-                      </button>
-                      <button
+                    </button>
+                    <button 
                         onClick={() =>
                           setShowCommentInput(
                             showCommentInput === post.id ? null : post.id
                           )
                         }
-                        className="flex items-center gap-1 text-gray-500"
-                      >
-                        <ChatBubbleOvalLeftIcon className="w-5 h-5" />
+                      className="flex items-center gap-1 text-gray-500"
+                    >
+                      <ChatBubbleOvalLeftIcon className="w-5 h-5" />
                         <span>
                           {post.comments?.filter(
                             (comment) => !comment.deletedAt
                           ).length || 0}
                         </span>
-                      </button>
-                    </div>
+                    </button>
+                  </div>
                   </div>
 
-                  {/* 댓글 입력창 */}
+              {/* 댓글 입력창 */}
                   {!post.deletedAt && showCommentInput === post.id && (
-                    <div className="mt-4 space-y-4 border-t pt-4">
+                <div className="mt-4 space-y-4 border-t pt-4">
                       <div className="flex flex-col gap-3">
                         <div className="flex items-center gap-2">
                           <button
@@ -1068,14 +1068,14 @@ export default function Community() {
                             {selectedCommentEmoji}
                           </button>
                           <div className="flex-1">
-                            <input
-                              type="text"
-                              value={newComment}
+                    <input
+                      type="text"
+                      value={newComment}
                               onChange={(e) => {
                                 const newValue = e.target.value;
                                 setNewComment(newValue);
                               }}
-                              placeholder="댓글을 입력하세요"
+                      placeholder="댓글을 입력하세요"
                               className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6C5CE7]"
                               maxLength={200}
                             />
@@ -1101,7 +1101,7 @@ export default function Community() {
                               {newComment.length}/200
                             </span>
                           </div>
-                          <button
+                    <button
                             onClick={() =>
                               handleAddComment(
                                 post.id,
@@ -1114,9 +1114,9 @@ export default function Community() {
                               ? "bg-gradient-to-r from-[#6C5CE7] to-[#5849BE] text-white hover:opacity-90 shadow-md"
                               : "bg-gray-100 text-gray-400 cursor-not-allowed"
                               }`}
-                          >
-                            작성
-                          </button>
+                    >
+                      작성
+                    </button>
                         </div>
                         {showCommentEmojiPicker && (
                           <div className="absolute z-10 mt-10 bg-white rounded-lg shadow-lg p-4 border border-gray-200">
@@ -1136,11 +1136,11 @@ export default function Community() {
                             </div>
                           </div>
                         )}
-                      </div>
-                    </div>
-                  )}
+                  </div>
+                </div>
+              )}
 
-                  {/* 댓글 목록 */}
+              {/* 댓글 목록 */}
                   {!post.deletedAt && (
                     <div className="mt-4 space-y-4 border-t pt-4">
                       {renderComments(post, showAllComments === post.id)}
@@ -1186,14 +1186,14 @@ export default function Community() {
             </h3>
             <p className="text-gray-700 mb-4">{errorMessage}</p>
             <div className="flex justify-end">
-              <button
+                    <button
                 onClick={() => setShowErrorModal(false)}
                 className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
-              >
+                    >
                 확인
-              </button>
+                    </button>
+                </div>
             </div>
-          </div>
         </div>
       )}
 
@@ -1227,7 +1227,7 @@ export default function Community() {
             </div>
             <p className="text-gray-600 mb-6">신고 사유를 선택해주세요.</p>
             <div className="space-y-3 mb-6">
-              {reportReasons.map((reason) => (
+                  {reportReasons.map((reason) => (
                 <label
                   key={reason}
                   className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${reportReason === reason
@@ -1256,28 +1256,28 @@ export default function Community() {
                   <span className="text-gray-700">{reason}</span>
                 </label>
               ))}
-            </div>
+              </div>
             <div className="flex justify-end gap-3">
-              <button
-                onClick={() => {
-                  setShowReportModal(false);
+                <button
+                  onClick={() => {
+                    setShowReportModal(false);
                   setReportReason("");
-                }}
+                  }}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-              >
-                취소
-              </button>
-              <button
+                >
+                  취소
+                </button>
+                <button
                 onClick={handleSubmitReport}
                 className={`px-4 py-2 rounded-lg transition-colors ${reportReason
                   ? "bg-[#6C5CE7] text-white hover:bg-[#5849BE]"
                   : "bg-gray-200 text-gray-400 cursor-not-allowed"
                   }`}
-                disabled={!reportReason}
-              >
-                신고하기
-              </button>
-            </div>
+                  disabled={!reportReason}
+                >
+                  신고하기
+                </button>
+              </div>
           </div>
         </div>
       )}
@@ -1384,4 +1384,4 @@ export default function Community() {
       </nav>
     </div>
   );
-}
+} 

@@ -5,9 +5,15 @@ import {
   Box,
   Typography,
   Tabs,
-  Tab
+  Tab,
+  TableRow,
+  Switch,
+  Paper,
+  CircularProgress,
+  Alert
 } from '@mui/material';
 import axiosServer from '@/utils/axios';
+import { useBatchStatus } from './useBatchStatus';
 
 // 컴포넌트 임포트
 import UserSearch from './components/UserSearch';
@@ -17,12 +23,45 @@ import UnmatchedUsers from './components/UnmatchedUsers';
 
 // 타입 임포트
 import { UserSearchResult, MatchingResult, MatchingSimulationResult, UnmatchedUser } from './types';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 // 탭 인터페이스
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
+}
+
+// 사용자 프로필 타입
+interface UserProfile {
+  id: string;
+  mbti?: string;
+  name: string;
+  age: number;
+  gender: string;
+  rank?: string;
+  profileImages?: {
+    id: string;
+    order: number;
+    isMain: boolean;
+    url: string;
+  }[];
+  instagramId?: string;
+  universityDetails?: {
+    name: string;
+    authentication: boolean;
+    department: string;
+    grade: string;
+    studentNumber: string;
+  };
+  preferences?: {
+    typeName: string;
+    selectedOptions: {
+      id: string;
+      displayName: string;
+    }[];
+  }[];
 }
 
 // 탭 패널 컴포넌트
@@ -46,17 +85,23 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
-export default function MatchingManagementPage() {
-  const [activeTab, setActiveTab] = useState(0);
+export default function MatchingManagement() {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+  const [activeTab, setActiveTab] = useState<number>(0);
+  const {
+    status: batchStatus,
+    loading: batchStatusLoading,
+    error: batchStatusError,
+    toggleStatus
+  } = useBatchStatus();
 
-  // 로딩 상태
-  const [error, setError] = useState<string | null>(null);
-
-  // 사용자 검색 상태
-  const [searchTerm, setSearchTerm] = useState('');
+  // 공통 상태
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(null);
+  const [searchLoading, setSearchLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
   // 단일 매칭 상태
   const [matchingLoading, setMatchingLoading] = useState(false);
@@ -67,6 +112,7 @@ export default function MatchingManagementPage() {
   const [simulationLoading, setSimulationLoading] = useState(false);
   const [simulationResult, setSimulationResult] = useState<MatchingSimulationResult | null>(null);
   const [selectedPartnerIndex, setSelectedPartnerIndex] = useState<number | null>(null);
+  const isBatchMatching = activeTab === 2;
 
   // 매칭 대기 사용자 상태
   const [unmatchedUsers, setUnmatchedUsers] = useState<UnmatchedUser[]>([]);
@@ -346,6 +392,7 @@ export default function MatchingManagementPage() {
         <Tab label="단일 매칭" />
         <Tab label="매칭 시뮬레이션" />
         <Tab label="매칭 대기 사용자" />
+        <Tab label="00시 매칭 여부" />
       </Tabs>
 
       <TabPanel value={activeTab} index={0}>
@@ -410,6 +457,27 @@ export default function MatchingManagementPage() {
           processUnmatchedUserMatching={processUnmatchedUserMatching}
           fetchUnmatchedUsers={fetchUnmatchedUsers}
         />
+      </TabPanel>
+
+      <TabPanel value={activeTab} index={3}>
+        <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
+          <Typography variant="h6" gutterBottom>
+            00시 매칭 On/Off
+          </Typography>
+          {batchStatusLoading ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <CircularProgress size={24} />
+              <Typography>상태를 불러오는 중...</Typography>
+            </Box>
+          ) : batchStatusError ? (
+            <Alert severity="error">{batchStatusError}</Alert>
+          ) : (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Switch checked={!!batchStatus} onChange={toggleStatus} />
+              <Typography>{batchStatus ? 'ON' : 'OFF'}</Typography>
+            </Box>
+          )}
+        </Paper>
       </TabPanel>
     </Box>
   );
