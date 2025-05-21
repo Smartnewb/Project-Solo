@@ -373,11 +373,12 @@ export default function UsersAdmin() {
                 // 실제 필드가 없으므로 false로 처리
                 const isBlocked = false; // user.is_blocked;
                 const hasReports = false; // user.reports_count && user.reports_count > 0;
+                const hasInstagramError = user.statusAt === 'instagramerror';
 
                 return (
                   <tr
                     key={user.userId}
-                    className={`hover:bg-gray-50 ${isBlocked ? 'bg-red-50' : hasReports ? 'bg-yellow-50' : ''}`}
+                    className={`hover:bg-gray-50 ${isBlocked ? 'bg-red-50' : hasReports ? 'bg-yellow-50' : hasInstagramError ? 'bg-orange-50' : ''}`}
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -416,33 +417,50 @@ export default function UsersAdmin() {
                       {getGenderText(user.gender)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {user.instagramId ? (
-                        <a
-                          href={`https://www.instagram.com/${user.instagramId}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-500 hover:underline"
-                        >
-                          @{user.instagramId}
-                        </a>
-                      ) : '-'}
+                      <div className="flex items-center">
+                        {user.instagramId ? (
+                          <>
+                            <a
+                              href={`https://www.instagram.com/${user.instagramId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-500 hover:underline"
+                            >
+                              @{user.instagramId}
+                            </a>
+                            {user.statusAt === 'instagramerror' && (
+                              <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                인스타그램 오류
+                              </span>
+                            )}
+                          </>
+                        ) : '-'}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {user.role === 'blocked' ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                          차단됨
-                        </span>
-                      ) : user.role === 'admin' ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          관리자
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          사용자
-                        </span>
-                      )}
+                      <div className="flex flex-col space-y-1">
+                        {user.role === 'blocked' ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            차단됨
+                          </span>
+                        ) : user.role === 'admin' ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            관리자
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            사용자
+                          </span>
+                        )}
+
+                        {user.statusAt === 'instagramerror' && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                            인스타그램 오류
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex space-x-2">

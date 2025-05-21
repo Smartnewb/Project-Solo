@@ -414,7 +414,12 @@ const UserAppearanceTable = forwardRef<
               </TableRow>
             ) : (
               users.map((user) => (
-                <TableRow key={user.userId || user.id}>
+                <TableRow
+                  key={user.userId || user.id}
+                  sx={{
+                    bgcolor: user.statusAt === 'instagramerror' ? 'rgba(255, 235, 230, 0.5)' : 'inherit'
+                  }}
+                >
                   <TableCell padding="checkbox">
                     <Checkbox
                       checked={selectedUsers.includes(user.userId || user.id)}
@@ -505,23 +510,36 @@ const UserAppearanceTable = forwardRef<
                     {user.instagramId ? (
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <InstagramIcon sx={{ mr: 0.5, color: '#E1306C' }} fontSize="small" />
-                        <Link
-                          href={user.instagramUrl || `https://instagram.com/${user.instagramId}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            textDecoration: 'none',
-                            color: 'primary.main',
-                            '&:hover': {
-                              textDecoration: 'underline'
-                            }
-                          }}
-                        >
-                          {user.instagramId}
-                          <OpenInNewIcon sx={{ ml: 0.5 }} fontSize="small" />
-                        </Link>
+                        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Link
+                              href={user.instagramUrl || `https://instagram.com/${user.instagramId}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                textDecoration: 'none',
+                                color: 'primary.main',
+                                '&:hover': {
+                                  textDecoration: 'underline'
+                                }
+                              }}
+                            >
+                              {user.instagramId}
+                              <OpenInNewIcon sx={{ ml: 0.5 }} fontSize="small" />
+                            </Link>
+
+                            {user.statusAt === 'instagramerror' && (
+                              <Chip
+                                label="인스타그램 오류"
+                                size="small"
+                                color="error"
+                                sx={{ ml: 1, height: 20, fontSize: '0.625rem' }}
+                              />
+                            )}
+                          </Box>
+                        </Box>
                       </Box>
                     ) : (
                       '-'
