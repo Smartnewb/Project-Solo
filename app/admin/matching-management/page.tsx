@@ -20,11 +20,14 @@ import UserSearch from './components/UserSearch';
 import SingleMatching from './components/SingleMatching';
 import MatchingSimulation from './components/MatchingSimulation';
 import UnmatchedUsers from './components/UnmatchedUsers';
+import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
 
 // 타입 임포트
 import { UserSearchResult, MatchingResult, MatchingSimulationResult, UnmatchedUser } from './types';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { UserDetail } from '@/components/admin/appearance/UserDetailModal';
+import AdminService from '@/app/services/admin';
 
 // 탭 인터페이스
 interface TabPanelProps {
@@ -124,6 +127,13 @@ export default function MatchingManagement() {
   const [unmatchedUsersSearchTerm, setUnmatchedUsersSearchTerm] = useState('');
   const [unmatchedUsersGenderFilter, setUnmatchedUsersGenderFilter] = useState('all');
   const [selectedUnmatchedUser, setSelectedUnmatchedUser] = useState<UnmatchedUser | null>(null);
+
+  // 사용자 상세 정보 모달 상태
+  const [userDetailModalOpen, setUserDetailModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [userDetail, setUserDetail] = useState<UserDetail | null>(null);
+  const [loadingUserDetail, setLoadingUserDetail] = useState(false);
+  const [userDetailError, setUserDetailError] = useState<string | null>(null);
 
   // 페이지 초기화
   useEffect(() => {
@@ -343,8 +353,32 @@ export default function MatchingManagement() {
   };
 
   // 매칭 대기 사용자 선택 핸들러
-  const handleUnmatchedUserSelect = (user: UnmatchedUser) => {
+  const handleUnmatchedUserSelect = async (user: UnmatchedUser) => {
     setSelectedUnmatchedUser(user);
+
+    try {
+      setSelectedUserId(user.id);
+      setUserDetailModalOpen(true);
+      setLoadingUserDetail(true);
+      setUserDetailError(null);
+      setUserDetail(null);
+
+      console.log('유저 상세 정보 조회 요청:', user.id);
+      const data = await AdminService.userAppearance.getUserDetails(user.id);
+      console.log('유저 상세 정보 응답:', data);
+
+      setUserDetail(data);
+    } catch (error: any) {
+      console.error('유저 상세 정보 조회 중 오류:', error);
+      setUserDetailError(error.message || '유저 상세 정보를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setLoadingUserDetail(false);
+    }
+  };
+
+  // 유저 상세 정보 모달 닫기
+  const handleCloseUserDetailModal = () => {
+    setUserDetailModalOpen(false);
   };
 
   // 매칭 대기 사용자 매칭 처리 함수
@@ -457,6 +491,22 @@ export default function MatchingManagement() {
           processUnmatchedUserMatching={processUnmatchedUserMatching}
           fetchUnmatchedUsers={fetchUnmatchedUsers}
         />
+
+        {/* 사용자 상세 정보 모달 */}
+        {userDetail && (
+          <UserDetailModal
+            open={userDetailModalOpen}
+            onClose={handleCloseUserDetailModal}
+            userId={selectedUserId}
+            userDetail={userDetail}
+            loading={loadingUserDetail}
+            error={userDetailError}
+            onRefresh={() => {
+              // 데이터 새로고침
+              fetchUnmatchedUsers();
+            }}
+          />
+        )}
       </TabPanel>
 
       <TabPanel value={activeTab} index={3}>

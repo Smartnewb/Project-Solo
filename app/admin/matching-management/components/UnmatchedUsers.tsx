@@ -230,72 +230,7 @@ const UnmatchedUsers: React.FC<UnmatchedUsersProps> = ({
         </>
       )}
 
-      {/* 선택된 사용자 정보 */}
-      {selectedUnmatchedUser && (
-        <Paper sx={{ p: 3, mt: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            선택된 사용자 정보
-          </Typography>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6} md={4}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar src={selectedUnmatchedUser.profileImageUrl} sx={{ width: 64, height: 64, mr: 2 }}>
-                  <PersonIcon />
-                </Avatar>
-                <Box>
-                  <Typography variant="h6">
-                    {selectedUnmatchedUser.name}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {selectedUnmatchedUser.age}세, {selectedUnmatchedUser.gender === 'MALE' ? '남성' : '여성'}
-                  </Typography>
-                </Box>
-              </Box>
-              {selectedUnmatchedUser.university && (
-                <Typography variant="body2" gutterBottom>
-                  <strong>대학교:</strong> {selectedUnmatchedUser.university}
-                </Typography>
-              )}
-              {selectedUnmatchedUser.department && (
-                <Typography variant="body2" gutterBottom>
-                  <strong>학과:</strong> {selectedUnmatchedUser.department}
-                </Typography>
-              )}
-              <Typography variant="body2" gutterBottom>
-                <strong>가입일:</strong> {
-                  selectedUnmatchedUser.joinedAt
-                    ? format(new Date(selectedUnmatchedUser.joinedAt), 'yyyy년 MM월 dd일')
-                    : selectedUnmatchedUser.createdAt
-                      ? format(new Date(selectedUnmatchedUser.createdAt), 'yyyy년 MM월 dd일')
-                      : '정보 없음'
-                }
-              </Typography>
-              {selectedUnmatchedUser.failureReason && (
-                <Typography variant="body2" gutterBottom>
-                  <strong>실패 사유:</strong> {selectedUnmatchedUser.failureReason}
-                </Typography>
-              )}
-              {selectedUnmatchedUser.failureDate && (
-                <Typography variant="body2" gutterBottom>
-                  <strong>실패 일시:</strong> {format(new Date(selectedUnmatchedUser.failureDate), 'yyyy년 MM월 dd일 HH:mm')}
-                </Typography>
-              )}
-            </Grid>
-            <Grid item xs={12} sm={6} md={8}>
-              <Button
-                variant="contained"
-                color="primary"
-                fullWidth
-                onClick={processUnmatchedUserMatching}
-                disabled={unmatchedUsersLoading}
-                sx={{ mt: 2 }}
-              >
-                {unmatchedUsersLoading ? <CircularProgress size={24} /> : '매칭 실행'}
-              </Button>
-            </Grid>
-          </Grid>
-        </Paper>
-      )}
+
     </Paper>
   );
 };
