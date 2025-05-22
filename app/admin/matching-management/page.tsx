@@ -10,7 +10,8 @@ import {
   Switch,
   Paper,
   CircularProgress,
-  Alert
+  Alert,
+  TextareaAutosize
 } from '@mui/material';
 import axiosServer from '@/utils/axios';
 import { useBatchStatus } from './useBatchStatus';
@@ -28,6 +29,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserDetail } from '@/components/admin/appearance/UserDetailModal';
 import AdminService from '@/app/services/admin';
+import { Button } from '@/shared/ui';
 
 // 탭 인터페이스
 interface TabPanelProps {
@@ -88,6 +90,9 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
+const matchRestMembers = () =>
+  axiosServer.post('/admin/matching/rest-members');
+
 export default function MatchingManagement() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -127,6 +132,17 @@ export default function MatchingManagement() {
   const [unmatchedUsersSearchTerm, setUnmatchedUsersSearchTerm] = useState('');
   const [unmatchedUsersGenderFilter, setUnmatchedUsersGenderFilter] = useState('all');
   const [selectedUnmatchedUser, setSelectedUnmatchedUser] = useState<UnmatchedUser | null>(null);
+  const [restMembers, setRestMembers] = useState<any>('');
+
+  const doMatchRestMembers = async () => {
+    try {
+      const response = await matchRestMembers();
+      setRestMembers(response);
+    } catch (error) {
+      console.error('매칭 대기 사용자 조회 오류:', error);  
+    }
+  }
+  
 
   // 사용자 상세 정보 모달 상태
   const [userDetailModalOpen, setUserDetailModalOpen] = useState(false);
@@ -529,6 +545,28 @@ export default function MatchingManagement() {
           )}
         </Paper>
       </TabPanel>
+
+
+      <TabPanel value={activeTab} index={4}>
+      <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
+          <Typography variant="h6" gutterBottom>
+            (굉장히 급조한 API) 잔여 사용자 매칭 (위험)
+          </Typography>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Button variant="default" color="primary" onClick={doMatchRestMembers}>
+                잔여 사용자 매칭하기
+              </Button>
+
+              {restMembers && (
+                <TextareaAutosize
+                  value={restMembers}
+                />
+              )}
+            </Box>
+        </Paper>
+      </TabPanel>
+
     </Box>
   );
 }
