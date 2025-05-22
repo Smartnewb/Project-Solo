@@ -91,7 +91,7 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const matchRestMembers = () =>
-  axiosServer.post('/admin/matching/rest-members', null, {
+  axiosServer.post('/matching/rest-members', null, {
     timeout: 1000 * 60 * 60
   });
 
