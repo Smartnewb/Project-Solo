@@ -443,6 +443,7 @@ export default function MatchingManagement() {
         <Tab label="매칭 시뮬레이션" />
         <Tab label="매칭 대기 사용자" />
         <Tab label="00시 매칭 여부" />
+        <Tab label="잔여 사용자 매칭" />
       </Tabs>
 
       <TabPanel value={activeTab} index={0}>
