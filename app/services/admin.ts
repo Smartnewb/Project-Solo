@@ -576,7 +576,8 @@ const userAppearance = {
         name: profileData.name,
         email: profileData.email,
         phoneNumber: profileData.phoneNumber,
-        instagramId: profileData.instagramId
+        instagramId: profileData.instagramId,
+        mbti: profileData.mbti
       };
 
       console.log('API 요청 데이터:', requestData);

@@ -111,11 +111,16 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   open,
   onClose,
   userId,
-  userDetail,
-  loading,
-  error,
+  userDetail: initialUserDetail,
+  loading: initialLoading,
+  error: initialError,
   onRefresh
 }) => {
+  // 내부 상태로 사용자 상세 정보 관리
+  const [userDetail, setUserDetail] = useState(initialUserDetail);
+  const [loading, setLoading] = useState(initialLoading);
+  const [error, setError] = useState(initialError);
+
   // 관리 메뉴 상태
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(menuAnchorEl);
@@ -128,6 +133,13 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const [appearanceGrade, setAppearanceGrade] = useState<'S' | 'A' | 'B' | 'C' | 'UNKNOWN'>(
     userDetail.appearanceGrade || userDetail.appearanceRank || 'UNKNOWN'
   );
+
+  // props가 변경되면 내부 상태 업데이트
+  useEffect(() => {
+    setUserDetail(initialUserDetail);
+    setLoading(initialLoading);
+    setError(initialError);
+  }, [initialUserDetail, initialLoading, initialError]);
   const [savingGrade, setSavingGrade] = useState(false);
 
   // 모달 상태
@@ -251,6 +263,39 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setActionError(error.message ?? '인스타그램 오류 상태 설정 중 오류가 발생했습니다.');
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  // 사용자 상세 정보 새로고침
+  const refreshUserDetail = async () => {
+    if (!userId) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      console.log('사용자 상세 정보 새로고침 요청:', userId);
+      const data = await AdminService.userAppearance.getUserDetails(userId);
+      console.log('사용자 상세 정보 새로고침 응답:', data);
+
+      setUserDetail(data);
+
+      // 이미지 선택 상태 업데이트
+      if (data.profileImages && data.profileImages.length > 0) {
+        const mainImage = data.profileImages.find(img => img.isMain === true);
+        if (mainImage) {
+          setSelectedImage(mainImage.url);
+        }
+      }
+
+      // 외모 등급 상태 업데이트
+      setAppearanceGrade(data.appearanceGrade || data.appearanceRank || 'UNKNOWN');
+
+    } catch (error: any) {
+      console.error('사용자 상세 정보 새로고침 중 오류:', error);
+      setError(error.message || '사용자 상세 정보를 새로고침하는 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -996,6 +1041,9 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
         userDetail={userDetail}
         onSuccess={() => {
           setActionSuccess('프로필이 수정되었습니다.');
+          // 사용자 상세 정보 새로고침
+          refreshUserDetail();
+          // 부모 컴포넌트의 목록 새로고침
           if (onRefresh) onRefresh();
         }}
       />

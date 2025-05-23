@@ -35,7 +35,8 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
     name: '',
     email: '',
     phoneNumber: '',
-    instagramId: ''
+    instagramId: '',
+    mbti: ''
   });
 
   const [loading, setLoading] = useState(false);
@@ -52,7 +53,8 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
         name: userDetail.name || '',
         email: userDetail.email || '',
         phoneNumber: userDetail.phoneNumber || '',
-        instagramId: userDetail.instagramId || ''
+        instagramId: userDetail.instagramId || '',
+        mbti: userDetail.mbti || ''
       });
     }
   }, [userDetail]);
@@ -81,7 +83,8 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
         name: formData.name,
         email: formData.email,
         phoneNumber: formData.phoneNumber,
-        instagramId: formData.instagramId || ''
+        instagramId: formData.instagramId || '',
+        mbti: formData.mbti || ''
       };
 
       console.log('프로필 업데이트 요청 데이터:', profileData);
@@ -189,6 +192,19 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
                   onChange={handleChange}
                   disabled={loading}
                   placeholder="@instagram_id"
+                />
+              </Grid>
+
+              {/* MBTI */}
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="MBTI"
+                  name="mbti"
+                  value={formData.mbti}
+                  onChange={handleChange}
+                  disabled={loading}
+                  placeholder="ENFP"
                 />
               </Grid>
             </Grid>
