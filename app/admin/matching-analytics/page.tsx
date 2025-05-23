@@ -7,6 +7,7 @@ import { ADMIN_EMAIL } from '@/utils/config';
 import AdminService from '@/app/services/admin';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
 import {
   Box,
   Card,
@@ -843,13 +844,7 @@ export default function MatchingAnalytics() {
                           />
                         </TableCell>
                         <TableCell>
-                          {new Date(item.publishedAt).toLocaleString('ko-KR', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
+                          {formatDateTimeWithoutTimezoneConversion(item.publishedAt)}
                         </TableCell>
                         <TableCell>
                           <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -1114,13 +1109,7 @@ export default function MatchingAnalytics() {
                           <Typography variant="body2">{item.reason}</Typography>
                         </TableCell>
                         <TableCell>
-                          {new Date(item.createdAt).toLocaleString('ko-KR', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
+                          {formatDateTimeWithoutTimezoneConversion(item.createdAt)}
                         </TableCell>
                       </TableRow>
                     ))

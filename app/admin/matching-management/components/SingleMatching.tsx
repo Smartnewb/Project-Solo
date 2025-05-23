@@ -30,6 +30,7 @@ import HistoryIcon from '@mui/icons-material/History';
 import WarningIcon from '@mui/icons-material/Warning';
 import { UserSearchResult, MatchingResult } from '../types';
 import AdminService from '@/app/services/admin';
+import { formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
 
 // 매칭 이력 아이템 인터페이스
 interface MatchHistoryItem {
@@ -421,13 +422,7 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
                                 />
                               </TableCell>
                               <TableCell>
-                                {new Date(item.publishedAt).toLocaleString('ko-KR', {
-                                  year: 'numeric',
-                                  month: '2-digit',
-                                  day: '2-digit',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
+                                {formatDateTimeWithoutTimezoneConversion(item.publishedAt)}
                               </TableCell>
                               <TableCell>
                                 {item.matcher ? (
@@ -581,13 +576,7 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
                                   )}
                                 </TableCell>
                                 <TableCell>
-                                  {new Date(match.publishedAt).toLocaleString('ko-KR', {
-                                    year: 'numeric',
-                                    month: '2-digit',
-                                    day: '2-digit',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                  })}
+                                  {formatDateTimeWithoutTimezoneConversion(match.publishedAt)}
                                 </TableCell>
                               </TableRow>
                             ))}
