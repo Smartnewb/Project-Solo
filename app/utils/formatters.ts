@@ -173,3 +173,22 @@ export const formatRelativeTimeOld = (dateString: string): string => {
     return formatSimpleDate(dateString);
   }
 };
+
+/**
+ * 날짜 문자열에서 시간대 변환 없이 날짜 부분만 추출하여 한국어 형식으로 포맷팅합니다.
+ *
+ * @param dateString - ISO 형식의 날짜 문자열 (예: "2023-05-24T15:30:00.000Z")
+ * @returns 포맷팅된 날짜 문자열 (예: "2023년 5월 24일")
+ */
+export function formatDateWithoutTimezoneConversion(dateString: string): string {
+  if (!dateString) return '날짜 정보 없음';
+
+  // ISO 형식 날짜 문자열에서 날짜 부분만 추출 (예: "2023-05-24T15:30:00.000Z")
+  const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const [_, year, month, day] = match;
+    return `${year}년 ${parseInt(month)}월 ${parseInt(day)}일`;
+  }
+
+  return dateString;
+}

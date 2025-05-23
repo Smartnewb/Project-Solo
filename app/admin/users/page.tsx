@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import axiosServer from '@/utils/axios';
+import { formatDateWithoutTimezoneConversion } from '@/utils/formatters';
 
 type ProfileImage = {
   id: string;
@@ -438,6 +439,7 @@ export default function UsersAdmin() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
+                      {user.createdAt ? formatDateWithoutTimezoneConversion(user.createdAt) : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col space-y-1">

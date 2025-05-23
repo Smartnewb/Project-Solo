@@ -47,6 +47,7 @@ import StarIcon from '@mui/icons-material/Star';
 import AdminService from '@/app/services/admin';
 import { format, formatDistance } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { formatDateWithoutTimezoneConversion, formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
 
 // 관리 기능 모달 컴포넌트들
 import AccountStatusModal from './modals/AccountStatusModal';
@@ -828,9 +829,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <CalendarTodayIcon sx={{ mr: 1, fontSize: 18, color: 'text.secondary' }} />
                         <Typography variant="body2">
-                          가입일: {new Date(userDetail.createdAt).toLocaleDateString('ko-KR', {
-                            year: 'numeric', month: 'long', day: 'numeric'
-                          })}
+                          가입일: {formatDateWithoutTimezoneConversion(userDetail.createdAt)}
                         </Typography>
                       </Box>
                     )}
@@ -839,9 +838,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <AccessTimeIcon sx={{ mr: 1, fontSize: 18, color: 'text.secondary' }} />
                         <Typography variant="body2">
-                          마지막 활동: {new Date(userDetail.lastActiveAt).toLocaleDateString('ko-KR', {
-                            year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                          })}
+                          마지막 활동: {formatDateTimeWithoutTimezoneConversion(userDetail.lastActiveAt)}
                         </Typography>
                       </Box>
                     )}

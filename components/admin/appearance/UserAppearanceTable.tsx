@@ -41,6 +41,7 @@ import {
   Gender,
   PaginatedResponse
 } from '@/app/admin/users/appearance/types';
+import { formatDateWithoutTimezoneConversion } from '@/app/utils/formatters';
 import { appearanceGradeEventBus } from '@/app/admin/users/appearance/page';
 import UserDetailModal, { UserDetail } from './UserDetailModal';
 import BulkEmailNotificationModal from './modals/BulkEmailNotificationModal';
@@ -546,7 +547,7 @@ const UserAppearanceTable = forwardRef<
                     )}
                   </TableCell>
                   <TableCell>
-                    {new Date(user.createdAt).toLocaleDateString('ko-KR')}
+                    {formatDateWithoutTimezoneConversion(user.createdAt)}
                   </TableCell>
                   <TableCell>
                     {/* 작업 버튼 제거 */}
