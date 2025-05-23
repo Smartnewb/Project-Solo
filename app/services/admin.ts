@@ -1244,6 +1244,24 @@ const matching = {
     }
   },
 
+  // 중복 매칭 여부 확인
+  getMatchCount: async (myId: string, matcherId: string) => {
+    try {
+      console.log('중복 매칭 여부 확인 요청:', { myId, matcherId });
+
+      const response = await axiosServer.get('/admin/matching/match-count', {
+        params: { myId, matcherId }
+      });
+
+      console.log('중복 매칭 여부 확인 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('중복 매칭 여부 확인 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
   // 매칭 실패 내역 조회
   getFailureLogs: async (date: string, page: number = 1, limit: number = 10, name?: string) => {
     try {

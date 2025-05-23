@@ -18,7 +18,8 @@ import {
   TableHead,
   TableRow,
   TablePagination,
-  Collapse
+  Collapse,
+  Badge
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -27,6 +28,7 @@ import { ko } from 'date-fns/locale';
 import { format } from 'date-fns';
 import PersonIcon from '@mui/icons-material/Person';
 import HistoryIcon from '@mui/icons-material/History';
+import WarningIcon from '@mui/icons-material/Warning';
 import { UserSearchResult, MatchingResult } from '../types';
 import AdminService from '@/app/services/admin';
 
@@ -73,6 +75,16 @@ interface MatchHistoryResponse {
   };
 }
 
+// 중복 매칭 확인 응답 인터페이스
+interface MatchCountResponse {
+  totalCount: number;
+  matches: {
+    id: string;
+    publishedAt: string;
+    type: string;
+  }[];
+}
+
 interface SingleMatchingProps {
   selectedUser: UserSearchResult | null;
   matchingLoading: boolean;
@@ -94,6 +106,11 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
   const [historyPage, setHistoryPage] = useState<number>(1);
   const [historyLimit, setHistoryLimit] = useState<number>(5);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+
+  // 중복 매칭 확인 관련 상태
+  const [matchCount, setMatchCount] = useState<MatchCountResponse | null>(null);
+  const [matchCountLoading, setMatchCountLoading] = useState<boolean>(false);
+  const [matchCountError, setMatchCountError] = useState<string | null>(null);
 
   // 매칭 이력 조회 함수
   const fetchMatchHistory = async () => {
@@ -167,11 +184,45 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
     }
   }, [historyPage, historyLimit]);
 
+  // 중복 매칭 확인 함수
+  const checkMatchCount = async () => {
+    if (!matchingResult || !matchingResult.success || !selectedUser) return;
+
+    setMatchCountLoading(true);
+    setMatchCountError(null);
+
+    try {
+      // 요청자 ID와 매칭 상대 ID로 중복 매칭 여부 확인
+      const data = await AdminService.matching.getMatchCount(
+        matchingResult.requester.id,
+        matchingResult.partner.id
+      );
+
+      console.log('중복 매칭 확인 응답:', data);
+      setMatchCount(data);
+    } catch (err: any) {
+      console.error('중복 매칭 확인 중 오류:', err);
+      setMatchCountError(err.response?.data?.message || err.message || '중복 매칭 확인 중 오류가 발생했습니다.');
+    } finally {
+      setMatchCountLoading(false);
+    }
+  };
+
+  // 매칭 결과가 변경되면 중복 매칭 여부 확인
+  useEffect(() => {
+    if (matchingResult && matchingResult.success) {
+      checkMatchCount();
+    } else {
+      setMatchCount(null);
+    }
+  }, [matchingResult]);
+
   // 선택된 사용자가 변경되면 매칭 이력 초기화
   useEffect(() => {
     setShowMatchHistory(false);
     setMatchHistory(null);
     setHistoryPage(1);
+    setMatchCount(null);
   }, [selectedUser]);
 
   return (
@@ -412,6 +463,87 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
               <Alert severity="success" sx={{ mb: 2 }}>
                 매칭 성공! 유사도: {(matchingResult.similarity * 100).toFixed(1)}%
               </Alert>
+
+              {/* 중복 매칭 정보 */}
+              {matchCount && (
+                <>
+                  <Alert
+                    severity={matchCount.totalCount > 0 ? "warning" : "info"}
+                    sx={{ mb: 2 }}
+                    icon={matchCount.totalCount > 0 ? <WarningIcon /> : undefined}
+                  >
+                    {matchCount.totalCount > 0
+                      ? `이 사용자들은 이전에 ${matchCount.totalCount}번 매칭된 이력이 있습니다.`
+                      : "이 사용자들은 이전에 매칭된 이력이 없습니다."}
+                  </Alert>
+
+                  {/* 중복 매칭 상세 정보 */}
+                  {matchCount.totalCount > 0 && matchCount.matches.length > 0 && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2" gutterBottom>
+                        이전 매칭 이력:
+                      </Typography>
+                      <TableContainer component={Paper} variant="outlined">
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                              <TableCell>매칭 ID</TableCell>
+                              <TableCell>매칭 타입</TableCell>
+                              <TableCell>매칭 일시</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {matchCount.matches.map((match) => (
+                              <TableRow key={match.id}>
+                                <TableCell>{match.id}</TableCell>
+                                <TableCell>
+                                  <Chip
+                                    label={
+                                      match.type === 'scheduled' ? '무료 매칭' :
+                                      match.type === 'admin' ? '관리자 매칭' :
+                                      match.type === 'rematching' ? '유료 매칭' :
+                                      match.type
+                                    }
+                                    color={
+                                      match.type === 'scheduled' ? 'primary' :
+                                      match.type === 'admin' ? 'warning' :
+                                      match.type === 'rematching' ? 'secondary' :
+                                      'default'
+                                    }
+                                    size="small"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  {new Date(match.publishedAt).toLocaleString('ko-KR', {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    </Box>
+                  )}
+                </>
+              )}
+
+              {matchCountLoading && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <CircularProgress size={20} />
+                  <Typography variant="body2">중복 매칭 여부 확인 중...</Typography>
+                </Box>
+              )}
+
+              {matchCountError && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {matchCountError}
+                </Alert>
+              )}
               <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
                 {/* 요청자 정보 */}
                 <Box sx={{ flex: 1 }}>
