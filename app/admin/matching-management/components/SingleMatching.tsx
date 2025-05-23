@@ -468,20 +468,22 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
               {matchCount && (
                 <>
                   <Alert
-                    severity={matchCount.totalCount > 0 ? "warning" : "info"}
+                    severity={matchCount.totalCount > 1 ? "warning" : matchCount.totalCount === 1 ? "success" : "info"}
                     sx={{ mb: 2 }}
-                    icon={matchCount.totalCount > 0 ? <WarningIcon /> : undefined}
+                    icon={matchCount.totalCount > 1 ? <WarningIcon /> : undefined}
                   >
-                    {matchCount.totalCount > 0
-                      ? `이 사용자들은 이전에 ${matchCount.totalCount}번 매칭된 이력이 있습니다.`
-                      : "이 사용자들은 이전에 매칭된 이력이 없습니다."}
+                    {matchCount.totalCount === 0
+                      ? "이 사용자들은 이전에 매칭된 이력이 없습니다."
+                      : matchCount.totalCount === 1
+                        ? "이 사용자들은 처음 매칭되었습니다."
+                        : `이 사용자들은 이전에 ${matchCount.totalCount}번 매칭된 이력이 있습니다. (재매칭)`}
                   </Alert>
 
                   {/* 중복 매칭 상세 정보 */}
                   {matchCount.totalCount > 0 && matchCount.matches.length > 0 && (
                     <Box sx={{ mb: 2 }}>
                       <Typography variant="subtitle2" gutterBottom>
-                        이전 매칭 이력:
+                        {matchCount.totalCount === 1 ? "첫 매칭 이력:" : "재매칭 이력:"}
                       </Typography>
                       <TableContainer component={Paper} variant="outlined">
                         <Table size="small">
@@ -493,8 +495,17 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
                             </TableRow>
                           </TableHead>
                           <TableBody>
-                            {matchCount.matches.map((match) => (
-                              <TableRow key={match.id}>
+                            {matchCount.matches.map((match, index) => (
+                              <TableRow
+                                key={match.id}
+                                sx={{
+                                  backgroundColor: matchCount.totalCount === 1
+                                    ? 'rgba(76, 175, 80, 0.08)' // 첫 매칭인 경우 연한 초록색
+                                    : index === 0
+                                      ? 'rgba(255, 152, 0, 0.08)' // 재매칭 중 첫 번째 매칭은 연한 주황색
+                                      : 'inherit' // 나머지는 기본 색상
+                                }}
+                              >
                                 <TableCell>{match.id}</TableCell>
                                 <TableCell>
                                   <Chip
@@ -512,6 +523,22 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
                                     }
                                     size="small"
                                   />
+                                  {index === 0 && matchCount.totalCount > 1 && (
+                                    <Chip
+                                      label="첫 매칭"
+                                      color="warning"
+                                      size="small"
+                                      sx={{ ml: 1 }}
+                                    />
+                                  )}
+                                  {index > 0 && (
+                                    <Chip
+                                      label={`${index + 1}번째 매칭`}
+                                      color="default"
+                                      size="small"
+                                      sx={{ ml: 1 }}
+                                    />
+                                  )}
                                 </TableCell>
                                 <TableCell>
                                   {new Date(match.publishedAt).toLocaleString('ko-KR', {
