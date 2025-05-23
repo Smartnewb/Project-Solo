@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import axiosServer from '@/utils/axios';
-import { formatDateWithoutTimezoneConversion } from '@/utils/formatters';
+import { formatDateWithoutTimezoneConversion } from '@/app/utils/formatters';
 
 type ProfileImage = {
   id: string;
