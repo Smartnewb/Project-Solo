@@ -18,8 +18,7 @@ import {
   TableHead,
   TableRow,
   TablePagination,
-  Collapse,
-  Badge
+  Collapse
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -105,7 +104,8 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [historyPage, setHistoryPage] = useState<number>(1);
   const [historyLimit, setHistoryLimit] = useState<number>(5);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  const [startDate, setStartDate] = useState<Date | null>(new Date());
+  const [endDate, setEndDate] = useState<Date | null>(new Date());
 
   // 중복 매칭 확인 관련 상태
   const [matchCount, setMatchCount] = useState<MatchCountResponse | null>(null);
@@ -114,18 +114,20 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
 
   // 매칭 이력 조회 함수
   const fetchMatchHistory = async () => {
-    if (!selectedUser || !selectedDate) return;
+    if (!selectedUser || !startDate || !endDate) return;
 
     setHistoryLoading(true);
     setHistoryError(null);
 
     try {
       // 날짜 형식 변환 (YYYY-MM-DD)
-      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+      const formattedStartDate = format(startDate, 'yyyy-MM-dd');
+      const formattedEndDate = format(endDate, 'yyyy-MM-dd');
 
       // AdminService를 사용하여 API 호출
       const data = await AdminService.matching.getMatchHistory(
-        formattedDate,
+        formattedStartDate,
+        formattedEndDate,
         historyPage,
         historyLimit,
         selectedUser.name
@@ -162,11 +164,21 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
     setHistoryPage(1);
   };
 
-  // 날짜 변경 핸들러
-  const handleDateChange = (newDate: Date | null) => {
-    setSelectedDate(newDate);
+  // 시작일 변경 핸들러
+  const handleStartDateChange = (newDate: Date | null) => {
+    setStartDate(newDate);
     setHistoryPage(1);
-    if (newDate && showMatchHistory) {
+    if (newDate && endDate && showMatchHistory) {
+      // 날짜가 변경되면 새로운 데이터 로드
+      setTimeout(() => fetchMatchHistory(), 0);
+    }
+  };
+
+  // 종료일 변경 핸들러
+  const handleEndDateChange = (newDate: Date | null) => {
+    setEndDate(newDate);
+    setHistoryPage(1);
+    if (startDate && newDate && showMatchHistory) {
       // 날짜가 변경되면 새로운 데이터 로드
       setTimeout(() => fetchMatchHistory(), 0);
     }
@@ -179,7 +191,7 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
 
   // 페이지 또는 항목 수 변경 시 데이터 다시 로드
   useEffect(() => {
-    if (showMatchHistory && selectedDate) {
+    if (showMatchHistory && startDate && endDate) {
       fetchMatchHistory();
     }
   }, [historyPage, historyLimit]);
@@ -199,6 +211,14 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
       );
 
       console.log('중복 매칭 확인 응답:', data);
+
+      // 매칭 이력을 날짜 기준으로 오름차순 정렬 (가장 오래된 매칭이 첫 번째)
+      if (data && data.matches && data.matches.length > 0) {
+        data.matches.sort((a: { publishedAt: string }, b: { publishedAt: string }) =>
+          new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime()
+        );
+      }
+
       setMatchCount(data);
     } catch (err: any) {
       console.error('중복 매칭 확인 중 오류:', err);
@@ -222,6 +242,8 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
     setShowMatchHistory(false);
     setMatchHistory(null);
     setHistoryPage(1);
+    setStartDate(new Date());
+    setEndDate(new Date());
     setMatchCount(null);
   }, [selectedUser]);
 
@@ -307,16 +329,32 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
                   <Box sx={{ flex: 1 }}>
                     <DatePicker
-                      label="날짜 선택"
-                      value={selectedDate}
-                      onChange={handleDateChange}
+                      label="시작일"
+                      value={startDate}
+                      onChange={handleStartDateChange}
                       format="yyyy-MM-dd"
                       slotProps={{
                         textField: {
                           fullWidth: true,
                           variant: 'outlined',
                           size: 'small',
-                          helperText: '매칭 내역을 조회할 날짜를 선택하세요'
+                          helperText: '조회 시작일을 선택하세요'
+                        }
+                      }}
+                    />
+                  </Box>
+                  <Box sx={{ flex: 1 }}>
+                    <DatePicker
+                      label="종료일"
+                      value={endDate}
+                      onChange={handleEndDateChange}
+                      format="yyyy-MM-dd"
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          variant: 'outlined',
+                          size: 'small',
+                          helperText: '조회 종료일을 선택하세요'
                         }
                       }}
                     />
@@ -523,7 +561,8 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
                                     }
                                     size="small"
                                   />
-                                  {index === 0 && matchCount.totalCount > 1 && (
+                                  {/* 첫 번째 매칭은 항상 "첫 매칭"으로 표시 */}
+                                  {index === 0 && (
                                     <Chip
                                       label="첫 매칭"
                                       color="warning"
@@ -531,6 +570,7 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
                                       sx={{ ml: 1 }}
                                     />
                                   )}
+                                  {/* 두 번째 이상의 매칭은 순서대로 표시 */}
                                   {index > 0 && (
                                     <Chip
                                       label={`${index + 1}번째 매칭`}

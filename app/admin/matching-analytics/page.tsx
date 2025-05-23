@@ -166,7 +166,8 @@ export default function MatchingAnalytics() {
   const [tabValue, setTabValue] = useState(0);
 
   // 매칭 내역 관련 상태
-  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  const [startDate, setStartDate] = useState<Date | null>(new Date());
+  const [endDate, setEndDate] = useState<Date | null>(new Date());
   const [matchHistory, setMatchHistory] = useState<MatchHistoryResponse | null>(null);
   const [historyPage, setHistoryPage] = useState<number>(1);
   const [historyLimit, setHistoryLimit] = useState<number>(10);
@@ -182,6 +183,7 @@ export default function MatchingAnalytics() {
   const [failureLogsLoading, setFailureLogsLoading] = useState<boolean>(false);
   const [failureSearchName, setFailureSearchName] = useState<string>('');
   const [isFailureSearchMode, setIsFailureSearchMode] = useState<boolean>(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
 
   // 대학교 목록 가져오기
   useEffect(() => {
@@ -224,19 +226,21 @@ export default function MatchingAnalytics() {
   // 매칭 내역 가져오기
   useEffect(() => {
     const fetchMatchHistory = async () => {
-      if (!selectedDate) return;
+      if (!startDate || !endDate) return;
 
       try {
         setHistoryLoading(true);
         setError(null);
 
         // 날짜 형식 변환 (YYYY-MM-DD)
-        const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+        const formattedStartDate = format(startDate, 'yyyy-MM-dd');
+        const formattedEndDate = format(endDate, 'yyyy-MM-dd');
 
         // 검색 모드가 아닌 경우에만 자동으로 데이터 가져오기
         if (!isSearchMode) {
           const data = await AdminService.matching.getMatchHistory(
-            formattedDate,
+            formattedStartDate,
+            formattedEndDate,
             historyPage,
             historyLimit
           );
@@ -255,11 +259,11 @@ export default function MatchingAnalytics() {
     if (tabValue === 2) {
       fetchMatchHistory();
     }
-  }, [selectedDate, historyPage, historyLimit, tabValue, isSearchMode]);
+  }, [startDate, endDate, historyPage, historyLimit, tabValue, isSearchMode]);
 
   // 매칭 내역 검색 실행 함수
   const handleSearch = async () => {
-    if (!selectedDate) return;
+    if (!startDate || !endDate) return;
 
     try {
       setHistoryLoading(true);
@@ -267,10 +271,12 @@ export default function MatchingAnalytics() {
       setHistoryPage(1); // 검색 시 첫 페이지로 이동
 
       // 날짜 형식 변환 (YYYY-MM-DD)
-      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+      const formattedStartDate = format(startDate, 'yyyy-MM-dd');
+      const formattedEndDate = format(endDate, 'yyyy-MM-dd');
 
       const data = await AdminService.matching.getMatchHistory(
-        formattedDate,
+        formattedStartDate,
+        formattedEndDate,
         1,
         historyLimit,
         searchName,
@@ -674,10 +680,10 @@ export default function MatchingAnalytics() {
               <Grid item xs={12} md={3}>
                 <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ko}>
                   <DatePicker
-                    label="날짜 선택"
-                    value={selectedDate}
+                    label="시작일"
+                    value={startDate}
                     onChange={(newDate) => {
-                      setSelectedDate(newDate);
+                      setStartDate(newDate);
                       setIsSearchMode(false); // 날짜 변경 시 검색 모드 해제
                     }}
                     format="yyyy-MM-dd"
@@ -686,7 +692,28 @@ export default function MatchingAnalytics() {
                         fullWidth: true,
                         variant: 'outlined',
                         size: 'small',
-                        helperText: '매칭 내역을 조회할 날짜를 선택하세요'
+                        helperText: '조회 시작일을 선택하세요'
+                      }
+                    }}
+                  />
+                </LocalizationProvider>
+              </Grid>
+              <Grid item xs={12} md={3}>
+                <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ko}>
+                  <DatePicker
+                    label="종료일"
+                    value={endDate}
+                    onChange={(newDate) => {
+                      setEndDate(newDate);
+                      setIsSearchMode(false); // 날짜 변경 시 검색 모드 해제
+                    }}
+                    format="yyyy-MM-dd"
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        variant: 'outlined',
+                        size: 'small',
+                        helperText: '조회 종료일을 선택하세요'
                       }
                     }}
                   />
@@ -898,10 +925,12 @@ export default function MatchingAnalytics() {
                     setHistoryPage(newPage + 1);
 
                     // 검색 모드인 경우 검색 파라미터를 유지하면서 페이지 변경
-                    if (isSearchMode && selectedDate) {
-                      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+                    if (isSearchMode && startDate && endDate) {
+                      const formattedStartDate = format(startDate, 'yyyy-MM-dd');
+                      const formattedEndDate = format(endDate, 'yyyy-MM-dd');
                       AdminService.matching.getMatchHistory(
-                        formattedDate,
+                        formattedStartDate,
+                        formattedEndDate,
                         newPage + 1,
                         historyLimit,
                         searchName,
@@ -918,10 +947,12 @@ export default function MatchingAnalytics() {
                     setHistoryPage(1);
 
                     // 검색 모드인 경우 검색 파라미터를 유지하면서 페이지당 항목 수 변경
-                    if (isSearchMode && selectedDate) {
-                      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+                    if (isSearchMode && startDate && endDate) {
+                      const formattedStartDate = format(startDate, 'yyyy-MM-dd');
+                      const formattedEndDate = format(endDate, 'yyyy-MM-dd');
                       AdminService.matching.getMatchHistory(
-                        formattedDate,
+                        formattedStartDate,
+                        formattedEndDate,
                         1,
                         newLimit,
                         searchName,

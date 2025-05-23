@@ -1216,12 +1216,12 @@ const universities = {
 // 매칭 관련 API
 const matching = {
   // 매칭 내역 조회
-  getMatchHistory: async (date: string, page: number = 1, limit: number = 10, name?: string, type?: string) => {
+  getMatchHistory: async (startDate: string, endDate: string, page: number = 1, limit: number = 10, name?: string, type?: string) => {
     try {
-      console.log('매칭 내역 조회 요청:', { date, page, limit, name, type });
+      console.log('매칭 내역 조회 요청:', { startDate, endDate, page, limit, name, type });
 
       // 파라미터 객체 생성
-      const params: any = { date, page, limit };
+      const params: any = { startDate, endDate, page, limit };
 
       // 이름 검색어가 있는 경우 추가
       if (name && name.trim() !== '') {
