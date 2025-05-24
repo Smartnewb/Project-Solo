@@ -21,6 +21,7 @@ import UserSearch from './components/UserSearch';
 import SingleMatching from './components/SingleMatching';
 import MatchingSimulation from './components/MatchingSimulation';
 import UnmatchedUsers from './components/UnmatchedUsers';
+import MatcherHistory from './components/MatcherHistory';
 import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
 
 // 타입 임포트
@@ -141,10 +142,10 @@ export default function MatchingManagement() {
       const response = await matchRestMembers();
       setRestMembers(response);
     } catch (error) {
-      console.error('매칭 대기 사용자 조회 오류:', error);  
+      console.error('매칭 대기 사용자 조회 오류:', error);
     }
   }
-  
+
 
   // 사용자 상세 정보 모달 상태
   const [userDetailModalOpen, setUserDetailModalOpen] = useState(false);
@@ -444,6 +445,7 @@ export default function MatchingManagement() {
         <Tab label="단일 매칭" />
         <Tab label="매칭 시뮬레이션" />
         <Tab label="매칭 대기 사용자" />
+        <Tab label="매칭 상대 이력" />
         <Tab label="00시 매칭 여부" />
         <Tab label="잔여 사용자 매칭" />
       </Tabs>
@@ -529,6 +531,19 @@ export default function MatchingManagement() {
       </TabPanel>
 
       <TabPanel value={activeTab} index={3}>
+        <MatcherHistory
+          searchTerm={searchTerm}
+          searchLoading={searchLoading}
+          error={error}
+          searchResults={searchResults}
+          selectedUser={selectedUser}
+          setSearchTerm={setSearchTerm}
+          searchUsers={searchUsers}
+          handleUserSelect={handleUserSelect}
+        />
+      </TabPanel>
+
+      <TabPanel value={activeTab} index={4}>
         <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
           <Typography variant="h6" gutterBottom>
             00시 매칭 On/Off
@@ -550,23 +565,23 @@ export default function MatchingManagement() {
       </TabPanel>
 
 
-      <TabPanel value={activeTab} index={4}>
-      <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
+      <TabPanel value={activeTab} index={5}>
+        <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
           <Typography variant="h6" gutterBottom>
             (굉장히 급조한 API) 잔여 사용자 매칭 (위험)
           </Typography>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Button variant="default" color="primary" onClick={doMatchRestMembers}>
-                잔여 사용자 매칭하기
-              </Button>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Button variant="default" color="primary" onClick={doMatchRestMembers}>
+              잔여 사용자 매칭하기
+            </Button>
 
-              {restMembers && (
-                <TextareaAutosize
-                  value={restMembers}
-                />
-              )}
-            </Box>
+            {restMembers && (
+              <TextareaAutosize
+                value={restMembers}
+              />
+            )}
+          </Box>
         </Paper>
       </TabPanel>
 

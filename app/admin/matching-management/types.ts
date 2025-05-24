@@ -91,3 +91,51 @@ export interface UserProfile {
     }[];
   }[];
 }
+
+// 매칭 상대 이력 응답 타입
+export interface MatcherHistoryResponse {
+  items: MatcherHistoryItem[];
+  meta: {
+    currentPage: number;
+    itemsPerPage: number;
+    totalItems: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+  totalMatchCount: number;
+  matcherInfo: {
+    id: string;
+    name: string;
+    age: number;
+    gender: string;
+    profileImageUrl?: string;
+    universityDetails?: {
+      name: string;
+      department: string;
+      grade: string;
+      studentNumber: string;
+    };
+  };
+}
+
+// 매칭 상대 이력 아이템 타입
+export interface MatcherHistoryItem {
+  id: string;
+  score: number;
+  type: string;
+  publishedAt: string;
+  requester: {
+    id: string;
+    name: string;
+    age: number;
+    gender: string;
+    profileImageUrl?: string;
+    universityDetails?: {
+      name: string;
+      department: string;
+      grade: string;
+      studentNumber: string;
+    };
+  };
+}
