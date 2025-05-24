@@ -96,6 +96,11 @@ const matchRestMembers = () =>
     timeout: 1000 * 60 * 60
   });
 
+const batchAllMatchableUsers = () =>
+  axiosServer.post('/admin/matching/vector', undefined, {
+    timeout: 1000 * 60 * 60
+  });
+
 export default function MatchingManagement() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -136,6 +141,7 @@ export default function MatchingManagement() {
   const [unmatchedUsersGenderFilter, setUnmatchedUsersGenderFilter] = useState('all');
   const [selectedUnmatchedUser, setSelectedUnmatchedUser] = useState<UnmatchedUser | null>(null);
   const [restMembers, setRestMembers] = useState<any>('');
+  const [vectorResult, setVectorResult] = useState<any>('');
 
   const doMatchRestMembers = async () => {
     try {
@@ -146,6 +152,14 @@ export default function MatchingManagement() {
     }
   }
 
+  const doBatchUpdateVectorAllMatchableUsers = async () => {
+    try {
+      const response = await batchAllMatchableUsers();
+      setVectorResult(response);
+    } catch (error) {
+      console.error('매칭 조건에 포함되는 전체 사용자의 벡터 갱신 오류:', error);  
+    }
+  }
 
   // 사용자 상세 정보 모달 상태
   const [userDetailModalOpen, setUserDetailModalOpen] = useState(false);
@@ -153,11 +167,6 @@ export default function MatchingManagement() {
   const [userDetail, setUserDetail] = useState<UserDetail | null>(null);
   const [loadingUserDetail, setLoadingUserDetail] = useState(false);
   const [userDetailError, setUserDetailError] = useState<string | null>(null);
-
-  // 페이지 초기화
-  useEffect(() => {
-    // 필요한 초기화 작업 수행
-  }, []);
 
   // 탭 변경 핸들러
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
@@ -448,6 +457,7 @@ export default function MatchingManagement() {
         <Tab label="매칭 상대 이력" />
         <Tab label="00시 매칭 여부" />
         <Tab label="잔여 사용자 매칭" />
+        <Tab label="임베드 데이터 갱신" />
       </Tabs>
 
       <TabPanel value={activeTab} index={0}>
@@ -571,17 +581,37 @@ export default function MatchingManagement() {
             (굉장히 급조한 API) 잔여 사용자 매칭 (위험)
           </Typography>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Button variant="default" color="primary" onClick={doMatchRestMembers}>
-              잔여 사용자 매칭하기
-            </Button>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+              <Button variant="default" color="primary" onClick={doMatchRestMembers}>
+                잔여 사용자 매칭하기
+              </Button>
 
-            {restMembers && (
-              <TextareaAutosize
-                value={restMembers}
-              />
-            )}
-          </Box>
+              {restMembers && (
+                <TextareaAutosize
+                  value={JSON.stringify(restMembers, null, 2)}
+                />
+              )}
+            </Box>
+        </Paper>
+      </TabPanel>
+
+      <TabPanel value={activeTab} index={5}>
+      <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
+          <Typography variant="h6" gutterBottom>
+            매칭 조건에 포함되는 전체 사용자의 벡터 갱신 (오래걸림)
+          </Typography>
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+              <Button variant="default" color="primary" onClick={doBatchUpdateVectorAllMatchableUsers}>
+                갱신하기 (신중히 사용할 것)
+              </Button>
+
+              {vectorResult && (
+                <TextareaAutosize
+                  value={JSON.stringify(vectorResult, null, 2)}
+                />
+              )}
+            </Box>
         </Paper>
       </TabPanel>
 
