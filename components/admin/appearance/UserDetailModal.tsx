@@ -318,6 +318,28 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     }
   };
 
+  // 회원 탈퇴 처리
+  const handleDeleteUser = async () => {
+    if (!userId) return;
+    if (!window.confirm('정말로 이 사용자를 탈퇴시키겠습니까?')) return;
+
+    try {
+      handleCloseMenu();
+      setActionLoading(true);
+      setActionError(null);
+
+      await AdminService.userAppearance.deleteUser(userId);
+
+      setActionSuccess('회원이 성공적으로 탈퇴되었습니다.');
+      if (onRefresh) onRefresh();
+      onClose();
+    } catch (error: any) {
+      setActionError(error.message || '회원 탈퇴 중 오류가 발생했습니다.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   return (
     <Dialog
       open={open}
@@ -413,6 +435,13 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
             <PhoneIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText>SMS 발송</ListItemText>
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={handleDeleteUser} disabled={actionLoading}>
+          <ListItemIcon>
+            <BlockIcon fontSize="small" color="error" />
+          </ListItemIcon>
+          <ListItemText primary="회원 탈퇴" primaryTypographyProps={{ color: 'error' }} />
         </MenuItem>
       </Menu>
       <DialogContent sx={{ p: 3 }}>

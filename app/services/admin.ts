@@ -1067,7 +1067,15 @@ const userAppearance = {
 
       return formattedData;
     }
-  }
+  },
+  deleteUser: async (userId: string) => {
+    try {
+      const response = await axiosServer.delete(`/admin/users/${userId}`);
+      return response.data;
+    } catch (error: any) {
+      throw error.response?.data || error;
+    }
+  },
 };
 
 // 대학교 및 학과 관련 API
