@@ -34,6 +34,7 @@ export interface UserProfileWithAppearance {
   userId?: string; // 새로운 응답에서는 없을 수 있음
   name: string;
   email?: string; // 새로운 응답에서는 없을 수 있음
+  phoneNumber?: string; // 전화번호
   gender: Gender;
   age: number;
   profileImages?: ProfileImage[]; // 새로운 응답에서는 없을 수 있음

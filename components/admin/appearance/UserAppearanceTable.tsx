@@ -393,6 +393,7 @@ const UserAppearanceTable = forwardRef<
               <TableCell>프로필</TableCell>
               <TableCell>이름</TableCell>
               <TableCell>나이/성별</TableCell>
+              <TableCell>전화번호</TableCell>
               <TableCell>대학교</TableCell>
               <TableCell>외모 등급</TableCell>
               <TableCell>인스타그램</TableCell>
@@ -403,13 +404,13 @@ const UserAppearanceTable = forwardRef<
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={9} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={10} align="center" sx={{ py: 3 }}>
                   <CircularProgress />
                 </TableCell>
               </TableRow>
             ) : users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={10} align="center" sx={{ py: 3 }}>
                   <Typography variant="body1">조회된 사용자가 없습니다.</Typography>
                 </TableCell>
               </TableRow>
@@ -454,6 +455,11 @@ const UserAppearanceTable = forwardRef<
                     )}
                   </TableCell>
                   <TableCell>{user.age}세 / {GENDER_LABELS[user.gender]}</TableCell>
+                  <TableCell>
+                    <Typography variant="body2">
+                      {user.phoneNumber || '-'}
+                    </Typography>
+                  </TableCell>
                   <TableCell>
                     {/* 대학교 정보 표시 (여러 필드 구조 지원) */}
                     {user.university ? (

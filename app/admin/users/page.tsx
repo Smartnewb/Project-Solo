@@ -38,6 +38,7 @@ interface User {
   createdAt: string;
   name: string;
   age: number;
+  phoneNumber?: string;
   instagramId: string | null;
   profileImages: ProfileImage[];
   universityDetails: UniversityDetails | null;
@@ -356,6 +357,9 @@ export default function UsersAdmin() {
                   나이/성별
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  전화번호
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   인스타그램
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -416,6 +420,11 @@ export default function UsersAdmin() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       {user.age ? `${user.age}세` : '-'} / {' '}
                       {getGenderText(user.gender)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {user.phoneNumber || '-'}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
