@@ -1076,6 +1076,22 @@ const userAppearance = {
       throw error.response?.data || error;
     }
   },
+
+  // 중복 휴대폰 번호로 가입한 사용자 조회
+  getDuplicatePhoneUsers: async () => {
+    try {
+      console.log('중복 휴대폰 번호 사용자 조회 요청');
+
+      const response = await axiosServer.get('/admin/users/duplicate-phone');
+
+      console.log('중복 휴대폰 번호 사용자 조회 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('중복 휴대폰 번호 사용자 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  }
 };
 
 // 대학교 및 학과 관련 API

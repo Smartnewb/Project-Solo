@@ -19,6 +19,7 @@ import AppearanceGradeStatsCard from '@/components/admin/appearance/AppearanceGr
 import UserAppearanceTable from '@/components/admin/appearance/UserAppearanceTable';
 import AppearanceFilterPanel from '@/components/admin/appearance/AppearanceFilterPanel';
 import UnclassifiedUsersPanel from '@/components/admin/appearance/UnclassifiedUsersPanel';
+import DuplicatePhoneUsersPanel from '@/components/admin/appearance/DuplicatePhoneUsersPanel';
 
 // 전역 이벤트 버스 생성 (등급 변경 이벤트 처리용)
 export const appearanceGradeEventBus = {
@@ -178,6 +179,7 @@ export default function AppearanceGradePage() {
         <Tabs value={activeTab} onChange={handleTabChange} aria-label="사용자 관리 탭">
           <Tab label="전체 사용자" />
           <Tab label="미분류 사용자" />
+          <Tab label="중복 휴대폰 번호" />
         </Tabs>
       </Box>
 
@@ -207,6 +209,9 @@ export default function AppearanceGradePage() {
         )}
         {activeTab === 1 && (
           <UnclassifiedUsersPanel />
+        )}
+        {activeTab === 2 && (
+          <DuplicatePhoneUsersPanel />
         )}
       </Box>
     </Box>

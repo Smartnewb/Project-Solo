@@ -126,7 +126,19 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const menuOpen = Boolean(menuAnchorEl);
   console.log({ userDetail });
   const [selectedImage, setSelectedImage] = useState<string>(
-    (() => userDetail.profileImages.find(img => img.isMain === true)!.url)()
+    (() => {
+      if (userDetail.profileImages && userDetail.profileImages.length > 0) {
+        const mainImage = userDetail.profileImages.find(img => img.isMain === true);
+        return mainImage ? mainImage.url : userDetail.profileImages[0].url;
+      }
+      if (userDetail.profileImageUrl) {
+        return userDetail.profileImageUrl;
+      }
+      // 기본 이미지 또는 빈 문자열
+      return userDetail.gender === 'MALE'
+        ? `https://randomuser.me/api/portraits/men/${Math.floor(Math.random() * 50) + 1}.jpg`
+        : `https://randomuser.me/api/portraits/women/${Math.floor(Math.random() * 50) + 1}.jpg`;
+    })()
   );
 
   // 외모 등급 상태
@@ -140,6 +152,13 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     setLoading(initialLoading);
     setError(initialError);
   }, [initialUserDetail, initialLoading, initialError]);
+
+  // userId가 변경되면 사용자 데이터 로드
+  useEffect(() => {
+    if (userId && open && !initialUserDetail?.id) {
+      refreshUserDetail();
+    }
+  }, [userId, open]);
   const [savingGrade, setSavingGrade] = useState(false);
 
   // 모달 상태
