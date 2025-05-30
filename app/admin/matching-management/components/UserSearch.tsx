@@ -15,6 +15,7 @@ import {
   Chip
 } from '@mui/material';
 import PersonIcon from '@mui/icons-material/Person';
+import PhoneIcon from '@mui/icons-material/Phone';
 import { UserSearchResult } from '../types';
 
 interface UserSearchProps {
@@ -101,12 +102,26 @@ const UserSearch: React.FC<UserSearchProps> = ({
                     </Box>
                   }
                   secondary={
-                    // 대학교 정보 표시 (여러 필드 구조 지원)
-                    user.university ? (
-                      typeof user.university === 'string' ? user.university : user.university.name
-                    ) : user.universityDetails?.name ?
-                      `${user.universityDetails.name} ${user.universityDetails.department || ''}` :
-                      '대학 정보 없음'
+                    <Box>
+                      {/* 전화번호 */}
+                      {user.phoneNumber && (
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                          <PhoneIcon sx={{ fontSize: 14, mr: 0.5, color: 'text.secondary' }} />
+                          <Typography variant="body2" color="text.secondary">
+                            {user.phoneNumber}
+                          </Typography>
+                        </Box>
+                      )}
+                      {/* 대학교 정보 */}
+                      <Typography variant="body2" color="text.secondary">
+                        {user.university ? (
+                          typeof user.university === 'string' ? user.university : user.university.name
+                        ) : user.universityDetails?.name ?
+                          `${user.universityDetails.name} ${user.universityDetails.department || ''}` :
+                          '대학 정보 없음'
+                        }
+                      </Typography>
+                    </Box>
                   }
                 />
               </ListItem>

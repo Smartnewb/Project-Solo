@@ -3,6 +3,7 @@ export interface UserSearchResult {
   id: string;
   name: string;
   email?: string;
+  phoneNumber?: string; // 전화번호 추가
   profileImageUrl?: string;
   age: number;
   gender: 'MALE' | 'FEMALE';
@@ -138,4 +139,25 @@ export interface MatcherHistoryItem {
       studentNumber: string;
     };
   };
+}
+
+// 재매칭 티켓 조회 응답 타입
+export interface TicketStatusResponse {
+  success: boolean;
+  userId: string;
+  userName: string;
+  stats: {
+    available: number;
+    used: number;
+    total: number;
+  };
+}
+
+// 재매칭 티켓 생성/회수 응답 타입
+export interface TicketActionResponse {
+  success: boolean;
+  message: string;
+  createdCount?: number;
+  deletedCount?: number;
+  ticketIds?: string[];
 }

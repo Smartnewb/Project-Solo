@@ -22,6 +22,7 @@ import SingleMatching from './components/SingleMatching';
 import MatchingSimulation from './components/MatchingSimulation';
 import UnmatchedUsers from './components/UnmatchedUsers';
 import MatcherHistory from './components/MatcherHistory';
+import TicketManagement from './components/TicketManagement';
 import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
 
 // 타입 임포트
@@ -157,7 +158,7 @@ export default function MatchingManagement() {
       const response = await batchAllMatchableUsers();
       setVectorResult(response);
     } catch (error) {
-      console.error('매칭 조건에 포함되는 전체 사용자의 벡터 갱신 오류:', error);  
+      console.error('매칭 조건에 포함되는 전체 사용자의 벡터 갱신 오류:', error);
     }
   }
 
@@ -455,6 +456,7 @@ export default function MatchingManagement() {
         <Tab label="매칭 시뮬레이션" />
         <Tab label="매칭 대기 사용자" />
         <Tab label="매칭 상대 이력" />
+        <Tab label="재매칭 티켓 관리" />
         <Tab label="00시 매칭 여부" />
         <Tab label="잔여 사용자 매칭" />
         <Tab label="임베드 데이터 갱신" />
@@ -554,6 +556,19 @@ export default function MatchingManagement() {
       </TabPanel>
 
       <TabPanel value={activeTab} index={4}>
+        <TicketManagement
+          searchTerm={searchTerm}
+          searchLoading={searchLoading}
+          error={error}
+          searchResults={searchResults}
+          selectedUser={selectedUser}
+          setSearchTerm={setSearchTerm}
+          searchUsers={searchUsers}
+          handleUserSelect={handleUserSelect}
+        />
+      </TabPanel>
+
+      <TabPanel value={activeTab} index={5}>
         <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
           <Typography variant="h6" gutterBottom>
             00시 매칭 On/Off
@@ -575,7 +590,7 @@ export default function MatchingManagement() {
       </TabPanel>
 
 
-      <TabPanel value={activeTab} index={5}>
+      <TabPanel value={activeTab} index={6}>
         <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
           <Typography variant="h6" gutterBottom>
             (굉장히 급조한 API) 잔여 사용자 매칭 (위험)
@@ -595,7 +610,7 @@ export default function MatchingManagement() {
         </Paper>
       </TabPanel>
 
-      <TabPanel value={activeTab} index={5}>
+      <TabPanel value={activeTab} index={7}>
       <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
           <Typography variant="h6" gutterBottom>
             매칭 조건에 포함되는 전체 사용자의 벡터 갱신 (오래걸림)
