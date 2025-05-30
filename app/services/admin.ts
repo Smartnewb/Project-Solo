@@ -1068,9 +1068,11 @@ const userAppearance = {
       return formattedData;
     }
   },
-  deleteUser: async (userId: string) => {
+  deleteUser: async (userId: string, sendEmail: boolean = false) => {
     try {
-      const response = await axiosServer.delete(`/admin/users/${userId}`);
+      const response = await axiosServer.delete(`/admin/users/${userId}`, {
+        data: { sendEmail }
+      });
       return response.data;
     } catch (error: any) {
       throw error.response?.data || error;

@@ -3,6 +3,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogActions,
   IconButton,
   Typography,
   Box,
@@ -26,7 +27,9 @@ import {
   TableContainer,
   TableRow,
   ToggleButtonGroup,
-  ToggleButton
+  ToggleButton,
+  FormControlLabel,
+  Checkbox
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import InstagramIcon from '@mui/icons-material/Instagram';
@@ -168,11 +171,15 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const [editProfileModalOpen, setEditProfileModalOpen] = useState(false);
   const [emailNotificationModalOpen, setEmailNotificationModalOpen] = useState(false);
   const [smsNotificationModalOpen, setSmsNotificationModalOpen] = useState(false);
+  const [deleteConfirmModalOpen, setDeleteConfirmModalOpen] = useState(false);
 
   // 작업 상태
   const [actionLoading, setActionLoading] = useState(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  // 회원 탈퇴 관련 상태
+  const [sendEmailOnDelete, setSendEmailOnDelete] = useState(false);
 
   // 메뉴 열기
   const handleOpenMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -337,19 +344,25 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     }
   };
 
-  // 회원 탈퇴 처리
-  const handleDeleteUser = async () => {
+  // 회원 탈퇴 확인 다이얼로그 열기
+  const handleDeleteUser = () => {
+    handleCloseMenu();
+    setDeleteConfirmModalOpen(true);
+    setSendEmailOnDelete(false); // 기본값으로 초기화
+  };
+
+  // 실제 회원 탈퇴 처리
+  const handleConfirmDeleteUser = async () => {
     if (!userId) return;
-    if (!window.confirm('정말로 이 사용자를 탈퇴시키겠습니까?')) return;
 
     try {
-      handleCloseMenu();
       setActionLoading(true);
       setActionError(null);
+      setDeleteConfirmModalOpen(false);
 
-      await AdminService.userAppearance.deleteUser(userId);
+      await AdminService.userAppearance.deleteUser(userId, sendEmailOnDelete);
 
-      setActionSuccess('회원이 성공적으로 탈퇴되었습니다.');
+      setActionSuccess(`회원이 성공적으로 탈퇴되었습니다.${sendEmailOnDelete ? ' (이메일 발송됨)' : ''}`);
       if (onRefresh) onRefresh();
       onClose();
     } catch (error: any) {
@@ -1119,6 +1132,54 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           if (onRefresh) onRefresh();
         }}
       />
+
+      {/* 회원 탈퇴 확인 다이얼로그 */}
+      <Dialog
+        open={deleteConfirmModalOpen}
+        onClose={() => setDeleteConfirmModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Typography variant="h6" color="error">
+            회원 탈퇴 확인
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            정말로 <strong>{userDetail?.name}</strong> 사용자를 탈퇴시키겠습니까?
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            이 작업은 되돌릴 수 없습니다.
+          </Typography>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={sendEmailOnDelete}
+                onChange={(e) => setSendEmailOnDelete(e.target.checked)}
+                color="primary"
+              />
+            }
+            label="탈퇴 처리 시 사용자에게 이메일 발송"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setDeleteConfirmModalOpen(false)}
+            color="inherit"
+          >
+            취소
+          </Button>
+          <Button
+            onClick={handleConfirmDeleteUser}
+            color="error"
+            variant="contained"
+            disabled={actionLoading}
+          >
+            {actionLoading ? '처리 중...' : '탈퇴 처리'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Dialog>
   );
 };
