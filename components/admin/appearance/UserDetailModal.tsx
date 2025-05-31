@@ -348,7 +348,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const handleDeleteUser = () => {
     handleCloseMenu();
     setDeleteConfirmModalOpen(true);
-    setSendEmailOnDelete(false); // 기본값으로 초기화
+    setSendEmailOnDelete(true);
   };
 
   // 실제 회원 탈퇴 처리
