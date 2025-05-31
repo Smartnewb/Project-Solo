@@ -113,26 +113,91 @@ const generateEmptyMonthlyData = () => {
 };
 
 // 데이터 포맷팅 함수들
-const formatDailyData = (data: any[]) => {
-  return data.map(item => ({
-    date: item.date,
-    '탈퇴자수': item.count
-  }));
+const formatData = (data: any[], type: 'daily' | 'weekly' | 'monthly') => {
+  return data.map(item => {
+    let formattedDate: string;
+
+    switch (type) {
+      case 'daily':
+        const date = new Date(item.label);
+        formattedDate = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;
+        break;
+      case 'weekly':
+        // 주별 데이터는 "2025-05-18 ~ 2025-05-24" 형태로 오므로 시작일만 추출하여 포맷팅
+        const weekRange = item.label.split(' ~ ');
+        const startDate = new Date(weekRange[0]);
+        const month = startDate.getMonth() + 1;
+        const day = startDate.getDate();
+        formattedDate = `${month}/${day}주`;
+        break;
+      case 'monthly':
+        const monthDate = new Date(item.label);
+        formattedDate = `${monthDate.getFullYear()}년 ${monthDate.getMonth() + 1}월`;
+        break;
+    }
+
+    return {
+      date: formattedDate,
+      originalDate: item.label,
+      '탈퇴자수': item.count
+    };
+  });
 };
 
-const formatWeeklyData = (data: any[]) => {
-  return data.map(item => ({
-    date: item.date,
-    '탈퇴자수': item.count
-  }));
+const formatDailyData = (data: any[]) => formatData(data, 'daily');
+const formatWeeklyData = (data: any[]) => formatData(data, 'weekly');
+const formatMonthlyData = (data: any[]) => formatData(data, 'monthly');
+
+// 커스텀 툴팁 컴포넌트
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div style={{
+        backgroundColor: 'white',
+        padding: '10px',
+        border: '1px solid #ccc',
+        borderRadius: '4px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+      }}>
+        <p style={{ margin: 0, fontWeight: 'bold' }}>{`날짜: ${label}`}</p>
+        {data.originalDate && (
+          <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>
+            {`상세: ${data.originalDate}`}
+          </p>
+        )}
+        <p style={{ margin: 0, color: '#ff7300' }}>
+          {`탈퇴자수: ${payload[0].value}명`}
+        </p>
+      </div>
+    );
+  }
+  return null;
 };
 
-const formatMonthlyData = (data: any[]) => {
-  return data.map(item => ({
-    date: item.date,
-    '탈퇴자수': item.count
-  }));
-};
+// 재사용 가능한 차트 컴포넌트
+const WithdrawalChart = ({ data, color, interval = 1 }: { data: any[], color: string, interval?: number }) => (
+  <Box sx={{ height: 400 }}>
+    <ResponsiveContainer width="100%" height="100%">
+      <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 90 }}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis
+          dataKey="date"
+          interval={interval}
+          angle={-45}
+          textAnchor="end"
+          height={80}
+          fontSize={12}
+          tick={{ fontSize: 12 }}
+        />
+        <YAxis />
+        <Tooltip content={<CustomTooltip />} />
+        <Legend />
+        <Line type="monotone" dataKey="탈퇴자수" stroke={color} activeDot={{ r: 8 }} />
+      </LineChart>
+    </ResponsiveContainer>
+  </Box>
+);
 
 export default function WithdrawalStatsDashboard() {
   const [activeTab, setActiveTab] = useState(0);
@@ -285,26 +350,7 @@ export default function WithdrawalStatsDashboard() {
 
             {/* 일별 탭 */}
             <TabPanel value={activeTab} index={0}>
-              <Box sx={{ height: 400 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={formatDailyData(dailyData)}
-                    margin={{ top: 5, right: 30, left: 20, bottom: 50 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" interval={2} angle={-45} textAnchor="end" height={70} />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="탈퇴자수"
-                      stroke="#ff7300"
-                      activeDot={{ r: 8 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </Box>
+              <WithdrawalChart data={formatDailyData(dailyData)} color="#ff7300" interval={1} />
               <Typography variant="body2" color="textSecondary" sx={{ mt: 2, textAlign: 'center' }}>
                 최근 30일간 일별 회원 탈퇴 추이
               </Typography>
@@ -312,26 +358,7 @@ export default function WithdrawalStatsDashboard() {
 
             {/* 주별 탭 */}
             <TabPanel value={activeTab} index={1}>
-              <Box sx={{ height: 400 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={formatWeeklyData(weeklyData)}
-                    margin={{ top: 5, right: 30, left: 20, bottom: 50 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" interval={1} angle={-45} textAnchor="end" height={70} />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="탈퇴자수"
-                      stroke="#ff4500"
-                      activeDot={{ r: 8 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </Box>
+              <WithdrawalChart data={formatWeeklyData(weeklyData)} color="#ff4500" interval={0} />
               <Typography variant="body2" color="textSecondary" sx={{ mt: 2, textAlign: 'center' }}>
                 최근 12주간 주별 회원 탈퇴 추이
               </Typography>
@@ -339,26 +366,7 @@ export default function WithdrawalStatsDashboard() {
 
             {/* 월별 탭 */}
             <TabPanel value={activeTab} index={2}>
-              <Box sx={{ height: 400 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={formatMonthlyData(monthlyData)}
-                    margin={{ top: 5, right: 30, left: 20, bottom: 50 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" interval={0} angle={-45} textAnchor="end" height={70} />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="탈퇴자수"
-                      stroke="#d32f2f"
-                      activeDot={{ r: 8 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </Box>
+              <WithdrawalChart data={formatMonthlyData(monthlyData)} color="#d32f2f" interval={0} />
               <Typography variant="body2" color="textSecondary" sx={{ mt: 2, textAlign: 'center' }}>
                 최근 12개월간 월별 회원 탈퇴 추이
               </Typography>
@@ -424,32 +432,11 @@ export default function WithdrawalStatsDashboard() {
               ) : (
                 <>
                   {customPeriodData.length > 0 ? (
-                    <Box sx={{ height: 400 }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart
-                          data={formatDailyData(customPeriodData)}
-                          margin={{ top: 5, right: 30, left: 20, bottom: 50 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis
-                            dataKey="date"
-                            interval={Math.max(1, Math.floor(customPeriodData.length / 10))}
-                            angle={-45}
-                            textAnchor="end"
-                            height={70}
-                          />
-                          <YAxis />
-                          <Tooltip />
-                          <Legend />
-                          <Line
-                            type="monotone"
-                            dataKey="탈퇴자수"
-                            stroke="#8884d8"
-                            activeDot={{ r: 8 }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </Box>
+                    <WithdrawalChart
+                      data={formatDailyData(customPeriodData)}
+                      color="#8884d8"
+                      interval={Math.max(1, Math.floor(customPeriodData.length / 10))}
+                    />
                   ) : (
                     <Box sx={{ py: 5, textAlign: 'center' }}>
                       <Typography variant="body1" color="textSecondary">

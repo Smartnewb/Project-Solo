@@ -35,44 +35,41 @@ export default function WithdrawalReasonStats() {
   const [error, setError] = useState<string | null>(null);
   const [reasonStats, setReasonStats] = useState<any[]>([]);
 
+  // 기본 데이터 생성 함수
+  const getDefaultReasonStats = () => [
+    { reason: 'FOUND_PARTNER', displayName: '파트너를 찾아서', count: 0, percentage: 0 },
+    { reason: 'POOR_MATCHING', displayName: '매칭 품질이 좋지 않아서', count: 0, percentage: 0 },
+    { reason: 'PRIVACY_CONCERN', displayName: '개인정보 보호 우려', count: 0, percentage: 0 },
+    { reason: 'SAFETY_CONCERN', displayName: '안전 우려', count: 0, percentage: 0 },
+    { reason: 'TECHNICAL_ISSUES', displayName: '기술적 문제', count: 0, percentage: 0 },
+    { reason: 'INACTIVE_USAGE', displayName: '서비스를 잘 사용하지 않아서', count: 0, percentage: 0 },
+    { reason: 'DISSATISFIED_SERVICE', displayName: '서비스에 불만족', count: 0, percentage: 0 },
+    { reason: 'OTHER', displayName: '기타 사유', count: 0, percentage: 0 }
+  ];
+
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+
       try {
-        setLoading(true);
-        setError(null);
+        const response = await AdminService.stats.getWithdrawalReasonStats();
+        console.log('탈퇴 사유 통계 응답:', response);
 
-        try {
-          const response = await AdminService.stats.getWithdrawalReasonStats();
-          console.log('탈퇴 사유 통계 응답:', response);
-
-          if (response?.reasons && Array.isArray(response.reasons) && response.reasons.length > 0) {
-            setReasonStats(response.reasons);
-          } else {
-            // 데이터가 없는 경우 기본 데이터 생성
-            setReasonStats([
-              { reason: '서비스 불만족', count: 0, percentage: 0 },
-              { reason: '다른 서비스 이용', count: 0, percentage: 0 },
-              { reason: '개인정보 우려', count: 0, percentage: 0 },
-              { reason: '사용빈도 낮음', count: 0, percentage: 0 },
-              { reason: '기타', count: 0, percentage: 0 }
-            ]);
-            setError('탈퇴 사유 데이터가 없습니다. 샘플 데이터를 표시합니다.');
-          }
-        } catch (apiError) {
-          console.error('API 호출 오류:', apiError);
-          // 오류 발생 시 기본 데이터 생성
-          setReasonStats([
-            { reason: '서비스 불만족', count: 0, percentage: 0 },
-            { reason: '다른 서비스 이용', count: 0, percentage: 0 },
-            { reason: '개인정보 우려', count: 0, percentage: 0 },
-            { reason: '사용빈도 낮음', count: 0, percentage: 0 },
-            { reason: '기타', count: 0, percentage: 0 }
-          ]);
-          setError('데이터를 불러오는데 실패했습니다. 샘플 데이터를 표시합니다.');
+        if (response?.reasons && Array.isArray(response.reasons) && response.reasons.length > 0) {
+          setReasonStats(response.reasons);
+        } else {
+          console.warn('탈퇴 사유 데이터가 없습니다. 기본 데이터를 사용합니다.');
+          setReasonStats(getDefaultReasonStats());
+          setError('탈퇴 사유 데이터가 없습니다. 샘플 데이터를 표시합니다.');
         }
-      } catch (err) {
-        console.error('탈퇴 사유 통계 조회 중 오류:', err);
-        setError('데이터를 불러오는데 실패했습니다.');
+      } catch (error) {
+        console.error('탈퇴 사유 통계 API 호출 실패:', error);
+        console.error('오류 상세:', error instanceof Error ? error.message : '알 수 없는 오류');
+
+        // API 호출 실패 시 기본 데이터 사용
+        setReasonStats(getDefaultReasonStats());
+        setError('데이터를 불러오는데 실패했습니다. 샘플 데이터를 표시합니다.');
       } finally {
         setLoading(false);
       }
@@ -84,7 +81,7 @@ export default function WithdrawalReasonStats() {
   // 차트 데이터 포맷팅
   const formatChartData = () => {
     return reasonStats.map(item => ({
-      name: item.reason,
+      name: item.displayName || item.reason,
       value: item.count,
       percentage: item.percentage
     }));
@@ -187,7 +184,7 @@ export default function WithdrawalReasonStats() {
                   {reasonStats.map((row, index) => (
                     <TableRow key={index}>
                       <TableCell component="th" scope="row">
-                        {row.reason}
+                        {row.displayName || row.reason}
                       </TableCell>
                       <TableCell align="right">{row.count.toLocaleString()}명</TableCell>
                       <TableCell align="right">{row.percentage.toFixed(1)}%</TableCell>
