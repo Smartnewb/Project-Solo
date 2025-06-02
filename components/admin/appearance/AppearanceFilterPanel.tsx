@@ -104,7 +104,7 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
             <TextField
               fullWidth
               label="검색어"
-              placeholder="이름, 아이디, 전화번호 검색"
+              placeholder="이름, 인스타그램, 전화번호로 검색"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               InputProps={{
