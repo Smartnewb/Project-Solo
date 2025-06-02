@@ -47,6 +47,7 @@ import EmailIcon from '@mui/icons-material/Email';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import StarIcon from '@mui/icons-material/Star';
+import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
 import AdminService from '@/app/services/admin';
 import { format, formatDistance } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -162,6 +163,13 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       refreshUserDetail();
     }
   }, [userId, open]);
+
+  // 모달이 열릴 때 티켓 정보 로드
+  useEffect(() => {
+    if (userId && open) {
+      fetchTicketInfo();
+    }
+  }, [userId, open]);
   const [savingGrade, setSavingGrade] = useState(false);
 
   // 모달 상태
@@ -180,6 +188,11 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
   // 회원 탈퇴 관련 상태
   const [sendEmailOnDelete, setSendEmailOnDelete] = useState(false);
+
+  // 재매칭 티켓 관련 상태
+  const [ticketInfo, setTicketInfo] = useState<any>(null);
+  const [ticketLoading, setTicketLoading] = useState(false);
+  const [ticketError, setTicketError] = useState<string | null>(null);
 
   // 메뉴 열기
   const handleOpenMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -292,6 +305,27 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     }
   };
 
+  // 재매칭 티켓 정보 조회
+  const fetchTicketInfo = async () => {
+    if (!userId) return;
+
+    try {
+      setTicketLoading(true);
+      setTicketError(null);
+
+      console.log('재매칭 티켓 정보 조회 요청:', userId);
+      const data = await AdminService.userAppearance.getUserTickets(userId);
+      console.log('재매칭 티켓 정보 응답:', data);
+
+      setTicketInfo(data);
+    } catch (error: any) {
+      console.error('재매칭 티켓 정보 조회 중 오류:', error);
+      setTicketError(error.message || '재매칭 티켓 정보를 조회하는 중 오류가 발생했습니다.');
+    } finally {
+      setTicketLoading(false);
+    }
+  };
+
   // 사용자 상세 정보 새로고침
   const refreshUserDetail = async () => {
     if (!userId) return;
@@ -308,7 +342,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
       // 이미지 선택 상태 업데이트
       if (data.profileImages && data.profileImages.length > 0) {
-        const mainImage = data.profileImages.find(img => img.isMain === true);
+        const mainImage = data.profileImages.find((img: any) => img.isMain === true);
         if (mainImage) {
           setSelectedImage(mainImage.url);
         }
@@ -968,6 +1002,53 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                       </Typography>
                     </Grid>
 
+                    {/* 재매칭 티켓 정보 */}
+                    <Grid item xs={12}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                        <ConfirmationNumberIcon fontSize="small" color="action" />
+                        <Typography variant="body2" color="text.secondary">
+                          재매칭 티켓
+                        </Typography>
+                      </Box>
+                      {ticketLoading ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <CircularProgress size={16} />
+                          <Typography variant="body2" color="text.secondary">
+                            조회 중...
+                          </Typography>
+                        </Box>
+                      ) : ticketError ? (
+                        <Typography variant="body2" color="error">
+                          {ticketError}
+                        </Typography>
+                      ) : ticketInfo ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Chip
+                            label={`${ticketInfo.stats?.available || 0}장`}
+                            color={ticketInfo.stats?.available > 0 ? 'primary' : 'default'}
+                            size="small"
+                            variant="outlined"
+                            icon={<ConfirmationNumberIcon />}
+                          />
+                          {ticketInfo.stats?.available > 0 && (
+                            <Typography variant="body2" color="text.secondary">
+                              보유 중
+                            </Typography>
+                          )}
+                        </Box>
+                      ) : (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Chip
+                            label="0장"
+                            color="default"
+                            size="small"
+                            variant="outlined"
+                            icon={<ConfirmationNumberIcon />}
+                          />
+                        </Box>
+                      )}
+                    </Grid>
+
                     {/* 선호도 정보 표시 */}
                     {userDetail.preferences && Array.isArray(userDetail.preferences) && userDetail.preferences.length > 0 && (
                       <Grid item xs={12}>
@@ -1149,6 +1230,17 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           <Typography variant="body1" sx={{ mb: 2 }}>
             정말로 <strong>{userDetail?.name}</strong> 사용자를 탈퇴시키겠습니까?
           </Typography>
+
+          {/* 재매칭 티켓 경고 메시지 */}
+          {ticketInfo?.stats?.available > 0 && (
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              <Typography variant="body2">
+                <strong>주의:</strong> 이 사용자는 재매칭 티켓을 <strong>{ticketInfo.stats.available}장</strong> 보유하고 있습니다.
+                탈퇴 처리 시 보유 중인 티켓이 모두 소멸됩니다.
+              </Typography>
+            </Alert>
+          )}
+
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             이 작업은 되돌릴 수 없습니다.
           </Typography>

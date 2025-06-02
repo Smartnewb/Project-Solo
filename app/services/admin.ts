@@ -560,6 +560,26 @@ const userAppearance = {
     }
   },
 
+  // 재매칭 티켓 조회
+  getUserTickets: async (userId: string) => {
+    try {
+      console.log('재매칭 티켓 조회 시작:', userId);
+      const endpoint = `/admin/tickets/user/${userId}`;
+      console.log(`API 엔드포인트: ${endpoint}`);
+
+      const response = await axiosServer.get(endpoint);
+      console.log('재매칭 티켓 조회 응답:', response.data);
+
+      return response.data;
+    } catch (error: any) {
+      console.error('재매칭 티켓 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+
+      // 오류 발생 시 예외 던지기
+      throw error;
+    }
+  },
+
   // 유저 프로필 직접 수정
   updateUserProfile: async (userId: string, profileData: any) => {
     try {
