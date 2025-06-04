@@ -188,6 +188,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
   // 회원 탈퇴 관련 상태
   const [sendEmailOnDelete, setSendEmailOnDelete] = useState(false);
+  const [addToBlacklist, setAddToBlacklist] = useState(false);
 
   // 재매칭 티켓 관련 상태
   const [ticketInfo, setTicketInfo] = useState<any>(null);
@@ -383,6 +384,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     handleCloseMenu();
     setDeleteConfirmModalOpen(true);
     setSendEmailOnDelete(true);
+    setAddToBlacklist(false); // 기본값 false로 설정
   };
 
   // 실제 회원 탈퇴 처리
@@ -394,9 +396,14 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setActionError(null);
       setDeleteConfirmModalOpen(false);
 
-      await AdminService.userAppearance.deleteUser(userId, sendEmailOnDelete);
+      await AdminService.userAppearance.deleteUser(userId, sendEmailOnDelete, addToBlacklist);
 
-      setActionSuccess(`회원이 성공적으로 탈퇴되었습니다.${sendEmailOnDelete ? ' (이메일 발송됨)' : ''}`);
+      const successMessages = [];
+      successMessages.push('회원이 성공적으로 탈퇴되었습니다.');
+      if (sendEmailOnDelete) successMessages.push('이메일 발송됨');
+      if (addToBlacklist) successMessages.push('블랙리스트 추가됨');
+
+      setActionSuccess(successMessages.join(' / '));
       if (onRefresh) onRefresh();
       onClose();
     } catch (error: any) {
@@ -1253,6 +1260,16 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
               />
             }
             label="탈퇴 처리 시 사용자에게 이메일 발송"
+          />
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={addToBlacklist}
+                onChange={(e) => setAddToBlacklist(e.target.checked)}
+                color="primary"
+              />
+            }
+            label="블랙리스트에 추가"
           />
         </DialogContent>
         <DialogActions>

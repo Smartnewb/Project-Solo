@@ -1088,10 +1088,13 @@ const userAppearance = {
       return formattedData;
     }
   },
-  deleteUser: async (userId: string, sendEmail: boolean = false) => {
+  deleteUser: async (userId: string, sendEmail: boolean = false, addToBlacklist: boolean = false) => {
     try {
       const response = await axiosServer.delete(`/admin/users/${userId}`, {
-        data: { sendEmail }
+        data: {
+          sendEmail,
+          addToBlacklist
+        }
       });
       return response.data;
     } catch (error: any) {
