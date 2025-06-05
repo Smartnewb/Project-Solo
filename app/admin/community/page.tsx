@@ -77,6 +77,7 @@ function ArticleList() {
       setArticles(response.items ?? []);
       setTotalCount(response.meta?.totalItems ?? 0);
       console.log('페이지네이션 정보:', response.meta);
+      console.log('게시글 목록 데이터:', response.items?.map(item => ({ id: item.id, isBlinded: item.isBlinded, blindedAt: (item as any).blindedAt })));
     } catch (error) {
       console.error('게시글 목록 조회 중 오류:', error);
       setError('게시글 목록을 불러오는 중 오류가 발생했습니다.');
@@ -377,8 +378,8 @@ function ArticleList() {
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
-                        textDecoration: article.isBlinded ? 'line-through' : 'none',
-                        color: article.isBlinded ? 'text.disabled' : 'text.primary'
+                        textDecoration: (article.isBlinded || (article as any).blindedAt) ? 'line-through' : 'none',
+                        color: (article.isBlinded || (article as any).blindedAt) ? 'text.disabled' : 'text.primary'
                       }}
                     >
                       {article.title ?? '제목 없음'}
@@ -392,8 +393,8 @@ function ArticleList() {
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
-                        textDecoration: article.isBlinded ? 'line-through' : 'none',
-                        color: article.isBlinded ? 'text.disabled' : 'text.primary'
+                        textDecoration: (article.isBlinded || (article as any).blindedAt) ? 'line-through' : 'none',
+                        color: (article.isBlinded || (article as any).blindedAt) ? 'text.disabled' : 'text.primary'
                       }}
                     >
                       {article.emoji} {article.content}
@@ -414,7 +415,7 @@ function ArticleList() {
                     )}
                   </TableCell>
                   <TableCell>
-                    {article.isBlinded ? (
+                    {(article.isBlinded || (article as any).blindedAt) ? (
                       <Chip label="블라인드" color="error" size="small" />
                     ) : (
                       <Chip label="정상" color="success" size="small" />
@@ -433,7 +434,7 @@ function ArticleList() {
                         <ArticleIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
-                    {article.isBlinded ? (
+                    {(article.isBlinded || (article as any).blindedAt) ? (
                       <Tooltip title="블라인드 해제">
                         <IconButton
                           size="small"
@@ -572,7 +573,7 @@ function ArticleList() {
                     variant="outlined"
                   />
                 )}
-                {selectedArticleDetail.isBlinded && (
+                {(selectedArticleDetail.isBlinded || (selectedArticleDetail as any).blindedAt) && (
                   <Chip
                     icon={<VisibilityOffIcon />}
                     label="블라인드"
@@ -581,7 +582,7 @@ function ArticleList() {
                 )}
               </Box>
 
-              {selectedArticleDetail.isBlinded && (
+              {(selectedArticleDetail.isBlinded || (selectedArticleDetail as any).blindedAt) && (
                 <Alert severity="warning" sx={{ mb: 2 }}>
                   <Typography variant="subtitle2">블라인드 사유</Typography>
                   <Typography variant="body2">
@@ -695,7 +696,7 @@ function ArticleList() {
         <DialogActions>
           <Button onClick={handleCloseDetailDialog}>닫기</Button>
           {selectedArticleDetail && (
-            selectedArticleDetail.isBlinded ? (
+            (selectedArticleDetail.isBlinded || (selectedArticleDetail as any).blindedAt) ? (
               <Button
                 color="primary"
                 onClick={() => {
