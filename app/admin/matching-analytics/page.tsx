@@ -232,8 +232,7 @@ export default function MatchingAnalytics() {
     for (const item of matchHistoryData.items) {
       if (item.matcher) {
         try {
-          const sortedIds = [item.user.id, item.matcher.id].sort();
-          const countData = await AdminService.matching.getMatchCount(sortedIds[0], sortedIds[1]);
+          const countData = await AdminService.matching.getMatchCount(item.user.id, item.matcher.id);
           const key = `${item.user.id}-${item.matcher.id}`;
           counts[key] = countData.totalCount || 0;
         } catch (error) {
