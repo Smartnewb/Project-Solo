@@ -176,6 +176,7 @@ export default function MatchingAnalytics() {
   const [searchName, setSearchName] = useState<string>('');
   const [matchType, setMatchType] = useState<string>('all');
   const [isSearchMode, setIsSearchMode] = useState<boolean>(false);
+  const [matchCounts, setMatchCounts] = useState<{[key: string]: number}>({});
 
   // 매칭 실패 내역 관련 상태
   const [failureLogs, setFailureLogs] = useState<FailureLogResponse | null>(null);
@@ -224,6 +225,27 @@ export default function MatchingAnalytics() {
     fetchMatchingStats();
   }, [selectedPeriod, selectedUniversity]);
 
+  // 매칭 횟수 정보 가져오기
+  const fetchMatchCounts = async (matchHistoryData: MatchHistoryResponse) => {
+    const counts: {[key: string]: number} = {};
+
+    for (const item of matchHistoryData.items) {
+      if (item.matcher) {
+        try {
+          const countData = await AdminService.matching.getMatchCount(item.user.id, item.matcher.id);
+          const key = `${item.user.id}-${item.matcher.id}`;
+          counts[key] = countData.totalCount || 0;
+        } catch (error) {
+          console.error('매칭 횟수 조회 중 오류:', error);
+          const key = `${item.user.id}-${item.matcher.id}`;
+          counts[key] = 0;
+        }
+      }
+    }
+
+    setMatchCounts(counts);
+  };
+
   // 매칭 내역 가져오기
   useEffect(() => {
     const fetchMatchHistory = async () => {
@@ -247,6 +269,11 @@ export default function MatchingAnalytics() {
           );
 
           setMatchHistory(data);
+
+          // 매칭 횟수 정보 가져오기
+          if (data && data.items.length > 0) {
+            await fetchMatchCounts(data);
+          }
         }
       } catch (err: any) {
         console.error('매칭 내역 조회 중 오류:', err);
@@ -286,6 +313,11 @@ export default function MatchingAnalytics() {
 
       setMatchHistory(data);
       setIsSearchMode(true);
+
+      // 매칭 횟수 정보 가져오기
+      if (data && data.items.length > 0) {
+        await fetchMatchCounts(data);
+      }
     } catch (err: any) {
       console.error('매칭 내역 검색 중 오류:', err);
       setError(err.message || '매칭 내역을 검색하는 중 오류가 발생했습니다.');
@@ -818,6 +850,7 @@ export default function MatchingAnalytics() {
                     <TableCell>매칭 발표 시간</TableCell>
                     <TableCell>사용자 정보</TableCell>
                     <TableCell>매칭 상대 정보</TableCell>
+                    <TableCell>매칭 횟수</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -894,11 +927,29 @@ export default function MatchingAnalytics() {
                             <Typography variant="body2" color="text.secondary">매칭 상대 없음</Typography>
                           )}
                         </TableCell>
+                        <TableCell>
+                          {item.matcher ? (
+                            (() => {
+                              const key = `${item.user.id}-${item.matcher.id}`;
+                              const count = matchCounts[key] || 0;
+                              return (
+                                <Chip
+                                  label={count >= 2 ? `중복매칭 (${count}회)` : `첫매칭 (${count}회)`}
+                                  color={count >= 2 ? 'warning' : 'success'}
+                                  size="small"
+                                  variant={count >= 2 ? 'filled' : 'outlined'}
+                                />
+                              );
+                            })()
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">-</Typography>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={6} align="center">
+                      <TableCell colSpan={7} align="center">
                         <Typography variant="body1" sx={{ py: 2 }}>
                           해당 날짜에 매칭 내역이 없습니다.
                         </Typography>
@@ -931,7 +982,13 @@ export default function MatchingAnalytics() {
                         searchName,
                         matchType
                       )
-                        .then(data => setMatchHistory(data))
+                        .then(async (data) => {
+                          setMatchHistory(data);
+                          // 매칭 횟수 정보 가져오기
+                          if (data && data.items.length > 0) {
+                            await fetchMatchCounts(data);
+                          }
+                        })
                         .catch(err => setError(err.message || '매칭 내역을 불러오는 중 오류가 발생했습니다.'));
                     }
                   }}
@@ -953,7 +1010,13 @@ export default function MatchingAnalytics() {
                         searchName,
                         matchType
                       )
-                        .then(data => setMatchHistory(data))
+                        .then(async (data) => {
+                          setMatchHistory(data);
+                          // 매칭 횟수 정보 가져오기
+                          if (data && data.items.length > 0) {
+                            await fetchMatchCounts(data);
+                          }
+                        })
                         .catch(err => setError(err.message || '매칭 내역을 불러오는 중 오류가 발생했습니다.'));
                     }
                   }}
