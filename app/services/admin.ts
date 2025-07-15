@@ -1116,6 +1116,36 @@ const userAppearance = {
       console.error('오류 상세 정보:', error.response?.data || error.message);
       throw error;
     }
+  },
+
+  getBlacklistUsers: async () => {
+    try {
+      console.log('블랙리스트 사용자 목록 조회 요청');
+
+      const response = await axiosServer.get('/admin/users/blacklist');
+
+      console.log('블랙리스트 사용자 목록 조회 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('블랙리스트 사용자 목록 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  releaseFromBlacklist: async (userId: string) => {
+    try {
+      console.log('블랙리스트 해제 요청:', { userId });
+
+      const response = await axiosServer.patch(`/admin/users/${userId}/blacklist/release`);
+
+      console.log('블랙리스트 해제 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('블랙리스트 해제 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
   }
 };
 
