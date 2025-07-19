@@ -57,7 +57,8 @@ const ApprovalManagementPanel: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [rejectedCount, setRejectedCount] = useState(0);
 
   // 승인/거부 모달 상태
   const [approvalModalOpen, setApprovalModalOpen] = useState(false);
@@ -105,27 +106,36 @@ const ApprovalManagementPanel: React.FC = () => {
     fetchUsers();
   }, [activeTab, page]);
 
+
+
   const fetchUsers = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const endpoint = activeTab === 0 ? '/admin/users/approval/pending' : '/admin/users/approval/rejected';
-      const response = await axiosServer.get(endpoint, {
-        params: { page, limit }
-      });
+      const currentEndpoint = activeTab === 0 ? '/admin/users/approval/pending' : '/admin/users/approval/rejected';
+      const otherEndpoint = activeTab === 0 ? '/admin/users/approval/rejected' : '/admin/users/approval/pending';
 
-      const users = response.data.items || [];
-      const meta = response.data.meta || {};
+      const [currentResponse, otherResponse] = await Promise.all([
+        axiosServer.get(currentEndpoint, { params: { page, limit } }),
+        axiosServer.get(otherEndpoint, { params: { page: 1, limit: 10 } }) // 카운트만 필요하므로 첫 페이지만
+      ]);
+
+      const users = currentResponse.data.items || [];
+      const currentMeta = currentResponse.data.meta || {};
+      const otherMeta = otherResponse.data.meta || {};
 
       if (activeTab === 0) {
         setPendingUsers(users);
+        setPendingCount(currentMeta.totalItems || users.length);
+        setRejectedCount(otherMeta.totalItems || otherResponse.data.items?.length || 0);
       } else {
         setRejectedUsers(users);
+        setRejectedCount(currentMeta.totalItems || users.length);
+        setPendingCount(otherMeta.totalItems || otherResponse.data.items?.length || 0);
       }
 
-      setTotalPages(meta.totalPages || Math.ceil((meta.totalItems || users.length) / limit));
-      setTotalCount(meta.totalItems || users.length);
+      setTotalPages(currentMeta.totalPages || Math.ceil((currentMeta.totalItems || users.length) / limit));
     } catch (err: any) {
       console.error('승인 대기 사용자 조회 오류:', err);
       setError('사용자 목록을 불러오는 중 오류가 발생했습니다.');
@@ -186,7 +196,7 @@ const ApprovalManagementPanel: React.FC = () => {
 
       setApprovalModalOpen(false);
       setSelectedUserId(null);
-      fetchUsers(); // 목록 새로고침
+      fetchUsers(); // 목록 및 카운트 새로고침
     } catch (err: any) {
       console.error('승인 처리 오류:', err);
       setError('승인 처리 중 오류가 발생했습니다.');
@@ -209,7 +219,7 @@ const ApprovalManagementPanel: React.FC = () => {
       setRejectionModalOpen(false);
       setSelectedUserId(null);
       setRejectionReason('');
-      fetchUsers(); // 목록 새로고침
+      fetchUsers(); // 목록 및 카운트 새로고침
     } catch (err: any) {
       console.error('거부 처리 오류:', err);
       setError('거부 처리 중 오류가 발생했습니다.');
@@ -234,8 +244,8 @@ const ApprovalManagementPanel: React.FC = () => {
 
       {/* 탭 메뉴 */}
       <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 2 }}>
-        <Tab label={`승인 대기 (${activeTab === 0 ? totalCount : 0})`} />
-        <Tab label={`승인 거부 (${activeTab === 1 ? totalCount : 0})`} />
+        <Tab label={`승인 대기 (${pendingCount})`} />
+        <Tab label={`승인 거부 (${rejectedCount})`} />
       </Tabs>
 
       {/* 사용자 목록 테이블 */}
