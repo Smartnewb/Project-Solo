@@ -21,6 +21,7 @@ import AppearanceFilterPanel from '@/components/admin/appearance/AppearanceFilte
 import UnclassifiedUsersPanel from '@/components/admin/appearance/UnclassifiedUsersPanel';
 import DuplicatePhoneUsersPanel from '@/components/admin/appearance/DuplicatePhoneUsersPanel';
 import BlacklistUsersPanel from '@/components/admin/appearance/BlacklistUsersPanel';
+import ApprovalManagementPanel from '@/components/admin/appearance/ApprovalManagementPanel';
 
 // 전역 이벤트 버스 생성 (등급 변경 이벤트 처리용)
 export const appearanceGradeEventBus = {
@@ -182,6 +183,7 @@ export default function AppearanceGradePage() {
           <Tab label="미분류 사용자" />
           <Tab label="중복 휴대폰 번호" />
           <Tab label="블랙리스트 관리" />
+          <Tab label="승인 관리" />
         </Tabs>
       </Box>
 
@@ -217,6 +219,9 @@ export default function AppearanceGradePage() {
         )}
         {activeTab === 3 && (
           <BlacklistUsersPanel />
+        )}
+        {activeTab === 4 && (
+          <ApprovalManagementPanel />
         )}
       </Box>
     </Box>
