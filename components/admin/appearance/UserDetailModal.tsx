@@ -109,6 +109,9 @@ interface UserDetailModalProps {
   loading: boolean;
   error: string | null;
   onRefresh?: () => void; // 데이터 새로고침 콜백
+  showApprovalActions?: boolean; // 승인 관리 액션 표시 여부
+  onApproval?: () => void; // 승인 버튼 클릭 콜백
+  onRejection?: () => void; // 거부 버튼 클릭 콜백
 }
 
 const UserDetailModal: React.FC<UserDetailModalProps> = ({
@@ -118,7 +121,10 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   userDetail: initialUserDetail,
   loading: initialLoading,
   error: initialError,
-  onRefresh
+  onRefresh,
+  showApprovalActions = false,
+  onApproval,
+  onRejection
 }) => {
   // 내부 상태로 사용자 상세 정보 관리
   const [userDetail, setUserDetail] = useState(initialUserDetail);
@@ -516,6 +522,23 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           </ListItemIcon>
           <ListItemText primary="회원 탈퇴" primaryTypographyProps={{ color: 'error' }} />
         </MenuItem>
+        {showApprovalActions && (
+          <>
+            <Divider />
+            <MenuItem onClick={onApproval} disabled={actionLoading}>
+              <ListItemIcon>
+                <PersonIcon fontSize="small" color="primary" />
+              </ListItemIcon>
+              <ListItemText primary="가입 승인" primaryTypographyProps={{ color: 'primary' }} />
+            </MenuItem>
+            <MenuItem onClick={onRejection} disabled={actionLoading}>
+              <ListItemIcon>
+                <BlockIcon fontSize="small" color="error" />
+              </ListItemIcon>
+              <ListItemText primary="가입 거부" primaryTypographyProps={{ color: 'error' }} />
+            </MenuItem>
+          </>
+        )}
       </Menu>
       <DialogContent sx={{ p: 3 }}>
         {loading ? (

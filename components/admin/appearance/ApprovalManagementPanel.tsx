@@ -26,7 +26,8 @@ import {
   MenuItem,
   Pagination,
   Tabs,
-  Tab
+  Tab,
+  Link
 } from '@mui/material';
 import axiosServer from '@/utils/axios';
 import UserDetailModal, { UserDetail } from './UserDetailModal';
@@ -38,6 +39,9 @@ interface PendingUser {
   phone?: string;
   phoneNumber?: string;
   profileImageUrl?: string;
+  instagramId?: string;
+  instagramUrl?: string;
+  university?: string;
   createdAt: string;
   status: 'pending' | 'rejected';
   rejectionReason?: string;
@@ -242,6 +246,8 @@ const ApprovalManagementPanel: React.FC = () => {
               <TableCell>프로필</TableCell>
               <TableCell>이름</TableCell>
               <TableCell>전화번호</TableCell>
+              <TableCell>인스타그램 ID</TableCell>
+              <TableCell>대학교</TableCell>
               <TableCell>가입일</TableCell>
               <TableCell>상태</TableCell>
               {activeTab === 1 && <TableCell>거부 사유</TableCell>}
@@ -251,13 +257,13 @@ const ApprovalManagementPanel: React.FC = () => {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={activeTab === 1 ? 7 : 6} align="center">
+                <TableCell colSpan={activeTab === 1 ? 9 : 8} align="center">
                   <CircularProgress />
                 </TableCell>
               </TableRow>
             ) : currentUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={activeTab === 1 ? 7 : 6} align="center">
+                <TableCell colSpan={activeTab === 1 ? 9 : 8} align="center">
                   {activeTab === 0 ? '승인 대기 중인 사용자가 없습니다.' : '승인 거부된 사용자가 없습니다.'}
                 </TableCell>
               </TableRow>
@@ -268,11 +274,35 @@ const ApprovalManagementPanel: React.FC = () => {
                     <Avatar
                       src={user.profileImageUrl}
                       alt={user.name}
-                      sx={{ width: 40, height: 40 }}
+                      sx={{ width: 40, height: 40, cursor: 'pointer' }}
+                      onClick={() => fetchUserDetail(getUserId(user))}
                     />
                   </TableCell>
                   <TableCell>{user.name}</TableCell>
                   <TableCell>{getUserPhone(user)}</TableCell>
+                  <TableCell>
+                    {user.instagramId ? (
+                      <Link
+                        href={user.instagramUrl || `https://www.instagram.com/${user.instagramId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{
+                          textDecoration: 'none',
+                          color: 'primary.main',
+                          '&:hover': {
+                            textDecoration: 'underline'
+                          }
+                        }}
+                      >
+                        {user.instagramId}
+                      </Link>
+                    ) : (
+                      '-'
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {user.university || '-'}
+                  </TableCell>
                   <TableCell>
                     {new Date(user.createdAt).toLocaleDateString('ko-KR')}
                   </TableCell>
@@ -423,6 +453,17 @@ const ApprovalManagementPanel: React.FC = () => {
           loading={loadingUserDetail}
           error={userDetailError}
           onRefresh={() => fetchUserDetail(userDetail.id)}
+          showApprovalActions={true}
+          onApproval={() => {
+            setSelectedUserId(userDetail.id);
+            setApprovalModalOpen(true);
+            setUserDetailModalOpen(false);
+          }}
+          onRejection={() => {
+            setSelectedUserId(userDetail.id);
+            setRejectionModalOpen(true);
+            setUserDetailModalOpen(false);
+          }}
         />
       )}
     </Box>
