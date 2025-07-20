@@ -3,17 +3,25 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, Typography, Box, CircularProgress } from '@mui/material';
 import AdminService from '@/app/services/admin';
+import { getRegionLabel } from '@/components/admin/common/RegionFilter';
 
-export default function TotalUsersCard() {
+interface TotalUsersCardProps {
+  region?: string;
+}
+
+export default function TotalUsersCard({ region }: TotalUsersCardProps) {
   const [totalUsers, setTotalUsers] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // 지역 라벨 생성
+  const regionLabel = region ? getRegionLabel(region as any) : '전체 지역';
 
   useEffect(() => {
     const fetchTotalUsers = async () => {
       try {
         setLoading(true);
-        const data = await AdminService.stats.getTotalUsersCount();
+        const data = await AdminService.stats.getTotalUsersCount(region);
         setTotalUsers(data.totalUsers);
         setError(null);
       } catch (err) {
@@ -27,15 +35,15 @@ export default function TotalUsersCard() {
     fetchTotalUsers();
     // 1분마다 데이터 갱신
     const interval = setInterval(fetchTotalUsers, 60000);
-    
+
     return () => clearInterval(interval);
-  }, []);
+  }, [region]);
 
   return (
     <Card variant="outlined">
       <CardContent>
         <Typography color="textSecondary" gutterBottom>
-          총 회원 수
+          총 회원 수 ({regionLabel})
         </Typography>
         {loading ? (
           <Box display="flex" justifyContent="center" alignItems="center" height="40px">

@@ -17,6 +17,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import { AppearanceGrade, Gender } from '@/app/admin/users/appearance/types';
+import { Region } from '@/components/admin/common/RegionFilter';
 
 // 등급 옵션
 const GRADE_OPTIONS: { value: AppearanceGrade | 'all'; label: string }[] = [
@@ -35,6 +36,13 @@ const GENDER_OPTIONS: { value: Gender | 'all'; label: string }[] = [
   { value: 'FEMALE', label: '여성' }
 ];
 
+// 지역 옵션
+const REGION_OPTIONS: { value: string; label: string }[] = [
+  { value: 'all', label: '모든 지역' },
+  { value: 'BSN', label: '부산' },
+  { value: 'DJN', label: '대전' }
+];
+
 interface AppearanceFilterPanelProps {
   onFilter?: (filters: {
     gender?: Gender;
@@ -43,6 +51,7 @@ interface AppearanceFilterPanelProps {
     minAge?: number;
     maxAge?: number;
     searchTerm?: string;
+    region?: string;
   }) => void;
 }
 
@@ -53,6 +62,7 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
   const [minAge, setMinAge] = useState<number | ''>('');
   const [maxAge, setMaxAge] = useState<number | ''>('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [isAdvancedFilterOpen, setIsAdvancedFilterOpen] = useState(false);
 
   // 필터 적용
@@ -66,6 +76,7 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
       if (minAge !== '') filters.minAge = minAge;
       if (maxAge !== '') filters.maxAge = maxAge;
       if (searchTerm) filters.searchTerm = searchTerm;
+      if (selectedRegion !== 'all') filters.region = selectedRegion;
 
       onFilter(filters);
     }
@@ -79,6 +90,7 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
     setMinAge('');
     setMaxAge('');
     setSearchTerm('');
+    setSelectedRegion('all');
 
     if (onFilter) {
       onFilter({});
@@ -149,6 +161,22 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
               onChange={(e) => setGender(e.target.value as Gender | 'all')}
             >
               {GENDER_OPTIONS.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <TextField
+              select
+              fullWidth
+              label="지역"
+              value={selectedRegion}
+              onChange={(e) => setSelectedRegion(e.target.value)}
+            >
+              {REGION_OPTIONS.map((option) => (
                 <MenuItem key={option.value} value={option.value}>
                   {option.label}
                 </MenuItem>

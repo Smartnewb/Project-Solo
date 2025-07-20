@@ -3,17 +3,25 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, Typography, Box, CircularProgress } from '@mui/material';
 import AdminService from '@/app/services/admin';
+import { getRegionLabel } from '@/components/admin/common/RegionFilter';
 
-export default function DailySignupsCard() {
+interface DailySignupsCardProps {
+  region?: string;
+}
+
+export default function DailySignupsCard({ region }: DailySignupsCardProps) {
   const [dailySignups, setDailySignups] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // 지역 라벨 생성
+  const regionLabel = region ? getRegionLabel(region as any) : '전체 지역';
 
   useEffect(() => {
     const fetchDailySignups = async () => {
       try {
         setLoading(true);
-        const data = await AdminService.stats.getDailySignupCount();
+        const data = await AdminService.stats.getDailySignupCount(region);
         setDailySignups(data.dailySignups);
         setError(null);
       } catch (err) {
@@ -27,15 +35,15 @@ export default function DailySignupsCard() {
     fetchDailySignups();
     // 1분마다 데이터 갱신
     const interval = setInterval(fetchDailySignups, 60000);
-    
+
     return () => clearInterval(interval);
-  }, []);
+  }, [region]);
 
   return (
     <Card variant="outlined">
       <CardContent>
         <Typography color="textSecondary" gutterBottom>
-          오늘의 신규 가입
+          오늘의 신규 가입 ({regionLabel})
         </Typography>
         {loading ? (
           <Box display="flex" justifyContent="center" alignItems="center" height="40px">

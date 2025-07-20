@@ -78,6 +78,7 @@ interface UserAppearanceTableProps {
     minAge?: number;
     maxAge?: number;
     searchTerm?: string;
+    region?: string;
   };
 }
 

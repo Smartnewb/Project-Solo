@@ -157,6 +157,8 @@ export default function AppearanceGradePage() {
         사용자 관리
       </Typography>
 
+
+
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}

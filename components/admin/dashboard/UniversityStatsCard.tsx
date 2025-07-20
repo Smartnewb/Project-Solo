@@ -21,6 +21,7 @@ import {
 } from '@mui/material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 import AdminService from '@/app/services/admin';
+import { getRegionLabel } from '@/components/admin/common/RegionFilter';
 
 // 대학 목록 (정렬된 상태로 유지)
 const UNIVERSITIES = [
@@ -38,8 +39,12 @@ const UNIVERSITIES = [
   '대덕대학교'
 ];
 
+interface UniversityStatsCardProps {
+  region?: string;
+}
+
 // 대학별 통계 카드 컴포넌트
-export default function UniversityStatsCard() {
+export default function UniversityStatsCard({ region }: UniversityStatsCardProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   // 실제 API 응답 구조에 맞게 타입 설정
@@ -55,6 +60,9 @@ export default function UniversityStatsCard() {
     totalCount: number;
   } | null>(null);
 
+  // 지역 라벨 생성
+  const regionLabel = region ? getRegionLabel(region as any) : '전체 지역';
+
   // 데이터 조회
   useEffect(() => {
     const fetchData = async () => {
@@ -63,7 +71,7 @@ export default function UniversityStatsCard() {
         setError(null);
 
         // API 호출
-        const response = await AdminService.stats.getUniversityStats();
+        const response = await AdminService.stats.getUniversityStats(region);
         console.log('대학별 통계 응답:', response);
         console.log('대학별 통계 데이터 구조:', JSON.stringify(response, null, 2));
 
@@ -112,7 +120,7 @@ export default function UniversityStatsCard() {
     };
 
     fetchData();
-  }, []);
+  }, [region]);
 
   // 차트 데이터 생성
   const chartData = stats?.universities?.map((uni, index) => {
@@ -142,7 +150,7 @@ export default function UniversityStatsCard() {
     <Card>
       <CardContent>
         <Typography variant="h6" gutterBottom>
-          대학별 통계
+          대학별 통계 ({regionLabel})
         </Typography>
 
         {loading && (

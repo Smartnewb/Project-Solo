@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import AdminService from '@/app/services/admin';
+import { getRegionLabel } from '@/components/admin/common/RegionFilter';
 
 // API 응답 타입 정의
 interface GenderStats {
@@ -24,11 +25,18 @@ interface GenderStats {
   genderRatio: string;
 }
 
+interface GenderStatsCardProps {
+  region?: string;
+}
+
 // 성별 통계 카드 컴포넌트
-export default function GenderStatsCard() {
+export default function GenderStatsCard({ region }: GenderStatsCardProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<GenderStats | null>(null);
+
+  // 지역 라벨 생성
+  const regionLabel = region ? getRegionLabel(region as any) : '전체 지역';
 
   // 데이터 조회
   useEffect(() => {
@@ -37,7 +45,7 @@ export default function GenderStatsCard() {
         setLoading(true);
         setError(null);
 
-        const response = await AdminService.stats.getGenderStats();
+        const response = await AdminService.stats.getGenderStats(region);
         console.log('성별 통계 응답:', response);
 
         setStats(response);
@@ -54,7 +62,7 @@ export default function GenderStatsCard() {
     };
 
     fetchData();
-  }, []);
+  }, [region]);
 
   // 차트 데이터 생성
   const chartData = stats ? [
@@ -69,7 +77,7 @@ export default function GenderStatsCard() {
     <Card>
       <CardContent>
         <Typography variant="h6" gutterBottom>
-          성별 통계
+          성별 통계 ({regionLabel})
         </Typography>
 
         {loading && (

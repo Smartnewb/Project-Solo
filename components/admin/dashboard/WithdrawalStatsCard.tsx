@@ -11,8 +11,13 @@ import {
   Grid
 } from '@mui/material';
 import AdminService from '@/app/services/admin';
+import { getRegionLabel } from '@/components/admin/common/RegionFilter';
 
-export default function WithdrawalStatsCard() {
+interface WithdrawalStatsCardProps {
+  region?: string;
+}
+
+export default function WithdrawalStatsCard({ region }: WithdrawalStatsCardProps) {
   const [stats, setStats] = useState<{
     totalWithdrawals: number | null;
     dailyWithdrawals: number | null;
@@ -27,6 +32,9 @@ export default function WithdrawalStatsCard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // 지역 라벨 생성
+  const regionLabel = region ? getRegionLabel(region as any) : '전체 지역';
+
   useEffect(() => {
     const fetchWithdrawalStats = async () => {
       try {
@@ -36,8 +44,8 @@ export default function WithdrawalStatsCard() {
         // 병렬로 모든 API 호출
         try {
           const [totalResponse, dailyResponse, weeklyResponse, monthlyResponse] = await Promise.all([
-            AdminService.stats.getTotalWithdrawalsCount(),
-            AdminService.stats.getDailyWithdrawalCount(),
+            AdminService.stats.getTotalWithdrawalsCount(region),
+            AdminService.stats.getDailyWithdrawalCount(region),
             AdminService.stats.getWeeklyWithdrawalCount(),
             AdminService.stats.getMonthlyWithdrawalCount()
           ]);
@@ -74,7 +82,7 @@ export default function WithdrawalStatsCard() {
     const interval = setInterval(fetchWithdrawalStats, 60000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [region]);
 
   if (loading) {
     return (
@@ -105,7 +113,7 @@ export default function WithdrawalStatsCard() {
     <Card>
       <CardContent>
         <Typography variant="h6" gutterBottom>
-          회원 탈퇴 통계
+          회원 탈퇴 통계 ({regionLabel})
         </Typography>
 
         <Grid container spacing={2}>

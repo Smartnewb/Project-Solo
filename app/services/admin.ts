@@ -26,9 +26,10 @@ const auth = {
 };
 
 const stats = {
-  getTotalUsersCount: async () => {
+  getTotalUsersCount: async (region?: string) => {
     try {
-      const response = await axiosServer.get('/admin/stats/users/total');
+      const params = region ? { region } : {};
+      const response = await axiosServer.get('/admin/stats/users/total', { params });
       console.log('총 회원 수 API 응답:', response.data);
 
       // 실제 사용자 수를 반환하도록 수정
@@ -39,9 +40,10 @@ const stats = {
       return { totalUsers: 120 }; // 오류 발생 시 기본값 반환
     }
   },
-  getDailySignupCount: async () => {
+  getDailySignupCount: async (region?: string) => {
     try {
-      const response = await axiosServer.get('/admin/stats/users/daily');
+      const params = region ? { region } : {};
+      const response = await axiosServer.get('/admin/stats/users/daily', { params });
       console.log('오늘 가입한 회원 수 API 응답:', response.data);
       return response.data || { dailySignups: 4 };
     } catch (error) {
@@ -49,9 +51,10 @@ const stats = {
       return { dailySignups: 4 }; // 오류 발생 시 기본값 반환
     }
   },
-  getWeeklySignupCount: async () => {
+  getWeeklySignupCount: async (region?: string) => {
     try {
-      const response = await axiosServer.get('/admin/stats/users/weekly');
+      const params = region ? { region } : {};
+      const response = await axiosServer.get('/admin/stats/users/weekly', { params });
       console.log('이번 주 가입한 회원 수 API 응답:', response.data);
       return response.data || { weeklySignups: 12 };
     } catch (error) {
@@ -128,9 +131,10 @@ const stats = {
   },
 
   // 성별 통계 조회
-  getGenderStats: async () => {
+  getGenderStats: async (region?: string) => {
     try {
-      const response = await axiosServer.get('/admin/stats/users/gender');
+      const params = region ? { region } : {};
+      const response = await axiosServer.get('/admin/stats/users/gender', { params });
       console.log('성별 통계 API 응답:', response.data);
 
       // 임시 데이터 생성
@@ -160,9 +164,10 @@ const stats = {
   },
 
   // 대학별 통계 조회
-  getUniversityStats: async () => {
+  getUniversityStats: async (region?: string) => {
     try {
-      const response = await axiosServer.get('/admin/stats/users/universities');
+      const params = region ? { region } : {};
+      const response = await axiosServer.get('/admin/stats/users/universities', { params });
       console.log('서비스에서 받은 대학별 통계 데이터:', response.data);
       console.log('서비스에서 받은 데이터 구조:', JSON.stringify(response.data, null, 2));
 
@@ -204,9 +209,10 @@ const stats = {
 
   // 회원 탈퇴 통계 API
   // 총 탈퇴자 수 조회
-  getTotalWithdrawalsCount: async () => {
+  getTotalWithdrawalsCount: async (region?: string) => {
     try {
-      const response = await axiosServer.get('/admin/stats/withdrawals/total');
+      const params = region ? { region } : {};
+      const response = await axiosServer.get('/admin/stats/withdrawals/total', { params });
       return response.data || { totalWithdrawals: 0 };
     } catch (error) {
       console.error('총 탈퇴자 수 조회 중 오류:', error);
@@ -215,9 +221,10 @@ const stats = {
   },
 
   // 일간 탈퇴자 수 조회
-  getDailyWithdrawalCount: async () => {
+  getDailyWithdrawalCount: async (region?: string) => {
     try {
-      const response = await axiosServer.get('/admin/stats/withdrawals/daily');
+      const params = region ? { region } : {};
+      const response = await axiosServer.get('/admin/stats/withdrawals/daily', { params });
       return response.data || { dailyWithdrawals: 0 };
     } catch (error) {
       console.error('오늘 탈퇴한 회원 수 조회 중 오류:', error);
@@ -356,6 +363,7 @@ const userAppearance = {
     minAge?: number;
     maxAge?: number;
     searchTerm?: string;
+    region?: string;
   }) => {
     try {
       console.log('유저 목록 조회 요청 파라미터:', JSON.stringify(params, null, 2));
@@ -380,6 +388,7 @@ const userAppearance = {
       if (params.minAge) queryParams.append('minAge', params.minAge.toString());
       if (params.maxAge) queryParams.append('maxAge', params.maxAge.toString());
       if (params.searchTerm) queryParams.append('searchTerm', params.searchTerm);
+      if (params.region) queryParams.append('region', params.region);
 
       const url = `/admin/users/appearance?${queryParams.toString()}`;
       console.log('최종 API 요청 URL:', url);
@@ -407,9 +416,14 @@ const userAppearance = {
   },
 
   // 미분류 유저 목록 조회
-  getUnclassifiedUsers: async (page: number, limit: number) => {
+  getUnclassifiedUsers: async (page: number, limit: number, region?: string) => {
     try {
-      const response = await axiosServer.get(`/admin/users/appearance/unclassified?page=${page}&limit=${limit}`);
+      const params = new URLSearchParams();
+      params.append('page', page.toString());
+      params.append('limit', limit.toString());
+      if (region) params.append('region', region);
+
+      const response = await axiosServer.get(`/admin/users/appearance/unclassified?${params.toString()}`);
 
       // 응답 데이터 로깅
       console.log('미분류 사용자 데이터 샘플:', response.data?.items?.slice(0, 2));
@@ -766,7 +780,7 @@ const userAppearance = {
   },
 
   // 외모 등급 통계 조회
-  getAppearanceGradeStats: async () => {
+  getAppearanceGradeStats: async (region?: string) => {
     try {
       console.log('외모 등급 통계 API 호출 시작');
 
@@ -781,8 +795,14 @@ const userAppearance = {
       // 캐싱 방지를 위한 타임스탬프 추가
       const timestamp = new Date().getTime();
 
+      // 쿼리 파라미터 구성
+      const params = new URLSearchParams();
+      params.append('_t', timestamp.toString());
+      if (region) params.append('region', region);
+
       // API 호출 (캐싱 방지를 위한 쿼리 파라미터 추가)
-      console.log('API 요청 URL:', `${endpoint}?_t=${timestamp}`);
+      const finalUrl = `${endpoint}?${params.toString()}`;
+      console.log('API 요청 URL:', finalUrl);
       console.log('API 요청 헤더:', {
         'Content-Type': 'application/json',
         ...(token ? { 'Authorization': `Bearer ${token}` } : {})
@@ -820,7 +840,7 @@ const userAppearance = {
 
       try {
         // Axios를 사용한 API 호출
-        const response = await axiosServer.get(`${endpoint}?_t=${timestamp}`);
+        const response = await axiosServer.get(finalUrl);
         console.log('Axios API 응답 상태 코드:', response.status);
         console.log('Axios API 응답 데이터 전체:', response.data);
         console.log('Axios API 응답 데이터 (JSON):', JSON.stringify(response.data, null, 2));

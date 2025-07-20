@@ -20,6 +20,7 @@ import WithdrawalStatsDashboard from '@/components/admin/dashboard/WithdrawalSta
 import WithdrawalReasonStats from '@/components/admin/dashboard/WithdrawalReasonStats';
 import ServiceDurationStats from '@/components/admin/dashboard/ServiceDurationStats';
 import ChurnRateStats from '@/components/admin/dashboard/ChurnRateStats';
+import RegionFilter, { useRegionFilter } from '@/components/admin/common/RegionFilter';
 
 
 
@@ -29,6 +30,9 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [authChecking, setAuthChecking] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
+
+  // 지역 필터 훅 사용
+  const { region, setRegion: setRegionFilter, getRegionParam } = useRegionFilter();
 
   // 관리자 인증 확인
   useEffect(() => {
@@ -142,16 +146,26 @@ export default function AdminDashboard() {
           관리자 대시보드
         </Typography>
 
+        {/* 지역 필터 */}
+        <Box sx={{ mb: 3 }}>
+          <RegionFilter
+            value={region}
+            onChange={setRegionFilter}
+            size="small"
+            sx={{ minWidth: 150 }}
+          />
+        </Box>
+
         {/* Summary Cards */}
         <Grid container spacing={3} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6} md={3}>
-            <TotalUsersCard />
+            <TotalUsersCard region={getRegionParam()} />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <WeeklySignupsCard />
+            <WeeklySignupsCard region={getRegionParam()} />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <DailySignupsCard />
+            <DailySignupsCard region={getRegionParam()} />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <Card>
@@ -169,7 +183,7 @@ export default function AdminDashboard() {
 
         {/* 성별 통계 카드 */}
         <Box sx={{ mt: 4, mb: 4 }}>
-          <GenderStatsCard />
+          <GenderStatsCard region={getRegionParam()} />
         </Box>
 
         {/* 회원가입 통계 대시보드 */}
@@ -179,7 +193,7 @@ export default function AdminDashboard() {
 
         {/* 대학별 통계 카드 */}
         <Box sx={{ mt: 4, mb: 4 }}>
-          <UniversityStatsCard />
+          <UniversityStatsCard region={getRegionParam()} />
         </Box>
 
         {/* 사용자 활동 지표 */}
@@ -195,7 +209,7 @@ export default function AdminDashboard() {
 
         {/* 회원 탈퇴 통계 카드 */}
         <Box sx={{ mt: 4, mb: 4 }}>
-          <WithdrawalStatsCard />
+          <WithdrawalStatsCard region={getRegionParam()} />
         </Box>
 
         {/* 회원 탈퇴 추이 대시보드 */}
