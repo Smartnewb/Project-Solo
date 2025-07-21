@@ -31,6 +31,7 @@ import {
 } from '@mui/material';
 import axiosServer from '@/utils/axios';
 import UserDetailModal, { UserDetail } from './UserDetailModal';
+import RegionFilter, { useRegionFilter } from '@/components/admin/common/RegionFilter';
 
 interface PendingUser {
   id?: string;
@@ -59,6 +60,9 @@ const ApprovalManagementPanel: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [pendingCount, setPendingCount] = useState(0);
   const [rejectedCount, setRejectedCount] = useState(0);
+
+  // 지역 필터 훅 사용
+  const { region, setRegion: setRegionFilter, getRegionParam } = useRegionFilter();
 
   // 승인/거부 모달 상태
   const [approvalModalOpen, setApprovalModalOpen] = useState(false);
@@ -101,10 +105,15 @@ const ApprovalManagementPanel: React.FC = () => {
     setPage(1);
   };
 
+  // 지역 변경 시 페이지 초기화
+  useEffect(() => {
+    setPage(1);
+  }, [region]);
+
   // 데이터 로드
   useEffect(() => {
     fetchUsers();
-  }, [activeTab, page]);
+  }, [activeTab, page, region]);
 
 
 
@@ -116,9 +125,14 @@ const ApprovalManagementPanel: React.FC = () => {
       const currentEndpoint = activeTab === 0 ? '/admin/users/approval/pending' : '/admin/users/approval/rejected';
       const otherEndpoint = activeTab === 0 ? '/admin/users/approval/rejected' : '/admin/users/approval/pending';
 
+      // 지역 파라미터 추가
+      const regionParam = getRegionParam();
+      const currentParams = { page, limit, ...(regionParam && { region: regionParam }) };
+      const otherParams = { page: 1, limit: 10, ...(regionParam && { region: regionParam }) };
+
       const [currentResponse, otherResponse] = await Promise.all([
-        axiosServer.get(currentEndpoint, { params: { page, limit } }),
-        axiosServer.get(otherEndpoint, { params: { page: 1, limit: 10 } }) // 카운트만 필요하므로 첫 페이지만
+        axiosServer.get(currentEndpoint, { params: currentParams }),
+        axiosServer.get(otherEndpoint, { params: otherParams }) // 카운트만 필요하므로 첫 페이지만
       ]);
 
       const users = currentResponse.data.items || [];
@@ -241,6 +255,16 @@ const ApprovalManagementPanel: React.FC = () => {
           {error}
         </Alert>
       )}
+
+      {/* 지역 필터 */}
+      <Box sx={{ mb: 3 }}>
+        <RegionFilter
+          value={region}
+          onChange={setRegionFilter}
+          size="small"
+          sx={{ minWidth: 150 }}
+        />
+      </Box>
 
       {/* 탭 메뉴 */}
       <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 2 }}>
