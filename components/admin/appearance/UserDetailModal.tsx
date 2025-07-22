@@ -96,6 +96,7 @@ export interface UserDetail {
   updatedAt?: string;
   lastActiveAt?: string | null;
   appearanceGrade?: 'S' | 'A' | 'B' | 'C' | 'UNKNOWN';
+  isUniversityVerified?: boolean; // 대학교 인증 여부
   accountStatus?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
   // 추가 필드
   [key: string]: any;
@@ -414,6 +415,26 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       onClose();
     } catch (error: any) {
       setActionError(error.message || '회원 탈퇴 중 오류가 발생했습니다.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // 대학교 인증 승인 처리
+  const handleUniversityApproval = async () => {
+    if (!userDetail) return;
+
+    try {
+      setActionLoading(true);
+      setActionError(null);
+
+      await AdminService.userAppearance.approveUniversityVerification(userDetail.id);
+      setUserDetail(prev => prev ? { ...prev, isUniversityVerified: true } : prev);
+
+      setActionSuccess('대학교 인증이 승인되었습니다.');
+      if (onRefresh) onRefresh();
+    } catch (error: any) {
+      setActionError(error.message || '대학교 인증 승인 중 오류가 발생했습니다.');
     } finally {
       setActionLoading(false);
     }
@@ -851,26 +872,75 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
                 {/* 대학 정보 */}
                 {(userDetail.universityDetails || userDetail.university) && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <SchoolIcon sx={{ mr: 1, color: 'primary.main' }} />
-                    <Box>
-                      {userDetail.universityDetails ? (
-                        <>
+                  <Box sx={{ mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <SchoolIcon sx={{ mr: 1, color: 'primary.main' }} />
+                      <Box sx={{ flex: 1 }}>
+                        {userDetail.universityDetails ? (
+                          <>
+                            <Typography variant="body1">
+                              {userDetail.universityDetails.name}{' '}
+                              {userDetail.universityDetails.authentication && (
+                                <span style={{ color: '#2ECC71', marginLeft: '4px' }}>✓</span>
+                              )}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {userDetail.universityDetails.department} {userDetail.universityDetails.grade}학년
+                              {userDetail.universityDetails.studentNumber && ` (${userDetail.universityDetails.studentNumber})`}
+                            </Typography>
+                          </>
+                        ) : (
                           <Typography variant="body1">
-                            {userDetail.universityDetails.name}{' '}
-                            {userDetail.universityDetails.authentication && (
-                              <span style={{ color: '#2ECC71', marginLeft: '4px' }}>✓</span>
-                            )}
+                            {userDetail.university}
                           </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {userDetail.universityDetails.department} {userDetail.universityDetails.grade}학년
-                            {userDetail.universityDetails.studentNumber && ` (${userDetail.universityDetails.studentNumber})`}
-                          </Typography>
-                        </>
+                        )}
+                      </Box>
+                    </Box>
+
+                    {/* 대학교 인증 상태 */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 4 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        인증 상태:
+                      </Typography>
+                      {userDetail.isUniversityVerified ? (
+                        <Chip
+                          label="✓ 인증됨"
+                          size="small"
+                          sx={{
+                            bgcolor: '#e8f5e8',
+                            color: '#2e7d32',
+                            fontWeight: 'medium'
+                          }}
+                        />
                       ) : (
-                        <Typography variant="body1">
-                          {userDetail.university}
-                        </Typography>
+                        <>
+                          <Chip
+                            label="미인증"
+                            size="small"
+                            sx={{
+                              bgcolor: '#fff3cd',
+                              color: '#856404',
+                              fontWeight: 'medium'
+                            }}
+                          />
+                          <Button
+                            size="small"
+                            variant="contained"
+                            sx={{
+                              minWidth: 'auto',
+                              px: 2,
+                              py: 0.5,
+                              fontSize: '0.75rem'
+                            }}
+                            onClick={() => {
+                              if (window.confirm(`${userDetail.name}님의 대학교 인증을 승인하시겠습니까?`)) {
+                                handleUniversityApproval();
+                              }
+                            }}
+                          >
+                            인증 승인
+                          </Button>
+                        </>
                       )}
                     </Box>
                   </Box>

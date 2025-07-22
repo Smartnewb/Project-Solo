@@ -50,6 +50,7 @@ export interface UserProfileWithAppearance {
   updatedAt?: string; // 새로운 응답에서는 없을 수 있음
   lastActiveAt?: string | null; // 새로운 응답에서 추가됨
   statusAt?: string | null; // 인스타그램 오류 상태 등을 나타내는 필드
+  isUniversityVerified?: boolean; // 대학교 인증 여부
 }
 
 // 페이지네이션 메타 정보

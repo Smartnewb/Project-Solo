@@ -125,6 +125,11 @@ const UserAppearanceTable = forwardRef<
   const [loadingUserDetail, setLoadingUserDetail] = useState(false);
   const [userDetailError, setUserDetailError] = useState<string | null>(null);
 
+  // 대학교 인증 승인 다이얼로그 상태
+  const [universityApprovalDialogOpen, setUniversityApprovalDialogOpen] = useState(false);
+  const [userToApprove, setUserToApprove] = useState<UserProfileWithAppearance | null>(null);
+  const [approvingUniversity, setApprovingUniversity] = useState(false);
+
   // 사용자 목록 조회
   const fetchUsers = async () => {
     try {
@@ -193,6 +198,51 @@ const UserAppearanceTable = forwardRef<
   const handleCloseGradeMenu = () => {
     setGradeMenuAnchorEl(null);
     setActiveUserId(null);
+  };
+
+  // 대학교 인증 승인 다이얼로그 열기
+  const handleUniversityVerificationApproval = (userId: string) => {
+    const user = users.find(u => (u.userId || u.id) === userId);
+    if (user) {
+      setUserToApprove(user);
+      setUniversityApprovalDialogOpen(true);
+    }
+  };
+
+  // 대학교 인증 승인 확인 처리
+  const handleConfirmUniversityApproval = async () => {
+    if (!userToApprove) return;
+
+    try {
+      setApprovingUniversity(true);
+
+      await AdminService.userAppearance.approveUniversityVerification(userToApprove.userId || userToApprove.id);
+
+      // 사용자 목록에서 해당 사용자의 인증 상태 즉시 업데이트
+      setUsers(prevUsers =>
+        prevUsers.map(user =>
+          (user.userId || user.id) === (userToApprove.userId || userToApprove.id)
+            ? { ...user, isUniversityVerified: true }
+            : user
+        )
+      );
+
+      // 다이얼로그 닫기
+      setUniversityApprovalDialogOpen(false);
+      setUserToApprove(null);
+
+    } catch (error: any) {
+      console.error('대학교 인증 승인 중 오류:', error);
+      setError(error.message || '대학교 인증 승인 중 오류가 발생했습니다.');
+    } finally {
+      setApprovingUniversity(false);
+    }
+  };
+
+  // 대학교 인증 승인 다이얼로그 닫기
+  const handleCloseUniversityApprovalDialog = () => {
+    setUniversityApprovalDialogOpen(false);
+    setUserToApprove(null);
   };
 
   // 등급 설정 저장
@@ -396,6 +446,7 @@ const UserAppearanceTable = forwardRef<
               <TableCell>나이/성별</TableCell>
               <TableCell>전화번호</TableCell>
               <TableCell>대학교</TableCell>
+              <TableCell>대학교 인증</TableCell>
               <TableCell>외모 등급</TableCell>
               <TableCell>인스타그램</TableCell>
               <TableCell>가입일</TableCell>
@@ -405,13 +456,13 @@ const UserAppearanceTable = forwardRef<
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={10} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={11} align="center" sx={{ py: 3 }}>
                   <CircularProgress />
                 </TableCell>
               </TableRow>
             ) : users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={11} align="center" sx={{ py: 3 }}>
                   <Typography variant="body1">조회된 사용자가 없습니다.</Typography>
                 </TableCell>
               </TableRow>
@@ -500,6 +551,52 @@ const UserAppearanceTable = forwardRef<
                       // 대학교 정보가 없는 경우
                       '-'
                     )}
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {user.isUniversityVerified ? (
+                        <Chip
+                          label="✓ 인증됨"
+                          size="small"
+                          sx={{
+                            bgcolor: '#e8f5e8',
+                            color: '#2e7d32',
+                            fontWeight: 'medium'
+                          }}
+                        />
+                      ) : (
+                        <>
+                          <Chip
+                            label="미인증"
+                            size="small"
+                            sx={{
+                              bgcolor: '#fff3cd',
+                              color: '#856404',
+                              fontWeight: 'medium'
+                            }}
+                          />
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            sx={{
+                              minWidth: 'auto',
+                              px: 1,
+                              py: 0.5,
+                              fontSize: '0.75rem',
+                              borderColor: '#1976d2',
+                              color: '#1976d2',
+                              '&:hover': {
+                                bgcolor: '#e3f2fd',
+                                borderColor: '#1565c0'
+                              }
+                            }}
+                            onClick={() => handleUniversityVerificationApproval(user.userId || user.id)}
+                          >
+                            인증 처리
+                          </Button>
+                        </>
+                      )}
+                    </Box>
                   </TableCell>
                   <TableCell>
                     <Box sx={{ position: 'relative' }}>
@@ -711,6 +808,60 @@ const UserAppearanceTable = forwardRef<
           }}
         />
       )}
+
+      {/* 대학교 인증 승인 확인 다이얼로그 */}
+      <Dialog
+        open={universityApprovalDialogOpen}
+        onClose={handleCloseUniversityApprovalDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          대학교 인증 승인
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            <strong>{userToApprove?.name}</strong>님의 대학교 인증을 승인하시겠습니까?
+          </Typography>
+          {userToApprove && (
+            <Box sx={{ bgcolor: 'grey.50', p: 2, borderRadius: 1 }}>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                사용자 정보
+              </Typography>
+              <Typography variant="body2">
+                • 이름: {userToApprove.name}
+              </Typography>
+              <Typography variant="body2">
+                • 대학교: {
+                  typeof userToApprove.university === 'string'
+                    ? userToApprove.university
+                    : userToApprove.university?.name || userToApprove.universityDetails?.name || '-'
+                }
+              </Typography>
+              <Typography variant="body2">
+                • 전화번호: {userToApprove.phoneNumber || '-'}
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleCloseUniversityApprovalDialog}
+            disabled={approvingUniversity}
+          >
+            취소
+          </Button>
+          <Button
+            onClick={handleConfirmUniversityApproval}
+            variant="contained"
+            color="primary"
+            disabled={approvingUniversity}
+            startIcon={approvingUniversity ? <CircularProgress size={16} /> : null}
+          >
+            {approvingUniversity ? '승인 중...' : '예, 승인합니다'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 });

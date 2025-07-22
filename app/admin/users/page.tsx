@@ -43,6 +43,7 @@ interface User {
   profileImages: ProfileImage[];
   universityDetails: UniversityDetails | null;
   preferences: Preference[];
+  statusAt?: string | null; // 인스타그램 오류 상태 등
 }
 
 type ApiResponse = {
@@ -73,7 +74,6 @@ export default function UsersAdmin() {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedGender, setSelectedGender] = useState<'all' | 'MALE' | 'FEMALE'>('all');
   const [selectedClass, setSelectedClass] = useState<'all' | 'S' | 'A' | 'B' | 'C' | 'unclassified'>('all');
-  const [dbError, setDbError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10); // 페이지당 표시 개수 고정
   const [totalCount, setTotalCount] = useState(0);
@@ -131,6 +131,8 @@ export default function UsersAdmin() {
       setLoading(false);
     }
   }
+
+
 
   const handleUserSelect = async (user: User) => {
     console.log('사용자 상세 정보 모달 열림:', user);
@@ -319,10 +321,10 @@ export default function UsersAdmin() {
 
   // 사용자 목록 렌더링 부분
   const renderUsersList = () => {
-    if (dbError) {
+    if (error) {
       return (
         <div className="py-8 text-center">
-          <p className="text-red-500">데이터베이스 오류: {dbError}</p>
+          <p className="text-red-500">데이터베이스 오류: {error}</p>
           <button
             onClick={() => window.location.reload()}
             className="mt-4 px-4 py-2 bg-primary-DEFAULT text-white rounded hover:bg-primary-dark"
@@ -812,11 +814,11 @@ export default function UsersAdmin() {
 
                         <div>
                           <p className="text-sm text-gray-500">인증 상태</p>
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${selectedUser.universityDetails.authentication
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${selectedUser.universityDetails?.authentication
                             ? 'bg-green-100 text-green-800'
                             : 'bg-red-100 text-red-800'
                             }`}>
-                            {selectedUser.universityDetails.authentication ? '인증됨' : '미인증'}
+                            {selectedUser.universityDetails?.authentication ? '인증됨' : '미인증'}
                           </span>
                         </div>
                       </div>

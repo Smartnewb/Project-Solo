@@ -1138,6 +1138,24 @@ const userAppearance = {
     }
   },
 
+  // 대학교 인증 승인
+  approveUniversityVerification: async (userId: string) => {
+    try {
+      console.log('대학교 인증 승인 요청:', userId);
+
+      const response = await axiosServer.post('/admin/university-verification/approve', {
+        userId
+      });
+
+      console.log('대학교 인증 승인 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('대학교 인증 승인 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
   getBlacklistUsers: async () => {
     try {
       console.log('블랙리스트 사용자 목록 조회 요청');
