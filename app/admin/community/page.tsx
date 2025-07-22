@@ -38,7 +38,7 @@ import {
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
   Comment as CommentIcon,
-  Warning as WarningIcon,
+
   Forum as ForumIcon,
   Article as ArticleIcon,
   FilterList as FilterListIcon,
@@ -66,14 +66,15 @@ function ArticleList() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedArticleDetail, setSelectedArticleDetail] = useState<any>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  const [startDate, setStartDate] = useState<Date | null>(new Date());
+  const [endDate, setEndDate] = useState<Date | null>(new Date());
 
   // 게시글 목록 조회
   const fetchArticles = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await communityService.getArticles(filter, page + 1, rowsPerPage, selectedDate);
+      const response = await communityService.getArticles(filter, page + 1, rowsPerPage, startDate, endDate);
       setArticles(response.items ?? []);
       setTotalCount(response.meta?.totalItems ?? 0);
       console.log('페이지네이션 정보:', response.meta);
@@ -86,9 +87,15 @@ function ArticleList() {
     }
   };
 
-  // 날짜 변경 시
-  const handleDateChange = (date: Date | null) => {
-    setSelectedDate(date);
+  // 시작 날짜 변경 시
+  const handleStartDateChange = (date: Date | null) => {
+    setStartDate(date);
+    setPage(0); // 날짜가 변경되면 첫 페이지로 이동
+  };
+
+  // 종료 날짜 변경 시
+  const handleEndDateChange = (date: Date | null) => {
+    setEndDate(date);
     setPage(0); // 날짜가 변경되면 첫 페이지로 이동
   };
 
@@ -228,7 +235,7 @@ function ArticleList() {
   // 게시글 목록 조회
   useEffect(() => {
     fetchArticles();
-  }, [filter, page, rowsPerPage, selectedDate]);
+  }, [filter, page, rowsPerPage, startDate, endDate]);
 
   return (
     <Box>
@@ -255,9 +262,23 @@ function ArticleList() {
 
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             <DatePicker
-              label="날짜 선택"
-              value={selectedDate}
-              onChange={handleDateChange}
+              label="시작 날짜"
+              value={startDate}
+              onChange={handleStartDateChange}
+              slotProps={{
+                textField: {
+                  size: 'small',
+                  sx: { width: 180 }
+                }
+              }}
+            />
+          </LocalizationProvider>
+
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <DatePicker
+              label="종료 날짜"
+              value={endDate}
+              onChange={handleEndDateChange}
               slotProps={{
                 textField: {
                   size: 'small',

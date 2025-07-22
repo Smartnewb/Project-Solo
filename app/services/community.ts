@@ -107,18 +107,25 @@ const communityService = {
     try {
       console.log('게시글 목록 조회 요청:', { filter, page, limit, startDate, endDate });
 
-      // 날짜 파라미터 설정 (startDate가 있으면 해당 날짜 사용, 없으면 현재 날짜)
-      const date = startDate ?
-        startDate.toISOString().split('T')[0] :
-        new Date().toISOString().split('T')[0];
+      // API 파라미터 구성
+      const params: any = {
+        page,
+        limit
+      };
+
+      // 시작 날짜가 있으면 추가 (YYYY-MM-DD 형식)
+      if (startDate) {
+        params.startDate = startDate.toISOString().split('T')[0];
+      }
+
+      // 종료 날짜가 있으면 추가 (YYYY-MM-DD 형식)
+      if (endDate) {
+        params.endDate = endDate.toISOString().split('T')[0];
+      }
 
       // 실제 API 호출
       const response = await axiosServer.get(`/admin/community/articles`, {
-        params: {
-          date,
-          page,
-          limit
-        }
+        params
       });
       console.log('게시글 목록 조회 응답:', response.data);
 
@@ -146,7 +153,19 @@ const communityService = {
       console.log('게시글 상세 조회 요청:', id);
 
       // 게시글 정보 가져오기 (목록 API에서 가져온 후 클라이언트에서 필터링)
-      const articlesResponse = await axiosServer.get(`/admin/community/articles`);
+      // 최근 30일 범위로 검색하여 게시글을 찾음
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(endDate.getDate() - 30);
+
+      const articlesResponse = await axiosServer.get(`/admin/community/articles`, {
+        params: {
+          startDate: startDate.toISOString().split('T')[0],
+          endDate: endDate.toISOString().split('T')[0],
+          page: 1,
+          limit: 1000 // 충분히 큰 값으로 설정하여 모든 게시글을 가져옴
+        }
+      });
 
       // 게시글 정보 추출 (클라이언트에서 ID로 필터링)
       const article = articlesResponse.data?.items?.find((item: any) => item.id === id);
