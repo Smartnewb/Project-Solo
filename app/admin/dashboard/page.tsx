@@ -11,14 +11,12 @@ import DailySignupsCard from '@/components/admin/dashboard/DailySignupsCard';
 import WeeklySignupsCard from '@/components/admin/dashboard/WeeklySignupsCard';
 import GenderStatsCard from '@/components/admin/dashboard/GenderStatsCard';
 import UniversityStatsCard from '@/components/admin/dashboard/UniversityStatsCard';
-import UserActivityDashboard from '@/components/admin/dashboard/UserActivityDashboard';
 import SignupStatsDashboard from '@/components/admin/dashboard/SignupStatsDashboard';
 
 // 회원 탈퇴 통계 컴포넌트
 import WithdrawalStatsCard from '@/components/admin/dashboard/WithdrawalStatsCard';
 import WithdrawalStatsDashboard from '@/components/admin/dashboard/WithdrawalStatsDashboard';
 import WithdrawalReasonStats from '@/components/admin/dashboard/WithdrawalReasonStats';
-import ServiceDurationStats from '@/components/admin/dashboard/ServiceDurationStats';
 import ChurnRateStats from '@/components/admin/dashboard/ChurnRateStats';
 import RegionFilter, { useRegionFilter } from '@/components/admin/common/RegionFilter';
 
@@ -188,17 +186,12 @@ export default function AdminDashboard() {
 
         {/* 회원가입 통계 대시보드 */}
         <Box sx={{ mt: 4, mb: 4 }}>
-          <SignupStatsDashboard />
+          <SignupStatsDashboard region={getRegionParam()} />
         </Box>
 
         {/* 대학별 통계 카드 */}
         <Box sx={{ mt: 4, mb: 4 }}>
           <UniversityStatsCard region={getRegionParam()} />
-        </Box>
-
-        {/* 사용자 활동 지표 */}
-        <Box sx={{ mt: 4, mb: 4 }}>
-          <UserActivityDashboard />
         </Box>
 
         <Divider sx={{ my: 6 }} />
@@ -220,11 +213,6 @@ export default function AdminDashboard() {
         {/* 탈퇴 사유 통계 */}
         <Box sx={{ mt: 4, mb: 4 }}>
           <WithdrawalReasonStats />
-        </Box>
-
-        {/* 서비스 사용 기간 통계 */}
-        <Box sx={{ mt: 4, mb: 4 }}>
-          <ServiceDurationStats />
         </Box>
 
         {/* 이탈률 통계 */}

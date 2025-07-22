@@ -31,6 +31,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { ko } from 'date-fns/locale';
 import { format, isAfter, isBefore, addDays } from 'date-fns';
 import AdminService from '@/app/services/admin';
+import { getRegionLabel } from '@/components/admin/common/RegionFilter';
 
 // 탭 패널 컴포넌트
 interface TabPanelProps {
@@ -100,13 +101,20 @@ interface MonthlySignupTrendResponse {
   data: MonthlySignupTrendItem[];
 }
 
-export default function SignupStatsDashboard() {
+interface SignupStatsDashboardProps {
+  region?: string;
+}
+
+export default function SignupStatsDashboard({ region }: SignupStatsDashboardProps) {
   const [activeTab, setActiveTab] = useState(0);
   const [dailyData, setDailyData] = useState<DailySignupTrendItem[]>([]);
   const [weeklyData, setWeeklyData] = useState<WeeklySignupTrendItem[]>([]);
   const [monthlyData, setMonthlyData] = useState<MonthlySignupTrendItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // 지역 라벨 생성
+  const regionLabel = region ? getRegionLabel(region as any) : '전체 지역';
 
   // 사용자 지정 기간 상태
   const [startDate, setStartDate] = useState<Date | null>(addDays(new Date(), -30)); // 기본값: 30일 전
@@ -289,7 +297,7 @@ export default function SignupStatsDashboard() {
 
         // 일별 데이터 조회
         try {
-          const dailyResponse = await AdminService.stats.getDailySignupTrend();
+          const dailyResponse = await AdminService.stats.getDailySignupTrend(region);
           console.log('일별 데이터 응답:', dailyResponse);
           if (dailyResponse && dailyResponse.data && dailyResponse.data.length > 0) {
             setDailyData(dailyResponse.data);
@@ -304,7 +312,7 @@ export default function SignupStatsDashboard() {
 
         // 주별 데이터 조회
         try {
-          const weeklyResponse = await AdminService.stats.getWeeklySignupTrend();
+          const weeklyResponse = await AdminService.stats.getWeeklySignupTrend(region);
           console.log('주별 데이터 응답:', weeklyResponse);
           if (weeklyResponse && weeklyResponse.data && weeklyResponse.data.length > 0) {
             setWeeklyData(weeklyResponse.data);
@@ -319,7 +327,7 @@ export default function SignupStatsDashboard() {
 
         // 월별 데이터 조회
         try {
-          const monthlyResponse = await AdminService.stats.getMonthlySignupTrend();
+          const monthlyResponse = await AdminService.stats.getMonthlySignupTrend(region);
           console.log('월별 데이터 응답:', monthlyResponse);
           if (monthlyResponse && monthlyResponse.data && monthlyResponse.data.length > 0) {
             setMonthlyData(monthlyResponse.data);
@@ -349,7 +357,7 @@ export default function SignupStatsDashboard() {
     const interval = setInterval(fetchTrendData, 5 * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [region]);
 
   // 날짜 유효성 검사
   const isDateRangeValid = () => {
@@ -379,7 +387,8 @@ export default function SignupStatsDashboard() {
       // 회원가입자 수 조회
       const countResponse = await AdminService.stats.getCustomPeriodSignupCount(
         formattedStartDate,
-        formattedEndDate
+        formattedEndDate,
+        region
       );
 
       console.log('회원가입자 수 응답:', countResponse);
@@ -412,7 +421,8 @@ export default function SignupStatsDashboard() {
       // 회원가입 추이 조회
       const trendResponse = await AdminService.stats.getCustomPeriodSignupTrend(
         formattedStartDate,
-        formattedEndDate
+        formattedEndDate,
+        region
       );
 
       console.log('회원가입 추이 응답:', trendResponse);
@@ -497,7 +507,7 @@ export default function SignupStatsDashboard() {
     <Card>
       <CardContent>
         <Typography variant="h6" gutterBottom>
-          회원가입 추이
+          회원가입 추이 ({regionLabel})
         </Typography>
 
         <Tabs

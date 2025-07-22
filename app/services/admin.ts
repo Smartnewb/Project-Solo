@@ -62,27 +62,30 @@ const stats = {
       return { weeklySignups: 12 }; // 오류 발생 시 기본값 반환
     }
   },
-  getDailySignupTrend: async () => {
+  getDailySignupTrend: async (region?: string) => {
     try {
-      const response = await axiosServer.get('/admin/stats/users/trend/daily');
+      const params = region ? { region } : {};
+      const response = await axiosServer.get('/admin/stats/users/trend/daily', { params });
       return response.data;
     } catch (error) {
       console.error('일별 회원가입 추이 조회 중 오류:', error);
       throw error;
     }
   },
-  getWeeklySignupTrend: async () => {
+  getWeeklySignupTrend: async (region?: string) => {
     try {
-      const response = await axiosServer.get('/admin/stats/users/trend/weekly');
+      const params = region ? { region } : {};
+      const response = await axiosServer.get('/admin/stats/users/trend/weekly', { params });
       return response.data;
     } catch (error) {
       console.error('주별 회원가입 추이 조회 중 오류:', error);
       throw error;
     }
   },
-  getMonthlySignupTrend: async () => {
+  getMonthlySignupTrend: async (region?: string) => {
     try {
-      const response = await axiosServer.get('/admin/stats/users/trend/monthly');
+      const params = region ? { region } : {};
+      const response = await axiosServer.get('/admin/stats/users/trend/monthly', { params });
       return response.data;
     } catch (error) {
       console.error('월별 회원가입 추이 조회 중 오류:', error);
@@ -91,13 +94,19 @@ const stats = {
   },
 
   // 사용자 지정 기간 회원가입자 수 조회
-  getCustomPeriodSignupCount: async (startDate: string, endDate: string) => {
+  getCustomPeriodSignupCount: async (startDate: string, endDate: string, region?: string) => {
     try {
-      console.log('사용자 지정 기간 조회:', startDate, endDate);
-      const response = await axiosServer.post('/admin/stats/users/custom-period', {
+      console.log('사용자 지정 기간 조회:', startDate, endDate, region);
+      const requestData: any = {
         startDate,
         endDate
-      });
+      };
+
+      if (region) {
+        requestData.region = region;
+      }
+
+      const response = await axiosServer.post('/admin/stats/users/custom-period', requestData);
 
       // 응답 로깅
       console.log('원본 API 응답:', response);
@@ -111,13 +120,19 @@ const stats = {
   },
 
   // 사용자 지정 기간 회원가입 추이 조회
-  getCustomPeriodSignupTrend: async (startDate: string, endDate: string) => {
+  getCustomPeriodSignupTrend: async (startDate: string, endDate: string, region?: string) => {
     try {
-      console.log('사용자 지정 기간 추이 조회:', startDate, endDate);
-      const response = await axiosServer.post('/admin/stats/users/trend/custom-period', {
+      console.log('사용자 지정 기간 추이 조회:', startDate, endDate, region);
+      const requestData: any = {
         startDate,
         endDate
-      });
+      };
+
+      if (region) {
+        requestData.region = region;
+      }
+
+      const response = await axiosServer.post('/admin/stats/users/trend/custom-period', requestData);
 
       // 응답 로깅
       console.log('추이 원본 API 응답:', response);
@@ -194,18 +209,7 @@ const stats = {
     }
   },
 
-  // 사용자 활동 지표 조회
-  getUserActivityStats: async () => {
-    try {
-      const response = await axiosServer.get('/admin/stats/users/activity');
-      console.log('사용자 활동 지표 응답:', response.data);
 
-      return response.data;
-    } catch (error) {
-      console.error('사용자 활동 지표 조회 중 오류:', error);
-      throw error;
-    }
-  },
 
   // 회원 탈퇴 통계 API
   // 총 탈퇴자 수 조회
@@ -328,16 +332,7 @@ const stats = {
     }
   },
 
-  // 서비스 사용 기간 통계 조회
-  getServiceDurationStats: async () => {
-    try {
-      const response = await axiosServer.get('/admin/stats/withdrawals/service-duration');
-      return response.data || { durations: [], averageDuration: 0 };
-    } catch (error) {
-      console.error('서비스 사용 기간 통계 조회 중 오류:', error);
-      return { durations: [], averageDuration: 0 }; // 오류 발생 시 기본값 반환
-    }
-  },
+
 
   // 이탈률 조회
   getChurnRate: async () => {
