@@ -192,7 +192,7 @@ export default function MatchingManagement() {
 
   // 검색 관련 상태
   const [historySearchName, setHistorySearchName] = useState('');
-  const [historySearchType, setHistorySearchType] = useState('scheduled');
+  const [historySearchType, setHistorySearchType] = useState('all');
   const [failureSearchName, setFailureSearchName] = useState('');
 
   // 탭 변경 핸들러
@@ -220,15 +220,87 @@ export default function MatchingManagement() {
         historyPage + 1,
         historyRowsPerPage,
         historySearchName.trim() || undefined,
-        historySearchType
+        historySearchType !== 'all' ? historySearchType : undefined
       );
-      setMatchingHistory(response);
+
+      // 각 매칭에 대해 매칭 횟수 조회
+      if (response.items && response.items.length > 0) {
+        const itemsWithMatchCount = await Promise.all(
+          response.items.map(async (history: any) => {
+            try {
+              const matchCountResponse = await AdminService.matching.getUserMatchCount(
+                history.user?.id,
+                history.matcher?.id,
+                formattedStartDate,
+                formattedEndDate
+              );
+
+              // 매칭 타입에 따른 횟수 계산
+              let displayCount = 1;
+              if (historySearchType === 'all') {
+                displayCount = matchCountResponse.totalCount || 1;
+              } else if (historySearchType === 'scheduled') {
+                displayCount = matchCountResponse.freeMatchCount || 0;
+              } else if (historySearchType === 'rematching') {
+                displayCount = matchCountResponse.paidMatchCount || 0;
+              } else if (historySearchType === 'admin') {
+                displayCount = matchCountResponse.adminMatchCount || 0;
+              }
+
+              return {
+                ...history,
+                matchCount: displayCount,
+                totalMatchCount: matchCountResponse.totalCount || 1,
+                freeMatchCount: matchCountResponse.freeMatchCount || 0,
+                paidMatchCount: matchCountResponse.paidMatchCount || 0,
+                adminMatchCount: matchCountResponse.adminMatchCount || 0
+              };
+            } catch (error) {
+              console.error('매칭 횟수 조회 중 오류:', error);
+              return {
+                ...history,
+                matchCount: 1, // 오류 시 기본값
+                totalMatchCount: 1,
+                freeMatchCount: 0,
+                paidMatchCount: 0,
+                adminMatchCount: 0
+              };
+            }
+          })
+        );
+
+        setMatchingHistory({
+          ...response,
+          items: itemsWithMatchCount
+        });
+      } else {
+        setMatchingHistory(response);
+      }
     } catch (error: any) {
       console.error('매칭 내역 조회 중 오류:', error);
       setAnalyticsError(error.message || '매칭 내역을 불러오는 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
+  };
+
+  // 매칭 내역 페이지네이션 핸들러
+  const handleHistoryPageChange = (event: unknown, newPage: number) => {
+    setHistoryPage(newPage);
+    // 페이지 변경 후 데이터 조회
+    setTimeout(() => {
+      fetchMatchingHistory();
+    }, 0);
+  };
+
+  const handleHistoryRowsPerPageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newRowsPerPage = parseInt(event.target.value, 10);
+    setHistoryRowsPerPage(newRowsPerPage);
+    setHistoryPage(0); // 첫 페이지로 리셋
+    // 페이지 변경 후 데이터 조회
+    setTimeout(() => {
+      fetchMatchingHistory();
+    }, 0);
   };
 
   const fetchMatchingFailures = async () => {
@@ -251,6 +323,25 @@ export default function MatchingManagement() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // 매칭 실패 내역 페이지네이션 핸들러
+  const handleFailurePageChange = (event: unknown, newPage: number) => {
+    setFailurePage(newPage);
+    // 페이지 변경 후 데이터 조회
+    setTimeout(() => {
+      fetchMatchingFailures();
+    }, 0);
+  };
+
+  const handleFailureRowsPerPageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newRowsPerPage = parseInt(event.target.value, 10);
+    setFailureRowsPerPage(newRowsPerPage);
+    setFailurePage(0); // 첫 페이지로 리셋
+    // 페이지 변경 후 데이터 조회
+    setTimeout(() => {
+      fetchMatchingFailures();
+    }, 0);
   };
 
   // 사용자 검색 함수
@@ -597,6 +688,7 @@ export default function MatchingManagement() {
                   onChange={(e) => setHistorySearchType(e.target.value)}
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
+                  <option value="all">전체</option>
                   <option value="scheduled">무료 매칭</option>
                   <option value="admin">관리자 매칭</option>
                   <option value="rematching">유료 매칭</option>
@@ -702,7 +794,51 @@ export default function MatchingManagement() {
                               </Box>
                             </Box>
                           </TableCell>
-                          <TableCell>{history.matchCount || 1}</TableCell>
+                          <TableCell>
+                            {historySearchType === 'all' ? (
+                              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                <Chip
+                                  label={`전체: ${history.totalMatchCount || 1}`}
+                                  color={history.totalMatchCount > 1 ? 'warning' : 'default'}
+                                  size="small"
+                                  variant="filled"
+                                />
+                                <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                  {history.freeMatchCount > 0 && (
+                                    <Chip
+                                      label={`무료: ${history.freeMatchCount}`}
+                                      color="success"
+                                      size="small"
+                                      variant="outlined"
+                                    />
+                                  )}
+                                  {history.paidMatchCount > 0 && (
+                                    <Chip
+                                      label={`유료: ${history.paidMatchCount}`}
+                                      color="warning"
+                                      size="small"
+                                      variant="outlined"
+                                    />
+                                  )}
+                                  {history.adminMatchCount > 0 && (
+                                    <Chip
+                                      label={`관리자: ${history.adminMatchCount}`}
+                                      color="info"
+                                      size="small"
+                                      variant="outlined"
+                                    />
+                                  )}
+                                </Box>
+                              </Box>
+                            ) : (
+                              <Chip
+                                label={history.matchCount || 0}
+                                color={history.matchCount > 1 ? 'warning' : history.matchCount === 0 ? 'error' : 'default'}
+                                size="small"
+                                variant={history.matchCount > 1 ? 'filled' : 'outlined'}
+                              />
+                            )}
+                          </TableCell>
                         </TableRow>
                       ))
                     ) : (
@@ -722,9 +858,9 @@ export default function MatchingManagement() {
                   component="div"
                   count={matchingHistory.meta?.totalItems || -1}
                   page={historyPage}
-                  onPageChange={(_, newPage) => setHistoryPage(newPage)}
+                  onPageChange={handleHistoryPageChange}
                   rowsPerPage={historyRowsPerPage}
-                  onRowsPerPageChange={(event) => setHistoryRowsPerPage(parseInt(event.target.value, 10))}
+                  onRowsPerPageChange={handleHistoryRowsPerPageChange}
                   rowsPerPageOptions={[5, 10, 25, 50]}
                   labelRowsPerPage="페이지당 항목 수:"
                   labelDisplayedRows={({ from, to, count }) =>
@@ -834,9 +970,9 @@ export default function MatchingManagement() {
                   component="div"
                   count={matchingFailures.meta?.totalItems || -1}
                   page={failurePage}
-                  onPageChange={(_, newPage) => setFailurePage(newPage)}
+                  onPageChange={handleFailurePageChange}
                   rowsPerPage={failureRowsPerPage}
-                  onRowsPerPageChange={(event) => setFailureRowsPerPage(parseInt(event.target.value, 10))}
+                  onRowsPerPageChange={handleFailureRowsPerPageChange}
                   rowsPerPageOptions={[5, 10, 25, 50]}
                   labelRowsPerPage="페이지당 항목 수:"
                   labelDisplayedRows={({ from, to, count }) =>

@@ -1442,6 +1442,28 @@ const matching = {
     }
   },
 
+  // 사용자 매칭 횟수 조회
+  getUserMatchCount: async (myId: string, matcherId: string, startDate?: string, endDate?: string) => {
+    try {
+      console.log('사용자 매칭 횟수 조회 요청:', { myId, matcherId, startDate, endDate });
+
+      const params: any = { myId, matcherId };
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
+
+      const response = await axiosServer.get('/admin/matching/match-count', {
+        params
+      });
+
+      console.log('사용자 매칭 횟수 조회 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('사용자 매칭 횟수 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
   // 특정 사용자가 매칭 상대로 선택된 이력 조회
   getMatcherHistory: async (matcherId: string, startDate: string, endDate: string, page: number = 1, limit: number = 10, name?: string) => {
     try {
