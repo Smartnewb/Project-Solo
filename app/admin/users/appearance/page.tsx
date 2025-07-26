@@ -182,10 +182,10 @@ export default function AppearanceGradePage() {
       <Box sx={{ mb: 3 }}>
         <Tabs value={activeTab} onChange={handleTabChange} aria-label="사용자 관리 탭">
           <Tab label="전체 사용자" />
+          <Tab label="승인 관리" />
+          <Tab label="블랙리스트" />
           <Tab label="미분류 사용자" />
           <Tab label="중복 휴대폰 번호" />
-          <Tab label="블랙리스트 관리" />
-          <Tab label="승인 관리" />
         </Tabs>
       </Box>
 
@@ -214,16 +214,16 @@ export default function AppearanceGradePage() {
           </Box>
         )}
         {activeTab === 1 && (
-          <UnclassifiedUsersPanel />
+          <ApprovalManagementPanel />
         )}
         {activeTab === 2 && (
-          <DuplicatePhoneUsersPanel />
-        )}
-        {activeTab === 3 && (
           <BlacklistUsersPanel />
         )}
+        {activeTab === 3 && (
+          <UnclassifiedUsersPanel />
+        )}
         {activeTab === 4 && (
-          <ApprovalManagementPanel />
+          <DuplicatePhoneUsersPanel />
         )}
       </Box>
     </Box>
