@@ -161,6 +161,8 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   // props가 변경되면 내부 상태 업데이트
   useEffect(() => {
     setUserDetail(initialUserDetail);
+    // 외모 등급도 함께 초기화
+    setAppearanceGrade(initialUserDetail.appearanceGrade || initialUserDetail.appearanceRank || 'UNKNOWN');
     setLoading(initialLoading);
     setError(initialError);
 
@@ -179,6 +181,13 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       }
     }
   }, [initialUserDetail, initialLoading, initialError]);
+
+  // 모달이 열릴 때마다 외모 등급 초기화
+  useEffect(() => {
+    if (open) {
+      setAppearanceGrade(userDetail.appearanceGrade || userDetail.appearanceRank || 'UNKNOWN');
+    }
+  }, [open, userDetail.appearanceGrade, userDetail.appearanceRank]);
 
   // userId가 변경되면 사용자 데이터 로드
   useEffect(() => {
