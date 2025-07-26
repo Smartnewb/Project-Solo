@@ -284,6 +284,14 @@ export default function MatchingManagement() {
     }
   };
 
+  // 조회 버튼 클릭 시 페이지 리셋 후 조회
+  const handleSearchMatchingHistory = () => {
+    setHistoryPage(0); // 페이지를 첫 번째로 리셋
+    setTimeout(() => {
+      fetchMatchingHistory();
+    }, 0);
+  };
+
   // 매칭 내역 페이지네이션 핸들러
   const handleHistoryPageChange = (event: unknown, newPage: number) => {
     setHistoryPage(newPage);
@@ -323,6 +331,14 @@ export default function MatchingManagement() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // 매칭 실패 내역 조회 버튼 클릭 시 페이지 리셋 후 조회
+  const handleSearchMatchingFailures = () => {
+    setFailurePage(0); // 페이지를 첫 번째로 리셋
+    setTimeout(() => {
+      fetchMatchingFailures();
+    }, 0);
   };
 
   // 매칭 실패 내역 페이지네이션 핸들러
@@ -695,7 +711,7 @@ export default function MatchingManagement() {
                 </select>
               </Box>
               <Button
-                onClick={fetchMatchingHistory}
+                onClick={handleSearchMatchingHistory}
                 disabled={loading}
               >
                 {loading ? <CircularProgress size={20} color="inherit" /> : '조회'}
@@ -903,7 +919,7 @@ export default function MatchingManagement() {
                 />
               </Box>
               <Button
-                onClick={fetchMatchingFailures}
+                onClick={handleSearchMatchingFailures}
                 disabled={loading}
               >
                 {loading ? <CircularProgress size={20} color="inherit" /> : '조회'}
