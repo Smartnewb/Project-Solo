@@ -206,7 +206,7 @@ export default function MatchingManagement() {
   };
 
   // 매칭분석 관련 함수들
-  const fetchMatchingHistory = async () => {
+  const fetchMatchingHistory = async (pageNumber?: number) => {
     try {
       setLoading(true);
       setAnalyticsError(null);
@@ -214,10 +214,13 @@ export default function MatchingManagement() {
       const formattedStartDate = format(startDate, 'yyyy-MM-dd');
       const formattedEndDate = format(endDate, 'yyyy-MM-dd');
 
+      // 페이지 번호가 전달되면 해당 페이지를, 아니면 현재 페이지 사용
+      const currentPage = pageNumber !== undefined ? pageNumber : historyPage;
+
       const response = await AdminService.matching.getMatchHistory(
         formattedStartDate,
         formattedEndDate,
-        historyPage + 1,
+        currentPage + 1,
         historyRowsPerPage,
         historySearchName.trim() || undefined,
         historySearchType !== 'all' ? historySearchType : undefined
@@ -285,20 +288,16 @@ export default function MatchingManagement() {
   };
 
   // 조회 버튼 클릭 시 페이지 리셋 후 조회
-  const handleSearchMatchingHistory = () => {
+  const handleSearchMatchingHistory = async () => {
     setHistoryPage(0); // 페이지를 첫 번째로 리셋
-    setTimeout(() => {
-      fetchMatchingHistory();
-    }, 0);
+    await fetchMatchingHistory(0); // 첫 번째 페이지로 조회
   };
 
   // 매칭 내역 페이지네이션 핸들러
-  const handleHistoryPageChange = (event: unknown, newPage: number) => {
+  const handleHistoryPageChange = async (event: unknown, newPage: number) => {
     setHistoryPage(newPage);
     // 페이지 변경 후 데이터 조회
-    setTimeout(() => {
-      fetchMatchingHistory();
-    }, 0);
+    await fetchMatchingHistory(newPage);
   };
 
   const handleHistoryRowsPerPageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -311,16 +310,19 @@ export default function MatchingManagement() {
     }, 0);
   };
 
-  const fetchMatchingFailures = async () => {
+  const fetchMatchingFailures = async (pageNumber?: number) => {
     try {
       setLoading(true);
       setAnalyticsError(null);
 
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
 
+      // 페이지 번호가 전달되면 해당 페이지를, 아니면 현재 페이지 사용
+      const currentPage = pageNumber !== undefined ? pageNumber : failurePage;
+
       const response = await AdminService.matching.getFailureLogs(
         formattedDate,
-        failurePage + 1,
+        currentPage + 1,
         failureRowsPerPage,
         failureSearchName.trim() || undefined
       );
@@ -334,20 +336,16 @@ export default function MatchingManagement() {
   };
 
   // 매칭 실패 내역 조회 버튼 클릭 시 페이지 리셋 후 조회
-  const handleSearchMatchingFailures = () => {
+  const handleSearchMatchingFailures = async () => {
     setFailurePage(0); // 페이지를 첫 번째로 리셋
-    setTimeout(() => {
-      fetchMatchingFailures();
-    }, 0);
+    await fetchMatchingFailures(0); // 첫 번째 페이지로 조회
   };
 
   // 매칭 실패 내역 페이지네이션 핸들러
-  const handleFailurePageChange = (event: unknown, newPage: number) => {
+  const handleFailurePageChange = async (event: unknown, newPage: number) => {
     setFailurePage(newPage);
     // 페이지 변경 후 데이터 조회
-    setTimeout(() => {
-      fetchMatchingFailures();
-    }, 0);
+    await fetchMatchingFailures(newPage);
   };
 
   const handleFailureRowsPerPageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
