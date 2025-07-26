@@ -1,17 +1,25 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
   Tabs,
   Tab,
-  TableRow,
   Switch,
   Paper,
   CircularProgress,
   Alert,
-  TextareaAutosize
+  TextareaAutosize,
+  TableContainer,
+  Table,
+  TableHead,
+  TableBody,
+  TableCell,
+  TableRow,
+  TablePagination,
+  Avatar,
+  Chip
 } from '@mui/material';
 import axiosServer from '@/utils/axios';
 import { useBatchStatus } from './useBatchStatus';
@@ -27,11 +35,17 @@ import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
 
 // 타입 임포트
 import { UserSearchResult, MatchingResult, MatchingSimulationResult, UnmatchedUser } from './types';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
 import { UserDetail } from '@/components/admin/appearance/UserDetailModal';
 import AdminService from '@/app/services/admin';
 import { Button } from '@/shared/ui';
+
+// 매칭분석 관련 임포트
+import { format } from 'date-fns';
+import { ko } from 'date-fns/locale';
+import { formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 
 // 탭 인터페이스
 interface TabPanelProps {
@@ -40,35 +54,32 @@ interface TabPanelProps {
   value: number;
 }
 
-// 사용자 프로필 타입
-interface UserProfile {
+
+
+// 매칭분석 관련 타입
+
+interface MatchingHistory {
   id: string;
-  mbti?: string;
+  requesterName: string;
+  requesterGender: string;
+  requesterUniversity: string;
+  matchedName: string;
+  matchedGender: string;
+  matchedUniversity: string;
+  matchedAt: string;
+  matchCount: number;
+  requesterProfileImage?: string;
+  matchedProfileImage?: string;
+}
+
+interface MatchingFailure {
+  id: string;
   name: string;
-  age: number;
   gender: string;
-  rank?: string;
-  profileImages?: {
-    id: string;
-    order: number;
-    isMain: boolean;
-    url: string;
-  }[];
-  instagramId?: string;
-  universityDetails?: {
-    name: string;
-    authentication: boolean;
-    department: string;
-    grade: string;
-    studentNumber: string;
-  };
-  preferences?: {
-    typeName: string;
-    selectedOptions: {
-      id: string;
-      displayName: string;
-    }[];
-  }[];
+  university: string;
+  reason: string;
+  failedAt: string;
+  profileImage?: string;
 }
 
 // 탭 패널 컴포넌트
@@ -103,8 +114,6 @@ const batchAllMatchableUsers = () =>
   });
 
 export default function MatchingManagement() {
-  const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<number>(0);
   const {
     status: batchStatus,
@@ -129,7 +138,6 @@ export default function MatchingManagement() {
   const [simulationLoading, setSimulationLoading] = useState(false);
   const [simulationResult, setSimulationResult] = useState<MatchingSimulationResult | null>(null);
   const [selectedPartnerIndex, setSelectedPartnerIndex] = useState<number | null>(null);
-  const isBatchMatching = activeTab === 2;
 
   // 매칭 대기 사용자 상태
   const [unmatchedUsers, setUnmatchedUsers] = useState<UnmatchedUser[]>([]);
@@ -169,13 +177,79 @@ export default function MatchingManagement() {
   const [loadingUserDetail, setLoadingUserDetail] = useState(false);
   const [userDetailError, setUserDetailError] = useState<string | null>(null);
 
+  // 매칭분석 관련 상태
+  const [matchingHistory, setMatchingHistory] = useState<any>(null);
+  const [matchingFailures, setMatchingFailures] = useState<any>(null);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [startDate, setStartDate] = useState<Date>(new Date());
+  const [endDate, setEndDate] = useState<Date>(new Date());
+  const [historyPage, setHistoryPage] = useState(0);
+  const [historyRowsPerPage, setHistoryRowsPerPage] = useState(10);
+  const [failurePage, setFailurePage] = useState(0);
+  const [failureRowsPerPage, setFailureRowsPerPage] = useState(10);
+  const [loading, setLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+
+  // 검색 관련 상태
+  const [historySearchName, setHistorySearchName] = useState('');
+  const [historySearchType, setHistorySearchType] = useState('scheduled');
+  const [failureSearchName, setFailureSearchName] = useState('');
+
   // 탭 변경 핸들러
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
 
     // 매칭 대기 사용자 탭으로 이동할 때 데이터 로드
-    if (newValue === 2 && unmatchedUsers.length === 0) {
+    if (newValue === 4 && unmatchedUsers.length === 0) {
       fetchUnmatchedUsers();
+    }
+  };
+
+  // 매칭분석 관련 함수들
+  const fetchMatchingHistory = async () => {
+    try {
+      setLoading(true);
+      setAnalyticsError(null);
+
+      const formattedStartDate = format(startDate, 'yyyy-MM-dd');
+      const formattedEndDate = format(endDate, 'yyyy-MM-dd');
+
+      const response = await AdminService.matching.getMatchHistory(
+        formattedStartDate,
+        formattedEndDate,
+        historyPage + 1,
+        historyRowsPerPage,
+        historySearchName.trim() || undefined,
+        historySearchType
+      );
+      setMatchingHistory(response);
+    } catch (error: any) {
+      console.error('매칭 내역 조회 중 오류:', error);
+      setAnalyticsError(error.message || '매칭 내역을 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMatchingFailures = async () => {
+    try {
+      setLoading(true);
+      setAnalyticsError(null);
+
+      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+
+      const response = await AdminService.matching.getFailureLogs(
+        formattedDate,
+        failurePage + 1,
+        failureRowsPerPage,
+        failureSearchName.trim() || undefined
+      );
+      setMatchingFailures(response);
+    } catch (error: any) {
+      console.error('매칭 실패 내역 조회 중 오류:', error);
+      setAnalyticsError(error.message || '매칭 실패 내역을 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -452,18 +526,21 @@ export default function MatchingManagement() {
       </Typography>
 
       <Tabs value={activeTab} onChange={handleTabChange} aria-label="매칭 관리 탭">
+        <Tab label="재매칭 티켓 관리" />
+        <Tab label="매칭 내역 조회" />
+        <Tab label="매칭 실패 내역" />
+        <Tab label="매칭 상대 이력" />
+        <Tab label="매칭 대기 사용자" />
         <Tab label="단일 매칭" />
         <Tab label="매칭 시뮬레이션" />
-        <Tab label="매칭 대기 사용자" />
-        <Tab label="매칭 상대 이력" />
-        <Tab label="재매칭 티켓 관리" />
         <Tab label="00시 매칭 여부" />
         <Tab label="잔여 사용자 매칭" />
         <Tab label="임베드 데이터 갱신" />
       </Tabs>
 
+      {/* 재매칭 티켓 관리 */}
       <TabPanel value={activeTab} index={0}>
-        <UserSearch
+        <TicketManagement
           searchTerm={searchTerm}
           searchLoading={searchLoading}
           error={error}
@@ -473,16 +550,308 @@ export default function MatchingManagement() {
           searchUsers={searchUsers}
           handleUserSelect={handleUserSelect}
         />
-        <SingleMatching
-          selectedUser={selectedUser}
-          matchingLoading={matchingLoading}
-          matchingResult={matchingResult}
-          processSingleMatching={processSingleMatching}
-        />
       </TabPanel>
 
+      {/* 매칭 내역 조회 */}
       <TabPanel value={activeTab} index={1}>
-        <UserSearch
+        <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ko}>
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              매칭 내역 조회
+            </Typography>
+
+            {/* 검색 필터 */}
+            <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', alignItems: 'end' }}>
+              <DatePicker
+                label="시작 날짜"
+                value={startDate}
+                onChange={(newValue) => newValue && setStartDate(newValue)}
+                format="yyyy-MM-dd"
+                slotProps={{ textField: { size: 'small', sx: { minWidth: 150 } } }}
+              />
+              <DatePicker
+                label="종료 날짜"
+                value={endDate}
+                onChange={(newValue) => newValue && setEndDate(newValue)}
+                format="yyyy-MM-dd"
+                slotProps={{ textField: { size: 'small', sx: { minWidth: 150 } } }}
+              />
+              <Box sx={{ minWidth: 150 }}>
+                <Typography variant="caption" sx={{ display: 'block', mb: 0.5 }}>
+                  이름 검색
+                </Typography>
+                <input
+                  type="text"
+                  value={historySearchName}
+                  onChange={(e) => setHistorySearchName(e.target.value)}
+                  placeholder="이름으로 검색"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </Box>
+              <Box sx={{ minWidth: 120 }}>
+                <Typography variant="caption" sx={{ display: 'block', mb: 0.5 }}>
+                  매칭 타입
+                </Typography>
+                <select
+                  value={historySearchType}
+                  onChange={(e) => setHistorySearchType(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="scheduled">무료 매칭</option>
+                  <option value="admin">관리자 매칭</option>
+                  <option value="rematching">유료 매칭</option>
+                </select>
+              </Box>
+              <Button
+                onClick={fetchMatchingHistory}
+                disabled={loading}
+              >
+                {loading ? <CircularProgress size={20} color="inherit" /> : '조회'}
+              </Button>
+            </Box>
+
+            {/* 로딩 상태 */}
+            {loading && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+                <CircularProgress />
+                <Typography sx={{ ml: 2 }}>매칭 내역을 조회하고 있습니다...</Typography>
+              </Box>
+            )}
+
+            {/* 에러 상태 */}
+            {analyticsError && (
+              <Alert severity="error" sx={{ mb: 3 }}>
+                {analyticsError}
+              </Alert>
+            )}
+
+            {/* 데이터 테이블 */}
+            {!loading && matchingHistory && (
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                      <TableCell>매칭 ID</TableCell>
+                      <TableCell>매칭 점수</TableCell>
+                      <TableCell>매칭 타입</TableCell>
+                      <TableCell>매칭 발표 시간</TableCell>
+                      <TableCell>사용자 정보</TableCell>
+                      <TableCell>매칭 상대 정보</TableCell>
+                      <TableCell>매칭 횟수</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {matchingHistory.items && matchingHistory.items.length > 0 ? (
+                      matchingHistory.items.map((history: any) => (
+                        <TableRow key={history.id} hover>
+                          <TableCell>{history.id}</TableCell>
+                          <TableCell>{history.score || '-'}</TableCell>
+                          <TableCell>
+                            <Chip
+                              label={
+                                history.type === 'scheduled' ? '무료 매칭' :
+                                history.type === 'admin' ? '관리자 매칭' :
+                                history.type === 'rematching' ? '유료 매칭' :
+                                history.type
+                              }
+                              color={
+                                history.type === 'scheduled' ? 'success' :
+                                history.type === 'admin' ? 'info' :
+                                history.type === 'rematching' ? 'warning' :
+                                'default'
+                              }
+                              size="small"
+                            />
+                          </TableCell>
+                          <TableCell>
+                            {formatDateTimeWithoutTimezoneConversion(history.publishedAt)}
+                          </TableCell>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              {history.user?.profileImageUrl && (
+                                <Avatar
+                                  src={history.user.profileImageUrl}
+                                  sx={{ width: 24, height: 24 }}
+                                />
+                              )}
+                              <Box>
+                                <Typography variant="body2" fontWeight="medium">
+                                  {history.user?.name}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {history.user?.age}세 · {history.user?.gender === 'MALE' ? '남성' : '여성'}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </TableCell>
+                          <TableCell>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              {history.matcher?.profileImageUrl && (
+                                <Avatar
+                                  src={history.matcher.profileImageUrl}
+                                  sx={{ width: 24, height: 24 }}
+                                />
+                              )}
+                              <Box>
+                                <Typography variant="body2" fontWeight="medium">
+                                  {history.matcher?.name}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {history.matcher?.age}세 · {history.matcher?.gender === 'MALE' ? '남성' : '여성'}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          </TableCell>
+                          <TableCell>{history.matchCount || 1}</TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            선택한 조건에 매칭 내역이 없습니다.
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+
+                {/* 페이지네이션 */}
+                <TablePagination
+                  component="div"
+                  count={matchingHistory.meta?.totalItems || -1}
+                  page={historyPage}
+                  onPageChange={(_, newPage) => setHistoryPage(newPage)}
+                  rowsPerPage={historyRowsPerPage}
+                  onRowsPerPageChange={(event) => setHistoryRowsPerPage(parseInt(event.target.value, 10))}
+                  rowsPerPageOptions={[5, 10, 25, 50]}
+                  labelRowsPerPage="페이지당 항목 수:"
+                  labelDisplayedRows={({ from, to, count }) =>
+                    count === -1 ? `${from}-${to}` : `${from}-${to} / ${count}`
+                  }
+                />
+              </TableContainer>
+            )}
+          </Paper>
+        </LocalizationProvider>
+      </TabPanel>
+
+      {/* 매칭 실패 내역 */}
+      <TabPanel value={activeTab} index={2}>
+        <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ko}>
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              매칭 실패 내역
+            </Typography>
+
+            {/* 검색 필터 */}
+            <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', alignItems: 'end' }}>
+              <DatePicker
+                label="조회 날짜"
+                value={selectedDate}
+                onChange={(newValue) => newValue && setSelectedDate(newValue)}
+                format="yyyy-MM-dd"
+                slotProps={{ textField: { size: 'small', sx: { minWidth: 150 } } }}
+              />
+              <Box sx={{ minWidth: 150 }}>
+                <Typography variant="caption" sx={{ display: 'block', mb: 0.5 }}>
+                  이름 검색
+                </Typography>
+                <input
+                  type="text"
+                  value={failureSearchName}
+                  onChange={(e) => setFailureSearchName(e.target.value)}
+                  placeholder="이름으로 검색"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </Box>
+              <Button
+                onClick={fetchMatchingFailures}
+                disabled={loading}
+              >
+                {loading ? <CircularProgress size={20} color="inherit" /> : '조회'}
+              </Button>
+            </Box>
+
+            {/* 로딩 상태 */}
+            {loading && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+                <CircularProgress />
+                <Typography sx={{ ml: 2 }}>매칭 실패 내역을 조회하고 있습니다...</Typography>
+              </Box>
+            )}
+
+            {/* 에러 상태 */}
+            {analyticsError && (
+              <Alert severity="error" sx={{ mb: 3 }}>
+                {analyticsError}
+              </Alert>
+            )}
+
+            {/* 데이터 테이블 */}
+            {!loading && matchingFailures && (
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                      <TableCell>사용자 ID</TableCell>
+                      <TableCell>이름</TableCell>
+                      <TableCell>실패 사유</TableCell>
+                      <TableCell>실패 일시</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {matchingFailures.items && matchingFailures.items.length > 0 ? (
+                      matchingFailures.items.map((failure: any) => (
+                        <TableRow key={failure.id} hover>
+                          <TableCell>{failure.userId}</TableCell>
+                          <TableCell>{failure.userName}</TableCell>
+                          <TableCell>
+                            <Typography variant="body2" sx={{ maxWidth: 400, wordBreak: 'break-word' }}>
+                              {failure.reason}
+                            </Typography>
+                          </TableCell>
+                          <TableCell>
+                            {failure.createdAt}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            선택한 조건에 매칭 실패 내역이 없습니다.
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+
+                {/* 페이지네이션 */}
+                <TablePagination
+                  component="div"
+                  count={matchingFailures.meta?.totalItems || -1}
+                  page={failurePage}
+                  onPageChange={(_, newPage) => setFailurePage(newPage)}
+                  rowsPerPage={failureRowsPerPage}
+                  onRowsPerPageChange={(event) => setFailureRowsPerPage(parseInt(event.target.value, 10))}
+                  rowsPerPageOptions={[5, 10, 25, 50]}
+                  labelRowsPerPage="페이지당 항목 수:"
+                  labelDisplayedRows={({ from, to, count }) =>
+                    count === -1 ? `${from}-${to}` : `${from}-${to} / ${count}`
+                  }
+                />
+              </TableContainer>
+            )}
+          </Paper>
+        </LocalizationProvider>
+      </TabPanel>
+
+      {/* 매칭 상대 이력 */}
+      <TabPanel value={activeTab} index={3}>
+        <MatcherHistory
           searchTerm={searchTerm}
           searchLoading={searchLoading}
           error={error}
@@ -492,19 +861,10 @@ export default function MatchingManagement() {
           searchUsers={searchUsers}
           handleUserSelect={handleUserSelect}
         />
-        <MatchingSimulation
-          selectedUser={selectedUser}
-          simulationLoading={simulationLoading}
-          simulationResult={simulationResult}
-          matchLimit={matchLimit}
-          selectedPartnerIndex={selectedPartnerIndex}
-          setMatchLimit={setMatchLimit}
-          runMatchingSimulation={runMatchingSimulation}
-          handlePartnerSelect={handlePartnerSelect}
-        />
       </TabPanel>
 
-      <TabPanel value={activeTab} index={2}>
+      {/* 매칭 대기 사용자 */}
+      <TabPanel value={activeTab} index={4}>
         <UnmatchedUsers
           unmatchedUsers={unmatchedUsers}
           unmatchedUsersLoading={unmatchedUsersLoading}
@@ -542,33 +902,52 @@ export default function MatchingManagement() {
         )}
       </TabPanel>
 
-      <TabPanel value={activeTab} index={3}>
-        <MatcherHistory
-          searchTerm={searchTerm}
-          searchLoading={searchLoading}
-          error={error}
-          searchResults={searchResults}
-          selectedUser={selectedUser}
-          setSearchTerm={setSearchTerm}
-          searchUsers={searchUsers}
-          handleUserSelect={handleUserSelect}
-        />
-      </TabPanel>
-
-      <TabPanel value={activeTab} index={4}>
-        <TicketManagement
-          searchTerm={searchTerm}
-          searchLoading={searchLoading}
-          error={error}
-          searchResults={searchResults}
-          selectedUser={selectedUser}
-          setSearchTerm={setSearchTerm}
-          searchUsers={searchUsers}
-          handleUserSelect={handleUserSelect}
-        />
-      </TabPanel>
-
+      {/* 단일 매칭 */}
       <TabPanel value={activeTab} index={5}>
+        <UserSearch
+          searchTerm={searchTerm}
+          searchLoading={searchLoading}
+          error={error}
+          searchResults={searchResults}
+          selectedUser={selectedUser}
+          setSearchTerm={setSearchTerm}
+          searchUsers={searchUsers}
+          handleUserSelect={handleUserSelect}
+        />
+        <SingleMatching
+          selectedUser={selectedUser}
+          matchingLoading={matchingLoading}
+          matchingResult={matchingResult}
+          processSingleMatching={processSingleMatching}
+        />
+      </TabPanel>
+
+      {/* 매칭 시뮬레이션 */}
+      <TabPanel value={activeTab} index={6}>
+        <UserSearch
+          searchTerm={searchTerm}
+          searchLoading={searchLoading}
+          error={error}
+          searchResults={searchResults}
+          selectedUser={selectedUser}
+          setSearchTerm={setSearchTerm}
+          searchUsers={searchUsers}
+          handleUserSelect={handleUserSelect}
+        />
+        <MatchingSimulation
+          selectedUser={selectedUser}
+          simulationLoading={simulationLoading}
+          simulationResult={simulationResult}
+          matchLimit={matchLimit}
+          selectedPartnerIndex={selectedPartnerIndex}
+          setMatchLimit={setMatchLimit}
+          runMatchingSimulation={runMatchingSimulation}
+          handlePartnerSelect={handlePartnerSelect}
+        />
+      </TabPanel>
+
+      {/* 00시 매칭 여부 */}
+      <TabPanel value={activeTab} index={7}>
         <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
           <Typography variant="h6" gutterBottom>
             00시 매칭 On/Off
@@ -589,15 +968,15 @@ export default function MatchingManagement() {
         </Paper>
       </TabPanel>
 
-
-      <TabPanel value={activeTab} index={6}>
+      {/* 잔여 사용자 매칭 */}
+      <TabPanel value={activeTab} index={8}>
         <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
           <Typography variant="h6" gutterBottom>
             (굉장히 급조한 API) 잔여 사용자 매칭 (위험)
           </Typography>
 
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-              <Button variant="default" color="primary" onClick={doMatchRestMembers}>
+              <Button variant="default" onClick={doMatchRestMembers}>
                 잔여 사용자 매칭하기
               </Button>
 
@@ -610,23 +989,24 @@ export default function MatchingManagement() {
         </Paper>
       </TabPanel>
 
-      <TabPanel value={activeTab} index={7}>
-      <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
+      {/* 임베드 데이터 갱신 */}
+      <TabPanel value={activeTab} index={9}>
+        <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
           <Typography variant="h6" gutterBottom>
             매칭 조건에 포함되는 전체 사용자의 벡터 갱신 (오래걸림)
           </Typography>
 
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-              <Button variant="default" color="primary" onClick={doBatchUpdateVectorAllMatchableUsers}>
-                갱신하기 (신중히 사용할 것)
-              </Button>
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <Button variant="default" onClick={doBatchUpdateVectorAllMatchableUsers}>
+              갱신하기 (신중히 사용할 것)
+            </Button>
 
-              {vectorResult && (
-                <TextareaAutosize
-                  value={JSON.stringify(vectorResult, null, 2)}
-                />
-              )}
-            </Box>
+            {vectorResult && (
+              <TextareaAutosize
+                value={JSON.stringify(vectorResult, null, 2)}
+              />
+            )}
+          </Box>
         </Paper>
       </TabPanel>
 
