@@ -29,7 +29,8 @@ import {
   ToggleButtonGroup,
   ToggleButton,
   FormControlLabel,
-  Checkbox
+  Checkbox,
+  TextField
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import InstagramIcon from '@mui/icons-material/Instagram';
@@ -223,6 +224,10 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const [ticketInfo, setTicketInfo] = useState<any>(null);
   const [ticketLoading, setTicketLoading] = useState(false);
   const [ticketError, setTicketError] = useState<string | null>(null);
+  const [ticketAddModalOpen, setTicketAddModalOpen] = useState(false);
+  const [ticketRemoveModalOpen, setTicketRemoveModalOpen] = useState(false);
+  const [ticketCount, setTicketCount] = useState<number>(1);
+  const [ticketActionLoading, setTicketActionLoading] = useState(false);
 
   // 메뉴 열기
   const handleOpenMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -353,6 +358,62 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setTicketError(error.message || '재매칭 티켓 정보를 조회하는 중 오류가 발생했습니다.');
     } finally {
       setTicketLoading(false);
+    }
+  };
+
+  // 재매칭 티켓 추가
+  const handleAddTickets = async () => {
+    if (!userId) return;
+
+    try {
+      setTicketActionLoading(true);
+      setTicketError(null);
+
+      console.log('재매칭 티켓 추가 요청:', { userId, count: ticketCount });
+      await AdminService.userAppearance.createUserTickets(userId, ticketCount);
+
+      // 성공 메시지 표시
+      setActionSuccess(`재매칭 티켓 ${ticketCount}장이 추가되었습니다.`);
+
+      // 티켓 정보 새로고침
+      await fetchTicketInfo();
+
+      // 모달 닫기
+      setTicketAddModalOpen(false);
+      setTicketCount(1);
+    } catch (error: any) {
+      console.error('재매칭 티켓 추가 중 오류:', error);
+      setTicketError(error.message || '재매칭 티켓 추가 중 오류가 발생했습니다.');
+    } finally {
+      setTicketActionLoading(false);
+    }
+  };
+
+  // 재매칭 티켓 제거
+  const handleRemoveTickets = async () => {
+    if (!userId) return;
+
+    try {
+      setTicketActionLoading(true);
+      setTicketError(null);
+
+      console.log('재매칭 티켓 제거 요청:', { userId, count: ticketCount });
+      await AdminService.userAppearance.deleteUserTickets(userId, ticketCount);
+
+      // 성공 메시지 표시
+      setActionSuccess(`재매칭 티켓 ${ticketCount}장이 제거되었습니다.`);
+
+      // 티켓 정보 새로고침
+      await fetchTicketInfo();
+
+      // 모달 닫기
+      setTicketRemoveModalOpen(false);
+      setTicketCount(1);
+    } catch (error: any) {
+      console.error('재매칭 티켓 제거 중 오류:', error);
+      setTicketError(error.message || '재매칭 티켓 제거 중 오류가 발생했습니다.');
+    } finally {
+      setTicketActionLoading(false);
     }
   };
 
@@ -1151,29 +1212,67 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                           {ticketError}
                         </Typography>
                       ) : ticketInfo ? (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Chip
-                            label={`${ticketInfo.stats?.available || 0}장`}
-                            color={ticketInfo.stats?.available > 0 ? 'primary' : 'default'}
-                            size="small"
-                            variant="outlined"
-                            icon={<ConfirmationNumberIcon />}
-                          />
-                          {ticketInfo.stats?.available > 0 && (
-                            <Typography variant="body2" color="text.secondary">
-                              보유 중
-                            </Typography>
-                          )}
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'space-between' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Chip
+                              label={`${ticketInfo.stats?.available || 0}장`}
+                              color={ticketInfo.stats?.available > 0 ? 'primary' : 'default'}
+                              size="small"
+                              variant="outlined"
+                              icon={<ConfirmationNumberIcon />}
+                            />
+                            {ticketInfo.stats?.available > 0 && (
+                              <Typography variant="body2" color="text.secondary">
+                                보유 중
+                              </Typography>
+                            )}
+                          </Box>
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              color="primary"
+                              onClick={() => setTicketAddModalOpen(true)}
+                              sx={{ minWidth: 'auto', px: 1.5, py: 0.5, fontSize: '0.75rem' }}
+                            >
+                              추가
+                            </Button>
+                            {ticketInfo.stats?.available > 0 && (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="error"
+                                onClick={() => setTicketRemoveModalOpen(true)}
+                                sx={{ minWidth: 'auto', px: 1.5, py: 0.5, fontSize: '0.75rem' }}
+                              >
+                                제거
+                              </Button>
+                            )}
+                          </Box>
                         </Box>
                       ) : (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Chip
-                            label="0장"
-                            color="default"
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'space-between' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Chip
+                              label="0장"
+                              color="default"
+                              size="small"
+                              variant="outlined"
+                              icon={<ConfirmationNumberIcon />}
+                            />
+                            <Typography variant="body2" color="text.secondary">
+                              보유 없음
+                            </Typography>
+                          </Box>
+                          <Button
                             size="small"
                             variant="outlined"
-                            icon={<ConfirmationNumberIcon />}
-                          />
+                            color="primary"
+                            onClick={() => setTicketAddModalOpen(true)}
+                            sx={{ minWidth: 'auto', px: 1.5, py: 0.5, fontSize: '0.75rem' }}
+                          >
+                            추가
+                          </Button>
                         </Box>
                       )}
                     </Grid>
@@ -1408,6 +1507,108 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
             disabled={actionLoading}
           >
             {actionLoading ? '처리 중...' : '탈퇴 처리'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 재매칭 티켓 추가 모달 */}
+      <Dialog
+        open={ticketAddModalOpen}
+        onClose={() => setTicketAddModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>재매칭 티켓 추가</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            <strong>{userDetail?.name}</strong>님에게 재매칭 티켓을 추가합니다.
+          </Typography>
+
+          <TextField
+            fullWidth
+            type="number"
+            label="추가할 티켓 개수"
+            value={ticketCount}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTicketCount(Math.max(1, parseInt(e.target.value) || 1))}
+            inputProps={{ min: 1, max: 100 }}
+            sx={{ mb: 2 }}
+          />
+
+          {ticketError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {ticketError}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setTicketAddModalOpen(false)}
+            disabled={ticketActionLoading}
+          >
+            취소
+          </Button>
+          <Button
+            onClick={handleAddTickets}
+            variant="contained"
+            disabled={ticketActionLoading}
+          >
+            {ticketActionLoading ? <CircularProgress size={20} /> : '티켓 추가'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 재매칭 티켓 제거 모달 */}
+      <Dialog
+        open={ticketRemoveModalOpen}
+        onClose={() => setTicketRemoveModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>재매칭 티켓 제거</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            <strong>{userDetail?.name}</strong>님의 재매칭 티켓을 제거합니다.
+          </Typography>
+
+          {ticketInfo && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              현재 보유 티켓: <strong>{ticketInfo.stats?.available || 0}장</strong>
+            </Alert>
+          )}
+
+          <TextField
+            fullWidth
+            type="number"
+            label="제거할 티켓 개수"
+            value={ticketCount}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTicketCount(Math.max(1, parseInt(e.target.value) || 1))}
+            inputProps={{
+              min: 1,
+              max: ticketInfo?.stats?.available || 1
+            }}
+            sx={{ mb: 2 }}
+          />
+
+          {ticketError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {ticketError}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setTicketRemoveModalOpen(false)}
+            disabled={ticketActionLoading}
+          >
+            취소
+          </Button>
+          <Button
+            onClick={handleRemoveTickets}
+            variant="contained"
+            color="error"
+            disabled={ticketActionLoading}
+          >
+            {ticketActionLoading ? <CircularProgress size={20} /> : '티켓 제거'}
           </Button>
         </DialogActions>
       </Dialog>

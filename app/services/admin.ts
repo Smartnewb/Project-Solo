@@ -589,6 +589,54 @@ const userAppearance = {
     }
   },
 
+  // 재매칭 티켓 생성
+  createUserTickets: async (userId: string, count: number) => {
+    try {
+      console.log('재매칭 티켓 생성 시작:', { userId, count });
+      const endpoint = `/admin/tickets`;
+      console.log(`API 엔드포인트: ${endpoint}`);
+
+      const response = await axiosServer.post(endpoint, {
+        userId,
+        count
+      });
+      console.log('재매칭 티켓 생성 응답:', response.data);
+
+      return response.data;
+    } catch (error: any) {
+      console.error('재매칭 티켓 생성 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+
+      // 오류 발생 시 예외 던지기
+      throw error;
+    }
+  },
+
+  // 재매칭 티켓 제거
+  deleteUserTickets: async (userId: string, count: number) => {
+    try {
+      console.log('재매칭 티켓 제거 시작:', { userId, count });
+      const endpoint = `/admin/tickets`;
+      console.log(`API 엔드포인트: ${endpoint}`);
+
+      const response = await axiosServer.delete(endpoint, {
+        data: {
+          userId,
+          count
+        }
+      });
+      console.log('재매칭 티켓 제거 응답:', response.data);
+
+      return response.data;
+    } catch (error: any) {
+      console.error('재매칭 티켓 제거 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+
+      // 오류 발생 시 예외 던지기
+      throw error;
+    }
+  },
+
   // 유저 프로필 직접 수정
   updateUserProfile: async (userId: string, profileData: any) => {
     try {
