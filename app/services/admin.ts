@@ -1227,6 +1227,25 @@ const userAppearance = {
       console.error('오류 상세 정보:', error.response?.data || error.message);
       throw error;
     }
+  },
+
+  // 재심사 요청 사용자 조회
+  getReapplyUsers: async (page: number = 1, limit: number = 10, region?: string) => {
+    try {
+      console.log('재심사 요청 사용자 조회 요청:', { page, limit, region });
+
+      const params: any = { page, limit };
+      if (region) params.region = region;
+
+      const response = await axiosServer.get('/admin/users/approval/reapply', { params });
+
+      console.log('재심사 요청 사용자 조회 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('재심사 요청 사용자 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
   }
 };
 

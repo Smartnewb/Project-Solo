@@ -51,15 +51,17 @@ interface PendingUser {
 
 
 const ApprovalManagementPanel: React.FC = () => {
-  const [activeTab, setActiveTab] = useState(0); // 0: pending, 1: rejected
+  const [activeTab, setActiveTab] = useState(0); // 0: pending, 1: rejected, 2: reapply
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
   const [rejectedUsers, setRejectedUsers] = useState<PendingUser[]>([]);
+  const [reapplyUsers, setReapplyUsers] = useState<PendingUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [pendingCount, setPendingCount] = useState(0);
   const [rejectedCount, setRejectedCount] = useState(0);
+  const [reapplyCount, setReapplyCount] = useState(0);
 
   // 지역 필터 훅 사용
   const { region, setRegion: setRegionFilter, getRegionParam } = useRegionFilter();
@@ -122,31 +124,48 @@ const ApprovalManagementPanel: React.FC = () => {
     setError(null);
 
     try {
-      const currentEndpoint = activeTab === 0 ? '/admin/users/approval/pending' : '/admin/users/approval/rejected';
-      const otherEndpoint = activeTab === 0 ? '/admin/users/approval/rejected' : '/admin/users/approval/pending';
+      let currentEndpoint = '';
+      let otherEndpoints: string[] = [];
+
+      if (activeTab === 0) {
+        currentEndpoint = '/admin/users/approval/pending';
+        otherEndpoints = ['/admin/users/approval/rejected', '/admin/users/approval/reapply'];
+      } else if (activeTab === 1) {
+        currentEndpoint = '/admin/users/approval/rejected';
+        otherEndpoints = ['/admin/users/approval/pending', '/admin/users/approval/reapply'];
+      } else if (activeTab === 2) {
+        currentEndpoint = '/admin/users/approval/reapply';
+        otherEndpoints = ['/admin/users/approval/pending', '/admin/users/approval/rejected'];
+      }
 
       // 지역 파라미터 추가
       const regionParam = getRegionParam();
       const currentParams = { page, limit, ...(regionParam && { region: regionParam }) };
       const otherParams = { page: 1, limit: 10, ...(regionParam && { region: regionParam }) };
 
-      const [currentResponse, otherResponse] = await Promise.all([
+      const [currentResponse, ...otherResponses] = await Promise.all([
         axiosServer.get(currentEndpoint, { params: currentParams }),
-        axiosServer.get(otherEndpoint, { params: otherParams }) // 카운트만 필요하므로 첫 페이지만
+        ...otherEndpoints.map(endpoint => axiosServer.get(endpoint, { params: otherParams }))
       ]);
 
       const users = currentResponse.data.items || [];
       const currentMeta = currentResponse.data.meta || {};
-      const otherMeta = otherResponse.data.meta || {};
 
       if (activeTab === 0) {
         setPendingUsers(users);
         setPendingCount(currentMeta.totalItems || users.length);
-        setRejectedCount(otherMeta.totalItems || otherResponse.data.items?.length || 0);
-      } else {
+        setRejectedCount(otherResponses[0]?.data?.meta?.totalItems || 0);
+        setReapplyCount(otherResponses[1]?.data?.meta?.totalItems || 0);
+      } else if (activeTab === 1) {
         setRejectedUsers(users);
         setRejectedCount(currentMeta.totalItems || users.length);
-        setPendingCount(otherMeta.totalItems || otherResponse.data.items?.length || 0);
+        setPendingCount(otherResponses[0]?.data?.meta?.totalItems || 0);
+        setReapplyCount(otherResponses[1]?.data?.meta?.totalItems || 0);
+      } else {
+        setReapplyUsers(users);
+        setReapplyCount(currentMeta.totalItems || users.length);
+        setPendingCount(otherResponses[0]?.data?.meta?.totalItems || 0);
+        setRejectedCount(otherResponses[1]?.data?.meta?.totalItems || 0);
       }
 
       setTotalPages(currentMeta.totalPages || Math.ceil((currentMeta.totalItems || users.length) / limit));
@@ -242,7 +261,7 @@ const ApprovalManagementPanel: React.FC = () => {
     }
   };
 
-  const currentUsers = activeTab === 0 ? pendingUsers : rejectedUsers;
+  const currentUsers = activeTab === 0 ? pendingUsers : activeTab === 1 ? rejectedUsers : reapplyUsers;
 
   return (
     <Box>
@@ -270,6 +289,7 @@ const ApprovalManagementPanel: React.FC = () => {
       <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 2 }}>
         <Tab label={`승인 대기 (${pendingCount})`} />
         <Tab label={`승인 거부 (${rejectedCount})`} />
+        <Tab label={`재심사 요청 (${reapplyCount})`} />
       </Tabs>
 
       {/* 사용자 목록 테이블 */}
@@ -284,21 +304,23 @@ const ApprovalManagementPanel: React.FC = () => {
               <TableCell>대학교</TableCell>
               <TableCell>가입일</TableCell>
               <TableCell>상태</TableCell>
-              {activeTab === 1 && <TableCell>거부 사유</TableCell>}
+              {(activeTab === 1 || activeTab === 2) && <TableCell>거부 사유</TableCell>}
               <TableCell>작업</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={activeTab === 1 ? 9 : 8} align="center">
+                <TableCell colSpan={(activeTab === 1 || activeTab === 2) ? 9 : 8} align="center">
                   <CircularProgress />
                 </TableCell>
               </TableRow>
             ) : currentUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={activeTab === 1 ? 9 : 8} align="center">
-                  {activeTab === 0 ? '승인 대기 중인 사용자가 없습니다.' : '승인 거부된 사용자가 없습니다.'}
+                <TableCell colSpan={(activeTab === 1 || activeTab === 2) ? 9 : 8} align="center">
+                  {activeTab === 0 ? '승인 대기 중인 사용자가 없습니다.' :
+                   activeTab === 1 ? '승인 거부된 사용자가 없습니다.' :
+                   '재심사 요청한 사용자가 없습니다.'}
                 </TableCell>
               </TableRow>
             ) : (
@@ -342,14 +364,22 @@ const ApprovalManagementPanel: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <Chip
-                      label={user.status === 'pending' ? '승인 대기' : '승인 거부'}
-                      color={user.status === 'pending' ? 'warning' : 'error'}
+                      label={
+                        user.status === 'pending' ?
+                          (user.rejectionReason === 'reapply' ? '재심사 요청' : '승인 대기') :
+                          '승인 거부'
+                      }
+                      color={
+                        user.status === 'pending' ?
+                          (user.rejectionReason === 'reapply' ? 'info' : 'warning') :
+                          'error'
+                      }
                       size="small"
                     />
                   </TableCell>
-                  {activeTab === 1 && (
+                  {(activeTab === 1 || activeTab === 2) && (
                     <TableCell>
-                      {user.rejectionReason || '-'}
+                      {user.rejectionReason === 'reapply' ? '재심사 요청' : user.rejectionReason || '-'}
                     </TableCell>
                   )}
                   <TableCell>
@@ -361,7 +391,33 @@ const ApprovalManagementPanel: React.FC = () => {
                       >
                         상세보기
                       </Button>
-                      {user.status === 'pending' && (
+                      {(user.status === 'pending' && user.rejectionReason !== 'reapply') && (
+                        <>
+                          <Button
+                            size="small"
+                            variant="contained"
+                            color="primary"
+                            onClick={() => {
+                              setSelectedUserId(getUserId(user));
+                              setApprovalModalOpen(true);
+                            }}
+                          >
+                            승인
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="contained"
+                            color="error"
+                            onClick={() => {
+                              setSelectedUserId(getUserId(user));
+                              setRejectionModalOpen(true);
+                            }}
+                          >
+                            거부
+                          </Button>
+                        </>
+                      )}
+                      {(user.status === 'pending' && user.rejectionReason === 'reapply') && (
                         <>
                           <Button
                             size="small"
