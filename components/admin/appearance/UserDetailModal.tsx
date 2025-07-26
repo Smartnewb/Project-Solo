@@ -162,6 +162,21 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     setUserDetail(initialUserDetail);
     setLoading(initialLoading);
     setError(initialError);
+
+    if (initialUserDetail) {
+      if (initialUserDetail.profileImages && initialUserDetail.profileImages.length > 0) {
+        const mainImage = initialUserDetail.profileImages.find(img => img.isMain === true);
+        const imageUrl = mainImage ? mainImage.url : initialUserDetail.profileImages[0].url;
+        setSelectedImage(imageUrl);
+      } else if (initialUserDetail.profileImageUrl) {
+        setSelectedImage(initialUserDetail.profileImageUrl);
+      } else {
+        const defaultImage = initialUserDetail.gender === 'MALE'
+          ? `https://randomuser.me/api/portraits/men/${Math.floor(Math.random() * 50) + 1}.jpg`
+          : `https://randomuser.me/api/portraits/women/${Math.floor(Math.random() * 50) + 1}.jpg`;
+        setSelectedImage(defaultImage);
+      }
+    }
   }, [initialUserDetail, initialLoading, initialError]);
 
   // userId가 변경되면 사용자 데이터 로드
@@ -177,6 +192,13 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       fetchTicketInfo();
     }
   }, [userId, open]);
+
+  // 모달이 닫힐 때 상태 초기화
+  useEffect(() => {
+    if (!open) {
+      setSelectedImage('');
+    }
+  }, [open]);
   const [savingGrade, setSavingGrade] = useState(false);
 
   // 모달 상태
@@ -351,9 +373,16 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       // 이미지 선택 상태 업데이트
       if (data.profileImages && data.profileImages.length > 0) {
         const mainImage = data.profileImages.find((img: any) => img.isMain === true);
-        if (mainImage) {
-          setSelectedImage(mainImage.url);
-        }
+        const imageUrl = mainImage ? mainImage.url : data.profileImages[0].url;
+        setSelectedImage(imageUrl);
+      } else if (data.profileImageUrl) {
+        setSelectedImage(data.profileImageUrl);
+      } else {
+        // 기본 이미지 설정
+        const defaultImage = data.gender === 'MALE'
+          ? `https://randomuser.me/api/portraits/men/${Math.floor(Math.random() * 50) + 1}.jpg`
+          : `https://randomuser.me/api/portraits/women/${Math.floor(Math.random() * 50) + 1}.jpg`;
+        setSelectedImage(defaultImage);
       }
 
       // 외모 등급 상태 업데이트
