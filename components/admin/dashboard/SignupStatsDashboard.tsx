@@ -13,9 +13,7 @@ import {
   Grid,
   TextField,
   Button,
-  Paper,
-  FormControlLabel,
-  Switch
+  Paper
 } from '@mui/material';
 import {
   LineChart,

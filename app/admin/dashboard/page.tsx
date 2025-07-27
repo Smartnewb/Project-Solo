@@ -12,7 +12,6 @@ import WeeklySignupsCard from '@/components/admin/dashboard/WeeklySignupsCard';
 import GenderStatsCard from '@/components/admin/dashboard/GenderStatsCard';
 import UniversityStatsCard from '@/components/admin/dashboard/UniversityStatsCard';
 import SignupStatsDashboard from '@/components/admin/dashboard/SignupStatsDashboard';
-import SignupTrendChart from '@/components/admin/dashboard/SignupTrendChart';
 
 // 회원 탈퇴 통계 컴포넌트
 import WithdrawalStatsCard from '@/components/admin/dashboard/WithdrawalStatsCard';
@@ -197,11 +196,6 @@ export default function AdminDashboard() {
         {/* 회원가입 통계 대시보드 */}
         <Box sx={{ mt: 4, mb: 4 }}>
           <SignupStatsDashboard region={getRegionParam()} includeDeleted={getIncludeDeletedParam()} />
-        </Box>
-
-        {/* 회원가입 추이 차트 */}
-        <Box sx={{ mt: 4, mb: 4 }}>
-          <SignupTrendChart includeDeleted={getIncludeDeletedParam()} />
         </Box>
 
         {/* 대학별 통계 카드 */}
