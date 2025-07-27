@@ -172,6 +172,14 @@ export default function SignupTrendChart() {
     }
 
     return data.map(item => {
+      // 백엔드에서 label을 제공하는 경우 해당 label 사용
+      if ((item as any).label) {
+        return {
+          date: (item as any).label,
+          가입자수: item.count
+        };
+      }
+
       let formattedDate = item.date;
       try {
         // 날짜 형식 확인 및 변환
@@ -200,6 +208,14 @@ export default function SignupTrendChart() {
     }
 
     return data.map(item => {
+      // 백엔드에서 label을 제공하는 경우 해당 label 사용
+      if ((item as any).label) {
+        return {
+          date: (item as any).label,
+          가입자수: item.count
+        };
+      }
+
       let formattedDate = `${item.weekStart} ~ ${item.weekEnd}`;
       try {
         // 날짜 형식 확인 및 변환
@@ -231,6 +247,14 @@ export default function SignupTrendChart() {
     }
 
     return data.map(item => {
+      // 백엔드에서 label을 제공하는 경우 해당 label 사용
+      if ((item as any).label) {
+        return {
+          date: (item as any).label,
+          가입자수: item.count
+        };
+      }
+
       let formattedDate = item.month;
       try {
         // 날짜 형식 확인 및 변환

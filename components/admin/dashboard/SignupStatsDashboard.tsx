@@ -440,9 +440,18 @@ export default function SignupStatsDashboard({ region }: SignupStatsDashboardPro
         }
       }
 
-      // 데이터 포맷팅
+      // 데이터 포맷팅 - 백엔드에서 제공하는 label 사용
       const formattedData = trendDataArray.map((item: any) => {
         try {
+          // 백엔드에서 label을 제공하는 경우 해당 label 사용
+          if (item.label) {
+            return {
+              date: item.label,
+              가입자수: item.count || 0
+            };
+          }
+
+          // label이 없는 경우 기존 로직 사용
           if (!item.date) return { date: '-', 가입자수: item.count || 0 };
 
           const date = new Date(item.date);
@@ -456,7 +465,7 @@ export default function SignupStatsDashboard({ region }: SignupStatsDashboardPro
           };
         } catch (e) {
           console.error('날짜 변환 오류:', e, item);
-          return { date: item.date || '-', 가입자수: item.count || 0 };
+          return { date: item.date || item.label || '-', 가입자수: item.count || 0 };
         }
       });
 
