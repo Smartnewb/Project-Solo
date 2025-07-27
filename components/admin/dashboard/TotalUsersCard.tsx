@@ -7,9 +7,10 @@ import { getRegionLabel } from '@/components/admin/common/RegionFilter';
 
 interface TotalUsersCardProps {
   region?: string;
+  includeDeleted?: boolean;
 }
 
-export default function TotalUsersCard({ region }: TotalUsersCardProps) {
+export default function TotalUsersCard({ region, includeDeleted = false }: TotalUsersCardProps) {
   const [totalUsers, setTotalUsers] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +22,7 @@ export default function TotalUsersCard({ region }: TotalUsersCardProps) {
     const fetchTotalUsers = async () => {
       try {
         setLoading(true);
-        const data = await AdminService.stats.getTotalUsersCount(region);
+        const data = await AdminService.stats.getTotalUsersCount(region, includeDeleted);
         setTotalUsers(data.totalUsers);
         setError(null);
       } catch (err) {
@@ -37,7 +38,7 @@ export default function TotalUsersCard({ region }: TotalUsersCardProps) {
     const interval = setInterval(fetchTotalUsers, 60000);
 
     return () => clearInterval(interval);
-  }, [region]);
+  }, [region, includeDeleted]);
 
   return (
     <Card variant="outlined">

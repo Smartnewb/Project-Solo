@@ -13,7 +13,9 @@ import {
   Grid,
   TextField,
   Button,
-  Paper
+  Paper,
+  FormControlLabel,
+  Switch
 } from '@mui/material';
 import {
   LineChart,
@@ -103,9 +105,10 @@ interface MonthlySignupTrendResponse {
 
 interface SignupStatsDashboardProps {
   region?: string;
+  includeDeleted?: boolean;
 }
 
-export default function SignupStatsDashboard({ region }: SignupStatsDashboardProps) {
+export default function SignupStatsDashboard({ region, includeDeleted = false }: SignupStatsDashboardProps) {
   const [activeTab, setActiveTab] = useState(0);
   const [dailyData, setDailyData] = useState<DailySignupTrendItem[]>([]);
   const [weeklyData, setWeeklyData] = useState<WeeklySignupTrendItem[]>([]);
@@ -297,7 +300,7 @@ export default function SignupStatsDashboard({ region }: SignupStatsDashboardPro
 
         // 일별 데이터 조회
         try {
-          const dailyResponse = await AdminService.stats.getDailySignupTrend(region);
+          const dailyResponse = await AdminService.stats.getDailySignupTrend(region, includeDeleted);
           console.log('일별 데이터 응답:', dailyResponse);
           if (dailyResponse && dailyResponse.data && dailyResponse.data.length > 0) {
             setDailyData(dailyResponse.data);
@@ -312,7 +315,7 @@ export default function SignupStatsDashboard({ region }: SignupStatsDashboardPro
 
         // 주별 데이터 조회
         try {
-          const weeklyResponse = await AdminService.stats.getWeeklySignupTrend(region);
+          const weeklyResponse = await AdminService.stats.getWeeklySignupTrend(region, includeDeleted);
           console.log('주별 데이터 응답:', weeklyResponse);
           if (weeklyResponse && weeklyResponse.data && weeklyResponse.data.length > 0) {
             setWeeklyData(weeklyResponse.data);
@@ -327,7 +330,7 @@ export default function SignupStatsDashboard({ region }: SignupStatsDashboardPro
 
         // 월별 데이터 조회
         try {
-          const monthlyResponse = await AdminService.stats.getMonthlySignupTrend(region);
+          const monthlyResponse = await AdminService.stats.getMonthlySignupTrend(region, includeDeleted);
           console.log('월별 데이터 응답:', monthlyResponse);
           if (monthlyResponse && monthlyResponse.data && monthlyResponse.data.length > 0) {
             setMonthlyData(monthlyResponse.data);
@@ -357,7 +360,7 @@ export default function SignupStatsDashboard({ region }: SignupStatsDashboardPro
     const interval = setInterval(fetchTrendData, 5 * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, [region]);
+  }, [region, includeDeleted]);
 
   // 날짜 유효성 검사
   const isDateRangeValid = () => {
@@ -422,7 +425,8 @@ export default function SignupStatsDashboard({ region }: SignupStatsDashboardPro
       const trendResponse = await AdminService.stats.getCustomPeriodSignupTrend(
         formattedStartDate,
         formattedEndDate,
-        region
+        region,
+        includeDeleted
       );
 
       console.log('회원가입 추이 응답:', trendResponse);

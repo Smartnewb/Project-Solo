@@ -7,9 +7,10 @@ import { getRegionLabel } from '@/components/admin/common/RegionFilter';
 
 interface DailySignupsCardProps {
   region?: string;
+  includeDeleted?: boolean;
 }
 
-export default function DailySignupsCard({ region }: DailySignupsCardProps) {
+export default function DailySignupsCard({ region, includeDeleted = false }: DailySignupsCardProps) {
   const [dailySignups, setDailySignups] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +22,7 @@ export default function DailySignupsCard({ region }: DailySignupsCardProps) {
     const fetchDailySignups = async () => {
       try {
         setLoading(true);
-        const data = await AdminService.stats.getDailySignupCount(region);
+        const data = await AdminService.stats.getDailySignupCount(region, includeDeleted);
         setDailySignups(data.dailySignups);
         setError(null);
       } catch (err) {
@@ -37,7 +38,7 @@ export default function DailySignupsCard({ region }: DailySignupsCardProps) {
     const interval = setInterval(fetchDailySignups, 60000);
 
     return () => clearInterval(interval);
-  }, [region]);
+  }, [region, includeDeleted]);
 
   return (
     <Card variant="outlined">

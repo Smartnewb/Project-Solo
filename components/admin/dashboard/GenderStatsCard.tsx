@@ -27,10 +27,11 @@ interface GenderStats {
 
 interface GenderStatsCardProps {
   region?: string;
+  includeDeleted?: boolean;
 }
 
 // 성별 통계 카드 컴포넌트
-export default function GenderStatsCard({ region }: GenderStatsCardProps) {
+export default function GenderStatsCard({ region, includeDeleted = false }: GenderStatsCardProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<GenderStats | null>(null);
@@ -45,7 +46,7 @@ export default function GenderStatsCard({ region }: GenderStatsCardProps) {
         setLoading(true);
         setError(null);
 
-        const response = await AdminService.stats.getGenderStats(region);
+        const response = await AdminService.stats.getGenderStats(region, includeDeleted);
         console.log('성별 통계 응답:', response);
 
         setStats(response);
@@ -62,7 +63,7 @@ export default function GenderStatsCard({ region }: GenderStatsCardProps) {
     };
 
     fetchData();
-  }, [region]);
+  }, [region, includeDeleted]);
 
   // 차트 데이터 생성
   const chartData = stats ? [

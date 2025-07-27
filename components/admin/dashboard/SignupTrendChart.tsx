@@ -9,7 +9,9 @@ import {
   Tabs,
   Tab,
   CircularProgress,
-  Alert
+  Alert,
+  FormControlLabel,
+  Switch
 } from '@mui/material';
 import {
   LineChart,
@@ -88,7 +90,11 @@ interface MonthlySignupTrendResponse {
   data: MonthlySignupTrendItem[];
 }
 
-export default function SignupTrendChart() {
+interface SignupTrendChartProps {
+  includeDeleted?: boolean;
+}
+
+export default function SignupTrendChart({ includeDeleted = false }: SignupTrendChartProps) {
   const [activeTab, setActiveTab] = useState(0);
   const [dailyData, setDailyData] = useState<DailySignupTrendItem[]>([]);
   const [weeklyData, setWeeklyData] = useState<WeeklySignupTrendItem[]>([]);
@@ -286,7 +292,7 @@ export default function SignupTrendChart() {
 
         // 일별 데이터 조회
         try {
-          const dailyResponse = await AdminService.stats.getDailySignupTrend();
+          const dailyResponse = await AdminService.stats.getDailySignupTrend(undefined, includeDeleted);
           console.log('일별 데이터 응답:', dailyResponse);
           if (dailyResponse && dailyResponse.data && dailyResponse.data.length > 0) {
             setDailyData(dailyResponse.data);
@@ -301,7 +307,7 @@ export default function SignupTrendChart() {
 
         // 주별 데이터 조회
         try {
-          const weeklyResponse = await AdminService.stats.getWeeklySignupTrend();
+          const weeklyResponse = await AdminService.stats.getWeeklySignupTrend(undefined, includeDeleted);
           console.log('주별 데이터 응답:', weeklyResponse);
           if (weeklyResponse && weeklyResponse.data && weeklyResponse.data.length > 0) {
             setWeeklyData(weeklyResponse.data);
@@ -316,7 +322,7 @@ export default function SignupTrendChart() {
 
         // 월별 데이터 조회
         try {
-          const monthlyResponse = await AdminService.stats.getMonthlySignupTrend();
+          const monthlyResponse = await AdminService.stats.getMonthlySignupTrend(undefined, includeDeleted);
           console.log('월별 데이터 응답:', monthlyResponse);
           if (monthlyResponse && monthlyResponse.data && monthlyResponse.data.length > 0) {
             setMonthlyData(monthlyResponse.data);
@@ -346,7 +352,7 @@ export default function SignupTrendChart() {
     const interval = setInterval(fetchData, 5 * 60 * 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [includeDeleted]);
 
   return (
     <Card>

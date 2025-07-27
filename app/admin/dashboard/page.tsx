@@ -12,6 +12,7 @@ import WeeklySignupsCard from '@/components/admin/dashboard/WeeklySignupsCard';
 import GenderStatsCard from '@/components/admin/dashboard/GenderStatsCard';
 import UniversityStatsCard from '@/components/admin/dashboard/UniversityStatsCard';
 import SignupStatsDashboard from '@/components/admin/dashboard/SignupStatsDashboard';
+import SignupTrendChart from '@/components/admin/dashboard/SignupTrendChart';
 
 // 회원 탈퇴 통계 컴포넌트
 import WithdrawalStatsCard from '@/components/admin/dashboard/WithdrawalStatsCard';
@@ -19,6 +20,7 @@ import WithdrawalStatsDashboard from '@/components/admin/dashboard/WithdrawalSta
 import WithdrawalReasonStats from '@/components/admin/dashboard/WithdrawalReasonStats';
 import ChurnRateStats from '@/components/admin/dashboard/ChurnRateStats';
 import RegionFilter, { useRegionFilter } from '@/components/admin/common/RegionFilter';
+import IncludeDeletedFilter, { useIncludeDeletedFilter } from '@/components/admin/common/IncludeDeletedFilter';
 
 
 
@@ -31,6 +33,9 @@ export default function AdminDashboard() {
 
   // 지역 필터 훅 사용
   const { region, setRegion: setRegionFilter, getRegionParam } = useRegionFilter();
+
+  // 탈퇴자 포함 여부 훅 사용
+  const { includeDeleted, setIncludeDeleted, getIncludeDeletedParam } = useIncludeDeletedFilter();
 
   // 관리자 인증 확인
   useEffect(() => {
@@ -144,26 +149,31 @@ export default function AdminDashboard() {
           관리자 대시보드
         </Typography>
 
-        {/* 지역 필터 */}
-        <Box sx={{ mb: 3 }}>
+        {/* 필터 */}
+        <Box sx={{ mb: 3, display: 'flex', gap: 3, alignItems: 'center' }}>
           <RegionFilter
             value={region}
             onChange={setRegionFilter}
             size="small"
             sx={{ minWidth: 150 }}
           />
+          <IncludeDeletedFilter
+            value={includeDeleted}
+            onChange={setIncludeDeleted}
+            size="small"
+          />
         </Box>
 
         {/* Summary Cards */}
         <Grid container spacing={3} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6} md={3}>
-            <TotalUsersCard region={getRegionParam()} />
+            <TotalUsersCard region={getRegionParam()} includeDeleted={getIncludeDeletedParam()} />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <WeeklySignupsCard region={getRegionParam()} />
+            <WeeklySignupsCard region={getRegionParam()} includeDeleted={getIncludeDeletedParam()} />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <DailySignupsCard region={getRegionParam()} />
+            <DailySignupsCard region={getRegionParam()} includeDeleted={getIncludeDeletedParam()} />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <Card>
@@ -181,12 +191,17 @@ export default function AdminDashboard() {
 
         {/* 성별 통계 카드 */}
         <Box sx={{ mt: 4, mb: 4 }}>
-          <GenderStatsCard region={getRegionParam()} />
+          <GenderStatsCard region={getRegionParam()} includeDeleted={getIncludeDeletedParam()} />
         </Box>
 
         {/* 회원가입 통계 대시보드 */}
         <Box sx={{ mt: 4, mb: 4 }}>
-          <SignupStatsDashboard region={getRegionParam()} />
+          <SignupStatsDashboard region={getRegionParam()} includeDeleted={getIncludeDeletedParam()} />
+        </Box>
+
+        {/* 회원가입 추이 차트 */}
+        <Box sx={{ mt: 4, mb: 4 }}>
+          <SignupTrendChart includeDeleted={getIncludeDeletedParam()} />
         </Box>
 
         {/* 대학별 통계 카드 */}

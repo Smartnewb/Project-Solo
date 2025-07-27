@@ -7,9 +7,10 @@ import { getRegionLabel } from '@/components/admin/common/RegionFilter';
 
 interface WeeklySignupsCardProps {
   region?: string;
+  includeDeleted?: boolean;
 }
 
-export default function WeeklySignupsCard({ region }: WeeklySignupsCardProps) {
+export default function WeeklySignupsCard({ region, includeDeleted = false }: WeeklySignupsCardProps) {
   const [weeklySignups, setWeeklySignups] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +22,7 @@ export default function WeeklySignupsCard({ region }: WeeklySignupsCardProps) {
     const fetchWeeklySignups = async () => {
       try {
         setLoading(true);
-        const data = await AdminService.stats.getWeeklySignupCount(region);
+        const data = await AdminService.stats.getWeeklySignupCount(region, includeDeleted);
         setWeeklySignups(data.weeklySignups);
         setError(null);
       } catch (err) {
@@ -37,7 +38,7 @@ export default function WeeklySignupsCard({ region }: WeeklySignupsCardProps) {
     const interval = setInterval(fetchWeeklySignups, 60000);
 
     return () => clearInterval(interval);
-  }, [region]);
+  }, [region, includeDeleted]);
 
   return (
     <Card variant="outlined">
