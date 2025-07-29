@@ -41,7 +41,7 @@ import {
   Gender,
   PaginatedResponse
 } from '@/app/admin/users/appearance/types';
-import { formatDateWithoutTimezoneConversion } from '@/app/utils/formatters';
+import { formatDateWithoutTimezoneConversion, formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
 import { appearanceGradeEventBus } from '@/app/admin/users/appearance/page';
 import UserDetailModal, { UserDetail } from './UserDetailModal';
 import BulkEmailNotificationModal from './modals/BulkEmailNotificationModal';
@@ -450,19 +450,20 @@ const UserAppearanceTable = forwardRef<
               <TableCell>외모 등급</TableCell>
               <TableCell>인스타그램</TableCell>
               <TableCell>가입일</TableCell>
+              <TableCell>마지막 접속</TableCell>
               <TableCell></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={11} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={12} align="center" sx={{ py: 3 }}>
                   <CircularProgress />
                 </TableCell>
               </TableRow>
             ) : users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={11} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={12} align="center" sx={{ py: 3 }}>
                   <Typography variant="body1">조회된 사용자가 없습니다.</Typography>
                 </TableCell>
               </TableRow>
@@ -652,6 +653,11 @@ const UserAppearanceTable = forwardRef<
                   </TableCell>
                   <TableCell>
                     {formatDateWithoutTimezoneConversion(user.createdAt)}
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">
+                      {user.lastActiveAt ? formatDateTimeWithoutTimezoneConversion(user.lastActiveAt) : '접속 기록 없음'}
+                    </Typography>
                   </TableCell>
                   <TableCell>
                     {/* 작업 버튼 제거 */}

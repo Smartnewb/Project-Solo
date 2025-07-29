@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import axiosServer from '@/utils/axios';
-import { formatDateWithoutTimezoneConversion } from '@/app/utils/formatters';
+import { formatDateWithoutTimezoneConversion, formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
 
 type ProfileImage = {
   id: string;
@@ -36,6 +36,7 @@ interface User {
   classification: string | null;
   gender: 'MALE' | 'FEMALE';
   createdAt: string;
+  lastActiveAt?: string | null; // 마지막 접속 시간
   name: string;
   age: number;
   phoneNumber?: string;
@@ -368,6 +369,9 @@ export default function UsersAdmin() {
                   가입일
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  마지막 접속
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   상태
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -451,6 +455,11 @@ export default function UsersAdmin() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {user.createdAt ? formatDateWithoutTimezoneConversion(user.createdAt) : '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {user.lastActiveAt ? formatDateTimeWithoutTimezoneConversion(user.lastActiveAt) : '접속 기록 없음'}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col space-y-1">
