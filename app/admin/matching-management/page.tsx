@@ -113,6 +113,11 @@ const batchAllMatchableUsers = () =>
     timeout: 1000 * 60 * 60
   });
 
+const processHumanRankUpdate = () =>
+  axiosServer.post('/admin/matching/human-rank/process', undefined, {
+    timeout: 1000 * 60 * 60
+  });
+
 export default function MatchingManagement() {
   const [activeTab, setActiveTab] = useState<number>(0);
   const {
@@ -151,6 +156,7 @@ export default function MatchingManagement() {
   const [selectedUnmatchedUser, setSelectedUnmatchedUser] = useState<UnmatchedUser | null>(null);
   const [restMembers, setRestMembers] = useState<any>('');
   const [vectorResult, setVectorResult] = useState<any>('');
+  const [humanRankResult, setHumanRankResult] = useState<any>('');
 
   const doMatchRestMembers = async () => {
     try {
@@ -167,6 +173,15 @@ export default function MatchingManagement() {
       setVectorResult(response);
     } catch (error) {
       console.error('매칭 조건에 포함되는 전체 사용자의 벡터 갱신 오류:', error);
+    }
+  }
+
+  const doProcessHumanRankUpdate = async () => {
+    try {
+      const response = await processHumanRankUpdate();
+      setHumanRankResult(response);
+    } catch (error) {
+      console.error('휴먼유저들 미분류 일괄 수정 오류:', error);
     }
   }
 
@@ -1154,6 +1169,24 @@ export default function MatchingManagement() {
             {vectorResult && (
               <TextareaAutosize
                 value={JSON.stringify(vectorResult, null, 2)}
+              />
+            )}
+          </Box>
+        </Paper>
+
+        <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
+          <Typography variant="h6" gutterBottom>
+            휴먼유저들 미분류로 일괄 수정
+          </Typography>
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <Button variant="default" onClick={doProcessHumanRankUpdate}>
+              휴먼유저들 미분류로 일괄 수정
+            </Button>
+
+            {humanRankResult && (
+              <TextareaAutosize
+                value={JSON.stringify(humanRankResult, null, 2)}
               />
             )}
           </Box>
