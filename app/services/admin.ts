@@ -662,6 +662,66 @@ const userAppearance = {
     }
   },
 
+  // 구슬 조회
+  getUserGems: async (userId: string) => {
+    try {
+      console.log('사용자 구슬 조회 시작:', userId);
+      const endpoint = `/admin/users/gems/${userId}`;
+      console.log(`API 엔드포인트: ${endpoint}`);
+
+      const response = await axiosServer.get(endpoint);
+      console.log('사용자 구슬 조회 응답:', response.data);
+
+      return response.data;
+    } catch (error: any) {
+      console.error('사용자 구슬 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // 구슬 추가
+  addUserGems: async (userId: string, amount: number) => {
+    try {
+      console.log('사용자 구슬 추가 시작:', { userId, amount });
+      const endpoint = `/admin/users/gems/add`;
+      console.log(`API 엔드포인트: ${endpoint}`);
+
+      const response = await axiosServer.post(endpoint, {
+        userId,
+        amount
+      });
+
+      console.log('사용자 구슬 추가 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('사용자 구슬 추가 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // 구슬 제거
+  removeUserGems: async (userId: string, amount: number) => {
+    try {
+      console.log('사용자 구슬 제거 시작:', { userId, amount });
+      const endpoint = `/admin/users/gems/remove`;
+      console.log(`API 엔드포인트: ${endpoint}`);
+
+      const response = await axiosServer.post(endpoint, {
+        userId,
+        amount
+      });
+
+      console.log('사용자 구슬 제거 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('사용자 구슬 제거 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
   // 유저 프로필 직접 수정
   updateUserProfile: async (userId: string, profileData: any) => {
     try {

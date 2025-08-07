@@ -49,6 +49,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import StarIcon from '@mui/icons-material/Star';
 import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
+import DiamondIcon from '@mui/icons-material/Diamond';
 import AdminService from '@/app/services/admin';
 import { format, formatDistance } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -200,6 +201,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   useEffect(() => {
     if (userId && open) {
       fetchTicketInfo();
+      fetchGemsInfo();
     }
   }, [userId, open]);
 
@@ -237,6 +239,15 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const [ticketRemoveModalOpen, setTicketRemoveModalOpen] = useState(false);
   const [ticketCount, setTicketCount] = useState<number>(1);
   const [ticketActionLoading, setTicketActionLoading] = useState(false);
+
+  // 구슬 관련 상태
+  const [gemsInfo, setGemsInfo] = useState<any>(null);
+  const [gemsLoading, setGemsLoading] = useState(false);
+  const [gemsError, setGemsError] = useState<string | null>(null);
+  const [gemsCount, setGemsCount] = useState<number>(1);
+  const [gemsActionLoading, setGemsActionLoading] = useState(false);
+  const [gemsAddModalOpen, setGemsAddModalOpen] = useState(false);
+  const [gemsRemoveModalOpen, setGemsRemoveModalOpen] = useState(false);
 
   // 메뉴 열기
   const handleOpenMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -423,6 +434,83 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setTicketError(error.message || '재매칭 티켓 제거 중 오류가 발생했습니다.');
     } finally {
       setTicketActionLoading(false);
+    }
+  };
+
+  // 구슬 정보 조회
+  const fetchGemsInfo = async () => {
+    if (!userId) return;
+
+    try {
+      setGemsLoading(true);
+      setGemsError(null);
+
+      console.log('구슬 정보 조회 요청:', userId);
+      const response = await AdminService.userAppearance.getUserGems(userId);
+      console.log('구슬 정보 조회 응답:', response);
+
+      setGemsInfo(response);
+    } catch (error: any) {
+      console.error('구슬 정보 조회 중 오류:', error);
+      setGemsError(error.message || '구슬 정보 조회 중 오류가 발생했습니다.');
+    } finally {
+      setGemsLoading(false);
+    }
+  };
+
+  // 구슬 추가
+  const handleAddGems = async () => {
+    if (!userId) return;
+
+    try {
+      setGemsActionLoading(true);
+      setGemsError(null);
+
+      console.log('구슬 추가 요청:', { userId, count: gemsCount });
+      await AdminService.userAppearance.addUserGems(userId, gemsCount);
+
+      // 성공 메시지 표시
+      setActionSuccess(`구슬 ${gemsCount}개가 추가되었습니다.`);
+
+      // 구슬 정보 새로고침
+      await fetchGemsInfo();
+
+      // 모달 닫기
+      setGemsAddModalOpen(false);
+      setGemsCount(1);
+    } catch (error: any) {
+      console.error('구슬 추가 중 오류:', error);
+      setGemsError(error.message || '구슬 추가 중 오류가 발생했습니다.');
+    } finally {
+      setGemsActionLoading(false);
+    }
+  };
+
+  // 구슬 제거
+  const handleRemoveGems = async () => {
+    if (!userId) return;
+
+    try {
+      setGemsActionLoading(true);
+      setGemsError(null);
+
+      console.log('구슬 제거 요청:', { userId, count: gemsCount });
+      await AdminService.userAppearance.removeUserGems(userId, gemsCount);
+
+      // 성공 메시지 표시
+      setActionSuccess(`구슬 ${gemsCount}개가 제거되었습니다.`);
+
+      // 구슬 정보 새로고침
+      await fetchGemsInfo();
+
+      // 모달 닫기
+      setGemsRemoveModalOpen(false);
+      setGemsCount(1);
+    } catch (error: any) {
+      console.error('구슬 제거 중 오류:', error);
+      setGemsError(error.message || '구슬 제거 중 오류가 발생했습니다.');
+    } finally {
+      setGemsActionLoading(false);
     }
   };
 
@@ -1286,6 +1374,91 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                       )}
                     </Grid>
 
+                    {/* 구슬 정보 */}
+                    <Grid item xs={12}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                        <DiamondIcon fontSize="small" color="action" />
+                        <Typography variant="body2" color="text.secondary">
+                          구슬
+                        </Typography>
+                      </Box>
+                      {gemsLoading ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <CircularProgress size={16} />
+                          <Typography variant="body2" color="text.secondary">
+                            조회 중...
+                          </Typography>
+                        </Box>
+                      ) : gemsError ? (
+                        <Typography variant="body2" color="error">
+                          {gemsError}
+                        </Typography>
+                      ) : gemsInfo ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'space-between' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Chip
+                              label={`${gemsInfo.gemBalance || 0}개`}
+                              color={gemsInfo.gemBalance > 0 ? 'primary' : 'default'}
+                              size="small"
+                              variant="outlined"
+                              icon={<DiamondIcon />}
+                            />
+                            {gemsInfo.gemBalance > 0 && (
+                              <Typography variant="body2" color="text.secondary">
+                                보유 중
+                              </Typography>
+                            )}
+                          </Box>
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              color="primary"
+                              onClick={() => setGemsAddModalOpen(true)}
+                              sx={{ minWidth: 'auto', px: 1.5, py: 0.5, fontSize: '0.75rem' }}
+                            >
+                              추가
+                            </Button>
+                            {gemsInfo.gemBalance > 0 && (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                color="error"
+                                onClick={() => setGemsRemoveModalOpen(true)}
+                                sx={{ minWidth: 'auto', px: 1.5, py: 0.5, fontSize: '0.75rem' }}
+                              >
+                                제거
+                              </Button>
+                            )}
+                          </Box>
+                        </Box>
+                      ) : (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'space-between' }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Chip
+                              label="0개"
+                              color="default"
+                              size="small"
+                              variant="outlined"
+                              icon={<DiamondIcon />}
+                            />
+                            <Typography variant="body2" color="text.secondary">
+                              보유 없음
+                            </Typography>
+                          </Box>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="primary"
+                            onClick={() => setGemsAddModalOpen(true)}
+                            sx={{ minWidth: 'auto', px: 1.5, py: 0.5, fontSize: '0.75rem' }}
+                          >
+                            추가
+                          </Button>
+                        </Box>
+                      )}
+                    </Grid>
+
                     {/* 선호도 정보 표시 */}
                     {userDetail.preferences && Array.isArray(userDetail.preferences) && userDetail.preferences.length > 0 && (
                       <Grid item xs={12}>
@@ -1621,6 +1794,103 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* 구슬 추가 모달 */}
+      <Dialog
+        open={gemsAddModalOpen}
+        onClose={() => setGemsAddModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>구슬 추가</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            <strong>{userDetail?.name}</strong>님에게 구슬을 추가합니다.
+          </Typography>
+
+          <TextField
+            fullWidth
+            type="number"
+            label="추가할 구슬 개수"
+            value={gemsCount}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGemsCount(Math.max(1, parseInt(e.target.value) || 1))}
+            inputProps={{ min: 1, max: 1000 }}
+            sx={{ mb: 2 }}
+          />
+
+          {gemsError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {gemsError}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setGemsAddModalOpen(false)}>
+            취소
+          </Button>
+          <Button
+            onClick={handleAddGems}
+            variant="contained"
+            disabled={gemsActionLoading}
+          >
+            {gemsActionLoading ? <CircularProgress size={20} /> : '구슬 추가'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 구슬 제거 모달 */}
+      <Dialog
+        open={gemsRemoveModalOpen}
+        onClose={() => setGemsRemoveModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>구슬 제거</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            <strong>{userDetail?.name}</strong>님의 구슬을 제거합니다.
+          </Typography>
+
+          {gemsInfo && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              현재 보유 구슬: <strong>{gemsInfo.gemBalance || 0}개</strong>
+            </Alert>
+          )}
+
+          <TextField
+            fullWidth
+            type="number"
+            label="제거할 구슬 개수"
+            value={gemsCount}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setGemsCount(Math.max(1, parseInt(e.target.value) || 1))}
+            inputProps={{
+              min: 1,
+              max: gemsInfo?.gemBalance || 1
+            }}
+            sx={{ mb: 2 }}
+          />
+
+          {gemsError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {gemsError}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setGemsRemoveModalOpen(false)}>
+            취소
+          </Button>
+          <Button
+            onClick={handleRemoveGems}
+            variant="contained"
+            color="error"
+            disabled={gemsActionLoading}
+          >
+            {gemsActionLoading ? <CircularProgress size={20} /> : '구슬 제거'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
     </Dialog>
   );
 };

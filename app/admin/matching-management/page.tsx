@@ -31,6 +31,7 @@ import MatchingSimulation from './components/MatchingSimulation';
 import UnmatchedUsers from './components/UnmatchedUsers';
 import MatcherHistory from './components/MatcherHistory';
 import TicketManagement from './components/TicketManagement';
+import GemsManagement from './components/GemsManagement';
 import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
 
 // 타입 임포트
@@ -113,11 +114,6 @@ const batchAllMatchableUsers = () =>
     timeout: 1000 * 60 * 60
   });
 
-const processHumanRankUpdate = () =>
-  axiosServer.post('/admin/matching/human-rank/process', undefined, {
-    timeout: 1000 * 60 * 60
-  });
-
 export default function MatchingManagement() {
   const [activeTab, setActiveTab] = useState<number>(0);
   const {
@@ -156,7 +152,6 @@ export default function MatchingManagement() {
   const [selectedUnmatchedUser, setSelectedUnmatchedUser] = useState<UnmatchedUser | null>(null);
   const [restMembers, setRestMembers] = useState<any>('');
   const [vectorResult, setVectorResult] = useState<any>('');
-  const [humanRankResult, setHumanRankResult] = useState<any>('');
 
   const doMatchRestMembers = async () => {
     try {
@@ -173,15 +168,6 @@ export default function MatchingManagement() {
       setVectorResult(response);
     } catch (error) {
       console.error('매칭 조건에 포함되는 전체 사용자의 벡터 갱신 오류:', error);
-    }
-  }
-
-  const doProcessHumanRankUpdate = async () => {
-    try {
-      const response = await processHumanRankUpdate();
-      setHumanRankResult(response);
-    } catch (error) {
-      console.error('휴먼유저들 미분류 일괄 수정 오류:', error);
     }
   }
 
@@ -647,6 +633,7 @@ export default function MatchingManagement() {
 
       <Tabs value={activeTab} onChange={handleTabChange} aria-label="매칭 관리 탭">
         <Tab label="재매칭 티켓 관리" />
+        <Tab label="구슬 관리" />
         <Tab label="매칭 내역 조회" />
         <Tab label="매칭 실패 내역" />
         <Tab label="매칭 상대 이력" />
@@ -672,8 +659,22 @@ export default function MatchingManagement() {
         />
       </TabPanel>
 
-      {/* 매칭 내역 조회 */}
+      {/* 구슬 관리 */}
       <TabPanel value={activeTab} index={1}>
+        <GemsManagement
+          searchTerm={searchTerm}
+          searchLoading={searchLoading}
+          error={error}
+          searchResults={searchResults}
+          selectedUser={selectedUser}
+          setSearchTerm={setSearchTerm}
+          searchUsers={searchUsers}
+          handleUserSelect={handleUserSelect}
+        />
+      </TabPanel>
+
+      {/* 매칭 내역 조회 */}
+      <TabPanel value={activeTab} index={2}>
         <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ko}>
           <Paper sx={{ p: 3, mb: 3 }}>
             <Typography variant="h6" gutterBottom>
@@ -903,7 +904,7 @@ export default function MatchingManagement() {
       </TabPanel>
 
       {/* 매칭 실패 내역 */}
-      <TabPanel value={activeTab} index={2}>
+      <TabPanel value={activeTab} index={3}>
         <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ko}>
           <Paper sx={{ p: 3, mb: 3 }}>
             <Typography variant="h6" gutterBottom>
@@ -1015,7 +1016,7 @@ export default function MatchingManagement() {
       </TabPanel>
 
       {/* 매칭 상대 이력 */}
-      <TabPanel value={activeTab} index={3}>
+      <TabPanel value={activeTab} index={4}>
         <MatcherHistory
           searchTerm={searchTerm}
           searchLoading={searchLoading}
@@ -1029,7 +1030,7 @@ export default function MatchingManagement() {
       </TabPanel>
 
       {/* 매칭 대기 사용자 */}
-      <TabPanel value={activeTab} index={4}>
+      <TabPanel value={activeTab} index={5}>
         <UnmatchedUsers
           unmatchedUsers={unmatchedUsers}
           unmatchedUsersLoading={unmatchedUsersLoading}
@@ -1068,7 +1069,7 @@ export default function MatchingManagement() {
       </TabPanel>
 
       {/* 단일 매칭 */}
-      <TabPanel value={activeTab} index={5}>
+      <TabPanel value={activeTab} index={6}>
         <UserSearch
           searchTerm={searchTerm}
           searchLoading={searchLoading}
@@ -1088,7 +1089,7 @@ export default function MatchingManagement() {
       </TabPanel>
 
       {/* 매칭 시뮬레이션 */}
-      <TabPanel value={activeTab} index={6}>
+      <TabPanel value={activeTab} index={7}>
         <UserSearch
           searchTerm={searchTerm}
           searchLoading={searchLoading}
@@ -1112,7 +1113,7 @@ export default function MatchingManagement() {
       </TabPanel>
 
       {/* 00시 매칭 여부 */}
-      <TabPanel value={activeTab} index={7}>
+      <TabPanel value={activeTab} index={8}>
         <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
           <Typography variant="h6" gutterBottom>
             00시 매칭 On/Off
@@ -1134,7 +1135,7 @@ export default function MatchingManagement() {
       </TabPanel>
 
       {/* 잔여 사용자 매칭 */}
-      <TabPanel value={activeTab} index={8}>
+      <TabPanel value={activeTab} index={9}>
         <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
           <Typography variant="h6" gutterBottom>
             (굉장히 급조한 API) 잔여 사용자 매칭 (위험)
@@ -1155,7 +1156,7 @@ export default function MatchingManagement() {
       </TabPanel>
 
       {/* 임베드 데이터 갱신 */}
-      <TabPanel value={activeTab} index={9}>
+      <TabPanel value={activeTab} index={10}>
         <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
           <Typography variant="h6" gutterBottom>
             매칭 조건에 포함되는 전체 사용자의 벡터 갱신 (오래걸림)
@@ -1169,24 +1170,6 @@ export default function MatchingManagement() {
             {vectorResult && (
               <TextareaAutosize
                 value={JSON.stringify(vectorResult, null, 2)}
-              />
-            )}
-          </Box>
-        </Paper>
-
-        <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
-          <Typography variant="h6" gutterBottom>
-            휴먼유저들 미분류로 일괄 수정
-          </Typography>
-
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-            <Button variant="default" onClick={doProcessHumanRankUpdate}>
-              휴먼유저들 미분류로 일괄 수정
-            </Button>
-
-            {humanRankResult && (
-              <TextareaAutosize
-                value={JSON.stringify(humanRankResult, null, 2)}
               />
             )}
           </Box>
