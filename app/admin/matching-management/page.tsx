@@ -823,7 +823,7 @@ export default function MatchingManagement() {
                                     }
                                   }}
                                 >
-                                  {history.user?.name}
+                                  {history.user?.name}{history.user?.deletedAt ? ' (탈퇴)' : ''}
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary">
                                   {history.user?.age}세 · {history.user?.gender === 'MALE' ? '남성' : '여성'}
@@ -866,7 +866,7 @@ export default function MatchingManagement() {
                                     }
                                   }}
                                 >
-                                  {history.matcher?.name}
+                                  {history.matcher?.name}{history.matcher?.deletedAt ? ' (탈퇴)' : ''}
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary">
                                   {history.matcher?.age}세 · {history.matcher?.gender === 'MALE' ? '남성' : '여성'}

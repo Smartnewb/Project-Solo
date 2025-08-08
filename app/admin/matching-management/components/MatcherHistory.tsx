@@ -255,7 +255,7 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
                       setUserModalOpen(true);
                     }}
                   >
-                    {selectedUser.name}
+                    {selectedUser.name}{selectedUser.deletedAt ? ' (탈퇴)' : ''}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
                     {selectedUser.age}세 · {selectedUser.gender === 'MALE' ? '남성' : '여성'}
@@ -420,7 +420,7 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
                                         setUserModalOpen(true);
                                       }}
                                     >
-                                      {item.requester.name}
+                                      {item.requester.name}{item.requester.deletedAt ? ' (탈퇴)' : ''}
                                     </Typography>
                                     <Typography variant="caption" color="text.secondary">
                                       {item.requester.age}세 · {item.requester.gender === 'MALE' ? '남' : '여'}
