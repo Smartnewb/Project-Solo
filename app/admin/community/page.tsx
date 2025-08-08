@@ -47,6 +47,7 @@ import {
   Report as ReportIcon,
   Favorite as FavoriteIcon
 } from '@mui/icons-material';
+import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
 
 // 게시글 목록 컴포넌트
 function ArticleList() {
@@ -68,6 +69,9 @@ function ArticleList() {
   const [selectedArticleDetail, setSelectedArticleDetail] = useState<any>(null);
   const [startDate, setStartDate] = useState<Date | null>(new Date());
   const [endDate, setEndDate] = useState<Date | null>(new Date());
+  // 사용자 프로필 상세 모달 상태
+  const [userModalOpen, setUserModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   // 게시글 목록 조회
   const fetchArticles = async () => {
@@ -197,8 +201,8 @@ function ArticleList() {
         ...selectedArticle,
         likeCount: selectedArticle.likeCount ?? 0,
         author: {
-          id: selectedArticle.userId ?? '',
-          name: selectedArticle.nickname ?? '익명',
+          id: selectedArticle.author?.id ?? selectedArticle.userId ?? '',
+          name: selectedArticle.author?.name ?? selectedArticle.nickname ?? '익명',
         },
         comments: commentsWithAuthor,
         reports: []
@@ -380,14 +384,17 @@ function ArticleList() {
                     />
                   </TableCell>
                   <TableCell>
-                    {article.isAnonymous ? (
-                      <Typography variant="body2">익명</Typography>
-                    ) : (
-                      <Typography variant="body2">
-                        {article.author?.name ?? article.nickname}
-                      </Typography>
-                    )}
-                    <Typography variant="caption" color="textSecondary">
+                    <Typography
+                      variant="body2"
+                      sx={{ color: 'primary.main', textDecoration: 'underline', cursor: 'pointer', display: 'inline' }}
+                      onClick={() => {
+                        const uid = article.author?.id ?? article.userId;
+                        if (uid) { setSelectedUserId(uid); setUserModalOpen(true); }
+                      }}
+                   >
+                      {(article.author?.name ?? article.nickname ?? '익명')}{article.anonymous ? ` (${article.anonymous})` : ''}
+                    </Typography>
+                    <Typography variant="caption" color="textSecondary" display="block">
                       ID: {article.author?.id ?? article.userId}
                     </Typography>
                   </TableCell>
@@ -549,8 +556,15 @@ function ArticleList() {
           {selectedArticleDetail && (
             <Box sx={{ mt: 1 }}>
               <Typography variant="subtitle1">작성자 정보</Typography>
-              <Typography variant="body2">
-                {selectedArticleDetail.isAnonymous ? '익명' : (selectedArticleDetail.author?.name ?? selectedArticleDetail.nickname)}
+              <Typography
+                variant="body2"
+                sx={{ color: 'primary.main', textDecoration: 'underline', cursor: 'pointer', display: 'inline' }}
+                onClick={() => {
+                  const uid = selectedArticleDetail.author?.id ?? selectedArticleDetail.userId;
+                  if (uid) { setSelectedUserId(uid); setUserModalOpen(true); }
+                }}
+              >
+                {(selectedArticleDetail.author?.name ?? selectedArticleDetail.nickname ?? '익명')}{selectedArticleDetail.anonymous ? ` (${selectedArticleDetail.anonymous})` : ''}
               </Typography>
               <Typography variant="caption" display="block">
                 ID: {selectedArticleDetail.author?.id ?? selectedArticleDetail.userId}
@@ -727,6 +741,7 @@ function ArticleList() {
                 }}
                 startIcon={<VisibilityIcon />}
               >
+
                 블라인드 해제
               </Button>
             ) : (
@@ -745,7 +760,19 @@ function ArticleList() {
           )}
         </DialogActions>
       </Dialog>
+
+      {/* 사용자 프로필 상세 모달 */}
+      <UserDetailModal
+        open={userModalOpen}
+        onClose={() => setUserModalOpen(false)}
+        userId={selectedUserId}
+        userDetail={{ id: '', name: '', age: 0, gender: 'MALE', profileImages: [] }}
+        loading={false}
+        error={null}
+      />
+
     </Box>
+
   );
 }
 
