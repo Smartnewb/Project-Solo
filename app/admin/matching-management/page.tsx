@@ -790,14 +790,39 @@ export default function MatchingManagement() {
                           </TableCell>
                           <TableCell>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              {history.user?.profileImageUrl && (
-                                <Avatar
-                                  src={history.user.profileImageUrl}
-                                  sx={{ width: 24, height: 24 }}
-                                />
-                              )}
+                              <Avatar
+                                src={history.user?.profileImageUrl}
+                                sx={{
+                                  width: 24,
+                                  height: 24,
+                                  cursor: 'pointer',
+                                  '&:hover': { opacity: 0.8 }
+                                }}
+                                onClick={() => {
+                                  if (history.user?.id) {
+                                    setSelectedUserId(history.user.id);
+                                    setUserDetailModalOpen(true);
+                                  }
+                                }}
+                              >
+                                {history.user?.name?.charAt(0)}
+                              </Avatar>
                               <Box>
-                                <Typography variant="body2" fontWeight="medium">
+                                <Typography
+                                  variant="body2"
+                                  fontWeight="medium"
+                                  sx={{
+                                    cursor: 'pointer',
+                                    color: 'primary.main',
+                                    '&:hover': { textDecoration: 'underline' }
+                                  }}
+                                  onClick={() => {
+                                    if (history.user?.id) {
+                                      setSelectedUserId(history.user.id);
+                                      setUserDetailModalOpen(true);
+                                    }
+                                  }}
+                                >
                                   {history.user?.name}
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary">
@@ -808,14 +833,39 @@ export default function MatchingManagement() {
                           </TableCell>
                           <TableCell>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              {history.matcher?.profileImageUrl && (
-                                <Avatar
-                                  src={history.matcher.profileImageUrl}
-                                  sx={{ width: 24, height: 24 }}
-                                />
-                              )}
+                              <Avatar
+                                src={history.matcher?.profileImageUrl}
+                                sx={{
+                                  width: 24,
+                                  height: 24,
+                                  cursor: 'pointer',
+                                  '&:hover': { opacity: 0.8 }
+                                }}
+                                onClick={() => {
+                                  if (history.matcher?.id) {
+                                    setSelectedUserId(history.matcher.id);
+                                    setUserDetailModalOpen(true);
+                                  }
+                                }}
+                              >
+                                {history.matcher?.name?.charAt(0)}
+                              </Avatar>
                               <Box>
-                                <Typography variant="body2" fontWeight="medium">
+                                <Typography
+                                  variant="body2"
+                                  fontWeight="medium"
+                                  sx={{
+                                    cursor: 'pointer',
+                                    color: 'primary.main',
+                                    '&:hover': { textDecoration: 'underline' }
+                                  }}
+                                  onClick={() => {
+                                    if (history.matcher?.id) {
+                                      setSelectedUserId(history.matcher.id);
+                                      setUserDetailModalOpen(true);
+                                    }
+                                  }}
+                                >
                                   {history.matcher?.name}
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary">
@@ -1175,6 +1225,15 @@ export default function MatchingManagement() {
           </Box>
         </Paper>
       </TabPanel>
+      {/* 사용자 프로필 상세 모달 */}
+      <UserDetailModal
+        open={userDetailModalOpen}
+        onClose={() => setUserDetailModalOpen(false)}
+        userId={selectedUserId}
+        userDetail={userDetail || { id: '', name: '', age: 0, gender: 'MALE', profileImages: [] }}
+        loading={loadingUserDetail}
+        error={userDetailError}
+      />
 
     </Box>
   );

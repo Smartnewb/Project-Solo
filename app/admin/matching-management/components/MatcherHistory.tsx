@@ -30,6 +30,7 @@ import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import AdminService from '@/app/services/admin';
 import { MatcherHistoryResponse, UserSearchResult } from '../types';
+import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
 
 interface MatcherHistoryProps {
   searchTerm: string;
@@ -61,6 +62,10 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
   const [startDate, setStartDate] = useState<Date | null>(new Date());
   const [endDate, setEndDate] = useState<Date | null>(new Date());
   const [requesterNameFilter, setRequesterNameFilter] = useState<string>('');
+
+  // 사용자 프로필 상세 모달 상태
+  const [userModalOpen, setUserModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   // 매칭 상대 이력 조회 함수
   const fetchMatcherHistory = async () => {
@@ -224,12 +229,32 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <Avatar
                   src={selectedUser.profileImageUrl}
-                  sx={{ width: 50, height: 50 }}
+                  sx={{
+                    width: 50,
+                    height: 50,
+                    cursor: 'pointer',
+                    '&:hover': { opacity: 0.8 }
+                  }}
+                  onClick={() => {
+                    setSelectedUserId(selectedUser.id);
+                    setUserModalOpen(true);
+                  }}
                 >
                   {selectedUser.name.charAt(0)}
                 </Avatar>
                 <Box>
-                  <Typography variant="h6">
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      cursor: 'pointer',
+                      color: 'primary.main',
+                      '&:hover': { textDecoration: 'underline' }
+                    }}
+                    onClick={() => {
+                      setSelectedUserId(selectedUser.id);
+                      setUserModalOpen(true);
+                    }}
+                  >
                     {selectedUser.name}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
@@ -368,12 +393,33 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                   <Avatar
                                     src={item.requester.profileImageUrl}
-                                    sx={{ width: 30, height: 30 }}
+                                    sx={{
+                                      width: 30,
+                                      height: 30,
+                                      cursor: 'pointer',
+                                      '&:hover': { opacity: 0.8 }
+                                    }}
+                                    onClick={() => {
+                                      setSelectedUserId(item.requester.id);
+                                      setUserModalOpen(true);
+                                    }}
                                   >
                                     {item.requester.name.charAt(0)}
                                   </Avatar>
                                   <Box>
-                                    <Typography variant="body2" fontWeight="medium">
+                                    <Typography
+                                      variant="body2"
+                                      fontWeight="medium"
+                                      sx={{
+                                        cursor: 'pointer',
+                                        color: 'primary.main',
+                                        '&:hover': { textDecoration: 'underline' }
+                                      }}
+                                      onClick={() => {
+                                        setSelectedUserId(item.requester.id);
+                                        setUserModalOpen(true);
+                                      }}
+                                    >
                                       {item.requester.name}
                                     </Typography>
                                     <Typography variant="caption" color="text.secondary">
@@ -410,6 +456,15 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
           </Box>
         )}
       </Paper>
+      {/* 사용자 프로필 상세 모달 */}
+      <UserDetailModal
+        open={userModalOpen}
+        onClose={() => setUserModalOpen(false)}
+        userId={selectedUserId}
+        userDetail={{ id: '', name: '', age: 0, gender: 'MALE', profileImages: [] }}
+        loading={false}
+        error={null}
+      />
     </LocalizationProvider>
   );
 };
