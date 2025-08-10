@@ -347,9 +347,13 @@ const stats = {
   },
 
   // 탈퇴 사유 통계 조회
-  getWithdrawalReasonStats: async () => {
+  getWithdrawalReasonStats: async (startDate?: string, endDate?: string) => {
     try {
-      const response = await axiosServer.get('/admin/stats/withdrawals/reasons');
+      const params: any = {};
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
+
+      const response = await axiosServer.get('/admin/stats/withdrawals/reasons', { params });
       return response.data || { reasons: [] };
     } catch (error) {
       console.error('탈퇴 사유 통계 조회 중 오류:', error);
