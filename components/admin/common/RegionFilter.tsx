@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 
 // 지역 타입 정의
-export type Region = 'ALL' | 'DJN' | 'SJG' | 'CJU' | 'BSN' | 'DGU';
+export type Region = 'ALL' | 'DJN' | 'SJG' | 'CJU' | 'BSN' | 'DGU' | 'GJJ';
 
 // 지역 옵션 정의
 const REGION_OPTIONS = [
@@ -20,7 +20,8 @@ const REGION_OPTIONS = [
   { value: 'SJG', label: '세종' },
   { value: 'CJU', label: '청주' },
   { value: 'BSN', label: '부산' },
-  { value: 'DGU', label: '대구' }
+  { value: 'DGU', label: '대구' },
+  { value: 'GJJ', label: '공주' }
 ] as const;
 
 interface RegionFilterProps {

@@ -43,7 +43,8 @@ const REGION_OPTIONS: { value: string; label: string }[] = [
   { value: 'SJG', label: '세종' },
   { value: 'CJU', label: '청주' },
   { value: 'BSN', label: '부산' },
-  { value: 'DGU', label: '대구' }
+  { value: 'DGU', label: '대구' },
+  { value: 'GJJ', label: '공주' }
 ];
 
 interface AppearanceFilterPanelProps {

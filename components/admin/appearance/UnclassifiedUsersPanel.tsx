@@ -61,6 +61,19 @@ const GENDER_LABELS: Record<Gender, string> = {
   'FEMALE': '여성'
 };
 
+// 지역 한글 표시
+const getRegionLabel = (region?: string) => {
+  const regionMap: Record<string, string> = {
+    'DJN': '대전',
+    'SJG': '세종',
+    'CJU': '청주',
+    'BSN': '부산',
+    'DGU': '대구',
+    'GJJ': '공주'
+  };
+  return region ? regionMap[region] || region : '-';
+};
+
 export default function UnclassifiedUsersPanel() {
   const [users, setUsers] = useState<UserProfileWithAppearance[]>([]);
   const [loading, setLoading] = useState(true);
@@ -279,6 +292,10 @@ export default function UnclassifiedUsersPanel() {
 
                       <Typography variant="body2" color="textSecondary" gutterBottom>
                         {user.age}세 / {GENDER_LABELS[user.gender]}
+                      </Typography>
+
+                      <Typography variant="body2" color="textSecondary" gutterBottom>
+                        지역: {getRegionLabel(user.region)}
                       </Typography>
 
                       {user.universityDetails?.name && (

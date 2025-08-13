@@ -43,6 +43,7 @@ interface PendingUser {
   instagramId?: string;
   instagramUrl?: string;
   university?: string;
+  region?: string;
   createdAt: string;
   status: 'pending' | 'rejected';
   rejectionReason?: string;
@@ -100,6 +101,19 @@ const ApprovalManagementPanel: React.FC = () => {
   // 사용자 전화번호 가져오기 헬퍼 함수
   const getUserPhone = (user: PendingUser): string => {
     return user.phone || user.phoneNumber || '';
+  };
+
+  // 지역 한글 표시 함수
+  const getRegionLabel = (region?: string) => {
+    const regionMap: Record<string, string> = {
+      'DJN': '대전',
+      'SJG': '세종',
+      'CJU': '청주',
+      'BSN': '부산',
+      'DGU': '대구',
+      'GJJ': '공주'
+    };
+    return region ? regionMap[region] || region : '-';
   };
 
   // 탭 변경 핸들러
@@ -303,6 +317,7 @@ const ApprovalManagementPanel: React.FC = () => {
               <TableCell>전화번호</TableCell>
               <TableCell>인스타그램 ID</TableCell>
               <TableCell>대학교</TableCell>
+              <TableCell>지역</TableCell>
               <TableCell>가입일</TableCell>
               <TableCell>상태</TableCell>
               {(activeTab === 1 || activeTab === 2) && <TableCell>거부 사유</TableCell>}
@@ -312,13 +327,13 @@ const ApprovalManagementPanel: React.FC = () => {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={(activeTab === 1 || activeTab === 2) ? 9 : 8} align="center">
+                <TableCell colSpan={(activeTab === 1 || activeTab === 2) ? 10 : 9} align="center">
                   <CircularProgress />
                 </TableCell>
               </TableRow>
             ) : currentUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={(activeTab === 1 || activeTab === 2) ? 9 : 8} align="center">
+                <TableCell colSpan={(activeTab === 1 || activeTab === 2) ? 10 : 9} align="center">
                   {activeTab === 0 ? '승인 대기 중인 사용자가 없습니다.' :
                    activeTab === 1 ? '승인 거부된 사용자가 없습니다.' :
                    '재심사 요청한 사용자가 없습니다.'}
@@ -359,6 +374,9 @@ const ApprovalManagementPanel: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     {user.university || '-'}
+                  </TableCell>
+                  <TableCell>
+                    {getRegionLabel(user.region)}
                   </TableCell>
                   <TableCell>
                     {new Date(user.createdAt).toLocaleDateString('ko-KR')}

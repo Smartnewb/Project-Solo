@@ -28,6 +28,7 @@ interface BlacklistUser {
   email: string;
   phoneNumber: string;
   suspendedAt: string;
+  region?: string;
   profile?: {
     profileImages?: Array<{
       url: string;
@@ -156,6 +157,18 @@ const BlacklistUsersPanel: React.FC = () => {
     return mainImage?.url || undefined;
   };
 
+  const getRegionLabel = (region?: string) => {
+    const regionMap: Record<string, string> = {
+      'DJN': '대전',
+      'SJG': '세종',
+      'CJU': '청주',
+      'BSN': '부산',
+      'DGU': '대구',
+      'GJJ': '공주'
+    };
+    return region ? regionMap[region] || region : '-';
+  };
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
@@ -243,6 +256,10 @@ const BlacklistUsersPanel: React.FC = () => {
 
                     <Typography variant="body2" color="textSecondary" gutterBottom>
                       {user.phoneNumber}
+                    </Typography>
+
+                    <Typography variant="body2" color="textSecondary" gutterBottom>
+                      지역: {getRegionLabel(user.region)}
                     </Typography>
 
                     <Divider sx={{ width: '100%', my: 2 }} />

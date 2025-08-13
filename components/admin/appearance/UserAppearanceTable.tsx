@@ -70,6 +70,19 @@ const GENDER_LABELS: Record<Gender, string> = {
   'FEMALE': '여성'
 };
 
+// 지역 한글 표시
+const getRegionLabel = (region?: string) => {
+  const regionMap: Record<string, string> = {
+    'DJN': '대전',
+    'SJG': '세종',
+    'CJU': '청주',
+    'BSN': '부산',
+    'DGU': '대구',
+    'GJJ': '공주'
+  };
+  return region ? regionMap[region] || region : '-';
+};
+
 interface UserAppearanceTableProps {
   initialFilters?: {
     gender?: Gender;
@@ -446,6 +459,7 @@ const UserAppearanceTable = forwardRef<
               <TableCell>나이/성별</TableCell>
               <TableCell>전화번호</TableCell>
               <TableCell>대학교</TableCell>
+              <TableCell>지역</TableCell>
               <TableCell>대학교 인증</TableCell>
               <TableCell>외모 등급</TableCell>
               <TableCell>인스타그램</TableCell>
@@ -457,13 +471,13 @@ const UserAppearanceTable = forwardRef<
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={12} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={13} align="center" sx={{ py: 3 }}>
                   <CircularProgress />
                 </TableCell>
               </TableRow>
             ) : users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={12} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={13} align="center" sx={{ py: 3 }}>
                   <Typography variant="body1">조회된 사용자가 없습니다.</Typography>
                 </TableCell>
               </TableRow>
@@ -552,6 +566,11 @@ const UserAppearanceTable = forwardRef<
                       // 대학교 정보가 없는 경우
                       '-'
                     )}
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">
+                      {getRegionLabel(user.region)}
+                    </Typography>
                   </TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
