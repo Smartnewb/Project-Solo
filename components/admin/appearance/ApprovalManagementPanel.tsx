@@ -24,6 +24,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  TextField,
   Pagination,
   Tabs,
   Tab,
@@ -72,16 +73,35 @@ const ApprovalManagementPanel: React.FC = () => {
   const [rejectionModalOpen, setRejectionModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [customRejectionReason, setCustomRejectionReason] = useState('');
 
   // 거부 사유 옵션들
   const rejectionReasons = [
-    '프로필 사진을 본인 사진으로 수정',
-    '프로필 사진이 얼굴이 잘 보이지 않음',
-    '프로필 사진이 상대방에게 불쾌함을 줄 수 있는 사진이 포함되어 있어 수정이 필요',
-    '프로필 이미지 오류(jpg,jpeg,png 지원)',
-    '인스타 ID 오류',
-    '인스타 ID 본계정이 아님',
-    '프로필 사진과 인스타 ID 모두 수정이 필요'
+    // 프로필 사진 관련
+    { value: 'PROFILE_PHOTO_CLEAR_FACE', label: '프로필 사진을 본인 얼굴이 잘 보이는 사진으로 변경해주세요' },
+    { value: 'PROFILE_PHOTO_SELF', label: '본인 사진으로 프로필을 변경해주세요' },
+    { value: 'PROFILE_PHOTO_NATURAL', label: '상대방이 봐도 부담스럽지 않은 자연스러운 사진으로 변경해주세요' },
+
+    // 인스타그램 ID 관련
+    { value: 'INSTAGRAM_ID_CORRECT', label: '인스타그램 ID를 정확히 입력해주세요' },
+    { value: 'INSTAGRAM_ID_MAIN_ACCOUNT', label: '인스타그램 본계정으로 변경해주세요' },
+    { value: 'INSTAGRAM_ID_PUBLIC', label: '인스타그램을 공개계정으로 설정해주세요' },
+    { value: 'INSTAGRAM_ID_ACTIVE', label: '활동 내역이 있는 인스타그램 계정으로 변경해주세요' },
+    { value: 'INSTAGRAM_ID_VERIFIABLE', label: '본인 확인이 가능한 인스타그램 계정으로 변경해주세요' },
+
+    // 복합 사유
+    { value: 'BOTH_PROFILE_AND_INSTAGRAM', label: '프로필 사진과 인스타그램 ID 모두 수정 후 재신청해주세요' },
+
+    // 이용 조건 관련
+    { value: 'NOT_ELIGIBLE', label: '현재 썸타임 이용 조건에 맞지 않아 승인이 어렵습니다' },
+    { value: 'FOREIGN_STUDENT_NOT_ACCEPTED', label: '죄송하지만 현재 외국인 유학생 회원가입을 받고 있지 않습니다' },
+
+    // 신뢰성 검증 관련
+    { value: 'IDENTITY_VERIFICATION_DIFFICULT', label: '본인 확인이 어려워 승인이 어렵습니다' },
+    { value: 'RELIABLE_PROFILE_REQUIRED', label: '신뢰할 수 있는 프로필 정보로 수정 후 재신청해주세요' },
+
+    // 기타
+    { value: 'OTHER', label: '기타 (직접 입력)' }
   ];
   const [processing, setProcessing] = useState(false);
 
@@ -114,6 +134,28 @@ const ApprovalManagementPanel: React.FC = () => {
       'GJJ': '공주'
     };
     return region ? regionMap[region] || region : '-';
+  };
+
+  // 거절 사유 한글 표시 함수
+  const getRejectionReasonLabel = (reason?: string) => {
+    const reasonMap: Record<string, string> = {
+      'PROFILE_PHOTO_CLEAR_FACE': '프로필 사진을 본인 얼굴이 잘 보이는 사진으로 변경해주세요',
+      'PROFILE_PHOTO_SELF': '본인 사진으로 프로필을 변경해주세요',
+      'PROFILE_PHOTO_NATURAL': '상대방이 봐도 부담스럽지 않은 자연스러운 사진으로 변경해주세요',
+      'INSTAGRAM_ID_CORRECT': '인스타그램 ID를 정확히 입력해주세요',
+      'INSTAGRAM_ID_MAIN_ACCOUNT': '인스타그램 본계정으로 변경해주세요',
+      'INSTAGRAM_ID_PUBLIC': '인스타그램을 공개계정으로 설정해주세요',
+      'INSTAGRAM_ID_ACTIVE': '활동 내역이 있는 인스타그램 계정으로 변경해주세요',
+      'INSTAGRAM_ID_VERIFIABLE': '본인 확인이 가능한 인스타그램 계정으로 변경해주세요',
+      'BOTH_PROFILE_AND_INSTAGRAM': '프로필 사진과 인스타그램 ID 모두 수정 후 재신청해주세요',
+      'NOT_ELIGIBLE': '현재 썸타임 이용 조건에 맞지 않아 승인이 어렵습니다',
+      'FOREIGN_STUDENT_NOT_ACCEPTED': '죄송하지만 현재 외국인 유학생 회원가입을 받고 있지 않습니다',
+      'IDENTITY_VERIFICATION_DIFFICULT': '본인 확인이 어려워 승인이 어렵습니다',
+      'RELIABLE_PROFILE_REQUIRED': '신뢰할 수 있는 프로필 정보로 수정 후 재신청해주세요',
+      'OTHER': '기타',
+      'reapply': '재심사 요청'
+    };
+    return reason ? reasonMap[reason] || reason : '-';
   };
 
   // 탭 변경 핸들러
@@ -257,16 +299,24 @@ const ApprovalManagementPanel: React.FC = () => {
   const handleRejection = async () => {
     if (!selectedUserId || !rejectionReason.trim()) return;
 
+    // 기타 사유인 경우 customRejectionReason이 필요
+    if (rejectionReason === 'OTHER' && !customRejectionReason.trim()) return;
+
     setProcessing(true);
     try {
+      const finalRejectionReason = rejectionReason === 'OTHER'
+        ? customRejectionReason.trim()
+        : getRejectionReasonLabel(rejectionReason);
+
       await axiosServer.patch(`/admin/users/approval/${selectedUserId}/status`, {
         status: 'rejected',
-        rejectionReason: rejectionReason.trim()
+        rejectionReason: finalRejectionReason
       });
 
       setRejectionModalOpen(false);
       setSelectedUserId(null);
       setRejectionReason('');
+      setCustomRejectionReason('');
       fetchUsers(); // 목록 및 카운트 새로고침
     } catch (err: any) {
       console.error('거부 처리 오류:', err);
@@ -398,7 +448,7 @@ const ApprovalManagementPanel: React.FC = () => {
                   </TableCell>
                   {(activeTab === 1 || activeTab === 2) && (
                     <TableCell>
-                      {user.rejectionReason === 'reapply' ? '재심사 요청' : user.rejectionReason || '-'}
+                      {getRejectionReasonLabel(user.rejectionReason)}
                     </TableCell>
                   )}
                   <TableCell>
@@ -528,16 +578,35 @@ const ApprovalManagementPanel: React.FC = () => {
             <InputLabel>거부 사유</InputLabel>
             <Select
               value={rejectionReason}
-              onChange={(e) => setRejectionReason(e.target.value)}
+              onChange={(e) => {
+                setRejectionReason(e.target.value);
+                if (e.target.value !== 'OTHER') {
+                  setCustomRejectionReason('');
+                }
+              }}
               label="거부 사유"
             >
               {rejectionReasons.map((reason, index) => (
-                <MenuItem key={index} value={reason}>
-                  {reason}
+                <MenuItem key={index} value={reason.value}>
+                  {reason.label}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
+
+          {rejectionReason === 'OTHER' && (
+            <FormControl fullWidth sx={{ mt: 2 }}>
+              <TextField
+                label="기타 거부 사유"
+                multiline
+                rows={3}
+                value={customRejectionReason}
+                onChange={(e) => setCustomRejectionReason(e.target.value)}
+                placeholder="거부 사유를 직접 입력해주세요"
+                required
+              />
+            </FormControl>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setRejectionModalOpen(false)}>취소</Button>
@@ -545,7 +614,7 @@ const ApprovalManagementPanel: React.FC = () => {
             onClick={handleRejection}
             variant="contained"
             color="error"
-            disabled={processing || !rejectionReason.trim()}
+            disabled={processing || !rejectionReason.trim() || (rejectionReason === 'OTHER' && !customRejectionReason.trim())}
           >
             {processing ? <CircularProgress size={20} /> : '거부'}
           </Button>
