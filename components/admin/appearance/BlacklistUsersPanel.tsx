@@ -20,6 +20,7 @@ import {
 } from '@mui/material';
 import AdminService from '@/app/services/admin';
 import UserDetailModal, { UserDetail } from './UserDetailModal';
+import RegionFilter, { useRegionFilter } from '@/components/admin/common/RegionFilter';
 
 interface BlacklistUser {
   id: string;
@@ -45,6 +46,9 @@ const BlacklistUsersPanel: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [releaseLoading, setReleaseLoading] = useState<string | null>(null);
+
+  // 지역 필터 훅 사용
+  const { region, setRegion: setRegionFilter, getRegionParam } = useRegionFilter();
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
     user: BlacklistUser | null;
@@ -64,7 +68,7 @@ const BlacklistUsersPanel: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const response: BlacklistUsersResponse = await AdminService.userAppearance.getBlacklistUsers();
+      const response: BlacklistUsersResponse = await AdminService.userAppearance.getBlacklistUsers(getRegionParam());
       setUsers(response.users || []);
     } catch (err: any) {
       console.error('블랙리스트 사용자 목록 조회 중 오류:', err);
@@ -76,7 +80,7 @@ const BlacklistUsersPanel: React.FC = () => {
 
   useEffect(() => {
     fetchBlacklistUsers();
-  }, []);
+  }, [region]);
 
   const handleOpenUserDetailModal = async (userId: string) => {
     try {
@@ -181,6 +185,16 @@ const BlacklistUsersPanel: React.FC = () => {
         >
           새로고침
         </Button>
+      </Box>
+
+      {/* 지역 필터 */}
+      <Box sx={{ mb: 3 }}>
+        <RegionFilter
+          value={region}
+          onChange={setRegionFilter}
+          size="small"
+          sx={{ minWidth: 150 }}
+        />
       </Box>
 
       {users.length === 0 ? (

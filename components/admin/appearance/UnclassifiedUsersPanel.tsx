@@ -35,6 +35,7 @@ import {
   Gender
 } from '@/app/admin/users/appearance/types';
 import UserDetailModal, { UserDetail } from './UserDetailModal';
+import RegionFilter, { useRegionFilter } from '@/components/admin/common/RegionFilter';
 
 // 등급 색상 정의
 const GRADE_COLORS: Record<AppearanceGrade, string> = {
@@ -68,6 +69,9 @@ export default function UnclassifiedUsersPanel() {
   const [totalPages, setTotalPages] = useState(1);
   const [pageSize] = useState(12);
 
+  // 지역 필터 훅 사용
+  const { region, setRegion: setRegionFilter, getRegionParam } = useRegionFilter();
+
   // 등급 설정 상태
   const [selectedUser, setSelectedUser] = useState<UserProfileWithAppearance | null>(null);
   const [selectedGrade, setSelectedGrade] = useState<AppearanceGrade>('UNKNOWN');
@@ -88,7 +92,7 @@ export default function UnclassifiedUsersPanel() {
       setLoading(true);
       setError(null);
 
-      const response = await AdminService.userAppearance.getUnclassifiedUsers(page, pageSize);
+      const response = await AdminService.userAppearance.getUnclassifiedUsers(page, pageSize, getRegionParam());
 
       setUsers(response.items);
       setTotalPages(response.meta.totalPages);
@@ -100,10 +104,10 @@ export default function UnclassifiedUsersPanel() {
     }
   };
 
-  // 페이지 변경 시 데이터 조회
+  // 페이지 및 지역 변경 시 데이터 조회
   useEffect(() => {
     fetchUnclassifiedUsers();
-  }, [page]);
+  }, [page, region]);
 
   // 페이지 변경 핸들러
   const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
@@ -215,6 +219,16 @@ export default function UnclassifiedUsersPanel() {
         >
           새로고침
         </Button>
+      </Box>
+
+      {/* 지역 필터 */}
+      <Box sx={{ mb: 3 }}>
+        <RegionFilter
+          value={region}
+          onChange={setRegionFilter}
+          size="small"
+          sx={{ minWidth: 150 }}
+        />
       </Box>
 
       {error && (

@@ -39,8 +39,11 @@ const GENDER_OPTIONS: { value: Gender | 'all'; label: string }[] = [
 // 지역 옵션
 const REGION_OPTIONS: { value: string; label: string }[] = [
   { value: 'all', label: '모든 지역' },
+  { value: 'DJN', label: '대전' },
+  { value: 'SJG', label: '세종' },
+  { value: 'CJU', label: '청주' },
   { value: 'BSN', label: '부산' },
-  { value: 'DJN', label: '대전' }
+  { value: 'DGU', label: '대구' }
 ];
 
 interface AppearanceFilterPanelProps {

@@ -1288,11 +1288,14 @@ const userAppearance = {
     }
   },
 
-  getBlacklistUsers: async () => {
+  getBlacklistUsers: async (region?: string) => {
     try {
       console.log('블랙리스트 사용자 목록 조회 요청');
 
-      const response = await axiosServer.get('/admin/users/blacklist');
+      const params = new URLSearchParams();
+      if (region) params.append('region', region);
+
+      const response = await axiosServer.get(`/admin/users/blacklist?${params.toString()}`);
 
       console.log('블랙리스트 사용자 목록 조회 응답:', response.data);
       return response.data;

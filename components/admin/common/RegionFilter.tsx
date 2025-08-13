@@ -7,18 +7,20 @@ import {
   Select,
   MenuItem,
   SelectChangeEvent,
-  Box,
-  Typography
+  Box
 } from '@mui/material';
 
 // 지역 타입 정의
-export type Region = 'ALL' | 'BSN' | 'DJN';
+export type Region = 'ALL' | 'DJN' | 'SJG' | 'CJU' | 'BSN' | 'DGU';
 
 // 지역 옵션 정의
 const REGION_OPTIONS = [
   { value: 'ALL', label: '전체 지역' },
+  { value: 'DJN', label: '대전' },
+  { value: 'SJG', label: '세종' },
+  { value: 'CJU', label: '청주' },
   { value: 'BSN', label: '부산' },
-  { value: 'DJN', label: '대전' }
+  { value: 'DGU', label: '대구' }
 ] as const;
 
 interface RegionFilterProps {
