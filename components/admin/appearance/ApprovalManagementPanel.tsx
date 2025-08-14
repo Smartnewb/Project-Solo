@@ -81,6 +81,7 @@ const ApprovalManagementPanel: React.FC = () => {
     { value: 'PROFILE_PHOTO_CLEAR_FACE', label: '프로필 사진을 본인 얼굴이 잘 보이는 사진으로 변경해주세요' },
     { value: 'PROFILE_PHOTO_SELF', label: '본인 사진으로 프로필을 변경해주세요' },
     { value: 'PROFILE_PHOTO_NATURAL', label: '상대방이 봐도 부담스럽지 않은 자연스러운 사진으로 변경해주세요' },
+    { value: 'PROFILE_PHOTO_FORMAT_UNSUPPORTED', label: '프로필 이미지 형식 지원 안함(jpg, jpeg, png 지원)' },
 
     // 인스타그램 ID 관련
     { value: 'INSTAGRAM_ID_CORRECT', label: '인스타그램 ID를 정확히 입력해주세요' },
@@ -142,6 +143,7 @@ const ApprovalManagementPanel: React.FC = () => {
       'PROFILE_PHOTO_CLEAR_FACE': '프로필 사진을 본인 얼굴이 잘 보이는 사진으로 변경해주세요',
       'PROFILE_PHOTO_SELF': '본인 사진으로 프로필을 변경해주세요',
       'PROFILE_PHOTO_NATURAL': '상대방이 봐도 부담스럽지 않은 자연스러운 사진으로 변경해주세요',
+      'PROFILE_PHOTO_FORMAT_UNSUPPORTED': '프로필 이미지 형식 지원 안함(jpg, jpeg, png 지원)',
       'INSTAGRAM_ID_CORRECT': '인스타그램 ID를 정확히 입력해주세요',
       'INSTAGRAM_ID_MAIN_ACCOUNT': '인스타그램 본계정으로 변경해주세요',
       'INSTAGRAM_ID_PUBLIC': '인스타그램을 공개계정으로 설정해주세요',
