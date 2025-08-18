@@ -125,7 +125,7 @@ const ApprovalManagementPanel: React.FC = () => {
     return user.phone || user.phoneNumber || '';
   };
 
-  // 지역 한글 표시 함수
+  // 지역 한글 표시 함수 (개별 지역 코드용)
   const getRegionLabel = (region?: string) => {
     const regionMap: Record<string, string> = {
       'DJN': '대전',
