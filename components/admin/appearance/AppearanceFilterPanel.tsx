@@ -36,7 +36,7 @@ const GENDER_OPTIONS: { value: Gender | 'all'; label: string }[] = [
   { value: 'FEMALE', label: '여성' }
 ];
 
-// 지역 옵션 (필터 패널용 - 개별 지역 선택 가능)
+// 지역 옵션
 const REGION_OPTIONS: { value: string; label: string }[] = [
   { value: 'all', label: '모든 지역' },
   { value: 'DJN', label: '대전' },

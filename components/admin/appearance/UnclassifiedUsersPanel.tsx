@@ -61,7 +61,7 @@ const GENDER_LABELS: Record<Gender, string> = {
   'FEMALE': '여성'
 };
 
-// 지역 한글 표시 (개별 지역 코드용)
+// 지역 한글 표시
 const getRegionLabel = (region?: string) => {
   const regionMap: Record<string, string> = {
     'DJN': '대전',

@@ -11,15 +11,17 @@ import {
 } from '@mui/material';
 
 // 지역 타입 정의
-export type Region = 'ALL' | 'DJN' | 'SJG' | 'BSN' | 'DGU';
+export type Region = 'ALL' | 'DJN' | 'SJG' | 'CJU' | 'BSN' | 'DGU' | 'GJJ';
 
 // 지역 옵션 정의
 const REGION_OPTIONS = [
   { value: 'ALL', label: '전체 지역' },
   { value: 'DJN', label: '대전' },
-  { value: 'SJG', label: '충북/세종' },
+  { value: 'SJG', label: '세종' },
+  { value: 'CJU', label: '청주' },
   { value: 'BSN', label: '부산' },
-  { value: 'DGU', label: '대구' }
+  { value: 'DGU', label: '대구' },
+  { value: 'GJJ', label: '공주' }
 ] as const;
 
 interface RegionFilterProps {
@@ -82,16 +84,7 @@ export function useRegionFilter(initialRegion: Region = 'ALL') {
 
   // API 호출용 지역 파라미터 변환
   const getRegionParam = (): string | undefined => {
-    if (region === 'ALL') return undefined;
-
-    // 대전 클러스터 → DJN으로 전송 (백엔드에서 DJN+GJJ 처리)
-    if (region === 'DJN') return 'DJN';
-
-    // 충북/세종 클러스터 → SJG로 전송 (백엔드에서 SJG+CJU 처리)
-    if (region === 'SJG') return 'SJG';
-
-    // 부산, 대구는 해당 지역만
-    return region;
+    return region === 'ALL' ? undefined : region;
   };
 
   return {
@@ -105,17 +98,4 @@ export function useRegionFilter(initialRegion: Region = 'ALL') {
 export const getRegionLabel = (region: Region): string => {
   const option = REGION_OPTIONS.find(opt => opt.value === region);
   return option?.label || '전체 지역';
-};
-
-// 개별 지역 코드를 한글로 변환하는 함수 (테이블 표시용)
-export const getIndividualRegionLabel = (regionCode: string): string => {
-  const regionMap: Record<string, string> = {
-    'DJN': '대전',
-    'SJG': '세종',
-    'CJU': '청주',
-    'BSN': '부산',
-    'DGU': '대구',
-    'GJJ': '공주'
-  };
-  return regionMap[regionCode] || regionCode;
 };
