@@ -48,6 +48,7 @@ interface PendingUser {
   createdAt: string;
   status: 'pending' | 'rejected';
   rejectionReason?: string;
+  lastPushNotificationAt?: string;
 }
 
 
@@ -373,19 +374,20 @@ const ApprovalManagementPanel: React.FC = () => {
               <TableCell>가입일</TableCell>
               <TableCell>상태</TableCell>
               {(activeTab === 1 || activeTab === 2) && <TableCell>거부 사유</TableCell>}
+              <TableCell>마지막 알림 발송</TableCell>
               <TableCell>작업</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={(activeTab === 1 || activeTab === 2) ? 10 : 9} align="center">
+                <TableCell colSpan={(activeTab === 1 || activeTab === 2) ? 11 : 10} align="center">
                   <CircularProgress />
                 </TableCell>
               </TableRow>
             ) : currentUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={(activeTab === 1 || activeTab === 2) ? 10 : 9} align="center">
+                <TableCell colSpan={(activeTab === 1 || activeTab === 2) ? 11 : 10} align="center">
                   {activeTab === 0 ? '승인 대기 중인 사용자가 없습니다.' :
                    activeTab === 1 ? '승인 거부된 사용자가 없습니다.' :
                    '재심사 요청한 사용자가 없습니다.'}
@@ -453,6 +455,17 @@ const ApprovalManagementPanel: React.FC = () => {
                       {getRejectionReasonLabel(user.rejectionReason)}
                     </TableCell>
                   )}
+                  <TableCell>
+                    {(user as any).lastPushNotificationAt ?
+                      new Date((user as any).lastPushNotificationAt).toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      }) : '-'
+                    }
+                  </TableCell>
                   <TableCell>
                     <Box sx={{ display: 'flex', gap: 1 }}>
                       <Button

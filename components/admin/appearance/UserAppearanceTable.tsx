@@ -465,19 +465,20 @@ const UserAppearanceTable = forwardRef<
               <TableCell>인스타그램</TableCell>
               <TableCell>가입일</TableCell>
               <TableCell>마지막 접속</TableCell>
+              <TableCell>마지막 알림 발송</TableCell>
               <TableCell></TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={13} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={14} align="center" sx={{ py: 3 }}>
                   <CircularProgress />
                 </TableCell>
               </TableRow>
             ) : users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={13} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={14} align="center" sx={{ py: 3 }}>
                   <Typography variant="body1">조회된 사용자가 없습니다.</Typography>
                 </TableCell>
               </TableRow>
@@ -676,6 +677,14 @@ const UserAppearanceTable = forwardRef<
                   <TableCell>
                     <Typography variant="body2">
                       {user.lastActiveAt ? formatDateTimeWithoutTimezoneConversion(user.lastActiveAt) : '접속 기록 없음'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">
+                      {(user as any).lastPushNotificationAt ?
+                        formatDateTimeWithoutTimezoneConversion((user as any).lastPushNotificationAt) :
+                        '알림 발송 기록 없음'
+                      }
                     </Typography>
                   </TableCell>
                   <TableCell>
