@@ -69,7 +69,9 @@ const getRegionLabel = (region?: string) => {
     'CJU': '청주',
     'BSN': '부산',
     'DGU': '대구',
-    'GJJ': '공주'
+    'GJJ': '공주',
+    'ICN': '인천',
+    'CAN': '천안'
   };
   return region ? regionMap[region] || region : '-';
 };

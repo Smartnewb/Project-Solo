@@ -44,7 +44,9 @@ const REGION_OPTIONS: { value: string; label: string }[] = [
   { value: 'CJU', label: '청주' },
   { value: 'BSN', label: '부산' },
   { value: 'DGU', label: '대구' },
-  { value: 'GJJ', label: '공주' }
+  { value: 'GJJ', label: '공주' },
+  { value: 'ICN', label: '인천' },
+  { value: 'CAN', label: '천안' }
 ];
 
 interface AppearanceFilterPanelProps {
