@@ -36,15 +36,13 @@ const GENDER_OPTIONS: { value: Gender | 'all'; label: string }[] = [
   { value: 'FEMALE', label: '여성' }
 ];
 
-// 지역 옵션
+// 지역 옵션 (클러스터 기반)
 const REGION_OPTIONS: { value: string; label: string }[] = [
   { value: 'all', label: '모든 지역' },
-  { value: 'DJN', label: '대전' },
-  { value: 'SJG', label: '세종' },
-  { value: 'CJU', label: '청주' },
+  { value: 'DJN', label: '대전/공주 클러스터' },
+  { value: 'SJG', label: '충북/세종 클러스터' },
   { value: 'BSN', label: '부산' },
   { value: 'DGU', label: '대구' },
-  { value: 'GJJ', label: '공주' },
   { value: 'ICN', label: '인천' },
   { value: 'CAN', label: '천안' }
 ];
@@ -71,6 +69,18 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [isAdvancedFilterOpen, setIsAdvancedFilterOpen] = useState(false);
 
+  // 지역 클러스터 변환 함수
+  const getClusterRegion = (region: string): string => {
+    // 대전/공주 클러스터 → DJN으로 전송 (백엔드에서 DJN+GJJ 처리)
+    if (region === 'DJN') return 'DJN';
+
+    // 충북/세종 클러스터 → SJG로 전송 (백엔드에서 SJG+CJU 처리)
+    if (region === 'SJG') return 'SJG';
+
+    // 부산, 대구, 인천, 천안은 단독
+    return region;
+  };
+
   // 필터 적용
   const applyFilter = () => {
     if (onFilter) {
@@ -82,7 +92,7 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
       if (minAge !== '') filters.minAge = minAge;
       if (maxAge !== '') filters.maxAge = maxAge;
       if (searchTerm) filters.searchTerm = searchTerm;
-      if (selectedRegion !== 'all') filters.region = selectedRegion;
+      if (selectedRegion !== 'all') filters.region = getClusterRegion(selectedRegion);
 
       onFilter(filters);
     }

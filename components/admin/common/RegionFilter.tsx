@@ -10,18 +10,16 @@ import {
   Box
 } from '@mui/material';
 
-// 지역 타입 정의
-export type Region = 'ALL' | 'DJN' | 'SJG' | 'CJU' | 'BSN' | 'DGU' | 'GJJ' | 'ICN' | 'CAN';
+// 지역 타입 정의 (클러스터 기반)
+export type Region = 'ALL' | 'DJN' | 'SJG' | 'BSN' | 'DGU' | 'ICN' | 'CAN';
 
-// 지역 옵션 정의
+// 지역 옵션 정의 (클러스터 기반)
 const REGION_OPTIONS = [
   { value: 'ALL', label: '전체 지역' },
-  { value: 'DJN', label: '대전' },
-  { value: 'SJG', label: '세종' },
-  { value: 'CJU', label: '청주' },
+  { value: 'DJN', label: '대전/공주 클러스터' },
+  { value: 'SJG', label: '충북/세종 클러스터' },
   { value: 'BSN', label: '부산' },
   { value: 'DGU', label: '대구' },
-  { value: 'GJJ', label: '공주' },
   { value: 'ICN', label: '인천' },
   { value: 'CAN', label: '천안' }
 ] as const;
@@ -84,9 +82,18 @@ export function useRegionFilter(initialRegion: Region = 'ALL') {
     setRegion(newRegion);
   };
 
-  // API 호출용 지역 파라미터 변환
+  // API 호출용 지역 파라미터 변환 (클러스터 기반)
   const getRegionParam = (): string | undefined => {
-    return region === 'ALL' ? undefined : region;
+    if (region === 'ALL') return undefined;
+
+    // 대전/공주 클러스터 → DJN으로 전송 (백엔드에서 DJN+GJJ 처리)
+    if (region === 'DJN') return 'DJN';
+
+    // 충북/세종 클러스터 → SJG로 전송 (백엔드에서 SJG+CJU 처리)
+    if (region === 'SJG') return 'SJG';
+
+    // 부산, 대구, 인천, 천안은 단독
+    return region;
   };
 
   return {
@@ -96,7 +103,7 @@ export function useRegionFilter(initialRegion: Region = 'ALL') {
   };
 }
 
-// 지역 표시용 유틸리티 함수
+// 지역 표시용 유틸리티 함수 (클러스터 기반)
 export const getRegionLabel = (region: Region): string => {
   const option = REGION_OPTIONS.find(opt => opt.value === region);
   return option?.label || '전체 지역';
