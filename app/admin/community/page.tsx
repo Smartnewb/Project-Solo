@@ -41,17 +41,16 @@ import {
 
   Forum as ForumIcon,
   Article as ArticleIcon,
-  FilterList as FilterListIcon,
   Refresh as RefreshIcon,
-  CalendarMonth as CalendarMonthIcon,
   Report as ReportIcon,
-  Favorite as FavoriteIcon
+  Favorite as FavoriteIcon,
+  Delete as DeleteIcon,
+  MoveToInbox as MoveToInboxIcon
 } from '@mui/icons-material';
 import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
 
 // 게시글 목록 컴포넌트
 function ArticleList() {
-  const router = useRouter();
   const [articles, setArticles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +63,16 @@ function ArticleList() {
   const [blindAction, setBlindAction] = useState<'blind' | 'unblind'>('blind');
   const [blindReason, setBlindReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+
+  // 게시글 삭제 관련 상태
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<string>('');
+
+  // 카테고리 이전 관련 상태
+  const [openCategoryDialog, setOpenCategoryDialog] = useState(false);
+  const [categoryTargetId, setCategoryTargetId] = useState<string>('');
+  const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedArticleDetail, setSelectedArticleDetail] = useState<any>(null);
@@ -169,6 +178,41 @@ function ArticleList() {
     }
   };
 
+  // 게시글 삭제
+  const handleDeleteArticle = async () => {
+    try {
+      setActionLoading(true);
+      await communityService.deleteArticle(deleteTargetId);
+      setSuccessMessage('게시글을 삭제했습니다.');
+      fetchArticles();
+      setOpenDeleteDialog(false);
+      setDeleteTargetId('');
+    } catch (error) {
+      console.error('게시글 삭제 중 오류:', error);
+      setError('게시글 삭제 중 오류가 발생했습니다.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // 게시글 카테고리 이전
+  const handleMoveCategory = async () => {
+    try {
+      setActionLoading(true);
+      await communityService.moveArticleCategory(categoryTargetId, selectedCategoryId);
+      setSuccessMessage('게시글 카테고리를 이전했습니다.');
+      fetchArticles();
+      setOpenCategoryDialog(false);
+      setCategoryTargetId('');
+      setSelectedCategoryId('');
+    } catch (error) {
+      console.error('게시글 카테고리 이전 중 오류:', error);
+      setError('게시글 카테고리 이전 중 오류가 발생했습니다.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // 게시글 상세 정보 조회
   const handleViewDetail = async (id: string) => {
     try {
@@ -240,6 +284,20 @@ function ArticleList() {
   useEffect(() => {
     fetchArticles();
   }, [filter, page, rowsPerPage, startDate, endDate]);
+
+  // 카테고리 목록 조회
+  const fetchCategories = async () => {
+    try {
+      const response = await communityService.getCategories();
+      setCategories(response.categories ?? []);
+    } catch (error) {
+      console.error('카테고리 목록 조회 중 오류:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
   return (
     <Box>
@@ -489,6 +547,30 @@ function ArticleList() {
                         </IconButton>
                       </Tooltip>
                     )}
+                    <Tooltip title="카테고리 이전">
+                      <IconButton
+                        size="small"
+                        color="info"
+                        onClick={() => {
+                          setCategoryTargetId(article.id);
+                          setOpenCategoryDialog(true);
+                        }}
+                      >
+                        <MoveToInboxIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="게시글 삭제">
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => {
+                          setDeleteTargetId(article.id);
+                          setOpenDeleteDialog(true);
+                        }}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   </TableCell>
                 </TableRow>
               ))
@@ -731,33 +813,114 @@ function ArticleList() {
         <DialogActions>
           <Button onClick={handleCloseDetailDialog}>닫기</Button>
           {selectedArticleDetail && (
-            (selectedArticleDetail.isBlinded || (selectedArticleDetail as any).blindedAt) ? (
+            <>
+              {(selectedArticleDetail.isBlinded || (selectedArticleDetail as any).blindedAt) ? (
+                <Button
+                  color="primary"
+                  onClick={() => {
+                    setSelectedArticles([selectedArticleDetail.id]);
+                    handleCloseDetailDialog();
+                    handleOpenBlindDialog('unblind');
+                  }}
+                  startIcon={<VisibilityIcon />}
+                >
+                  블라인드 해제
+                </Button>
+              ) : (
+                <Button
+                  color="warning"
+                  onClick={() => {
+                    setSelectedArticles([selectedArticleDetail.id]);
+                    handleCloseDetailDialog();
+                    handleOpenBlindDialog('blind');
+                  }}
+                  startIcon={<VisibilityOffIcon />}
+                >
+                  블라인드
+                </Button>
+              )}
               <Button
-                color="primary"
+                color="info"
                 onClick={() => {
-                  setSelectedArticles([selectedArticleDetail.id]);
+                  setCategoryTargetId(selectedArticleDetail.id);
                   handleCloseDetailDialog();
-                  handleOpenBlindDialog('unblind');
+                  setOpenCategoryDialog(true);
                 }}
-                startIcon={<VisibilityIcon />}
+                startIcon={<MoveToInboxIcon />}
               >
-
-                블라인드 해제
+                카테고리 이전
               </Button>
-            ) : (
               <Button
-                color="warning"
+                color="error"
                 onClick={() => {
-                  setSelectedArticles([selectedArticleDetail.id]);
+                  setDeleteTargetId(selectedArticleDetail.id);
                   handleCloseDetailDialog();
-                  handleOpenBlindDialog('blind');
+                  setOpenDeleteDialog(true);
                 }}
-                startIcon={<VisibilityOffIcon />}
+                startIcon={<DeleteIcon />}
               >
-                블라인드
+                삭제
               </Button>
-            )
+            </>
           )}
+        </DialogActions>
+      </Dialog>
+
+      {/* 게시글 삭제 확인 다이얼로그 */}
+      <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)}>
+        <DialogTitle>게시글 삭제 확인</DialogTitle>
+        <DialogContent>
+          <Typography>
+            정말로 이 게시글을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDeleteDialog(false)} disabled={actionLoading}>
+            취소
+          </Button>
+          <Button
+            onClick={handleDeleteArticle}
+            color="error"
+            disabled={actionLoading}
+          >
+            {actionLoading ? <CircularProgress size={24} /> : '삭제'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 카테고리 이전 다이얼로그 */}
+      <Dialog open={openCategoryDialog} onClose={() => setOpenCategoryDialog(false)}>
+        <DialogTitle>게시글 카테고리 이전</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ mb: 2 }}>
+            이 게시글을 어느 카테고리로 이전하시겠습니까?
+          </Typography>
+          <FormControl fullWidth>
+            <InputLabel>카테고리 선택</InputLabel>
+            <Select
+              value={selectedCategoryId}
+              onChange={(e) => setSelectedCategoryId(e.target.value)}
+              label="카테고리 선택"
+            >
+              {categories.map((category) => (
+                <MenuItem key={category.id} value={category.id}>
+                  {category.displayName}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenCategoryDialog(false)} disabled={actionLoading}>
+            취소
+          </Button>
+          <Button
+            onClick={handleMoveCategory}
+            color="primary"
+            disabled={actionLoading || !selectedCategoryId}
+          >
+            {actionLoading ? <CircularProgress size={24} /> : '이전'}
+          </Button>
         </DialogActions>
       </Dialog>
 

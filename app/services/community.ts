@@ -213,17 +213,50 @@ const communityService = {
     }
   },
 
-  // 게시글 삭제
-  deleteArticle: async (id: string): Promise<any> => {
+  // 게시글 삭제 (새로운 API 엔드포인트 사용)
+  deleteArticle: async (articleId: string): Promise<any> => {
     try {
-      console.log('게시글 삭제 요청:', id);
+      console.log('게시글 삭제 요청:', articleId);
 
-      // 실제 API 호출
-      const response = await axiosServer.delete(`/admin/community/articles/${id}`);
+      // 새로운 API 엔드포인트 호출
+      const response = await axiosServer.delete(`/admin/community/articles`, {
+        data: { articleId }
+      });
       console.log('게시글 삭제 응답:', response.data);
       return response.data;
     } catch (error) {
       console.error('게시글 삭제 중 오류:', error);
+      throw error;
+    }
+  },
+
+  // 게시글 카테고리 이전
+  moveArticleCategory: async (articleId: string, categoryId: string): Promise<any> => {
+    try {
+      console.log('게시글 카테고리 이전 요청:', { articleId, categoryId });
+
+      const response = await axiosServer.patch(`/admin/community/articles/category`, {
+        articleId,
+        categoryId
+      });
+      console.log('게시글 카테고리 이전 응답:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('게시글 카테고리 이전 중 오류:', error);
+      throw error;
+    }
+  },
+
+  // 게시글 카테고리 목록 조회
+  getCategories: async (): Promise<any> => {
+    try {
+      console.log('게시글 카테고리 목록 조회 요청');
+
+      const response = await axiosServer.get(`/admin/community/categories`);
+      console.log('게시글 카테고리 목록 조회 응답:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('게시글 카테고리 목록 조회 중 오류:', error);
       throw error;
     }
   },
