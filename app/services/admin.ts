@@ -1270,6 +1270,33 @@ const userAppearance = {
     }
   },
 
+  // 대학교 인증 사용자 조회
+  getVerifiedUsers: async (params: {
+    page?: number;
+    limit?: number;
+    name?: string;
+    university?: string;
+  }) => {
+    try {
+      console.log('대학교 인증 사용자 조회 요청:', params);
+
+      const queryParams = new URLSearchParams();
+      if (params.page) queryParams.append('page', params.page.toString());
+      if (params.limit) queryParams.append('limit', params.limit.toString());
+      if (params.name) queryParams.append('name', params.name);
+      if (params.university) queryParams.append('university', params.university);
+
+      const response = await axiosServer.get(`/admin/users/verified?${queryParams.toString()}`);
+
+      console.log('대학교 인증 사용자 조회 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('대학교 인증 사용자 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
   // 대학교 인증 승인
   approveUniversityVerification: async (userId: string) => {
     try {
