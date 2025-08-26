@@ -32,6 +32,7 @@ import UnmatchedUsers from './components/UnmatchedUsers';
 import MatcherHistory from './components/MatcherHistory';
 import TicketManagement from './components/TicketManagement';
 import GemsManagement from './components/GemsManagement';
+import LikeHistory from './components/LikeHistory';
 import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
 
 // 타입 임포트
@@ -637,6 +638,7 @@ export default function MatchingManagement() {
         <Tab label="매칭 내역 조회" />
         <Tab label="매칭 실패 내역" />
         <Tab label="매칭 상대 이력" />
+        <Tab label="좋아요 이력" />
         <Tab label="매칭 대기 사용자" />
         <Tab label="단일 매칭" />
         <Tab label="매칭 시뮬레이션" />
@@ -1079,8 +1081,13 @@ export default function MatchingManagement() {
         />
       </TabPanel>
 
-      {/* 매칭 대기 사용자 */}
+      {/* 좋아요 이력 */}
       <TabPanel value={activeTab} index={5}>
+        <LikeHistory />
+      </TabPanel>
+
+      {/* 매칭 대기 사용자 */}
+      <TabPanel value={activeTab} index={6}>
         <UnmatchedUsers
           unmatchedUsers={unmatchedUsers}
           unmatchedUsersLoading={unmatchedUsersLoading}
@@ -1119,7 +1126,7 @@ export default function MatchingManagement() {
       </TabPanel>
 
       {/* 단일 매칭 */}
-      <TabPanel value={activeTab} index={6}>
+      <TabPanel value={activeTab} index={7}>
         <UserSearch
           searchTerm={searchTerm}
           searchLoading={searchLoading}
@@ -1139,7 +1146,7 @@ export default function MatchingManagement() {
       </TabPanel>
 
       {/* 매칭 시뮬레이션 */}
-      <TabPanel value={activeTab} index={7}>
+      <TabPanel value={activeTab} index={8}>
         <UserSearch
           searchTerm={searchTerm}
           searchLoading={searchLoading}
@@ -1163,7 +1170,7 @@ export default function MatchingManagement() {
       </TabPanel>
 
       {/* 00시 매칭 여부 */}
-      <TabPanel value={activeTab} index={8}>
+      <TabPanel value={activeTab} index={9}>
         <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
           <Typography variant="h6" gutterBottom>
             00시 매칭 On/Off
@@ -1185,7 +1192,7 @@ export default function MatchingManagement() {
       </TabPanel>
 
       {/* 잔여 사용자 매칭 */}
-      <TabPanel value={activeTab} index={9}>
+      <TabPanel value={activeTab} index={10}>
         <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
           <Typography variant="h6" gutterBottom>
             (굉장히 급조한 API) 잔여 사용자 매칭 (위험)
@@ -1206,7 +1213,7 @@ export default function MatchingManagement() {
       </TabPanel>
 
       {/* 임베드 데이터 갱신 */}
-      <TabPanel value={activeTab} index={10}>
+      <TabPanel value={activeTab} index={11}>
         <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
           <Typography variant="h6" gutterBottom>
             매칭 조건에 포함되는 전체 사용자의 벡터 갱신 (오래걸림)

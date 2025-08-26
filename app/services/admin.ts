@@ -1706,6 +1706,30 @@ const matching = {
     }
   },
 
+  // 좋아요 이력 조회
+  getLikeHistory: async (startDate: string, endDate: string, page: number = 1, limit: number = 10, name?: string) => {
+    try {
+      console.log('좋아요 이력 조회 요청:', { startDate, endDate, page, limit, name });
+
+      // 파라미터 객체 생성
+      const params: any = { startDate, endDate, page, limit };
+
+      // 이름 검색어가 있는 경우 추가
+      if (name && name.trim() !== '') {
+        params.name = name.trim();
+      }
+
+      const response = await axiosServer.get('/admin/matching/like-history', { params });
+
+      console.log('좋아요 이력 조회 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('좋아요 이력 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
   // 매칭 통계 조회 (임시 데이터)
   getMatchingStats: async (period: 'daily' | 'weekly' | 'monthly' = 'daily', university?: string) => {
     try {

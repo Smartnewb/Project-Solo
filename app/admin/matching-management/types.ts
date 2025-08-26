@@ -161,3 +161,35 @@ export interface TicketActionResponse {
   deletedCount?: number;
   ticketIds?: string[];
 }
+
+// 좋아요 이력 아이템 타입
+export interface LikeHistoryItem {
+  id: string;
+  connectionId: string;
+  sender: {
+    id: string;
+    name: string;
+    profileImage?: string;
+  };
+  receiver: {
+    id: string;
+    name: string;
+    profileImage?: string;
+  };
+  matchStatus: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
+  createdAt: string;
+  viewedAt?: string | null;
+  isExpired: boolean;
+  isNoShow: boolean;
+}
+
+// 좋아요 이력 응답 타입
+export interface LikeHistoryResponse {
+  items: LikeHistoryItem[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: string | number;
+    itemsPerPage: number;
+  };
+}
