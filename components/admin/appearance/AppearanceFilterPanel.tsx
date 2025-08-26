@@ -41,7 +41,7 @@ const REGION_OPTIONS: { value: string; label: string }[] = [
   { value: 'all', label: '모든 지역' },
   { value: 'DJN', label: '대전/공주 클러스터' },
   { value: 'SJG', label: '충북/세종 클러스터' },
-  { value: 'BSN', label: '부산' },
+  { value: 'BSN', label: '부산/김해 클러스터' },
   { value: 'DGU', label: '대구' },
   { value: 'ICN', label: '인천' },
   { value: 'CAN', label: '천안' }
@@ -77,7 +77,10 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
     // 충북/세종 클러스터 → SJG로 전송 (백엔드에서 SJG+CJU 처리)
     if (region === 'SJG') return 'SJG';
 
-    // 부산, 대구, 인천, 천안은 단독
+    // 부산/김해 클러스터 → BSN으로 전송 (백엔드에서 BSN+GHE 처리)
+    if (region === 'BSN') return 'BSN';
+
+    // 대구, 인천, 천안은 단독
     return region;
   };
 

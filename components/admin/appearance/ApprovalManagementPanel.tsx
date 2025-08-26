@@ -134,6 +134,7 @@ const ApprovalManagementPanel: React.FC = () => {
       'BSN': '부산',
       'DGU': '대구',
       'GJJ': '공주',
+      'GHE': '김해',
       'ICN': '인천',
       'CAN': '천안'
     };

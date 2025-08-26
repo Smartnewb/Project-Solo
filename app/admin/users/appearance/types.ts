@@ -37,7 +37,7 @@ export interface UserProfileWithAppearance {
   phoneNumber?: string; // 전화번호
   gender: Gender;
   age: number;
-  region?: string; // 지역 정보 (DJN, SJG, CJU, BSN, DGU)
+  region?: string; // 지역 정보 (DJN, SJG, CJU, BSN, DGU, GJJ, GHE, ICN, CAN)
   profileImages?: ProfileImage[]; // 새로운 응답에서는 없을 수 있음
   profileImageUrl?: string | null; // 새로운 응답에서 추가됨
   universityDetails?: UniversityDetails; // 기존 필드 (하위 호환성 유지)
