@@ -5,7 +5,7 @@ import {
     User,
     SendSmsRequest,
     SendSmsResponse,
-    GetHistoryResponse,
+    SmsHistory,
     GetHistoryDetailResponse
 } from "../admin/sms/types";
 
@@ -78,7 +78,7 @@ export const smsService = {
     },
 
     // 템플릿 목록 조회
-    async getTemplates(): Promise<{ templates: SmsTemplate[]; totalCount: number }>{
+    async getTemplates(): Promise<SmsTemplate[]>{
         try {
             const response = await axiosServer.get(SMS_ENDPOINTS.TEMPLATE);
             return response.data;
@@ -118,18 +118,18 @@ export const smsService = {
             const response = await axiosServer.delete(url);
             return response.data;
         } catch(error) {
-            throw new SmsApiError(`템플릿(${id}) 삭제 실패`, error)
+            throw new SmsApiError(`템플릿(${id}) 삭제 실패`, error);
         }
     },
     // === 사용자 ===
     // 사용자 검색
     async searchUser(params: {
-        startDate: string,
-        endDate: string,
-        gender: 'male' | 'female',
+        startDate?: string,
+        endDate?: string,
+        gender?: 'male' | 'female',
         searchTerm?: string,
-        includeWithdrawn: boolean,
-        includeRejected: boolean
+        includeWithdrawn?: boolean,
+        includeRejected?: boolean
 
     }): Promise<User[]> {
         try {
@@ -155,8 +155,8 @@ export const smsService = {
     // === 발송 내역 조회 ===
     // 발송 내역 조회
     async getHistory(params?: {
-        limit: number
-    }): Promise<GetHistoryResponse> {
+        limit?: number
+    }): Promise<SmsHistory[]> {
         try {
             const response = await axiosServer.get(SMS_ENDPOINTS.HISTORY, { params: params });
             return response.data;
@@ -165,14 +165,14 @@ export const smsService = {
         }
     },
 
-    // 발송 내역 상세 NOTE: 필요한 기능이지 체크
+    // 발송 내역 상세 NOTE: 필요한 기능인지 체크
     async getHistoryDetail(id: string): Promise<GetHistoryDetailResponse> {
         try {
             const url = SMS_ENDPOINTS.HISTORY_BY_ID(id);
             const response = await axiosServer.get(url);
             return response.data;
         } catch(error) {
-            throw new SmsApiError(`발송 내역 상세 조회 실패 (${id})`)
+            throw new SmsApiError(`발송 내역 상세 조회 실패 (${id})`, error);
         }
     }
 
