@@ -14,33 +14,39 @@ export interface SmsTemplate {
 
 // MARK: - 사용자
 export interface User {
-    id: string;
-    gender: 'male' | 'female' ; // NOTE: 사용자 정의 성별이 존재하는지 확인 필요
+    userId: string;
     name: string;
     phoneNumber: string;
-    profileImage?: string;
+    gender: 'male' | 'female' ; 
+    lastLoginAt?: string;
+    isWithdrawn?: boolean;
+    withdrawnAt?: string;
 }
 
 // MARK: - 선택된 사용자
-export interface SelectedUser {
-    id: string;
-    name: string;
-    phoneNumber: string;
-    profileImage?: string;
-    isSelected: boolean;
-}
+// export interface SelectedUser {
+//     id: string;
+//     name: string;
+//     phoneNumber: string;
+//     profileImage?: string;
+//     isSelected: boolean;
+// }
+
+export type SelectedUser = User & { isSelected: boolean};
 
 
 
 // MARK: - 발송 내역
 export interface SmsHistory {
     id: string;
+    templateId: string;
     templateTitle: string;
     messageContent: string;
+    recipientCount: number;
+    successCount: number;
+    failureCount: number;
+    status: string;
     createdAt: string;
-    status: 'success' | 'failed' ; 
-    recipientCount: number; 
-    filterCriteria?: RecipientFilter;
 }
 
 
@@ -48,7 +54,7 @@ export interface SmsHistory {
 export interface RecipientFilter{
     startDate: Date | null;
     endDate: Date | null;
-    gender: 'all' | 'male' | 'female' ; // FIX: 사용자 정의 추가
+    gender: 'all' | 'male' | 'female' | 'custom'; 
     customUsers?: User[];
 }
 
@@ -59,7 +65,6 @@ export interface RecipientFilter{
 export interface CreateTemplateRequest {
     title: string;
     content: string;
-    variables?: string[];
 }
 
 export interface CreateTemplateResponse {
@@ -74,7 +79,7 @@ export interface GetTemplatesResponse {
 } 
 
 // MARK: - 특정 sms 템플릿 조회
-export interface GetTemplateById {
+export interface GetTemplateByIdResponse {
     success: boolean;
     data?: SmsTemplate;
 }
@@ -82,18 +87,17 @@ export interface GetTemplateById {
 // MARK: - sms 템플릿 수정
 export interface UpdateTemplateRequest {
     // NOTE: url에 id 존재해서 body에서 id 제거
-    title?: string;
-    content?: string;
-    variables?: string[];
+    title: string;
+    content: string;
 }
 
 export interface UpdateTemplateResponse {
     success: boolean;
-    data?: SmsTemplate;
+    data?: SmsTemplate; // NOTE: 이 부분 Partial<SmsTemplate> 아닌가?
 }
 
 // MARK: - 템플릿 삭제
-export interface DeleteTemplate {
+export interface RemoveTemplateResponse {
     success: boolean;
     message?: string;
 }
@@ -101,7 +105,15 @@ export interface DeleteTemplate {
 // MARK: - 사용자 검색
 export interface GetUser {
     success: boolean;
-    data?: User[]; 
+    data?: {
+        userId: string;
+        name: string;
+        phoneNumber: string;
+        gender: 'male' | 'female';
+        lastLoginAt: string;
+        isWithdrawn: boolean;
+        withdrawnAt: string;
+    }; 
 }
 
 
@@ -128,7 +140,7 @@ export interface SendSmsResponse {
         groupId: string;
         templateTitle: string;
         messageContent: string;
-        result?: Array<{
+        results?: Array<{
             phoneNumber: string;
             name: string;
             success: boolean;
@@ -139,13 +151,13 @@ export interface SendSmsResponse {
 }
 
 // MARK: - 발송 내역 조회
-export interface GetHistory {
+export interface GetHistoryResponse {
     success: boolean;
     data?: SmsHistory[];
 }
 
 // MARK: - 발송 내역 상세 조회
-export interface GetHistoryDetail {
+export interface GetHistoryDetailResponse {
     success: boolean;
     data?: {
         history: SmsHistory;
@@ -159,3 +171,4 @@ export interface GetHistoryDetail {
         }>;
     };
 }
+
