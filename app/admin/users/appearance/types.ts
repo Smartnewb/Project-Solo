@@ -53,6 +53,7 @@ export interface UserProfileWithAppearance {
   statusAt?: string | null; // 인스타그램 오류 상태 등을 나타내는 필드
   isUniversityVerified?: boolean; // 대학교 인증 여부
   lastPushNotificationAt?: string | null; // 마지막 푸시 알림 발송 시간
+  hasPreferences?: boolean; // 프로필 정보 입력 여부
 }
 
 // 페이지네이션 메타 정보

@@ -465,6 +465,7 @@ const UserAppearanceTable = forwardRef<
               <TableCell>지역</TableCell>
               <TableCell>대학교 인증</TableCell>
               <TableCell>외모 등급</TableCell>
+              <TableCell>프로필 정보</TableCell>
               <TableCell>인스타그램</TableCell>
               <TableCell>가입일</TableCell>
               <TableCell>마지막 접속</TableCell>
@@ -475,13 +476,13 @@ const UserAppearanceTable = forwardRef<
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={14} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={15} align="center" sx={{ py: 3 }}>
                   <CircularProgress />
                 </TableCell>
               </TableRow>
             ) : users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={14} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={15} align="center" sx={{ py: 3 }}>
                   <Typography variant="body1">조회된 사용자가 없습니다.</Typography>
                 </TableCell>
               </TableRow>
@@ -634,6 +635,17 @@ const UserAppearanceTable = forwardRef<
                         onClick={(e) => handleOpenGradeMenu(e, user)}
                       />
                     </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={user.hasPreferences ? "입력 완료" : "미입력"}
+                      size="small"
+                      sx={{
+                        bgcolor: user.hasPreferences ? '#e8f5e8' : '#ffebee',
+                        color: user.hasPreferences ? '#2e7d32' : '#c62828',
+                        fontWeight: 'medium'
+                      }}
+                    />
                   </TableCell>
                   <TableCell>
                     {user.instagramId ? (

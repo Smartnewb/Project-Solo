@@ -17,6 +17,7 @@ import {
   CircularProgress,
   Alert,
   Avatar,
+  Chip,
   Grid,
   InputAdornment
 } from '@mui/material';
@@ -44,6 +45,7 @@ interface VerifiedUser {
     isMain: boolean;
     order: number;
   }[];
+  hasPreferences?: boolean; // 프로필 정보 입력 여부
 }
 
 // API 응답 타입
@@ -241,6 +243,7 @@ const VerifiedUsersPanel: React.FC = () => {
               <TableCell>학과</TableCell>
               <TableCell>학년</TableCell>
               <TableCell>학번</TableCell>
+              <TableCell>프로필 정보</TableCell>
               <TableCell>인증일시</TableCell>
               <TableCell>가입일시</TableCell>
             </TableRow>
@@ -248,13 +251,13 @@ const VerifiedUsersPanel: React.FC = () => {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={11} align="center" sx={{ py: 4 }}>
                   <CircularProgress />
                 </TableCell>
               </TableRow>
             ) : users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={11} align="center" sx={{ py: 4 }}>
                   대학교 인증 사용자가 없습니다.
                 </TableCell>
               </TableRow>
@@ -285,6 +288,17 @@ const VerifiedUsersPanel: React.FC = () => {
                   <TableCell>{user.departmentName}</TableCell>
                   <TableCell>{user.grade}</TableCell>
                   <TableCell>{user.studentNumber}</TableCell>
+                  <TableCell>
+                    <Chip
+                      label={user.hasPreferences ? "입력 완료" : "미입력"}
+                      size="small"
+                      sx={{
+                        bgcolor: user.hasPreferences ? '#e8f5e8' : '#ffebee',
+                        color: user.hasPreferences ? '#2e7d32' : '#c62828',
+                        fontWeight: 'medium'
+                      }}
+                    />
+                  </TableCell>
                   <TableCell>{formatDate(user.verifiedAt)}</TableCell>
                   <TableCell>{formatDate(user.createdAt)}</TableCell>
                 </TableRow>
