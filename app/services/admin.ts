@@ -388,6 +388,8 @@ const userAppearance = {
     maxAge?: number;
     searchTerm?: string;
     region?: string;
+    isLongTermInactive?: boolean;
+    hasPreferences?: boolean;
   }) => {
     try {
       console.log('유저 목록 조회 요청 파라미터:', JSON.stringify(params, null, 2));
@@ -413,6 +415,8 @@ const userAppearance = {
       if (params.maxAge) queryParams.append('maxAge', params.maxAge.toString());
       if (params.searchTerm) queryParams.append('searchTerm', params.searchTerm);
       if (params.region) queryParams.append('region', params.region);
+      if (params.isLongTermInactive !== undefined) queryParams.append('isLongTermInactive', params.isLongTermInactive.toString());
+      if (params.hasPreferences !== undefined) queryParams.append('hasPreferences', params.hasPreferences.toString());
 
       const url = `/admin/users/appearance?${queryParams.toString()}`;
       console.log('최종 API 요청 URL:', url);

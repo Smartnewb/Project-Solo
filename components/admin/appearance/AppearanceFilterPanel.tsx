@@ -47,6 +47,20 @@ const REGION_OPTIONS: { value: string; label: string }[] = [
   { value: 'CAN', label: '천안' }
 ];
 
+// 장기 미접속자 옵션
+const LONG_TERM_INACTIVE_OPTIONS: { value: string; label: string }[] = [
+  { value: 'all', label: '모든 사용자' },
+  { value: 'true', label: '장기 미접속자만' },
+  { value: 'false', label: '정상 사용자만' }
+];
+
+// 프로필 정보 입력 여부 옵션
+const HAS_PREFERENCES_OPTIONS: { value: string; label: string }[] = [
+  { value: 'all', label: '모든 사용자' },
+  { value: 'true', label: '프로필 입력 완료' },
+  { value: 'false', label: '프로필 미입력' }
+];
+
 interface AppearanceFilterPanelProps {
   onFilter?: (filters: {
     gender?: Gender;
@@ -56,6 +70,8 @@ interface AppearanceFilterPanelProps {
     maxAge?: number;
     searchTerm?: string;
     region?: string;
+    isLongTermInactive?: boolean;
+    hasPreferences?: boolean;
   }) => void;
 }
 
@@ -67,6 +83,8 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
   const [maxAge, setMaxAge] = useState<number | ''>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
+  const [isLongTermInactive, setIsLongTermInactive] = useState<string>('all');
+  const [hasPreferences, setHasPreferences] = useState<string>('all');
   const [isAdvancedFilterOpen, setIsAdvancedFilterOpen] = useState(false);
 
   // 지역 클러스터 변환 함수
@@ -96,6 +114,8 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
       if (maxAge !== '') filters.maxAge = maxAge;
       if (searchTerm) filters.searchTerm = searchTerm;
       if (selectedRegion !== 'all') filters.region = getClusterRegion(selectedRegion);
+      if (isLongTermInactive !== 'all') filters.isLongTermInactive = isLongTermInactive === 'true';
+      if (hasPreferences !== 'all') filters.hasPreferences = hasPreferences === 'true';
 
       onFilter(filters);
     }
@@ -110,6 +130,8 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
     setMaxAge('');
     setSearchTerm('');
     setSelectedRegion('all');
+    setIsLongTermInactive('all');
+    setHasPreferences('all');
 
     if (onFilter) {
       onFilter({});
@@ -196,6 +218,38 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
               onChange={(e) => setSelectedRegion(e.target.value)}
             >
               {REGION_OPTIONS.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <TextField
+              select
+              fullWidth
+              label="접속 상태"
+              value={isLongTermInactive}
+              onChange={(e) => setIsLongTermInactive(e.target.value)}
+            >
+              {LONG_TERM_INACTIVE_OPTIONS.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <TextField
+              select
+              fullWidth
+              label="프로필 정보"
+              value={hasPreferences}
+              onChange={(e) => setHasPreferences(e.target.value)}
+            >
+              {HAS_PREFERENCES_OPTIONS.map((option) => (
                 <MenuItem key={option.value} value={option.value}>
                   {option.label}
                 </MenuItem>

@@ -95,6 +95,8 @@ interface UserAppearanceTableProps {
     maxAge?: number;
     searchTerm?: string;
     region?: string;
+    isLongTermInactive?: boolean;
+    hasPreferences?: boolean;
   };
 }
 
