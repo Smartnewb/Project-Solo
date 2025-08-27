@@ -54,6 +54,7 @@ export interface UserProfileWithAppearance {
   isUniversityVerified?: boolean; // 대학교 인증 여부
   lastPushNotificationAt?: string | null; // 마지막 푸시 알림 발송 시간
   hasPreferences?: boolean; // 프로필 정보 입력 여부
+  isLongTermInactive?: boolean; // 장기 미접속자 여부
 }
 
 // 페이지네이션 메타 정보

@@ -46,6 +46,7 @@ interface VerifiedUser {
     order: number;
   }[];
   hasPreferences?: boolean; // 프로필 정보 입력 여부
+  isLongTermInactive?: boolean; // 장기 미접속자 여부
 }
 
 // API 응답 타입
@@ -244,6 +245,7 @@ const VerifiedUsersPanel: React.FC = () => {
               <TableCell>학년</TableCell>
               <TableCell>학번</TableCell>
               <TableCell>프로필 정보</TableCell>
+              <TableCell>접속 상태</TableCell>
               <TableCell>인증일시</TableCell>
               <TableCell>가입일시</TableCell>
             </TableRow>
@@ -251,13 +253,13 @@ const VerifiedUsersPanel: React.FC = () => {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={11} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={12} align="center" sx={{ py: 4 }}>
                   <CircularProgress />
                 </TableCell>
               </TableRow>
             ) : users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={11} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={12} align="center" sx={{ py: 4 }}>
                   대학교 인증 사용자가 없습니다.
                 </TableCell>
               </TableRow>
@@ -295,6 +297,17 @@ const VerifiedUsersPanel: React.FC = () => {
                       sx={{
                         bgcolor: user.hasPreferences ? '#e8f5e8' : '#ffebee',
                         color: user.hasPreferences ? '#2e7d32' : '#c62828',
+                        fontWeight: 'medium'
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={user.isLongTermInactive ? "장기 미접속" : "정상"}
+                      size="small"
+                      sx={{
+                        bgcolor: user.isLongTermInactive ? '#ffebee' : '#e8f5e8',
+                        color: user.isLongTermInactive ? '#c62828' : '#2e7d32',
                         fontWeight: 'medium'
                       }}
                     />

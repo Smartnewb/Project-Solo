@@ -309,6 +309,20 @@ export default function UnclassifiedUsersPanel() {
                         }}
                       />
 
+                      {/* 장기 미접속자 표시 */}
+                      {user.isLongTermInactive && (
+                        <Chip
+                          label="장기 미접속"
+                          size="small"
+                          sx={{
+                            bgcolor: '#fff3cd',
+                            color: '#856404',
+                            fontWeight: 'medium',
+                            mb: 1
+                          }}
+                        />
+                      )}
+
                       <Typography variant="body2" color="textSecondary" gutterBottom>
                         지역: {getRegionLabel(user.region)}
                       </Typography>
