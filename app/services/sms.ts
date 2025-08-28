@@ -126,7 +126,7 @@ export const smsService = {
     async searchUser(params: {
         startDate?: string,
         endDate?: string,
-        gender?: 'male' | 'female',
+        gender?: 'male' | 'female' | 'all' | 'custom',
         searchTerm?: string,
         includeWithdrawn?: boolean,
         includeRejected?: boolean
