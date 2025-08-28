@@ -90,15 +90,15 @@ export function SmsHistoryTable({ histories, limit = 50}: SmsHistoryTableProps) 
     // === 렌더링(JSX) ===
     return (<>
         {/* MARK: - 전체 컨테이너 */}
-        <div className="">
+        <div className="bg-white border border-[#D1D5DB] rounded-lg w-full px-4 sm:px-6 py-3 sm:py-4/">
             {/* MARK: - 테이블 헤더 */}
-            <div className=''>
-                <h3>최근 발송 내역</h3>
+            <div className='pb-2'>
+                <h3 className='text-base sm:text-lg font-[400] text-[#111827] mb-0'>최근 발송 내역</h3>
                 <p>최근 {limit}건의 발송 내역입니다</p>
             </div>
 
             {/* MARK: - 테이블 콘텐츠 영역*/}
-            <div className='px-4 sm:px-6 pb-4'>
+            <div className='pb-4'>
                 {loading ? (
                     // 로딩 스피너
                     <div className='flex justify-center items-center py-12'>
@@ -127,7 +127,7 @@ export function SmsHistoryTable({ histories, limit = 50}: SmsHistoryTableProps) 
                                         {/* MARK: - 날짜 및 정보
                                         TODO:
                                         - 텍스트 스타일 및 반응형으로 변경*/}
-                                        <div className='flex font-[400] text-[#1F2937]'>
+                                        <div className='text-xs sm:text-sm text-[#6B7280] font-[400]'>
                                             <span>{formatDateTimeWithoutTimezoneConversion(history.createdAt)}</span>
                                             <span>•</span>
                                             <span>{history.successCount}명 발송 완료</span> {/*FOLLOW: 성공명수/실패명수 렌더링 할 것인지 확인 */}
