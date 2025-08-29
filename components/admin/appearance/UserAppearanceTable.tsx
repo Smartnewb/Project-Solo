@@ -468,7 +468,7 @@ const UserAppearanceTable = forwardRef<
               <TableCell>대학교 인증</TableCell>
               <TableCell>외모 등급</TableCell>
               <TableCell>프로필 정보</TableCell>
-              <TableCell>접속 상태</TableCell>
+              <TableCell>휴먼유저</TableCell>
               <TableCell>인스타그램</TableCell>
               <TableCell>가입일</TableCell>
               <TableCell>마지막 접속</TableCell>
@@ -656,7 +656,7 @@ const UserAppearanceTable = forwardRef<
                   </TableCell>
                   <TableCell>
                     <Chip
-                      label={user.isLongTermInactive ? "장기 미접속" : "정상"}
+                      label={user.isLongTermInactive ? "휴먼유저" : "활성유저"}
                       size="small"
                       sx={{
                         bgcolor: user.isLongTermInactive ? '#ffebee' : '#e8f5e8',
