@@ -202,7 +202,7 @@ export default function MatchingManagement() {
     setActiveTab(newValue);
 
     // 매칭 대기 사용자 탭으로 이동할 때 데이터 로드
-    if (newValue === 4 && unmatchedUsers.length === 0) {
+    if (newValue === 6 && unmatchedUsers.length === 0) {
       fetchUnmatchedUsers();
     }
   };
@@ -633,12 +633,12 @@ export default function MatchingManagement() {
       </Typography>
 
       <Tabs value={activeTab} onChange={handleTabChange} aria-label="매칭 관리 탭">
-        <Tab label="재매칭 티켓 관리" />
         <Tab label="구슬 관리" />
         <Tab label="매칭 내역 조회" />
-        <Tab label="매칭 실패 내역" />
-        <Tab label="매칭 상대 이력" />
         <Tab label="좋아요 이력" />
+        <Tab label="매칭 실패 내역" />
+        <Tab label="재매칭 티켓 관리" />
+        <Tab label="매칭 상대 이력" />
         <Tab label="매칭 대기 사용자" />
         <Tab label="단일 매칭" />
         <Tab label="매칭 시뮬레이션" />
@@ -647,22 +647,8 @@ export default function MatchingManagement() {
         <Tab label="임베드 데이터 갱신" />
       </Tabs>
 
-      {/* 재매칭 티켓 관리 */}
-      <TabPanel value={activeTab} index={0}>
-        <TicketManagement
-          searchTerm={searchTerm}
-          searchLoading={searchLoading}
-          error={error}
-          searchResults={searchResults}
-          selectedUser={selectedUser}
-          setSearchTerm={setSearchTerm}
-          searchUsers={searchUsers}
-          handleUserSelect={handleUserSelect}
-        />
-      </TabPanel>
-
       {/* 구슬 관리 */}
-      <TabPanel value={activeTab} index={1}>
+      <TabPanel value={activeTab} index={0}>
         <GemsManagement
           searchTerm={searchTerm}
           searchLoading={searchLoading}
@@ -676,7 +662,7 @@ export default function MatchingManagement() {
       </TabPanel>
 
       {/* 매칭 내역 조회 */}
-      <TabPanel value={activeTab} index={2}>
+      <TabPanel value={activeTab} index={1}>
         <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ko}>
           <Paper sx={{ p: 3, mb: 3 }}>
             <Typography variant="h6" gutterBottom>
@@ -955,6 +941,11 @@ export default function MatchingManagement() {
         </LocalizationProvider>
       </TabPanel>
 
+      {/* 좋아요 이력 */}
+      <TabPanel value={activeTab} index={2}>
+        <LikeHistory />
+      </TabPanel>
+
       {/* 매칭 실패 내역 */}
       <TabPanel value={activeTab} index={3}>
         <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ko}>
@@ -1067,9 +1058,9 @@ export default function MatchingManagement() {
         </LocalizationProvider>
       </TabPanel>
 
-      {/* 매칭 상대 이력 */}
+      {/* 재매칭 티켓 관리 */}
       <TabPanel value={activeTab} index={4}>
-        <MatcherHistory
+        <TicketManagement
           searchTerm={searchTerm}
           searchLoading={searchLoading}
           error={error}
@@ -1081,9 +1072,18 @@ export default function MatchingManagement() {
         />
       </TabPanel>
 
-      {/* 좋아요 이력 */}
+      {/* 매칭 상대 이력 */}
       <TabPanel value={activeTab} index={5}>
-        <LikeHistory />
+        <MatcherHistory
+          searchTerm={searchTerm}
+          searchLoading={searchLoading}
+          error={error}
+          searchResults={searchResults}
+          selectedUser={selectedUser}
+          setSearchTerm={setSearchTerm}
+          searchUsers={searchUsers}
+          handleUserSelect={handleUserSelect}
+        />
       </TabPanel>
 
       {/* 매칭 대기 사용자 */}
