@@ -467,8 +467,8 @@ const UserAppearanceTable = forwardRef<
               <TableCell>지역</TableCell>
               <TableCell>대학교 인증</TableCell>
               <TableCell>외모 등급</TableCell>
-              <TableCell>프로필 정보</TableCell>
               <TableCell>휴먼유저</TableCell>
+              <TableCell>프로필 정보</TableCell>
               <TableCell>인스타그램</TableCell>
               <TableCell>가입일</TableCell>
               <TableCell>마지막 접속</TableCell>
@@ -645,22 +645,22 @@ const UserAppearanceTable = forwardRef<
                   </TableCell>
                   <TableCell>
                     <Chip
-                      label={user.hasPreferences ? "입력 완료" : "미입력"}
+                      label={user.isLongTermInactive ? "휴먼유저" : "활성유저"}
                       size="small"
                       sx={{
-                        bgcolor: user.hasPreferences ? '#e8f5e8' : '#ffebee',
-                        color: user.hasPreferences ? '#2e7d32' : '#c62828',
+                        bgcolor: user.isLongTermInactive ? '#ffebee' : '#e8f5e8',
+                        color: user.isLongTermInactive ? '#c62828' : '#2e7d32',
                         fontWeight: 'medium'
                       }}
                     />
                   </TableCell>
                   <TableCell>
                     <Chip
-                      label={user.isLongTermInactive ? "휴먼유저" : "활성유저"}
+                      label={user.hasPreferences ? "입력 완료" : "미입력"}
                       size="small"
                       sx={{
-                        bgcolor: user.isLongTermInactive ? '#ffebee' : '#e8f5e8',
-                        color: user.isLongTermInactive ? '#c62828' : '#2e7d32',
+                        bgcolor: user.hasPreferences ? '#e8f5e8' : '#ffebee',
+                        color: user.hasPreferences ? '#2e7d32' : '#c62828',
                         fontWeight: 'medium'
                       }}
                     />

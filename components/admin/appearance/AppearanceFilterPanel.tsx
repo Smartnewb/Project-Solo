@@ -197,6 +197,38 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
             <TextField
               select
               fullWidth
+              label="휴먼유저"
+              value={isLongTermInactive}
+              onChange={(e) => setIsLongTermInactive(e.target.value)}
+            >
+              {LONG_TERM_INACTIVE_OPTIONS.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <TextField
+              select
+              fullWidth
+              label="프로필 정보"
+              value={hasPreferences}
+              onChange={(e) => setHasPreferences(e.target.value)}
+            >
+              {HAS_PREFERENCES_OPTIONS.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <TextField
+              select
+              fullWidth
               label="성별"
               value={gender}
               onChange={(e) => setGender(e.target.value as Gender | 'all')}
@@ -218,38 +250,6 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
               onChange={(e) => setSelectedRegion(e.target.value)}
             >
               {REGION_OPTIONS.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Grid>
-
-          <Grid item xs={12} md={4}>
-            <TextField
-              select
-              fullWidth
-              label="접속 상태"
-              value={isLongTermInactive}
-              onChange={(e) => setIsLongTermInactive(e.target.value)}
-            >
-              {LONG_TERM_INACTIVE_OPTIONS.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Grid>
-
-          <Grid item xs={12} md={4}>
-            <TextField
-              select
-              fullWidth
-              label="프로필 정보"
-              value={hasPreferences}
-              onChange={(e) => setHasPreferences(e.target.value)}
-            >
-              {HAS_PREFERENCES_OPTIONS.map((option) => (
                 <MenuItem key={option.value} value={option.value}>
                   {option.label}
                 </MenuItem>
