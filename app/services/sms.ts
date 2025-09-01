@@ -12,12 +12,12 @@ import {
 
 // MARK: - 엔드포인트 정의
 const SMS_ENDPOINTS = {
-    TEMPLATE: '/api/admin/sms/templates',
-    TEMPLATE_BY_ID: (id: string) =>  `/api/admin/sms/templates/${id}`,
-    HISTORY: '/api/admin/sms/histories',
-    HISTORY_BY_ID: (id: string) =>  `/api/admin/sms/histories/${id}`,
-    SEND_MESSAGE: '/api/admin/sms/send-bulk',
-    USER_SEARCH: '/api/admin/sms/users/search'
+    TEMPLATE: '/admin/sms/templates',
+    TEMPLATE_BY_ID: (id: string) =>  `/admin/sms/templates/${id}`,
+    HISTORY: '/admin/sms/histories',
+    HISTORY_BY_ID: (id: string) =>  `/admin/sms/histories/${id}`,
+    SEND_MESSAGE: '/admin/sms/send-bulk',
+    USER_SEARCH: '/admin/sms/users/search'
 } as const;
 
 // MARK: - 로컬스토리지 헬퍼 함수
@@ -124,17 +124,22 @@ export const smsService = {
     // === 사용자 ===
     // 사용자 검색
     async searchUser(params: {
-        startDate?: string,
-        endDate?: string,
-        gender?: 'male' | 'female' | 'all' | 'custom',
-        searchTerm?: string,
-        includeWithdrawn?: boolean,
-        includeRejected?: boolean
-
+        startDate?: string;
+        endDate?: string;
+        gender?: 'male' | 'female';
+        searchTerm?: string;
     }): Promise<User[]> {
         try {
             const response = await axiosServer.get(SMS_ENDPOINTS.USER_SEARCH, { params: params });
-            return response.data;
+            
+            // API 응답 구조 확인용 로그
+            console.log('API 응답:', response.data);
+
+            if (response.data && response.data.users) {
+                return response.data.users;  
+            }
+            
+            return [];
         } catch (error) {
             throw new SmsApiError('사용자 검색 실패', error);
         }
