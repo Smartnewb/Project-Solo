@@ -4,6 +4,8 @@
 import { useState, useEffect } from 'react';
 import { SmsHistory } from '../types';
 import { formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters'; // 날짜&시간 포맷터(yyyy-mm-dd hh:mm) 
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { smsService } from '@/app/services/sms';
 
 // MARK: - 메세지 발송 내역 props
 interface SmsHistoryTableProps {
@@ -12,54 +14,42 @@ interface SmsHistoryTableProps {
 }
 
 // MARK: - 메세지 발송 내역 컴포넌트
-export function SmsHistoryTable({ histories, limit = 50}: SmsHistoryTableProps) {
+export function SmsHistoryTable({ histories, limit = 50 }: SmsHistoryTableProps) {
     // === 상태관리 ===
-    const  [data, setData] = useState<SmsHistory[]>([]);
+    const [data, setData] = useState<SmsHistory[]>([]);
     const [loading, setLoading] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
-    // === Hook ===
+    const totalPages = Math.ceil(data.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentData = data.slice(startIndex, endIndex);
+
+
+
+
     useEffect(() => {
+        const fetchHistories = async () => {
+            setLoading(true);
+            try {
+                const response = await smsService.getHistory({
+                    limit: limit,
+                });
+                setData(response || []); 
+            } catch (error) {
+                console.error('발송 내역 조회 실패:', error);
+                setData([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
         // 상위 limit(default: 50개)
         if (histories) {
-            setData(histories.slice(0,limit));
+            setData(histories.slice(0, limit));
         } else {
-            // NOTE: - 임시 목업 데이터 / 추후 삭제
-            const mockData: SmsHistory[] = [
-                {
-                    id: '1',
-                    templateId: 'temp-001',
-                    templateTitle: '신규 회원 환영 메세지',    
-                    messageContent: '안녕하세요 {name}님, 서비스 가입을 환영합니다...',
-                    recipientCount: 10,
-                    successCount: 8,
-                    failureCount: 2,
-                    status: 'success',
-                    createdAt: '2025-01-15T13:45:00Z',
-                },
-                {
-                    id: '2',
-                    templateId: 'temp-002',
-                    templateTitle: '신규 회원 환영 메세지',    
-                    messageContent: '안녕하세요 {name}님, 서비스 가입을 환영합니다...',
-                    recipientCount: 10,
-                    successCount: 8,
-                    failureCount: 2,
-                    status: 'Failed',
-                    createdAt: '2025-01-15T13:45:00Z',
-                },
-                {
-                    id: '3',
-                    templateId: 'temp-003',
-                    templateTitle: '신규 회원 환영 메세지',    
-                    messageContent: '안녕하세요 {name}님, 서비스 가입을 환영합니다...',
-                    recipientCount: 10,
-                    successCount: 8,
-                    failureCount: 2,
-                    status: 'success',
-                    createdAt: '2025-01-15T13:45:00Z',
-                }    
-            ];
-            setData(mockData);
+            fetchHistories();
         }
     }, [histories, limit]);
 
@@ -76,21 +66,41 @@ export function SmsHistoryTable({ histories, limit = 50}: SmsHistoryTableProps) 
     // === 상태별 스타일 변환 ===
     const getStatusStyle = (status: string) => {
         switch (status) {
-            case 'success':
-                return 'text-white bg-[#8355E8]';
+            case 'COMPLETED':  // 🔴 COMPLETE → COMPLETED로 수정!
+            case 'SUCCESS':
+                return 'text-white bg-[#885AEB]';
+            case 'FAILED':
+                return 'text-white bg-red-500';
             default:
-                return 'text-[#1F2937] bg-[#F3F4F6]';
+                return 'text-[#1F2937] bg-[#F3F4F6] border border-[#D1D5DB] border-[0.5px]';
         }
     };
 
-
-
+    // 상태 표시 텍스트를 위한 함수 추가 (getStatusStyle 함수 아래)
+    const getStatusText = (status: string) => {
+        const upperStatus = status?.toUpperCase();
+        switch (upperStatus) {
+            case 'SUCCESS':
+            case 'COMPLETE':
+            case 'COMPLETED':
+            case 'SENT':
+                return '완료';
+            case 'FAILED':
+            case 'ERROR':
+                return '실패';
+            case 'PENDING':
+            case 'PROCESSING':
+                return '처리중';
+            default:
+                return status; // 원본 그대로 표시
+        }
+    };
 
 
     // === 렌더링(JSX) ===
     return (<>
         {/* MARK: - 전체 컨테이너 */}
-        <div className="bg-white border border-[#D1D5DB] rounded-lg w-full px-4 sm:px-6 py-3 sm:py-4/">
+        <div className="bg-white border border-[#D1D5DB] rounded-lg w-full px-4 sm:px-6 py-3 sm:py-4 border-box">
             {/* MARK: - 테이블 헤더 */}
             <div className='pb-2'>
                 <h3 className='text-base sm:text-lg font-[400] text-[#111827] mb-0'>최근 발송 내역</h3>
@@ -112,7 +122,7 @@ export function SmsHistoryTable({ histories, limit = 50}: SmsHistoryTableProps) 
                 ) : (
                     // 발송 내역 카드 리스트
                     <div className='space-y-3'>
-                        {data.map((history) => (
+                        {currentData.map((history) => (
                             // MARK: - 카드 컨테이너
                             <div
                                 key={history.id}
@@ -142,8 +152,9 @@ export function SmsHistoryTable({ histories, limit = 50}: SmsHistoryTableProps) 
                                             rounded-full
                                             text-xs font-medium
                                             ${getStatusStyle(history.status)}`}>
-                                                {history.status === 'success' ? '완료' : '실패'}
-                                            </span>
+                                            {/* 🔴 수정: COMPLETE도 완료로 표시 */}
+                                            {(history.status === 'success' || history.status === 'COMPLETED') ? '완료' : '실패'}
+                                        </span>
                                     </div>
 
                                 </div>
@@ -152,9 +163,18 @@ export function SmsHistoryTable({ histories, limit = 50}: SmsHistoryTableProps) 
 
                     </div>
                 )}
-            
+
             </div>
 
+            {/* MARK: - 페이지네이션 
+            NOTE:
+            - BE에서 페이지네이션을 해서 통신함
+            - 당분간 미사용
+            - notion에 코드 보관*/}
+
+
+
         </div>
+
     </>);
 }
