@@ -66,7 +66,7 @@ export function SmsHistoryTable({ histories, limit = 50 }: SmsHistoryTableProps)
     // === 상태별 스타일 변환 ===
     const getStatusStyle = (status: string) => {
         switch (status) {
-            case 'COMPLETED':  // 🔴 COMPLETE → COMPLETED로 수정!
+            case 'COMPLETED':  // 🔴 COMPLETE → COMPLETED로 수정(매우 주의)
             case 'SUCCESS':
                 return 'text-white bg-[#885AEB]';
             case 'FAILED':
@@ -152,7 +152,7 @@ export function SmsHistoryTable({ histories, limit = 50 }: SmsHistoryTableProps)
                                             rounded-full
                                             text-xs font-medium
                                             ${getStatusStyle(history.status)}`}>
-                                            {/* 🔴 수정: COMPLETE도 완료로 표시 */}
+                                            {/* 🔴 매우 주의: COMPLETE도 완료로 표시 */}
                                             {(history.status === 'success' || history.status === 'COMPLETED') ? '완료' : '실패'}
                                         </span>
                                     </div>
