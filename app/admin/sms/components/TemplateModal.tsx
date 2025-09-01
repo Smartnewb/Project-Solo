@@ -101,7 +101,7 @@ export function TemplateModal({
                     }}
                 > 
 
-                    {/* MARK: - 모달 전체 }
+                    {/* MARK: - 모달 전체 */}
                     <div className="bg-white rounded-lg shadow-xl w-full max-w-sm sm:max-w-md md:max-w-lg"
                         onClick = {(e) => {e.stopPropagation()}}>
                             {/* 모달 헤더 */}
