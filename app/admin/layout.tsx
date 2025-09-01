@@ -135,6 +135,13 @@ export default function AdminLayout({
                 매칭 관리
               </Link>
             </li>
+
+            
+            <li>
+              <Link href="/admin/sms" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
+                SMS 관리
+              </Link>
+            </li>
             
             <li>
               <button
