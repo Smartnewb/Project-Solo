@@ -17,7 +17,7 @@ export interface User {
     userId: string;
     name: string;
     phoneNumber: string;
-    gender: 'male' | 'female' ; 
+    gender: 'MALE' | 'FEMALE' | 'ALL' | 'CUSTOM' ; 
     lastLoginAt?: string;
     isWithdrawn?: boolean;
     withdrawnAt?: string;
@@ -45,7 +45,7 @@ export interface SmsHistory {
     recipientCount: number;
     successCount: number;
     failureCount: number;
-    status: string;
+    status: 'COMPLETE' | 'FAILED' | 'PENDING'; 
     createdAt: string;
 }
 
@@ -106,22 +106,24 @@ export interface RemoveTemplateResponse {
 export interface GetUser {
     success: boolean;
     data?: {
-        userId: string;
-        name: string;
-        phoneNumber: string;
-        gender: 'male' | 'female';
-        lastLoginAt: string;
-        isWithdrawn: boolean;
-        withdrawnAt: string;
+        users?: Array<{
+            userId: string;
+            name: string;
+            phoneNumber: string;
+            gender: 'MALE' | 'FEMALE' | 'ALL' | 'CUSTOM';
+            lastLoginAt: string;
+            isWithdrawn: boolean;
+            withdrawnAt: string;}>
+        meta: { totalCount: number; };
     }; 
 }
 
 
 // MARK: - 단체 발송
 export interface SendSmsRequest {
-    messageContent: string;
-    templateId: string;
-    templateTitle: string;
+    messageContent?: string;
+    templateId?: string;
+    templateTitle?: string;
     recipients: Array<{
         userId: string;
         name: string;
@@ -132,22 +134,22 @@ export interface SendSmsRequest {
 
 export interface SendSmsResponse {
     success: boolean;
-    data?: {
-        totalCount: number;
-        successCount: number;
-        failureCount: number;
-        historyId: string;
-        groupId: string;
-        templateTitle: string;
-        messageContent: string;
-        results?: Array<{
-            phoneNumber: string;
-            name: string;
-            success: boolean;
-            message: '전송 성공' | '전송 실패';
-            error?: string;
-        }>;
-    };
+    message: string; // 콘솔용 메세지
+    totalCount: number;
+    successCount: number;
+    failureCount: number;
+    historyId: string;
+    groupId: string;
+    templateTitle: string;
+    messageContent: string;
+    results?: Array<{
+        phoneNumber: string;
+        name: string;
+        success: boolean;
+        message: '전송 성공' | '전송 실패';
+        error?: string;
+    }>;
+    
 }
 
 // MARK: - 발송 내역 조회
