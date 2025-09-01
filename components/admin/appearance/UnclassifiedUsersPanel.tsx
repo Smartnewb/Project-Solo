@@ -72,6 +72,8 @@ const getRegionLabel = (region?: string) => {
     'GJJ': '공주',
     'GHE': '김해',
     'ICN': '인천',
+    'SEL': '서울',
+    'KYG': '경기',
     'CAN': '천안'
   };
   return region ? regionMap[region] || region : '-';

@@ -92,13 +92,16 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
     // 대전/공주 클러스터 → DJN으로 전송 (백엔드에서 DJN+GJJ 처리)
     if (region === 'DJN') return 'DJN';
 
-    // 충북/세종 클러스터 → SJG로 전송 (백엔드에서 SJG+CJU 처리)
+    // 청주/세종/천안 클러스터 → SJG로 전송 (백엔드에서 SJG+CJU+CAN 처리)
     if (region === 'SJG') return 'SJG';
 
     // 부산/김해 클러스터 → BSN으로 전송 (백엔드에서 BSN+GHE 처리)
     if (region === 'BSN') return 'BSN';
 
-    // 대구, 인천, 천안은 단독
+    // 인천/서울/경기 클러스터 → ICN으로 전송 (백엔드에서 ICN+SEL+KYG 처리)
+    if (region === 'ICN') return 'ICN';
+
+    // 대구는 단독
     return region;
   };
 
