@@ -74,7 +74,7 @@ export function TemplateModal({
         // 저장
         onSave(newTemplate);
 
-        // NOTE: 모달 닫고 초기화 (무슨 말이지?)
+        
         handleClose();
 
     };
