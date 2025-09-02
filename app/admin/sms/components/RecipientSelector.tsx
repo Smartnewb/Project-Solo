@@ -1,10 +1,10 @@
 // TITLE : - 사용자 검색
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { ko } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Users } from 'lucide-react';
-import { User } from '../types';
+import { User, UserSearchResponse } from '../types';
 import { smsService } from '@/app/services/sms';
 import { format } from 'date-fns';
 import { Search } from 'lucide-react';
@@ -14,6 +14,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/shared/ui/popover';
+
 
 
 // MARK: - props
@@ -59,15 +60,18 @@ interface RecipientSelectorProps {
 export function RecipientSelector({ onRecipientsChange }: RecipientSelectorProps) {
     // === 상태관리 ===
     const [recentActivity, setRecentActivity] = useState<string>('all');
-    const [dateRange, setDateRange] = useState<{
-        from: Date | undefined;
-        to: Date | undefined
-    }>({
-        from: undefined,
-        to: undefined,
-    });
+    // NOTE: 미사용 - 캘린더 범위 지정
+    // const [dateRange, setDateRange] = useState<{
+    //     from: Date | undefined;
+    //     to: Date | undefined
+    // }>({
+    //     from: undefined,
+    //     to: undefined,
+    // });
+    const [criteriaDate, setCriteriaDate] = useState<Date | undefined>(undefined); // 기준 날짜
     const [checkedUser, setCheckedUser] = useState<Set<string>>(new Set()); // 선택된 사용자 ID 추적
     const [checkedSelectedUser, setCheckedSelectedUser] = useState<Set<string>>(new Set());
+
 
     // NOTE: 사용자 정의 확인 필요
     const [gender, setGender] = useState<'ALL' | 'FEMALE' | 'MALE' | 'CUSTOM'>('ALL');
@@ -75,47 +79,141 @@ export function RecipientSelector({ onRecipientsChange }: RecipientSelectorProps
     const [searchResults, setSearchResults] = useState<User[]>([]);
     const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(false);
+    const [totalCount, setTotalCount] = useState<number>(0);
+    const [includeWithdrawn, setIncludeWithdrawn] = useState<boolean>(false); // 사용자 상태
+    const [includedRejected, setIncludedRejected] = useState<boolean>(false); // 승인 거부
 
-    // 팝오버 상태 추가
-    const [startDateOpen, setStartDateOpen] = useState(false);
-    const [endDateOpen, setEndDateOpen] = useState(false);
+    const [criteriaDateOpen, setCriteriaDateOpen] = useState(false);
+    // NOTE: 미사용 - 범위 팝오버 상태 추가
+    // const [startDateOpen, setStartDateOpen] = useState(false);
+    // const [endDateOpen, setEndDateOpen] = useState(false);
 
     // === 사용자 검색 ===
+    // const handleSearch = async () => {
+    //     setLoading(true);
+
+    //     try {
+    //         const [activeUsers, rejectedUsers, withdrawnUsers] = await Promise.all([
+    //             // 활성 사용자 검색
+    //             smsService.searchUser({
+    //                 startDate: dateRange.from 
+    //                     ? format(dateRange.from, 'yyyy-MM-dd')
+    //                     : undefined,
+    //                 endDate: dateRange.to
+    //                     ? format(dateRange.to, 'yyyy-MM-dd')
+    //                     : undefined,
+    //                 gender: gender !== 'ALL' && gender ! == 'CUSTOM'
+    //                     ? gender as 'MALE' | 'FEMALE'
+    //                     : undefined,
+    //                 searchTerm: searchTerm,
+    //                 includeWithdrawn: false, // 사용자 상태(false: 활성)
+    //                 includeRejected: false, // 승인 거부 사용자 필터(false: 승인 거부 사용자 제외, true: 포함)
+    //             }),
+
+    //             // 승인 거부 사용자 검색
+    //             smsService.searchUser({
+    //                 startDate: dateRange.from 
+    //                     ? format(dateRange.from, 'yyyy-MM-dd')
+    //                     : undefined,
+    //                 endDate: dateRange.to
+    //                     ? format(dateRange.to, 'yyyy-MM-dd')
+    //                     : undefined,
+    //                 gender: gender !== 'ALL' && gender ! == 'CUSTOM'
+    //                     ? gender as 'MALE' | 'FEMALE'
+    //                     : undefined,
+    //                 searchTerm: searchTerm,
+    //                 includeWithdrawn: false, // 사용자 상태(false: 활성)
+    //                 includeRejected: true, // 승인 거부 사용자 필터(false: 승인 거부 사용자 제외, true: 포함)
+    //             }),
+
+    //             // 탈퇴 사용자
+    //             smsService.searchUser({
+    //                 startDate: dateRange.from 
+    //                     ? format(dateRange.from, 'yyyy-MM-dd')
+    //                     : undefined,
+    //                 endDate: dateRange.to
+    //                     ? format(dateRange.to, 'yyyy-MM-dd')
+    //                     : undefined,
+    //                 gender: gender !== 'ALL' && gender ! == 'CUSTOM'
+    //                     ? gender as 'MALE' | 'FEMALE'
+    //                     : undefined,
+    //                 searchTerm: searchTerm,
+    //                 includeWithdrawn: true, // 사용자 상태(false: 활성)
+    //                 includeRejected: false, // 승인 거부 사용자 필터(false: 승인 거부 사용자 제외, true: 포함)
+    //             }),
+    //         ]);
+
+
+
+    //         const allUsers = [...activeUsers, ...rejectedUsers, ...withdrawnUsers];
+
+
+    //         // 중복 제거
+    //         const uniqueUsers = allUsers.filter((user, index, self) =>
+    //             index === self.findIndex(u => u.userId === user.userId)
+    //         );
+
+    //         // 체크박스 필터링
+    //         let filteredUsers = uniqueUsers;
+    //         if (!includeWithdrawn && !includedRejected) {
+    //             filteredUsers = activeUsers; // 활성 사용자
+    //         } else if (includeWithdrawn && !includedRejected) {
+    //             filteredUsers = [...activeUsers, ...withdrawnUsers] // 탈퇴 사용자 포함
+    //         } else if (!includeWithdrawn && includedRejected) {
+    //             filteredUsers = [...activeUsers, ...rejectedUsers]; // 승인 거부 사용자 포함
+    //         } else {
+    //             // NOTE: - 모든 사용자
+    //         }
+
+    //         const results = filteredUsers.filter(
+    //             user => !selectedUsers.find(selected => selected.userId === user.userId));
+    //         setSearchResults(results);
+    //         console.log('검색 결과 :',results.length);
+
+
+    //     } catch(error) {
+    //         console.error('사용자 검색 실패 : ',error);
+    //     } finally {
+    //         setLoading(false);
+    //     }
+
+    // };
     const handleSearch = async () => {
         setLoading(true);
 
         try {
-            // MARK: - API 호출(사용자 검색)
-            const results = await smsService.searchUser({
-                startDate: dateRange.from
-                    ? format(dateRange.from, 'yyyy-MM-dd')
-                    : undefined,
-
-                endDate: dateRange.to
-                    ? format(dateRange.to, 'yyyy-MM-dd')
-                    : undefined,
-
+            // API 호출 - 응답 타입이 UserSearchResponse
+            const response: UserSearchResponse = await smsService.searchUser({
+                startDate: criteriaDate ? format(criteriaDate, 'yyyy-MM-dd') : undefined, // NOTE: 캘린더 사용시 criteriaDate를 dateRange.from 으로 변경
+                // endDate: dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined, // NOTE: 미사용 - 날짜 범위 지정용
                 gender: gender !== 'ALL' && gender !== 'CUSTOM'
                     ? gender as 'MALE' | 'FEMALE'
                     : undefined,
                 searchTerm: searchTerm,
+                includeWithdrawn: includeWithdrawn,
+                includeRejected: includedRejected,
+                
             });
 
-            // 선택된 사용자 필터링
-            const filteredResults = results.filter(
-                user => !selectedUsers.find(selected => selected.userId === user.userId)
-            )
+            console.log('=== API 응답 ===');
+            console.log('전체 응답:', response);
+            console.log('사용자 배열:', response.users);
+            console.log('사용자 수:', response.users.length);
+            console.log('전체 카운트:', response.meta.totalCount);
 
-            // 필터링 결과 저장
+            // users 배열에서 필터링
+            const filteredResults = response.users.filter(
+                user => !selectedUsers.find(selected => selected.userId === user.userId)
+            );
+
             setSearchResults(filteredResults);
+            setTotalCount(response.meta.totalCount);  // totalCount 상태 업데이트
 
         } catch (error) {
             console.error('사용자 검색 실패:', error);
-
         } finally {
             setLoading(false);
         }
-
     };
 
     // === 개별 사용자 추가 ===
@@ -193,21 +291,40 @@ export function RecipientSelector({ onRecipientsChange }: RecipientSelectorProps
         })
     };
 
-    // === 필터링 ===
+    // === 성별 필터링 ===
     useEffect(() => {
         handleSearch();
     }, [gender]);
 
+    // NOTE: 미사용 - 날짜 범위 지정 시
+    // useEffect(() => {
+    //     if (dateRange.from || dateRange.to) {
+    //         handleSearch();
+    //     }
+    // }, [dateRange.from, dateRange.to]);
+
     useEffect(() => {
-        if (dateRange.from || dateRange.to) {
+        if (criteriaDate) {
             handleSearch();
         }
-    }, [dateRange.from, dateRange.to]);
+    }, [criteriaDate]);
 
 
     useEffect(() => {
         handleSearch();
     }, []);
+
+    // === 활동일 기준 필터링 === 
+    useEffect(() => {
+        if (recentActivity !== 'all') {
+            handleSearch();
+        }
+    }, [recentActivity]);
+
+    // === 사용자 상태, 승인 거부 핸들러 ===
+    useEffect(() => {
+        handleSearch();
+    }, [includeWithdrawn, includedRejected]);
 
     // === 사용자 제거 ===
     const handleRemoveUser = (userId: string) => {
@@ -239,42 +356,24 @@ export function RecipientSelector({ onRecipientsChange }: RecipientSelectorProps
                     발송 대상 선택
                 </h3>
 
-
-                {/* MARK: - 최근 활동 드롭다운 */}
+                {/* 활동 기준일 */}
+                {/* 비활성 사용자 기준일 - 캘린더 스타일 */}
                 <div className='mb-6'>
-                    {/* TODO: 스타일 클래스 설정 */}
-                    <label className='block text-sm font-medium text-[#111827] mb-2'>최근 활동</label>
-                    <select
-                        value={recentActivity}
-                        onChange={(e) => setRecentActivity(e.target.value)}
-                        className='w-full px-3 py-2 border-[1px] border-[#D1D5DB] rounded-md focus:outline-none focus:ring-1 focus:ring-[#885BEB]'>
-                        <option>전체</option>
-                        <option>3일전</option>
-                        <option>7일전</option>
-                        <option>21일전</option>
-                        <option>30일전</option>
-                        <option>60일전</option>
-                    </select>
-                </div>
-
-
-                {/* MARK: - 날짜 범위 */}
-                <div className='mb-6'>
-                    <label className='block text-sm font-medium text-[#111827] mb-2'>날짜범위(가입일 기준)</label>
+                    <label className='block text-sm font-medium text-[#111827] mb-2'> 비활성 사용자 기준일 (해당 날짜 이전에 마지막 활동한 사용자 조회)</label>
                     <div className='flex gap-2 items-center'>
-                        {/* 시작일 */}
                         <Popover
-                            open={startDateOpen}
-                            onOpenChange={setStartDateOpen}>
+                            open={criteriaDateOpen}
+                            onOpenChange={setCriteriaDateOpen}>
                             <PopoverTrigger asChild>
-                                <button className={`flex-1 flex px-3 py-2 text-left border  rounded-md text-sm  items-center justify-between ${startDateOpen
+                                <button className={`flex-1 flex px-3 py-2 text-left border rounded-md text-sm items-center justify-between
+                                    ${criteriaDateOpen
                                     ? 'border-[#7D4EE4]'
-                                    : 'border-[#D1D5DB]'}`}
-                                >
-                                    <span className={dateRange.from ? '' : 'text-gray-400'}>
-                                        {dateRange.from ? (
-                                            format(dateRange.from, 'yyyy-MM-dd')
-                                        ) : ('시작일')}
+                                    : 'border-[#D1D5DB]'}`}>
+                                    <span className={
+                                        criteriaDate 
+                                        ? ''
+                                        : 'text-gray-400'}>
+                                        {criteriaDate ? format(criteriaDate, 'yyyy-MM-dd') : '기준일 선택'}
                                     </span>
                                 </button>
                             </PopoverTrigger>
@@ -282,100 +381,31 @@ export function RecipientSelector({ onRecipientsChange }: RecipientSelectorProps
                             <PopoverContent className='w-auto p-0' align='start'>
                                 <Calendar
                                     mode='single'
-                                    selected={dateRange.from}
-                                    onSelect={(date) =>
-                                        setDateRange(prev => ({ ...prev, from: date }))
-                                    }
+                                    selected={criteriaDate}
+                                    onSelect={(date) => setCriteriaDate(date)}
                                     locale={ko}
                                     modifiersStyles={{
                                         today: {
                                             backgroundColor: 'transparent',
-
                                         }
                                     }}
                                     initialFocus />
-                                {/* 버튼 영역 */}
-                                <div className='p-3 border-t flex justify-end gap-2 '>
-                                    <button
-                                        onClick={() => {
-                                            setDateRange(prev => ({ ...prev, from: undefined }));
-                                            setStartDateOpen(false);
-                                        }}
-                                        className='px-3 py-1.5 text-sm text-gray-600 font-medium hover:bg-gray-100 rounded-md border
-                                        border-gray-200' >취소</button>
-                                    <button
-                                        onClick={() => {
-
-                                            setStartDateOpen(false);
-                                        }}
-                                        className='px-3 py-1.5 text-sm text-white font-medium hover:bg-purple-700 rounded-md bg-[#7D4EE4]'>확인</button>
-
-                                </div>
-                            </PopoverContent>
-
-
-
-                        </Popover>
-
-                        {/* 종료일 */}
-                        <Popover
-                            open={endDateOpen}
-                            onOpenChange={setEndDateOpen}>
-                            <PopoverTrigger asChild>
-                                <button className={`flex-1 flex px-3 py-2 text-left border  rounded-md text-sm items-center justify-between ${endDateOpen
-                                    ? 'border-[#7D4EE4]'
-                                    : 'border-[#D1D5DB]'
-
-                                    }`}>
-                                    <span className={dateRange.to ? '' : 'text-gray-400'}>
-                                        {dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : '종료일'}
-                                    </span>
-                                </button>
-                            </PopoverTrigger>
-
-                            <PopoverContent className='w-auto p-0' align='start'>
-                                <Calendar
-                                    mode='range'
-                                    selected={{
-                                        from: dateRange.from,
-                                        to: dateRange.to
-                                    }}
-                                    onSelect={(range) => {
-                                        if (range?.to) {
-                                            // 종료일만 업데이트
-                                            setDateRange(prev => ({
-                                                ...prev,
-                                                to: range.to
-                                            }));
-                                        }
-                                    }}
-                                    modifiersStyles={{
-                                        today: {
-                                            backgroundColor: 'transparent',
-                                        }
-                                    }}
-                                    locale={ko}
-                                    disabled={(date) =>
-                                        dateRange.from ? date < dateRange.from : false
-                                    }
-                                    initialFocus />
-
-                                <div className='border-t flex justify-end gap-2 p-3'>
-                                    <button
-                                        onClick={() => {
-                                            setDateRange(prev => ({ ...prev, from: undefined }));
-                                            setEndDateOpen(false);
-                                        }}
-                                        className='px-3 py-1.5 text-sm text-gray-600 font-medium hover:bg-gray-100 rounded-md border
-                                            border-gray-200' >취소</button>
-                                    <button
-                                        onClick={() => setEndDateOpen(false)}
-                                        className='px-3 py-1.5 text-sm text-white font-medium hover:bg-purple-700 rounded-md bg-[#7D4EE4]'>확인</button>
-                                </div>
+                                    {/* 버튼 영역 */}
+                                    <div className='p-3 border-t flex justify-end gap-2'>
+                                        <button
+                                            onClick={() => {
+                                                setCriteriaDate(undefined);
+                                                setCriteriaDateOpen(false);
+                                            }}
+                                            className='px-3 py-1.5 text-sm text-gray-600 font-medium hover:bg-gray-100 rounded-md border border-gray-200'>취소</button>
+                                        <button
+                                            onClick={() => setCriteriaDateOpen(false)}
+                                            className='px-3 py-1.5 text-sm text-white font-medium hover:bg-purple-700 rounded-md bg-[#7D4EE4]'>확인</button>
+                                    </div>
                             </PopoverContent>
                         </Popover>
-
                     </div>
+                    <p className='text-xs text-gray-500 mt-1'>선택한 날짜 이전에 마지막 활동한 사용자 + 한 번도 활동하지 않은 사용자가 조회됩니다</p>
                 </div>
 
                 {/* MARK: - 성별 */}
@@ -402,29 +432,63 @@ export function RecipientSelector({ onRecipientsChange }: RecipientSelectorProps
                 {/* MARK: - 사용자 검색 */}
                 <div className='mb-4'>
                     <label className='block text-sm font-medium text-[#111827] mb-2'>사용자 검색</label>
-                    {/* 검색 입력 창 */}
-                    <div className='relative mb-3'>
-                        <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400' />
-                        <input
-                            type='text'
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            onKeyPress={handleKeyPress}
-                            placeholder='이름 또는 전화번호로 검색'
-                            className='w-full pl-10 pr-3 py-2 border-[1px] border-[#D1D5DB] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#885BEB]' />
+                    {/* 검색 필드*/}
+                    <div className='flex items-center gap-2 mb-3'>
+                        <div className='relative flex-1'>
+                            <Search className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400' />
+                            <input
+                                type='text'
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onKeyPress={handleKeyPress}
+                                placeholder='이름 또는 전화번호로 검색'
+                                className='w-full pl-10 pr-3 py-2 border-[1px] border-[#D1D5DB] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#885BEB]' />
 
-                        {loading && (
-                            <div className='absolute right-3 top-1/2 -translate-y-1/2'>
-                                <div className='animate-spin h-4 w-4 border-2 border-purple-500 rounded-full border-t-transparent'></div>
-                            </div>
-                        )}
+                            {loading && (
+                                <div className='absolute right-3 top-1/2 -translate-y-1/2'>
+                                    <div className='animate-spin h-4 w-4 border-2 border-purple-500 rounded-full border-t-transparent'></div>
+                                </div>
+                            )}
+                        </div>
+                        <button
+                            onClick={handleSearch}
+                            className='px-3 py-2 text-sm rounded-md bg-[#885AEB] text-white hover:bg-purple-700 transition-colors'
+                        >검색</button>
                     </div>
+
 
                     {/* 검색 결과 */}
                     {searchResults.length > 0 && (
                         <div>
                             {/* 체크박스 영역 */}
-                            <div>
+                            <div className='mb-1'>
+                                {/* 활성 사용자 */}
+                                <div className='flex items-center gap-2' >
+                                    <input
+                                        type='checkbox'
+                                        id='selectActive'
+                                        checked={includeWithdrawn}
+                                        onChange={(e) => {
+                                            console.log('활성 사용자 조회:',e.target.checked) // 디버깅 용
+                                            setIncludeWithdrawn(e.target.checked)}}
+                                        className='w-4 h-4 text-[#885AEB] border-gray-300 rounded focus:ring-[#885AEB] cursor-pointer'
+                                    />
+                                    <label className='text-sm text-gray-700'>탈퇴 사용자 포함</label>
+                                </div>
+                                {/* 승인 거부 사용자 */}
+                                <div className='flex items-center gap-2'>
+                                    <input
+                                        type='checkbox'
+                                        id='selectReject'
+                                        checked={includedRejected}
+                                        onChange={(e) => {
+                                            console.log('미승인 사용자 조회:',e.target.checked)
+                                            setIncludedRejected(e.target.checked)}}
+                                        className='w-4 h-4 text-[#885AEB] border-gray-300 rounded focus:ring-[#885AEB] cursor-pointer'
+                                    />
+                                    <label className='text-sm text-gray-700'>승인 거부 사용자 포함</label>
+                                </div>
+
                                 {/* 전체 선택 체크박스*/}
                                 <div className='flex items-center gap-2'>
                                     <input
@@ -441,7 +505,7 @@ export function RecipientSelector({ onRecipientsChange }: RecipientSelectorProps
                                         }}
                                         onChange={(e) => handleSelectAll(e.target.checked)}
                                         className='w-4 h-4 text-[#885AEB] border-gray-300 rounded focus:ring-[#885AEB] cursor-pointer' />
-                                    <label className='text-s text-gray-700'>일괄 선택</label>
+                                    <label className='text-sm text-gray-700'>일괄 선택</label>
 
                                     {checkedUser.size > 0 && (
                                         <button
@@ -450,22 +514,26 @@ export function RecipientSelector({ onRecipientsChange }: RecipientSelectorProps
                                             className='text-xs text-[#885AEB]  hover:text-gray-600 underline'>선택 취소</button>
                                     )}
                                 </div>
+                            </div>
 
-                                <div className='flex justify-between items-center'>
-                                    <p className='text-xs text-gray-400'>검색 결과: {searchResults.length}명
-                                    </p>
-                                    {/* 일괄 추가 버튼 */}
-                                    <div className='flex justify-between items-center gap-2'>
-                                        <button
-                                            type='button'
-                                            onClick={handleAddAll}
-                                            className='px-3 py-1.5 text-xs rounded-md bg-[#885AEB] text-white hover:bg-purple-700 transition-colors flex items-center gap-1'>
-                                            <Users className='w-3 h-3' />
-                                            선택한 {checkedUser.size}명 추가
-                                        </button>
+                            {/* 사용자 수 및 일괄 추가 버튼 */}
+                                <div>
+                                    <div className='flex justify-between items-center'>
+                                        <p className='text-xs text-gray-400'>
+                                            검색 결과: {totalCount}명
+                                        </p>
+                                        {/* 일괄 추가 버튼 */}
+                                        <div className='flex justify-between items-center gap-2'>
+                                            <button
+                                                type='button'
+                                                onClick={handleAddAll}
+                                                className='px-3 py-1.5 text-xs rounded-md bg-[#885AEB] text-white hover:bg-purple-700 transition-colors flex items-center gap-1'>
+                                                <Users className='w-3 h-3' />
+                                                선택한 {checkedUser.size}명 추가
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
 
 
@@ -490,9 +558,7 @@ export function RecipientSelector({ onRecipientsChange }: RecipientSelectorProps
                                                     {/* 사용자 정보 */}
                                                     <div>
                                                         <p className='text-sm font-meduium text-gray-900'>{user.name}</p>
-                                                        <p className='text-xs text-gray-500'>
-                                                            {user.phoneNumber} • {user.gender === 'MALE' ? '남성' : user.gender === 'FEMALE' ? '여성' : '미정'} {' '} {user.isWithdrawn === false ? '활성' : '비활성'}
-                                                        </p>
+                                                        <p className='text-xs text-gray-500'>{user.phoneNumber} • {user.gender === 'MALE' ? '남성' : '여성'}</p>
                                                     </div>
                                                 </div>
 
