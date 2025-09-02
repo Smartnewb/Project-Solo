@@ -118,6 +118,14 @@ export interface GetUser {
     }; 
 }
 
+// MARK: - 검색된 유저
+export interface UserSearchResponse {
+    users: User[];
+    meta: {
+        totalCount: number;
+    };
+}
+
 
 // MARK: - 단체 발송
 export interface SendSmsRequest {
