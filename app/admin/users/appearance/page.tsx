@@ -20,6 +20,7 @@ import UserAppearanceTable from '@/components/admin/appearance/UserAppearanceTab
 import AppearanceFilterPanel from '@/components/admin/appearance/AppearanceFilterPanel';
 import UnclassifiedUsersPanel from '@/components/admin/appearance/UnclassifiedUsersPanel';
 import DuplicatePhoneUsersPanel from '@/components/admin/appearance/DuplicatePhoneUsersPanel';
+import VerifiedUsersPanel from '@/components/admin/appearance/VerifiedUsersPanel';
 import BlacklistUsersPanel from '@/components/admin/appearance/BlacklistUsersPanel';
 import ApprovalManagementPanel from '@/components/admin/appearance/ApprovalManagementPanel';
 
@@ -186,6 +187,7 @@ export default function AppearanceGradePage() {
           <Tab label="블랙리스트" />
           <Tab label="미분류 사용자" />
           <Tab label="중복 휴대폰 번호" />
+          <Tab label="대학교 인증 사용자" />
         </Tabs>
       </Box>
 
@@ -224,6 +226,9 @@ export default function AppearanceGradePage() {
         )}
         {activeTab === 4 && (
           <DuplicatePhoneUsersPanel />
+        )}
+        {activeTab === 5 && (
+          <VerifiedUsersPanel />
         )}
       </Box>
     </Box>

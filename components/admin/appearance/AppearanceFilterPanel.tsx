@@ -40,11 +40,24 @@ const GENDER_OPTIONS: { value: Gender | 'all'; label: string }[] = [
 const REGION_OPTIONS: { value: string; label: string }[] = [
   { value: 'all', label: '모든 지역' },
   { value: 'DJN', label: '대전/공주 클러스터' },
-  { value: 'SJG', label: '충북/세종 클러스터' },
-  { value: 'BSN', label: '부산' },
-  { value: 'DGU', label: '대구' },
-  { value: 'ICN', label: '인천' },
-  { value: 'CAN', label: '천안' }
+  { value: 'SJG', label: '청주/세종/천안 클러스터' },
+  { value: 'BSN', label: '부산/김해 클러스터' },
+  { value: 'ICN', label: '인천/서울/경기 클러스터' },
+  { value: 'DGU', label: '대구' }
+];
+
+// 장기 미접속자 옵션
+const LONG_TERM_INACTIVE_OPTIONS: { value: string; label: string }[] = [
+  { value: 'all', label: '모든 사용자' },
+  { value: 'true', label: '장기 미접속자만' },
+  { value: 'false', label: '정상 사용자만' }
+];
+
+// 프로필 정보 입력 여부 옵션
+const HAS_PREFERENCES_OPTIONS: { value: string; label: string }[] = [
+  { value: 'all', label: '모든 사용자' },
+  { value: 'true', label: '프로필 입력 완료' },
+  { value: 'false', label: '프로필 미입력' }
 ];
 
 interface AppearanceFilterPanelProps {
@@ -56,6 +69,8 @@ interface AppearanceFilterPanelProps {
     maxAge?: number;
     searchTerm?: string;
     region?: string;
+    isLongTermInactive?: boolean;
+    hasPreferences?: boolean;
   }) => void;
 }
 
@@ -67,6 +82,8 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
   const [maxAge, setMaxAge] = useState<number | ''>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRegion, setSelectedRegion] = useState<string>('all');
+  const [isLongTermInactive, setIsLongTermInactive] = useState<string>('all');
+  const [hasPreferences, setHasPreferences] = useState<string>('all');
   const [isAdvancedFilterOpen, setIsAdvancedFilterOpen] = useState(false);
 
   // 지역 클러스터 변환 함수
@@ -74,10 +91,16 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
     // 대전/공주 클러스터 → DJN으로 전송 (백엔드에서 DJN+GJJ 처리)
     if (region === 'DJN') return 'DJN';
 
-    // 충북/세종 클러스터 → SJG로 전송 (백엔드에서 SJG+CJU 처리)
+    // 청주/세종/천안 클러스터 → SJG로 전송 (백엔드에서 SJG+CJU+CAN 처리)
     if (region === 'SJG') return 'SJG';
 
-    // 부산, 대구, 인천, 천안은 단독
+    // 부산/김해 클러스터 → BSN으로 전송 (백엔드에서 BSN+GHE 처리)
+    if (region === 'BSN') return 'BSN';
+
+    // 인천/서울/경기 클러스터 → ICN으로 전송 (백엔드에서 ICN+SEL+KYG 처리)
+    if (region === 'ICN') return 'ICN';
+
+    // 대구는 단독
     return region;
   };
 
@@ -93,6 +116,8 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
       if (maxAge !== '') filters.maxAge = maxAge;
       if (searchTerm) filters.searchTerm = searchTerm;
       if (selectedRegion !== 'all') filters.region = getClusterRegion(selectedRegion);
+      if (isLongTermInactive !== 'all') filters.isLongTermInactive = isLongTermInactive === 'true';
+      if (hasPreferences !== 'all') filters.hasPreferences = hasPreferences === 'true';
 
       onFilter(filters);
     }
@@ -107,6 +132,8 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
     setMaxAge('');
     setSearchTerm('');
     setSelectedRegion('all');
+    setIsLongTermInactive('all');
+    setHasPreferences('all');
 
     if (onFilter) {
       onFilter({});
@@ -161,6 +188,38 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
               onChange={(e) => setAppearanceGrade(e.target.value as AppearanceGrade | 'all')}
             >
               {GRADE_OPTIONS.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <TextField
+              select
+              fullWidth
+              label="휴먼유저"
+              value={isLongTermInactive}
+              onChange={(e) => setIsLongTermInactive(e.target.value)}
+            >
+              {LONG_TERM_INACTIVE_OPTIONS.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <TextField
+              select
+              fullWidth
+              label="프로필 정보"
+              value={hasPreferences}
+              onChange={(e) => setHasPreferences(e.target.value)}
+            >
+              {HAS_PREFERENCES_OPTIONS.map((option) => (
                 <MenuItem key={option.value} value={option.value}>
                   {option.label}
                 </MenuItem>

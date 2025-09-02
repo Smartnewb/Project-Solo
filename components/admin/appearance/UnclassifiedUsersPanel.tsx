@@ -70,7 +70,10 @@ const getRegionLabel = (region?: string) => {
     'BSN': '부산',
     'DGU': '대구',
     'GJJ': '공주',
+    'GHE': '김해',
     'ICN': '인천',
+    'SEL': '서울',
+    'KYG': '경기',
     'CAN': '천안'
   };
   return region ? regionMap[region] || region : '-';
@@ -295,6 +298,32 @@ export default function UnclassifiedUsersPanel() {
                       <Typography variant="body2" color="textSecondary" gutterBottom>
                         {user.age}세 / {GENDER_LABELS[user.gender]}
                       </Typography>
+
+                      {/* 프로필 정보 입력 여부 */}
+                      <Chip
+                        label={user.hasPreferences ? "프로필 입력 완료" : "프로필 미입력"}
+                        size="small"
+                        sx={{
+                          bgcolor: user.hasPreferences ? '#e8f5e8' : '#ffebee',
+                          color: user.hasPreferences ? '#2e7d32' : '#c62828',
+                          fontWeight: 'medium',
+                          mb: 1
+                        }}
+                      />
+
+                      {/* 장기 미접속자 표시 */}
+                      {user.isLongTermInactive && (
+                        <Chip
+                          label="장기 미접속"
+                          size="small"
+                          sx={{
+                            bgcolor: '#fff3cd',
+                            color: '#856404',
+                            fontWeight: 'medium',
+                            mb: 1
+                          }}
+                        />
+                      )}
 
                       <Typography variant="body2" color="textSecondary" gutterBottom>
                         지역: {getRegionLabel(user.region)}

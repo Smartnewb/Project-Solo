@@ -79,7 +79,10 @@ const getRegionLabel = (region?: string) => {
     'BSN': '부산',
     'DGU': '대구',
     'GJJ': '공주',
+    'GHE': '김해',
     'ICN': '인천',
+    'SEL': '서울',
+    'KYG': '경기',
     'CAN': '천안'
   };
   return region ? regionMap[region] || region : '-';
@@ -94,6 +97,8 @@ interface UserAppearanceTableProps {
     maxAge?: number;
     searchTerm?: string;
     region?: string;
+    isLongTermInactive?: boolean;
+    hasPreferences?: boolean;
   };
 }
 
@@ -464,6 +469,8 @@ const UserAppearanceTable = forwardRef<
               <TableCell>지역</TableCell>
               <TableCell>대학교 인증</TableCell>
               <TableCell>외모 등급</TableCell>
+              <TableCell>휴먼유저</TableCell>
+              <TableCell>프로필 정보</TableCell>
               <TableCell>인스타그램</TableCell>
               <TableCell>가입일</TableCell>
               <TableCell>마지막 접속</TableCell>
@@ -474,13 +481,13 @@ const UserAppearanceTable = forwardRef<
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={14} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={16} align="center" sx={{ py: 3 }}>
                   <CircularProgress />
                 </TableCell>
               </TableRow>
             ) : users.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={14} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={16} align="center" sx={{ py: 3 }}>
                   <Typography variant="body1">조회된 사용자가 없습니다.</Typography>
                 </TableCell>
               </TableRow>
@@ -489,7 +496,11 @@ const UserAppearanceTable = forwardRef<
                 <TableRow
                   key={user.userId || user.id}
                   sx={{
-                    bgcolor: user.statusAt === 'instagramerror' ? 'rgba(255, 235, 230, 0.5)' : 'inherit'
+                    bgcolor: user.statusAt === 'instagramerror'
+                      ? 'rgba(255, 235, 230, 0.5)'
+                      : user.isLongTermInactive
+                        ? 'rgba(255, 243, 205, 0.3)'
+                        : 'inherit'
                   }}
                 >
                   <TableCell padding="checkbox">
@@ -633,6 +644,28 @@ const UserAppearanceTable = forwardRef<
                         onClick={(e) => handleOpenGradeMenu(e, user)}
                       />
                     </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={user.isLongTermInactive ? "휴먼유저" : "활성유저"}
+                      size="small"
+                      sx={{
+                        bgcolor: user.isLongTermInactive ? '#ffebee' : '#e8f5e8',
+                        color: user.isLongTermInactive ? '#c62828' : '#2e7d32',
+                        fontWeight: 'medium'
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={user.hasPreferences ? "입력 완료" : "미입력"}
+                      size="small"
+                      sx={{
+                        bgcolor: user.hasPreferences ? '#e8f5e8' : '#ffebee',
+                        color: user.hasPreferences ? '#2e7d32' : '#c62828',
+                        fontWeight: 'medium'
+                      }}
+                    />
                   </TableCell>
                   <TableCell>
                     {user.instagramId ? (

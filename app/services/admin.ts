@@ -388,6 +388,8 @@ const userAppearance = {
     maxAge?: number;
     searchTerm?: string;
     region?: string;
+    isLongTermInactive?: boolean;
+    hasPreferences?: boolean;
   }) => {
     try {
       console.log('유저 목록 조회 요청 파라미터:', JSON.stringify(params, null, 2));
@@ -413,6 +415,8 @@ const userAppearance = {
       if (params.maxAge) queryParams.append('maxAge', params.maxAge.toString());
       if (params.searchTerm) queryParams.append('searchTerm', params.searchTerm);
       if (params.region) queryParams.append('region', params.region);
+      if (params.isLongTermInactive !== undefined) queryParams.append('isLongTermInactive', params.isLongTermInactive.toString());
+      if (params.hasPreferences !== undefined) queryParams.append('hasPreferences', params.hasPreferences.toString());
 
       const url = `/admin/users/appearance?${queryParams.toString()}`;
       console.log('최종 API 요청 URL:', url);
@@ -1270,6 +1274,33 @@ const userAppearance = {
     }
   },
 
+  // 대학교 인증 사용자 조회
+  getVerifiedUsers: async (params: {
+    page?: number;
+    limit?: number;
+    name?: string;
+    university?: string;
+  }) => {
+    try {
+      console.log('대학교 인증 사용자 조회 요청:', params);
+
+      const queryParams = new URLSearchParams();
+      if (params.page) queryParams.append('page', params.page.toString());
+      if (params.limit) queryParams.append('limit', params.limit.toString());
+      if (params.name) queryParams.append('name', params.name);
+      if (params.university) queryParams.append('university', params.university);
+
+      const response = await axiosServer.get(`/admin/users/verified?${queryParams.toString()}`);
+
+      console.log('대학교 인증 사용자 조회 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('대학교 인증 사용자 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
   // 대학교 인증 승인
   approveUniversityVerification: async (userId: string) => {
     try {
@@ -1674,6 +1705,30 @@ const matching = {
       return response.data;
     } catch (error: any) {
       console.error('단일 사용자 매칭 처리 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // 좋아요 이력 조회
+  getLikeHistory: async (startDate: string, endDate: string, page: number = 1, limit: number = 10, name?: string) => {
+    try {
+      console.log('좋아요 이력 조회 요청:', { startDate, endDate, page, limit, name });
+
+      // 파라미터 객체 생성
+      const params: any = { startDate, endDate, page, limit };
+
+      // 이름 검색어가 있는 경우 추가
+      if (name && name.trim() !== '') {
+        params.name = name.trim();
+      }
+
+      const response = await axiosServer.get('/admin/matching/like-history', { params });
+
+      console.log('좋아요 이력 조회 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('좋아요 이력 조회 중 오류:', error);
       console.error('오류 상세 정보:', error.response?.data || error.message);
       throw error;
     }
