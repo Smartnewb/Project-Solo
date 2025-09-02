@@ -126,20 +126,18 @@ export const smsService = {
     async searchUser(params: {
         startDate?: string;
         endDate?: string;
-        gender?: 'male' | 'female';
+        gender?: 'MALE' | 'FEMALE'; 
         searchTerm?: string;
-    }): Promise<User[]> {
+        includeWithdrawn?: boolean;
+        includeRejected?: boolean;
+    }): Promise<UserSearchResponse> {  
         try {
-            const response = await axiosServer.get(SMS_ENDPOINTS.USER_SEARCH, { params: params });
+            const response = await axiosServer.get(SMS_ENDPOINTS.USER_SEARCH, { params });
             
-            // API 응답 구조 확인용 로그
             console.log('API 응답:', response.data);
-
-            if (response.data && response.data.users) {
-                return response.data.users;  
-            }
             
-            return [];
+            // 전체 응답 객체 반환
+            return response.data || { users: [], meta: { totalCount: 0 } };
         } catch (error) {
             throw new SmsApiError('사용자 검색 실패', error);
         }
