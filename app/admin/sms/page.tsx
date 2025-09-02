@@ -24,9 +24,9 @@ export default function Smspage() {
     // === JSX ===
     return (
         // MARK: - 전체 페이지
-        <div className='bg-[#F9FAFB] min-h-screen px-20 lg:px-25 py-5'>
+        <div className='bg-[#F9FAFB] min-h-screen px-4 sm:px-6 md:px-8 lg:px-20 xl:px-25'>
             {/* MARK: - 컨텐츠 영역 */}
-            <div className='grid grid-cols-1 lg:grid-cols-10 gap-6'>
+            <div className='grid grid-cols-1 md:grid-cols-8 lg:grid-cols-10 gap-6'>
                 <div className='lg:col-span-3'>
                     <RecipientSelector
                         onRecipientsChange={setSelectedRecipients} />
