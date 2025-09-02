@@ -93,7 +93,9 @@ export function TemplateModal({
         <>
             {isOpen && (
                 <div
-                    className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"> 
+                    className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+                    style={{ marginTop: 0}}
+                > 
 
                     {/* MARK: - 모달 전체 */}
                     <div className="bg-white rounded-lg shadow-xl w-full max-w-sm sm:max-w-md md:max-w-lg"
