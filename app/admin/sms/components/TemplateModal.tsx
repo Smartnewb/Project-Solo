@@ -93,13 +93,7 @@ export function TemplateModal({
         <>
             {isOpen && (
                 <div
-                    className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-                    onClick={(e) => {
-                        if (e.target === e.currentTarget) {
-                            handleClose();
-                        }
-                    }}
-                > 
+                    className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"> 
 
                     {/* MARK: - 모달 전체 */}
                     <div className="bg-white rounded-lg shadow-xl w-full max-w-sm sm:max-w-md md:max-w-lg"
@@ -154,6 +148,7 @@ export function TemplateModal({
                                                 setContent(e.target.value);
                                                 setError(null);
                                             }}
+                                            onClick={(e) => e.stopPropagation()}
                                             placeholder="예: 안녕하세요! 서비스 가입을 환영합니다. 궁금한 사항이 있으시면 언제든 문의해주세요."
                                             rows={5}
                                             maxLength={2400}
