@@ -148,7 +148,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const userInfo = data.user || data;
       const isAdmin = userInfo.role === 'admin';
 
-      // 관리자 여부 저장
+      // 사용자 정보 및 관리자 여부 저장
+      localStorage.setItem('user', JSON.stringify(userInfo));
       localStorage.setItem('isAdmin', isAdmin ? 'true' : 'false');
 
       setState(prev => ({
@@ -201,46 +202,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      // 토큰에서 사용자 정보 추출
-      try {
-        // 토큰에서 사용자 정보 가져오기 시도
-        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        const userData = response.data;
-        const isAdmin = userData.role === 'admin';
-
-        // 관리자 여부 저장
-        localStorage.setItem('isAdmin', isAdmin ? 'true' : 'false');
-
-        setState(prev => ({
-          ...prev,
-          user: userData,
-          isAdmin: isAdmin,
-          loading: false
-        }));
-
-        console.log('사용자 정보 가져오기 성공:', userData);
-      } catch (userError) {
-        console.error('사용자 정보 가져오기 실패:', userError);
-
-        // 토큰이 유효하지 않은 경우 토큰 갱신 시도
-        const refreshSuccess = await refreshAccessToken();
-        if (!refreshSuccess) {
-          throw new Error('토큰 갱신 실패');
+      // localStorage에서 사용자 정보 복원
+      const storedUser = localStorage.getItem('user');
+      const storedIsAdmin = localStorage.getItem('isAdmin') === 'true';
+      
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          setState(prev => ({
+            ...prev,
+            user: userData,
+            isAdmin: storedIsAdmin,
+            loading: false
+          }));
+          console.log('저장된 사용자 정보 복원 성공:', userData);
+        } catch (parseError) {
+          console.error('사용자 정보 파싱 실패:', parseError);
+          throw new Error('저장된 사용자 정보 손상');
         }
-
-        // 임시 사용자 정보 설정 (이전 저장된 관리자 여부 활용)
-        const isAdmin = localStorage.getItem('isAdmin') === 'true';
-        setState(prev => ({
-          ...prev,
-          user: { id: 'temp-id', email: 'admin@example.com', role: isAdmin ? 'admin' : 'user' },
-          isAdmin: isAdmin,
-          loading: false
-        }));
+      } else {
+        throw new Error('저장된 사용자 정보 없음');
       }
 
       await fetchProfile();
