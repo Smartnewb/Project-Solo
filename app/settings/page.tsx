@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export default function Settings() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [notifications, setNotifications] = useState({
     matching: true,
@@ -23,44 +23,7 @@ export default function Settings() {
 
   const handleLogout = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
-      if (!token) {
-        console.error('토큰이 없습니다.');
-        router.push('/');
-        return;
-      }
-
-      // Nest.js 로그아웃 API 호출
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('로그아웃 처리에 실패했습니다.');
-      }
-
-      // 로컬 스토리지 클리어
-      try {
-        localStorage.clear();
-      } catch (e) {
-        console.error('로컬 스토리지 클리어 중 오류:', e);
-      }
-
-      // 쿠키 클리어 (모든 쿠키 삭제)
-      document.cookie.split(';').forEach(cookie => {
-        document.cookie = cookie
-          .replace(/^ +/, '')
-          .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
-      });
-
-      console.log('로그아웃 성공');
-
-      // 홈페이지로 리디렉션
-      router.push('/');
+      await signOut();
     } catch (error) {
       console.error('로그아웃 처리 중 오류:', error);
       alert('로그아웃 중 오류가 발생했습니다.');

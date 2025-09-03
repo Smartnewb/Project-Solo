@@ -14,7 +14,7 @@ export default function AdminLayout({
 }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, signOut } = useAuth();
 
   useEffect(() => {
     let mounted = true;
@@ -68,8 +68,7 @@ export default function AdminLayout({
   const handleLogout = async () => {
     try {
       console.log('로그아웃 시도');
-      console.log('로그아웃 성공 - 로그인 페이지로 리디렉션');
-      router.push('/');
+      await signOut();
     } catch (error) {
       console.error('로그아웃 처리 중 예외 발생:', error);
     }
