@@ -176,20 +176,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // 로그아웃
-  const signOut = async () => {
+   const signOut = async () => {
+    console.log('로그아웃 시작');
     setState(prev => ({ ...prev, loading: true }));
     try {
+      localStorage.clear();
       removeAccessToken();
-      setState({
-        user: null,
-        profile: null,
-        loading: false,
-        isAdmin: false
-      });
-      router.push('/');
     } catch (error) {
       console.error('로그아웃 중 오류 발생:', error);
-      setState(prev => ({ ...prev, loading: false }));
     }
   };
 
