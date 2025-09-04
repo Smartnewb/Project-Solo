@@ -1611,6 +1611,26 @@ const matching = {
     }
   },
 
+  // 직접 매칭 생성
+  createDirectMatch: async (requesterId: string, targetId: string, type: 'rematching' | 'scheduled') => {
+    try {
+      console.log('직접 매칭 생성 요청:', { requesterId, targetId, type });
+
+      const response = await axiosServer.post('/admin/matching/direct-match', {
+        requesterId,
+        targetId,
+        type
+      });
+
+      console.log('직접 매칭 생성 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('직접 매칭 생성 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
   // 매칭 실패 내역 조회
   getFailureLogs: async (date: string, page: number = 1, limit: number = 10, name?: string) => {
     try {

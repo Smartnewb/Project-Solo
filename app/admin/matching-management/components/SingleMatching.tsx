@@ -18,7 +18,17 @@ import {
   TableHead,
   TableRow,
   TablePagination,
-  Collapse
+  Collapse,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Autocomplete
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -28,9 +38,11 @@ import { format } from 'date-fns';
 import PersonIcon from '@mui/icons-material/Person';
 import HistoryIcon from '@mui/icons-material/History';
 import WarningIcon from '@mui/icons-material/Warning';
+import AddIcon from '@mui/icons-material/Add';
 import { UserSearchResult, MatchingResult } from '../types';
 import AdminService from '@/app/services/admin';
 import { formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
+import axiosServer from '@/utils/axios';
 
 // 매칭 이력 아이템 인터페이스
 interface MatchHistoryItem {
@@ -112,6 +124,16 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
   const [matchCount, setMatchCount] = useState<MatchCountResponse | null>(null);
   const [matchCountLoading, setMatchCountLoading] = useState<boolean>(false);
   const [matchCountError, setMatchCountError] = useState<string | null>(null);
+
+  // 직접 매칭 생성 관련 상태
+  const [directMatchDialogOpen, setDirectMatchDialogOpen] = useState<boolean>(false);
+  const [targetUserSearch, setTargetUserSearch] = useState<string>('');
+  const [targetUserSearchResults, setTargetUserSearchResults] = useState<UserSearchResult[]>([]);
+  const [selectedTargetUser, setSelectedTargetUser] = useState<UserSearchResult | null>(null);
+  const [matchType, setMatchType] = useState<'rematching' | 'scheduled'>('scheduled');
+  const [directMatchLoading, setDirectMatchLoading] = useState<boolean>(false);
+  const [directMatchError, setDirectMatchError] = useState<string | null>(null);
+  const [directMatchResult, setDirectMatchResult] = useState<any>(null);
 
   // 매칭 이력 조회 함수
   const fetchMatchHistory = async () => {
@@ -248,6 +270,98 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
     setMatchCount(null);
   }, [selectedUser]);
 
+  // 타겟 사용자 검색 함수
+  const searchTargetUsers = async (searchTerm: string) => {
+    if (!searchTerm.trim()) {
+      setTargetUserSearchResults([]);
+      return;
+    }
+
+    try {
+      // 기존 매칭 관리 페이지와 동일한 API 사용
+      const response = await axiosServer.get('/admin/users/appearance', {
+        params: {
+          page: 1,
+          limit: 20,
+          searchTerm: searchTerm
+        }
+      });
+
+      console.log('타겟 사용자 검색 응답:', response.data);
+
+      let results = [];
+      if (response.data && response.data.items && Array.isArray(response.data.items)) {
+        results = response.data.items;
+      } else if (response.data && Array.isArray(response.data)) {
+        results = response.data;
+      }
+
+      setTargetUserSearchResults(results);
+    } catch (error: any) {
+      console.error('타겟 사용자 검색 중 오류:', error);
+      setTargetUserSearchResults([]);
+    }
+  };
+
+  // 직접 매칭 생성 함수
+  const createDirectMatch = async () => {
+    if (!selectedUser || !selectedTargetUser) {
+      setDirectMatchError('매칭할 사용자들을 모두 선택해주세요.');
+      return;
+    }
+
+    setDirectMatchLoading(true);
+    setDirectMatchError(null);
+
+    try {
+      const response = await AdminService.matching.createDirectMatch(
+        selectedUser.id,
+        selectedTargetUser.id,
+        matchType
+      );
+
+      console.log('직접 매칭 생성 응답:', response);
+      setDirectMatchResult(response);
+
+      // 성공 시 다이얼로그 닫기
+      setTimeout(() => {
+        setDirectMatchDialogOpen(false);
+        resetDirectMatchForm();
+      }, 2000);
+    } catch (err: any) {
+      console.error('직접 매칭 생성 중 오류:', err);
+      const errorMessage = err.response?.data?.message ||
+                          err.response?.data?.error ||
+                          err.message ||
+                          '직접 매칭 생성 중 오류가 발생했습니다.';
+      setDirectMatchError(errorMessage);
+    } finally {
+      setDirectMatchLoading(false);
+    }
+  };
+
+  // 직접 매칭 폼 초기화
+  const resetDirectMatchForm = () => {
+    setTargetUserSearch('');
+    setTargetUserSearchResults([]);
+    setSelectedTargetUser(null);
+    setMatchType('scheduled');
+    setDirectMatchError(null);
+    setDirectMatchResult(null);
+  };
+
+  // 직접 매칭 다이얼로그 열기
+  const openDirectMatchDialog = () => {
+    resetDirectMatchForm();
+    setDirectMatchDialogOpen(true);
+  };
+
+  // 직접 매칭 다이얼로그 닫기
+  const closeDirectMatchDialog = () => {
+    setDirectMatchDialogOpen(false);
+    resetDirectMatchForm();
+  };
+
   return (
     <>
       {/* 선택된 사용자 정보 */}
@@ -302,6 +416,16 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
               sx={{ flex: 1 }}
             >
               {matchingLoading ? <CircularProgress size={24} /> : '매칭 실행'}
+            </Button>
+
+            <Button
+              variant="contained"
+              color="success"
+              onClick={openDirectMatchDialog}
+              startIcon={<AddIcon />}
+              sx={{ flex: 1 }}
+            >
+              수동 매칭 생성
             </Button>
 
             <Button
@@ -733,6 +857,170 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
           )}
         </Box>
       )}
+
+      {/* 직접 매칭 생성 다이얼로그 */}
+      <Dialog
+        open={directMatchDialogOpen}
+        onClose={closeDirectMatchDialog}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          직접 매칭 생성
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            {/* 요청자 정보 */}
+            <Typography variant="subtitle1" gutterBottom>
+              매칭 요청자:
+            </Typography>
+            {selectedUser && (
+              <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Avatar src={selectedUser.profileImageUrl} sx={{ mr: 2 }}>
+                    <PersonIcon />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="body1">
+                      {selectedUser.name} ({selectedUser.age}세, {selectedUser.gender === 'MALE' ? '남성' : '여성'})
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      {selectedUser.university ? (
+                        typeof selectedUser.university === 'string' ?
+                          selectedUser.university :
+                          selectedUser.university.name
+                      ) : selectedUser.universityDetails?.name ?
+                        `${selectedUser.universityDetails.name} ${selectedUser.universityDetails.department || ''}` :
+                        '대학 정보 없음'}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Paper>
+            )}
+
+            {/* 매칭 타입 선택 */}
+            <FormControl fullWidth sx={{ mb: 3 }}>
+              <InputLabel>매칭 타입</InputLabel>
+              <Select
+                value={matchType}
+                label="매칭 타입"
+                onChange={(e) => setMatchType(e.target.value as 'rematching' | 'scheduled')}
+              >
+                <MenuItem value="scheduled">일반 매칭 (scheduled)</MenuItem>
+                <MenuItem value="rematching">재매칭 (rematching)</MenuItem>
+              </Select>
+            </FormControl>
+
+            {/* 타겟 사용자 검색 */}
+            <Typography variant="subtitle1" gutterBottom>
+              매칭 대상자:
+            </Typography>
+            <Autocomplete
+              options={targetUserSearchResults}
+              getOptionLabel={(option) => `${option.name} (${option.age}세, ${option.gender === 'MALE' ? '남성' : '여성'})`}
+              value={selectedTargetUser}
+              onChange={(_, newValue) => setSelectedTargetUser(newValue)}
+              inputValue={targetUserSearch}
+              onInputChange={(_, newInputValue) => {
+                setTargetUserSearch(newInputValue);
+                if (newInputValue.length >= 2) {
+                  searchTargetUsers(newInputValue);
+                }
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="사용자 검색 (이름 또는 전화번호)"
+                  placeholder="최소 2글자 이상 입력하세요"
+                  fullWidth
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && targetUserSearchResults.length > 0 && !selectedTargetUser) {
+                      e.preventDefault();
+                      setSelectedTargetUser(targetUserSearchResults[0]);
+                    }
+                  }}
+                />
+              )}
+              renderOption={(props, option) => (
+                <Box component="li" {...props}>
+                  <Avatar src={option.profileImageUrl} sx={{ mr: 2, width: 32, height: 32 }}>
+                    <PersonIcon />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="body2">
+                      {option.name} ({option.age}세, {option.gender === 'MALE' ? '남성' : '여성'})
+                    </Typography>
+                    <Typography variant="caption" color="textSecondary">
+                      {option.university ? (
+                        typeof option.university === 'string' ?
+                          option.university :
+                          option.university.name
+                      ) : option.universityDetails?.name ?
+                        `${option.universityDetails.name} ${option.universityDetails.department || ''}` :
+                        '대학 정보 없음'}
+                    </Typography>
+                  </Box>
+                </Box>
+              )}
+              sx={{ mb: 3 }}
+            />
+
+            {/* 선택된 타겟 사용자 정보 */}
+            {selectedTargetUser && (
+              <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  선택된 매칭 대상자:
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Avatar src={selectedTargetUser.profileImageUrl} sx={{ mr: 2 }}>
+                    <PersonIcon />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="body1">
+                      {selectedTargetUser.name} ({selectedTargetUser.age}세, {selectedTargetUser.gender === 'MALE' ? '남성' : '여성'})
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      {selectedTargetUser.university ? (
+                        typeof selectedTargetUser.university === 'string' ?
+                          selectedTargetUser.university :
+                          selectedTargetUser.university.name
+                      ) : selectedTargetUser.universityDetails?.name ?
+                        `${selectedTargetUser.universityDetails.name} ${selectedTargetUser.universityDetails.department || ''}` :
+                        '대학 정보 없음'}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Paper>
+            )}
+
+            {/* 오류 메시지 */}
+            {directMatchError && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {directMatchError}
+              </Alert>
+            )}
+
+            {/* 성공 메시지 */}
+            {directMatchResult && (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                직접 매칭이 성공적으로 생성되었습니다!
+              </Alert>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeDirectMatchDialog}>
+            취소
+          </Button>
+          <Button
+            onClick={createDirectMatch}
+            variant="contained"
+            disabled={directMatchLoading || !selectedUser || !selectedTargetUser}
+          >
+            {directMatchLoading ? <CircularProgress size={24} /> : '매칭 생성'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };
