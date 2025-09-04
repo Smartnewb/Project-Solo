@@ -5,6 +5,12 @@ import {
   Box,
   Typography,
   Table,
+  useMediaQuery,
+  useTheme,
+  Stack,
+  IconButton,
+  Card,
+  CardContent,
   TableBody,
   TableCell,
   TableContainer,
@@ -33,6 +39,7 @@ import {
 import axiosServer from '@/utils/axios';
 import UserDetailModal, { UserDetail } from './UserDetailModal';
 import RegionFilter, { useRegionFilter } from '@/components/admin/common/RegionFilter';
+import { Check as CheckIcon, Close as CloseIcon } from '@mui/icons-material';
 
 interface PendingUser {
   id?: string;
@@ -65,6 +72,10 @@ const ApprovalManagementPanel: React.FC = () => {
   const [pendingCount, setPendingCount] = useState(0);
   const [rejectedCount, setRejectedCount] = useState(0);
   const [reapplyCount, setReapplyCount] = useState(0);
+
+  // 모바일 감지 훅
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   // 지역 필터 훅 사용
   const { region, setRegion: setRegionFilter, getRegionParam } = useRegionFilter();
@@ -338,7 +349,18 @@ const ApprovalManagementPanel: React.FC = () => {
 
   return (
     <Box>
-      <Typography variant="h6" gutterBottom>
+      <Typography 
+        variant={isMobile ? 'h6' : 'h5'} 
+        gutterBottom
+        sx={{
+          fontSize: {
+            xs: '1.1rem',
+            sm: '1.25rem',
+            md: '1.5rem',
+          }
+        }}
+      >
+
         회원가입 승인 관리
       </Typography>
 
@@ -349,24 +371,104 @@ const ApprovalManagementPanel: React.FC = () => {
       )}
 
       {/* 지역 필터 */}
-      <Box sx={{ mb: 3 }}>
+      <Box sx={{ 
+        mb: 3,
+        width: { xs: '100%', sm: 'auto'}
+      }}>
         <RegionFilter
           value={region}
           onChange={setRegionFilter}
-          size="small"
-          sx={{ minWidth: 150 }}
+          size={isMobile ? 'medium' : 'small'}
+          sx={{ minWidth: { xs: '100%', sm: 150}, }}
         />
       </Box>
 
       {/* 탭 메뉴 */}
-      <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 2 }}>
-        <Tab label={`승인 대기 (${pendingCount})`} />
-        <Tab label={`승인 거부 (${rejectedCount})`} />
-        <Tab label={`재심사 요청 (${reapplyCount})`} />
+      <Tabs 
+        value={activeTab}
+        onChange={handleTabChange}
+        sx={{ mb: 2 }}
+        variant={isMobile ? 'scrollable' : 'standard'}
+        scrollButtons={isMobile ? 'auto' : false}
+        allowScrollButtonsMobile
+      >
+        <Tab label={isMobile ? `대기 (${pendingCount})` : `승인 대기 (${pendingCount})`} />
+        <Tab label={isMobile ? `거부 (${rejectedCount})` : `승인 거부 (${rejectedCount})`} />
+        <Tab label={isMobile ? `재심사 (${reapplyCount})` : `재심사 요청 (${reapplyCount})`} />
       </Tabs>
+      {/* MARK: - 모바일: 카드 레이아웃 */}
+      {isMobile ? (
+        <Stack spacing={2}>
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3}}>
+              <CircularProgress />
+            </Box>
+          ) : currentUsers.length === 0 ? (
+            <Typography align='center' sx={{ p: 3}}>
+            </Typography>
+          ) : (
+            currentUsers.map((user) => (
+              <Card key={getUserId(user)} sx={{ width: '100%'}}>
+                {/* 수직 레이아웃 */}
+                <CardContent> 
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2}}>
+                    <Avatar
+                      src={user.profileImageUrl}
+                      alt={user.name}
+                      sx={{
+                        width: 50,
+                        height: 50,
+                        mr: 2,
+                      }}
+                      onClick={() => fetchUserDetail(getUserId(user))}
+                    />
 
-      {/* 사용자 목록 테이블 */}
-      <TableContainer component={Paper}>
+                    <Box sx={{ flex: 1}}>
+                      <Typography variant='subtitle1' fontWeight='bold'>{user.name}</Typography>
+                      <Typography variant='caption' color='text.secondary'>{new Date(user.createdAt).toLocaleDateString('ko-KR')}</Typography>
+                    </Box>
+
+                    {/*TODO: - 상태 라벨 및 색상 지정 */}
+
+                  </Box>
+
+                
+
+                  <Stack spacing={1} sx={{ mb: 2}}>
+                    <Typography>{getUserPhone(user)}</Typography>
+                    <Typography>{user.instagramId || '-'}</Typography>
+                    <Typography>{user.university || '-'}</Typography>
+                    <Typography>{getRegionLabel(user.region)}</Typography>
+                  </Stack>
+
+                  <Box sx={{
+                    display: 'flex',
+                    gap: 1,
+                    justifyContent: 'flex-end',
+                  }}>
+                    {/*TODO: - 아이콘 추가 */}
+                    <IconButton>
+                    </IconButton>
+
+                    {(user.status === 'pending') && (
+                      <>
+                        <IconButton size='small' color='success' onClick={() => {}}> {/* TODO: - 승인 처리 */}
+                          <CheckIcon />
+                        </IconButton>
+
+                        <IconButton size='small' color='error' onClick={() => {}}> {/* TODO: - 거부 처리 */}
+                          <CloseIcon />
+                        </IconButton>
+                      </>
+                    )}
+                  </Box>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </Stack>
+      ) : (
+        <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
@@ -553,6 +655,7 @@ const ApprovalManagementPanel: React.FC = () => {
           </TableBody>
         </Table>
       </TableContainer>
+      )}
 
       {/* 페이지네이션 */}
       {totalPages > 1 && (
@@ -636,6 +739,7 @@ const ApprovalManagementPanel: React.FC = () => {
             color="error"
             disabled={processing || !rejectionReason.trim() || (rejectionReason === 'OTHER' && !customRejectionReason.trim())}
           >
+            
             {processing ? <CircularProgress size={20} /> : '거부'}
           </Button>
         </DialogActions>
@@ -669,3 +773,4 @@ const ApprovalManagementPanel: React.FC = () => {
 };
 
 export default ApprovalManagementPanel;
+
