@@ -116,32 +116,32 @@ export default function AdminLayout({
         <nav className="mt-4">
           <ul>
             <li>
-              <Link href="/admin/dashboard" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
+              <Link href="/admin/dashboard" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors" onClick={() => setSidebarOpen(false)}>
                 대시보드
               </Link>
             </li>
             <li>
-              <Link href="/admin/community" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
+              <Link href="/admin/community" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors" onClick={() => setSidebarOpen(false)}>
                 커뮤니티 관리
               </Link>
             </li>
             <li>
-              <Link href="/admin/users/appearance" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
+              <Link href="/admin/users/appearance" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors" onClick={() => setSidebarOpen(false)}>
                 사용자 관리
               </Link>
             </li>
             <li>
-              <Link href="/admin/matching-management" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
+              <Link href="/admin/matching-management" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors" onClick={() => setSidebarOpen(false)}>
                 매칭 관리
               </Link>
             </li>
             <li>
-              <Link href="/admin/version-management" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
+              <Link href="/admin/version-management" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors" onClick={() => setSidebarOpen(false)}>
                 버전 관리
               </Link>
             </li>
             <li>
-              <Link href="/admin/sms" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
+              <Link href="/admin/sms" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors" onClick={() => setSidebarOpen(false)}>
                 SMS 관리
               </Link>
             </li>
