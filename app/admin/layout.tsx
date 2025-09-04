@@ -108,7 +108,7 @@ export default function AdminLayout({
   return (
     <div className="flex h-screen bg-gray-100">
       {/* 사이드바 */}
-      <div className={`fixed inset-y-0 keft-0 z-50 w-64 bg-white shadow-md transform ${sidebarOpen ? 'translate-x-0 ': '-translate-x-full' } transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:inset-0`}>
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-md transform ${sidebarOpen ? 'translate-x-0 ': '-translate-x-full' } transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:inset-0`}>
         <div className="p-4 border-b">
           <h2 className="text-xl font-bold text-primary-DEFAULT">관리자 대시보드</h2>
           <p className="text-sm text-gray-500 mt-1">{user?.email}</p>
