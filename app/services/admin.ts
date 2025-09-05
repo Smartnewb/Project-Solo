@@ -1353,12 +1353,13 @@ const userAppearance = {
   },
 
   // 재심사 요청 사용자 조회
-  getReapplyUsers: async (page: number = 1, limit: number = 10, region?: string) => {
+  getReapplyUsers: async (page: number = 1, limit: number = 10, region?: string, name?: string) => {
     try {
-      console.log('재심사 요청 사용자 조회 요청:', { page, limit, region });
+      console.log('재심사 요청 사용자 조회 요청:', { page, limit, region, name });
 
       const params: any = { page, limit };
       if (region) params.region = region;
+      if (name) params.name = name;
 
       const response = await axiosServer.get('/admin/users/approval/reapply', { params });
 
@@ -1366,6 +1367,46 @@ const userAppearance = {
       return response.data;
     } catch (error: any) {
       console.error('재심사 요청 사용자 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // 승인 대기 사용자 조회
+  getPendingUsers: async (page: number = 1, limit: number = 10, region?: string, name?: string) => {
+    try {
+      console.log('승인 대기 사용자 조회 요청:', { page, limit, region, name });
+
+      const params: any = { page, limit };
+      if (region) params.region = region;
+      if (name) params.name = name;
+
+      const response = await axiosServer.get('/admin/users/approval/pending', { params });
+
+      console.log('승인 대기 사용자 조회 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('승인 대기 사용자 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // 승인 거부 사용자 조회
+  getRejectedUsers: async (page: number = 1, limit: number = 10, region?: string, name?: string) => {
+    try {
+      console.log('승인 거부 사용자 조회 요청:', { page, limit, region, name });
+
+      const params: any = { page, limit };
+      if (region) params.region = region;
+      if (name) params.name = name;
+
+      const response = await axiosServer.get('/admin/users/approval/rejected', { params });
+
+      console.log('승인 거부 사용자 조회 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('승인 거부 사용자 조회 중 오류:', error);
       console.error('오류 상세 정보:', error.response?.data || error.message);
       throw error;
     }
@@ -1677,12 +1718,16 @@ const matching = {
   },
 
   // 매칭되지 않은 사용자 조회
-  getUnmatchedUsers: async (page: number = 1, limit: number = 10) => {
+  getUnmatchedUsers: async (page: number = 1, limit: number = 10, name?: string, gender?: string) => {
     try {
-      console.log('매칭되지 않은 사용자 조회 요청:', { page, limit });
+      console.log('매칭되지 않은 사용자 조회 요청:', { page, limit, name, gender });
+
+      const params: any = { page, limit };
+      if (name) params.name = name;
+      if (gender && gender !== 'all') params.gender = gender;
 
       const response = await axiosServer.get('/admin/matching/unmatched-users', {
-        params: { page, limit }
+        params
       });
       console.log('매칭되지 않은 사용자 응답:', response.data);
 

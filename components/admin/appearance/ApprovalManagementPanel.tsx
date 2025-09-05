@@ -40,6 +40,7 @@ import axiosServer from '@/utils/axios';
 import UserDetailModal, { UserDetail } from './UserDetailModal';
 import RegionFilter, { useRegionFilter } from '@/components/admin/common/RegionFilter';
 import { Check as CheckIcon, Close as CloseIcon } from '@mui/icons-material';
+import AdminService from '@/app/services/admin';
 
 interface PendingUser {
   id?: string;
@@ -79,6 +80,9 @@ const ApprovalManagementPanel: React.FC = () => {
 
   // 지역 필터 훅 사용
   const { region, setRegion: setRegionFilter, getRegionParam } = useRegionFilter();
+
+  // 이름 검색 상태
+  const [nameSearch, setNameSearch] = useState<string>('');
 
   // 승인/거부 모달 상태
   const [approvalModalOpen, setApprovalModalOpen] = useState(false);
@@ -188,10 +192,15 @@ const ApprovalManagementPanel: React.FC = () => {
     setPage(1);
   }, [region]);
 
+  // 이름 검색 변경 시 페이지 초기화
+  useEffect(() => {
+    setPage(1);
+  }, [nameSearch]);
+
   // 데이터 로드
   useEffect(() => {
     fetchUsers();
-  }, [activeTab, page, region]);
+  }, [activeTab, page, region, nameSearch]);
 
 
 
@@ -200,48 +209,47 @@ const ApprovalManagementPanel: React.FC = () => {
     setError(null);
 
     try {
-      let currentEndpoint = '';
-      let otherEndpoints: string[] = [];
-
-      if (activeTab === 0) {
-        currentEndpoint = '/admin/users/approval/pending';
-        otherEndpoints = ['/admin/users/approval/rejected', '/admin/users/approval/reapply'];
-      } else if (activeTab === 1) {
-        currentEndpoint = '/admin/users/approval/rejected';
-        otherEndpoints = ['/admin/users/approval/pending', '/admin/users/approval/reapply'];
-      } else if (activeTab === 2) {
-        currentEndpoint = '/admin/users/approval/reapply';
-        otherEndpoints = ['/admin/users/approval/pending', '/admin/users/approval/rejected'];
-      }
-
-      // 지역 파라미터 추가
       const regionParam = getRegionParam();
-      const currentParams = { page, limit, ...(regionParam && { region: regionParam }) };
-      const otherParams = { page: 1, limit: 10, ...(regionParam && { region: regionParam }) };
 
-      const [currentResponse, ...otherResponses] = await Promise.all([
-        axiosServer.get(currentEndpoint, { params: currentParams }),
-        ...otherEndpoints.map(endpoint => axiosServer.get(endpoint, { params: otherParams }))
+      // 현재 탭에 따라 적절한 API 호출
+      const [currentResponse, pendingResponse, rejectedResponse, reapplyResponse] = await Promise.all([
+        // 현재 탭 데이터
+        activeTab === 0
+          ? AdminService.userAppearance.getPendingUsers(page, limit, regionParam, nameSearch || undefined)
+          : activeTab === 1
+          ? AdminService.userAppearance.getRejectedUsers(page, limit, regionParam, nameSearch || undefined)
+          : AdminService.userAppearance.getReapplyUsers(page, limit, regionParam, nameSearch || undefined),
+
+        // 다른 탭들의 카운트를 위한 데이터 (첫 페이지만)
+        activeTab !== 0 ? AdminService.userAppearance.getPendingUsers(1, 10, regionParam, nameSearch || undefined) : null,
+        activeTab !== 1 ? AdminService.userAppearance.getRejectedUsers(1, 10, regionParam, nameSearch || undefined) : null,
+        activeTab !== 2 ? AdminService.userAppearance.getReapplyUsers(1, 10, regionParam, nameSearch || undefined) : null
       ]);
 
-      const users = currentResponse.data.items || [];
-      const currentMeta = currentResponse.data.meta || {};
+      const users = currentResponse.items || [];
+      const currentMeta = currentResponse.meta || {};
 
+      // 현재 탭 데이터 설정
       if (activeTab === 0) {
         setPendingUsers(users);
         setPendingCount(currentMeta.totalItems || users.length);
-        setRejectedCount(otherResponses[0]?.data?.meta?.totalItems || 0);
-        setReapplyCount(otherResponses[1]?.data?.meta?.totalItems || 0);
       } else if (activeTab === 1) {
         setRejectedUsers(users);
         setRejectedCount(currentMeta.totalItems || users.length);
-        setPendingCount(otherResponses[0]?.data?.meta?.totalItems || 0);
-        setReapplyCount(otherResponses[1]?.data?.meta?.totalItems || 0);
       } else {
         setReapplyUsers(users);
         setReapplyCount(currentMeta.totalItems || users.length);
-        setPendingCount(otherResponses[0]?.data?.meta?.totalItems || 0);
-        setRejectedCount(otherResponses[1]?.data?.meta?.totalItems || 0);
+      }
+
+      // 다른 탭들의 카운트 설정
+      if (pendingResponse && activeTab !== 0) {
+        setPendingCount(pendingResponse.meta?.totalItems || 0);
+      }
+      if (rejectedResponse && activeTab !== 1) {
+        setRejectedCount(rejectedResponse.meta?.totalItems || 0);
+      }
+      if (reapplyResponse && activeTab !== 2) {
+        setReapplyCount(reapplyResponse.meta?.totalItems || 0);
       }
 
       setTotalPages(currentMeta.totalPages || Math.ceil((currentMeta.totalItems || users.length) / limit));
@@ -370,16 +378,30 @@ const ApprovalManagementPanel: React.FC = () => {
         </Alert>
       )}
 
-      {/* 지역 필터 */}
-      <Box sx={{ 
+      {/* 필터 영역 */}
+      <Box sx={{
         mb: 3,
-        width: { xs: '100%', sm: 'auto'}
+        display: 'flex',
+        flexDirection: { xs: 'column', sm: 'row' },
+        gap: 2,
+        alignItems: { xs: 'stretch', sm: 'center' }
       }}>
+        {/* 지역 필터 */}
         <RegionFilter
           value={region}
           onChange={setRegionFilter}
           size={isMobile ? 'medium' : 'small'}
           sx={{ minWidth: { xs: '100%', sm: 150}, }}
+        />
+
+        {/* 이름 검색 */}
+        <TextField
+          label="이름 검색"
+          value={nameSearch}
+          onChange={(e) => setNameSearch(e.target.value)}
+          size={isMobile ? 'medium' : 'small'}
+          sx={{ minWidth: { xs: '100%', sm: 200} }}
+          placeholder="사용자 이름을 입력하세요"
         />
       </Box>
 
