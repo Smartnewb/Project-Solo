@@ -11,13 +11,14 @@ import {
 } from '@mui/material';
 
 // 지역 타입 정의 (클러스터 기반)
-export type Region = 'ALL' | 'DJN' | 'SJG' | 'BSN' | 'DGU' | 'ICN';
+export type Region = 'ALL' | 'DJN' | 'SJG' | 'CAN' | 'BSN' | 'DGU' | 'ICN';
 
 // 지역 옵션 정의 (클러스터 기반)
 const REGION_OPTIONS = [
   { value: 'ALL', label: '전체 지역' },
   { value: 'DJN', label: '대전/공주 클러스터' },
-  { value: 'SJG', label: '청주/세종/천안 클러스터' },
+  { value: 'SJG', label: '청주/세종 클러스터' },
+  { value: 'CAN', label: '천안 클러스터' },
   { value: 'BSN', label: '부산/김해 클러스터' },
   { value: 'ICN', label: '인천/서울/경기 클러스터' },
   { value: 'DGU', label: '대구' }
@@ -88,8 +89,11 @@ export function useRegionFilter(initialRegion: Region = 'ALL') {
     // 대전/공주 클러스터 → DJN으로 전송 (백엔드에서 DJN+GJJ 처리)
     if (region === 'DJN') return 'DJN';
 
-    // 청주/세종/천안 클러스터 → SJG로 전송 (백엔드에서 SJG+CJU+CAN 처리)
+    // 청주/세종 클러스터 → SJG로 전송 (백엔드에서 SJG+CJU 처리)
     if (region === 'SJG') return 'SJG';
+
+    // 천안 클러스터 → CAN으로 전송
+    if (region === 'CAN') return 'CAN';
 
     // 부산/김해 클러스터 → BSN으로 전송 (백엔드에서 BSN+GHE 처리)
     if (region === 'BSN') return 'BSN';
