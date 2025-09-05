@@ -28,6 +28,11 @@ type Preference = {
   selectedOptions: PreferenceOption[];
 };
 
+type UserPreferences = {
+  self?: Preference[];
+  partner?: Preference[];
+};
+
 interface User {
   id: string;
   userId: string;
@@ -43,7 +48,7 @@ interface User {
   instagramId: string | null;
   profileImages: ProfileImage[];
   universityDetails: UniversityDetails | null;
-  preferences: Preference[];
+  preferences?: UserPreferences;
   statusAt?: string | null; // 인스타그램 오류 상태 등
 }
 
@@ -839,23 +844,58 @@ export default function UsersAdmin() {
                 <div className="space-y-6">
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <h3 className="text-lg font-semibold mb-4">선호도 정보</h3>
-                    <div className="space-y-4">
-                      {selectedUser.preferences?.map((pref, index) => (
-                        <div key={index} className="border-b border-gray-200 pb-3 last:border-0">
-                          <p className="text-sm text-gray-500 mb-1">{pref.typeName}</p>
-                          <div className="flex flex-wrap gap-2">
-                            {pref.selectedOptions.map((option, optIndex) => (
-                              <span
-                                key={optIndex}
-                                className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"
-                              >
-                                {option.displayName}
-                              </span>
+                    <div className="space-y-6">
+                      {/* 프로필 정보 */}
+                      {selectedUser.preferences?.self && Array.isArray(selectedUser.preferences.self) && selectedUser.preferences.self.length > 0 && (
+                        <div>
+                          <h4 className="text-md font-semibold mb-3 text-purple-700">프로필 정보</h4>
+                          <div className="space-y-3">
+                            {selectedUser.preferences.self.map((pref, index) => (
+                              <div key={index} className="border-b border-gray-200 pb-3 last:border-0">
+                                <p className="text-sm text-gray-500 mb-1">{pref.typeName}</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {pref.selectedOptions.map((option, optIndex) => (
+                                    <span
+                                      key={optIndex}
+                                      className="px-2 py-1 bg-purple-100 text-purple-800 text-sm rounded-full"
+                                    >
+                                      {option.displayName}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
                             ))}
                           </div>
                         </div>
-                      ))}
-                      {(!selectedUser.preferences || selectedUser.preferences.length === 0) && (
+                      )}
+
+                      {/* 이상형 정보 */}
+                      {selectedUser.preferences?.partner && Array.isArray(selectedUser.preferences.partner) && selectedUser.preferences.partner.length > 0 && (
+                        <div>
+                          <h4 className="text-md font-semibold mb-3 text-blue-700">이상형 정보</h4>
+                          <div className="space-y-3">
+                            {selectedUser.preferences.partner.map((pref, index) => (
+                              <div key={index} className="border-b border-gray-200 pb-3 last:border-0">
+                                <p className="text-sm text-gray-500 mb-1">{pref.typeName}</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {pref.selectedOptions.map((option, optIndex) => (
+                                    <span
+                                      key={optIndex}
+                                      className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"
+                                    >
+                                      {option.displayName}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 선호도 정보가 없는 경우 */}
+                      {(!selectedUser.preferences?.self || selectedUser.preferences.self.length === 0) &&
+                       (!selectedUser.preferences?.partner || selectedUser.preferences.partner.length === 0) && (
                         <p className="text-gray-500 text-sm">등록된 선호도 정보가 없습니다.</p>
                       )}
                     </div>

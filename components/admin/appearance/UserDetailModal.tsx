@@ -69,6 +69,24 @@ const GENDER_LABELS = {
   FEMALE: '여성'
 };
 
+// 선호도 옵션 타입
+interface PreferenceOption {
+  id: string;
+  displayName: string;
+}
+
+// 선호도 타입
+interface Preference {
+  typeName: string;
+  selectedOptions: PreferenceOption[];
+}
+
+// 사용자 선호도 타입
+interface UserPreferences {
+  self?: Preference[];
+  partner?: Preference[];
+}
+
 // 유저 상세 정보 타입
 export interface UserDetail {
   id: string;
@@ -100,6 +118,7 @@ export interface UserDetail {
   appearanceGrade?: 'S' | 'A' | 'B' | 'C' | 'UNKNOWN';
   isUniversityVerified?: boolean; // 대학교 인증 여부
   accountStatus?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  preferences?: UserPreferences;
   // 추가 필드
   [key: string]: any;
 }
@@ -1460,33 +1479,80 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                     </Grid>
 
                     {/* 선호도 정보 표시 */}
-                    {userDetail.preferences && Array.isArray(userDetail.preferences) && userDetail.preferences.length > 0 && (
+                    {userDetail.preferences && (
                       <Grid item xs={12}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
                           선호도 정보
                         </Typography>
                         <Divider sx={{ mb: 2 }} />
-                        <Box>
-                          {userDetail.preferences.map((pref: any, index: number) => (
-                            <Box key={index} sx={{ mb: 3 }}>
-                              <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'primary.main', mb: 1 }}>
-                                {pref.typeName}
-                              </Typography>
-                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8, mt: 0.5 }}>
-                                {pref.selectedOptions?.map((option: any, optIndex: number) => (
-                                  <Chip
-                                    key={optIndex}
-                                    label={option.displayName}
-                                    size="small"
-                                    color="primary"
-                                    variant="outlined"
-                                    sx={{ fontWeight: 'medium' }}
-                                  />
-                                ))}
-                              </Box>
+
+                        {/* 프로필 정보 */}
+                        {userDetail.preferences.self && Array.isArray(userDetail.preferences.self) && userDetail.preferences.self.length > 0 && (
+                          <Box sx={{ mb: 4 }}>
+                            <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'secondary.main', mb: 2 }}>
+                              프로필 정보
+                            </Typography>
+                            <Box>
+                              {userDetail.preferences.self.map((pref: any, index: number) => (
+                                <Box key={index} sx={{ mb: 3 }}>
+                                  <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'primary.main', mb: 1 }}>
+                                    {pref.typeName}
+                                  </Typography>
+                                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8, mt: 0.5 }}>
+                                    {pref.selectedOptions?.map((option: any, optIndex: number) => (
+                                      <Chip
+                                        key={optIndex}
+                                        label={option.displayName}
+                                        size="small"
+                                        color="secondary"
+                                        variant="outlined"
+                                        sx={{ fontWeight: 'medium' }}
+                                      />
+                                    ))}
+                                  </Box>
+                                </Box>
+                              ))}
                             </Box>
-                          ))}
-                        </Box>
+                          </Box>
+                        )}
+
+                        {/* 이상형 정보 */}
+                        {userDetail.preferences.partner && Array.isArray(userDetail.preferences.partner) && userDetail.preferences.partner.length > 0 && (
+                          <Box>
+                            <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main', mb: 2 }}>
+                              이상형 정보
+                            </Typography>
+                            <Box>
+                              {userDetail.preferences.partner.map((pref: any, index: number) => (
+                                <Box key={index} sx={{ mb: 3 }}>
+                                  <Typography variant="body1" sx={{ fontWeight: 'bold', color: 'primary.main', mb: 1 }}>
+                                    {pref.typeName}
+                                  </Typography>
+                                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8, mt: 0.5 }}>
+                                    {pref.selectedOptions?.map((option: any, optIndex: number) => (
+                                      <Chip
+                                        key={optIndex}
+                                        label={option.displayName}
+                                        size="small"
+                                        color="primary"
+                                        variant="outlined"
+                                        sx={{ fontWeight: 'medium' }}
+                                      />
+                                    ))}
+                                  </Box>
+                                </Box>
+                              ))}
+                            </Box>
+                          </Box>
+                        )}
+
+                        {/* 선호도 정보가 없는 경우 */}
+                        {(!userDetail.preferences.self || userDetail.preferences.self.length === 0) &&
+                         (!userDetail.preferences.partner || userDetail.preferences.partner.length === 0) && (
+                          <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                            등록된 선호도 정보가 없습니다.
+                          </Typography>
+                        )}
                       </Grid>
                     )}
 
