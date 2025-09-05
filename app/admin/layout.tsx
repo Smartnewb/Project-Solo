@@ -13,6 +13,7 @@ export default function AdminLayout({
   readonly children: React.ReactNode
 }) {
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
   const { user, isAdmin, signOut } = useAuth();
 
@@ -107,7 +108,7 @@ export default function AdminLayout({
   return (
     <div className="flex h-screen bg-gray-100">
       {/* 사이드바 */}
-      <div className="w-64 bg-white shadow-md">
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-md transform ${sidebarOpen ? 'translate-x-0 ': '-translate-x-full' } transition-transform duration-200 ease-in-out md:translate-x-0 md:static md:inset-0`}>
         <div className="p-4 border-b">
           <h2 className="text-xl font-bold text-primary-DEFAULT">관리자 대시보드</h2>
           <p className="text-sm text-gray-500 mt-1">{user?.email}</p>
@@ -115,32 +116,32 @@ export default function AdminLayout({
         <nav className="mt-4">
           <ul>
             <li>
-              <Link href="/admin/dashboard" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
+              <Link href="/admin/dashboard" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors" onClick={() => setSidebarOpen(false)}>
                 대시보드
               </Link>
             </li>
             <li>
-              <Link href="/admin/community" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
+              <Link href="/admin/community" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors" onClick={() => setSidebarOpen(false)}>
                 커뮤니티 관리
               </Link>
             </li>
             <li>
-              <Link href="/admin/users/appearance" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
+              <Link href="/admin/users/appearance" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors" onClick={() => setSidebarOpen(false)}>
                 사용자 관리
               </Link>
             </li>
             <li>
-              <Link href="/admin/matching-management" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
+              <Link href="/admin/matching-management" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors" onClick={() => setSidebarOpen(false)}>
                 매칭 관리
               </Link>
             </li>
             <li>
-              <Link href="/admin/version-management" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
+              <Link href="/admin/version-management" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors" onClick={() => setSidebarOpen(false)}>
                 버전 관리
               </Link>
             </li>
             <li>
-              <Link href="/admin/sms" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors">
+              <Link href="/admin/sms" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors" onClick={() => setSidebarOpen(false)}>
                 SMS 관리
               </Link>
             </li>
@@ -156,8 +157,28 @@ export default function AdminLayout({
         </nav>
       </div>
 
+      {/* 모바일 오버레이 */}
+      {sidebarOpen && (
+        <div
+          className='fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden'
+          onClick={()=>setSidebarOpen(false)}
+        />
+      )}
+
       {/* 메인 콘텐츠 */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 flex flex-col overflow-auto">
+        {/* 모바일 전용 햄버거 버튼 */}
+        <div className='md:hidden flex items-center justify-between p-4 bg-white shadow-sm'>
+          <h1 className='text-lg font-semibold'>관리자 대시보드</h1>
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className='p-2 rounded-md hover:bg-gray-100'
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </div>
         <main className="p-6">
           {children}
         </main>
