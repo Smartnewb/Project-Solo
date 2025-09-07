@@ -461,6 +461,9 @@ const ApprovalManagementPanel: React.FC = () => {
                     <Typography>{user.instagramId || '-'}</Typography>
                     <Typography>{user.university || '-'}</Typography>
                     <Typography>{getRegionLabel(user.region)}</Typography>
+                    {(activeTab === 1 || activeTab ===2) && user.rejectionReason && (
+                      <Typography>거부 사유 : {getRejectionReasonLabel(user.rejectionReason)}</Typography>
+                    )}
                   </Stack>
 
                   <Box sx={{
@@ -468,17 +471,22 @@ const ApprovalManagementPanel: React.FC = () => {
                     gap: 1,
                     justifyContent: 'flex-end',
                   }}>
-                    {/*TODO: - 아이콘 추가 */}
                     <IconButton>
                     </IconButton>
 
+                    <IconButton size='small' color='success' onClick={() => {
+                      setSelectedUserId(getUserId(user));
+                      setApprovalModalOpen(true);
+                    }}> 
+                          <CheckIcon />
+                      </IconButton>
+
                     {(user.status === 'pending') && (
                       <>
-                        <IconButton size='small' color='success' onClick={() => {}}> {/* TODO: - 승인 처리 */}
-                          <CheckIcon />
-                        </IconButton>
-
-                        <IconButton size='small' color='error' onClick={() => {}}> {/* TODO: - 거부 처리 */}
+                        <IconButton size='small' color='error' onClick={() => {
+                          setSelectedUserId(getUserId(user));
+                          setRejectionModalOpen(true);
+                        }}> 
                           <CloseIcon />
                         </IconButton>
                       </>
