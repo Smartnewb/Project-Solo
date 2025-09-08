@@ -74,6 +74,10 @@ export default function ChatManagementPage() {
   const [loadingUserDetail, setLoadingUserDetail] = useState(false);
   const [userDetailError, setUserDetailError] = useState<string | null>(null);
 
+  // 이미지 미리보기 모달 상태
+  const [imagePreviewOpen, setImagePreviewOpen] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string>('');
+
   const [error, setError] = useState<string>('');
 
   // 채팅방 목록 조회
@@ -149,6 +153,12 @@ export default function ChatManagementPage() {
     } finally {
       setLoadingUserDetail(false);
     }
+  };
+
+  // 이미지 미리보기 핸들러
+  const handleImagePreview = (imageUrl: string) => {
+    setPreviewImageUrl(imageUrl);
+    setImagePreviewOpen(true);
   };
 
   // 날짜 포맷팅
@@ -437,9 +447,36 @@ export default function ChatManagementPage() {
                                 p: 1
                               }}
                             >
-                              <Typography variant="body2">
-                                {message.content}
-                              </Typography>
+                              {message.messageType === 'image' && message.mediaUrl ? (
+                                <Box>
+                                  <Box
+                                    component="img"
+                                    src={message.mediaUrl}
+                                    alt="채팅 이미지"
+                                    sx={{
+                                      maxWidth: 200,
+                                      maxHeight: 200,
+                                      width: 'auto',
+                                      height: 'auto',
+                                      borderRadius: 1,
+                                      cursor: 'pointer',
+                                      '&:hover': {
+                                        opacity: 0.8
+                                      }
+                                    }}
+                                    onClick={() => handleImagePreview(message.mediaUrl!)}
+                                  />
+                                  {message.content && (
+                                    <Typography variant="body2" sx={{ mt: 1 }}>
+                                      {message.content}
+                                    </Typography>
+                                  )}
+                                </Box>
+                              ) : (
+                                <Typography variant="body2">
+                                  {message.content}
+                                </Typography>
+                              )}
                             </Card>
 
                             <Typography
@@ -484,6 +521,45 @@ export default function ChatManagementPage() {
           }}
         />
       )}
+
+      {/* 이미지 미리보기 모달 */}
+      <Dialog
+        open={imagePreviewOpen}
+        onClose={() => setImagePreviewOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="h6">이미지 미리보기</Typography>
+          <IconButton onClick={() => setImagePreviewOpen(false)}>
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ p: 2, textAlign: 'center' }}>
+          {previewImageUrl && (
+            <Box
+              component="img"
+              src={previewImageUrl}
+              alt="미리보기 이미지"
+              sx={{
+                maxWidth: '100%',
+                maxHeight: '70vh',
+                width: 'auto',
+                height: 'auto',
+                borderRadius: 1
+              }}
+            />
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => window.open(previewImageUrl, '_blank')}>
+            새 탭에서 열기
+          </Button>
+          <Button onClick={() => setImagePreviewOpen(false)}>
+            닫기
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
