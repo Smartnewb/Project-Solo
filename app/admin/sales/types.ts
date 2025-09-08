@@ -1,9 +1,9 @@
 // TITLE: - 어드민 매출 지표 관련 타입 정의
 
-import { WeekNumberLabel } from "react-day-picker";
+import { extend } from "lodash";
 
 // === 타입 ===
-type paymentType = 'all' | 'iap_only' | 'exclude_iap';
+export type paymentType = 'all' | 'iap_only' | 'exclude_iap';
 
 // === 도메인 엔티티 ===
 // MARK: - 지역별 매출액
@@ -19,6 +19,12 @@ export interface SalesTransition {
     amount: number;
     count: number;
     regionalData: RegionSales[];
+};
+
+// MARK: - 기간 설정
+export interface DatePicker {
+    startDate?: string;
+    endDate?: string;
 };
 
 
@@ -101,10 +107,55 @@ export interface TrendCustomResponse {
 
 };
 
-// MARK: - 결제 성공률 조회
-export interface SuccessRateResponse {
-    date: string;
-    totalAttemps: number;
-    successFulPayments: number;
-    successRate: number;
-};
+// MARK: - 대학별 매출 순위 조회
+export interface UniversityRanking {
+    rankings: {
+        universityName: string;
+        amount: number;
+        count: number;
+        averageAmout: number;
+        rank: number;
+    }
+}
+// MARK: - 상세분석 공통 필드
+interface Analysis {
+    count: number;
+    totalAmount: number;
+    averageAmount: number;
+    percentage: number;
+}
+
+// MARK: - 상세분석 공통 메타데이터
+interface Amount {
+    totalAmount: number;
+    totalCount: number;
+}
+
+// MARK: - 결제수단 별 상세 분석
+
+interface PaymentAnalysisItem extends Analysis {
+    paymentType: string;
+}
+
+export interface PaymentAnalysis extends Amount {
+    analysis: PaymentAnalysisItem[];
+}
+
+
+// MARK: - 성별 구매 분석
+interface GenderAnalysisItem extends Analysis {
+    gender: string;
+}
+
+export interface GenderAnalysis extends Amount {
+    analysis: GenderAnalysisItem[];
+}
+
+// MARK: - 연령대별 구매 분석
+interface AgeAnalysisItem extends Analysis {
+    ageGroup: string;
+}
+
+export interface AgeAnalysis extends Amount {
+    analysis: AgeAnalysisItem[];
+}
