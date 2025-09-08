@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import communityService from '@/app/services/community';
+import communityService, { Category } from '@/app/services/community';
 import {
   Box,
   Typography,
@@ -71,13 +71,15 @@ function ArticleList() {
   // 카테고리 이전 관련 상태
   const [openCategoryDialog, setOpenCategoryDialog] = useState(false);
   const [categoryTargetId, setCategoryTargetId] = useState<string>('');
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedArticleDetail, setSelectedArticleDetail] = useState<any>(null);
   const [startDate, setStartDate] = useState<Date | null>(new Date());
   const [endDate, setEndDate] = useState<Date | null>(new Date());
+  // 카테고리 필터 상태
+  const [selectedFilterCategoryId, setSelectedFilterCategoryId] = useState<string>('');
   // 사용자 프로필 상세 모달 상태
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -87,7 +89,8 @@ function ArticleList() {
     try {
       setLoading(true);
       setError(null);
-      const response = await communityService.getArticles(filter, page + 1, rowsPerPage, startDate, endDate);
+      const categoryId = selectedFilterCategoryId || null;
+      const response = await communityService.getArticles(filter, page + 1, rowsPerPage, startDate, endDate, categoryId);
       setArticles(response.items ?? []);
       setTotalCount(response.meta?.totalItems ?? 0);
       console.log('페이지네이션 정보:', response.meta);
@@ -126,6 +129,15 @@ function ArticleList() {
   // 필터 변경 시
   const handleFilterChange = (event: any) => {
     setFilter(event.target.value as 'all' | 'reported' | 'blinded');
+    setPage(0);
+  };
+
+  // 필터 초기화
+  const handleResetFilters = () => {
+    setFilter('all');
+    setSelectedFilterCategoryId('');
+    setStartDate(new Date());
+    setEndDate(new Date());
     setPage(0);
   };
 
@@ -283,7 +295,7 @@ function ArticleList() {
   // 게시글 목록 조회
   useEffect(() => {
     fetchArticles();
-  }, [filter, page, rowsPerPage, startDate, endDate]);
+  }, [filter, page, rowsPerPage, startDate, endDate, selectedFilterCategoryId]);
 
   // 카테고리 목록 조회
   const fetchCategories = async () => {
@@ -322,6 +334,25 @@ function ArticleList() {
             </Select>
           </FormControl>
 
+          <FormControl variant="outlined" size="small" sx={{ minWidth: 150 }}>
+            <Select
+              value={selectedFilterCategoryId}
+              onChange={(e) => {
+                setSelectedFilterCategoryId(e.target.value);
+                setPage(0); // 페이지를 첫 번째로 리셋
+              }}
+              displayEmpty
+              size="small"
+            >
+              <MenuItem value="">전체 카테고리</MenuItem>
+              {categories.map((category) => (
+                <MenuItem key={category.id} value={category.id}>
+                  {category.displayName}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             <DatePicker
               label="시작 날짜"
@@ -357,6 +388,15 @@ function ArticleList() {
             onClick={fetchArticles}
           >
             새로고침
+          </Button>
+
+          <Button
+            variant="outlined"
+            size="small"
+            color="secondary"
+            onClick={handleResetFilters}
+          >
+            필터 초기화
           </Button>
         </Box>
 

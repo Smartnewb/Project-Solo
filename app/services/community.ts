@@ -94,6 +94,13 @@ export interface ArticleDetail extends Article {
   reports: Report[];
 }
 
+// 카테고리 타입 정의
+export interface Category {
+  id: string;
+  code: string;
+  displayName: string;
+}
+
 // 커뮤니티 관리 API 서비스
 const communityService = {
   // 게시글 목록 조회
@@ -102,10 +109,11 @@ const communityService = {
     page = 1,
     limit = 10,
     startDate: Date | null = null,
-    endDate: Date | null = null
+    endDate: Date | null = null,
+    categoryId: string | null = null
   ): Promise<PaginatedResponse<Article>> => {
     try {
-      console.log('게시글 목록 조회 요청:', { filter, page, limit, startDate, endDate });
+      console.log('게시글 목록 조회 요청:', { filter, page, limit, startDate, endDate, categoryId });
 
       // API 파라미터 구성
       const params: any = {
@@ -121,6 +129,11 @@ const communityService = {
       // 종료 날짜가 있으면 추가 (YYYY-MM-DD 형식)
       if (endDate) {
         params.endDate = endDate.toISOString().split('T')[0];
+      }
+
+      // 카테고리 ID가 있으면 추가
+      if (categoryId) {
+        params.categoryId = categoryId;
       }
 
       // 실제 API 호출
@@ -248,13 +261,17 @@ const communityService = {
   },
 
   // 게시글 카테고리 목록 조회
-  getCategories: async (): Promise<any> => {
+  getCategories: async (): Promise<{ categories: Category[] }> => {
     try {
       console.log('게시글 카테고리 목록 조회 요청');
 
       const response = await axiosServer.get(`/admin/community/categories`);
       console.log('게시글 카테고리 목록 조회 응답:', response.data);
-      return response.data;
+
+      // 백엔드 응답 구조에 맞게 반환
+      return {
+        categories: response.data.categories ?? []
+      };
     } catch (error) {
       console.error('게시글 카테고리 목록 조회 중 오류:', error);
       throw error;
