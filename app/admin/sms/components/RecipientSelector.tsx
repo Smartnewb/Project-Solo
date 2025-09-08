@@ -22,38 +22,6 @@ interface RecipientSelectorProps {
     onRecipientsChange?: (recipient: User[]) => void; // 선택된 수신자 변경시 호출되는 콜백
 }
 
-// NOTE: - 추후 삭제
-// MARK: - 목업 데이터
-// const MOCK_USERS: User[] = [
-//     {
-//         userId: '1',
-//         name: '이민지',
-//         phoneNumber: '010-0000-0000',
-//         gender: 'female',
-//         lastLoginAt: '2024-01-12',
-//     },
-//     {
-//         userId: '2',
-//         name: '사민경',
-//         phoneNumber: '010-9876-5432',
-//         gender: 'female',
-//         lastLoginAt: '2024-01-14',
-//     },
-//     {
-//         userId: '3',
-//         name: '유재윤',
-//         phoneNumber: '010-5555-1234',
-//         gender: 'male',
-//         lastLoginAt: '2024-01-13',
-//     },
-//     {
-//         userId: '4',
-//         name: '최은기',
-//         phoneNumber: '010-5555-1234',
-//         gender: 'male',
-//         lastLoginAt: '2024-01-13',
-//     },
-// ];
 
 
 // MARK: - 발송 대상 선택 컴포넌트
