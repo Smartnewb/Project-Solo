@@ -34,6 +34,16 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
     const [startDateOpen, setStartDateOpen] = useState<boolean>(false);
     const [endDateOpen, setEndDateOpen] = useState<boolean>(false);
     const [dateError, setDateError] = useState<string>('');
+    const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
+
+    // === 날짜 포맷팅 유틸리티 ===
+    const formatDateToString = (date: Date): string => {
+        // 로컬 시간대 기준으로 YYYY-MM-DD 형식 변환
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
 
     // === hooks ===
     // MARK: - 마운트 시, 초기화
@@ -44,17 +54,25 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
             from: startDate,
             to: endDate,
         })
+        setSelectedPeriod('all'); // 초기값을 'all'로 설정
     }, []);
+    console.log('초기 selectedPeriod:', selectedPeriod);
 
     // MARK: - 날짜 변경 감지 및 부모 컴포넌트에게 알림
     useEffect(()=>{
         if (dateRange.from && dateRange.to && handleValidationDate()) {
+            console.log('PeriodSelector 날짜 전달:', {
+                from: formatDateToString(dateRange.from),
+                to: formatDateToString(dateRange.to)
+            });
+            
             onDateRangeChange?.({
                 startDate: dateRange.from,
                 endDate: dateRange.to,
             });
         }
     }, [dateRange.from, dateRange.to]);
+    console.log('현재 selectedPeriod:',selectedPeriod);
 
     /// === handlers === 
     
@@ -81,6 +99,8 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
 
     // MARK: - 날짜 범위 초기화
     const handleClearDates = () => {
+        setSelectedPeriod('all');
+        console.log('handleClearDates - selectedPeriod:', 'all');
         setDateRange({
             from: undefined,
             to: undefined,
@@ -97,9 +117,27 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
             startDate: undefined,
             endDate: undefined,
         })
-
     }
 
+    // MARK: - 빠른 기간 설정
+    const handleQuickPeriod = (days: number) => {
+        setSelectedPeriod(`${days}days`)
+        const today = new Date();
+        const startDate = new Date();
+        startDate.setDate(today.getDate() - days);
+        
+        setDateRange({
+            from: startDate,
+            to: today,
+        });
+        
+        setDateError('');
+        
+        onDateRangeChange?.({
+            startDate: startDate,
+            endDate: today,
+        });
+    };
 
     // MARK: - 날짜 유효성 검증
     const handleValidationDate = (): boolean => {
@@ -130,10 +168,54 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
             <div className='border border-border bg-[#FFFFFF] rounded-lg p-4 sm:p-6 mb-6'>
                 {/* MARK: - 헤더  */}
                 <h3 className='text-lg font-medium text-[#111827] mb-4'>기간 설정</h3>
-                {/* MARK:
-                - 콘텐츠 p-4
-                - 날짜 설정 
-                */}
+                
+                {/* MARK: - 기간 선택 버튼들 */}
+                <div className='flex flex-wrap gap-2 mb-4'>
+                    <button
+                        onClick={handleClearDates}
+                        className={`px-3 py-1.5 text-sm rounded-md transition-colors' 
+                            ${selectedPeriod === 'all'
+                                ? 'text-white bg-[#7D4EE4]'
+                                : 'border border-border text-gray-700 bg-gary-100 text-gray-700'
+                            }`}
+                    >
+                        전체 기간
+                    </button>
+                    <button
+                        onClick={() => handleQuickPeriod(7)}
+                        className={`px-3 py-1.5 text-sm rounded-md transition-colors' 
+                            ${selectedPeriod === '7days'
+                                ? 'text-white bg-[#7D4EE4]'
+                                : 'border border-border text-gray-700 bg-gary-100 text-gray-700'
+                            }`}
+                    >
+                        최근 7일
+                    </button>
+                    <button
+                        onClick={() => handleQuickPeriod(30)}
+                        className={`px-3 py-1.5 text-sm rounded-md transition-colors' 
+                            ${selectedPeriod === '30days'
+                                ? 'text-white bg-[#7D4EE4]'
+                                : 'border border-border text-gray-700 bg-gary-100 text-gray-700'
+                            }`}
+                    >
+                        최근 30일
+                    </button>
+                    <button
+                        onClick={() => handleQuickPeriod(90)}
+                        className={`px-3 py-1.5 text-sm rounded-md transition-colors' 
+                            ${selectedPeriod === '90days'
+                                ? 'text-white bg-[#7D4EE4]'
+                                : 'border border-border text-gray-700 bg-gary-100 text-gray-700'
+                            }`}
+                        
+                    >
+                        최근 3개월
+                    </button>
+
+                </div>
+
+                {/* 기존 날짜 선택 UI */}
                 <div className='flex flex-col sm:flex-row gap-2 w-full'>
                     {/* 시작일 */}
                         <div className='flex-1 w-full'>
@@ -257,6 +339,39 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
                     
 
                 </div>
+
+                {/* 선택된 기간 표시 */}
+                {(dateRange.from || dateRange.to) && (
+                    <div className='mt-4 p-3 bg-purple-50 border border-purple-200 rounded-md'>
+                        <div className='flex items-center justify-between'>
+                            <div className='text-sm text-[#7D4EE4]'>
+                                <span className='font-medium'>선택된 기간: </span>
+                                {dateRange.from && dateRange.to ? (
+                                    `${format(dateRange.from, 'yyyy-MM-dd')} ~ ${format(dateRange.to, 'yyyy-MM-dd')}`
+                                ) : dateRange.from ? (
+                                    `${format(dateRange.from, 'yyyy-MM-dd')} ~ (종료일 미선택)`
+                                ) : (
+                                    `(시작일 미선택) ~ ${dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : ''}`
+                                )}
+                                
+                            </div>
+                            <button
+                                onClick={handleClearDates}
+                                className='text-[#7D4EE4] hover:text-purple-700 text-sm font-medium'
+                            >
+                                초기화
+                            </button>
+                        </div>
+                        <label className='text-gray-400 text-xs'>초기화 버튼을 누를 시, 전체 기간으로 조회됩니다.</label>
+                    </div>
+                )}
+
+                {/* 에러 메시지 표시 */}
+                {dateError && (
+                    <div className='mt-3 p-3 bg-red-50 border border-red-200 rounded-md'>
+                        <p className='text-sm text-red-600'>{dateError}</p>
+                    </div>
+                )}
             </div>
         </>
     );
