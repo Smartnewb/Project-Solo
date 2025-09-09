@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { SendSmsRequest, User } from '../types';
 import { smsService } from '@/app/services/sms';
+import { setSeconds } from "date-fns";
 
 // MARK: - props
 interface MessageComposerProps {
@@ -10,6 +11,7 @@ interface MessageComposerProps {
     templateTitle?: string;
     templateContent?: string;
     onSendComplete?: () => void;
+
 }
 
 // MARK: - 메인 컴포넌트
@@ -17,6 +19,8 @@ export function MessageComposer({ recipients, templateId, templateTitle, templat
     // === 상태관리 ===
     const [message, setMessage] = useState<string>('');
     const [loading, setLoading] = useState(false);
+    const [scheduledAt, setScheduledAt] = useState<string>('');
+    const [scheduledAtOpen, setScheduledAtOpen] = useState<boolean>(false);
 
     // 현재 사용 중인 소스 추적
     const [messageSource, setMessageSource] = useState<'draft' | 'template' | 'manual'>('manual');
@@ -185,6 +189,11 @@ export function MessageComposer({ recipients, templateId, templateTitle, templat
 
     // === sms 발송 ===
     const handleSend = async () => {
+        console.log('=== 일반 발송 버튼 클릭 ===');
+        console.log('현재 시간:', new Date());
+        console.log('현재 시간 문자열:', new Date().toString());
+        console.log('scheduledAt 상태:', scheduledAt);
+        
         if (!message.trim()) {
             alert('메세지를 입력해주세요.');
             return;
@@ -208,16 +217,26 @@ export function MessageComposer({ recipients, templateId, templateTitle, templat
                     phoneNumber: user.phoneNumber,
                     name: user.name,
                 }))
-
+                
 
             };
+            
+            console.log('=== 발송 요청 데이터 ===');
+            console.log('request:', request);
 
             const response = await smsService.sendBulkSms(request);
 
             if (response.success) {
-                alert(`${recipients.length}명에게 메세지가 발송되었습니다.`);
+                console.log('=== 발송 성공 응답 ===');
+                console.log('response:', response);
+                
+                const messageText = scheduledAt
+                    ? `${recipients.length}명에게 예약 발송이 등록되었습니다.`
+                    : `${recipients.length}명에게 메세지가 발송되었습니다..`
+                alert(messageText);
                 setMessage('');
                 setHasUnsavedChanges(false);
+                setScheduledAt(''); // 일반 발송 후 예약 시간 초기화
                 localStorage.removeItem('sms_draft'); // 발송 후 임시저장 삭제
                 onSendComplete?.();
             } else {
@@ -240,6 +259,87 @@ export function MessageComposer({ recipients, templateId, templateTitle, templat
 
 
     };
+    
+    // === sms 예약 발송 ===
+    const handleScheduleSubmit = async (datetime: string) => {
+        console.log('=== 예약 발송 함수 시작 ===');
+        console.log('전달받은 datetime:', datetime);
+        console.log('현재 시간:', new Date());
+        
+        if (!datetime) {
+            alert('예약 시간을 선택해주세요.');
+            return;
+        }
+
+        const selectedTime = new Date(datetime);
+        const now = new Date();
+        
+        console.log('선택된 시간 객체:', selectedTime);
+        console.log('시간 비교 결과:', selectedTime <= now);
+
+        if (selectedTime <= now) {
+            alert('현재 시각보다 이후로 시간을 선택해주세요.');
+            return;
+        }
+
+        if (!message.trim()) {
+            alert('메세지를 입력해주세요.');
+            return;
+        }
+
+        if (!recipients || recipients.length === 0) {
+            alert('수신자를 선택해주세요.');
+            return;
+        }
+        setLoading(true);
+        setScheduledAtOpen(false);
+
+    try {
+        const request: SendSmsRequest = {
+            messageContent: message.trim(),
+            templateId: templateId || '',
+            templateTitle: templateTitle || '',
+            recipients: recipients.map(user => ({
+                userId: user.userId,
+                phoneNumber: user.phoneNumber,
+                name: user.name,
+            })),
+            scheduledAt: datetime.replace('T',' ')
+        };
+        
+        console.log('=== 예약 발송 요청 데이터 ===');
+        console.log('request:', request);
+
+        const response = await smsService.sendBulkSms(request);
+        
+        console.log('=== 예약 발송 응답 ===');
+        console.log('response:', response);
+
+        if (response.success) {
+            const scheduledTime = new Date(datetime);
+            alert(`${recipients.length}명에게 예약 발송이 등록되었습니다.\n발송 예정 시간: ${scheduledTime.toLocaleString('ko-KR')}`);
+            setMessage('');
+            setHasUnsavedChanges(false);
+            setScheduledAt('');
+            localStorage.removeItem('sms_draft');
+            onSendComplete?.();
+        } else {
+            console.log('예약 발송 실패 응답:', response);
+            throw new Error(response.message || '예약 발송 실패');
+        }
+    } catch (error) {
+        console.error('예약 발송 에러:', error);
+        alert('예약 발송에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+        setLoading(false);
+    }
+    
+    };
+
+    // === 예약 날짜 초기화 ===
+    const handleClearSchedul = () => {
+        setScheduledAt('');
+    }
 
     // === JSX ===
     return (
@@ -336,7 +436,7 @@ export function MessageComposer({ recipients, templateId, templateTitle, templat
                     </button>
                     
                     {/*  임시 저장 버튼 */}
-                    <div className='flex flex-col sm:flex-row gap-2 sm:gap-3'>
+                    <div className='flex flex-col sm:flex-row gap-3 sm:gap-4'>
                         <button
                             className='w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-2.5 
                             border border-[#D1D5DB] rounded-md
@@ -347,7 +447,31 @@ export function MessageComposer({ recipients, templateId, templateTitle, templat
                         >
                             임시저장
                         </button>
-
+                        
+                        {/* 예약 발송 */}
+                        <button
+                            onClick={() => {
+                                const now = new Date();
+                                console.log('=== 예약 발송 버튼 클릭 ===');
+                                console.log('현재 시간:', now);
+                                console.log('현재 시간 문자열:', now.toString());
+                                const year = now.getFullYear();
+                                const month = String(now.getMonth() + 1).padStart(2, '0');
+                                const day = String(now.getDate()).padStart(2, '0');
+                                const hours = String(now.getHours()).padStart(2, '0');
+                                const minutes = String(now.getMinutes()).padStart(2, '0');
+                                const formattedTime = `${year}-${month}-${day} ${hours}:${minutes}`;
+                                console.log('포맷된 시간:', formattedTime);
+                                setScheduledAt(formattedTime);
+                                setScheduledAtOpen(true);
+                            }}
+                            className='w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-2.5 
+                            border border-[#D1D5DB] rounded-md
+                            text-sm text-[#374151] font-[400]
+                            hover:bg-gray-50 transition-colors'
+                        >
+                            예약 발송
+                        </button>
                         <button
                             className='w-full sm:w-auto flex items-center justify-center gap-2 
                             px-4 sm:px-6 py-2 sm:py-2.5 
@@ -370,6 +494,44 @@ export function MessageComposer({ recipients, templateId, templateTitle, templat
                     </div>
                 </div>
             </div>
+
+            {/* 예약 시간 설정 모달*/}
+            {scheduledAtOpen && (
+                <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 !mt-0'>
+                    <div className='bg-white rounded-lg p-6 w-96'>
+                <h3 className='text-lg font-semibold mb-4'>예약 발송 시간 설정</h3>
+                <input
+                    type='datetime-local'
+                    value={scheduledAt}
+                    className='w-full border rounded px-3 py-2 mb-4'
+                    onChange={(e) => {
+                        console.log('=== input onChange ===');
+                        console.log('이전 값:', scheduledAt);
+                        console.log('새로운 값:', e.target.value);
+                        setScheduledAt(e.target.value);
+                    }}
+                />
+                <div className='text-xs text-gray-500 mb-2'>
+                    현재 scheduledAt 상태: {scheduledAt}
+                </div>
+                <div className='flex gap-2'>
+                    <button
+                        onClick={() => setScheduledAtOpen(false)}
+                        className='px-4 py-2 border rounded hover:bg-gray-50 transition-colors'
+                    >
+                    취소
+                    </button>
+                    <button
+                        onClick={() => handleScheduleSubmit(scheduledAt)}
+                        disabled={!scheduledAt}
+                        className='px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors'
+                    >
+                        설정
+                    </button>
+                </div>
+            </div>
+        </div>
+            )}
         </>
     );
 }
