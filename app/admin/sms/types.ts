@@ -4,7 +4,7 @@
 // DESCRIPTION: - 기본 데이터 타입 정의
 // MARK: - sms 템플릿
 export interface SmsTemplate {
-    id: string; // TODO: 타입 체크 필요
+    id: string;
     title: string; // 템플릿 타이틀
     content: string;
     createdAt: string;
@@ -23,17 +23,7 @@ export interface User {
     withdrawnAt?: string;
 }
 
-// MARK: - 선택된 사용자
-// export interface SelectedUser {
-//     id: string;
-//     name: string;
-//     phoneNumber: string;
-//     profileImage?: string;
-//     isSelected: boolean;
-// }
-
 export type SelectedUser = User & { isSelected: boolean};
-
 
 
 // MARK: - 발송 내역
@@ -137,6 +127,7 @@ export interface SendSmsRequest {
         name: string;
         phoneNumber: string;
     }>;
+    scheduledAt?: string;
 }
 
 
@@ -181,4 +172,3 @@ export interface GetHistoryDetailResponse {
         }>;
     };
 }
-
