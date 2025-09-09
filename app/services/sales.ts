@@ -33,7 +33,7 @@ const SALES_ENDPOINT = {
     TREND_MONTHLY: '/admin/stats/sales/trend/monthly',
     TREND_CUSTOM: '/admin/stats/sales/trend/custom-period',
     UNIVERSITY_RANKING: '/admin/stats/sales/university-ranking',
-    PAYMENT_ANALYSIS: '/admin/stats/sales/university-ranking',
+    PAYMENT_ANALYSIS: '/admin/stats/sales/payment-method-analysis',
     GENDER_ANALYSIS: '/admin/stats/sales/gender-analysis',
     AGE_ANALYSIS: '/admin/stats/sales/age-analysis',
 } as const;
@@ -55,16 +55,35 @@ export interface GetAnalysis {
 export const salesService = {
     
     // MARK: - 총 매출액 조회
-    async getSalesTotal(data: GetSales) : Promise<TotalSalesResponse> {
+    async getSalesTotal(data: GetSales): Promise<TotalSalesResponse> {
         try {
-            const response = await 
-            axiosServer.get(SALES_ENDPOINT.TOTAL , {
-                    params: data,
-                }
-            );
+            console.log('getSalesTotal API 호출:', data);
+            
+            // 전체 기간 조회를 위한 파라미터 처리
+            const params: any = { ...data };
+            
+            // 날짜가 없으면 전체 기간 조회
+            if (!params.startDate && !params.endDate) {
+                console.log('🌍 전체 기간 총 매출액 조회');
+                // 백엔드에서 전체 기간을 의미하는 특별한 값 전달 (또는 파라미터 제거)
+                delete params.startDate;
+                delete params.endDate;
+            }
+            
+            const response = await axiosServer.get(SALES_ENDPOINT.TOTAL, {
+                params: params,
+            });
+            
+            console.log('getSalesTotal API 응답:', response.data);
+            
+            if (!response.data) {
+                throw new Error('API 응답이 비어있습니다.');
+            }
+            
             return response.data;
-        } catch(error) {
-            throw new SalesApiError('총 매출액 조회 실패:',error);
+        } catch (error) {
+            console.error('총 매출액 조회 실패:', error);
+            throw new SalesApiError('총 매출액 조회 실패:', error);
         }
     },
 
@@ -104,13 +123,42 @@ export const salesService = {
         }
     },
 
-    // MARK: - 사용자 지정 기간 매출액 조회
+    // MARK: - 사용자 지정 기간 매출액 조회 개선
     async getSalesCustom(data: CustomSalesRequest): Promise<CustomSalesResponse> {
         try {
+            console.log('getSalesCustom API 호출 파라미터:', data);
+            
+            // 전체 기간 조회인지 확인
+            const isFullPeriod = !data.startDate && !data.endDate;
+            
+            if (isFullPeriod) {
+                console.log('🌍 전체 기간 매출 데이터 조회 중...');
+            }
+
             const response = await axiosServer.post(SALES_ENDPOINT.CUSTOM_PERIOD, data);
-            return response.data;
-        } catch(error) {
-            throw new SalesApiError('사용자 지정 매출액 조회 실패:',error);
+            
+            console.log('getSalesCustom API 응답:', response.data);
+            
+            // 응답 데이터 검증 및 정규화
+            const normalizedData = {
+                totalSales: response.data.totalSales || response.data.dailySales || 0,
+                totalCount: response.data.totalCount || response.data.dailyCount || 0,
+                dailySales: response.data.dailySales || response.data.totalSales || 0,
+                dailyCount: response.data.dailyCount || response.data.totalCount || 0,
+                regionalData: response.data.regionalData || [],
+                paymentData: response.data.paymentData || [],
+                // API에서 실제 조회된 날짜 범위 정보
+                startDate: response.data.startDate,
+                endDate: response.data.endDate,
+                // 메타 정보
+                isFullPeriod: isFullPeriod,
+                currency: 'KRW'
+            };
+            
+            return normalizedData;
+        } catch (error) {
+            console.error('사용자 지정 매출액 조회 실패:', error);
+            throw new SalesApiError('사용자 지정 매출액 조회 실패:', error);
         }
     },
 
