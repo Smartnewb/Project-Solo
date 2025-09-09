@@ -1,6 +1,5 @@
 // TITLE: - 어드민 매출 지표 관련 타입 정의
 
-import { extend } from "lodash";
 
 // === 타입 ===
 export type paymentType = 'all' | 'iap_only' | 'exclude_iap';
@@ -8,7 +7,7 @@ export type paymentType = 'all' | 'iap_only' | 'exclude_iap';
 // === 도메인 엔티티 ===
 // MARK: - 지역별 매출액
 export interface RegionSales {
-    regiond: string;
+    region: string;
     amount?: number;
     count?: number;
 };
@@ -39,7 +38,7 @@ export interface TotalSalesResponse {
 
 // MARK: - 일간 매출액 조회 응답
 export interface DailySalesResponse {
-    dialySales: number;
+    dailySales: number;
     dailyCount: number;
     regionalData?: RegionSales[];
 };
