@@ -1,4 +1,4 @@
-// 지역 코드와 한글명 매핑
+// MARK: - 지역 코드와 한글명 매핑
 export const REGION_MAP: Record<string, string> = {
     'all': '전체',
     'DJN': '대전',
