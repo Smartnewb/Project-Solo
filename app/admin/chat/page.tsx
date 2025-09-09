@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Box,
@@ -54,6 +54,12 @@ export default function ChatManagementPage() {
   const [selectedChatRoom, setSelectedChatRoom] = useState<ChatRoom | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
+
+  // 무한 스크롤 관련 상태
+  const [messagesPage, setMessagesPage] = useState(1);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [loadingMoreMessages, setLoadingMoreMessages] = useState(false);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // 페이지네이션
   const [page, setPage] = useState(0);
@@ -118,6 +124,8 @@ export default function ChatManagementPage() {
       });
 
       setChatMessages(response.messages);
+      setMessagesPage(1);
+      setHasMoreMessages(response.totalPages > 1);
     } catch (error: any) {
       console.error('채팅 메시지 조회 실패:', error);
       setError(error.message || '채팅 메시지를 불러오는데 실패했습니다.');
@@ -126,10 +134,59 @@ export default function ChatManagementPage() {
     }
   };
 
+  const loadMoreMessages = useCallback(async () => {
+    if (!selectedChatRoom || loadingMoreMessages || !hasMoreMessages) return;
+
+    setLoadingMoreMessages(true);
+    try {
+      const nextPage = messagesPage + 1;
+      const response = await chatService.getChatMessages({
+        chatRoomId: selectedChatRoom.id,
+        page: nextPage,
+        limit: 50
+      });
+
+      if (response.messages.length > 0) {
+        setChatMessages(prev => [...prev, ...response.messages]);
+        setMessagesPage(nextPage);
+        setHasMoreMessages(nextPage < response.totalPages);
+      } else {
+        setHasMoreMessages(false);
+      }
+    } catch (error: any) {
+      console.error('추가 메시지 로드 실패:', error);
+    } finally {
+      setLoadingMoreMessages(false);
+    }
+  }, [selectedChatRoom, loadingMoreMessages, hasMoreMessages, messagesPage]);
+
+  const handleScroll = useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+
+    if (isNearBottom && hasMoreMessages && !loadingMoreMessages) {
+      loadMoreMessages();
+    }
+  }, [hasMoreMessages, loadingMoreMessages, loadMoreMessages]);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+      return () => container.removeEventListener('scroll', handleScroll);
+    }
+  }, [handleScroll]);
+
   // 채팅방 클릭 핸들러
   const handleChatRoomClick = async (chatRoom: ChatRoom) => {
     setSelectedChatRoom(chatRoom);
     setChatDetailOpen(true);
+    setChatMessages([]);
+    setMessagesPage(1);
+    setHasMoreMessages(true);
     await fetchChatMessages(chatRoom.id);
   };
 
@@ -376,7 +433,10 @@ export default function ChatManagementPage() {
               </Box>
 
               {/* 채팅 메시지 목록 */}
-              <Box sx={{ height: 400, overflow: 'auto', p: 1 }}>
+              <Box
+                ref={messagesContainerRef}
+                sx={{ height: 400, overflow: 'auto', p: 1 }}
+              >
                 {messagesLoading ? (
                   <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                     <CircularProgress />
@@ -441,10 +501,13 @@ export default function ChatManagementPage() {
 
                             <Card
                               sx={{
-                                bgcolor: isMaleMessage ? 'primary.light' : 'grey.200',
-                                color: isMaleMessage ? 'primary.contrastText' : 'text.primary',
+                                bgcolor: isMaleMessage ? '#1976d2' : '#424242',
+                                color: '#ffffff !important',
                                 borderRadius: 2,
-                                p: 1
+                                p: 1,
+                                '& .MuiTypography-root': {
+                                  color: '#ffffff !important'
+                                }
                               }}
                             >
                               {message.messageType === 'image' && message.mediaUrl ? (
@@ -490,6 +553,22 @@ export default function ChatManagementPage() {
                         </ListItem>
                       );
                     })}
+
+                    {/* 추가 로딩 인디케이터 */}
+                    {loadingMoreMessages && (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                        <CircularProgress size={24} />
+                      </Box>
+                    )}
+
+                    {/* 더 이상 메시지가 없을 때 */}
+                    {!hasMoreMessages && chatMessages.length > 0 && (
+                      <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                        <Typography variant="caption" color="text.secondary">
+                          모든 메시지를 불러왔습니다.
+                        </Typography>
+                      </Box>
+                    )}
                   </List>
                 )}
               </Box>
