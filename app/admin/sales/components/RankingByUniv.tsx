@@ -172,6 +172,7 @@ export function RankingByUniv ({startDate, endDate} : RankingByUnivProps) {
                 </div>
 
                 {/* MARK: - 푸터(페이지 버튼) */}
+                {/* TODO: - 구현 */}
                 <div></div>
             </div>
         </>
