@@ -7,6 +7,7 @@ import { paymentType } from '../types';
 import { REGION_OPTIONS, getRegionLabel } from '../constants/regions';
 import { PAYMENT_TYPE_OPTIONS, getPaymentTypeLabel } from '../constants/paymentTypes';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { formatCurrency } from '../utils';
 
 interface TotalAmountProps {
     startDate?: Date;
@@ -48,15 +49,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
         return `${year}-${month}-${day}`;
     };
 
-    // === 유틸리티 함수 ===
-    const formatCurrency = (amount: number): string => {
-        return new Intl.NumberFormat('ko-KR', {
-            style: 'currency',
-            currency: 'KRW',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        }).format(amount);
-    };
+    
 
     const formatNumber = (num: number): string => {
         return new Intl.NumberFormat('ko-KR').format(num);
