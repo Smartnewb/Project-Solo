@@ -3,9 +3,7 @@
 import { useState, useEffect } from 'react'
 import { salesService } from '@/app/services/sales';
 import { paymentType, UniversityRanking } from '../types';
-import { Tally1 } from 'lucide-react';
-import { ClassNames } from '@emotion/react';
-import { format } from 'path';
+import { formatCurrency } from '../utils';
 
 // MARK: - props
 interface RankingByUnivProps {
@@ -162,9 +160,9 @@ export function RankingByUniv ({startDate, endDate} : RankingByUnivProps) {
                                 <tr key={index} className='hover:bg-gray-50'>
                                     <td className='px-6 py-4 text-sm font-medium text-gray-900'>{item.rank}</td> 
                                     <td className='px-6 py-4 text-sm font-medium text-gray-900'>{item.universityName}</td>
-                                    <td className='px-6 py-4 text-sm font-medium text-gray-900'>{item.amount}</td>
+                                    <td className='px-6 py-4 text-sm font-medium text-gray-900'>{formatCurrency(item.amount)}</td>
                                     <td className='px-6 py-4 text-sm font-medium text-gray-900'>{item.count}</td>
-                                    <td className='px-6 py-4 text-sm font-medium text-gray-900'>{item.averageAmount}</td>
+                                    <td className='px-6 py-4 text-sm font-medium text-gray-900'>{formatCurrency(item.averageAmount)}</td>
                                 </tr>
                             ))}
                         </tbody>
