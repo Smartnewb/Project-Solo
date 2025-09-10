@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { PaymentAnalysis } from './components/PaymentAnalysis';
 import { PeriodSelector } from './components/PeriodSelector';
 import { TotalAmount } from './components/TotalAmount';
+import { RankingByUniv } from './components/RankingByUniv';
 
 // 타입 정의
 interface DateRange {
@@ -87,7 +88,19 @@ export default function SalesPage() {
                         </div>
                     </div>
 
-                    
+                    {/* MARK: - 대학별 매출 순위 */}
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                        <div className="px-6 py-4 border-b border-gray-200">
+                            <h2 className="text-lg font-semibold text-gray-900">대학별 매출 순위</h2>
+                            <p className="text-sm text-gray-500 mt-1">대학별 매출 순위를 확인하세요</p>
+                        </div>
+                        <div className="p-6">
+                            <RankingByUniv 
+                                startDate={dateRange.startDate}
+                                endDate={dateRange.endDate}
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

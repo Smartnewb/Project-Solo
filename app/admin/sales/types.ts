@@ -107,14 +107,16 @@ export interface TrendCustomResponse {
 };
 
 // MARK: - 대학별 매출 순위 조회
+
+interface RankingItem {
+    universityName: string;
+    amount: number;
+    count: number;
+    averageAmount: number;
+    rank: number;
+};
 export interface UniversityRanking {
-    rankings: {
-        universityName: string;
-        amount: number;
-        count: number;
-        averageAmout: number;
-        rank: number;
-    }
+    rankings: RankingItem[];
 }
 // MARK: - 상세분석 공통 필드
 interface Analysis {
