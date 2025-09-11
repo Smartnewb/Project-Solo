@@ -227,7 +227,7 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
                 </div>
                 <button
                     onClick={handleRefresh}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                    className="px-4 py-2 bg-[#7D4EE4] text-white rounded-lg hover:bg-purple-700"
                 >
                     새로고침
                 </button>

@@ -350,14 +350,8 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                 </div>
                 <div className="flex gap-2">
                     <button
-                        onClick={handleToggleSort}
-                        className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
-                    >
-                        금액순 {sortOrder === 'desc' ? '↓' : '↑'}
-                    </button>
-                    <button
                         onClick={handleRefresh}
-                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                        className="px-4 py-2 bg-[#7D4EE4] text-white rounded-lg hover:bg-purple-700 transition-colors"
                     >
                         새로고침
                     </button>
