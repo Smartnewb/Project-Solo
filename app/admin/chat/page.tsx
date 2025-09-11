@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -40,25 +39,18 @@ import {
 import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
 import chatService, {
   ChatRoom,
-  ChatMessage,
-  ChatRoomsResponse,
-  ChatMessagesResponse
+  ChatMessage
 } from '@/app/services/chat';
 import AdminService from '@/app/services/admin';
 import { UserDetail } from '@/components/admin/appearance/UserDetailModal';
 
 export default function ChatManagementPage() {
-  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
   const [selectedChatRoom, setSelectedChatRoom] = useState<ChatRoom | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
 
-  // 무한 스크롤 관련 상태
-  const [messagesPage, setMessagesPage] = useState(1);
-  const [hasMoreMessages, setHasMoreMessages] = useState(true);
-  const [loadingMoreMessages, setLoadingMoreMessages] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // 페이지네이션
@@ -119,13 +111,10 @@ export default function ChatManagementPage() {
     try {
       const response = await chatService.getChatMessages({
         chatRoomId,
-        page: 1,
         limit: 50
       });
 
       setChatMessages(response.messages);
-      setMessagesPage(1);
-      setHasMoreMessages(response.totalPages > 1);
     } catch (error: any) {
       console.error('채팅 메시지 조회 실패:', error);
       setError(error.message || '채팅 메시지를 불러오는데 실패했습니다.');
@@ -134,59 +123,15 @@ export default function ChatManagementPage() {
     }
   };
 
-  const loadMoreMessages = useCallback(async () => {
-    if (!selectedChatRoom || loadingMoreMessages || !hasMoreMessages) return;
 
-    setLoadingMoreMessages(true);
-    try {
-      const nextPage = messagesPage + 1;
-      const response = await chatService.getChatMessages({
-        chatRoomId: selectedChatRoom.id,
-        page: nextPage,
-        limit: 50
-      });
 
-      if (response.messages.length > 0) {
-        setChatMessages(prev => [...prev, ...response.messages]);
-        setMessagesPage(nextPage);
-        setHasMoreMessages(nextPage < response.totalPages);
-      } else {
-        setHasMoreMessages(false);
-      }
-    } catch (error: any) {
-      console.error('추가 메시지 로드 실패:', error);
-    } finally {
-      setLoadingMoreMessages(false);
-    }
-  }, [selectedChatRoom, loadingMoreMessages, hasMoreMessages, messagesPage]);
 
-  const handleScroll = useCallback(() => {
-    const container = messagesContainerRef.current;
-    if (!container) return;
-
-    const { scrollTop, scrollHeight, clientHeight } = container;
-    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
-
-    if (isNearBottom && hasMoreMessages && !loadingMoreMessages) {
-      loadMoreMessages();
-    }
-  }, [hasMoreMessages, loadingMoreMessages, loadMoreMessages]);
-
-  useEffect(() => {
-    const container = messagesContainerRef.current;
-    if (container) {
-      container.addEventListener('scroll', handleScroll);
-      return () => container.removeEventListener('scroll', handleScroll);
-    }
-  }, [handleScroll]);
 
   // 채팅방 클릭 핸들러
   const handleChatRoomClick = async (chatRoom: ChatRoom) => {
     setSelectedChatRoom(chatRoom);
     setChatDetailOpen(true);
     setChatMessages([]);
-    setMessagesPage(1);
-    setHasMoreMessages(true);
     await fetchChatMessages(chatRoom.id);
   };
 
@@ -554,21 +499,7 @@ export default function ChatManagementPage() {
                       );
                     })}
 
-                    {/* 추가 로딩 인디케이터 */}
-                    {loadingMoreMessages && (
-                      <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
-                        <CircularProgress size={24} />
-                      </Box>
-                    )}
 
-                    {/* 더 이상 메시지가 없을 때 */}
-                    {!hasMoreMessages && chatMessages.length > 0 && (
-                      <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
-                        <Typography variant="caption" color="text.secondary">
-                          모든 메시지를 불러왔습니다.
-                        </Typography>
-                      </Box>
-                    )}
                   </List>
                 )}
               </Box>

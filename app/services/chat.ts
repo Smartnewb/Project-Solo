@@ -35,10 +35,10 @@ export interface ChatRoomsResponse {
 
 export interface ChatMessagesResponse {
   messages: ChatMessage[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+  total?: number;
+  page?: number;
+  limit?: number;
+  totalPages?: number;
 }
 
 export interface ChatRoomsParams {
@@ -83,8 +83,6 @@ class ChatService {
       const response = await axiosServer.get<ChatMessagesResponse>('/admin/chat/messages', {
         params: {
           chatRoomId: params.chatRoomId,
-          page: params.page || 1,
-          limit: params.limit || 50
         }
       });
       return response.data;
