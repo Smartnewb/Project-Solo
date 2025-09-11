@@ -5,6 +5,8 @@ import { PaymentAnalysis } from './components/PaymentAnalysis';
 import { PeriodSelector } from './components/PeriodSelector';
 import { TotalAmount } from './components/TotalAmount';
 import { RankingByUniv } from './components/RankingByUniv';
+import { GenderAnalysisTable } from './components/GenderAnalysis';
+import { AgeAnalysisComponent } from './components/AgeAnalysis';
 
 // 타입 정의
 interface DateRange {
@@ -96,6 +98,25 @@ export default function SalesPage() {
                         </div>
                         <div className="p-6">
                             <RankingByUniv 
+                                startDate={dateRange.startDate}
+                                endDate={dateRange.endDate}
+                            />
+                        </div>
+                    </div>
+
+                    {/* TODO: - 성별 및 연령대 분석*/}
+                    
+                    <div className='flex gap-2'>
+                        {/* 성별 분석 */} 
+                        <div className='flex-1'>
+                            <GenderAnalysisTable
+                                startDate={dateRange.startDate}
+                                endDate={dateRange.endDate}
+                            />
+                        </div>
+                        {/* 연령대별 분석 */} 
+                        <div className='flex-1'>
+                            <AgeAnalysisComponent 
                                 startDate={dateRange.startDate}
                                 endDate={dateRange.endDate}
                             />

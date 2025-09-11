@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { salesService } from '@/app/services/sales';
 import { paymentType, UniversityRanking } from '../types';
-import { formatCurrency } from '../utils';
+import { formateDateToString, formatCurrency } from '../utils';
+
 
 // MARK: - props
 interface RankingByUnivProps {
@@ -76,15 +77,6 @@ export function RankingByUniv ({startDate, endDate} : RankingByUnivProps) {
 
     };
 
-    // === utils ===
-    // MARK: - 날짜 포맷팅
-    // TODO: - 유틸로 따로 빼기
-    const formateDateToString = (date: Date): string => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2,'0');
-        const day = String(date.getDate()).padStart(2,'0');
-        return `${year}-${month}-${day}`;
-    };
 
     // === hooks ===
     // MARK: - 마운트
