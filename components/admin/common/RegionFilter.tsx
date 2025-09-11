@@ -7,14 +7,16 @@ import {
   Select,
   MenuItem,
   SelectChangeEvent,
-  Box
+  Box,
+  FormControlLabel,
+  Switch,
+  Typography
 } from '@mui/material';
 
 // 지역 타입 정의 (클러스터 기반)
-export type Region = 'ALL' | 'DJN' | 'SJG' | 'CAN' | 'BSN' | 'DGU' | 'ICN';
+export type Region = 'ALL' | 'DJN' | 'SJG' | 'CAN' | 'BSN' | 'DGU' | 'ICN' | 'CJU' | 'GJJ' | 'GHE' | 'SEL' | 'KYG';
 
-// 지역 옵션 정의 (클러스터 기반)
-const REGION_OPTIONS = [
+const CLUSTER_REGION_OPTIONS = [
   { value: 'ALL', label: '전체 지역' },
   { value: 'DJN', label: '대전/공주 클러스터' },
   { value: 'SJG', label: '청주/세종 클러스터' },
@@ -24,9 +26,27 @@ const REGION_OPTIONS = [
   { value: 'DGU', label: '대구' }
 ] as const;
 
+const INDIVIDUAL_REGION_OPTIONS = [
+  { value: 'ALL', label: '전체 지역' },
+  { value: 'DJN', label: '대전' },
+  { value: 'SJG', label: '세종' },
+  { value: 'CJU', label: '청주' },
+  { value: 'GJJ', label: '공주' },
+  { value: 'BSN', label: '부산' },
+  { value: 'GHE', label: '김해' },
+  { value: 'DGU', label: '대구' },
+  { value: 'ICN', label: '인천' },
+  { value: 'SEL', label: '서울' },
+  { value: 'KYG', label: '경기' },
+  { value: 'CAN', label: '천안' }
+] as const;
+
 interface RegionFilterProps {
   value: Region;
   onChange: (region: Region) => void;
+  useCluster?: boolean;
+  onClusterModeChange?: (useCluster: boolean) => void;
+  showClusterToggle?: boolean;
   disabled?: boolean;
   size?: 'small' | 'medium';
   variant?: 'outlined' | 'filled' | 'standard';
@@ -37,6 +57,9 @@ interface RegionFilterProps {
 export default function RegionFilter({
   value,
   onChange,
+  useCluster = true,
+  onClusterModeChange,
+  showClusterToggle = false,
   disabled = false,
   size = 'small',
   variant = 'outlined',
@@ -47,11 +70,39 @@ export default function RegionFilter({
     onChange(event.target.value as Region);
   };
 
+  const handleClusterToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newUseCluster = event.target.checked;
+    if (onClusterModeChange) {
+      onClusterModeChange(newUseCluster);
+    }
+    onChange('ALL');
+  };
+  const regionOptions = useCluster ? CLUSTER_REGION_OPTIONS : INDIVIDUAL_REGION_OPTIONS;
+
   return (
     <Box sx={sx}>
-      <FormControl 
-        size={size} 
-        variant={variant} 
+      {showClusterToggle && (
+        <Box sx={{ mb: 1 }}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={useCluster}
+                onChange={handleClusterToggle}
+                size="small"
+                disabled={disabled}
+              />
+            }
+            label={
+              <Typography variant="caption" color="textSecondary">
+                {useCluster ? '클러스터 단위' : '개별 지역'}
+              </Typography>
+            }
+          />
+        </Box>
+      )}
+      <FormControl
+        size={size}
+        variant={variant}
         fullWidth={fullWidth}
         disabled={disabled}
       >
@@ -63,7 +114,7 @@ export default function RegionFilter({
           label="지역"
           onChange={handleChange}
         >
-          {REGION_OPTIONS.map((option) => (
+          {regionOptions.map((option) => (
             <MenuItem key={option.value} value={option.value}>
               {option.label}
             </MenuItem>
@@ -75,45 +126,49 @@ export default function RegionFilter({
 }
 
 // 지역 필터 훅
-export function useRegionFilter(initialRegion: Region = 'ALL') {
+export function useRegionFilter(initialRegion: Region = 'ALL', initialUseCluster: boolean = true) {
   const [region, setRegion] = useState<Region>(initialRegion);
+  const [useCluster, setUseCluster] = useState<boolean>(initialUseCluster);
 
   const handleRegionChange = (newRegion: Region) => {
     setRegion(newRegion);
   };
 
-  // API 호출용 지역 파라미터 변환 (클러스터 기반)
+  const handleClusterModeChange = (newUseCluster: boolean) => {
+    setUseCluster(newUseCluster);
+
+    setRegion('ALL');
+  };
+
   const getRegionParam = (): string | undefined => {
     if (region === 'ALL') return undefined;
-
-    // 대전/공주 클러스터 → DJN으로 전송 (백엔드에서 DJN+GJJ 처리)
-    if (region === 'DJN') return 'DJN';
-
-    // 청주/세종 클러스터 → SJG로 전송 (백엔드에서 SJG+CJU 처리)
-    if (region === 'SJG') return 'SJG';
-
-    // 천안 클러스터 → CAN으로 전송
-    if (region === 'CAN') return 'CAN';
-
-    // 부산/김해 클러스터 → BSN으로 전송 (백엔드에서 BSN+GHE 처리)
-    if (region === 'BSN') return 'BSN';
-
-    // 인천/서울/경기 클러스터 → ICN으로 전송 (백엔드에서 ICN+SEL+KYG 처리)
-    if (region === 'ICN') return 'ICN';
-
-    // 대구는 단독
     return region;
+  };
+
+  const getUseClusterParam = (): boolean => {
+    return useCluster;
   };
 
   return {
     region,
+    useCluster,
     setRegion: handleRegionChange,
-    getRegionParam
+    setUseCluster: handleClusterModeChange,
+    getRegionParam,
+    getUseClusterParam
   };
 }
 
-// 지역 표시용 유틸리티 함수 (클러스터 기반)
-export const getRegionLabel = (region: Region): string => {
-  const option = REGION_OPTIONS.find(opt => opt.value === region);
+export const getRegionLabel = (region: Region, useCluster: boolean = true): string => {
+  const options = useCluster ? CLUSTER_REGION_OPTIONS : INDIVIDUAL_REGION_OPTIONS;
+  const option = options.find(opt => opt.value === region);
   return option?.label || '전체 지역';
+};
+
+export const getClusterRegionLabel = (region: Region): string => {
+  return getRegionLabel(region, true);
+};
+
+export const getIndividualRegionLabel = (region: Region): string => {
+  return getRegionLabel(region, false);
 };

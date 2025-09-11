@@ -8,21 +8,22 @@ import { getRegionLabel } from '@/components/admin/common/RegionFilter';
 interface DailySignupsCardProps {
   region?: string;
   includeDeleted?: boolean;
+  useCluster?: boolean;
 }
 
-export default function DailySignupsCard({ region, includeDeleted = false }: DailySignupsCardProps) {
+export default function DailySignupsCard({ region, includeDeleted = false, useCluster = true }: DailySignupsCardProps) {
   const [dailySignups, setDailySignups] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // 지역 라벨 생성
-  const regionLabel = region ? getRegionLabel(region as any) : '전체 지역';
+  const regionLabel = region ? getRegionLabel(region as any, useCluster) : '전체 지역';
 
   useEffect(() => {
     const fetchDailySignups = async () => {
       try {
         setLoading(true);
-        const data = await AdminService.stats.getDailySignupCount(region, includeDeleted);
+        const data = await AdminService.stats.getDailySignupCount(region, includeDeleted, useCluster);
         setDailySignups(data.dailySignups);
         setError(null);
       } catch (err) {
@@ -38,7 +39,7 @@ export default function DailySignupsCard({ region, includeDeleted = false }: Dai
     const interval = setInterval(fetchDailySignups, 60000);
 
     return () => clearInterval(interval);
-  }, [region, includeDeleted]);
+  }, [region, includeDeleted, useCluster]);
 
   return (
     <Card variant="outlined">

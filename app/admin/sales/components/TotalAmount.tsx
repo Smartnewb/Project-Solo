@@ -164,7 +164,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
     // 지역별 필터링된 총합 계산 함수
     const getFilteredTotals = () => {
         console.log('getFilteredTotals 호출:', { totalData, selectedRegions });
-        
+
         if (!totalData) {
             console.log('totalData가 없음');
             return { totalSales: 0, totalCount: 0 };
@@ -182,11 +182,11 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
 
         // 특정 지역들 선택 시 해당 지역들 데이터 합계
         if (totalData.regionalData && totalData.regionalData.length > 0) {
-            const filteredRegionData = totalData.regionalData.filter(item => 
+            const filteredRegionData = totalData.regionalData.filter(item =>
                 selectedRegions.includes(item.region)
             );
             console.log('선택된 지역들 데이터:', filteredRegionData);
-            
+
             if (filteredRegionData.length > 0) {
                 const result = filteredRegionData.reduce(
                     (acc, regionData) => ({
@@ -244,7 +244,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
         }
 
         // 선택된 지역들이 있으면 해당 지역들만, 전체 선택이면 모든 지역
-        const filteredRegionalData = selectedRegions.includes('all') 
+        const filteredRegionalData = selectedRegions.includes('all')
             ? totalData.regionalData
             : totalData.regionalData.filter(regionData => selectedRegions.includes(regionData.region));
 
@@ -262,7 +262,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
             value: regionData.amount || 0,
             count: regionData.count || 0,
             region: regionData.region,
-            percentage: selectedRegions.includes('all') 
+            percentage: selectedRegions.includes('all')
                 ? (percentageMap[regionData.region] || 0)
                 : ((regionData.amount || 0) / filteredTotal * 100) // 다중 지역 선택 시 필터된 총액 기준 비율
         }));
@@ -361,7 +361,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
 
             {/* 필터 영역 */}
             <div className="bg-white p-6 rounded-lg border border-gray-200">
-                <div className="flex flex-wrap gap-4 items-center">
+                <div className="flex flex-wrap gap-4 items-center mb-4">
                     {/* 지역별 필터 */}
                     <div className="flex flex-col gap-2">
                         <label className="text-sm font-medium text-gray-700">지역별</label>
@@ -438,9 +438,9 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                 <div className="bg-white p-8 rounded-lg border border-gray-200">
                     <div className="text-center">
                         <h3 className="text-lg font-medium text-gray-700 mb-2">
-                            {selectedRegions.includes('all') || selectedRegions.length === 0 
-                                ? '총 매출액' 
-                                : selectedRegions.length === 1 
+                            {selectedRegions.includes('all') || selectedRegions.length === 0
+                                ? '총 매출액'
+                                : selectedRegions.length === 1
                                     ? `${getRegionLabel(selectedRegions[0])} 매출액`
                                     : `선택된 지역 (${selectedRegions.length}개) 매출액`
                             }
@@ -458,9 +458,9 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                             <div className="text-center p-4 bg-gray-50 rounded-lg">
                                 <div className="text-sm text-gray-500">지역 필터</div>
                                 <div className="text-xl font-semibold text-gray-900">
-                                    {selectedRegions.includes('all') || selectedRegions.length === 0 
-                                        ? '전체' 
-                                        : selectedRegions.length === 1 
+                                    {selectedRegions.includes('all') || selectedRegions.length === 0
+                                        ? '전체'
+                                        : selectedRegions.length === 1
                                             ? getRegionLabel(selectedRegions[0])
                                             : `${selectedRegions.length}개 지역`
                                     }
@@ -516,7 +516,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                                                 </thead>
                                                 <tbody className="bg-white divide-y divide-gray-200">
                                                     {(() => {
-                                                        const filteredData = selectedRegions.includes('all') 
+                                                        const filteredData = selectedRegions.includes('all')
                                                             ? totalData.regionalData
                                                             : totalData.regionalData.filter(item => selectedRegions.includes(item.region));
                                                         return filteredData.map((regionData) => (

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Grid, Card, CardContent, Typography, Box, Alert, CircularProgress, Divider } from '@mui/material';
+import { Grid, Card, CardContent, Typography, Box, Alert, CircularProgress, Divider, FormControlLabel, Switch } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -30,8 +30,15 @@ export default function AdminDashboard() {
   const [authChecking, setAuthChecking] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // 지역 필터 훅 사용
-  const { region, setRegion: setRegionFilter, getRegionParam } = useRegionFilter();
+  // 지역 필터 훅 사용 (클러스터 모드 지원)
+  const {
+    region,
+    useCluster,
+    setRegion: setRegionFilter,
+    setUseCluster: setUseClusterMode,
+    getRegionParam,
+    getUseClusterParam
+  } = useRegionFilter();
 
   // 탈퇴자 포함 여부 훅 사용
   const { includeDeleted, setIncludeDeleted, getIncludeDeletedParam } = useIncludeDeletedFilter();
@@ -149,30 +156,65 @@ export default function AdminDashboard() {
         </Typography>
 
         {/* 필터 */}
-        <Box sx={{ mb: 3, display: 'flex', gap: 3, alignItems: 'center' }}>
-          <RegionFilter
-            value={region}
-            onChange={setRegionFilter}
-            size="small"
-            sx={{ minWidth: 150 }}
-          />
-          <IncludeDeletedFilter
-            value={includeDeleted}
-            onChange={setIncludeDeleted}
-            size="small"
-          />
+        <Box sx={{ mb: 3 }}>
+          <Box sx={{ display: 'flex', gap: 3, alignItems: 'center', mb: 2 }}>
+            <RegionFilter
+              value={region}
+              onChange={setRegionFilter}
+              useCluster={useCluster}
+              onClusterModeChange={setUseClusterMode}
+              showClusterToggle={false}
+              size="small"
+              sx={{ minWidth: 150 }}
+            />
+            <IncludeDeletedFilter
+              value={includeDeleted}
+              onChange={setIncludeDeleted}
+              size="small"
+            />
+          </Box>
+
+          {/* 클러스터 모드 토글 */}
+          <Box sx={{ ml: 1 }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={useCluster}
+                  onChange={(e) => setUseClusterMode(e.target.checked)}
+                  size="small"
+                />
+              }
+              label={
+                <Typography variant="caption" color="textSecondary">
+                  {useCluster ? '클러스터 단위 조회' : '개별 지역 조회'}
+                </Typography>
+              }
+            />
+          </Box>
         </Box>
 
         {/* Summary Cards */}
         <Grid container spacing={3} sx={{ mb: 3 }}>
           <Grid item xs={12} sm={6} md={3}>
-            <TotalUsersCard region={getRegionParam()} includeDeleted={getIncludeDeletedParam()} />
+            <TotalUsersCard
+              region={getRegionParam()}
+              includeDeleted={getIncludeDeletedParam()}
+              useCluster={getUseClusterParam()}
+            />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <WeeklySignupsCard region={getRegionParam()} includeDeleted={getIncludeDeletedParam()} />
+            <WeeklySignupsCard
+              region={getRegionParam()}
+              includeDeleted={getIncludeDeletedParam()}
+              useCluster={getUseClusterParam()}
+            />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <DailySignupsCard region={getRegionParam()} includeDeleted={getIncludeDeletedParam()} />
+            <DailySignupsCard
+              region={getRegionParam()}
+              includeDeleted={getIncludeDeletedParam()}
+              useCluster={getUseClusterParam()}
+            />
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <Card>
@@ -190,7 +232,11 @@ export default function AdminDashboard() {
 
         {/* 성별 통계 카드 */}
         <Box sx={{ mt: 4, mb: 4 }}>
-          <GenderStatsCard region={getRegionParam()} includeDeleted={getIncludeDeletedParam()} />
+          <GenderStatsCard
+            region={getRegionParam()}
+            includeDeleted={getIncludeDeletedParam()}
+            useCluster={getUseClusterParam()}
+          />
         </Box>
 
         {/* 회원가입 통계 대시보드 */}

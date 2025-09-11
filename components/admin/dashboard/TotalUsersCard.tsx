@@ -8,21 +8,22 @@ import { getRegionLabel } from '@/components/admin/common/RegionFilter';
 interface TotalUsersCardProps {
   region?: string;
   includeDeleted?: boolean;
+  useCluster?: boolean;
 }
 
-export default function TotalUsersCard({ region, includeDeleted = false }: TotalUsersCardProps) {
+export default function TotalUsersCard({ region, includeDeleted = false, useCluster = true }: TotalUsersCardProps) {
   const [totalUsers, setTotalUsers] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // 지역 라벨 생성
-  const regionLabel = region ? getRegionLabel(region as any) : '전체 지역';
+  const regionLabel = region ? getRegionLabel(region as any, useCluster) : '전체 지역';
 
   useEffect(() => {
     const fetchTotalUsers = async () => {
       try {
         setLoading(true);
-        const data = await AdminService.stats.getTotalUsersCount(region, includeDeleted);
+        const data = await AdminService.stats.getTotalUsersCount(region, includeDeleted, useCluster);
         setTotalUsers(data.totalUsers);
         setError(null);
       } catch (err) {
@@ -38,7 +39,7 @@ export default function TotalUsersCard({ region, includeDeleted = false }: Total
     const interval = setInterval(fetchTotalUsers, 60000);
 
     return () => clearInterval(interval);
-  }, [region, includeDeleted]);
+  }, [region, includeDeleted, useCluster]);
 
   return (
     <Card variant="outlined">

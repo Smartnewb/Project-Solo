@@ -17,7 +17,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import { AppearanceGrade, Gender } from '@/app/admin/users/appearance/types';
-import { Region } from '@/components/admin/common/RegionFilter';
+import RegionFilter, { Region, useRegionFilter } from '@/components/admin/common/RegionFilter';
 
 // 등급 옵션
 const GRADE_OPTIONS: { value: AppearanceGrade | 'all'; label: string }[] = [
@@ -36,16 +36,7 @@ const GENDER_OPTIONS: { value: Gender | 'all'; label: string }[] = [
   { value: 'FEMALE', label: '여성' }
 ];
 
-// 지역 옵션 (클러스터 기반)
-const REGION_OPTIONS: { value: string; label: string }[] = [
-  { value: 'all', label: '모든 지역' },
-  { value: 'DJN', label: '대전/공주 클러스터' },
-  { value: 'SJG', label: '청주/세종 클러스터' },
-  { value: 'CAN', label: '천안 클러스터' },
-  { value: 'BSN', label: '부산/김해 클러스터' },
-  { value: 'ICN', label: '인천/서울/경기 클러스터' },
-  { value: 'DGU', label: '대구' }
-];
+
 
 // 장기 미접속자 옵션
 const LONG_TERM_INACTIVE_OPTIONS: { value: string; label: string }[] = [
@@ -70,6 +61,7 @@ interface AppearanceFilterPanelProps {
     maxAge?: number;
     searchTerm?: string;
     region?: string;
+    useCluster?: boolean;
     isLongTermInactive?: boolean;
     hasPreferences?: boolean;
   }) => void;
@@ -82,31 +74,19 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
   const [minAge, setMinAge] = useState<number | ''>('');
   const [maxAge, setMaxAge] = useState<number | ''>('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedRegion, setSelectedRegion] = useState<string>('all');
   const [isLongTermInactive, setIsLongTermInactive] = useState<string>('all');
   const [hasPreferences, setHasPreferences] = useState<string>('all');
   const [isAdvancedFilterOpen, setIsAdvancedFilterOpen] = useState(false);
 
-  // 지역 클러스터 변환 함수
-  const getClusterRegion = (region: string): string => {
-    // 대전/공주 클러스터 → DJN으로 전송 (백엔드에서 DJN+GJJ 처리)
-    if (region === 'DJN') return 'DJN';
-
-    // 청주/세종 클러스터 → SJG로 전송 (백엔드에서 SJG+CJU 처리)
-    if (region === 'SJG') return 'SJG';
-
-    // 천안 클러스터 → CAN으로 전송
-    if (region === 'CAN') return 'CAN';
-
-    // 부산/김해 클러스터 → BSN으로 전송 (백엔드에서 BSN+GHE 처리)
-    if (region === 'BSN') return 'BSN';
-
-    // 인천/서울/경기 클러스터 → ICN으로 전송 (백엔드에서 ICN+SEL+KYG 처리)
-    if (region === 'ICN') return 'ICN';
-
-    // 대구는 단독
-    return region;
-  };
+  // 지역 필터 훅 사용
+  const {
+    region,
+    useCluster,
+    setRegion,
+    setUseCluster,
+    getRegionParam,
+    getUseClusterParam
+  } = useRegionFilter();
 
   // 필터 적용
   const applyFilter = () => {
@@ -119,7 +99,12 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
       if (minAge !== '') filters.minAge = minAge;
       if (maxAge !== '') filters.maxAge = maxAge;
       if (searchTerm) filters.searchTerm = searchTerm;
-      if (selectedRegion !== 'all') filters.region = getClusterRegion(selectedRegion);
+
+      // 지역 필터 적용
+      const regionParam = getRegionParam();
+      if (regionParam) filters.region = regionParam;
+      filters.useCluster = getUseClusterParam();
+
       if (isLongTermInactive !== 'all') filters.isLongTermInactive = isLongTermInactive === 'true';
       if (hasPreferences !== 'all') filters.hasPreferences = hasPreferences === 'true';
 
@@ -135,7 +120,7 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
     setMinAge('');
     setMaxAge('');
     setSearchTerm('');
-    setSelectedRegion('all');
+    setRegion('ALL'); // 지역 필터 초기화
     setIsLongTermInactive('all');
     setHasPreferences('all');
 
@@ -253,19 +238,15 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
           </Grid>
 
           <Grid item xs={12} md={4}>
-            <TextField
-              select
+            <RegionFilter
+              value={region}
+              onChange={setRegion}
+              useCluster={useCluster}
+              onClusterModeChange={setUseCluster}
+              showClusterToggle={false}
+              size="small"
               fullWidth
-              label="지역"
-              value={selectedRegion}
-              onChange={(e) => setSelectedRegion(e.target.value)}
-            >
-              {REGION_OPTIONS.map((option) => (
-                <MenuItem key={option.value} value={option.value}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </TextField>
+            />
           </Grid>
 
           {/* 고급 필터 */}

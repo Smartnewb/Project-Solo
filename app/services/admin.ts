@@ -26,11 +26,12 @@ const auth = {
 };
 
 const stats = {
-  getTotalUsersCount: async (region?: string, includeDeleted?: boolean) => {
+  getTotalUsersCount: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
     try {
       const params: any = {};
       if (region) params.region = region;
       if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
+      if (useCluster !== undefined) params.useCluster = useCluster;
 
       const response = await axiosServer.get('/admin/stats/users/total', { params });
       console.log('총 회원 수 API 응답:', response.data);
@@ -43,11 +44,12 @@ const stats = {
       return { totalUsers: 120 }; // 오류 발생 시 기본값 반환
     }
   },
-  getDailySignupCount: async (region?: string, includeDeleted?: boolean) => {
+  getDailySignupCount: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
     try {
       const params: any = {};
       if (region) params.region = region;
       if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
+      if (useCluster !== undefined) params.useCluster = useCluster;
 
       const response = await axiosServer.get('/admin/stats/users/daily', { params });
       console.log('오늘 가입한 회원 수 API 응답:', response.data);
@@ -57,11 +59,12 @@ const stats = {
       return { dailySignups: 4 }; // 오류 발생 시 기본값 반환
     }
   },
-  getWeeklySignupCount: async (region?: string, includeDeleted?: boolean) => {
+  getWeeklySignupCount: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
     try {
       const params: any = {};
       if (region) params.region = region;
       if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
+      if (useCluster !== undefined) params.useCluster = useCluster;
 
       const response = await axiosServer.get('/admin/stats/users/weekly', { params });
       console.log('이번 주 가입한 회원 수 API 응답:', response.data);
@@ -71,11 +74,12 @@ const stats = {
       return { weeklySignups: 12 }; // 오류 발생 시 기본값 반환
     }
   },
-  getDailySignupTrend: async (region?: string, includeDeleted?: boolean) => {
+  getDailySignupTrend: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
     try {
       const params: any = {};
       if (region) params.region = region;
       if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
+      if (useCluster !== undefined) params.useCluster = useCluster;
 
       const response = await axiosServer.get('/admin/stats/users/trend/daily', { params });
       return response.data;
@@ -84,11 +88,12 @@ const stats = {
       throw error;
     }
   },
-  getWeeklySignupTrend: async (region?: string, includeDeleted?: boolean) => {
+  getWeeklySignupTrend: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
     try {
       const params: any = {};
       if (region) params.region = region;
       if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
+      if (useCluster !== undefined) params.useCluster = useCluster;
 
       const response = await axiosServer.get('/admin/stats/users/trend/weekly', { params });
       return response.data;
@@ -97,11 +102,12 @@ const stats = {
       throw error;
     }
   },
-  getMonthlySignupTrend: async (region?: string, includeDeleted?: boolean) => {
+  getMonthlySignupTrend: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
     try {
       const params: any = {};
       if (region) params.region = region;
       if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
+      if (useCluster !== undefined) params.useCluster = useCluster;
 
       const response = await axiosServer.get('/admin/stats/users/trend/monthly', { params });
       return response.data;
@@ -112,9 +118,9 @@ const stats = {
   },
 
   // 사용자 지정 기간 회원가입자 수 조회
-  getCustomPeriodSignupCount: async (startDate: string, endDate: string, region?: string) => {
+  getCustomPeriodSignupCount: async (startDate: string, endDate: string, region?: string, useCluster?: boolean) => {
     try {
-      console.log('사용자 지정 기간 조회:', startDate, endDate, region);
+      console.log('사용자 지정 기간 조회:', startDate, endDate, region, useCluster);
       const requestData: any = {
         startDate,
         endDate
@@ -122,6 +128,10 @@ const stats = {
 
       if (region) {
         requestData.region = region;
+      }
+
+      if (useCluster !== undefined) {
+        requestData.useCluster = useCluster;
       }
 
       const response = await axiosServer.post('/admin/stats/users/custom-period', requestData);
@@ -138,9 +148,9 @@ const stats = {
   },
 
   // 사용자 지정 기간 회원가입 추이 조회
-  getCustomPeriodSignupTrend: async (startDate: string, endDate: string, region?: string, includeDeleted?: boolean) => {
+  getCustomPeriodSignupTrend: async (startDate: string, endDate: string, region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
     try {
-      console.log('사용자 지정 기간 추이 조회:', startDate, endDate, region, includeDeleted);
+      console.log('사용자 지정 기간 추이 조회:', startDate, endDate, region, includeDeleted, useCluster);
       const requestData: any = {
         startDate,
         endDate
@@ -152,6 +162,10 @@ const stats = {
 
       if (includeDeleted !== undefined) {
         requestData.includeDeleted = includeDeleted;
+      }
+
+      if (useCluster !== undefined) {
+        requestData.useCluster = useCluster;
       }
 
       const response = await axiosServer.post('/admin/stats/users/trend/custom-period', requestData);
@@ -168,11 +182,12 @@ const stats = {
   },
 
   // 성별 통계 조회
-  getGenderStats: async (region?: string, includeDeleted?: boolean) => {
+  getGenderStats: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
     try {
       const params: any = {};
       if (region) params.region = region;
       if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
+      if (useCluster !== undefined) params.useCluster = useCluster;
 
       const response = await axiosServer.get('/admin/stats/users/gender', { params });
       console.log('성별 통계 API 응답:', response.data);
@@ -204,9 +219,12 @@ const stats = {
   },
 
   // 대학별 통계 조회
-  getUniversityStats: async (region?: string) => {
+  getUniversityStats: async (region?: string, useCluster?: boolean) => {
     try {
-      const params = region ? { region } : {};
+      const params: any = {};
+      if (region) params.region = region;
+      if (useCluster !== undefined) params.useCluster = useCluster;
+
       const response = await axiosServer.get('/admin/stats/users/universities', { params });
       console.log('서비스에서 받은 대학별 통계 데이터:', response.data);
       console.log('서비스에서 받은 데이터 구조:', JSON.stringify(response.data, null, 2));
@@ -238,9 +256,12 @@ const stats = {
 
   // 회원 탈퇴 통계 API
   // 총 탈퇴자 수 조회
-  getTotalWithdrawalsCount: async (region?: string) => {
+  getTotalWithdrawalsCount: async (region?: string, useCluster?: boolean) => {
     try {
-      const params = region ? { region } : {};
+      const params: any = {};
+      if (region) params.region = region;
+      if (useCluster !== undefined) params.useCluster = useCluster;
+
       const response = await axiosServer.get('/admin/stats/withdrawals/total', { params });
       return response.data || { totalWithdrawals: 0 };
     } catch (error) {
@@ -250,9 +271,12 @@ const stats = {
   },
 
   // 일간 탈퇴자 수 조회
-  getDailyWithdrawalCount: async (region?: string) => {
+  getDailyWithdrawalCount: async (region?: string, useCluster?: boolean) => {
     try {
-      const params = region ? { region } : {};
+      const params: any = {};
+      if (region) params.region = region;
+      if (useCluster !== undefined) params.useCluster = useCluster;
+
       const response = await axiosServer.get('/admin/stats/withdrawals/daily', { params });
       return response.data || { dailyWithdrawals: 0 };
     } catch (error) {
@@ -388,6 +412,7 @@ const userAppearance = {
     maxAge?: number;
     searchTerm?: string;
     region?: string;
+    useCluster?: boolean;
     isLongTermInactive?: boolean;
     hasPreferences?: boolean;
   }) => {
@@ -415,6 +440,7 @@ const userAppearance = {
       if (params.maxAge) queryParams.append('maxAge', params.maxAge.toString());
       if (params.searchTerm) queryParams.append('searchTerm', params.searchTerm);
       if (params.region) queryParams.append('region', params.region);
+      if (params.useCluster !== undefined) queryParams.append('useCluster', params.useCluster.toString());
       if (params.isLongTermInactive !== undefined) queryParams.append('isLongTermInactive', params.isLongTermInactive.toString());
       if (params.hasPreferences !== undefined) queryParams.append('hasPreferences', params.hasPreferences.toString());
 
@@ -916,7 +942,7 @@ const userAppearance = {
   },
 
   // 외모 등급 통계 조회
-  getAppearanceGradeStats: async (region?: string) => {
+  getAppearanceGradeStats: async (region?: string, useCluster?: boolean) => {
     try {
       console.log('외모 등급 통계 API 호출 시작');
 
@@ -935,6 +961,7 @@ const userAppearance = {
       const params = new URLSearchParams();
       params.append('_t', timestamp.toString());
       if (region) params.append('region', region);
+      if (useCluster !== undefined) params.append('useCluster', useCluster.toString());
 
       // API 호출 (캐싱 방지를 위한 쿼리 파라미터 추가)
       const finalUrl = `${endpoint}?${params.toString()}`;

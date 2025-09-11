@@ -28,16 +28,17 @@ interface GenderStats {
 interface GenderStatsCardProps {
   region?: string;
   includeDeleted?: boolean;
+  useCluster?: boolean;
 }
 
 // 성별 통계 카드 컴포넌트
-export default function GenderStatsCard({ region, includeDeleted = false }: GenderStatsCardProps) {
+export default function GenderStatsCard({ region, includeDeleted = false, useCluster = true }: GenderStatsCardProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<GenderStats | null>(null);
 
   // 지역 라벨 생성
-  const regionLabel = region ? getRegionLabel(region as any) : '전체 지역';
+  const regionLabel = region ? getRegionLabel(region as any, useCluster) : '전체 지역';
 
   // 데이터 조회
   useEffect(() => {
@@ -46,7 +47,7 @@ export default function GenderStatsCard({ region, includeDeleted = false }: Gend
         setLoading(true);
         setError(null);
 
-        const response = await AdminService.stats.getGenderStats(region, includeDeleted);
+        const response = await AdminService.stats.getGenderStats(region, includeDeleted, useCluster);
         console.log('성별 통계 응답:', response);
 
         setStats(response);
@@ -63,7 +64,7 @@ export default function GenderStatsCard({ region, includeDeleted = false }: Gend
     };
 
     fetchData();
-  }, [region, includeDeleted]);
+  }, [region, includeDeleted, useCluster]);
 
   // 차트 데이터 생성
   const chartData = stats ? [

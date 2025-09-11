@@ -63,6 +63,7 @@ export interface CustomSalesRequest {
     endDate: string;
     paymentType: paymentType;
     byRegion: boolean;
+    useCluster?: boolean;
 };
 
 // MARK: - 사용자 지정 기간 매출액 조회 응답
@@ -96,6 +97,7 @@ export interface TrendCustomRequest {
     endDate?: string;
     paymentType: paymentType;
     byRegion: boolean;
+    useCluster?: boolean;
 };
 
 // MARK: - 사용자 지정 기간 매출 추이 조회 응답
