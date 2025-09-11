@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { GenderAnalysis, paymentType } from '../types';
 import { formateDateToString } from '../utils'
 import { salesService } from '@/app/services/sales';
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
+
 
 
 // MARK: - props
@@ -84,6 +86,59 @@ export function GenderAnalysisTable({ startDate, endDate }: GenderAnalysisProps)
     // MARK: - 자동 새로고침
     // TODO: - 추후 구현
 
+    // === utils ===
+    // TODO: - utils로 분리
+
+    const getGender = (gender: string): string => {
+        const typeMap: Record<string, string> = {
+            'MALE': '남성',
+            'FEMALE': '여성',
+        };
+        return typeMap[gender] || gender;
+    };
+    const getChartColors = () => [
+        '#87ceeb', '#d084d0', 
+    ];
+    const getPieChartData = () => {
+        if(!totalData?.analysis) return [];
+        return totalData.analysis.map(item => ({
+            name: getGender(item.gender),
+            value: item.totalAmount,
+            count: item.count,
+            percentage: item.percentage,
+        }))
+    };
+
+    // MARK: - 파이차트 렌더링
+    const renderPieChart = () => {
+            const data = getPieChartData();
+            const colors = getChartColors();
+    
+            return (
+                <ResponsiveContainer width="100%" height={400}>
+                    <PieChart>
+                        <Pie
+                            data={data}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            label={({ name, percentage }) => `${name} (${percentage.toFixed(1)}%)`}
+                            outerRadius={120}
+                            fill="#8884d8"
+                            dataKey="value"
+                        >
+                            {data.map((entry, index) => (
+                                <Cell 
+                                    key={`cell-${index}`} 
+                                    fill={colors[index % colors.length]} 
+                                />
+                            ))}
+                        </Pie>
+                        <Legend />
+                    </PieChart>
+                </ResponsiveContainer>
+            );
+        };
 
     // === JSX === 
     return (
@@ -96,15 +151,25 @@ export function GenderAnalysisTable({ startDate, endDate }: GenderAnalysisProps)
                 </div>
 
                 {/* MARK: - 메인 콘텐츠*/}
-                {/* TODO: - 파이차트*/}
-                <div className='flex gap-4 mb-24'>
-                    {totalData?.analysis?.map((item, index) => (
-                        <div className={`rounded-md ${item.gender === 'MALE' ? 'bg-blue-50' : 'bg-pink-50'} flex-1 text-center`}>
-                            <p className={`text-xl font-semibold ${item.gender === 'MALE' ? 'text-[#1D4ED8]' : 'text-pink-700'}`}>{item.percentage}%</p>
-                            <p className='text-sm font-gray-900'>{item.gender === 'MALE' ? '남성' : '여성'}</p>
-                            <p className={`text-sm ${item.gender === 'MALE' ? 'text-[#1D4ED8]' : 'text-pink-700'}`}>{item.count}명</p>
+                <div className='flex flex-col gap-6'>
+                    {!isLoading && totalData && (
+                        <div className="bg-white p-6 rounded-lg border border-gray-200">
+                            <h3 className="text-lg font-medium mb-4">
+                                성별 구매 비율
+                            </h3>
+                            {renderPieChart()}
                         </div>
-                    ))}
+                    )}
+
+                    <div className='flex gap-4 mb-24'>
+                        {totalData?.analysis?.map((item, index) => (
+                            <div className={`rounded-md ${item.gender === 'MALE' ? 'bg-blue-50' : 'bg-pink-50'} flex-1 text-center`}>
+                                <p className={`text-xl font-semibold ${item.gender === 'MALE' ? 'text-[#1D4ED8]' : 'text-pink-700'}`}>{item.percentage}%</p>
+                                <p className='text-sm font-gray-900'>{item.gender === 'MALE' ? '남성' : '여성'}</p>
+                                <p className={`text-sm ${item.gender === 'MALE' ? 'text-[#1D4ED8]' : 'text-pink-700'}`}>{item.count}명</p>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
         </>

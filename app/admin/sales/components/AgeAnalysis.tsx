@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { AgeAnalysis, paymentType } from '../types';
 import { formateDateToString } from '../utils'
 import { salesService } from '@/app/services/sales';
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
+
 
 interface AgeAnalysisProps {
     startDate?: Date;
@@ -74,6 +76,56 @@ export function AgeAnalysisComponent({ startDate, endDate}: AgeAnalysisProps) {
     // MARK: - 자동 새로고침
     // TODO: - 추후 구현
 
+    // === utils ===
+    // TODO: - utils 분리
+
+    const getChartColors = () => [
+        '#3B82F6', // blue-500
+        '#10B981', // green-500
+        '#8B5CF6', // purple-500
+        '#F59E0B', // orange-500
+        '#EC4899'  // pink-500
+    ];
+    const getPieChartData = () => {
+        if(!totalData?.analysis) return [];
+        return totalData.analysis.map(item => ({
+            name: item.ageGroup,
+            value: item.totalAmount,
+            count: item.count,
+            percentage: item.percentage,
+        }))
+    };
+    // MARK: - 파이차트 렌더링
+        const renderPieChart = () => {
+                const data = getPieChartData();
+                const colors = getChartColors();
+        
+                return (
+                    <ResponsiveContainer width="100%" height={400}>
+                        <PieChart>
+                            <Pie
+                                data={data}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={false}
+                                label={({ name, percentage }) => `${name} (${percentage.toFixed(1)}%)`}
+                                outerRadius={120}
+                                fill="#8884d8"
+                                dataKey="value"
+                            >
+                                {data.map((entry, index) => (
+                                    <Cell 
+                                        key={`cell-${index}`} 
+                                        fill={colors[index % colors.length]} 
+                                    />
+                                ))}
+                            </Pie>
+                            <Legend />
+                        </PieChart>
+                    </ResponsiveContainer>
+                );
+            };
+
     // === JSX ===
     return (
         <>
@@ -85,28 +137,39 @@ export function AgeAnalysisComponent({ startDate, endDate}: AgeAnalysisProps) {
                 </div>
 
                 {/* MARK: - 메인 컨텐츠 */}
-                <div className='flex flex-col gap-2'>
-                    {totalData?.analysis?.map((item, index) => {
-                        const getAgeColor = (ageGroup: string) => {
-                            const age = parseInt(ageGroup);
-                            if (age < 22) return 'bg-blue-50 text-blue-700';
-                            if (age < 24) return 'bg-green-50 text-green-700';
-                            if (age < 30) return 'bg-purple-50 text-purple-700';
-                            if (age < 50) return 'bg-orange-50 text-orange-700';
-                            return 'bg-pink-50';
-                        };
-                        
-                        return (
-                            <div 
-                                key={index}
-                                className={`flex justify-between items-center rounded-lg p-4 ${getAgeColor(item.ageGroup)}`}
-                            >
-                                <p className={`font-semibold ${getAgeColor(item.ageGroup)}`}>{item.ageGroup}세</p>
-                                <p className={`font-bold ${getAgeColor(item.ageGroup)}`}>{item.percentage}%</p>
-                            </div>
-                        );
-                    })}
+                <div className='flex flex-col gap-4'>
+                    {!isLoading && totalData && (
+                        <div className="bg-white p-6 rounded-lg border border-gray-200">
+                            <h3 className="text-lg font-medium mb-4">
+                                성별 구매 비율
+                            </h3>
+                            {renderPieChart()}
+                        </div>
+                    )}
+                    <div className='flex flex-col gap-2'>
+                        {totalData?.analysis?.map((item, index) => {
+                            const getAgeColor = (ageGroup: string) => {
+                                const age = parseInt(ageGroup);
+                                if (age < 22) return 'bg-blue-50 text-blue-700';
+                                if (age < 24) return 'bg-green-50 text-green-700';
+                                if (age < 30) return 'bg-purple-50 text-purple-700';
+                                if (age < 50) return 'bg-orange-50 text-orange-700';
+                                return 'bg-pink-50';
+                            };
+                            
+                            return (
+                                <div 
+                                    key={index}
+                                    className={`flex justify-between items-center rounded-lg p-4 ${getAgeColor(item.ageGroup)}`}
+                                >
+                                    <p className={`font-semibold ${getAgeColor(item.ageGroup)}`}>{item.ageGroup}세</p>
+                                    <p className={`font-bold ${getAgeColor(item.ageGroup)}`}>{item.percentage}%</p>
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
+                
             </div>
         </>
     );
