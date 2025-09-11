@@ -79,13 +79,40 @@ export function AgeAnalysisComponent({ startDate, endDate}: AgeAnalysisProps) {
     // === utils ===
     // TODO: - utils 분리
 
-    const getChartColors = () => [
-        '#3B82F6', // blue-500
-        '#10B981', // green-500
-        '#8B5CF6', // purple-500
-        '#F59E0B', // orange-500
-        '#EC4899'  // pink-500
+    // MARK: - 색상
+    const AGE_COLOR_SYSTEM = [
+        {
+            chart: '#3B82F6',
+            bg: 'bg-blue-50',
+            text: 'text-blue-700',
+        },
+        {
+            chart: '#10B981',
+            bg: 'bg-green-50',
+            text: 'text-green-700',
+            
+        },
+        {
+            chart: '#8B5CF6',
+            bg: 'bg-purple-50',
+            text: 'text-purple-700',
+            
+        },
+        {
+            chart: '#F59E0B',
+            bg: 'bg-orange-50',
+            text: 'text-orange-700',
+            
+        },
+        {
+            chart: '#EC4899',
+            bg: 'bg-pink-50',
+            text: 'text-pink-700',
+            
+        }
     ];
+
+    const getChartColors = () => AGE_COLOR_SYSTEM.map(color => color.chart);
     const getPieChartData = () => {
         if(!totalData?.analysis) return [];
         return totalData.analysis.map(item => ({
@@ -148,22 +175,25 @@ export function AgeAnalysisComponent({ startDate, endDate}: AgeAnalysisProps) {
                     )}
                     <div className='flex flex-col gap-2'>
                         {totalData?.analysis?.map((item, index) => {
-                            const getAgeColor = (ageGroup: string) => {
-                                const age = parseInt(ageGroup);
-                                if (age < 22) return 'bg-blue-50 text-blue-700';
-                                if (age < 24) return 'bg-green-50 text-green-700';
-                                if (age < 30) return 'bg-purple-50 text-purple-700';
-                                if (age < 50) return 'bg-orange-50 text-orange-700';
-                                return 'bg-pink-50';
-                            };
+                            const colorSystem = AGE_COLOR_SYSTEM[index % AGE_COLOR_SYSTEM.length];
                             
                             return (
                                 <div 
                                     key={index}
-                                    className={`flex justify-between items-center rounded-lg p-4 ${getAgeColor(item.ageGroup)}`}
+                                    className={`flex justify-between items-center rounded-lg p-4  ${colorSystem.bg}`}
                                 >
-                                    <p className={`font-semibold ${getAgeColor(item.ageGroup)}`}>{item.ageGroup}세</p>
-                                    <p className={`font-bold ${getAgeColor(item.ageGroup)}`}>{item.percentage}%</p>
+                                    <div className="flex items-center gap-3">
+                                        <div 
+                                            className="w-3 h-3 rounded-full"
+                                            style={{ backgroundColor: colorSystem.chart }}
+                                        />
+                                        <p className={`font-semibold ${colorSystem.text}`}>
+                                            {item.ageGroup === '30+' ? '30세 이상' : item.ageGroup+'세'}
+                                        </p>
+                                    </div>
+                                    <p className={`font-bold ${colorSystem.text}`}>
+                                        {item.percentage.toFixed(1)}%
+                                    </p>
                                 </div>
                             );
                         })}
