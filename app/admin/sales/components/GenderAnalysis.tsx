@@ -89,7 +89,7 @@ export function GenderAnalysisTable({ startDate, endDate }: GenderAnalysisProps)
     return (
         <>
             {/* MARK: - 전체 컨테이너 */}
-            <div className='bg-white border border-border rounded-md px-6 py-6 gap-4'>
+            <div className='bg-white  rounded-md px-6 py-6 gap-4 border border-border'>
                 {/* MARK: - 헤더(타이틀) */}
                 <div className=''>
                     <h2 className="text-xl font-semibold">성별 구매 비율</h2>

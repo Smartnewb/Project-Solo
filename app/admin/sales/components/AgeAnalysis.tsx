@@ -77,6 +77,37 @@ export function AgeAnalysisComponent({ startDate, endDate}: AgeAnalysisProps) {
     // === JSX ===
     return (
         <>
+            {/* MARK: - 전체 컨테이너 */}
+            <div className='bg-white border border-border px-6 py-6 gap-4 rounded-md'>
+                {/* MARK: - 헤더 */}
+                <div>
+                    <h2 className='text-xl font-semibold'>연령대별 구매 비율</h2>
+                </div>
+
+                {/* MARK: - 메인 컨텐츠 */}
+                <div className='flex flex-col gap-2'>
+                    {totalData?.analysis?.map((item, index) => {
+                        const getAgeColor = (ageGroup: string) => {
+                            const age = parseInt(ageGroup);
+                            if (age < 22) return 'bg-blue-50 text-blue-700';
+                            if (age < 24) return 'bg-green-50 text-green-700';
+                            if (age < 30) return 'bg-purple-50 text-purple-700';
+                            if (age < 50) return 'bg-orange-50 text-orange-700';
+                            return 'bg-pink-50';
+                        };
+                        
+                        return (
+                            <div 
+                                key={index}
+                                className={`flex justify-between items-center rounded-lg p-4 ${getAgeColor(item.ageGroup)}`}
+                            >
+                                <p className={`font-semibold ${getAgeColor(item.ageGroup)}`}>{item.ageGroup}세</p>
+                                <p className={`font-bold ${getAgeColor(item.ageGroup)}`}>{item.percentage}%</p>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
         </>
     );
 };
