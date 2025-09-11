@@ -107,7 +107,7 @@ export function AgeAnalysisComponent({ startDate, endDate}: AgeAnalysisProps) {
                                 data={data}
                                 cx="50%"
                                 cy="50%"
-                                labelLine={false}
+                                labelLine={true}
                                 label={({ name, percentage }) => `${name} (${percentage.toFixed(1)}%)`}
                                 outerRadius={120}
                                 fill="#8884d8"
@@ -141,7 +141,7 @@ export function AgeAnalysisComponent({ startDate, endDate}: AgeAnalysisProps) {
                     {!isLoading && totalData && (
                         <div className="bg-white p-6 rounded-lg border border-gray-200">
                             <h3 className="text-lg font-medium mb-4">
-                                성별 구매 비율
+                                연령대별 구매 비율
                             </h3>
                             {renderPieChart()}
                         </div>

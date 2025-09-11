@@ -193,9 +193,9 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
                         data={data}
                         cx="50%"
                         cy="50%"
-                        labelLine={false}
+                        labelLine={true}
                         label={({ name, percentage }) => `${name} (${percentage.toFixed(1)}%)`}
-                        outerRadius={120}
+                        outerRadius={100}
                         fill="#8884d8"
                         dataKey="value"
                     >
@@ -276,7 +276,7 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
                                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                                         onClick={() => handleSort('amount')}
                                     >
-                                        총 금액 {sortBy === 'amount' && (sortOrder === 'desc' ? '↓' : '↑')}
+                                        매출액 {sortBy === 'amount' && (sortOrder === 'desc' ? '↓' : '↑')}
                                     </th>
                                     <th 
                                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"

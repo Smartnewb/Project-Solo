@@ -9,6 +9,7 @@ import { PAYMENT_TYPE_OPTIONS, getPaymentTypeLabel } from '../constants/paymentT
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { formatCurrency } from '../utils';
 
+
 interface TotalAmountProps {
     startDate?: Date;
     endDate?: Date;
@@ -19,12 +20,14 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
     const [totalData, setTotalData] = useState<CustomSalesResponse | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string>('');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     
     // 필터 상태
     const [selectedRegions, setSelectedRegions] = useState<string[]>(['all']);
     const [selectedPaymentType, setSelectedPaymentType] = useState<paymentType>('all');
 
-    // === 기본 날짜 범위 계산 개선 ===
+    // TODO: utils 분리
+    // === 기본 날짜 범위 계산  ===
     const getDefaultDateRange = () => {
         const today = new Date();
         // 서비스 시작일을 더 과거로 설정 (또는 null로 전체 기간 조회)
@@ -32,7 +35,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
         return { start: serviceStartDate, end: today };
     };
 
-    // === 실제 사용할 날짜 계산 개선 ===
+    // === 실제 사용할 날짜 계산 ===
     const getEffectiveDates = () => {
         if (startDate && endDate) {
             return { start: startDate, end: endDate };
@@ -41,7 +44,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
         return getDefaultDateRange();
     };
 
-    // === 날짜 포맷팅 유틸리티 개선 ===
+    // FIXME: 삭제
     const formatDateToString = (date: Date): string => {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -69,6 +72,12 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
     useEffect(() => {
         fetchTotalSales();
     }, [selectedPaymentType]); // 지역 필터는 제거 - 프론트엔드에서만 필터링
+
+    useEffect(()=>{
+        if (totalData) {
+            handleSortData();
+        }
+    },[sortOrder]);
 
     // === handlers 수정 ===
     const fetchTotalSales = async () => {
@@ -116,6 +125,27 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
 
     const handleRefresh = () => {
         fetchTotalSales();
+    };
+
+    const handleSortData = () => {
+        if (!totalData?.regionalData) return;
+        
+        // 지역별 데이터 매출액순으로 정렬
+        const sortedRegionalData = [...totalData.regionalData].sort((a, b) => {
+            const aValue = a.amount || 0;
+            const bValue = b.amount || 0;
+            return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+        });
+        
+        
+        setTotalData(prev => prev ? { 
+            ...prev, 
+            regionalData: sortedRegionalData 
+        } : null);
+    };
+
+    const handleToggleSort = () => {
+        setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
     };
 
     const getCurrentDateRangeText = () => {
@@ -287,9 +317,12 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                         data={data}
                         cx="50%"
                         cy="50%"
-                        labelLine={false}
+                        labelLine={{
+                            stroke: '#8884d8',
+                            strokeWidth: 1
+                        }}
                         label={({ name, percentage }) => `${name} (${percentage.toFixed(1)}%)`}
-                        outerRadius={100}
+                        outerRadius={90} // 라벨 공간 확보
                         fill="#8884d8"
                         dataKey="value"
                     >
@@ -316,7 +349,12 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                     <h2 className="text-lg font-semibold">총 매출액</h2>
                 </div>
                 <div className="flex gap-2">
-                    
+                    <button
+                        onClick={handleToggleSort}
+                        className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+                    >
+                        금액순 {sortOrder === 'desc' ? '↓' : '↑'}
+                    </button>
                     <button
                         onClick={handleRefresh}
                         className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
@@ -468,8 +506,11 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                             지역
                                                         </th>
-                                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                            매출액
+                                                        <th 
+                                                            className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                                                            onClick={handleToggleSort}
+                                                        >
+                                                            매출액 {sortOrder === 'desc' ? '↓' : '↑'}
                                                         </th>
                                                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                             거래건수
