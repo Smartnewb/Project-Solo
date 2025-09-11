@@ -166,6 +166,11 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
               placeholder="이름, 인스타그램, 전화번호로 검색"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  applyFilter();
+                }
+              }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
