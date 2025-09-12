@@ -135,7 +135,7 @@ export function AgeAnalysisComponent({ startDate, endDate}: AgeAnalysisProps) {
                                 cx="50%"
                                 cy="50%"
                                 labelLine={true}
-                                label={({ name, percentage }) => `${name} (${percentage.toFixed(1)}%)`}
+                                label={({ name, percentage }) => `${name ==='30+' ? '30세 이상' : name} (${percentage.toFixed(1)}%)`}
                                 outerRadius={120}
                                 fill="#8884d8"
                                 dataKey="value"
