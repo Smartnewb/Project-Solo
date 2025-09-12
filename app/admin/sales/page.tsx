@@ -7,6 +7,7 @@ import { TotalAmount } from './components/TotalAmount';
 import { RankingByUniv } from './components/RankingByUniv';
 import { GenderAnalysisTable } from './components/GenderAnalysis';
 import { AgeAnalysisComponent } from './components/AgeAnalysis';
+import { MonthlyPaymentGraph } from './components/MonthlyPaymentGraph';
 
 // 타입 정의
 interface DateRange {
@@ -104,7 +105,6 @@ export default function SalesPage() {
                         </div>
                     </div>
 
-                    {/* TODO: - 성별 및 연령대 분석*/}
                     
                     <div className='flex gap-2'>
                         {/* 성별 분석 */} 
@@ -121,6 +121,11 @@ export default function SalesPage() {
                                 endDate={dateRange.endDate}
                             />
                         </div>
+                    </div>
+
+                    {/* MARK: - 연간 결제 타입별 매출 그래프*/}
+                    <div>
+                        <MonthlyPaymentGraph />
                     </div>
                 </div>
             </div>
