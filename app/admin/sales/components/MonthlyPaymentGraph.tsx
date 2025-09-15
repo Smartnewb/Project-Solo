@@ -207,7 +207,7 @@ export function MonthlyPaymentGraph() {
                                         dataKey="totalCount"
                                         stroke="#ff7c7c"
                                         strokeWidth={3}
-                                        name="총 매출 추이"
+                                        name="총 매출 건수"
                                         dot={{ fill: '#ff7c7c', strokeWidth: 2, r: 5 }}
                                         strokeDasharray="5 5"
                                     />
