@@ -18,6 +18,10 @@ export interface SalesTransition {
     amount: number;
     count: number;
     regionalData: RegionSales[];
+    excludeIapAmount: number;
+    excludeIapCount: number;
+    iapOnlyAmount: number;
+    iapOnlyCount: number;
 };
 
 // MARK: - 기간 설정
