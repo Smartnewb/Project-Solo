@@ -15,16 +15,17 @@ import {
     Legend 
 } from 'recharts';
 import { formatCurrency } from "../utils";
+import { smsService } from "@/app/services/sms";
 
 interface MonthlyPaymentData {
     month: string;
     totalAmount: number;
     pgAmount: number;
     iapAmount: number;
-    count: number;
+    totalCount: number;
     pgCount: number;
     iapCount: number;
-};
+}
 
 export function MonthlyPaymentGraph() {
     // === 상태관리 ===
@@ -38,79 +39,32 @@ export function MonthlyPaymentGraph() {
         setIsLoading(true);
         
         try {
-            const currentYear = new Date().getFullYear();
-            const startDate = `${currentYear}-01-01`;
-            const endDate = `${currentYear}-12-31`;
-            
-            // NOTE: - api 병렬 호출
-            const [allTrend, pgTrend, iapTrend] = await Promise.all([
-                salesService.getTrendCustom({
-                    startDate: startDate,
-                    endDate: endDate,
-                    paymentType: 'all',
-                    byRegion: false
-                }),
-                salesService.getTrendCustom({
-                    startDate: startDate,
-                    endDate: endDate,
-                    paymentType: 'exclude_iap',
-                    byRegion: false
-                }),
-                salesService.getTrendCustom({
-                    startDate: startDate,
-                    endDate: endDate,
-                    paymentType: 'iap_only',
-                    byRegion: false
-                }),
-
-            ]);
-            // NOTE: - response 결합 (월별로 합산)
-            const monthlyGroups: { [key: string]: MonthlyPaymentData } = {};
-
-            allTrend.data?.forEach(dayData => {
-                const monthKey = dayData.label.substring(0, 7); // "2025-01-01" -> "2025-01"
-                
-                if (!monthlyGroups[monthKey]) {
-                    monthlyGroups[monthKey] = {
-                        month: monthKey,
-                        totalAmount: 0,
-                        pgAmount: 0,
-                        iapAmount: 0,
-                        count: 0,
-                        pgCount: 0,
-                        iapCount: 0
-                    };
-                }
-                
-                monthlyGroups[monthKey].totalAmount += dayData.amount;
-                monthlyGroups[monthKey].count += dayData.count;
-                
-                // PG 
-                const pgDay = pgTrend.data?.find(d => d.label === dayData.label);
-                if (pgDay) {
-                    monthlyGroups[monthKey].pgAmount += pgDay.amount;
-                    monthlyGroups[monthKey].pgCount += pgDay.count;
-                }
-                
-                // IAP
-                const iapDay = iapTrend.data?.find(d => d.label === dayData.label);
-                if (iapDay) {
-                    monthlyGroups[monthKey].iapAmount += iapDay.amount;
-                    monthlyGroups[monthKey].iapCount += iapDay.count;
-                }
+            const response = await salesService.getTrendMonthly({
+                paymentType: "all", 
+                byRegion: false,
             });
-
-            const combinedData: MonthlyPaymentData[] = Object.values(monthlyGroups)
-                .sort((a, b) => a.month.localeCompare(b.month));
             
-            setChartData(combinedData);
+            console.log('전체 응답 데이터:', response.data);
+            
+            // 전체 배열을 차트 데이터로 변환
+            const transformedData: MonthlyPaymentData[] = response.data.map(item => ({
+                month: item.label,
+                totalAmount: item.amount,
+                pgAmount: item.excludeIapAmount,
+                iapAmount: item.iapOnlyAmount,
+                totalCount: item.count,
+                pgCount: item.excludeIapCount,
+                iapCount: item.iapOnlyCount,
+            }));
+            
+            setChartData(transformedData);
+            
         } catch(error) {
-            setIsLoading(false);
+            console.error('API 호출 실패:', error);
+            setChartData([]);
         } finally {
             setIsLoading(false);
         }
-
-        
     };
 
     // MARK: - 그래프 툴팁
@@ -127,7 +81,7 @@ export function MonthlyPaymentGraph() {
                         Apple 인앱 결제: {formatCurrency(data.iapAmount)} ({data.iapCount}건)
                     </p>
                     <p className="font-semibold border-t pt-1 mt-1">
-                        총 매출: {formatCurrency(data.totalAmount)} ({data.count}건)
+                        총 매출: {formatCurrency(data.totalAmount)} ({data.totalCount}건)
                     </p>
                 </div>
             );
@@ -158,7 +112,7 @@ export function MonthlyPaymentGraph() {
                     fontSize="12"
                     fontWeight="500"
                 >
-                    {payload.count}건
+                    {payload.totalCount}건
                 </text>
             );
         }
@@ -207,22 +161,38 @@ export function MonthlyPaymentGraph() {
                                 >
                                     <CartesianGrid strokeDasharray="3 3" />
                                     <XAxis dataKey="month" tickFormatter={formatMonthLabel}/>
-                                    <YAxis 
+                                    
+                                    {/* MARK: - 금액 축 (왼쪽 축) */}
+                                    <YAxis
+                                        yAxisId='amount'
+                                        orientation='left'
                                         tickFormatter={formatCurrency}
                                         tick={{ fontSize: 12 }}
                                         width={80}
                                     />
+                                    
+                                    {/* MARK: - 건수 축 (오른쪽 축) */}
+                                    <YAxis 
+                                        yAxisId='totalCount'
+                                        orientation='right'
+                                        tickFormatter={(value) => `${value}건`}
+                                        tick={{ fontSize: 12 }}
+                                        width={60}
+                                    />
+
                                     <Tooltip content={<CustomTooltip />} />
                                     <Legend />
                                     
                                     {/* MARK: - 스택형 막대 */}
                                     <Bar
+                                        yAxisId='amount'
                                         dataKey="pgAmount"
                                         stackId="a"
                                         fill="#8884d8"
                                         name="WELCOME payment"
                                     />
                                     <Bar
+                                        yAxisId='amount'
                                         dataKey="iapAmount"
                                         stackId="a"
                                         fill="#82ca9d"
@@ -230,10 +200,11 @@ export function MonthlyPaymentGraph() {
                                         label={<CustomStackLabel />}
                                     />
                                     
-                                    {/* MARK: - 매출 추이선 */}
+                                    {/* MARK: - 매출건수 추이선 */}
                                     <Line
+                                        yAxisId='totalCount'
                                         type="monotone"
-                                        dataKey="totalAmount"
+                                        dataKey="totalCount"
                                         stroke="#ff7c7c"
                                         strokeWidth={3}
                                         name="총 매출 추이"
