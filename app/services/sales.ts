@@ -42,13 +42,11 @@ const SALES_ENDPOINT = {
 export interface GetSales {
     paymentType: paymentType;
     byRegion: boolean;
-    useCluster?: boolean;
 }
 
 export interface GetAnalysis {
     paymentType: paymentType;
     startDate: string;
-    useCluster?: boolean;
     endDate: string;
 }
 
