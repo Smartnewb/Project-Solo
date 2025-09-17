@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 
 // 지역 타입 정의 (클러스터 기반)
-export type Region = 'ALL' | 'DJN' | 'SJG' | 'CAN' | 'BSN' | 'DGU' | 'ICN' | 'CJU' | 'GJJ' | 'GHE' | 'SEL' | 'KYG';
+export type Region = 'ALL' | 'DJN' | 'SJG' | 'CAN' | 'BSN' | 'DGU' | 'ICN' | 'CJU' | 'GJJ' | 'GHE' | 'SEL' | 'KYG' | 'GWJ';
 
 const CLUSTER_REGION_OPTIONS = [
   { value: 'ALL', label: '전체 지역' },
@@ -23,7 +23,8 @@ const CLUSTER_REGION_OPTIONS = [
   { value: 'CAN', label: '천안 클러스터' },
   { value: 'BSN', label: '부산/김해 클러스터' },
   { value: 'ICN', label: '인천/서울/경기 클러스터' },
-  { value: 'DGU', label: '대구' }
+  { value: 'DGU', label: '대구' },
+  { value: 'GWJ', label: '광주' }
 ] as const;
 
 const INDIVIDUAL_REGION_OPTIONS = [
@@ -38,7 +39,8 @@ const INDIVIDUAL_REGION_OPTIONS = [
   { value: 'ICN', label: '인천' },
   { value: 'SEL', label: '서울' },
   { value: 'KYG', label: '경기' },
-  { value: 'CAN', label: '천안' }
+  { value: 'CAN', label: '천안' },
+  { value: 'GWJ', label: '광주' }
 ] as const;
 
 interface RegionFilterProps {

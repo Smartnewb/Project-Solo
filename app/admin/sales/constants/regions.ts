@@ -11,7 +11,8 @@ export const REGION_MAP: Record<string, string> = {
     'ICN': '인천',
     'SEL': '서울',
     'KYG': '경기',
-    'CAN': '천안'
+    'CAN': '천안',
+    'GWJ': '광주'
 };
 
 // 지역 옵션 배열 (select 옵션용)
