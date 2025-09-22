@@ -142,6 +142,7 @@ interface Amount {
 
 interface PaymentAnalysisItem extends Analysis {
     paymentType: string;
+    netAmount?: number;
 }
 
 export interface PaymentAnalysis extends Amount {

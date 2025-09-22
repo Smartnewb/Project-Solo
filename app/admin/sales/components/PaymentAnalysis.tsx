@@ -6,6 +6,7 @@ import { PaymentAnalysis as PaymentAnalysisType } from '../types';
 import { salesService } from '@/app/services/sales';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import { getPaymentTypeLabel } from '../constants/paymentTypes';
+import Image from 'next/image';
 
 interface PaymentAnalysisProps {
     startDate?: Date;
@@ -19,6 +20,7 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
     const [error, setError] = useState<string>('');
     const [sortBy, setSortBy] = useState<'amount' | 'count' | 'percentage'>('amount');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+    const [showNetAmount, setShowNetAmount] = useState<boolean>(false);
 
     // === 기본 날짜 범위 계산 ===
     const getDefaultDateRange = () => {
@@ -133,6 +135,8 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
             value: item.totalAmount,
             count: item.count,
             percentage: item.percentage,
+            netAmount: item.netAmount,
+            paymentType: item.paymentType,
         }));
     };
 
@@ -168,6 +172,11 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
                     <p className="font-medium">{data.name}</p>
                     <p style={{ color: payload[0].color }}>
                         금액: {formatCurrency(data.value)}
+                        {data.paymentType === 'IAP' && data.netAmount && (
+                            <span className="text-gray-600 text-sm block">
+                                수수료 차감 후: {formatCurrency(data.netAmount)}
+                            </span>
+                        )}
                     </p>
                     <p style={{ color: payload[0].color }}>
                         건수: {formatNumber(data.count)}건
@@ -199,10 +208,10 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
                         fill="#8884d8"
                         dataKey="value"
                     >
-                        {data.map((entry, index) => (
-                            <Cell 
-                                key={`cell-${index}`} 
-                                fill={colors[index % colors.length]} 
+                        {data.map((_, index) => (
+                            <Cell
+                                key={`cell-${index}`}
+                                fill={colors[index % colors.length]}
                             />
                         ))}
                     </Pie>
@@ -296,10 +305,32 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
                                 {paymentData.analysis.map((item, index) => (
                                     <tr key={index} className="hover:bg-gray-50">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                            {getPaymentTypeName(item.paymentType)}
+                                            <div className="flex items-center gap-2">
+                                                {getPaymentTypeName(item.paymentType)}
+                                                {item.paymentType === 'IAP' && (
+                                                    <button
+                                                        onClick={() => setShowNetAmount(!showNetAmount)}
+                                                        className="hover:opacity-80 transition-opacity"
+                                                        title="수수료 차감 금액 보기"
+                                                    >
+                                                        <Image
+                                                            src="/miho.png"
+                                                            alt="미호"
+                                                            width={20}
+                                                            height={20}
+                                                            className="cursor-pointer"
+                                                        />
+                                                    </button>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                             {formatCurrency(item.totalAmount)}
+                                            {item.paymentType === 'IAP' && showNetAmount && item.netAmount && (
+                                                <span className="text-gray-600 ml-2">
+                                                    ({formatCurrency(item.netAmount)})
+                                                </span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                             {formatNumber(item.count)}건
