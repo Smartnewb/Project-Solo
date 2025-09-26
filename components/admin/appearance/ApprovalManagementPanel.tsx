@@ -57,6 +57,7 @@ interface PendingUser {
   status: 'pending' | 'rejected';
   rejectionReason?: string;
   lastPushNotificationAt?: string;
+  signupRoute?: 'PASS' | 'KAKAO' | 'APPLE';
 }
 
 
@@ -157,6 +158,16 @@ const ApprovalManagementPanel: React.FC = () => {
       'GWJ': '광주'
     };
     return region ? regionMap[region] || region : '-';
+  };
+
+  // 회원가입 루트 한글 표시 함수
+  const getSignupRouteLabel = (signupRoute?: string) => {
+    const routeMap: Record<string, string> = {
+      'PASS': 'PASS',
+      'KAKAO': '카카오',
+      'APPLE': '애플'
+    };
+    return signupRoute ? routeMap[signupRoute] || signupRoute : '-';
   };
 
   // 거절 사유 한글 표시 함수
@@ -462,6 +473,7 @@ const ApprovalManagementPanel: React.FC = () => {
                     <Typography>{user.instagramId || '-'}</Typography>
                     <Typography>{user.university || '-'}</Typography>
                     <Typography>{getRegionLabel(user.region)}</Typography>
+                    <Typography>가입 루트: {getSignupRouteLabel(user.signupRoute)}</Typography>
                     {(activeTab === 1 || activeTab ===2) && user.rejectionReason && (
                       <Typography>거부 사유 : {getRejectionReasonLabel(user.rejectionReason)}</Typography>
                     )}
@@ -510,6 +522,7 @@ const ApprovalManagementPanel: React.FC = () => {
               <TableCell>대학교</TableCell>
               <TableCell>지역</TableCell>
               <TableCell>가입일</TableCell>
+              <TableCell>회원가입 루트</TableCell>
               <TableCell>상태</TableCell>
               {(activeTab === 1 || activeTab === 2) && <TableCell>거부 사유</TableCell>}
               <TableCell>마지막 알림 발송</TableCell>
@@ -519,13 +532,13 @@ const ApprovalManagementPanel: React.FC = () => {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={(activeTab === 1 || activeTab === 2) ? 11 : 10} align="center">
+                <TableCell colSpan={(activeTab === 1 || activeTab === 2) ? 12 : 11} align="center">
                   <CircularProgress />
                 </TableCell>
               </TableRow>
             ) : currentUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={(activeTab === 1 || activeTab === 2) ? 11 : 10} align="center">
+                <TableCell colSpan={(activeTab === 1 || activeTab === 2) ? 12 : 11} align="center">
                   {activeTab === 0 ? '승인 대기 중인 사용자가 없습니다.' :
                    activeTab === 1 ? '승인 거부된 사용자가 없습니다.' :
                    '재심사 요청한 사용자가 없습니다.'}
@@ -572,6 +585,9 @@ const ApprovalManagementPanel: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     {new Date(user.createdAt).toLocaleDateString('ko-KR')}
+                  </TableCell>
+                  <TableCell>
+                    {getSignupRouteLabel(user.signupRoute)}
                   </TableCell>
                   <TableCell>
                     <Chip

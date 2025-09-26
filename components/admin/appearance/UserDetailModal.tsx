@@ -69,6 +69,13 @@ const GENDER_LABELS = {
   FEMALE: '여성'
 };
 
+// 회원가입 루트 레이블
+const SIGNUP_ROUTE_LABELS = {
+  PASS: 'PASS',
+  KAKAO: '카카오',
+  APPLE: '애플'
+};
+
 // 선호도 옵션 타입
 interface PreferenceOption {
   id: string;
@@ -119,6 +126,7 @@ export interface UserDetail {
   isUniversityVerified?: boolean; // 대학교 인증 여부
   accountStatus?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
   preferences?: UserPreferences;
+  signupRoute?: 'PASS' | 'KAKAO' | 'APPLE'; // 회원가입 루트
   // 추가 필드
   [key: string]: any;
 }
@@ -1057,14 +1065,22 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                   </Box>
 
                   {/* 나이, 성별 및 계정 상태 표시 */}
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
                     <Chip
                       label={`${userDetail.age}세 / ${GENDER_LABELS[userDetail.gender]}`}
                       size="small"
                       color="primary"
                       variant="outlined"
-                      sx={{ mr: 1 }}
                     />
+
+                    {userDetail.signupRoute && (
+                      <Chip
+                        label={`가입: ${SIGNUP_ROUTE_LABELS[userDetail.signupRoute] || userDetail.signupRoute}`}
+                        size="small"
+                        color="secondary"
+                        variant="outlined"
+                      />
+                    )}
 
                     {userDetail.accountStatus && userDetail.accountStatus !== 'ACTIVE' && (
                       <Chip
