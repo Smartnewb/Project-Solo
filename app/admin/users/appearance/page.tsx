@@ -23,6 +23,7 @@ import DuplicatePhoneUsersPanel from '@/components/admin/appearance/DuplicatePho
 import VerifiedUsersPanel from '@/components/admin/appearance/VerifiedUsersPanel';
 import BlacklistUsersPanel from '@/components/admin/appearance/BlacklistUsersPanel';
 import ApprovalManagementPanel from '@/components/admin/appearance/ApprovalManagementPanel';
+import UniversityVerificationPendingPanel from '@/components/admin/appearance/UniversityVerificationPendingPanel';
 
 // 전역 이벤트 버스 생성 (등급 변경 이벤트 처리용)
 export const appearanceGradeEventBus = {
@@ -188,6 +189,7 @@ export default function AppearanceGradePage() {
           <Tab label="미분류 사용자" />
           <Tab label="중복 휴대폰 번호" />
           <Tab label="대학교 인증 사용자" />
+          <Tab label="학생증 인증 신청자" />
         </Tabs>
       </Box>
 
@@ -229,6 +231,9 @@ export default function AppearanceGradePage() {
         )}
         {activeTab === 5 && (
           <VerifiedUsersPanel />
+        )}
+        {activeTab === 6 && (
+          <UniversityVerificationPendingPanel />
         )}
       </Box>
     </Box>
