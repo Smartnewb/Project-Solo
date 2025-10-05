@@ -30,7 +30,10 @@ import {
   Alert,
   CircularProgress,
   Checkbox,
-  Tooltip
+  Tooltip,
+  Tabs,
+  Tab,
+  Avatar
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
@@ -45,9 +48,11 @@ import {
   Report as ReportIcon,
   Favorite as FavoriteIcon,
   Delete as DeleteIcon,
-  MoveToInbox as MoveToInboxIcon
+  MoveToInbox as MoveToInboxIcon,
+  Person as PersonIcon
 } from '@mui/icons-material';
 import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
+import AdminService from '@/app/services/admin';
 
 // 게시글 목록 컴포넌트
 function ArticleList() {
@@ -979,9 +984,552 @@ function ArticleList() {
   );
 }
 
+// 신고 관리 컴포넌트
+function ReportList() {
+  const [reports, setReports] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
+  const [statusFilter, setStatusFilter] = useState<'pending' | 'reviewing' | 'resolved' | 'rejected'>('pending');
+  const [reporterNameFilter, setReporterNameFilter] = useState('');
+  const [reportedNameFilter, setReportedNameFilter] = useState('');
+  const [selectedReport, setSelectedReport] = useState<any>(null);
+  const [openDetailDialog, setOpenDetailDialog] = useState(false);
+
+  // 사용자 상세 정보 모달 관련 상태
+  const [userDetailModalOpen, setUserDetailModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [userDetail, setUserDetail] = useState<any>(null);
+  const [loadingUserDetail, setLoadingUserDetail] = useState(false);
+  const [userDetailError, setUserDetailError] = useState<string | null>(null);
+
+  // 게시글 관리 관련 상태
+  const [actionLoading, setActionLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [openBlindDialog, setOpenBlindDialog] = useState(false);
+  const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
+  const [blindAction, setBlindAction] = useState<'blind' | 'unblind'>('blind');
+
+  // 신고 목록 조회
+  const fetchReports = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await communityService.getCommunityReports(
+        page + 1,
+        rowsPerPage,
+        statusFilter,
+        reporterNameFilter || undefined,
+        reportedNameFilter || undefined
+      );
+      setReports(response.items ?? []);
+      setTotalCount(response.meta?.totalItems ?? 0);
+      console.log('신고 목록 데이터:', response.items);
+    } catch (error) {
+      console.error('신고 목록 조회 중 오류:', error);
+      setError('신고 목록을 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 페이지 변경
+  const handleChangePage = (_: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  // 페이지당 행 수 변경
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  // 상태 필터 변경
+  const handleStatusFilterChange = (event: any) => {
+    setStatusFilter(event.target.value);
+    setPage(0);
+  };
+
+  // 신고자 이름 필터 변경
+  const handleReporterNameFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setReporterNameFilter(event.target.value);
+  };
+
+  // 신고당한 사용자 이름 필터 변경
+  const handleReportedNameFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setReportedNameFilter(event.target.value);
+  };
+
+  // 필터 적용
+  const handleApplyFilters = () => {
+    setPage(0);
+    fetchReports();
+  };
+
+  // 신고 상세 보기
+  const handleViewDetail = (report: any) => {
+    setSelectedReport(report);
+    setOpenDetailDialog(true);
+  };
+
+  // 사용자 상세 정보 모달 열기
+  const handleOpenUserDetailModal = async (userId: string) => {
+    try {
+      setSelectedUserId(userId);
+      setUserDetailModalOpen(true);
+      setLoadingUserDetail(true);
+      setUserDetailError(null);
+      setUserDetail(null);
+
+      console.log('유저 상세 정보 조회 요청:', userId);
+      const data = await AdminService.userAppearance.getUserDetails(userId);
+      console.log('유저 상세 정보 응답:', data);
+
+      setUserDetail(data);
+    } catch (error: any) {
+      console.error('유저 상세 정보 조회 중 오류:', error);
+      setUserDetailError(error.message || '유저 상세 정보를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setLoadingUserDetail(false);
+    }
+  };
+
+  // 사용자 상세 정보 모달 닫기
+  const handleCloseUserDetailModal = () => {
+    setUserDetailModalOpen(false);
+  };
+
+  // 게시글 블라인드 처리
+  const handleBlindArticle = (articleId: string, isBlinded: boolean) => {
+    setSelectedArticleId(articleId);
+    setBlindAction(isBlinded ? 'unblind' : 'blind');
+    setOpenBlindDialog(true);
+  };
+
+  // 게시글 블라인드 처리 확인
+  const handleConfirmBlind = async () => {
+    if (!selectedArticleId) return;
+
+    try {
+      setActionLoading(true);
+      const isBlinded = blindAction === 'blind';
+
+      await communityService.blindArticle(selectedArticleId, isBlinded);
+
+      setSuccessMessage(`게시글이 ${isBlinded ? '블라인드' : '블라인드 해제'} 처리되었습니다.`);
+      setOpenBlindDialog(false);
+      fetchReports(); // 목록 새로고침
+    } catch (error) {
+      console.error('게시글 블라인드 처리 중 오류:', error);
+      setError('게시글 블라인드 처리 중 오류가 발생했습니다.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // 게시글 삭제
+  const handleDeleteArticle = async (articleId: string) => {
+    if (!confirm('정말로 이 게시글을 삭제하시겠습니까?')) return;
+
+    try {
+      setActionLoading(true);
+
+      await communityService.deleteArticle(articleId);
+
+      setSuccessMessage('게시글이 삭제되었습니다.');
+      fetchReports(); // 목록 새로고침
+    } catch (error) {
+      console.error('게시글 삭제 중 오류:', error);
+      setError('게시글 삭제 중 오류가 발생했습니다.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // 신고 목록 조회
+  useEffect(() => {
+    fetchReports();
+  }, [page, rowsPerPage, statusFilter]);
+
+  // 성공 메시지 초기화
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  // 상태에 따른 칩 색상
+  const getStatusChipColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'warning';
+      case 'reviewing': return 'info';
+      case 'resolved': return 'success';
+      case 'rejected': return 'error';
+      default: return 'default';
+    }
+  };
+
+  // 상태 한글 변환
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'pending': return '대기중';
+      case 'reviewing': return '검토중';
+      case 'resolved': return '처리완료';
+      case 'rejected': return '반려';
+      default: return status;
+    }
+  };
+
+  return (
+    <Box>
+      {/* 필터 및 검색 */}
+      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Typography variant="h6">
+            신고 관리 ({totalCount})
+          </Typography>
+
+          <FormControl variant="outlined" size="small" sx={{ minWidth: 120 }}>
+            <InputLabel id="status-filter-label">상태</InputLabel>
+            <Select
+              labelId="status-filter-label"
+              value={statusFilter}
+              onChange={handleStatusFilterChange}
+              label="상태"
+            >
+              <MenuItem value="pending">대기중</MenuItem>
+              <MenuItem value="reviewing">검토중</MenuItem>
+              <MenuItem value="resolved">처리완료</MenuItem>
+              <MenuItem value="rejected">반려</MenuItem>
+            </Select>
+          </FormControl>
+
+          <TextField
+            label="신고자 이름"
+            variant="outlined"
+            size="small"
+            value={reporterNameFilter}
+            onChange={handleReporterNameFilterChange}
+            sx={{ minWidth: 150 }}
+          />
+
+          <TextField
+            label="신고당한 사용자 이름"
+            variant="outlined"
+            size="small"
+            value={reportedNameFilter}
+            onChange={handleReportedNameFilterChange}
+            sx={{ minWidth: 150 }}
+          />
+
+          <Button
+            variant="contained"
+            onClick={handleApplyFilters}
+            sx={{ height: 40 }}
+          >
+            검색
+          </Button>
+        </Box>
+
+        <Button
+          variant="outlined"
+          startIcon={<RefreshIcon />}
+          onClick={fetchReports}
+        >
+          새로고침
+        </Button>
+      </Box>
+
+      {/* 에러 메시지 */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      {/* 성공 메시지 */}
+      {successMessage && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          {successMessage}
+        </Alert>
+      )}
+
+      {/* 신고 목록 테이블 */}
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>신고자</TableCell>
+              <TableCell>신고당한 사용자</TableCell>
+              <TableCell>게시글 제목</TableCell>
+              <TableCell>신고 사유</TableCell>
+              <TableCell>상태</TableCell>
+              <TableCell>신고일</TableCell>
+              <TableCell>액션</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={7} align="center">
+                  <CircularProgress size={24} sx={{ my: 2 }} />
+                </TableCell>
+              </TableRow>
+            ) : reports.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} align="center">
+                  신고 내역이 없습니다.
+                </TableCell>
+              </TableRow>
+            ) : (
+              reports.map((report) => (
+                <TableRow key={report.id}>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Avatar
+                        src={report.reporter?.profileImageUrl}
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          cursor: 'pointer',
+                          '&:hover': {
+                            opacity: 0.8
+                          }
+                        }}
+                        onClick={() => handleOpenUserDetailModal(report.reporter?.id)}
+                      >
+                        <PersonIcon />
+                      </Avatar>
+                      <Box>
+                        <Typography variant="body2" fontWeight="medium">
+                          {report.reporter?.name || '알 수 없음'}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {report.reporter?.phoneNumber || ''}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Avatar
+                        src={report.reported?.profileImageUrl}
+                        sx={{
+                          width: 32,
+                          height: 32,
+                          cursor: 'pointer',
+                          '&:hover': {
+                            opacity: 0.8
+                          }
+                        }}
+                        onClick={() => handleOpenUserDetailModal(report.reported?.id)}
+                      >
+                        <PersonIcon />
+                      </Avatar>
+                      <Box>
+                        <Typography variant="body2" fontWeight="medium">
+                          {report.reported?.name || '알 수 없음'}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {report.reported?.phoneNumber || ''}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
+                      {report.article?.title || '제목 없음'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" noWrap sx={{ maxWidth: 150 }}>
+                      {report.reason || '사유 없음'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={getStatusText(report.status)}
+                      color={getStatusChipColor(report.status) as any}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">
+                      {new Date(report.createdAt).toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => handleViewDetail(report)}
+                      >
+                        상세보기
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color={report.article?.blindedAt ? "success" : "warning"}
+                        onClick={() => handleBlindArticle(report.article?.id, !!report.article?.blindedAt)}
+                        disabled={actionLoading}
+                      >
+                        {report.article?.blindedAt ? '블라인드 해제' : '블라인드'}
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="error"
+                        onClick={() => handleDeleteArticle(report.article?.id)}
+                        disabled={actionLoading}
+                      >
+                        삭제
+                      </Button>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {/* 페이지네이션 */}
+      <TablePagination
+        rowsPerPageOptions={[5, 10, 25]}
+        component="div"
+        count={totalCount}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        labelRowsPerPage="페이지당 행 수:"
+        labelDisplayedRows={({ from, to, count }) => `${from}-${to} / ${count}`}
+      />
+
+      {/* 신고 상세 다이얼로그 */}
+      <Dialog
+        open={openDetailDialog}
+        onClose={() => setOpenDetailDialog(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>신고 상세 정보</DialogTitle>
+        <DialogContent>
+          {selectedReport && (
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="h6" gutterBottom>신고 정보</Typography>
+              <Box sx={{ mb: 2 }}>
+                <Typography><Box component="span" fontWeight="bold">신고 ID:</Box> {selectedReport.id}</Typography>
+                <Typography><Box component="span" fontWeight="bold">신고 사유:</Box> {selectedReport.reason}</Typography>
+                <Typography><Box component="span" fontWeight="bold">상태:</Box> {getStatusText(selectedReport.status)}</Typography>
+                <Typography><Box component="span" fontWeight="bold">신고일:</Box> {new Date(selectedReport.createdAt).toLocaleString('ko-KR')}</Typography>
+              </Box>
+
+              <Typography variant="h6" gutterBottom>신고자 정보</Typography>
+              <Box sx={{ mb: 2 }}>
+                <Typography><Box component="span" fontWeight="bold">이름:</Box> {selectedReport.reporter?.name}</Typography>
+                <Typography><Box component="span" fontWeight="bold">이메일:</Box> {selectedReport.reporter?.email}</Typography>
+                <Typography><Box component="span" fontWeight="bold">전화번호:</Box> {selectedReport.reporter?.phoneNumber}</Typography>
+                <Typography><Box component="span" fontWeight="bold">나이:</Box> {selectedReport.reporter?.age}세</Typography>
+                <Typography><Box component="span" fontWeight="bold">성별:</Box> {selectedReport.reporter?.gender === 'MALE' ? '남성' : '여성'}</Typography>
+              </Box>
+
+              <Typography variant="h6" gutterBottom>신고당한 사용자 정보</Typography>
+              <Box sx={{ mb: 2 }}>
+                <Typography><Box component="span" fontWeight="bold">이름:</Box> {selectedReport.reported?.name}</Typography>
+                <Typography><Box component="span" fontWeight="bold">이메일:</Box> {selectedReport.reported?.email}</Typography>
+                <Typography><Box component="span" fontWeight="bold">전화번호:</Box> {selectedReport.reported?.phoneNumber}</Typography>
+                <Typography><Box component="span" fontWeight="bold">나이:</Box> {selectedReport.reported?.age}세</Typography>
+                <Typography><Box component="span" fontWeight="bold">성별:</Box> {selectedReport.reported?.gender === 'MALE' ? '남성' : '여성'}</Typography>
+              </Box>
+
+              <Typography variant="h6" gutterBottom>게시글 정보</Typography>
+              <Box sx={{ mb: 2 }}>
+                <Typography><Box component="span" fontWeight="bold">제목:</Box> {selectedReport.article?.title}</Typography>
+                <Typography><Box component="span" fontWeight="bold">내용:</Box></Typography>
+                <Paper sx={{ p: 2, mt: 1, backgroundColor: '#f5f5f5' }}>
+                  <Typography variant="body2" style={{ whiteSpace: 'pre-wrap' }}>
+                    {selectedReport.article?.content}
+                  </Typography>
+                </Paper>
+                <Typography><Box component="span" fontWeight="bold">작성일:</Box> {new Date(selectedReport.article?.createdAt).toLocaleString('ko-KR')}</Typography>
+                <Typography><Box component="span" fontWeight="bold">블라인드 상태:</Box> {selectedReport.article?.blindedAt ? '블라인드 처리됨' : '정상'}</Typography>
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDetailDialog(false)}>닫기</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 블라인드 확인 다이얼로그 */}
+      <Dialog
+        open={openBlindDialog}
+        onClose={() => setOpenBlindDialog(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          게시글 {blindAction === 'blind' ? '블라인드' : '블라인드 해제'} 확인
+        </DialogTitle>
+        <DialogContent>
+          <Typography>
+            정말로 이 게시글을 {blindAction === 'blind' ? '블라인드' : '블라인드 해제'} 처리하시겠습니까?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenBlindDialog(false)}>취소</Button>
+          <Button
+            onClick={handleConfirmBlind}
+            color={blindAction === 'blind' ? 'warning' : 'success'}
+            variant="contained"
+            disabled={actionLoading}
+          >
+            {actionLoading ? '처리중...' : (blindAction === 'blind' ? '블라인드' : '블라인드 해제')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 사용자 상세 정보 모달 */}
+      {!!userDetail && (
+        <UserDetailModal
+          open={userDetailModalOpen}
+          onClose={handleCloseUserDetailModal}
+          userId={selectedUserId}
+          userDetail={userDetail}
+          loading={loadingUserDetail}
+          error={userDetailError}
+          onRefresh={() => {
+            fetchReports();
+          }}
+        />
+      )}
+    </Box>
+  );
+}
+
 export default function AdminCommunity() {
   const router = useRouter();
   const { user, loading, isAdmin } = useAuth();
+  const [currentTab, setCurrentTab] = useState(0);
+
+  // 탭 변경 핸들러
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+    setCurrentTab(newValue);
+  };
 
   // 관리자 권한 확인
   useEffect(() => {
@@ -1038,7 +1586,33 @@ export default function AdminCommunity() {
         p: 0,
         boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)'
       }}>
-        <ArticleList />
+        {/* 탭 네비게이션 */}
+        <Tabs
+          value={currentTab}
+          onChange={handleTabChange}
+          sx={{
+            borderBottom: 1,
+            borderColor: 'divider',
+            px: 2
+          }}
+        >
+          <Tab
+            label="게시글 관리"
+            icon={<ArticleIcon />}
+            iconPosition="start"
+          />
+          <Tab
+            label="신고 관리"
+            icon={<ReportIcon />}
+            iconPosition="start"
+          />
+        </Tabs>
+
+        {/* 탭 컨텐츠 */}
+        <Box sx={{ p: 2 }}>
+          {currentTab === 0 && <ArticleList />}
+          {currentTab === 1 && <ReportList />}
+        </Box>
       </Box>
     </Box>
   );

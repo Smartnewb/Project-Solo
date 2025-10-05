@@ -338,7 +338,46 @@ const communityService = {
     }
   },
 
-  // 신고 목록 조회
+  // 커뮤니티 신고 목록 조회
+  getCommunityReports: async (
+    page = 1,
+    limit = 10,
+    status: 'pending' | 'reviewing' | 'resolved' | 'rejected' = 'pending',
+    reporterName?: string,
+    reportedName?: string
+  ): Promise<PaginatedResponse<any>> => {
+    try {
+      console.log('커뮤니티 신고 목록 조회 요청:', { page, limit, status, reporterName, reportedName });
+
+      const params: any = { page, limit, status };
+      if (reporterName) params.reporterName = reporterName;
+      if (reportedName) params.reportedName = reportedName;
+
+      // 실제 API 호출
+      const response = await axiosServer.get(`/admin/community-reports`, {
+        params
+      });
+      console.log('커뮤니티 신고 목록 조회 응답:', response.data);
+
+      // API 응답 구조에 맞게 데이터 반환
+      return {
+        items: response.data.data ?? [],
+        meta: response.data.meta ?? {
+          currentPage: page,
+          itemsPerPage: limit,
+          totalItems: response.data.meta?.totalItems ?? 0,
+          totalPages: response.data.meta?.totalPages ?? 1,
+          hasNextPage: false,
+          hasPreviousPage: page > 1
+        }
+      };
+    } catch (error) {
+      console.error('커뮤니티 신고 목록 조회 중 오류:', error);
+      throw error;
+    }
+  },
+
+  // 신고 목록 조회 (기존)
   getReports: async (type: 'article' | 'comment' | 'all' = 'all', status: 'pending' | 'processed' | 'all' = 'all', page = 1, limit = 10): Promise<PaginatedResponse<Report>> => {
     try {
       console.log('신고 목록 조회 요청:', { type, status, page, limit });
