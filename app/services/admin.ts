@@ -1989,12 +1989,38 @@ const matching = {
   }
 };
 
+// 신고 관리 API
+const reports = {
+  // 프로필 신고 목록 조회
+  getProfileReports: async (params: URLSearchParams) => {
+    try {
+      console.log('프로필 신고 목록 조회 시작');
+
+      const endpoint = `/admin/profile-reports?${params.toString()}`;
+      console.log('API 엔드포인트:', endpoint);
+
+      const response = await axiosServer.get(endpoint);
+      console.log('프로필 신고 목록 응답:', response.data);
+
+      return response.data;
+    } catch (error: any) {
+      console.error('프로필 신고 목록 조회 중 오류:', error);
+      throw error;
+    }
+  },
+
+
+};
+
 const AdminService = {
   auth,
   stats,
   userAppearance,
   universities,
-  matching
+  matching,
+  reports,
+  // 기존 함수들을 reports 객체로 이동하기 전까지 임시로 유지
+  getProfileReports: reports.getProfileReports
 };
 
 export default AdminService;
