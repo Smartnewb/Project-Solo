@@ -99,6 +99,7 @@ export interface UserDetail {
   id: string;
   name: string;
   age: number;
+  birthday?: string;
   gender: 'MALE' | 'FEMALE';
   profileImages: {
     id: string;
@@ -1072,6 +1073,15 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                       color="primary"
                       variant="outlined"
                     />
+
+                    {userDetail.birthday && (
+                      <Chip
+                        label={`생년월일: ${formatDateWithoutTimezoneConversion(userDetail.birthday)}`}
+                        size="small"
+                        color="info"
+                        variant="outlined"
+                      />
+                    )}
 
                     {userDetail.signupRoute && (
                       <Chip

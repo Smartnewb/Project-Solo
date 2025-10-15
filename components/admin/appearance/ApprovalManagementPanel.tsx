@@ -46,6 +46,8 @@ interface PendingUser {
   id?: string;
   userId?: string;
   name: string;
+  age?: number;
+  birthday?: string;
   phone?: string;
   phoneNumber?: string;
   profileImageUrl?: string;
@@ -287,6 +289,7 @@ const ApprovalManagementPanel: React.FC = () => {
         id: userData.id || userData.userId,
         name: userData.name,
         age: userData.age,
+        birthday: userData.birthday,
         gender: userData.gender,
         profileImages: userData.profileImages || [],
         profileImageUrl: userData.profileImageUrl,
@@ -459,7 +462,19 @@ const ApprovalManagementPanel: React.FC = () => {
 
                     <Box sx={{ flex: 1}}>
                       <Typography variant='subtitle1' fontWeight='bold'>{user.name}</Typography>
-                      <Typography variant='caption' color='text.secondary'>{new Date(user.createdAt).toLocaleDateString('ko-KR')}</Typography>
+                      <Typography variant='caption' color='text.secondary'>
+                        {user.birthday ? (
+                          <>
+                            생년월일: {new Date(user.birthday).toLocaleDateString('ko-KR')}
+                            {user.age && ` (${user.age}세)`}
+                          </>
+                        ) : (
+                          user.age ? `나이: ${user.age}세` : ''
+                        )}
+                      </Typography>
+                      <Typography variant='caption' color='text.secondary' sx={{ display: 'block' }}>
+                        가입일: {new Date(user.createdAt).toLocaleDateString('ko-KR')}
+                      </Typography>
                     </Box>
 
                     {/*TODO: - 상태 라벨 및 색상 지정 */}
@@ -517,6 +532,7 @@ const ApprovalManagementPanel: React.FC = () => {
             <TableRow>
               <TableCell>프로필</TableCell>
               <TableCell>이름</TableCell>
+              <TableCell>생년월일(나이)</TableCell>
               <TableCell>전화번호</TableCell>
               <TableCell>인스타그램 ID</TableCell>
               <TableCell>대학교</TableCell>
@@ -532,13 +548,13 @@ const ApprovalManagementPanel: React.FC = () => {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={(activeTab === 1 || activeTab === 2) ? 12 : 11} align="center">
+                <TableCell colSpan={(activeTab === 1 || activeTab === 2) ? 13 : 12} align="center">
                   <CircularProgress />
                 </TableCell>
               </TableRow>
             ) : currentUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={(activeTab === 1 || activeTab === 2) ? 12 : 11} align="center">
+                <TableCell colSpan={(activeTab === 1 || activeTab === 2) ? 13 : 12} align="center">
                   {activeTab === 0 ? '승인 대기 중인 사용자가 없습니다.' :
                    activeTab === 1 ? '승인 거부된 사용자가 없습니다.' :
                    '재심사 요청한 사용자가 없습니다.'}
@@ -556,6 +572,16 @@ const ApprovalManagementPanel: React.FC = () => {
                     />
                   </TableCell>
                   <TableCell>{user.name}</TableCell>
+                  <TableCell>
+                    {user.birthday ? (
+                      <>
+                        {new Date(user.birthday).toLocaleDateString('ko-KR')}
+                        {user.age && ` (${user.age}세)`}
+                      </>
+                    ) : (
+                      user.age ? `${user.age}세` : '-'
+                    )}
+                  </TableCell>
                   <TableCell>{getUserPhone(user)}</TableCell>
                   <TableCell>
                     {user.instagramId ? (

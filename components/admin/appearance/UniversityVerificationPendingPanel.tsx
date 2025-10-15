@@ -38,6 +38,8 @@ import UserDetailModal, { UserDetail } from './UserDetailModal';
 interface UniversityVerificationUser {
   id: string;
   name: string;
+  age?: number;
+  birthday?: string;
   email: string;
   phoneNumber: string;
   profileImageUrl?: string;
@@ -339,6 +341,19 @@ export default function UniversityVerificationPendingPanel() {
                       {user.name}
                     </Typography>
 
+                    {(user.birthday || user.age) && (
+                      <Typography variant="body2" color="textSecondary" align="center">
+                        {user.birthday ? (
+                          <>
+                            생년월일: {new Date(user.birthday).toLocaleDateString('ko-KR')}
+                            {user.age && ` (${user.age}세)`}
+                          </>
+                        ) : (
+                          user.age ? `나이: ${user.age}세` : ''
+                        )}
+                      </Typography>
+                    )}
+
                     <Typography variant="body2" color="textSecondary" align="center">
                       {user.phoneNumber}
                     </Typography>
@@ -411,6 +426,7 @@ export default function UniversityVerificationPendingPanel() {
               <TableRow>
                 <TableCell>프로필</TableCell>
                 <TableCell>이름</TableCell>
+                <TableCell>생년월일(나이)</TableCell>
                 <TableCell>전화번호</TableCell>
                 <TableCell>대학교</TableCell>
                 <TableCell>학과</TableCell>
@@ -424,13 +440,13 @@ export default function UniversityVerificationPendingPanel() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={10} align="center" sx={{ py: 3 }}>
+                  <TableCell colSpan={11} align="center" sx={{ py: 3 }}>
                     <CircularProgress />
                   </TableCell>
                 </TableRow>
               ) : users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} align="center" sx={{ py: 3 }}>
+                  <TableCell colSpan={11} align="center" sx={{ py: 3 }}>
                     <Typography variant="body1">학생증 인증 신청한 사용자가 없습니다.</Typography>
                   </TableCell>
                 </TableRow>
@@ -448,6 +464,16 @@ export default function UniversityVerificationPendingPanel() {
                       </Avatar>
                     </TableCell>
                     <TableCell>{user.name}</TableCell>
+                    <TableCell>
+                      {user.birthday ? (
+                        <>
+                          {new Date(user.birthday).toLocaleDateString('ko-KR')}
+                          {user.age && ` (${user.age}세)`}
+                        </>
+                      ) : (
+                        user.age ? `${user.age}세` : '-'
+                      )}
+                    </TableCell>
                     <TableCell>{user.phoneNumber}</TableCell>
                     <TableCell>{user.universityName}</TableCell>
                     <TableCell>{user.departmentName}</TableCell>
