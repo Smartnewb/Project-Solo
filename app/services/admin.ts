@@ -1485,6 +1485,55 @@ const userAppearance = {
   }
 };
 
+const profileImages = {
+  getPendingProfileImages: async () => {
+    try {
+      console.log('심사 대기 중인 프로필 이미지 목록 조회 요청');
+
+      const response = await axiosServer.get('/admin/profile-images/pending');
+
+      console.log('심사 대기 중인 프로필 이미지 목록 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('심사 대기 중인 프로필 이미지 목록 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  approveProfileImage: async (userId: string) => {
+    try {
+      console.log('프로필 이미지 승인 요청:', userId);
+
+      const response = await axiosServer.post(`/admin/profile-images/users/${userId}/approve`);
+
+      console.log('프로필 이미지 승인 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('프로필 이미지 승인 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  rejectProfileImage: async (userId: string, rejectionReason: string) => {
+    try {
+      console.log('프로필 이미지 거절 요청:', { userId, rejectionReason });
+
+      const response = await axiosServer.post(`/admin/profile-images/users/${userId}/reject`, {
+        rejectionReason
+      });
+
+      console.log('프로필 이미지 거절 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('프로필 이미지 거절 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  }
+};
+
 // 대학교 및 학과 관련 API
 const universities = {
   // 대학교 목록 조회
@@ -2019,6 +2068,7 @@ const AdminService = {
   universities,
   matching,
   reports,
+  profileImages,
   // 기존 함수들을 reports 객체로 이동하기 전까지 임시로 유지
   getProfileReports: reports.getProfileReports
 };

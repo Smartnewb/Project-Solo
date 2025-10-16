@@ -24,6 +24,7 @@ import VerifiedUsersPanel from '@/components/admin/appearance/VerifiedUsersPanel
 import BlacklistUsersPanel from '@/components/admin/appearance/BlacklistUsersPanel';
 import ApprovalManagementPanel from '@/components/admin/appearance/ApprovalManagementPanel';
 import UniversityVerificationPendingPanel from '@/components/admin/appearance/UniversityVerificationPendingPanel';
+import ProfileImageApprovalPanel from '@/components/admin/appearance/ProfileImageApprovalPanel';
 
 // 전역 이벤트 버스 생성 (등급 변경 이벤트 처리용)
 export const appearanceGradeEventBus = {
@@ -185,6 +186,7 @@ export default function AppearanceGradePage() {
         <Tabs value={activeTab} onChange={handleTabChange} aria-label="사용자 관리 탭">
           <Tab label="전체 사용자" />
           <Tab label="승인 관리" />
+          <Tab label="프로필 이미지 승인" />
           <Tab label="블랙리스트" />
           <Tab label="미분류 사용자" />
           <Tab label="중복 휴대폰 번호" />
@@ -221,18 +223,21 @@ export default function AppearanceGradePage() {
           <ApprovalManagementPanel />
         )}
         {activeTab === 2 && (
-          <BlacklistUsersPanel />
+          <ProfileImageApprovalPanel />
         )}
         {activeTab === 3 && (
-          <UnclassifiedUsersPanel />
+          <BlacklistUsersPanel />
         )}
         {activeTab === 4 && (
-          <DuplicatePhoneUsersPanel />
+          <UnclassifiedUsersPanel />
         )}
         {activeTab === 5 && (
-          <VerifiedUsersPanel />
+          <DuplicatePhoneUsersPanel />
         )}
         {activeTab === 6 && (
+          <VerifiedUsersPanel />
+        )}
+        {activeTab === 7 && (
           <UniversityVerificationPendingPanel />
         )}
       </Box>
