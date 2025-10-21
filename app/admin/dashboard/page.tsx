@@ -246,7 +246,11 @@ export default function AdminDashboard() {
 
         {/* 대학별 통계 카드 */}
         <Box sx={{ mt: 4, mb: 4 }}>
-          <UniversityStatsCard region={getRegionParam()} />
+          <UniversityStatsCard
+            region={getRegionParam()}
+            includeDeleted={getIncludeDeletedParam()}
+            useCluster={getUseClusterParam()}
+          />
         </Box>
 
         <Divider sx={{ my: 6 }} />

@@ -219,10 +219,11 @@ const stats = {
   },
 
   // 대학별 통계 조회
-  getUniversityStats: async (region?: string, useCluster?: boolean) => {
+  getUniversityStats: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
     try {
       const params: any = {};
       if (region) params.region = region;
+      if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
       if (useCluster !== undefined) params.useCluster = useCluster;
 
       const response = await axiosServer.get('/admin/stats/users/universities', { params });
