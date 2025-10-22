@@ -416,6 +416,7 @@ const userAppearance = {
     useCluster?: boolean;
     isLongTermInactive?: boolean;
     hasPreferences?: boolean;
+    includeDeleted?: boolean;
   }) => {
     try {
       console.log('유저 목록 조회 요청 파라미터:', JSON.stringify(params, null, 2));
@@ -444,6 +445,7 @@ const userAppearance = {
       if (params.useCluster !== undefined) queryParams.append('useCluster', params.useCluster.toString());
       if (params.isLongTermInactive !== undefined) queryParams.append('isLongTermInactive', params.isLongTermInactive.toString());
       if (params.hasPreferences !== undefined) queryParams.append('hasPreferences', params.hasPreferences.toString());
+      if (params.includeDeleted !== undefined) queryParams.append('includeDeleted', params.includeDeleted.toString());
 
       const url = `/admin/users/appearance?${queryParams.toString()}`;
       console.log('최종 API 요청 URL:', url);

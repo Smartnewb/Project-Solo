@@ -52,6 +52,12 @@ const HAS_PREFERENCES_OPTIONS: { value: string; label: string }[] = [
   { value: 'false', label: '프로필 미입력' }
 ];
 
+// 탈퇴자 포함 여부 옵션
+const INCLUDE_DELETED_OPTIONS: { value: string; label: string }[] = [
+  { value: 'false', label: '활성 사용자만' },
+  { value: 'true', label: '탈퇴자 포함' }
+];
+
 interface AppearanceFilterPanelProps {
   onFilter?: (filters: {
     gender?: Gender;
@@ -64,6 +70,7 @@ interface AppearanceFilterPanelProps {
     useCluster?: boolean;
     isLongTermInactive?: boolean;
     hasPreferences?: boolean;
+    includeDeleted?: boolean;
   }) => void;
 }
 
@@ -76,6 +83,7 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
   const [searchTerm, setSearchTerm] = useState('');
   const [isLongTermInactive, setIsLongTermInactive] = useState<string>('all');
   const [hasPreferences, setHasPreferences] = useState<string>('all');
+  const [includeDeleted, setIncludeDeleted] = useState<string>('false');
   const [isAdvancedFilterOpen, setIsAdvancedFilterOpen] = useState(false);
 
   // 지역 필터 훅 사용
@@ -107,6 +115,7 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
 
       if (isLongTermInactive !== 'all') filters.isLongTermInactive = isLongTermInactive === 'true';
       if (hasPreferences !== 'all') filters.hasPreferences = hasPreferences === 'true';
+      filters.includeDeleted = includeDeleted === 'true';
 
       onFilter(filters);
     }
@@ -123,6 +132,7 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
     setRegion('ALL'); // 지역 필터 초기화
     setIsLongTermInactive('all');
     setHasPreferences('all');
+    setIncludeDeleted('false');
 
     if (onFilter) {
       onFilter({});
@@ -288,6 +298,22 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
                   }}
                   InputProps={{ inputProps: { min: 18 } }}
                 />
+              </Grid>
+
+              <Grid item xs={12} md={4}>
+                <TextField
+                  select
+                  fullWidth
+                  label="탈퇴자 포함 여부"
+                  value={includeDeleted}
+                  onChange={(e) => setIncludeDeleted(e.target.value)}
+                >
+                  {INCLUDE_DELETED_OPTIONS.map((option) => (
+                    <MenuItem key={option.value} value={option.value}>
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
               </Grid>
             </>
           )}

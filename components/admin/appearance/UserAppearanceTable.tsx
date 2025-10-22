@@ -100,6 +100,7 @@ interface UserAppearanceTableProps {
     region?: string;
     isLongTermInactive?: boolean;
     hasPreferences?: boolean;
+    includeDeleted?: boolean;
   };
 }
 
