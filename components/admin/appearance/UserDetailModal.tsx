@@ -30,7 +30,10 @@ import {
   ToggleButton,
   FormControlLabel,
   Checkbox,
-  TextField
+  TextField,
+  FormControl,
+  InputLabel,
+  Select
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import InstagramIcon from '@mui/icons-material/Instagram';
@@ -269,7 +272,46 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
   // 승인 취소 관련 상태
   const [revokeReason, setRevokeReason] = useState<string>('');
+  const [customRevokeReason, setCustomRevokeReason] = useState<string>('');
   const [revokeActionLoading, setRevokeActionLoading] = useState(false);
+
+  const rejectionReasons = [
+    { value: 'PROFILE_PHOTO_CLEAR_FACE', label: '프로필 사진을 본인 얼굴이 잘 보이는 사진으로 변경해주세요' },
+    { value: 'PROFILE_PHOTO_SELF', label: '본인 사진으로 프로필을 변경해주세요' },
+    { value: 'PROFILE_PHOTO_NATURAL', label: '상대방이 봐도 부담스럽지 않은 자연스러운 사진으로 변경해주세요' },
+    { value: 'PROFILE_PHOTO_FORMAT_UNSUPPORTED', label: '프로필 이미지 형식 지원 안함(jpg, jpeg, png 지원)' },
+    { value: 'INSTAGRAM_ID_CORRECT', label: '인스타그램 ID를 정확히 입력해주세요' },
+    { value: 'INSTAGRAM_ID_MAIN_ACCOUNT', label: '인스타그램 본계정으로 변경해주세요' },
+    { value: 'INSTAGRAM_ID_PUBLIC', label: '인스타그램을 공개계정으로 설정해주세요' },
+    { value: 'INSTAGRAM_ID_ACTIVE', label: '활동 내역이 있는 인스타그램 계정으로 변경해주세요' },
+    { value: 'INSTAGRAM_ID_VERIFIABLE', label: '본인 확인이 가능한 인스타그램 계정으로 변경해주세요' },
+    { value: 'BOTH_PROFILE_AND_INSTAGRAM', label: '프로필 사진과 인스타그램 ID 모두 수정 후 재신청해주세요' },
+    { value: 'NOT_ELIGIBLE', label: '현재 썸타임 이용 조건에 맞지 않아 승인이 어렵습니다' },
+    { value: 'FOREIGN_STUDENT_NOT_ACCEPTED', label: '죄송하지만 현재 외국인 유학생 회원가입을 받고 있지 않습니다' },
+    { value: 'IDENTITY_VERIFICATION_DIFFICULT', label: '본인 확인이 어려워 승인이 어렵습니다' },
+    { value: 'RELIABLE_PROFILE_REQUIRED', label: '신뢰할 수 있는 프로필 정보로 수정 후 재신청해주세요' },
+    { value: 'OTHER', label: '기타 (직접 입력)' }
+  ];
+  const getRejectionReasonLabel = (reason: string) => {
+    const reasonMap: Record<string, string> = {
+      'PROFILE_PHOTO_CLEAR_FACE': '프로필 사진을 본인 얼굴이 잘 보이는 사진으로 변경해주세요',
+      'PROFILE_PHOTO_SELF': '본인 사진으로 프로필을 변경해주세요',
+      'PROFILE_PHOTO_NATURAL': '상대방이 봐도 부담스럽지 않은 자연스러운 사진으로 변경해주세요',
+      'PROFILE_PHOTO_FORMAT_UNSUPPORTED': '프로필 이미지 형식 지원 안함(jpg, jpeg, png 지원)',
+      'INSTAGRAM_ID_CORRECT': '인스타그램 ID를 정확히 입력해주세요',
+      'INSTAGRAM_ID_MAIN_ACCOUNT': '인스타그램 본계정으로 변경해주세요',
+      'INSTAGRAM_ID_PUBLIC': '인스타그램을 공개계정으로 설정해주세요',
+      'INSTAGRAM_ID_ACTIVE': '활동 내역이 있는 인스타그램 계정으로 변경해주세요',
+      'INSTAGRAM_ID_VERIFIABLE': '본인 확인이 가능한 인스타그램 계정으로 변경해주세요',
+      'BOTH_PROFILE_AND_INSTAGRAM': '프로필 사진과 인스타그램 ID 모두 수정 후 재신청해주세요',
+      'NOT_ELIGIBLE': '현재 썸타임 이용 조건에 맞지 않아 승인이 어렵습니다',
+      'FOREIGN_STUDENT_NOT_ACCEPTED': '죄송하지만 현재 외국인 유학생 회원가입을 받고 있지 않습니다',
+      'IDENTITY_VERIFICATION_DIFFICULT': '본인 확인이 어려워 승인이 어렵습니다',
+      'RELIABLE_PROFILE_REQUIRED': '신뢰할 수 있는 프로필 정보로 수정 후 재신청해주세요',
+      'OTHER': '기타'
+    };
+    return reasonMap[reason] || reason;
+  };
 
   // 메뉴 열기
   const handleOpenMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -613,13 +655,20 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
   // 승인 취소 처리
   const handleRevokeApproval = async () => {
-    if (!userId || !revokeReason.trim()) return;
+    if (!userId) return;
+
+    if (revokeReason === 'OTHER' && !customRevokeReason.trim()) return;
+    if (revokeReason !== 'OTHER' && !revokeReason.trim()) return;
 
     try {
       setRevokeActionLoading(true);
       setActionError(null);
 
-      await AdminService.userAppearance.revokeUserApproval(userId, revokeReason.trim());
+      const finalRevokeReason = revokeReason === 'OTHER'
+        ? customRevokeReason.trim()
+        : getRejectionReasonLabel(revokeReason);
+
+      await AdminService.userAppearance.revokeUserApproval(userId, finalRevokeReason);
 
       // 사용자 상태 업데이트
       setUserDetail(prev => prev ? { ...prev, approvalStatus: 'REJECTED' } : prev);
@@ -630,6 +679,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       // 모달 닫기 및 상태 초기화
       setRevokeApprovalModalOpen(false);
       setRevokeReason('');
+      setCustomRevokeReason('');
 
       // 부모 컴포넌트에 변경 알림
       if (onRefresh) onRefresh();
@@ -646,6 +696,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     handleCloseMenu();
     setRevokeApprovalModalOpen(true);
     setRevokeReason('');
+    setCustomRevokeReason('');
   };
 
   return (
@@ -1953,17 +2004,39 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
             </Typography>
           </Alert>
 
-          <TextField
-            fullWidth
-            multiline
-            rows={3}
-            label="승인 취소 사유 *"
-            placeholder="승인을 취소하는 사유를 입력하세요"
-            value={revokeReason}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRevokeReason(e.target.value)}
-            sx={{ mb: 2 }}
-            required
-          />
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>승인 취소 사유</InputLabel>
+            <Select
+              value={revokeReason}
+              onChange={(e) => {
+                setRevokeReason(e.target.value);
+                if (e.target.value !== 'OTHER') {
+                  setCustomRevokeReason('');
+                }
+              }}
+              label="승인 취소 사유"
+            >
+              {rejectionReasons.map((reason, index) => (
+                <MenuItem key={index} value={reason.value}>
+                  {reason.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {revokeReason === 'OTHER' && (
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              label="기타 승인 취소 사유"
+              placeholder="승인 취소 사유를 직접 입력해주세요"
+              value={customRevokeReason}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomRevokeReason(e.target.value)}
+              sx={{ mb: 2 }}
+              required
+            />
+          )}
 
           {actionError && (
             <Alert severity="error" sx={{ mb: 2 }}>
@@ -1976,6 +2049,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
             onClick={() => {
               setRevokeApprovalModalOpen(false);
               setRevokeReason('');
+              setCustomRevokeReason('');
             }}
             disabled={revokeActionLoading}
           >
@@ -1985,7 +2059,11 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
             onClick={handleRevokeApproval}
             variant="contained"
             color="warning"
-            disabled={revokeActionLoading || !revokeReason.trim()}
+            disabled={
+              revokeActionLoading ||
+              !revokeReason.trim() ||
+              (revokeReason === 'OTHER' && !customRevokeReason.trim())
+            }
           >
             {revokeActionLoading ? <CircularProgress size={20} /> : '승인 취소'}
           </Button>
