@@ -1485,6 +1485,23 @@ const userAppearance = {
       console.error('오류 상세 정보:', error.response?.data || error.message);
       throw error;
     }
+  },
+
+  revokeUserApproval: async (userId: string, revokeReason: string) => {
+    try {
+      console.log('사용자 승인 취소 요청:', { userId, revokeReason });
+
+      const response = await axiosServer.patch(`/admin/users/approval/${userId}/revoke-approval`, {
+        revokeReason
+      });
+
+      console.log('사용자 승인 취소 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('사용자 승인 취소 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
   }
 };
 

@@ -37,28 +37,19 @@ import InstagramIcon from '@mui/icons-material/Instagram';
 import SchoolIcon from '@mui/icons-material/School';
 import PhoneIcon from '@mui/icons-material/Phone';
 import PersonIcon from '@mui/icons-material/Person';
-import ImageIcon from '@mui/icons-material/Image';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import BlockIcon from '@mui/icons-material/Block';
-import WarningIcon from '@mui/icons-material/Warning';
-import LogoutIcon from '@mui/icons-material/Logout';
 import EditIcon from '@mui/icons-material/Edit';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import EmailIcon from '@mui/icons-material/Email';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import StarIcon from '@mui/icons-material/Star';
 import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
 import DiamondIcon from '@mui/icons-material/Diamond';
 import AdminService from '@/app/services/admin';
-import { format, formatDistance } from 'date-fns';
-import { ko } from 'date-fns/locale';
 import { formatDateWithoutTimezoneConversion, formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
 
 // 관리 기능 모달 컴포넌트들
-import AccountStatusModal from './modals/AccountStatusModal';
-import WarningMessageModal from './modals/WarningMessageModal';
-import ProfileUpdateRequestModal from './modals/ProfileUpdateRequestModal';
 import EditProfileModal from './modals/EditProfileModal';
 import EmailNotificationModal from './modals/EmailNotificationModal';
 import SmsNotificationModal from './modals/SmsNotificationModal';
@@ -126,6 +117,7 @@ export interface UserDetail {
   appearanceGrade?: 'S' | 'A' | 'B' | 'C' | 'UNKNOWN';
   isUniversityVerified?: boolean; // 대학교 인증 여부
   accountStatus?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED'; // 승인 상태
   preferences?: UserPreferences;
   signupRoute?: 'PASS' | 'KAKAO' | 'APPLE'; // 회원가입 루트
   // 추가 필드
@@ -242,13 +234,11 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const [savingGrade, setSavingGrade] = useState(false);
 
   // 모달 상태
-  const [accountStatusModalOpen, setAccountStatusModalOpen] = useState(false);
-  const [warningMessageModalOpen, setWarningMessageModalOpen] = useState(false);
-  const [profileUpdateRequestModalOpen, setProfileUpdateRequestModalOpen] = useState(false);
   const [editProfileModalOpen, setEditProfileModalOpen] = useState(false);
   const [emailNotificationModalOpen, setEmailNotificationModalOpen] = useState(false);
   const [smsNotificationModalOpen, setSmsNotificationModalOpen] = useState(false);
   const [deleteConfirmModalOpen, setDeleteConfirmModalOpen] = useState(false);
+  const [revokeApprovalModalOpen, setRevokeApprovalModalOpen] = useState(false);
 
   // 작업 상태
   const [actionLoading, setActionLoading] = useState(false);
@@ -277,6 +267,10 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const [gemsAddModalOpen, setGemsAddModalOpen] = useState(false);
   const [gemsRemoveModalOpen, setGemsRemoveModalOpen] = useState(false);
 
+  // 승인 취소 관련 상태
+  const [revokeReason, setRevokeReason] = useState<string>('');
+  const [revokeActionLoading, setRevokeActionLoading] = useState(false);
+
   // 메뉴 열기
   const handleOpenMenu = (event: React.MouseEvent<HTMLElement>) => {
     setMenuAnchorEl(event.currentTarget);
@@ -285,24 +279,6 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   // 메뉴 닫기
   const handleCloseMenu = () => {
     setMenuAnchorEl(null);
-  };
-
-  // 계정 상태 변경 모달 열기
-  const handleOpenAccountStatusModal = () => {
-    handleCloseMenu();
-    setAccountStatusModalOpen(true);
-  };
-
-  // 경고 메시지 모달 열기
-  const handleOpenWarningMessageModal = () => {
-    handleCloseMenu();
-    setWarningMessageModalOpen(true);
-  };
-
-  // 프로필 수정 요청 모달 열기
-  const handleOpenProfileUpdateRequestModal = () => {
-    handleCloseMenu();
-    setProfileUpdateRequestModalOpen(true);
   };
 
   // 프로필 직접 수정 모달 열기
@@ -321,26 +297,6 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const handleOpenSmsNotificationModal = () => {
     handleCloseMenu();
     setSmsNotificationModalOpen(true);
-  };
-
-  // 강제 로그아웃 처리
-  const handleForceLogout = async () => {
-    if (!userId) return;
-
-    try {
-      handleCloseMenu();
-      setActionLoading(true);
-      setActionError(null);
-
-      await AdminService.userAppearance.forceLogout(userId);
-
-      setActionSuccess('사용자가 강제 로그아웃 되었습니다.');
-      if (onRefresh) onRefresh();
-    } catch (error: any) {
-      setActionError(error.message || '강제 로그아웃 처리 중 오류가 발생했습니다.');
-    } finally {
-      setActionLoading(false);
-    }
   };
 
   // 외모 등급 변경 처리
@@ -655,6 +611,43 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     }
   };
 
+  // 승인 취소 처리
+  const handleRevokeApproval = async () => {
+    if (!userId || !revokeReason.trim()) return;
+
+    try {
+      setRevokeActionLoading(true);
+      setActionError(null);
+
+      await AdminService.userAppearance.revokeUserApproval(userId, revokeReason.trim());
+
+      // 사용자 상태 업데이트
+      setUserDetail(prev => prev ? { ...prev, approvalStatus: 'REJECTED' } : prev);
+
+      // 성공 메시지 표시
+      setActionSuccess('사용자의 승인이 취소되었습니다.');
+
+      // 모달 닫기 및 상태 초기화
+      setRevokeApprovalModalOpen(false);
+      setRevokeReason('');
+
+      // 부모 컴포넌트에 변경 알림
+      if (onRefresh) onRefresh();
+    } catch (error: any) {
+      console.error('승인 취소 중 오류:', error);
+      setActionError(error.message || '승인 취소 중 오류가 발생했습니다.');
+    } finally {
+      setRevokeActionLoading(false);
+    }
+  };
+
+  // 승인 취소 모달 열기
+  const handleOpenRevokeApprovalModal = () => {
+    handleCloseMenu();
+    setRevokeApprovalModalOpen(true);
+    setRevokeReason('');
+  };
+
   return (
     <Dialog
       open={open}
@@ -707,31 +700,6 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           horizontal: 'right',
         }}
       >
-        <MenuItem onClick={handleOpenAccountStatusModal}>
-          <ListItemIcon>
-            <BlockIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>계정 상태 변경</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={handleOpenWarningMessageModal}>
-          <ListItemIcon>
-            <WarningIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>경고 메시지 발송</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={handleForceLogout}>
-          <ListItemIcon>
-            <LogoutIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>강제 로그아웃</ListItemText>
-        </MenuItem>
-        <Divider />
-        <MenuItem onClick={handleOpenProfileUpdateRequestModal}>
-          <ListItemIcon>
-            <EditIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>프로필 수정 요청</ListItemText>
-        </MenuItem>
         <MenuItem onClick={handleOpenEditProfileModal}>
           <ListItemIcon>
             <EditIcon fontSize="small" />
@@ -775,6 +743,14 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
             </MenuItem>
           </>
         )}
+        {/* 승인 취소 메뉴 - 모든 사용자에게 표시 */}
+        <Divider />
+        <MenuItem onClick={handleOpenRevokeApprovalModal} disabled={actionLoading}>
+          <ListItemIcon>
+            <BlockIcon fontSize="small" color="warning" />
+          </ListItemIcon>
+          <ListItemText primary="승인 취소" primaryTypographyProps={{ color: 'warning.main' }} />
+        </MenuItem>
       </Menu>
       <DialogContent sx={{ p: 3 }}>
         {loading ? (
@@ -1648,36 +1624,6 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       )}
 
       {/* 관리 기능 모달들 */}
-      <AccountStatusModal
-        open={accountStatusModalOpen}
-        onClose={() => setAccountStatusModalOpen(false)}
-        userId={userId || ''}
-        onSuccess={() => {
-          setActionSuccess('계정 상태가 변경되었습니다.');
-          if (onRefresh) onRefresh();
-        }}
-      />
-
-      <WarningMessageModal
-        open={warningMessageModalOpen}
-        onClose={() => setWarningMessageModalOpen(false)}
-        userId={userId || ''}
-        onSuccess={() => {
-          setActionSuccess('경고 메시지가 발송되었습니다.');
-          if (onRefresh) onRefresh();
-        }}
-      />
-
-      <ProfileUpdateRequestModal
-        open={profileUpdateRequestModalOpen}
-        onClose={() => setProfileUpdateRequestModalOpen(false)}
-        userId={userId || ''}
-        onSuccess={() => {
-          setActionSuccess('프로필 수정 요청이 발송되었습니다.');
-          if (onRefresh) onRefresh();
-        }}
-      />
-
       <EditProfileModal
         open={editProfileModalOpen}
         onClose={() => setEditProfileModalOpen(false)}
@@ -1979,6 +1925,69 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
             disabled={gemsActionLoading}
           >
             {gemsActionLoading ? <CircularProgress size={20} /> : '구슬 제거'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 승인 취소 확인 모달 */}
+      <Dialog
+        open={revokeApprovalModalOpen}
+        onClose={() => setRevokeApprovalModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Typography variant="h6" color="warning.main">
+            승인 취소 확인
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            <strong>{userDetail?.name}</strong>님의 승인을 취소하시겠습니까?
+          </Typography>
+
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            <Typography variant="body2">
+              <strong>경고:</strong> 승인을 취소하면 사용자 상태가 '미승인'으로 변경되며,
+              다시 가입 승인을 받아야 합니다. 또한 자동으로 SMS가 발송됩니다.
+            </Typography>
+          </Alert>
+
+          <TextField
+            fullWidth
+            multiline
+            rows={3}
+            label="승인 취소 사유 *"
+            placeholder="승인을 취소하는 사유를 입력하세요"
+            value={revokeReason}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRevokeReason(e.target.value)}
+            sx={{ mb: 2 }}
+            required
+          />
+
+          {actionError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {actionError}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setRevokeApprovalModalOpen(false);
+              setRevokeReason('');
+            }}
+            disabled={revokeActionLoading}
+          >
+            취소
+          </Button>
+          <Button
+            onClick={handleRevokeApproval}
+            variant="contained"
+            color="warning"
+            disabled={revokeActionLoading || !revokeReason.trim()}
+          >
+            {revokeActionLoading ? <CircularProgress size={20} /> : '승인 취소'}
           </Button>
         </DialogActions>
       </Dialog>
