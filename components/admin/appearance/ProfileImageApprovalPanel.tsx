@@ -25,7 +25,11 @@ import {
   Card,
   CardContent,
   useMediaQuery,
-  useTheme
+  useTheme,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem
 } from '@mui/material';
 import AdminService from '@/app/services/admin';
 import UserDetailModal from './UserDetailModal';
@@ -46,27 +50,48 @@ interface PendingProfileImageUser {
 const ProfileImageApprovalPanel: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  
+
   const [pendingUsers, setPendingUsers] = useState<PendingProfileImageUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // 사용자 상세 정보 모달 관련 상태
   const [userDetailModalOpen, setUserDetailModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [userDetail, setUserDetail] = useState<any>(null);
   const [loadingUserDetail, setLoadingUserDetail] = useState(false);
   const [userDetailError, setUserDetailError] = useState<string | null>(null);
-  
+
   // 승인/거절 모달 관련 상태
   const [approvalModalOpen, setApprovalModalOpen] = useState(false);
   const [rejectionModalOpen, setRejectionModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [customRejectionReason, setCustomRejectionReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
 
   // 이미지 확대 모달 관련 상태
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [selectedImageUrl, setSelectedImageUrl] = useState<string>('');
+
+  // 거절 사유 템플릿
+  const rejectionReasons = [
+    { value: 'PROFILE_PHOTO_SELF', label: '본인 사진으로 프로필을 변경해주세요' },
+    { value: 'PROFILE_PHOTO_CLEAR_FACE', label: '프로필 사진을 본인 얼굴이 잘 보이는 사진으로 변경해주세요' },
+    { value: 'PROFILE_PHOTO_NATURAL', label: '상대방이 봐도 부담스럽지 않은 자연스러운 사진으로 변경해주세요' },
+    { value: 'PROFILE_PHOTO_FORMAT_UNSUPPORTED', label: '프로필 이미지 형식 지원 안함(jpg, jpeg, png 지원)' },
+    { value: 'OTHER', label: '기타 (직접 입력)' }
+  ];
+
+  // 거절 사유 한글 표시 함수
+  const getRejectionReasonLabel = (reason: string) => {
+    const reasonMap: Record<string, string> = {
+      'PROFILE_PHOTO_CLEAR_FACE': '프로필 사진을 본인 얼굴이 잘 보이는 사진으로 변경해주세요',
+      'PROFILE_PHOTO_SELF': '본인 사진으로 프로필을 변경해주세요',
+      'PROFILE_PHOTO_NATURAL': '상대방이 봐도 부담스럽지 않은 자연스러운 사진으로 변경해주세요',
+      'PROFILE_PHOTO_FORMAT_UNSUPPORTED': '프로필 이미지 형식 지원 안함(jpg, jpeg, png 지원)'
+    };
+    return reasonMap[reason] || reason;
+  };
 
   // 심사 대기 중인 프로필 이미지 목록 조회
   const fetchPendingProfileImages = async () => {
@@ -125,16 +150,22 @@ const ProfileImageApprovalPanel: React.FC = () => {
   // 프로필 이미지 거절
   const handleReject = async () => {
     if (!selectedUserId || !rejectionReason.trim()) return;
-    
+
     try {
       setActionLoading(true);
-      await AdminService.profileImages.rejectProfileImage(selectedUserId, rejectionReason);
-      
+
+      const finalRejectionReason = rejectionReason === 'OTHER'
+        ? customRejectionReason.trim()
+        : getRejectionReasonLabel(rejectionReason);
+
+      await AdminService.profileImages.rejectProfileImage(selectedUserId, finalRejectionReason);
+
       // 목록 새로고침
       await fetchPendingProfileImages();
       setRejectionModalOpen(false);
       setSelectedUserId(null);
       setRejectionReason('');
+      setCustomRejectionReason('');
     } catch (error: any) {
       console.error('프로필 이미지 거절 오류:', error);
       setError(error.message || '거절 처리 중 오류가 발생했습니다.');
@@ -391,24 +422,49 @@ const ProfileImageApprovalPanel: React.FC = () => {
         <DialogTitle>프로필 이미지 거절</DialogTitle>
         <DialogContent>
           <Typography sx={{ mb: 2 }}>
-            거절 사유를 입력해주세요.
+            거절 사유를 선택해주세요.
           </Typography>
-          <TextField
-            fullWidth
-            multiline
-            rows={3}
-            value={rejectionReason}
-            onChange={(e) => setRejectionReason(e.target.value)}
-            placeholder="거절 사유를 입력하세요..."
-          />
+          <FormControl fullWidth sx={{ mt: 1 }}>
+            <InputLabel>거절 사유</InputLabel>
+            <Select
+              value={rejectionReason}
+              onChange={(e) => {
+                setRejectionReason(e.target.value);
+                if (e.target.value !== 'OTHER') {
+                  setCustomRejectionReason('');
+                }
+              }}
+              label="거절 사유"
+            >
+              {rejectionReasons.map((reason, index) => (
+                <MenuItem key={index} value={reason.value}>
+                  {reason.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {rejectionReason === 'OTHER' && (
+            <FormControl fullWidth sx={{ mt: 2 }}>
+              <TextField
+                label="기타 거절 사유"
+                multiline
+                rows={3}
+                value={customRejectionReason}
+                onChange={(e) => setCustomRejectionReason(e.target.value)}
+                placeholder="거절 사유를 직접 입력해주세요"
+                required
+              />
+            </FormControl>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setRejectionModalOpen(false)}>취소</Button>
-          <Button 
-            onClick={handleReject} 
-            variant="contained" 
+          <Button
+            onClick={handleReject}
+            variant="contained"
             color="error"
-            disabled={actionLoading || !rejectionReason.trim()}
+            disabled={actionLoading || !rejectionReason.trim() || (rejectionReason === 'OTHER' && !customRejectionReason.trim())}
           >
             {actionLoading ? <CircularProgress size={20} /> : '거절'}
           </Button>

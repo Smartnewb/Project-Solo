@@ -276,6 +276,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const [revokeActionLoading, setRevokeActionLoading] = useState(false);
 
   const rejectionReasons = [
+    { value: 'LONG_TERM_INACTIVE_REAPPLY', label: '[장기 미접속]-재심사를 요청해주세요' },
     { value: 'PROFILE_PHOTO_CLEAR_FACE', label: '프로필 사진을 본인 얼굴이 잘 보이는 사진으로 변경해주세요' },
     { value: 'PROFILE_PHOTO_SELF', label: '본인 사진으로 프로필을 변경해주세요' },
     { value: 'PROFILE_PHOTO_NATURAL', label: '상대방이 봐도 부담스럽지 않은 자연스러운 사진으로 변경해주세요' },
@@ -305,6 +306,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       'INSTAGRAM_ID_VERIFIABLE': '본인 확인이 가능한 인스타그램 계정으로 변경해주세요',
       'BOTH_PROFILE_AND_INSTAGRAM': '프로필 사진과 인스타그램 ID 모두 수정 후 재신청해주세요',
       'NOT_ELIGIBLE': '현재 썸타임 이용 조건에 맞지 않아 승인이 어렵습니다',
+      'LONG_TERM_INACTIVE_REAPPLY': '[장기 미접속]-재심사를 요청해주세요',
       'FOREIGN_STUDENT_NOT_ACCEPTED': '죄송하지만 현재 외국인 유학생 회원가입을 받고 있지 않습니다',
       'IDENTITY_VERIFICATION_DIFFICULT': '본인 확인이 어려워 승인이 어렵습니다',
       'RELIABLE_PROFILE_REQUIRED': '신뢰할 수 있는 프로필 정보로 수정 후 재신청해주세요',
