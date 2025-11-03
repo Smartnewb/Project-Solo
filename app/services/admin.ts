@@ -1560,30 +1560,13 @@ const universities = {
   getUniversities: async () => {
     try {
       console.log('대학교 목록 조회 시작');
-      const response = await axiosServer.get('/universities');
+      const response = await axiosServer.get('/admin/universities');
       console.log('대학교 목록 조회 응답:', response.data);
       return response.data;
     } catch (error: any) {
       console.error('대학교 목록 조회 중 오류:', error);
       console.error('오류 상세 정보:', error.response?.data || error.message);
-
-      // 오류 발생 시 실제 DB에 있는 대학교 목록 반환
-      return [
-        '건양대학교(메디컬캠퍼스)',
-        '대전대학교',
-        '목원대학교',
-        '배재대학교',
-        '우송대학교',
-        '한남대학교',
-        '충남대학교',
-        'KAIST',
-        '한밭대학교',
-        '을지대학교',
-        '대덕대학교',
-        '대전과학기술대학교',
-        '대전보건대학교',
-        '우송정보대학'
-      ];
+      throw error;
     }
   },
 
@@ -2081,6 +2064,71 @@ const reports = {
 
 };
 
+const pushNotifications = {
+  filterUsers: async (filters: {
+    isDormant?: boolean;
+    gender?: string;
+    universities?: string[];
+    regions?: string[];
+    ranks?: string[];
+    phoneNumber?: string;
+    hasPreferences?: boolean;
+  }, page: number = 1, limit: number = 20) => {
+    try {
+      const response = await axiosServer.post('/admin/push-notifications/filter-users', {
+        ...filters,
+        page,
+        limit,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('사용자 필터링 중 오류:', error);
+      throw error;
+    }
+  },
+
+  sendPushNotification: async (data: {
+    title: string;
+    message: string;
+    isDormant?: boolean;
+    universities?: string[];
+    gender?: string;
+    hasPreferences?: boolean;
+    ranks?: string[];
+    regions?: string[];
+    phoneNumber?: string;
+    scheduledAt?: string;
+  }) => {
+    try {
+      const response = await axiosServer.post('/admin/push-notifications/send', data);
+      return response.data;
+    } catch (error) {
+      console.error('푸시 알림 발송 중 오류:', error);
+      throw error;
+    }
+  },
+
+  getScheduledNotifications: async () => {
+    try {
+      const response = await axiosServer.get('/admin/push-notifications/scheduled');
+      return response.data;
+    } catch (error) {
+      console.error('예약된 푸시 알림 조회 중 오류:', error);
+      throw error;
+    }
+  },
+
+  cancelScheduledNotification: async (scheduleId: string) => {
+    try {
+      const response = await axiosServer.delete(`/admin/push-notifications/scheduled/${scheduleId}`);
+      return response.data;
+    } catch (error) {
+      console.error('예약된 푸시 알림 취소 중 오류:', error);
+      throw error;
+    }
+  },
+};
+
 const AdminService = {
   auth,
   stats,
@@ -2089,6 +2137,7 @@ const AdminService = {
   matching,
   reports,
   profileImages,
+  pushNotifications,
   // 기존 함수들을 reports 객체로 이동하기 전까지 임시로 유지
   getProfileReports: reports.getProfileReports
 };
