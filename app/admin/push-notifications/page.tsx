@@ -222,7 +222,7 @@ export default function PushNotificationsPage() {
       return;
     }
 
-    if (filteredUsers.length === 0) {
+    if (totalCount === 0) {
       alert('발송 대상 사용자가 없습니다. 먼저 필터링을 진행해주세요.');
       return;
     }
@@ -244,8 +244,8 @@ export default function PushNotificationsPage() {
     }
 
     const confirmMessage = sendType === 'immediate'
-      ? `${filteredUsers.length}명에게 즉시 푸시 알림을 발송하시겠습니까?`
-      : `${filteredUsers.length}명에게 ${scheduledAt}에 푸시 알림을 예약하시겠습니까?`;
+      ? `총 ${totalCount}명에게 즉시 푸시 알림을 발송하시겠습니까?\n(현재 페이지: ${filteredUsers.length}명 표시 중)`
+      : `총 ${totalCount}명에게 ${scheduledAt}에 푸시 알림을 예약하시겠습니까?\n(현재 페이지: ${filteredUsers.length}명 표시 중)`;
 
     if (!confirm(confirmMessage)) {
       return;
@@ -715,10 +715,10 @@ export default function PushNotificationsPage() {
 
           <button
             onClick={handleSendPushNotification}
-            disabled={loading || filteredUsers.length === 0}
+            disabled={loading || totalCount === 0}
             className="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 disabled:bg-gray-400"
           >
-            {loading ? '발송 중...' : sendType === 'immediate' ? '즉시 발송' : '예약 발송'}
+            {loading ? '발송 중...' : sendType === 'immediate' ? `즉시 발송 (총 ${totalCount}명)` : `예약 발송 (총 ${totalCount}명)`}
           </button>
         </div>
       </div>
