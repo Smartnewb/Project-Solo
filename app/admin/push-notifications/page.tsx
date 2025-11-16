@@ -76,6 +76,7 @@ export default function PushNotificationsPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [itemsPerPage] = useState(20);
   const [loading, setLoading] = useState(false);
+  const [targetUsers, setTargetUsers] = useState<FilteredUser[]>([]);
 
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
@@ -200,7 +201,7 @@ export default function PushNotificationsPage() {
     setLoadingProfile(true);
     setShowProfileModal(true);
     try {
-      const profile = await AdminService.users.getUserDetail(userId);
+      const profile = await AdminService.users.getUserDetails(userId);
       setSelectedUser(profile);
     } catch (error) {
       console.error('프로필 조회 실패:', error);
@@ -222,8 +223,8 @@ export default function PushNotificationsPage() {
       return;
     }
 
-    if (totalCount === 0) {
-      alert('발송 대상 사용자가 없습니다. 먼저 필터링을 진행해주세요.');
+    if (targetUsers.length === 0) {
+      alert('발송 대상 사용자가 없습니다. 먼저 사용자를 검색하고 발송 대상자 리스트에 추가해주세요.');
       return;
     }
 
@@ -244,8 +245,8 @@ export default function PushNotificationsPage() {
     }
 
     const confirmMessage = sendType === 'immediate'
-      ? `총 ${totalCount}명에게 즉시 푸시 알림을 발송하시겠습니까?\n(현재 페이지: ${filteredUsers.length}명 표시 중)`
-      : `총 ${totalCount}명에게 ${scheduledAt}에 푸시 알림을 예약하시겠습니까?\n(현재 페이지: ${filteredUsers.length}명 표시 중)`;
+      ? `총 ${targetUsers.length}명에게 즉시 푸시 알림을 발송하시겠습니까?`
+      : `총 ${targetUsers.length}명에게 ${scheduledAt}에 푸시 알림을 예약하시겠습니까?`;
 
     if (!confirm(confirmMessage)) {
       return;
@@ -256,15 +257,8 @@ export default function PushNotificationsPage() {
       const data: any = {
         title,
         message,
+        userIds: targetUsers.map(u => u.id), // 발송 대상자 리스트의 userId 배열 전달
       };
-
-      if (filters.isDormant) data.isDormant = true;
-      if (filters.gender) data.gender = filters.gender;
-      if (filters.universities.length > 0) data.universities = filters.universities;
-      if (filters.regions.length > 0) data.regions = filters.regions;
-      if (filters.ranks.length > 0) data.ranks = filters.ranks;
-      if (filters.phoneNumber) data.phoneNumber = filters.phoneNumber;
-      if (filters.hasPreferences !== undefined) data.hasPreferences = filters.hasPreferences;
 
       if (sendType === 'scheduled') {
         data.scheduledAt = scheduledAt;
@@ -284,6 +278,7 @@ export default function PushNotificationsPage() {
       setTitle('');
       setMessage('');
       setScheduledAt('');
+      setTargetUsers([]); // 발송 후 리스트 초기화
     } catch (error: any) {
       console.error('❌ 푸시 알림 발송 실패:', error);
       console.error('에러 상세:', {
@@ -347,6 +342,37 @@ export default function PushNotificationsPage() {
         : [...prev.ranks, rank],
     }));
     setCurrentPage(1);
+  };
+
+  const addToTargetUsers = () => {
+    if (filteredUsers.length === 0) {
+      alert('추가할 사용자가 없습니다.');
+      return;
+    }
+
+    const newTargetUsers = [...targetUsers];
+    let addedCount = 0;
+
+    filteredUsers.forEach(user => {
+      if (!newTargetUsers.find(u => u.id === user.id)) {
+        newTargetUsers.push(user);
+        addedCount++;
+      }
+    });
+
+    setTargetUsers(newTargetUsers);
+    alert(`${addedCount}명이 발송 대상자 리스트에 추가되었습니다.\n(중복 ${filteredUsers.length - addedCount}명 제외)`);
+  };
+
+  const removeFromTargetUsers = (userId: string) => {
+    setTargetUsers(prev => prev.filter(u => u.id !== userId));
+  };
+
+  const clearTargetUsers = () => {
+    if (!confirm('발송 대상자 리스트를 전체 초기화하시겠습니까?')) {
+      return;
+    }
+    setTargetUsers([]);
   };
 
   return (
@@ -521,18 +547,30 @@ export default function PushNotificationsPage() {
             </select>
           </div>
 
-          <button
-            onClick={() => handleFilterUsers(1)}
-            disabled={loading}
-            className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
-          >
-            {loading ? '조회 중...' : '사용자 필터링'}
-          </button>
+          <div className="flex gap-4">
+            <button
+              onClick={() => handleFilterUsers(1)}
+              disabled={loading}
+              className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
+            >
+              {loading ? '조회 중...' : '사용자 검색'}
+            </button>
+
+            {totalCount > 0 && (
+              <button
+                onClick={addToTargetUsers}
+                disabled={loading}
+                className="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 disabled:bg-gray-400"
+              >
+                발송 대상자 리스트에 추가 ({totalCount}명)
+              </button>
+            )}
+          </div>
 
           {totalCount > 0 && (
             <div className="mt-4">
               <div className="p-4 bg-blue-50 rounded mb-4">
-                <p className="font-semibold">필터링 결과: 총 {totalCount}명</p>
+                <p className="font-semibold">검색 결과: 총 {totalCount}명</p>
                 <p className="text-sm text-gray-600">현재 페이지: {filteredUsers.length}명</p>
               </div>
 
@@ -648,6 +686,69 @@ export default function PushNotificationsPage() {
         </div>
       </div>
 
+      {/* 발송 대상자 리스트 섹션 */}
+      {targetUsers.length > 0 && (
+        <div className="bg-white p-6 rounded-lg shadow">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">발송 대상자 리스트 ({targetUsers.length}명)</h2>
+            <button
+              onClick={clearTargetUsers}
+              className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+            >
+              전체 초기화
+            </button>
+          </div>
+
+          <div className="border rounded-lg overflow-hidden max-h-96 overflow-y-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 sticky top-0">
+                <tr>
+                  <th className="px-4 py-2 text-left">프로필</th>
+                  <th className="px-4 py-2 text-left">이름</th>
+                  <th className="px-4 py-2 text-left">성별</th>
+                  <th className="px-4 py-2 text-left">ID</th>
+                  <th className="px-4 py-2 text-left">작업</th>
+                </tr>
+              </thead>
+              <tbody>
+                {targetUsers.map((user) => (
+                  <tr key={user.id} className="border-t hover:bg-gray-50">
+                    <td className="px-4 py-2">
+                      {user.profileImageUrl ? (
+                        <img
+                          src={user.profileImageUrl}
+                          alt={user.name}
+                          onClick={() => handleViewProfile(user.id)}
+                          className="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-blue-500"
+                        />
+                      ) : (
+                        <div
+                          onClick={() => handleViewProfile(user.id)}
+                          className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-blue-500"
+                        >
+                          <span className="text-gray-500 text-xs">없음</span>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-2">{user.name}</td>
+                    <td className="px-4 py-2">{user.gender === 'MALE' ? '남성' : '여성'}</td>
+                    <td className="px-4 py-2 text-xs text-gray-500">{user.id}</td>
+                    <td className="px-4 py-2">
+                      <button
+                        onClick={() => removeFromTargetUsers(user.id)}
+                        className="text-red-500 hover:text-red-700 text-sm"
+                      >
+                        제거
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* 푸시 알림 발송 섹션 */}
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-semibold mb-4">푸시 알림 발송</h2>
@@ -715,10 +816,10 @@ export default function PushNotificationsPage() {
 
           <button
             onClick={handleSendPushNotification}
-            disabled={loading || totalCount === 0}
+            disabled={loading || targetUsers.length === 0}
             className="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 disabled:bg-gray-400"
           >
-            {loading ? '발송 중...' : sendType === 'immediate' ? `즉시 발송 (총 ${totalCount}명)` : `예약 발송 (총 ${totalCount}명)`}
+            {loading ? '발송 중...' : sendType === 'immediate' ? `즉시 발송 (총 ${targetUsers.length}명)` : `예약 발송 (총 ${targetUsers.length}명)`}
           </button>
         </div>
       </div>
