@@ -86,6 +86,27 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
   const [includeDeleted, setIncludeDeleted] = useState<string>('false');
   const [isAdvancedFilterOpen, setIsAdvancedFilterOpen] = useState(false);
 
+  const formatPhoneNumber = (value: string) => {
+    const numbers = value.replace(/[^0-9]/g, '');
+    if (numbers.length <= 3) {
+      return numbers;
+    } else if (numbers.length <= 7) {
+      return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+    } else if (numbers.length <= 11) {
+      return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7)}`;
+    }
+    return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
+  };
+
+  const handleSearchTermChange = (value: string) => {
+    const numbersOnly = value.replace(/[^0-9]/g, '');
+    if (numbersOnly.length > 0 && value.replace(/[^0-9-]/g, '') === value) {
+      setSearchTerm(formatPhoneNumber(value));
+    } else {
+      setSearchTerm(value);
+    }
+  };
+
   // 지역 필터 훅 사용
   const {
     region,
@@ -160,7 +181,7 @@ export default function AppearanceFilterPanel({ onFilter }: AppearanceFilterPane
               label="검색어"
               placeholder="이름, 인스타그램, 전화번호로 검색"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearchTermChange(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   applyFilter();
