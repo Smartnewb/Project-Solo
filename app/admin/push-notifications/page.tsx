@@ -344,24 +344,56 @@ export default function PushNotificationsPage() {
     setCurrentPage(1);
   };
 
-  const addToTargetUsers = () => {
-    if (filteredUsers.length === 0) {
+  const addToTargetUsers = async () => {
+    if (totalCount === 0) {
       alert('추가할 사용자가 없습니다.');
       return;
     }
 
-    const newTargetUsers = [...targetUsers];
-    let addedCount = 0;
+    if (!confirm(`총 ${totalCount}명의 사용자를 발송 대상자 리스트에 추가하시겠습니까?`)) {
+      return;
+    }
 
-    filteredUsers.forEach(user => {
-      if (!newTargetUsers.find(u => u.id === user.id)) {
-        newTargetUsers.push(user);
-        addedCount++;
+    setLoading(true);
+    try {
+      const cleanFilters: any = {};
+
+      if (filters.isDormant) cleanFilters.isDormant = true;
+      if (filters.gender) cleanFilters.gender = filters.gender;
+      if (filters.universities.length > 0) cleanFilters.universities = filters.universities;
+      if (filters.regions.length > 0) cleanFilters.regions = filters.regions;
+      if (filters.ranks.length > 0) cleanFilters.ranks = filters.ranks;
+      if (filters.phoneNumber) cleanFilters.phoneNumber = filters.phoneNumber;
+      if (filters.hasPreferences !== undefined) cleanFilters.hasPreferences = filters.hasPreferences;
+
+      // 모든 페이지의 사용자를 가져오기
+      const allUsers: FilteredUser[] = [];
+      const totalPagesToFetch = Math.ceil(totalCount / itemsPerPage);
+
+      for (let page = 1; page <= totalPagesToFetch; page++) {
+        const data = await AdminService.pushNotifications.filterUsers(cleanFilters, page, itemsPerPage);
+        allUsers.push(...data.users);
       }
-    });
 
-    setTargetUsers(newTargetUsers);
-    alert(`${addedCount}명이 발송 대상자 리스트에 추가되었습니다.\n(중복 ${filteredUsers.length - addedCount}명 제외)`);
+      // 중복 제거하며 추가
+      const newTargetUsers = [...targetUsers];
+      let addedCount = 0;
+
+      allUsers.forEach(user => {
+        if (!newTargetUsers.find(u => u.id === user.id)) {
+          newTargetUsers.push(user);
+          addedCount++;
+        }
+      });
+
+      setTargetUsers(newTargetUsers);
+      alert(`${addedCount}명이 발송 대상자 리스트에 추가되었습니다.\n(중복 ${allUsers.length - addedCount}명 제외)`);
+    } catch (error) {
+      console.error('사용자 추가 실패:', error);
+      alert('사용자 추가에 실패했습니다.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const removeFromTargetUsers = (userId: string) => {
@@ -562,7 +594,7 @@ export default function PushNotificationsPage() {
                 disabled={loading}
                 className="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 disabled:bg-gray-400"
               >
-                발송 대상자 리스트에 추가 ({totalCount}명)
+                {loading ? '추가 중...' : `발송 대상자 리스트에 추가 (${totalCount}명)`}
               </button>
             )}
           </div>
