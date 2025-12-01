@@ -2129,6 +2129,49 @@ const pushNotifications = {
   },
 };
 
+// AI 채팅 관리 API
+const aiChat = {
+  // AI 채팅 세션 목록 조회
+  getSessions: async (params: {
+    startDate?: string;
+    endDate?: string;
+    category?: string;
+    isActive?: boolean;
+    status?: string;
+    userId?: string;
+    page?: number;
+    limit?: number;
+  }) => {
+    try {
+      const queryParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, String(value));
+        }
+      });
+
+      const response = await axiosServer.get(`/admin/ai-chat/sessions?${queryParams.toString()}`);
+      console.log('AI 채팅 세션 목록 조회 응답:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('AI 채팅 세션 목록 조회 중 오류:', error);
+      throw error;
+    }
+  },
+
+  // AI 채팅 메시지 상세 조회
+  getMessages: async (sessionId: string) => {
+    try {
+      const response = await axiosServer.get(`/admin/ai-chat/messages?sessionId=${sessionId}`);
+      console.log('AI 채팅 메시지 상세 조회 응답:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('AI 채팅 메시지 상세 조회 중 오류:', error);
+      throw error;
+    }
+  },
+};
+
 const AdminService = {
   auth,
   stats,
@@ -2138,6 +2181,7 @@ const AdminService = {
   reports,
   profileImages,
   pushNotifications,
+  aiChat,
   // 기존 함수들을 reports 객체로 이동하기 전까지 임시로 유지
   getProfileReports: reports.getProfileReports
 };
