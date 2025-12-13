@@ -134,7 +134,6 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
             name: getPaymentTypeName(item.paymentType),
             value: item.totalAmount,
             count: item.count,
-            paidUserCount: item.paidUserCount,
             percentage: item.percentage,
             netAmount: item.netAmount,
             paymentType: item.paymentType,
@@ -181,9 +180,6 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
                     </p>
                     <p style={{ color: payload[0].color }}>
                         건수: {formatNumber(data.count)}건
-                    </p>
-                    <p className="text-orange-600">
-                        유료 사용자: {formatNumber(data.paidUserCount || 0)}명
                     </p>
                     <p style={{ color: payload[0].color }}>
                         비율: {data.percentage.toFixed(1)}%
@@ -297,9 +293,6 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
                                     >
                                         건수 {sortBy === 'count' && (sortOrder === 'desc' ? '↓' : '↑')}
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        유료 사용자 수
-                                    </th>
                                     <th
                                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                                         onClick={() => handleSort('percentage')}
@@ -341,9 +334,6 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                             {formatNumber(item.count)}건
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-orange-900 font-semibold">
-                                            {formatNumber(item.paidUserCount)}명
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                             {item.percentage.toFixed(1)}%

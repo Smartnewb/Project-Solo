@@ -523,6 +523,9 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                                                             유료 사용자 수
                                                         </th>
                                                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                            사용자당 평균
+                                                        </th>
+                                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                             비율
                                                         </th>
                                                     </tr>
@@ -555,6 +558,14 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                                                                 </div>
                                                             </td>
                                                             <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                                <div className="text-sm text-blue-900 font-semibold">
+                                                                    {(regionData.paidUserCount || 0) > 0
+                                                                        ? formatCurrency((regionData.amount || 0) / (regionData.paidUserCount || 0))
+                                                                        : formatCurrency(0)
+                                                                    }
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap text-right">
                                                                 <div className="text-sm text-purple-600 font-medium">
                                                                     {(() => {
                                                                         const percentageMap = calculatePercentages();
@@ -579,6 +590,12 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-orange-900">
                                                             {formatNumber(getFilteredTotals().totalPaidUsers)}명
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-blue-900">
+                                                            {getFilteredTotals().totalPaidUsers > 0
+                                                                ? formatCurrency(getFilteredTotals().totalSales / getFilteredTotals().totalPaidUsers)
+                                                                : formatCurrency(0)
+                                                            }
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-purple-600">
                                                             100.0%

@@ -153,7 +153,6 @@ interface Amount {
 interface PaymentAnalysisItem extends Analysis {
     paymentType: string;
     netAmount?: number;
-    paidUserCount: number;
 }
 
 export interface PaymentAnalysis extends Amount {
@@ -164,7 +163,6 @@ export interface PaymentAnalysis extends Amount {
 // MARK: - 성별 구매 분석
 interface GenderAnalysisItem extends Analysis {
     gender: string;
-    paidUserCount: number;
 }
 
 export interface GenderAnalysis extends Amount {
@@ -174,7 +172,6 @@ export interface GenderAnalysis extends Amount {
 // MARK: - 연령대별 구매 분석
 interface AgeAnalysisItem extends Analysis {
     ageGroup: string;
-    paidUserCount: number;
 }
 
 export interface AgeAnalysis extends Amount {

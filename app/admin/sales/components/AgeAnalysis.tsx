@@ -119,7 +119,6 @@ export function AgeAnalysisComponent({ startDate, endDate}: AgeAnalysisProps) {
             name: item.ageGroup,
             value: item.totalAmount,
             count: item.count,
-            paidUserCount: item.paidUserCount,
             percentage: item.percentage,
         }))
     };
@@ -181,25 +180,20 @@ export function AgeAnalysisComponent({ startDate, endDate}: AgeAnalysisProps) {
                             return (
                                 <div
                                     key={index}
-                                    className={`rounded-lg p-4  ${colorSystem.bg}`}
+                                    className={`flex justify-between items-center rounded-lg p-4  ${colorSystem.bg}`}
                                 >
-                                    <div className="flex justify-between items-center mb-2">
-                                        <div className="flex items-center gap-3">
-                                            <div
-                                                className="w-3 h-3 rounded-full"
-                                                style={{ backgroundColor: colorSystem.chart }}
-                                            />
-                                            <p className={`font-semibold ${colorSystem.text}`}>
-                                                {item.ageGroup === '30+' ? '30세 이상' : item.ageGroup+'세'}
-                                            </p>
-                                        </div>
-                                        <p className={`font-bold ${colorSystem.text}`}>
-                                            {item.percentage.toFixed(1)}%
+                                    <div className="flex items-center gap-3">
+                                        <div
+                                            className="w-3 h-3 rounded-full"
+                                            style={{ backgroundColor: colorSystem.chart }}
+                                        />
+                                        <p className={`font-semibold ${colorSystem.text}`}>
+                                            {item.ageGroup === '30+' ? '30세 이상' : item.ageGroup+'세'}
                                         </p>
                                     </div>
-                                    <div className="text-sm text-gray-600">
-                                        유료 사용자: {item.paidUserCount}명
-                                    </div>
+                                    <p className={`font-bold ${colorSystem.text}`}>
+                                        {item.percentage.toFixed(1)}%
+                                    </p>
                                 </div>
                             );
                         })}

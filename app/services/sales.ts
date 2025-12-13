@@ -92,7 +92,8 @@ export const salesService = {
             const response = await axiosServer.get(SALES_ENDPOINT.DAILY, {
                 params: data,
             });
-            
+
+            console.log('getSalesDaily API 응답:', response.data);
             return response.data;
         } catch(error) {
             throw new SalesApiError('일간 매출액 조회 실패:',error);
@@ -142,6 +143,7 @@ export const salesService = {
             const normalizedData = {
                 totalSales: response.data.totalSales || response.data.dailySales || 0,
                 totalCount: response.data.totalCount || response.data.dailyCount || 0,
+                totalPaidUsers: response.data.totalPaidUsers || 0,
                 dailySales: response.data.dailySales || response.data.totalSales || 0,
                 dailyCount: response.data.dailyCount || response.data.totalCount || 0,
                 regionalData: response.data.regionalData || [],
@@ -149,6 +151,7 @@ export const salesService = {
                 // API에서 실제 조회된 날짜 범위 정보
                 startDate: response.data.startDate,
                 endDate: response.data.endDate,
+                paymentType: response.data.paymentType,
                 // 메타 정보
                 isFullPeriod: isFullPeriod,
                 currency: 'KRW'
