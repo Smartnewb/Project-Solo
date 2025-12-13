@@ -10,6 +10,7 @@ export interface RegionSales {
     region: string;
     amount?: number;
     count?: number;
+    paidUserCount?: number;
 };
 
 // MARK: - 매출액 추이
@@ -17,11 +18,14 @@ export interface SalesTransition {
     label: string;
     amount: number;
     count: number;
+    paidUserCount: number;
     regionalData: RegionSales[];
     excludeIapAmount: number;
     excludeIapCount: number;
+    excludeIapPaidUserCount: number;
     iapOnlyAmount: number;
     iapOnlyCount: number;
+    iapOnlyPaidUserCount: number;
 };
 
 // MARK: - 기간 설정
@@ -37,6 +41,7 @@ export interface DatePicker {
 export interface TotalSalesResponse {
     totalSales: number;
     totalCount: number;
+    totalPaidUsers: number;
     regionalData?: RegionSales[];
 };
 
@@ -44,6 +49,7 @@ export interface TotalSalesResponse {
 export interface DailySalesResponse {
     dailySales: number;
     dailyCount: number;
+    dailyPaidUsers: number;
     regionalData?: RegionSales[];
 };
 
@@ -51,6 +57,7 @@ export interface DailySalesResponse {
 export interface WeeklySalesResponse {
     weeklySales: number;
     weeklyCount: number;
+    weeklyPaidUsers: number;
     regionalData: RegionSales[];
 };
 
@@ -58,6 +65,7 @@ export interface WeeklySalesResponse {
 export interface MonthlySalesResponse {
     monthlySales: number;
     monthlyCount: number;
+    monthlyPaidUsers: number;
     regionalData: RegionSales[];
 }
 
@@ -74,6 +82,7 @@ export interface CustomSalesRequest {
 export interface CustomSalesResponse {
     totalSales: number;
     totalCount: number;
+    totalPaidUsers: number;
     startDate?: string;
     endDate?: string;
     paymentType?: string;
@@ -118,6 +127,7 @@ interface RankingItem {
     universityName: string;
     amount: number;
     count: number;
+    paidUserCount: number;
     averageAmount: number;
     rank: number;
 };
@@ -143,6 +153,7 @@ interface Amount {
 interface PaymentAnalysisItem extends Analysis {
     paymentType: string;
     netAmount?: number;
+    paidUserCount: number;
 }
 
 export interface PaymentAnalysis extends Amount {
@@ -153,6 +164,7 @@ export interface PaymentAnalysis extends Amount {
 // MARK: - 성별 구매 분석
 interface GenderAnalysisItem extends Analysis {
     gender: string;
+    paidUserCount: number;
 }
 
 export interface GenderAnalysis extends Amount {
@@ -162,6 +174,7 @@ export interface GenderAnalysis extends Amount {
 // MARK: - 연령대별 구매 분석
 interface AgeAnalysisItem extends Analysis {
     ageGroup: string;
+    paidUserCount: number;
 }
 
 export interface AgeAnalysis extends Amount {

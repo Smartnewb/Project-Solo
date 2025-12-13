@@ -167,14 +167,15 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
 
         if (!totalData) {
             console.log('totalData가 없음');
-            return { totalSales: 0, totalCount: 0 };
+            return { totalSales: 0, totalCount: 0, totalPaidUsers: 0 };
         }
 
         // 전체 지역 선택 시 원본 데이터 반환
         if (selectedRegions.includes('all') || selectedRegions.length === 0) {
             const result = {
                 totalSales: totalData.totalSales || 0,
-                totalCount: totalData.totalCount || 0
+                totalCount: totalData.totalCount || 0,
+                totalPaidUsers: totalData.totalPaidUsers || 0
             };
             console.log('전체 지역 선택 결과:', result);
             return result;
@@ -191,9 +192,10 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                 const result = filteredRegionData.reduce(
                     (acc, regionData) => ({
                         totalSales: acc.totalSales + (regionData.amount || 0),
-                        totalCount: acc.totalCount + (regionData.count || 0)
+                        totalCount: acc.totalCount + (regionData.count || 0),
+                        totalPaidUsers: acc.totalPaidUsers + (regionData.paidUserCount || 0)
                     }),
-                    { totalSales: 0, totalCount: 0 }
+                    { totalSales: 0, totalCount: 0, totalPaidUsers: 0 }
                 );
                 console.log('다중 지역 선택 결과:', result);
                 return result;
@@ -202,7 +204,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
 
         // 선택된 지역 데이터가 없는 경우
         console.log('선택된 지역 데이터 없음');
-        return { totalSales: 0, totalCount: 0 };
+        return { totalSales: 0, totalCount: 0, totalPaidUsers: 0 };
     };
 
     // === 비율 계산 유틸리티 ===
@@ -261,6 +263,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
             name: getRegionLabel(regionData.region),
             value: regionData.amount || 0,
             count: regionData.count || 0,
+            paidUserCount: regionData.paidUserCount || 0,
             region: regionData.region,
             percentage: selectedRegions.includes('all')
                 ? (percentageMap[regionData.region] || 0)
@@ -287,6 +290,9 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                     </p>
                     <p className="text-green-600">
                         거래건수: {formatNumber(data.count)}건
+                    </p>
+                    <p className="text-orange-600">
+                        유료 사용자: {formatNumber(data.paidUserCount || 0)}명
                     </p>
                     <p className="text-purple-600">
                         비율: {data.percentage.toFixed(1)}%
@@ -448,27 +454,31 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                         <div className="text-4xl font-bold text-purple-600 mb-4">
                             {formatCurrency(getFilteredTotals().totalSales)}
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
                             <div className="text-center p-4 bg-gray-50 rounded-lg">
                                 <div className="text-sm text-gray-500">총 거래 건수</div>
                                 <div className="text-xl font-semibold text-gray-900">
                                     {formatNumber(getFilteredTotals().totalCount)}건
                                 </div>
                             </div>
-                            <div className="text-center p-4 bg-gray-50 rounded-lg">
-                                <div className="text-sm text-gray-500">지역 필터</div>
-                                <div className="text-xl font-semibold text-gray-900">
-                                    {selectedRegions.includes('all') || selectedRegions.length === 0
-                                        ? '전체'
-                                        : selectedRegions.length === 1
-                                            ? getRegionLabel(selectedRegions[0])
-                                            : `${selectedRegions.length}개 지역`
+                            <div className="text-center p-4 bg-orange-50 rounded-lg">
+                                <div className="text-sm text-gray-500">유료 사용자 수</div>
+                                <div className="text-xl font-semibold text-orange-900">
+                                    {formatNumber(getFilteredTotals().totalPaidUsers)}명
+                                </div>
+                            </div>
+                            <div className="text-center p-4 bg-blue-50 rounded-lg">
+                                <div className="text-sm text-gray-500">사용자당 평균 결제액(ARPU)</div>
+                                <div className="text-xl font-semibold text-blue-900">
+                                    {getFilteredTotals().totalPaidUsers > 0
+                                        ? formatCurrency(getFilteredTotals().totalSales / getFilteredTotals().totalPaidUsers)
+                                        : formatCurrency(0)
                                     }
                                 </div>
                             </div>
-                            <div className="text-center p-4 bg-gray-50 rounded-lg">
+                            <div className="text-center p-4 bg-purple-50 rounded-lg">
                                 <div className="text-sm text-gray-500">결제 타입</div>
-                                <div className="text-xl font-semibold text-gray-900">
+                                <div className="text-xl font-semibold text-purple-900">
                                     {getPaymentTypeLabel(selectedPaymentType)}
                                 </div>
                             </div>
@@ -500,7 +510,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                             지역
                                                         </th>
-                                                        <th 
+                                                        <th
                                                             className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                                                             onClick={handleToggleSort}
                                                         >
@@ -508,6 +518,9 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                                                         </th>
                                                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                             거래건수
+                                                        </th>
+                                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                            유료 사용자 수
                                                         </th>
                                                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                                             비율
@@ -537,6 +550,11 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                                                                 </div>
                                                             </td>
                                                             <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                                <div className="text-sm text-orange-900 font-semibold">
+                                                                    {formatNumber(regionData.paidUserCount || 0)}명
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap text-right">
                                                                 <div className="text-sm text-purple-600 font-medium">
                                                                     {(() => {
                                                                         const percentageMap = calculatePercentages();
@@ -558,6 +576,9 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-gray-900">
                                                             {formatNumber(getFilteredTotals().totalCount)}건
+                                                        </td>
+                                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-orange-900">
+                                                            {formatNumber(getFilteredTotals().totalPaidUsers)}명
                                                         </td>
                                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-purple-600">
                                                             100.0%

@@ -142,7 +142,9 @@ export function RankingByUniv ({startDate, endDate} : RankingByUnivProps) {
                                 <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>대학명</th>
                                 <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>매출</th>
                                 <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>결제건수</th>
+                                <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>유료 사용자 수</th>
                                 <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>평균매출</th>
+                                <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>사용자당 평균</th>
                             </tr>
                         </thead>
 
@@ -150,11 +152,18 @@ export function RankingByUniv ({startDate, endDate} : RankingByUnivProps) {
                         <tbody className='bg-white divide-y divide-gray-200'>
                             {totalData?.rankings.map((item, index) => (
                                 <tr key={index} className='hover:bg-gray-50'>
-                                    <td className='px-6 py-4 text-sm font-medium text-gray-900'>{item.rank}</td> 
+                                    <td className='px-6 py-4 text-sm font-medium text-gray-900'>{item.rank}</td>
                                     <td className='px-6 py-4 text-sm font-medium text-gray-900'>{item.universityName}</td>
-                                    <td className='px-6 py-4 text-sm font-medium text-gray-900'>{formatCurrency(item.amount)}</td>
+                                    <td className='px-6 py-4 text-sm font-medium text-blue-900'>{formatCurrency(item.amount)}</td>
                                     <td className='px-6 py-4 text-sm font-medium text-gray-900'>{item.count}</td>
+                                    <td className='px-6 py-4 text-sm font-medium text-orange-900'>{item.paidUserCount || 0}</td>
                                     <td className='px-6 py-4 text-sm font-medium text-gray-900'>{formatCurrency(item.averageAmount)}</td>
+                                    <td className='px-6 py-4 text-sm font-medium text-purple-900'>
+                                        {item.paidUserCount > 0
+                                            ? formatCurrency(item.amount / item.paidUserCount)
+                                            : formatCurrency(0)
+                                        }
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>

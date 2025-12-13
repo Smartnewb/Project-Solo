@@ -25,6 +25,9 @@ interface MonthlyPaymentData {
     totalCount: number;
     pgCount: number;
     iapCount: number;
+    totalPaidUsers: number;
+    pgPaidUsers: number;
+    iapPaidUsers: number;
 }
 
 export function MonthlyPaymentGraph() {
@@ -55,6 +58,9 @@ export function MonthlyPaymentGraph() {
                 totalCount: item.count,
                 pgCount: item.excludeIapCount,
                 iapCount: item.iapOnlyCount,
+                totalPaidUsers: item.paidUserCount,
+                pgPaidUsers: item.excludeIapPaidUserCount || 0,
+                iapPaidUsers: item.iapOnlyPaidUserCount || 0,
             }));
             
             setChartData(transformedData);
@@ -75,13 +81,19 @@ export function MonthlyPaymentGraph() {
                 <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
                     <p className="font-medium">{`${formatMonthLabel(label)}`}</p>
                     <p style={{ color: "#8884d8" }}>
-                        WELCOME payment: {formatCurrency(data.pgAmount)} ({data.pgCount}건)
+                        WELCOME payment: {formatCurrency(data.pgAmount)} ({data.pgCount}건, {data.pgPaidUsers}명)
                     </p>
                     <p style={{ color: "#82ca9d" }}>
-                        Apple 인앱 결제: {formatCurrency(data.iapAmount)} ({data.iapCount}건)
+                        Apple 인앱 결제: {formatCurrency(data.iapAmount)} ({data.iapCount}건, {data.iapPaidUsers}명)
                     </p>
                     <p className="font-semibold border-t pt-1 mt-1">
                         총 매출: {formatCurrency(data.totalAmount)} ({data.totalCount}건)
+                    </p>
+                    <p className="text-orange-600 font-semibold">
+                        총 유료 사용자: {data.totalPaidUsers}명
+                    </p>
+                    <p className="text-blue-600 text-sm">
+                        사용자당 평균: {data.totalPaidUsers > 0 ? formatCurrency(data.totalAmount / data.totalPaidUsers) : formatCurrency(0)}
                     </p>
                 </div>
             );
@@ -206,10 +218,20 @@ export function MonthlyPaymentGraph() {
                                         type="monotone"
                                         dataKey="totalCount"
                                         stroke="#ff7c7c"
-                                        strokeWidth={3}
+                                        strokeWidth={2}
                                         name="총 매출 건수"
-                                        dot={{ fill: '#ff7c7c', strokeWidth: 2, r: 5 }}
+                                        dot={{ fill: '#ff7c7c', strokeWidth: 2, r: 4 }}
                                         strokeDasharray="5 5"
+                                    />
+
+                                    <Line
+                                        yAxisId='totalCount'
+                                        type="monotone"
+                                        dataKey="totalPaidUsers"
+                                        stroke="#ff9500"
+                                        strokeWidth={3}
+                                        name="총 유료 사용자 수"
+                                        dot={{ fill: '#ff9500', strokeWidth: 2, r: 5 }}
                                     />
                                     
                                 </ComposedChart>

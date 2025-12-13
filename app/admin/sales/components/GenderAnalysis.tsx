@@ -105,6 +105,7 @@ export function GenderAnalysisTable({ startDate, endDate }: GenderAnalysisProps)
             name: getGender(item.gender),
             value: item.totalAmount,
             count: item.count,
+            paidUserCount: item.paidUserCount,
             percentage: item.percentage,
         }))
     };
@@ -166,7 +167,8 @@ export function GenderAnalysisTable({ startDate, endDate }: GenderAnalysisProps)
                             <div className={`rounded-md ${item.gender === 'MALE' ? 'bg-blue-50' : 'bg-pink-50'} flex-1 text-center`}>
                                 <p className={`text-xl font-semibold ${item.gender === 'MALE' ? 'text-[#1D4ED8]' : 'text-pink-700'}`}>{item.percentage}%</p>
                                 <p className='text-sm font-gray-900'>{item.gender === 'MALE' ? '남성' : '여성'}</p>
-                                <p className={`text-sm ${item.gender === 'MALE' ? 'text-[#1D4ED8]' : 'text-pink-700'}`}>{item.count}명</p>
+                                <p className={`text-sm ${item.gender === 'MALE' ? 'text-[#1D4ED8]' : 'text-pink-700'}`}>{item.paidUserCount}명</p>
+                                <p className='text-xs text-gray-600 mt-1'>유료 사용자</p>
                             </div>
                         ))}
                     </div>
