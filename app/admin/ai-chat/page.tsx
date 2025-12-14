@@ -38,7 +38,7 @@ import {
   Message as MessageIcon,
   AccessTime as AccessTimeIcon,
   CheckCircle as CheckCircleIcon,
-  Analyze as AnalyzeIcon
+  Psychology as AnalyzeIcon
 } from '@mui/icons-material';
 import AdminService from '@/app/services/admin';
 import {

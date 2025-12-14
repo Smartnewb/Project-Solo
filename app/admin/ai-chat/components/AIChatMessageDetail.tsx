@@ -18,7 +18,7 @@ import {
   Person as PersonIcon,
   Chat as ChatIcon,
   CheckCircle as CheckCircleIcon,
-  Analyze as AnalyzeIcon
+  Psychology as AnalyzeIcon
 } from '@mui/icons-material';
 import {
   AIChatSession,
