@@ -7,7 +7,11 @@ const axiosServer = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true // 쿠키 전송 활성화
+  withCredentials: true, // 쿠키 전송 활성화
+  validateStatus: (status) => {
+    // 200번대와 304(Not Modified)를 정상으로 처리
+    return (status >= 200 && status < 300) || status === 304;
+  }
 });
 
 // 요청 인터셉터

@@ -1551,6 +1551,111 @@ const profileImages = {
       console.error('오류 상세 정보:', error.response?.data || error.message);
       throw error;
     }
+  },
+
+  approveIndividualImage: async (imageId: string) => {
+    try {
+      console.log('개별 프로필 이미지 승인 요청:', imageId);
+
+      const response = await axiosServer.post(`/admin/profile-images/${imageId}/approve`);
+
+      console.log('개별 프로필 이미지 승인 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('개별 프로필 이미지 승인 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  rejectIndividualImage: async (imageId: string, rejectionReason: string) => {
+    try {
+      console.log('개별 프로필 이미지 거절 요청:', { imageId, rejectionReason });
+
+      const response = await axiosServer.post(`/admin/profile-images/${imageId}/reject`, {
+        rejectionReason
+      });
+
+      console.log('개별 프로필 이미지 거절 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('개별 프로필 이미지 거절 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  }
+};
+
+// 유저 심사 관련 API
+const userReview = {
+  getPendingUsers: async (page: number = 1, limit: number = 20) => {
+    try {
+      console.log('심사 대기 유저 목록 조회 요청:', { page, limit });
+
+      const response = await axiosServer.get('/admin/profile-images/pending', {
+        params: { page, limit },
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      });
+
+      console.log('심사 대기 유저 목록 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('심사 대기 유저 목록 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  getUserDetail: async (userId: string) => {
+    try {
+      console.log('유저 상세 정보 조회 요청:', userId);
+
+      const response = await axiosServer.get(`/admin/user-review/${userId}`);
+
+      console.log('유저 상세 정보 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('유저 상세 정보 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  approveUser: async (userId: string) => {
+    try {
+      console.log('유저 승인 요청:', userId);
+
+      const response = await axiosServer.post(`/admin/profile-images/users/${userId}/approve`);
+
+      console.log('유저 승인 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('유저 승인 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  rejectUser: async (userId: string, category: string, reason: string) => {
+    try {
+      console.log('유저 반려 요청:', { userId, category, reason });
+
+      const response = await axiosServer.post(`/admin/profile-images/users/${userId}/reject`, {
+        category,
+        reason
+      });
+
+      console.log('유저 반려 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('유저 반려 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
   }
 };
 
@@ -2180,6 +2285,7 @@ const AdminService = {
   matching,
   reports,
   profileImages,
+  userReview,
   pushNotifications,
   aiChat,
   // 기존 함수들을 reports 객체로 이동하기 전까지 임시로 유지

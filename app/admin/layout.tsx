@@ -176,6 +176,11 @@ export default function AdminLayout({
               </Link>
             </li>
             <li>
+              <Link href="/admin/profile-review" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors" onClick={() => setSidebarOpen(false)}>
+                회원 적격 심사
+              </Link>
+            </li>
+            <li>
               <button
                 onClick={handleLogout}
                 className="w-full text-left px-4 py-2 text-red-500 hover:bg-red-50 transition-colors"
