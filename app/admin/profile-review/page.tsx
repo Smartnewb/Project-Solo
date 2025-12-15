@@ -182,20 +182,94 @@ export default function ProfileReviewPage() {
     setSelectedUser(user);
   };
 
+  const handleImageApproved = (imageId: string) => {
+    if (!selectedUser) return;
+
+    // 선택된 사용자의 pendingImages에서 해당 이미지 제거
+    const updatedPendingImages = (selectedUser.pendingImages || []).filter(img => img.id !== imageId);
+    const updatedUser = {
+      ...selectedUser,
+      pendingImages: updatedPendingImages
+    };
+
+    // 사용자 목록에서도 업데이트
+    setUsers(prevUsers => prevUsers.map(u => {
+      if (u.userId === selectedUser.userId || u.id === selectedUser.id) {
+        // pendingImages가 비어있으면 해당 사용자를 목록에서 제거
+        if (updatedPendingImages.length === 0) {
+          return null;
+        }
+        return updatedUser;
+      }
+      return u;
+    }).filter(Boolean) as PendingUser[]);
+
+    // pendingImages가 비어있으면 선택 해제, 아니면 업데이트된 사용자로 설정
+    if (updatedPendingImages.length === 0) {
+      setSelectedUser(null);
+      // 페이지네이션 total 업데이트
+      setPagination(prev => ({
+        ...prev,
+        total: Math.max(0, prev.total - 1)
+      }));
+    } else {
+      setSelectedUser(updatedUser);
+    }
+  };
+
+  const handleImageRejected = (imageId: string) => {
+    if (!selectedUser) return;
+
+    // 선택된 사용자의 pendingImages에서 해당 이미지 제거
+    const updatedPendingImages = (selectedUser.pendingImages || []).filter(img => img.id !== imageId);
+    const updatedUser = {
+      ...selectedUser,
+      pendingImages: updatedPendingImages
+    };
+
+    // 사용자 목록에서도 업데이트
+    setUsers(prevUsers => prevUsers.map(u => {
+      if (u.userId === selectedUser.userId || u.id === selectedUser.id) {
+        // pendingImages가 비어있으면 해당 사용자를 목록에서 제거
+        if (updatedPendingImages.length === 0) {
+          return null;
+        }
+        return updatedUser;
+      }
+      return u;
+    }).filter(Boolean) as PendingUser[]);
+
+    // pendingImages가 비어있으면 선택 해제, 아니면 업데이트된 사용자로 설정
+    if (updatedPendingImages.length === 0) {
+      setSelectedUser(null);
+      // 페이지네이션 total 업데이트
+      setPagination(prev => ({
+        ...prev,
+        total: Math.max(0, prev.total - 1)
+      }));
+    } else {
+      setSelectedUser(updatedUser);
+    }
+  };
+
   const handleApproveUser = async (userId: string) => {
     try {
       setProcessing(true);
       await AdminService.userReview.approveUser(userId);
-      const updatedData = await fetchPendingUsers();
 
-      if (selectedUser?.id === userId || selectedUser?.userId === userId) {
-        const updatedUser = updatedData.find((u: PendingUser) => u.id === userId || u.userId === userId);
-        if (updatedUser) {
-          setSelectedUser(updatedUser);
-        } else {
-          setSelectedUser(null);
-        }
+      // 상태에서 해당 사용자 제거 (승인 완료)
+      setUsers(prevUsers => prevUsers.filter(u => u.userId !== userId && u.id !== userId));
+
+      // 선택된 사용자가 승인된 경우 선택 해제
+      if (selectedUser?.userId === userId || selectedUser?.id === userId) {
+        setSelectedUser(null);
       }
+
+      // 페이지네이션 total 업데이트
+      setPagination(prev => ({
+        ...prev,
+        total: Math.max(0, prev.total - 1)
+      }));
     } catch (err: any) {
       console.error('유저 승인 중 오류:', err);
       setError(err.response?.data?.message || '유저 승인 중 오류가 발생했습니다.');
@@ -216,16 +290,20 @@ export default function ProfileReviewPage() {
       setProcessing(true);
       setRejectModalOpen(false);
       await AdminService.userReview.rejectUser(currentRejectUserId, category, reason);
-      const updatedData = await fetchPendingUsers();
 
-      if (selectedUser?.id === currentRejectUserId || selectedUser?.userId === currentRejectUserId) {
-        const updatedUser = updatedData.find((u: PendingUser) => u.id === currentRejectUserId || u.userId === currentRejectUserId);
-        if (updatedUser) {
-          setSelectedUser(updatedUser);
-        } else {
-          setSelectedUser(null);
-        }
+      // 상태에서 해당 사용자 제거 (거절 완료)
+      setUsers(prevUsers => prevUsers.filter(u => u.userId !== currentRejectUserId && u.id !== currentRejectUserId));
+
+      // 선택된 사용자가 거절된 경우 선택 해제
+      if (selectedUser?.userId === currentRejectUserId || selectedUser?.id === currentRejectUserId) {
+        setSelectedUser(null);
       }
+
+      // 페이지네이션 total 업데이트
+      setPagination(prev => ({
+        ...prev,
+        total: Math.max(0, prev.total - 1)
+      }));
 
       setCurrentRejectUserId(null);
     } catch (err: any) {
@@ -273,7 +351,10 @@ export default function ProfileReviewPage() {
             user={selectedUser}
             onApprove={handleApproveUser}
             onReject={handleRejectUser}
-            onRefresh={fetchPendingUsers}
+            onImageApproved={handleImageApproved}
+            onImageRejected={handleImageRejected}
+            processing={processing}
+            setProcessing={setProcessing}
           />
         </Box>
       </Box>

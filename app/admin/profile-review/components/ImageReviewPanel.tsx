@@ -11,14 +11,20 @@ interface ImageReviewPanelProps {
   user: PendingUser | null;
   onApprove: (userId: string) => void;
   onReject: (userId: string) => void;
-  onRefresh: () => void;
+  onImageApproved: (imageId: string) => void;
+  onImageRejected: (imageId: string) => void;
+  processing: boolean;
+  setProcessing: (processing: boolean) => void;
 }
 
 export default function ImageReviewPanel({
   user,
   onApprove,
   onReject,
-  onRefresh
+  onImageApproved,
+  onImageRejected,
+  processing,
+  setProcessing
 }: ImageReviewPanelProps) {
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
@@ -56,11 +62,14 @@ export default function ImageReviewPanel({
 
   const handleApproveImage = async (imageId: string) => {
     try {
+      setProcessing(true);
       await AdminService.profileImages.approveIndividualImage(imageId);
-      onRefresh();
+      onImageApproved(imageId);
     } catch (error: any) {
       console.error('개별 이미지 승인 중 오류:', error);
       alert(error.response?.data?.message || '이미지 승인 중 오류가 발생했습니다.');
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -78,14 +87,18 @@ export default function ImageReviewPanel({
     }
 
     try {
+      setProcessing(true);
       await AdminService.profileImages.rejectIndividualImage(selectedImageId, imageRejectionReason);
       setRejectImageModalOpen(false);
+      const rejectedImageId = selectedImageId;
       setSelectedImageId(null);
       setImageRejectionReason('');
-      onRefresh();
+      onImageRejected(rejectedImageId);
     } catch (error: any) {
       console.error('개별 이미지 거절 중 오류:', error);
       alert(error.response?.data?.message || '이미지 거절 중 오류가 발생했습니다.');
+    } finally {
+      setProcessing(false);
     }
   };
 
