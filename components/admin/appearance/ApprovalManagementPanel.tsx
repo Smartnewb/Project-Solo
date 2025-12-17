@@ -376,8 +376,8 @@ const ApprovalManagementPanel: React.FC = () => {
 
   return (
     <Box>
-      <Typography 
-        variant={isMobile ? 'h6' : 'h5'} 
+      <Typography
+        variant={isMobile ? 'h6' : 'h5'}
         gutterBottom
         sx={{
           fontSize: {
@@ -390,6 +390,43 @@ const ApprovalManagementPanel: React.FC = () => {
 
         회원가입 승인 관리
       </Typography>
+
+      {/* 이전 안내 Alert */}
+      <Alert
+        severity="warning"
+        sx={{
+          mb: 3,
+          '& .MuiAlert-message': {
+            width: '100%'
+          }
+        }}
+      >
+        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+          ⚠️ 메뉴 이전 안내
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 1 }}>
+          회원가입 승인 관리 기능이 <strong>"회원 적격 심사"</strong> 메뉴로 이전되었습니다.
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          • 새로운 메뉴에서 프로필 이미지 개별 심사와 사용자 정보를 한눈에 확인할 수 있습니다.<br />
+          • 좌측 사이드바에서 <strong>"회원 적격 심사"</strong> 메뉴를 이용해주세요.
+        </Typography>
+        <Box sx={{ mt: 2 }}>
+          <Link
+            href="/admin/profile-review"
+            sx={{
+              color: 'primary.main',
+              fontWeight: 600,
+              textDecoration: 'none',
+              '&:hover': {
+                textDecoration: 'underline'
+              }
+            }}
+          >
+            → 회원 적격 심사 메뉴로 이동하기
+          </Link>
+        </Box>
+      </Alert>
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>

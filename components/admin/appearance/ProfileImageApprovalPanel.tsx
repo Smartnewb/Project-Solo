@@ -199,6 +199,38 @@ const ProfileImageApprovalPanel: React.FC = () => {
         프로필 이미지 승인 관리
       </Typography>
 
+      {/* 이전 안내 Alert */}
+      <Alert
+        severity="warning"
+        sx={{
+          mb: 3,
+          '& .MuiAlert-message': {
+            width: '100%'
+          }
+        }}
+      >
+        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+          ⚠️ 메뉴 이전 안내
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 1 }}>
+          프로필 이미지 승인 관리 기능이 <strong>"회원 적격 심사"</strong> 메뉴로 이전되었습니다.
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          • 새로운 메뉴에서 개별 이미지 심사와 사용자 전체 정보를 함께 확인할 수 있습니다.<br />
+          • 좌측 사이드바에서 <strong>"회원 적격 심사"</strong> 메뉴를 이용해주세요.
+        </Typography>
+        <Box sx={{ mt: 2 }}>
+          <Button
+            variant="contained"
+            color="primary"
+            href="/admin/profile-review"
+            sx={{ fontWeight: 600 }}
+          >
+            회원 적격 심사 메뉴로 이동하기 →
+          </Button>
+        </Box>
+      </Alert>
+
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}

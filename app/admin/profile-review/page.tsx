@@ -19,6 +19,7 @@ export interface PendingImage {
   id: string;
   imageUrl: string;
   imageOrder: number;
+  slotIndex: number; // 0: 대표사진, 1-2: 서브사진
   isMain: boolean;
 }
 
@@ -53,6 +54,7 @@ export interface PendingUser {
   department?: string;
   mbti?: string;
   bio?: string;
+  instagramId?: string;
   preferences?: PreferenceOption[];
   rejectionHistory?: RejectionHistory[];
 

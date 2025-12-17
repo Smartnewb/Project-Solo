@@ -62,9 +62,28 @@ export default function ImageReviewPanel({
 
   const handleApproveImage = async (imageId: string) => {
     try {
+      // 승인하려는 이미지가 대표 프로필인지 확인
+      const targetImage = (user.pendingImages || user.profileImages || []).find(img => img.id === imageId);
+      const isMainProfile = targetImage?.slotIndex === 0;
+
+      // 대표 프로필 승인 시 확인 메시지
+      if (isMainProfile) {
+        const confirmed = window.confirm(
+          '대표 프로필을 승인하시겠습니까?\n\n' +
+          '대표 프로필 승인 시 회원 상태가 "승인됨"으로 자동 변경되며,\n' +
+          '회원이 서비스를 정상적으로 이용할 수 있게 됩니다.'
+        );
+        if (!confirmed) return;
+      }
+
       setProcessing(true);
       await AdminService.profileImages.approveIndividualImage(imageId);
       onImageApproved(imageId);
+
+      // 대표 프로필 승인 성공 시 안내 메시지
+      if (isMainProfile) {
+        alert('대표 프로필이 승인되었습니다.\n회원 상태가 "승인됨"으로 변경되었습니다.');
+      }
     } catch (error: any) {
       console.error('개별 이미지 승인 중 오류:', error);
       alert(error.response?.data?.message || '이미지 승인 중 오류가 발생했습니다.');
@@ -86,6 +105,21 @@ export default function ImageReviewPanel({
       return;
     }
 
+    // 거절하려는 이미지가 대표 프로필인지 확인
+    const targetImage = (user.pendingImages || user.profileImages || []).find(img => img.id === selectedImageId);
+    const isMainProfile = targetImage?.slotIndex === 0;
+
+    // 대표 프로필 거절 시 추가 확인
+    if (isMainProfile) {
+      const confirmed = window.confirm(
+        '⚠️ 대표 프로필을 거절하시겠습니까?\n\n' +
+        '대표 프로필 거절 시 회원 상태가 "거절됨"으로 변경되며,\n' +
+        '회원이 서비스를 이용할 수 없게 됩니다.\n\n' +
+        `거절 사유: ${imageRejectionReason}`
+      );
+      if (!confirmed) return;
+    }
+
     try {
       setProcessing(true);
       await AdminService.profileImages.rejectIndividualImage(selectedImageId, imageRejectionReason);
@@ -94,6 +128,11 @@ export default function ImageReviewPanel({
       setSelectedImageId(null);
       setImageRejectionReason('');
       onImageRejected(rejectedImageId);
+
+      // 대표 프로필 거절 성공 시 안내 메시지
+      if (isMainProfile) {
+        alert('대표 프로필이 거절되었습니다.\n회원 상태가 "거절됨"으로 변경되었습니다.');
+      }
     } catch (error: any) {
       console.error('개별 이미지 거절 중 오류:', error);
       alert(error.response?.data?.message || '이미지 거절 중 오류가 발생했습니다.');
@@ -121,20 +160,21 @@ export default function ImageReviewPanel({
           <Chip label={user.mbti || 'MBTI 미입력'} size="small" color={user.mbti ? 'primary' : 'default'} />
         </Box>
         {(user.universityName || user.department) && (
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
             {user.universityName || '대학 미입력'} · {user.department || '학과 미입력'}
           </Typography>
         )}
-        {user.instagram && (
+
+        {/* 인스타그램 ID */}
+        {(user.instagramId || user.instagram) && (
           <Link
-            href={user.instagram.startsWith('http') ? user.instagram : `https://instagram.com/${user.instagram}`}
+            href={`https://instagram.com/${user.instagramId || user.instagram}`}
             target="_blank"
             rel="noopener noreferrer"
             sx={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: 0.5,
-              mt: 1,
               color: '#E1306C',
               textDecoration: 'none',
               '&:hover': {
@@ -142,9 +182,9 @@ export default function ImageReviewPanel({
               }
             }}
           >
-            <InstagramIcon fontSize="small" />
-            <Typography variant="body2">
-              {user.instagram.replace('https://instagram.com/', '@').replace('https://www.instagram.com/', '@')}
+            <InstagramIcon fontSize="small" sx={{ color: '#E1306C' }} />
+            <Typography variant="body2" sx={{ fontWeight: 500, color: '#E1306C' }}>
+              @{user.instagramId || user.instagram}
             </Typography>
           </Link>
         )}
@@ -258,17 +298,42 @@ export default function ImageReviewPanel({
                     position: 'absolute',
                     top: 12,
                     left: 12,
-                    px: 1.5,
-                    py: 0.5,
-                    borderRadius: 1.5,
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    color: '#fff',
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    backdropFilter: 'blur(4px)'
+                    display: 'flex',
+                    gap: 1,
+                    alignItems: 'center'
                   }}
                 >
-                  사진 {index + 1}
+                  <Box
+                    sx={{
+                      px: 1.5,
+                      py: 0.5,
+                      borderRadius: 1.5,
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      color: '#fff',
+                      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                      backdropFilter: 'blur(4px)'
+                    }}
+                  >
+                    사진 {index + 1}
+                  </Box>
+                  {image.slotIndex === 0 && (
+                    <Box
+                      sx={{
+                        px: 1.5,
+                        py: 0.5,
+                        borderRadius: 1.5,
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        color: '#fff',
+                        backgroundColor: 'rgba(255, 152, 0, 0.9)',
+                        backdropFilter: 'blur(4px)',
+                        boxShadow: '0 2px 8px rgba(255, 152, 0, 0.4)'
+                      }}
+                    >
+                      대표
+                    </Box>
+                  )}
                 </Box>
 
                 {/* 우측 하단 X, V 버튼 */}
