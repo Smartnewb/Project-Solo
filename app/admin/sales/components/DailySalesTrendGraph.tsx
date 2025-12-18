@@ -225,12 +225,19 @@ export function DailySalesTrendGraph({ className, hideHeader = false }: DailySal
         handleQuickPeriod(30);
     }, []);
 
-    // === 초기 데이터 로드 ===
+    // === 날짜 변경 시 자동 조회 ===
     useEffect(() => {
         if (startDate && endDate) {
             fetchDailySalesTrend();
         }
-    }, []);
+    }, [startDate, endDate]);
+
+    // === 결제 타입 변경 시 자동 조회 ===
+    useEffect(() => {
+        if (startDate && endDate && chartData.length > 0) {
+            fetchDailySalesTrend();
+        }
+    }, [selectedPaymentType]);
 
     // === JSX ===
     return (
@@ -451,7 +458,7 @@ export function DailySalesTrendGraph({ className, hideHeader = false }: DailySal
                     <div className="h-[420px]">
                         <ResponsiveContainer width="100%" height="100%">
                             {selectedPaymentType === 'all' ? (
-                                // 전체 선택 시: PG와 인앱을 분리하여 표시
+                                // 전체 선택 시: PG와 인앱을 스택형 막대 그래프로 표시
                                 <ComposedChart
                                     data={chartData}
                                     margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
@@ -479,28 +486,24 @@ export function DailySalesTrendGraph({ className, hideHeader = false }: DailySal
                                     <Tooltip content={<CustomTooltip />} />
                                     <Legend />
 
-                                    {/* PG 매출 라인 */}
-                                    <Line
+                                    {/* PG 매출 막대 (스택 하단) */}
+                                    <Bar
                                         yAxisId="amount"
-                                        type="monotone"
                                         dataKey="pgAmount"
-                                        stroke="#3B82F6"
-                                        strokeWidth={2}
+                                        stackId="sales"
+                                        fill="#3B82F6"
                                         name="PG 결제"
-                                        dot={{ fill: '#3B82F6', strokeWidth: 1, r: 3 }}
-                                        activeDot={{ r: 5 }}
+                                        radius={[0, 0, 0, 0]}
                                     />
 
-                                    {/* 인앱 매출 라인 */}
-                                    <Line
+                                    {/* 인앱 매출 막대 (스택 상단) */}
+                                    <Bar
                                         yAxisId="amount"
-                                        type="monotone"
                                         dataKey="iapAmount"
-                                        stroke="#10B981"
-                                        strokeWidth={2}
+                                        stackId="sales"
+                                        fill="#10B981"
                                         name="인앱 결제"
-                                        dot={{ fill: '#10B981', strokeWidth: 1, r: 3 }}
-                                        activeDot={{ r: 5 }}
+                                        radius={[4, 4, 0, 0]}
                                     />
 
                                     {/* 총 건수 라인 */}
