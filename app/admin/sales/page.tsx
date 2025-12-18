@@ -8,6 +8,7 @@ import { RankingByUniv } from './components/RankingByUniv';
 import { GenderAnalysisTable } from './components/GenderAnalysis';
 import { AgeAnalysisComponent } from './components/AgeAnalysis';
 import { MonthlyPaymentGraph } from './components/MonthlyPaymentGraph';
+import { DailySalesTrendGraph } from './components/DailySalesTrendGraph';
 
 // 타입 정의
 interface DateRange {
@@ -15,12 +16,16 @@ interface DateRange {
     endDate: Date | undefined;
 }
 
+// 매출 추이 탭 타입
+type SalesTrendTab = 'monthly' | 'daily';
+
 export default function SalesPage() {
     // === 상태 관리 ===
     const [dateRange, setDateRange] = useState<DateRange>({
-        startDate: undefined, 
-        endDate: undefined,  
+        startDate: undefined,
+        endDate: undefined,
     });
+    const [salesTrendTab, setSalesTrendTab] = useState<SalesTrendTab>('monthly');
 
     // === 핸들러 ===
     const handleDateRangeChange = (range: DateRange) => {
@@ -123,9 +128,49 @@ export default function SalesPage() {
                         </div>
                     </div>
 
-                    {/* MARK: - 연간 결제 타입별 매출 그래프*/}
-                    <div>
-                        <MonthlyPaymentGraph />
+                    {/* MARK: - 매출 추이 그래프 (탭 전환) */}
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+                        {/* 탭 헤더 */}
+                        <div className="px-6 py-4 border-b border-gray-200">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-lg font-semibold text-gray-900">매출 추이</h2>
+                                    <p className="text-sm text-gray-500 mt-1">기간별 매출 추이를 확인하세요</p>
+                                </div>
+                                {/* 탭 버튼 */}
+                                <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+                                    <button
+                                        onClick={() => setSalesTrendTab('monthly')}
+                                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                                            salesTrendTab === 'monthly'
+                                                ? 'bg-white text-purple-700 shadow-sm'
+                                                : 'text-gray-600 hover:text-gray-900'
+                                        }`}
+                                    >
+                                        월별
+                                    </button>
+                                    <button
+                                        onClick={() => setSalesTrendTab('daily')}
+                                        className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                                            salesTrendTab === 'daily'
+                                                ? 'bg-white text-purple-700 shadow-sm'
+                                                : 'text-gray-600 hover:text-gray-900'
+                                        }`}
+                                    >
+                                        일별
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 탭 콘텐츠 */}
+                        <div>
+                            {salesTrendTab === 'monthly' ? (
+                                <MonthlyPaymentGraph />
+                            ) : (
+                                <DailySalesTrendGraph hideHeader />
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
