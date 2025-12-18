@@ -67,7 +67,7 @@ export function DailySalesTrendGraph({ className, hideHeader = false }: DailySal
     const [endDateOpen, setEndDateOpen] = useState<boolean>(false);
 
     // 필터 상태
-    const [selectedPaymentType, setSelectedPaymentType] = useState<paymentType>('exclude_iap');
+    const [selectedPaymentType, setSelectedPaymentType] = useState<paymentType>('all');
 
     // === 유틸리티 함수 ===
     const formatDateLabel = (dateStr: string): string => {
