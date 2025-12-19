@@ -10,12 +10,11 @@ import {
 } from '@/app/admin/dashboard/types';
 
 // 엔드포인트 상수
-// 프로덕션 NEXT_PUBLIC_API_URL이 /admin으로 끝나므로 경로에서 /admin 제거
 const DASHBOARD_ENDPOINT = {
-  SUMMARY: '/dashboard/summary',
-  MATCHING_FUNNEL: '/dashboard/matching/funnel',
-  HOURLY_SIGNUPS: '/dashboard/stats/signups/hourly',
-  GOALS: '/goals',
+  SUMMARY: '/admin/dashboard/summary',
+  MATCHING_FUNNEL: '/admin/dashboard/matching/funnel',
+  HOURLY_SIGNUPS: '/admin/dashboard/stats/signups/hourly',
+  GOALS: '/admin/goals',  // 목표 관리는 별도 경로
 } as const;
 
 // 에러 클래스
