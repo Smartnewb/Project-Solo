@@ -1,42 +1,67 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, CircularProgress, Alert, Grid } from '@mui/material';
+import { useState, useEffect } from 'react';
+import { Grid, Card, CardContent, Typography, Box, Alert, CircularProgress, Divider, FormControlLabel, Switch } from '@mui/material';
 import { useRouter } from 'next/navigation';
-import { dashboardService } from '@/app/services/dashboard';
-import { DashboardSummaryResponse, Goal } from './types';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { ko } from 'date-fns/locale';
+import TotalUsersCard from '@/components/admin/dashboard/TotalUsersCard';
+import DailySignupsCard from '@/components/admin/dashboard/DailySignupsCard';
+import WeeklySignupsCard from '@/components/admin/dashboard/WeeklySignupsCard';
+import GenderStatsCard from '@/components/admin/dashboard/GenderStatsCard';
+import UniversityStatsCard from '@/components/admin/dashboard/UniversityStatsCard';
+import SignupStatsDashboard from '@/components/admin/dashboard/SignupStatsDashboard';
 
-// 컴포넌트
-import AlertBanner from './components/AlertBanner';
-import ActionCards from './components/ActionCards';
-import KPICards from './components/KPICards';
-import UserMetricsCard from './components/UserMetricsCard';
-import GoalProgressCard from './components/GoalProgressCard';
-import MatchingFunnelChart from './components/MatchingFunnelChart';
+// 회원 탈퇴 통계 컴포넌트
+import WithdrawalStatsCard from '@/components/admin/dashboard/WithdrawalStatsCard';
+import WithdrawalStatsDashboard from '@/components/admin/dashboard/WithdrawalStatsDashboard';
+import WithdrawalReasonStats from '@/components/admin/dashboard/WithdrawalReasonStats';
+import ChurnRateStats from '@/components/admin/dashboard/ChurnRateStats';
+import RegionFilter, { useRegionFilter } from '@/components/admin/common/RegionFilter';
+import IncludeDeletedFilter, { useIncludeDeletedFilter } from '@/components/admin/common/IncludeDeletedFilter';
 
-export default function MainDashboard() {
+
+
+export default function AdminDashboard() {
   const router = useRouter();
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [authChecking, setAuthChecking] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [summary, setSummary] = useState<DashboardSummaryResponse | null>(null);
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
+
+  // 지역 필터 훅 사용 (클러스터 모드 지원)
+  const {
+    region,
+    useCluster,
+    setRegion: setRegionFilter,
+    setUseCluster: setUseClusterMode,
+    getRegionParam,
+    getUseClusterParam
+  } = useRegionFilter();
+
+  // 탈퇴자 포함 여부 훅 사용
+  const { includeDeleted, setIncludeDeleted, getIncludeDeletedParam } = useIncludeDeletedFilter();
 
   // 관리자 인증 확인
   useEffect(() => {
+    // 클라이언트 사이드에서만 실행
     if (typeof window === 'undefined') return;
 
     const checkAuth = async () => {
       try {
         setAuthChecking(true);
+        // 로컬 스토리지에서 토큰과 관리자 여부 확인
         const token = localStorage.getItem('accessToken');
         const isAdmin = localStorage.getItem('isAdmin');
 
+        console.log('관리자 인증 확인:', { token: !!token, isAdmin });
+
         if (!token || isAdmin !== 'true') {
           setAuthError('관리자 권한이 없습니다. 로그인 페이지로 이동합니다.');
-          setTimeout(() => router.push('/'), 2000);
+          setTimeout(() => {
+            router.push('/');
+          }, 2000);
           return;
         }
 
@@ -52,63 +77,56 @@ export default function MainDashboard() {
     checkAuth();
   }, [router]);
 
-  // 대시보드 데이터 로드
-  const fetchDashboardData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Summary API 호출
-      const summaryRes = await dashboardService.getSummary();
-      setSummary(summaryRes);
-
-      // Goals API는 별도로 호출 (실패해도 대시보드 표시)
-      try {
-        const currentMonth = new Date().toISOString().slice(0, 7);
-        const goalsRes = await dashboardService.getGoals(currentMonth);
-        setGoals(goalsRes.goals || []);
-      } catch (goalsErr) {
-        console.warn('목표 데이터 조회 실패 (무시됨):', goalsErr);
-        setGoals([]);
-      }
-    } catch (err) {
-      console.error('대시보드 데이터 로딩 실패:', err);
-      setError('대시보드 데이터를 불러오는데 실패했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // 통계 데이터 가져오기
   useEffect(() => {
+    // 클라이언트 사이드에서만 실행
     if (typeof window === 'undefined') return;
+
+    // 인증 중이거나 인증 오류가 있으면 통계 데이터를 가져오지 않음
     if (authChecking || authError) return;
 
-    fetchDashboardData();
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        console.log('대시보드 통계 데이터 요청 시작');
 
-    // 1분마다 자동 갱신
-    const interval = setInterval(fetchDashboardData, 60000);
+        // 토큰 확인
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+          console.error('토큰이 없어 통계 데이터를 가져올 수 없습니다.');
+          return;
+        }
+
+        const response = await fetch('/api/admin/stats', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('대시보드 통계 데이터 응답:', data);
+          setStats(data);
+        } else {
+          console.error('통계 데이터 요청 실패:', response.status, response.statusText);
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+    const interval = setInterval(fetchStats, 60000); // 1분마다 갱신
+
     return () => clearInterval(interval);
-  }, [authChecking, authError, fetchDashboardData]);
+  }, [authChecking, authError]);
 
-  // 알림 닫기
-  const handleDismissAlert = (id: string) => {
-    setDismissedAlerts((prev) => new Set(prev).add(id));
-  };
-
-  // 목표 변경 시 리로드
-  const handleGoalChange = () => {
-    fetchDashboardData();
-  };
-
-  // 표시할 알림 필터링
-  const visibleAlerts = summary?.alerts.filter(
-    (alert) => !dismissedAlerts.has(alert.id)
-  ) ?? [];
-
-  // 인증 확인 중
+  // 인증 확인 중이거나 인증 오류가 있으면 로딩 화면 또는 오류 메시지 표시
   if (authChecking) {
     return (
-      <Box className="flex items-center justify-center h-screen">
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
         <CircularProgress />
         <Typography variant="h6" sx={{ ml: 2 }}>
           관리자 권한 확인 중...
@@ -117,10 +135,9 @@ export default function MainDashboard() {
     );
   }
 
-  // 인증 오류
   if (authError) {
     return (
-      <Box className="flex flex-col items-center justify-center h-screen">
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', flexDirection: 'column' }}>
         <Alert severity="error" sx={{ mb: 2 }}>
           {authError}
         </Alert>
@@ -132,59 +149,137 @@ export default function MainDashboard() {
   }
 
   return (
-    <Box className="min-h-screen bg-gray-50">
-      {/* 헤더 */}
-      <Box className="bg-white shadow-sm border-b border-gray-200">
-        <Box className="max-w-7xl mx-auto px-4 py-6">
-          <Typography variant="h4" fontWeight="bold" color="textPrimary">
-            메인 대시보드
-          </Typography>
-          <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-            주요 지표 및 액션 아이템을 한눈에 확인하세요
-          </Typography>
-        </Box>
-      </Box>
+    <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ko}>
+      <Box sx={{ p: 3 }}>
+        <Typography variant="h4" gutterBottom>
+          관리자 대시보드
+        </Typography>
 
-      <Box className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        {/* API 에러 표시 */}
-        {error && (
-          <Alert severity="error" onClose={() => setError(null)}>
-            {error}
-          </Alert>
-        )}
-
-        {/* 알림 배너 */}
-        {visibleAlerts.length > 0 && (
-          <AlertBanner alerts={visibleAlerts} onDismiss={handleDismissAlert} />
-        )}
-
-        {/* 액션 카드 */}
-        <ActionCards
-          actionItems={summary?.actionItems ?? null}
-          matching={summary?.matching ?? null}
-          loading={loading}
-        />
-
-        {/* KPI 카드 */}
-        <KPICards kpi={summary?.kpi ?? null} loading={loading} />
-
-        {/* 사용자 현황 & 월간 목표 */}
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <UserMetricsCard kpi={summary?.kpi ?? null} loading={loading} />
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <GoalProgressCard
-              goals={goals}
-              loading={loading}
-              onGoalChange={handleGoalChange}
+        {/* 필터 */}
+        <Box sx={{ mb: 3 }}>
+          <Box sx={{ display: 'flex', gap: 3, alignItems: 'center', mb: 2 }}>
+            <RegionFilter
+              value={region}
+              onChange={setRegionFilter}
+              useCluster={useCluster}
+              onClusterModeChange={setUseClusterMode}
+              showClusterToggle={false}
+              size="small"
+              sx={{ minWidth: 150 }}
             />
+            <IncludeDeletedFilter
+              value={includeDeleted}
+              onChange={setIncludeDeleted}
+              size="small"
+            />
+          </Box>
+
+          {/* 클러스터 모드 토글 */}
+          <Box sx={{ ml: 1 }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={useCluster}
+                  onChange={(e) => setUseClusterMode(e.target.checked)}
+                  size="small"
+                />
+              }
+              label={
+                <Typography variant="caption" color="textSecondary">
+                  {useCluster ? '클러스터 단위 조회' : '개별 지역 조회'}
+                </Typography>
+              }
+            />
+          </Box>
+        </Box>
+
+        {/* Summary Cards */}
+        <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <TotalUsersCard
+              region={getRegionParam()}
+              includeDeleted={getIncludeDeletedParam()}
+              useCluster={getUseClusterParam()}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <WeeklySignupsCard
+              region={getRegionParam()}
+              includeDeleted={getIncludeDeletedParam()}
+              useCluster={getUseClusterParam()}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <DailySignupsCard
+              region={getRegionParam()}
+              includeDeleted={getIncludeDeletedParam()}
+              useCluster={getUseClusterParam()}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card>
+              <CardContent>
+                <Typography color="textSecondary" gutterBottom>
+                  총 매칭 수
+                </Typography>
+                <Typography variant="h4">
+                  {loading ? '로딩 중...' : stats?.totalMatches.toLocaleString() || 0}
+                </Typography>
+              </CardContent>
+            </Card>
           </Grid>
         </Grid>
 
-        {/* 매칭 퍼널 차트 */}
-        <MatchingFunnelChart />
+        {/* 성별 통계 카드 */}
+        <Box sx={{ mt: 4, mb: 4 }}>
+          <GenderStatsCard
+            region={getRegionParam()}
+            includeDeleted={getIncludeDeletedParam()}
+            useCluster={getUseClusterParam()}
+          />
+        </Box>
+
+        {/* 회원가입 통계 대시보드 */}
+        <Box sx={{ mt: 4, mb: 4 }}>
+          <SignupStatsDashboard region={getRegionParam()} includeDeleted={getIncludeDeletedParam()} />
+        </Box>
+
+        {/* 대학별 통계 카드 */}
+        <Box sx={{ mt: 4, mb: 4 }}>
+          <UniversityStatsCard
+            region={getRegionParam()}
+            includeDeleted={getIncludeDeletedParam()}
+            useCluster={getUseClusterParam()}
+          />
+        </Box>
+
+        <Divider sx={{ my: 6 }} />
+
+        <Typography variant="h5" gutterBottom sx={{ mt: 6, mb: 4 }}>
+          회원 탈퇴 통계
+        </Typography>
+
+        {/* 회원 탈퇴 통계 카드 */}
+        <Box sx={{ mt: 4, mb: 4 }}>
+          <WithdrawalStatsCard region={getRegionParam()} />
+        </Box>
+
+        {/* 회원 탈퇴 추이 대시보드 */}
+        <Box sx={{ mt: 4, mb: 4 }}>
+          <WithdrawalStatsDashboard />
+        </Box>
+
+        {/* 탈퇴 사유 통계 */}
+        <Box sx={{ mt: 4, mb: 4 }}>
+          <WithdrawalReasonStats />
+        </Box>
+
+        {/* 이탈률 통계 */}
+        <Box sx={{ mt: 4, mb: 4 }}>
+          <ChurnRateStats />
+        </Box>
+
       </Box>
-    </Box>
+    </LocalizationProvider>
   );
 }

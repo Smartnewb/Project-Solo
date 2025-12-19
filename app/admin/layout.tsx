@@ -117,12 +117,7 @@ export default function AdminLayout({
           <ul>
             <li>
               <Link href="/admin/dashboard" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors" onClick={() => setSidebarOpen(false)}>
-                메인 대시보드
-              </Link>
-            </li>
-            <li>
-              <Link href="/admin/dashboard/member-stats" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors" onClick={() => setSidebarOpen(false)}>
-                회원 통계
+                대시보드
               </Link>
             </li>
             <li>
