@@ -1,8 +1,17 @@
 import axios from 'axios';
 
+// baseURL 정규화 함수
+// 환경변수가 /admin으로 끝나면 /api로 변경 (잘못된 설정 보정)
+function normalizeBaseUrl(url: string): string {
+  if (url.endsWith('/admin')) {
+    return url.replace(/\/admin$/, '/api');
+  }
+  return url;
+}
+
 // axios 인스턴스 생성
 const axiosServer = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045/api',
+  baseURL: normalizeBaseUrl(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045/api'),
   timeout: 15000,  // 15초
   headers: {
     'Content-Type': 'application/json',
@@ -61,7 +70,8 @@ axiosServer.interceptors.response.use(
           console.log('토큰 만료 감지, 새로고침 시도');
 
           // 토큰 새로고침 요청
-          const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`, {}, {
+          const refreshUrl = normalizeBaseUrl(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045/api');
+          const response = await axios.post(`${refreshUrl}/auth/refresh`, {}, {
             withCredentials: true
           });
 
