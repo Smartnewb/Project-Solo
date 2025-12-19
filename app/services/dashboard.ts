@@ -11,10 +11,10 @@ import {
 
 // 엔드포인트 상수
 const DASHBOARD_ENDPOINT = {
-  SUMMARY: '/admin/dashboard/summary',
-  MATCHING_FUNNEL: '/admin/dashboard/matching/funnel',
-  HOURLY_SIGNUPS: '/admin/dashboard/stats/signups/hourly',
-  GOALS: '/admin/goals',  // 목표 관리는 별도 경로
+  SUMMARY: '/api/admin/dashboard/summary',
+  MATCHING_FUNNEL: '/api/admin/dashboard/matching/funnel',
+  HOURLY_SIGNUPS: '/api/admin/dashboard/stats/signups/hourly',
+  GOALS: '/api/admin/goals',  // 목표 관리는 별도 경로
 } as const;
 
 // 에러 클래스
