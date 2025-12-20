@@ -2277,6 +2277,39 @@ const aiChat = {
   },
 };
 
+// 여성 유저 리텐션 관리 API
+const femaleRetention = {
+  // 3일 이상 미접속 여성 유저 리스트 조회
+  getInactiveUsers: async (limit: number = 20, offset: number = 0) => {
+    try {
+      console.log('미접속 여성 유저 목록 조회 요청:', { limit, offset });
+      const response = await axiosServer.get('/admin/female-retention', {
+        params: { limit, offset }
+      });
+      console.log('미접속 여성 유저 목록 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('미접속 여성 유저 목록 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // 개별 유저에 대해 1회성 패스워드 발급
+  issueTemporaryPassword: async (userId: string) => {
+    try {
+      console.log('임시 패스워드 발급 요청:', userId);
+      const response = await axiosServer.post(`/admin/female-retention/${userId}`);
+      console.log('임시 패스워드 발급 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('임시 패스워드 발급 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  }
+};
+
 const AdminService = {
   auth,
   stats,
@@ -2288,6 +2321,7 @@ const AdminService = {
   userReview,
   pushNotifications,
   aiChat,
+  femaleRetention,
   // 기존 함수들을 reports 객체로 이동하기 전까지 임시로 유지
   getProfileReports: reports.getProfileReports
 };
