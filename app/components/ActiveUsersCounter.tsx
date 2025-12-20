@@ -2,20 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import axiosServer from '@/utils/axios';
 
 export default function ActiveUsersCounter() {
   const [actualCount, setActualCount] = useState(0);
   const [displayCount, setDisplayCount] = useState(0); // 실제 사용자 수 + 100
   const [prevCount, setPrevCount] = useState(0);
-  const [floatingNumbers, setFloatingNumbers] = useState<number[]>([]);
+  const [floatingNumbers, setFloatingNumbers] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
-
-  const fetchUserCount = async () => { }
-
-  useEffect(() => {
-    // 초기 로드 시 사용자 수 가져오기
-    fetchUserCount();
-  }, []);
+  const [showAnimation, setShowAnimation] = useState(false);
 
   const fetchUserCount = async () => {
     try {
@@ -32,6 +27,11 @@ export default function ActiveUsersCounter() {
       console.error('사용자 수 조회 중 오류 발생:', error);
     }
   };
+
+  useEffect(() => {
+    // 초기 로드 시 사용자 수 가져오기
+    fetchUserCount();
+  }, []);
 
   return (
     <div className="text-center py-6">
