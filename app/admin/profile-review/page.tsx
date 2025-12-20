@@ -46,6 +46,7 @@ export interface PendingUser {
   pendingImages: PendingImage[];
   approvedImageUrls: string[];
   createdAt: string;
+  rank?: 'S' | 'A' | 'B' | 'C' | 'UNKNOWN';
 
   // 선택적 필드
   email?: string;

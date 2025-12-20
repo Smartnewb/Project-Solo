@@ -1656,6 +1656,24 @@ const userReview = {
       console.error('오류 상세 정보:', error.response?.data || error.message);
       throw error;
     }
+  },
+
+  updateUserRank: async (userId: string, rank: 'S' | 'A' | 'B' | 'C' | 'UNKNOWN', emitEvent: boolean = false) => {
+    try {
+      console.log('유저 Rank 업데이트 요청:', { userId, rank, emitEvent });
+
+      const response = await axiosServer.patch(`/admin/profiles/${userId}/rank`,
+        { rank },
+        { params: { emitEvent } }
+      );
+
+      console.log('유저 Rank 업데이트 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('유저 Rank 업데이트 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
   }
 };
 
@@ -2277,6 +2295,132 @@ const aiChat = {
   },
 };
 
+// 카드뉴스 관련 API
+const cardNews = {
+  // 카드뉴스 생성
+  create: async (data: {
+    title: string;
+    categoryCode: string;
+    sections: Array<{
+      order: number;
+      title: string;
+      content: string;
+      imageUrl?: string;
+    }>;
+    pushNotificationMessage?: string;
+  }) => {
+    try {
+      console.log('카드뉴스 생성 요청:', data);
+      const response = await axiosServer.post('/admin/card-news', data);
+      console.log('카드뉴스 생성 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('카드뉴스 생성 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // 카드뉴스 조회
+  get: async (id: string) => {
+    try {
+      console.log('카드뉴스 조회 요청:', id);
+      const response = await axiosServer.get(`/admin/card-news/${id}`);
+      console.log('카드뉴스 조회 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('카드뉴스 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // 카드뉴스 목록 조회
+  getList: async (page: number = 1, limit: number = 20) => {
+    try {
+      console.log('카드뉴스 목록 조회 요청:', { page, limit });
+      const response = await axiosServer.get('/articles', {
+        params: {
+          postType: 'CARD_NEWS',
+          page,
+          limit
+        }
+      });
+      console.log('카드뉴스 목록 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('카드뉴스 목록 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // 카드뉴스 수정
+  update: async (id: string, data: {
+    title?: string;
+    sections?: Array<{
+      order: number;
+      title: string;
+      content: string;
+      imageUrl?: string;
+    }>;
+    pushNotificationMessage?: string;
+  }) => {
+    try {
+      console.log('카드뉴스 수정 요청:', { id, data });
+      const response = await axiosServer.put(`/admin/card-news/${id}`, data);
+      console.log('카드뉴스 수정 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('카드뉴스 수정 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // 카드뉴스 삭제
+  delete: async (id: string) => {
+    try {
+      console.log('카드뉴스 삭제 요청:', id);
+      const response = await axiosServer.delete(`/admin/card-news/${id}`);
+      console.log('카드뉴스 삭제 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('카드뉴스 삭제 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // 카드뉴스 발행 및 푸시 알림 발송
+  publish: async (id: string) => {
+    try {
+      console.log('카드뉴스 발행 요청:', id);
+      const response = await axiosServer.post(`/admin/card-news/${id}/publish`);
+      console.log('카드뉴스 발행 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('카드뉴스 발행 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // 카테고리 목록 조회
+  getCategories: async () => {
+    try {
+      console.log('카테고리 목록 조회 요청');
+      const response = await axiosServer.get('/articles/category/list');
+      console.log('카테고리 목록 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('카테고리 목록 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  }
+};
+
 // 여성 유저 리텐션 관리 API
 const femaleRetention = {
   // 3일 이상 미접속 여성 유저 리스트 조회
@@ -2310,6 +2454,47 @@ const femaleRetention = {
   }
 };
 
+// 구슬 관리 API
+const gems = {
+  // 구슬 일괄 지급 및 푸시 알림 발송 (v2.0.0 - 전화번호 기반)
+  bulkGrant: async (data: {
+    phoneNumbers?: string[];
+    csvFile?: File;
+    gemAmount: number;
+    message: string;
+  }) => {
+    try {
+      console.log('구슬 일괄 지급 요청:', data);
+
+      const formData = new FormData();
+
+      if (data.phoneNumbers && data.phoneNumbers.length > 0) {
+        formData.append('phoneNumbers', JSON.stringify(data.phoneNumbers));
+      }
+
+      if (data.csvFile) {
+        formData.append('csvFile', data.csvFile);
+      }
+
+      formData.append('gemAmount', data.gemAmount.toString());
+      formData.append('message', data.message);
+
+      const response = await axiosServer.post('/admin/gems/bulk-grant', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      console.log('구슬 일괄 지급 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('구슬 일괄 지급 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  }
+};
+
 const AdminService = {
   auth,
   stats,
@@ -2321,7 +2506,9 @@ const AdminService = {
   userReview,
   pushNotifications,
   aiChat,
+  cardNews,
   femaleRetention,
+  gems,
   // 기존 함수들을 reports 객체로 이동하기 전까지 임시로 유지
   getProfileReports: reports.getProfileReports
 };

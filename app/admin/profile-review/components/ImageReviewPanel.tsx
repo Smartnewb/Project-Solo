@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Paper, Typography, Box, Button, IconButton, Dialog, Chip, Divider, TextField, Link } from '@mui/material';
+import { useState, useEffect } from 'react';
+import { Paper, Typography, Box, Button, IconButton, Dialog, Chip, Divider, TextField, Link, Select, MenuItem, FormControl, InputLabel, Tooltip } from '@mui/material';
 import { PendingUser } from '../page';
 import CloseIcon from '@mui/icons-material/Close';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -17,6 +17,18 @@ interface ImageReviewPanelProps {
   setProcessing: (processing: boolean) => void;
 }
 
+const getRankConfig = (rank?: string) => {
+  const configs = {
+    S: { label: 'S', color: '#9c27b0', bgColor: '#f3e5f5', tooltip: '최상위 등급' },
+    A: { label: 'A', color: '#2196f3', bgColor: '#e3f2fd', tooltip: '상위 등급' },
+    B: { label: 'B', color: '#4caf50', bgColor: '#e8f5e9', tooltip: '중위 등급' },
+    C: { label: 'C', color: '#ff9800', bgColor: '#fff3e0', tooltip: '하위 등급' },
+    UNKNOWN: { label: '미분류', color: '#9e9e9e', bgColor: '#f5f5f5', tooltip: '등급 미정' }
+  };
+
+  return configs[rank as keyof typeof configs] || configs.UNKNOWN;
+};
+
 export default function ImageReviewPanel({
   user,
   onApprove,
@@ -31,6 +43,38 @@ export default function ImageReviewPanel({
   const [rejectImageModalOpen, setRejectImageModalOpen] = useState(false);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [imageRejectionReason, setImageRejectionReason] = useState('');
+  const [currentRank, setCurrentRank] = useState<string | undefined>(user?.rank);
+  const [isUpdatingRank, setIsUpdatingRank] = useState(false);
+
+  useEffect(() => {
+    setCurrentRank(user?.rank);
+  }, [user]);
+
+  const handleRankChange = async (newRank: string) => {
+    if (!user || newRank === currentRank) return;
+
+    const confirmed = window.confirm(
+      `정말로 이 유저의 Rank를 ${newRank}(으)로 변경하시겠습니까?`
+    );
+
+    if (!confirmed) return;
+
+    const previousRank = currentRank;
+    setCurrentRank(newRank);
+    setIsUpdatingRank(true);
+
+    try {
+      const result = await AdminService.userReview.updateUserRank(user.userId || user.id, newRank as any);
+
+      alert(`Rank가 ${result.previousRank}에서 ${result.updatedRank}(으)로 변경되었습니다.`);
+    } catch (error: any) {
+      console.error('Rank 업데이트 실패:', error);
+      setCurrentRank(previousRank);
+      alert(error.response?.data?.message || 'Rank 업데이트에 실패했습니다.');
+    } finally {
+      setIsUpdatingRank(false);
+    }
+  };
 
   if (!user) {
     return (
@@ -193,6 +237,51 @@ export default function ImageReviewPanel({
             "{user.bio}"
           </Typography>
         )}
+      </Box>
+
+      <Divider sx={{ mb: 2 }} />
+
+      {/* Rank 관리 */}
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
+          유저 Rank 관리
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+              현재 Rank
+            </Typography>
+            <Tooltip title={getRankConfig(currentRank).tooltip}>
+              <Chip
+                label={getRankConfig(currentRank).label}
+                sx={{
+                  backgroundColor: getRankConfig(currentRank).bgColor,
+                  color: getRankConfig(currentRank).color,
+                  fontWeight: 'bold',
+                  minWidth: 80,
+                  fontSize: '0.9rem'
+                }}
+              />
+            </Tooltip>
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <FormControl fullWidth size="small">
+              <InputLabel>Rank 변경</InputLabel>
+              <Select
+                value={currentRank || 'UNKNOWN'}
+                label="Rank 변경"
+                onChange={(e) => handleRankChange(e.target.value)}
+                disabled={isUpdatingRank}
+              >
+                <MenuItem value="S">S등급 (최상위)</MenuItem>
+                <MenuItem value="A">A등급 (상위)</MenuItem>
+                <MenuItem value="B">B등급 (중위)</MenuItem>
+                <MenuItem value="C">C등급 (하위)</MenuItem>
+                <MenuItem value="UNKNOWN">미분류</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        </Box>
       </Box>
 
       <Divider sx={{ mb: 2 }} />

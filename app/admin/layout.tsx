@@ -171,6 +171,11 @@ export default function AdminLayout({
               </Link>
             </li>
             <li>
+              <Link href="/admin/card-news" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors" onClick={() => setSidebarOpen(false)}>
+                카드뉴스 관리
+              </Link>
+            </li>
+            <li>
               <Link href='/admin/sales' className='block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors'>
                 매출 조회
               </Link>
@@ -183,6 +188,11 @@ export default function AdminLayout({
             <li>
               <Link href="/admin/female-retention" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors" onClick={() => setSidebarOpen(false)}>
                 여성 유저 리텐션
+              </Link>
+            </li>
+            <li>
+              <Link href="/admin/gems" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors" onClick={() => setSidebarOpen(false)}>
+                💎 구슬 관리
               </Link>
             </li>
             <li>
