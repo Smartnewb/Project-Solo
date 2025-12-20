@@ -146,7 +146,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // 사용자 정보 설정
       const userInfo = data.user || data;
-      const isAdmin = userInfo.role === 'admin';
+
+      // roles 배열 또는 role 문자열 모두 지원
+      const roles = userInfo.roles || (userInfo.role ? [userInfo.role] : []);
+      const isAdmin = Array.isArray(roles) ? roles.includes('admin') : roles === 'admin';
 
       // 사용자 정보 및 관리자 여부 저장
       localStorage.setItem('user', JSON.stringify(userInfo));
@@ -163,7 +166,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await fetchProfile();
 
       // 리다이렉트
-      router.push(userInfo.role === 'admin' ? '/admin/dashboard' : '/home');
+      router.push(isAdmin ? '/admin/dashboard' : '/home');
     } catch (error) {
       setState(prev => ({ ...prev, loading: false }));
 
