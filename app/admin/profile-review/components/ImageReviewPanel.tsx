@@ -64,7 +64,7 @@ export default function ImageReviewPanel({
     setIsUpdatingRank(true);
 
     try {
-      const result = await AdminService.userReview.updateUserRank(user.userId || user.id, newRank as any);
+      const result = await AdminService.userReview.updateUserRank(user.userId, newRank as any);
 
       alert(`Rank가 ${result.previousRank}에서 ${result.updatedRank}(으)로 변경되었습니다.`);
     } catch (error: any) {
