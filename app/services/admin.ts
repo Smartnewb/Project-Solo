@@ -2295,23 +2295,88 @@ const aiChat = {
   },
 };
 
+// 배경 프리셋 관련 API
+const backgroundPresets = {
+  // 활성화된 배경 프리셋 목록 조회
+  getActive: async () => {
+    try {
+      console.log('활성 배경 프리셋 목록 조회 요청');
+      const response = await axiosServer.get('/admin/background-presets/active');
+      console.log('활성 배경 프리셋 목록 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('활성 배경 프리셋 목록 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // 배경 이미지 직접 업로드
+  upload: async (imageFile: File) => {
+    try {
+      console.log('배경 이미지 업로드 요청');
+      const formData = new FormData();
+      formData.append('image', imageFile);
+
+      const response = await axiosServer.post('/admin/background-presets/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      console.log('배경 이미지 업로드 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('배경 이미지 업로드 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // 배경 프리셋 생성
+  create: async (data: {
+    name: string;
+    displayName: string;
+    imageUrl: string;
+    thumbnailUrl?: string;
+    order: number;
+  }) => {
+    try {
+      console.log('배경 프리셋 생성 요청:', data);
+      const response = await axiosServer.post('/admin/background-presets', data);
+      console.log('배경 프리셋 생성 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('배경 프리셋 생성 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  }
+};
+
 // 카드뉴스 관련 API
 const cardNews = {
   // 카드뉴스 생성
   create: async (data: {
     title: string;
+    description: string;
     categoryCode: string;
+    backgroundImage: {
+      type: 'PRESET' | 'CUSTOM';
+      presetId?: string;
+      customUrl?: string;
+    };
+    hasReward: boolean;
     sections: Array<{
       order: number;
       title: string;
       content: string;
-      imageUrl?: string;
     }>;
     pushNotificationMessage?: string;
   }) => {
     try {
       console.log('카드뉴스 생성 요청:', data);
-      const response = await axiosServer.post('/admin/card-news', data);
+      const response = await axiosServer.post('/admin/posts/card-news', data);
       console.log('카드뉴스 생성 응답:', response.data);
       return response.data;
     } catch (error: any) {
@@ -2325,7 +2390,7 @@ const cardNews = {
   get: async (id: string) => {
     try {
       console.log('카드뉴스 조회 요청:', id);
-      const response = await axiosServer.get(`/admin/card-news/${id}`);
+      const response = await axiosServer.get(`/admin/posts/card-news/${id}`);
       console.log('카드뉴스 조회 응답:', response.data);
       return response.data;
     } catch (error: any) {
@@ -2358,17 +2423,23 @@ const cardNews = {
   // 카드뉴스 수정
   update: async (id: string, data: {
     title?: string;
+    description?: string;
+    backgroundImage?: {
+      type: 'PRESET' | 'CUSTOM';
+      presetId?: string;
+      customUrl?: string;
+    };
+    hasReward?: boolean;
     sections?: Array<{
       order: number;
       title: string;
       content: string;
-      imageUrl?: string;
     }>;
     pushNotificationMessage?: string;
   }) => {
     try {
       console.log('카드뉴스 수정 요청:', { id, data });
-      const response = await axiosServer.put(`/admin/card-news/${id}`, data);
+      const response = await axiosServer.put(`/admin/posts/card-news/${id}`, data);
       console.log('카드뉴스 수정 응답:', response.data);
       return response.data;
     } catch (error: any) {
@@ -2382,7 +2453,7 @@ const cardNews = {
   delete: async (id: string) => {
     try {
       console.log('카드뉴스 삭제 요청:', id);
-      const response = await axiosServer.delete(`/admin/card-news/${id}`);
+      const response = await axiosServer.delete(`/admin/posts/card-news/${id}`);
       console.log('카드뉴스 삭제 응답:', response.data);
       return response.data;
     } catch (error: any) {
@@ -2396,7 +2467,7 @@ const cardNews = {
   publish: async (id: string) => {
     try {
       console.log('카드뉴스 발행 요청:', id);
-      const response = await axiosServer.post(`/admin/card-news/${id}/publish`);
+      const response = await axiosServer.post(`/admin/posts/card-news/${id}/publish`);
       console.log('카드뉴스 발행 응답:', response.data);
       return response.data;
     } catch (error: any) {
@@ -2506,6 +2577,7 @@ const AdminService = {
   userReview,
   pushNotifications,
   aiChat,
+  backgroundPresets,
   cardNews,
   femaleRetention,
   gems,

@@ -21,7 +21,6 @@ interface CardSection {
   order: number;
   title: string;
   content: string;
-  imageUrl?: string;
 }
 
 interface CardEditorProps {
@@ -36,7 +35,6 @@ const quillModules = {
     [{ header: [1, 2, 3, false] }],
     ['bold', 'italic', 'underline', 'strike'],
     [{ list: 'ordered' }, { list: 'bullet' }],
-    [{ color: [] }, { background: [] }],
     ['link'],
     ['clean']
   ]
@@ -50,8 +48,6 @@ const quillFormats = [
   'strike',
   'list',
   'bullet',
-  'color',
-  'background',
   'link'
 ];
 
@@ -67,10 +63,6 @@ export default function CardEditor({
 
   const handleContentChange = (value: string) => {
     onUpdate({ ...section, content: value });
-  };
-
-  const handleImageUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onUpdate({ ...section, imageUrl: e.target.value });
   };
 
   return (
@@ -100,7 +92,7 @@ export default function CardEditor({
 
       <Box sx={{ mb: 2 }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-          카드 본문 *
+          카드 본문 * (최대 500자)
         </Typography>
         <Box sx={{ '& .ql-container': { minHeight: '200px' } }}>
           <ReactQuill
@@ -108,42 +100,13 @@ export default function CardEditor({
             onChange={handleContentChange}
             modules={quillModules}
             formats={quillFormats}
-            placeholder="카드 본문을 입력하세요..."
+            placeholder="카드 본문을 입력하세요... (마크다운 지원: 굵게, 기울임, 목록, 링크)"
           />
         </Box>
+        <Typography variant="caption" color="text.secondary">
+          {section.content.length}/500자
+        </Typography>
       </Box>
-
-      <TextField
-        fullWidth
-        label="이미지 URL (선택 사항)"
-        value={section.imageUrl || ''}
-        onChange={handleImageUrlChange}
-        placeholder="https://example.com/image.jpg"
-        helperText="이미지 URL을 입력하거나 S3에 업로드 후 URL을 붙여넣으세요"
-      />
-
-      {section.imageUrl && (
-        <Box sx={{ mt: 2 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-            미리보기
-          </Typography>
-          <Box
-            component="img"
-            src={section.imageUrl}
-            alt="Card preview"
-            sx={{
-              width: '100%',
-              maxWidth: 400,
-              height: 'auto',
-              borderRadius: 1,
-              border: '1px solid #e0e0e0'
-            }}
-            onError={(e: any) => {
-              e.target.style.display = 'none';
-            }}
-          />
-        </Box>
-      )}
     </Paper>
   );
 }

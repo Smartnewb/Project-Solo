@@ -13,7 +13,16 @@ import {
   InputLabel,
   Alert,
   CircularProgress,
-  Divider
+  Divider,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
+  Checkbox,
+  FormLabel,
+  Grid,
+  Card,
+  CardMedia,
+  CardActionArea
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import AdminService from '@/app/services/admin';
@@ -26,7 +35,6 @@ interface CardSection {
   order: number;
   title: string;
   content: string;
-  imageUrl?: string;
 }
 
 interface Category {
@@ -36,21 +44,38 @@ interface Category {
   emojiUrl: string;
 }
 
+interface BackgroundPreset {
+  id: string;
+  name: string;
+  displayName: string;
+  imageUrl: string;
+  thumbnailUrl: string | null;
+  order: number;
+}
+
 export default function CreateCardNewsPage() {
   const router = useRouter();
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [categoryCode, setCategoryCode] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [pushMessage, setPushMessage] = useState('');
+  const [hasReward, setHasReward] = useState(false);
+  const [backgroundType, setBackgroundType] = useState<'PRESET' | 'CUSTOM'>('PRESET');
+  const [selectedPresetId, setSelectedPresetId] = useState('');
+  const [customBackgroundUrl, setCustomBackgroundUrl] = useState('');
+  const [backgroundPresets, setBackgroundPresets] = useState<BackgroundPreset[]>([]);
   const [sections, setSections] = useState<CardSection[]>([
-    { order: 0, title: '', content: '', imageUrl: '' }
+    { order: 0, title: '', content: '' }
   ]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [uploadingBackground, setUploadingBackground] = useState(false);
 
   useEffect(() => {
     fetchCategories();
+    fetchBackgroundPresets();
   }, []);
 
   const fetchCategories = async () => {
@@ -66,6 +91,45 @@ export default function CreateCardNewsPage() {
     }
   };
 
+  const fetchBackgroundPresets = async () => {
+    try {
+      const response = await AdminService.backgroundPresets.getActive();
+      setBackgroundPresets(response.data || []);
+      if (response.data && response.data.length > 0) {
+        setSelectedPresetId(response.data[0].id);
+      }
+    } catch (err: any) {
+      console.error('배경 프리셋 목록 조회 실패:', err);
+    }
+  };
+
+  const handleBackgroundUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.match(/^image\/(jpeg|png)$/)) {
+      alert('JPG 또는 PNG 파일만 업로드 가능합니다.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('파일 크기는 5MB 이하여야 합니다.');
+      return;
+    }
+
+    try {
+      setUploadingBackground(true);
+      const response = await AdminService.backgroundPresets.upload(file);
+      setCustomBackgroundUrl(response.url);
+      setBackgroundType('CUSTOM');
+    } catch (err: any) {
+      console.error('배경 이미지 업로드 실패:', err);
+      alert(err.response?.data?.message || '이미지 업로드에 실패했습니다.');
+    } finally {
+      setUploadingBackground(false);
+    }
+  };
+
   const handleAddCard = () => {
     if (sections.length >= 7) {
       alert('최대 7개의 카드까지만 추가할 수 있습니다.');
@@ -77,8 +141,7 @@ export default function CreateCardNewsPage() {
       {
         order: sections.length,
         title: '',
-        content: '',
-        imageUrl: ''
+        content: ''
       }
     ]);
   };
@@ -109,8 +172,33 @@ export default function CreateCardNewsPage() {
       return false;
     }
 
+    if (title.length > 50) {
+      setError('제목은 최대 50자까지 입력 가능합니다.');
+      return false;
+    }
+
+    if (!description.trim()) {
+      setError('설명을 입력해주세요.');
+      return false;
+    }
+
+    if (description.length > 100) {
+      setError('설명은 최대 100자까지 입력 가능합니다.');
+      return false;
+    }
+
     if (!categoryCode) {
       setError('카테고리를 선택해주세요.');
+      return false;
+    }
+
+    if (backgroundType === 'PRESET' && !selectedPresetId) {
+      setError('배경 프리셋을 선택해주세요.');
+      return false;
+    }
+
+    if (backgroundType === 'CUSTOM' && !customBackgroundUrl) {
+      setError('배경 이미지를 업로드해주세요.');
       return false;
     }
 
@@ -125,10 +213,25 @@ export default function CreateCardNewsPage() {
         return false;
       }
 
+      if (sections[i].title.length > 50) {
+        setError(`카드 ${i + 1}의 제목은 최대 50자까지 입력 가능합니다.`);
+        return false;
+      }
+
       if (!sections[i].content.trim() || sections[i].content === '<p><br></p>') {
         setError(`카드 ${i + 1}의 본문을 입력해주세요.`);
         return false;
       }
+
+      if (sections[i].content.length > 500) {
+        setError(`카드 ${i + 1}의 본문은 최대 500자까지 입력 가능합니다.`);
+        return false;
+      }
+    }
+
+    if (pushMessage && pushMessage.length > 100) {
+      setError('푸시 알림 메시지는 최대 100자까지 입력 가능합니다.');
+      return false;
     }
 
     return true;
@@ -146,12 +249,16 @@ export default function CreateCardNewsPage() {
 
       const data = {
         title: title.trim(),
+        description: description.trim(),
         categoryCode,
+        backgroundImage: backgroundType === 'PRESET'
+          ? { type: 'PRESET' as const, presetId: selectedPresetId }
+          : { type: 'CUSTOM' as const, customUrl: customBackgroundUrl },
+        hasReward,
         sections: sections.map(section => ({
           order: section.order,
           title: section.title.trim(),
-          content: section.content,
-          ...(section.imageUrl?.trim() && { imageUrl: section.imageUrl.trim() })
+          content: section.content
         })),
         ...(pushMessage.trim() && { pushNotificationMessage: pushMessage.trim() })
       };
@@ -215,6 +322,19 @@ export default function CreateCardNewsPage() {
           onChange={(e) => setTitle(e.target.value)}
           placeholder="카드뉴스 제목을 입력하세요 (최대 50자)"
           inputProps={{ maxLength: 50 }}
+          helperText={`${title.length}/50자`}
+          sx={{ mb: 2 }}
+          required
+        />
+
+        <TextField
+          fullWidth
+          label="카드뉴스 설명"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="카드뉴스 설명을 입력하세요 (최대 100자)"
+          inputProps={{ maxLength: 100 }}
+          helperText={`${description.length}/100자`}
           sx={{ mb: 2 }}
           required
         />
@@ -234,6 +354,94 @@ export default function CreateCardNewsPage() {
           </Select>
         </FormControl>
 
+        <Divider sx={{ my: 3 }} />
+
+        <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 2 }}>
+          배경 이미지 설정
+        </Typography>
+
+        <FormControl component="fieldset" sx={{ mb: 2 }}>
+          <RadioGroup
+            row
+            value={backgroundType}
+            onChange={(e) => setBackgroundType(e.target.value as 'PRESET' | 'CUSTOM')}
+          >
+            <FormControlLabel value="PRESET" control={<Radio />} label="프리셋 선택" />
+            <FormControlLabel value="CUSTOM" control={<Radio />} label="직접 업로드" />
+          </RadioGroup>
+        </FormControl>
+
+        {backgroundType === 'PRESET' ? (
+          <Grid container spacing={2} sx={{ mb: 2 }}>
+            {backgroundPresets.map((preset) => (
+              <Grid item xs={6} sm={4} md={3} key={preset.id}>
+                <Card
+                  variant="outlined"
+                  sx={{
+                    border: selectedPresetId === preset.id ? '2px solid #1976d2' : '1px solid #e0e0e0'
+                  }}
+                >
+                  <CardActionArea onClick={() => setSelectedPresetId(preset.id)}>
+                    <CardMedia
+                      component="img"
+                      height="140"
+                      image={preset.thumbnailUrl || preset.imageUrl}
+                      alt={preset.displayName}
+                    />
+                    <Box sx={{ p: 1, textAlign: 'center' }}>
+                      <Typography variant="caption">
+                        {preset.displayName}
+                      </Typography>
+                    </Box>
+                  </CardActionArea>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        ) : (
+          <Box sx={{ mb: 2 }}>
+            <Button
+              variant="outlined"
+              component="label"
+              disabled={uploadingBackground}
+            >
+              {uploadingBackground ? '업로드 중...' : customBackgroundUrl ? '다른 이미지 업로드' : '배경 이미지 업로드'}
+              <input
+                type="file"
+                hidden
+                accept="image/jpeg,image/png"
+                onChange={handleBackgroundUpload}
+              />
+            </Button>
+            {customBackgroundUrl && (
+              <Box sx={{ mt: 2 }}>
+                <img
+                  src={customBackgroundUrl}
+                  alt="업로드된 배경"
+                  style={{ maxWidth: '200px', borderRadius: '8px' }}
+                />
+              </Box>
+            )}
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+              JPG 또는 PNG 파일, 최대 5MB, 권장 비율 4:5 (예: 1080x1350)
+            </Typography>
+          </Box>
+        )}
+
+        <Divider sx={{ my: 3 }} />
+
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={hasReward}
+              onChange={(e) => setHasReward(e.target.checked)}
+            />
+          }
+          label="구슬 보상 제공 (마지막 카드 도달 시 구슬 1개 지급)"
+        />
+
+        <Divider sx={{ my: 3 }} />
+
         <TextField
           fullWidth
           label="푸시 알림 메시지 (선택 사항)"
@@ -241,7 +449,7 @@ export default function CreateCardNewsPage() {
           onChange={(e) => setPushMessage(e.target.value)}
           placeholder="푸시 알림 메시지를 입력하세요 (최대 100자)"
           inputProps={{ maxLength: 100 }}
-          helperText="발행 시 모든 활성 사용자에게 전송됩니다. 설정하지 않으면 발행할 수 없습니다."
+          helperText={`${pushMessage.length}/100자 | 발행 시 모든 활성 사용자에게 전송됩니다. 설정하지 않으면 발행할 수 없습니다.`}
           multiline
           rows={2}
         />
