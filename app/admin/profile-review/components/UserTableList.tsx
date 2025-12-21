@@ -141,9 +141,9 @@ export default function UserTableList({ users, selectedUser, onUserSelect, pagin
               </TableCell>
               <TableCell align="center">
                 <Chip
-                  label={user.approved ? '예' : '아니오'}
+                  label={user.approved ? '아니오' : '예'}
                   size="small"
-                  color={user.approved ? 'success' : 'default'}
+                  color={user.approved ? 'default' : 'warning'}
                   sx={{
                     fontWeight: 600,
                     minWidth: 50
