@@ -43,11 +43,11 @@ export default function ImageReviewPanel({
   const [rejectImageModalOpen, setRejectImageModalOpen] = useState(false);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [imageRejectionReason, setImageRejectionReason] = useState('');
-  const [currentRank, setCurrentRank] = useState<string | undefined>(user?.rank);
+  const [currentRank, setCurrentRank] = useState<string>(user?.rank || 'UNKNOWN');
   const [isUpdatingRank, setIsUpdatingRank] = useState(false);
 
   useEffect(() => {
-    setCurrentRank(user?.rank);
+    setCurrentRank(user?.rank || 'UNKNOWN');
   }, [user]);
 
   const handleRankChange = async (newRank: string) => {
@@ -268,7 +268,7 @@ export default function ImageReviewPanel({
             <FormControl fullWidth size="small">
               <InputLabel>Rank 변경</InputLabel>
               <Select
-                value={currentRank || 'UNKNOWN'}
+                value={currentRank}
                 label="Rank 변경"
                 onChange={(e) => handleRankChange(e.target.value)}
                 disabled={isUpdatingRank}
