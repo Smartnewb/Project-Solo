@@ -2311,7 +2311,7 @@ const backgroundPresets = {
     }
   },
 
-  // 배경 이미지 직접 업로드
+  // 배경 이미지 직접 업로드 (프리셋 저장 안 함)
   upload: async (imageFile: File) => {
     try {
       console.log('배경 이미지 업로드 요청');
@@ -2333,7 +2333,38 @@ const backgroundPresets = {
     }
   },
 
-  // 배경 프리셋 생성
+  // 배경 프리셋 통합 생성 (이미지 업로드 + 프리셋 생성을 한 번에)
+  uploadAndCreate: async (imageFile: File, data: {
+    name: string;
+    displayName: string;
+    order?: number;
+  }) => {
+    try {
+      console.log('배경 프리셋 통합 생성 요청:', data);
+      const formData = new FormData();
+      formData.append('image', imageFile);
+      formData.append('name', data.name);
+      formData.append('displayName', data.displayName);
+      if (data.order !== undefined) {
+        formData.append('order', data.order.toString());
+      }
+
+      const response = await axiosServer.post('/admin/background-presets/upload-and-create', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      console.log('배경 프리셋 통합 생성 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('배경 프리셋 통합 생성 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // 배경 프리셋 생성 (URL로)
   create: async (data: {
     name: string;
     displayName: string;
@@ -2356,6 +2387,28 @@ const backgroundPresets = {
 
 // 카드뉴스 관련 API
 const cardNews = {
+  // 섹션 이미지 업로드
+  uploadSectionImage: async (imageFile: File) => {
+    try {
+      console.log('섹션 이미지 업로드 요청');
+      const formData = new FormData();
+      formData.append('image', imageFile);
+
+      const response = await axiosServer.post('/admin/posts/card-news/section-images/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      console.log('섹션 이미지 업로드 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('섹션 이미지 업로드 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
   // 카드뉴스 생성
   create: async (data: {
     title: string;
@@ -2371,6 +2424,7 @@ const cardNews = {
       order: number;
       title: string;
       content: string;
+      imageUrl?: string;
     }>;
     pushNotificationMessage?: string;
   }) => {
@@ -2434,6 +2488,7 @@ const cardNews = {
       order: number;
       title: string;
       content: string;
+      imageUrl?: string;
     }>;
     pushNotificationMessage?: string;
   }) => {

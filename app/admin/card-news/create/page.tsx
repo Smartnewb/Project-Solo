@@ -35,6 +35,7 @@ interface CardSection {
   order: number;
   title: string;
   content: string;
+  imageUrl?: string;
 }
 
 interface Category {
@@ -66,7 +67,7 @@ export default function CreateCardNewsPage() {
   const [customBackgroundUrl, setCustomBackgroundUrl] = useState('');
   const [backgroundPresets, setBackgroundPresets] = useState<BackgroundPreset[]>([]);
   const [sections, setSections] = useState<CardSection[]>([
-    { order: 0, title: '', content: '' }
+    { order: 0, title: '', content: '', imageUrl: undefined }
   ]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -141,7 +142,8 @@ export default function CreateCardNewsPage() {
       {
         order: sections.length,
         title: '',
-        content: ''
+        content: '',
+        imageUrl: undefined
       }
     ]);
   };
@@ -258,7 +260,8 @@ export default function CreateCardNewsPage() {
         sections: sections.map(section => ({
           order: section.order,
           title: section.title.trim(),
-          content: section.content
+          content: section.content,
+          ...(section.imageUrl && { imageUrl: section.imageUrl })
         })),
         ...(pushMessage.trim() && { pushNotificationMessage: pushMessage.trim() })
       };

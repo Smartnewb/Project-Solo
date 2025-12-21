@@ -34,6 +34,7 @@ interface CardSection {
   order: number;
   title: string;
   content: string;
+  imageUrl?: string;
 }
 
 interface Category {
@@ -162,7 +163,8 @@ export default function EditCardNewsPage() {
       {
         order: sections.length,
         title: '',
-        content: ''
+        content: '',
+        imageUrl: undefined
       }
     ]);
   };
@@ -258,7 +260,8 @@ export default function EditCardNewsPage() {
         data.sections = sections.map(section => ({
           order: section.order,
           title: section.title.trim(),
-          content: section.content
+          content: section.content,
+          ...(section.imageUrl && { imageUrl: section.imageUrl })
         }));
       }
 
