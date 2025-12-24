@@ -4,6 +4,7 @@ import type {
   AdminCardNewsListResponse,
   CreateCardNewsRequest,
   UpdateCardNewsRequest,
+  PublishCardNewsRequest,
   PublishCardNewsResponse,
   UploadImageResponse,
   BackgroundPreset,
@@ -2541,10 +2542,13 @@ const cardNews = {
     }
   },
 
-  publish: async (id: string): Promise<PublishCardNewsResponse> => {
+  publish: async (id: string, data?: PublishCardNewsRequest): Promise<PublishCardNewsResponse> => {
     try {
-      console.log('카드뉴스 발행 요청:', id);
-      const response = await axiosServer.post<PublishCardNewsResponse>(`/admin/posts/card-news/${id}/publish`);
+      console.log('카드뉴스 발행 요청:', id, data);
+      const response = await axiosServer.post<PublishCardNewsResponse>(
+        `/admin/posts/card-news/${id}/publish`,
+        data || {}
+      );
       console.log('카드뉴스 발행 응답:', response.data);
       return response.data;
     } catch (error: any) {

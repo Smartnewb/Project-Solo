@@ -40,6 +40,7 @@ export interface AdminCardNewsItem {
   hasReward: boolean;
   sections?: CardSection[];
   readCount: number;
+  pushNotificationTitle?: string;
   pushNotificationMessage?: string;
   pushSentAt: string | null;
   publishedAt: string | null;
@@ -70,6 +71,7 @@ export interface CreateCardNewsRequest {
     content: string;
     imageUrl?: string;
   }>;
+  pushNotificationTitle?: string;
   pushNotificationMessage?: string;
 }
 
@@ -88,6 +90,12 @@ export interface UpdateCardNewsRequest {
     content: string;
     imageUrl?: string;
   }>;
+  pushNotificationTitle?: string;
+  pushNotificationMessage?: string;
+}
+
+export interface PublishCardNewsRequest {
+  pushNotificationTitle?: string;
   pushNotificationMessage?: string;
 }
 

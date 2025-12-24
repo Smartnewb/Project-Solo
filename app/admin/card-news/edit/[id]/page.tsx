@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -27,6 +27,8 @@ import { useRouter, useParams } from 'next/navigation';
 import AdminService from '@/app/services/admin';
 import CardEditor from '../../components/CardEditor';
 import PresetUploadModal from '../../components/PresetUploadModal';
+import CardNewsPreview from '../../components/CardNewsPreview';
+import CardNewsDetailPreview from '../../components/CardNewsDetailPreview';
 import type { BackgroundPreset } from '@/types/admin';
 import AddIcon from '@mui/icons-material/Add';
 import SaveIcon from '@mui/icons-material/Save';
@@ -54,8 +56,8 @@ export default function EditCardNewsPage() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [categoryCode, setCategoryCode] = useState('');
-  const [categories, setCategories] = useState<Category[]>([]);
+  const categoryCode = 'NOTICE'; // 공지사항으로 고정
+  const [pushTitle, setPushTitle] = useState('');
   const [pushMessage, setPushMessage] = useState('');
   const [hasReward, setHasReward] = useState(false);
   const [backgroundType, setBackgroundType] = useState<'PRESET' | 'CUSTOM'>('PRESET');
@@ -69,6 +71,18 @@ export default function EditCardNewsPage() {
   const [isPublished, setIsPublished] = useState(false);
   const [uploadingBackground, setUploadingBackground] = useState(false);
   const [presetUploadModalOpen, setPresetUploadModalOpen] = useState(false);
+
+  // 미리보기용 배경 이미지 URL 계산
+  const previewBackgroundUrl = useMemo(() => {
+    if (backgroundType === 'CUSTOM' && customBackgroundUrl) {
+      return customBackgroundUrl;
+    }
+    if (backgroundType === 'PRESET' && selectedPresetId) {
+      const preset = backgroundPresets.find(p => p.id === selectedPresetId);
+      return preset?.imageUrl || preset?.thumbnailUrl;
+    }
+    return undefined;
+  }, [backgroundType, customBackgroundUrl, selectedPresetId, backgroundPresets]);
 
   useEffect(() => {
     fetchData();
@@ -86,19 +100,17 @@ export default function EditCardNewsPage() {
   const fetchData = async () => {
     try {
       setInitialLoading(true);
-      const [cardNewsData, categoriesData, presetsData] = await Promise.all([
+      const [cardNewsData, presetsData] = await Promise.all([
         AdminService.cardNews.get(id),
-        AdminService.cardNews.getCategories(),
         AdminService.backgroundPresets.getActive()
       ]);
 
       setTitle(cardNewsData.title);
       setDescription(cardNewsData.description || '');
-      setCategoryCode(cardNewsData.category.code);
+      setPushTitle(cardNewsData.pushNotificationTitle || '');
       setPushMessage(cardNewsData.pushNotificationMessage || '');
       setHasReward(cardNewsData.hasReward || false);
       setSections(cardNewsData.sections || []);
-      setCategories(categoriesData);
       setBackgroundPresets(presetsData.data || []);
       setIsPublished(!!cardNewsData.publishedAt);
 
@@ -236,6 +248,11 @@ export default function EditCardNewsPage() {
       }
     }
 
+    if (pushTitle && pushTitle.length > 50) {
+      setError('푸시 알림 제목은 최대 50자까지 입력 가능합니다.');
+      return false;
+    }
+
     if (pushMessage && pushMessage.length > 100) {
       setError('푸시 알림 메시지는 최대 100자까지 입력 가능합니다.');
       return false;
@@ -261,6 +278,7 @@ export default function EditCardNewsPage() {
           ? { type: 'PRESET' as const, presetId: selectedPresetId }
           : { type: 'CUSTOM' as const, customUrl: customBackgroundUrl },
         hasReward,
+        ...(pushTitle.trim() && { pushNotificationTitle: pushTitle.trim() }),
         ...(pushMessage.trim() && { pushNotificationMessage: pushMessage.trim() })
       };
 
@@ -326,6 +344,14 @@ export default function EditCardNewsPage() {
         </Alert>
       )}
 
+      {/* 미리보기 */}
+      <CardNewsPreview
+        title={title}
+        description={description}
+        backgroundImageUrl={previewBackgroundUrl}
+        hasReward={hasReward}
+      />
+
       <Paper sx={{ p: 3, mb: 3 }}>
         <Typography variant="h6" sx={{ mb: 2 }}>
           기본 정보
@@ -360,20 +386,6 @@ export default function EditCardNewsPage() {
           sx={{ mb: 2 }}
           required
         />
-
-        <FormControl fullWidth sx={{ mb: 2 }} disabled>
-          <InputLabel>카테고리</InputLabel>
-          <Select
-            value={categoryCode}
-            label="카테고리"
-          >
-            {categories.map((category) => (
-              <MenuItem key={category.code} value={category.code}>
-                {category.displayName}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
 
         <Divider sx={{ my: 3 }} />
 
@@ -481,6 +493,21 @@ export default function EditCardNewsPage() {
 
         <Divider sx={{ my: 3 }} />
 
+        <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 2 }}>
+          푸시 알림 설정
+        </Typography>
+
+        <TextField
+          fullWidth
+          label="푸시 알림 제목 (선택 사항)"
+          value={pushTitle}
+          onChange={(e) => setPushTitle(e.target.value)}
+          placeholder="예: 썸타임 새소식 🎉"
+          inputProps={{ maxLength: 50 }}
+          helperText={`${pushTitle.length}/50자 | 비워두면 카드뉴스 제목이 사용됩니다.`}
+          sx={{ mb: 2 }}
+        />
+
         <TextField
           fullWidth
           label="푸시 알림 메시지 (선택 사항)"
@@ -547,6 +574,9 @@ export default function EditCardNewsPage() {
           {loading ? '저장 중...' : '수정 완료'}
         </Button>
       </Box>
+
+      {/* 카드뉴스 상세 미리보기 */}
+      <CardNewsDetailPreview sections={sections} />
 
       <PresetUploadModal
         open={presetUploadModalOpen}

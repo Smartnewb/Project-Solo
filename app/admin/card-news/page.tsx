@@ -20,7 +20,8 @@ import {
   DialogContentText,
   DialogActions,
   CircularProgress,
-  Alert
+  Alert,
+  TextField
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import AdminService from '@/app/services/admin';
@@ -40,6 +41,8 @@ export default function CardNewsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<AdminCardNewsItem | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [publishPushTitle, setPublishPushTitle] = useState('');
+  const [publishPushMessage, setPublishPushMessage] = useState('');
 
   useEffect(() => {
     fetchCardNewsList();
@@ -92,6 +95,8 @@ export default function CardNewsPage() {
   const handlePublishClick = (item: AdminCardNewsItem) => {
     setSelectedItem(item);
     setSelectedId(item.id);
+    setPublishPushTitle(item.pushNotificationTitle || '');
+    setPublishPushMessage(item.pushNotificationMessage || '');
     setPublishDialogOpen(true);
   };
 
@@ -100,11 +105,16 @@ export default function CardNewsPage() {
 
     try {
       setProcessing(true);
-      const result = await AdminService.cardNews.publish(selectedId);
+      const result = await AdminService.cardNews.publish(selectedId, {
+        ...(publishPushTitle.trim() && { pushNotificationTitle: publishPushTitle.trim() }),
+        ...(publishPushMessage.trim() && { pushNotificationMessage: publishPushMessage.trim() })
+      });
 
       setPublishDialogOpen(false);
       setSelectedId(null);
       setSelectedItem(null);
+      setPublishPushTitle('');
+      setPublishPushMessage('');
 
       if (result.success) {
         alert(`푸시 알림이 ${result.sentCount}명에게 발송되었습니다.`);
@@ -273,14 +283,14 @@ export default function CardNewsPage() {
       </Dialog>
 
       {/* 발행 확인 다이얼로그 */}
-      <Dialog open={publishDialogOpen} onClose={() => setPublishDialogOpen(false)}>
+      <Dialog open={publishDialogOpen} onClose={() => setPublishDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>카드뉴스 발행</DialogTitle>
         <DialogContent>
-          <DialogContentText>
+          <DialogContentText sx={{ mb: 2 }}>
             이 카드뉴스를 모든 활성 사용자에게 푸시 알림으로 발송하시겠습니까?
           </DialogContentText>
           {selectedItem && (
-            <Box sx={{ mt: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
+            <Box sx={{ mb: 3, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
               <Typography variant="body2" color="text.secondary" gutterBottom>
                 <strong>제목:</strong> {selectedItem.title}
               </Typography>
@@ -289,12 +299,44 @@ export default function CardNewsPage() {
               </Typography>
             </Box>
           )}
+
+          <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 2 }}>
+            푸시 알림 설정
+          </Typography>
+
+          <TextField
+            fullWidth
+            label="푸시 알림 제목 (선택 사항)"
+            value={publishPushTitle}
+            onChange={(e) => setPublishPushTitle(e.target.value)}
+            placeholder="예: 썸타임 새소식 🎉 (비워두면 카드뉴스 제목 사용)"
+            inputProps={{ maxLength: 50 }}
+            helperText={`${publishPushTitle.length}/50자 | 비워두면 카드뉴스 제목이 사용됩니다.`}
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            fullWidth
+            label="푸시 알림 메시지"
+            value={publishPushMessage}
+            onChange={(e) => setPublishPushMessage(e.target.value)}
+            placeholder="푸시 알림 메시지를 입력하세요"
+            inputProps={{ maxLength: 100 }}
+            helperText={`${publishPushMessage.length}/100자 | 필수 항목입니다.`}
+            multiline
+            rows={2}
+            error={!publishPushMessage.trim()}
+          />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setPublishDialogOpen(false)} disabled={processing}>
             취소
           </Button>
-          <Button onClick={handlePublishConfirm} color="primary" disabled={processing}>
+          <Button
+            onClick={handlePublishConfirm}
+            color="primary"
+            disabled={processing || !publishPushMessage.trim()}
+          >
             {processing ? '발행 중...' : '발행'}
           </Button>
         </DialogActions>
