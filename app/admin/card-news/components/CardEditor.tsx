@@ -75,7 +75,9 @@ export default function CardEditor({
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      return;
+    }
 
     if (!file.type.match(/^image\/(jpeg|png)$/)) {
       alert('JPG 또는 PNG 파일만 업로드 가능합니다.');
@@ -93,9 +95,10 @@ export default function CardEditor({
       onUpdate({ ...section, imageUrl: response.url });
     } catch (error: any) {
       console.error('섹션 이미지 업로드 실패:', error);
-      alert(error.response?.data?.message || '이미지 업로드에 실패했습니다.');
+      alert(error.message || '이미지 업로드에 실패했습니다.');
     } finally {
       setUploadingImage(false);
+      event.target.value = '';
     }
   };
 

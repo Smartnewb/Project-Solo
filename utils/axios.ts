@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-// axios 인스턴스 생성
+// JSON 요청용 axios 인스턴스
 const axiosServer = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045/api',
   timeout: 15000,  // 15초
@@ -14,31 +14,44 @@ const axiosServer = axios.create({
   }
 });
 
-// 요청 인터셉터
-axiosServer.interceptors.request.use(
-  (config: any) => {
-    // 클라이언트 사이드에서만 localStorage에 접근
-    if (typeof window !== 'undefined') {
-      // 토큰이 있다면 헤더에 추가
-      const token = localStorage.getItem('accessToken');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-    }
-    return config;
-  },
-  (error) => {
-    console.error('요청 인터셉터 오류:', error);
-    return Promise.reject(error);
+// multipart/form-data 요청전용 axios 인스턴스
+export const axiosMultipart = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045/api',
+  timeout: 30000,  // 30초 (파일 업로드는 더 오래 걸릴 수 있음)
+  withCredentials: true,
+  validateStatus: (status) => {
+    return (status >= 200 && status < 300) || status === 304;
   }
-);
+  // Content-Type 헤더를 설정하지 않음 - 브라우저가 자동으로 multipart/form-data; boundary=... 설정
+});
 
-// 응답 인터셉터
-axiosServer.interceptors.response.use(
-  (response: any) => {
-    return response;
-  },
-  async (error) => {
+// 공통 요청 인터셉터 함수
+const requestInterceptor = (config: any) => {
+  // 클라이언트 사이드에서만 localStorage에 접근
+  if (typeof window !== 'undefined') {
+    // 토큰이 있다면 헤더에 추가
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
+};
+
+const requestErrorInterceptor = (error: any) => {
+  console.error('요청 인터셉터 오류:', error);
+  return Promise.reject(error);
+};
+
+// axiosServer 요청 인터셉터
+axiosServer.interceptors.request.use(requestInterceptor, requestErrorInterceptor);
+
+// axiosMultipart 요청 인터셉터 (FormData 전용이므로 Content-Type 제거 로직 불필요)
+axiosMultipart.interceptors.request.use(requestInterceptor, requestErrorInterceptor);
+
+// 공통 응답 인터셉터 함수
+const createResponseInterceptor = (axiosInstance: any) => {
+  return async (error: any) => {
     console.error('응답 인터셉터 오류:', error?.response?.status, error?.message);
 
     // 서버가 응답하지 않는 경우 (ECONNREFUSED, Network Error 등)
@@ -92,8 +105,8 @@ axiosServer.interceptors.response.use(
           // 원래 요청의 헤더 업데이트
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
 
-          // 원래 요청 재시도
-          return axiosServer(originalRequest);
+          // 원래 요청 재시도 (해당 인스턴스로)
+          return axiosInstance(originalRequest);
         } catch (refreshError) {
           console.error('토큰 새로고침 실패:', refreshError);
 
@@ -116,7 +129,19 @@ axiosServer.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  };
+};
+
+// axiosServer 응답 인터셉터
+axiosServer.interceptors.response.use(
+  (response: any) => response,
+  createResponseInterceptor(axiosServer)
+);
+
+// axiosMultipart 응답 인터셉터
+axiosMultipart.interceptors.response.use(
+  (response: any) => response,
+  createResponseInterceptor(axiosMultipart)
 );
 
 export default axiosServer;

@@ -24,36 +24,21 @@ import {
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import AdminService from '@/app/services/admin';
+import type { AdminCardNewsItem } from '@/types/admin';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SendIcon from '@mui/icons-material/Send';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 
-interface CardNewsItem {
-  id: string;
-  title: string;
-  postType: string;
-  category: {
-    id: string;
-    displayName: string;
-    code: string;
-    emojiUrl: string;
-  };
-  readCount: number;
-  pushSentAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export default function CardNewsPage() {
   const router = useRouter();
-  const [cardNewsList, setCardNewsList] = useState<CardNewsItem[]>([]);
+  const [cardNewsList, setCardNewsList] = useState<AdminCardNewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [publishDialogOpen, setPublishDialogOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [selectedItem, setSelectedItem] = useState<CardNewsItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<AdminCardNewsItem | null>(null);
   const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
@@ -104,7 +89,7 @@ export default function CardNewsPage() {
     }
   };
 
-  const handlePublishClick = (item: CardNewsItem) => {
+  const handlePublishClick = (item: AdminCardNewsItem) => {
     setSelectedItem(item);
     setSelectedId(item.id);
     setPublishDialogOpen(true);

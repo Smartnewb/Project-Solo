@@ -27,9 +27,12 @@ import {
 import { useRouter } from 'next/navigation';
 import AdminService from '@/app/services/admin';
 import CardEditor from '../components/CardEditor';
+import PresetUploadModal from '../components/PresetUploadModal';
+import type { BackgroundPreset } from '@/types/admin';
 import AddIcon from '@mui/icons-material/Add';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
 interface CardSection {
   order: number;
@@ -43,15 +46,6 @@ interface Category {
   displayName: string;
   code: string;
   emojiUrl: string;
-}
-
-interface BackgroundPreset {
-  id: string;
-  name: string;
-  displayName: string;
-  imageUrl: string;
-  thumbnailUrl: string | null;
-  order: number;
 }
 
 export default function CreateCardNewsPage() {
@@ -73,6 +67,7 @@ export default function CreateCardNewsPage() {
   const [error, setError] = useState<string | null>(null);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [uploadingBackground, setUploadingBackground] = useState(false);
+  const [presetUploadModalOpen, setPresetUploadModalOpen] = useState(false);
 
   useEffect(() => {
     fetchCategories();
@@ -96,12 +91,16 @@ export default function CreateCardNewsPage() {
     try {
       const response = await AdminService.backgroundPresets.getActive();
       setBackgroundPresets(response.data || []);
-      if (response.data && response.data.length > 0) {
+      if (response.data && response.data.length > 0 && !selectedPresetId) {
         setSelectedPresetId(response.data[0].id);
       }
     } catch (err: any) {
       console.error('배경 프리셋 목록 조회 실패:', err);
     }
+  };
+
+  const handlePresetUploadSuccess = async () => {
+    await fetchBackgroundPresets();
   };
 
   const handleBackgroundUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -359,9 +358,21 @@ export default function CreateCardNewsPage() {
 
         <Divider sx={{ my: 3 }} />
 
-        <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 2 }}>
-          배경 이미지 설정
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="subtitle1" fontWeight="bold">
+            배경 이미지 설정
+          </Typography>
+          {backgroundType === 'PRESET' && (
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<CloudUploadIcon />}
+              onClick={() => setPresetUploadModalOpen(true)}
+            >
+              프리셋 추가
+            </Button>
+          )}
+        </Box>
 
         <FormControl component="fieldset" sx={{ mb: 2 }}>
           <RadioGroup
@@ -381,7 +392,12 @@ export default function CreateCardNewsPage() {
                 <Card
                   variant="outlined"
                   sx={{
-                    border: selectedPresetId === preset.id ? '2px solid #1976d2' : '1px solid #e0e0e0'
+                    border: selectedPresetId === preset.id ? '2px solid #1976d2' : '1px solid #e0e0e0',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      boxShadow: 2
+                    }
                   }}
                 >
                   <CardActionArea onClick={() => setSelectedPresetId(preset.id)}>
@@ -390,9 +406,10 @@ export default function CreateCardNewsPage() {
                       height="140"
                       image={preset.thumbnailUrl || preset.imageUrl}
                       alt={preset.displayName}
+                      sx={{ objectFit: 'cover' }}
                     />
                     <Box sx={{ p: 1, textAlign: 'center' }}>
-                      <Typography variant="caption">
+                      <Typography variant="caption" fontWeight={selectedPresetId === preset.id ? 'bold' : 'normal'}>
                         {preset.displayName}
                       </Typography>
                     </Box>
@@ -503,6 +520,12 @@ export default function CreateCardNewsPage() {
           {loading ? '저장 중...' : '저장'}
         </Button>
       </Box>
+
+      <PresetUploadModal
+        open={presetUploadModalOpen}
+        onClose={() => setPresetUploadModalOpen(false)}
+        onSuccess={handlePresetUploadSuccess}
+      />
     </Box>
   );
 }

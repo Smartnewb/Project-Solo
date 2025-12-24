@@ -1,4 +1,16 @@
-import axiosServer from '@/utils/axios';
+import axiosServer, { axiosMultipart } from '@/utils/axios';
+import type {
+  AdminCardNewsItem,
+  AdminCardNewsListResponse,
+  CreateCardNewsRequest,
+  UpdateCardNewsRequest,
+  PublishCardNewsResponse,
+  UploadImageResponse,
+  BackgroundPreset,
+  BackgroundPresetsResponse,
+  CreatePresetRequest,
+  UploadAndCreatePresetRequest,
+} from '@/types/admin';
 
 // 상단에 타입 정의 추가
 interface StatItem {
@@ -2297,11 +2309,10 @@ const aiChat = {
 
 // 배경 프리셋 관련 API
 const backgroundPresets = {
-  // 활성화된 배경 프리셋 목록 조회
-  getActive: async () => {
+  getActive: async (): Promise<BackgroundPresetsResponse> => {
     try {
       console.log('활성 배경 프리셋 목록 조회 요청');
-      const response = await axiosServer.get('/admin/background-presets/active');
+      const response = await axiosServer.get<BackgroundPresetsResponse>('/admin/background-presets/active');
       console.log('활성 배경 프리셋 목록 응답:', response.data);
       return response.data;
     } catch (error: any) {
@@ -2311,36 +2322,65 @@ const backgroundPresets = {
     }
   },
 
-  // 배경 이미지 직접 업로드 (프리셋 저장 안 함)
-  upload: async (imageFile: File) => {
+  upload: async (imageFile: File): Promise<UploadImageResponse> => {
     try {
-      console.log('배경 이미지 업로드 요청');
+      console.log('=== 배경 이미지 업로드 시작 ===');
+      console.log('File 정보:', {
+        name: imageFile.name,
+        type: imageFile.type,
+        size: imageFile.size,
+        lastModified: imageFile.lastModified
+      });
+
       const formData = new FormData();
       formData.append('image', imageFile);
 
-      const response = await axiosServer.post('/admin/background-presets/upload', formData, {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045/api';
+      const url = `${baseURL}/admin/background-presets/upload`;
+
+      console.log('요청 URL:', url);
+      console.log('Authorization 토큰 존재:', !!token);
+
+      const response = await fetch(url, {
+        method: 'POST',
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json',
         },
+        body: formData,
+        credentials: 'include'
       });
 
-      console.log('배경 이미지 업로드 응답:', response.data);
-      return response.data;
+      console.log('응답 상태:', response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
+        console.error('업로드 실패 응답:', errorData);
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('배경 이미지 업로드 성공:', data);
+      console.log('=== 배경 이미지 업로드 종료 ===');
+      return data;
     } catch (error: any) {
       console.error('배경 이미지 업로드 중 오류:', error);
-      console.error('오류 상세 정보:', error.response?.data || error.message);
+      console.error('오류 상세 정보:', error.message);
       throw error;
     }
   },
 
-  // 배경 프리셋 통합 생성 (이미지 업로드 + 프리셋 생성을 한 번에)
-  uploadAndCreate: async (imageFile: File, data: {
-    name: string;
-    displayName: string;
-    order?: number;
-  }) => {
+  uploadAndCreate: async (imageFile: File, data: UploadAndCreatePresetRequest): Promise<BackgroundPreset> => {
     try {
       console.log('배경 프리셋 통합 생성 요청:', data);
+      console.log('File 정보:', {
+        name: imageFile.name,
+        type: imageFile.type,
+        size: imageFile.size,
+        lastModified: imageFile.lastModified
+      });
+
       const formData = new FormData();
       formData.append('image', imageFile);
       formData.append('name', data.name);
@@ -2349,29 +2389,34 @@ const backgroundPresets = {
         formData.append('order', data.order.toString());
       }
 
-      const response = await axiosServer.post('/admin/background-presets/upload-and-create', formData, {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045/api';
+
+      const response = await fetch(`${baseURL}/admin/background-presets/upload-and-create`, {
+        method: 'POST',
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`,
         },
+        body: formData,
+        credentials: 'include'
       });
 
-      console.log('배경 프리셋 통합 생성 응답:', response.data);
-      return response.data;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const responseData = await response.json();
+      console.log('배경 프리셋 통합 생성 응답:', responseData);
+      return responseData;
     } catch (error: any) {
       console.error('배경 프리셋 통합 생성 중 오류:', error);
-      console.error('오류 상세 정보:', error.response?.data || error.message);
+      console.error('오류 상세 정보:', error.message);
       throw error;
     }
   },
 
-  // 배경 프리셋 생성 (URL로)
-  create: async (data: {
-    name: string;
-    displayName: string;
-    imageUrl: string;
-    thumbnailUrl?: string;
-    order: number;
-  }) => {
+  create: async (data: CreatePresetRequest): Promise<BackgroundPreset> => {
     try {
       console.log('배경 프리셋 생성 요청:', data);
       const response = await axiosServer.post('/admin/background-presets', data);
@@ -2387,50 +2432,50 @@ const backgroundPresets = {
 
 // 카드뉴스 관련 API
 const cardNews = {
-  // 섹션 이미지 업로드
-  uploadSectionImage: async (imageFile: File) => {
+  uploadSectionImage: async (imageFile: File): Promise<UploadImageResponse> => {
     try {
       console.log('섹션 이미지 업로드 요청');
+      console.log('File 정보:', {
+        name: imageFile.name,
+        type: imageFile.type,
+        size: imageFile.size,
+        lastModified: imageFile.lastModified
+      });
+
       const formData = new FormData();
       formData.append('image', imageFile);
 
-      const response = await axiosServer.post('/admin/posts/card-news/section-images/upload', formData, {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045/api';
+
+      const response = await fetch(`${baseURL}/admin/posts/card-news/section-images/upload`, {
+        method: 'POST',
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`,
         },
+        body: formData,
+        credentials: 'include'
       });
 
-      console.log('섹션 이미지 업로드 응답:', response.data);
-      return response.data;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('섹션 이미지 업로드 응답:', data);
+      return data;
     } catch (error: any) {
       console.error('섹션 이미지 업로드 중 오류:', error);
-      console.error('오류 상세 정보:', error.response?.data || error.message);
+      console.error('오류 상세 정보:', error.message);
       throw error;
     }
   },
 
-  // 카드뉴스 생성
-  create: async (data: {
-    title: string;
-    description: string;
-    categoryCode: string;
-    backgroundImage: {
-      type: 'PRESET' | 'CUSTOM';
-      presetId?: string;
-      customUrl?: string;
-    };
-    hasReward: boolean;
-    sections: Array<{
-      order: number;
-      title: string;
-      content: string;
-      imageUrl?: string;
-    }>;
-    pushNotificationMessage?: string;
-  }) => {
+  create: async (data: CreateCardNewsRequest): Promise<AdminCardNewsItem> => {
     try {
       console.log('카드뉴스 생성 요청:', data);
-      const response = await axiosServer.post('/admin/posts/card-news', data);
+      const response = await axiosServer.post<AdminCardNewsItem>('/admin/posts/card-news', data);
       console.log('카드뉴스 생성 응답:', response.data);
       return response.data;
     } catch (error: any) {
@@ -2440,11 +2485,10 @@ const cardNews = {
     }
   },
 
-  // 카드뉴스 조회
-  get: async (id: string) => {
+  get: async (id: string): Promise<AdminCardNewsItem> => {
     try {
       console.log('카드뉴스 조회 요청:', id);
-      const response = await axiosServer.get(`/admin/posts/card-news/${id}`);
+      const response = await axiosServer.get<AdminCardNewsItem>(`/admin/posts/card-news/${id}`);
       console.log('카드뉴스 조회 응답:', response.data);
       return response.data;
     } catch (error: any) {
@@ -2454,13 +2498,11 @@ const cardNews = {
     }
   },
 
-  // 카드뉴스 목록 조회
-  getList: async (page: number = 1, limit: number = 20) => {
+  getList: async (page: number = 1, limit: number = 20): Promise<AdminCardNewsListResponse> => {
     try {
       console.log('카드뉴스 목록 조회 요청:', { page, limit });
-      const response = await axiosServer.get('/articles', {
+      const response = await axiosServer.get<AdminCardNewsListResponse>('/admin/posts/card-news', {
         params: {
-          postType: 'CARD_NEWS',
           page,
           limit
         }
@@ -2474,27 +2516,10 @@ const cardNews = {
     }
   },
 
-  // 카드뉴스 수정
-  update: async (id: string, data: {
-    title?: string;
-    description?: string;
-    backgroundImage?: {
-      type: 'PRESET' | 'CUSTOM';
-      presetId?: string;
-      customUrl?: string;
-    };
-    hasReward?: boolean;
-    sections?: Array<{
-      order: number;
-      title: string;
-      content: string;
-      imageUrl?: string;
-    }>;
-    pushNotificationMessage?: string;
-  }) => {
+  update: async (id: string, data: UpdateCardNewsRequest): Promise<AdminCardNewsItem> => {
     try {
       console.log('카드뉴스 수정 요청:', { id, data });
-      const response = await axiosServer.put(`/admin/posts/card-news/${id}`, data);
+      const response = await axiosServer.put<AdminCardNewsItem>(`/admin/posts/card-news/${id}`, data);
       console.log('카드뉴스 수정 응답:', response.data);
       return response.data;
     } catch (error: any) {
@@ -2504,13 +2529,11 @@ const cardNews = {
     }
   },
 
-  // 카드뉴스 삭제
-  delete: async (id: string) => {
+  delete: async (id: string): Promise<void> => {
     try {
       console.log('카드뉴스 삭제 요청:', id);
-      const response = await axiosServer.delete(`/admin/posts/card-news/${id}`);
-      console.log('카드뉴스 삭제 응답:', response.data);
-      return response.data;
+      await axiosServer.delete(`/admin/posts/card-news/${id}`);
+      console.log('카드뉴스 삭제 완료');
     } catch (error: any) {
       console.error('카드뉴스 삭제 중 오류:', error);
       console.error('오류 상세 정보:', error.response?.data || error.message);
@@ -2518,11 +2541,10 @@ const cardNews = {
     }
   },
 
-  // 카드뉴스 발행 및 푸시 알림 발송
-  publish: async (id: string) => {
+  publish: async (id: string): Promise<PublishCardNewsResponse> => {
     try {
       console.log('카드뉴스 발행 요청:', id);
-      const response = await axiosServer.post(`/admin/posts/card-news/${id}/publish`);
+      const response = await axiosServer.post<PublishCardNewsResponse>(`/admin/posts/card-news/${id}/publish`);
       console.log('카드뉴스 발행 응답:', response.data);
       return response.data;
     } catch (error: any) {
@@ -2532,7 +2554,6 @@ const cardNews = {
     }
   },
 
-  // 카테고리 목록 조회
   getCategories: async () => {
     try {
       console.log('카테고리 목록 조회 요청');
@@ -2599,23 +2620,50 @@ const gems = {
       }
 
       if (data.csvFile) {
+        console.log('CSV File 정보:', {
+          name: data.csvFile.name,
+          type: data.csvFile.type,
+          size: data.csvFile.size,
+          lastModified: data.csvFile.lastModified
+        });
+
         formData.append('csvFile', data.csvFile);
       }
 
       formData.append('gemAmount', data.gemAmount.toString());
       formData.append('message', data.message);
 
-      const response = await axiosServer.post('/admin/gems/bulk-grant', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      console.log('FormData 내용 확인:', {
+        csvFile: formData.get('csvFile'),
+        phoneNumbers: formData.get('phoneNumbers'),
+        gemAmount: formData.get('gemAmount'),
+        message: formData.get('message')
       });
 
-      console.log('구슬 일괄 지급 응답:', response.data);
-      return response.data;
+      // fetch API로 직접 요청
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045/api';
+
+      const response = await fetch(`${baseURL}/admin/gems/bulk-grant`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const responseData = await response.json();
+      console.log('구슬 일괄 지급 응답:', responseData);
+      return responseData;
     } catch (error: any) {
       console.error('구슬 일괄 지급 중 오류:', error);
-      console.error('오류 상세 정보:', error.response?.data || error.message);
+      console.error('오류 상세 정보:', error.message);
       throw error;
     }
   }
