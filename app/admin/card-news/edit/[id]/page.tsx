@@ -56,7 +56,8 @@ export default function EditCardNewsPage() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const categoryCode = 'NOTICE'; // 공지사항으로 고정
+  const [categoryCode, setCategoryCode] = useState('');
+  const [categories, setCategories] = useState<Category[]>([]);
   const [pushTitle, setPushTitle] = useState('');
   const [pushMessage, setPushMessage] = useState('');
   const [hasReward, setHasReward] = useState(false);
@@ -100,17 +101,20 @@ export default function EditCardNewsPage() {
   const fetchData = async () => {
     try {
       setInitialLoading(true);
-      const [cardNewsData, presetsData] = await Promise.all([
+      const [cardNewsData, categoriesData, presetsData] = await Promise.all([
         AdminService.cardNews.get(id),
+        AdminService.cardNews.getCategories(),
         AdminService.backgroundPresets.getActive()
       ]);
 
       setTitle(cardNewsData.title);
       setDescription(cardNewsData.description || '');
+      setCategoryCode(cardNewsData.category.code);
       setPushTitle(cardNewsData.pushNotificationTitle || '');
       setPushMessage(cardNewsData.pushNotificationMessage || '');
       setHasReward(cardNewsData.hasReward || false);
       setSections(cardNewsData.sections || []);
+      setCategories(categoriesData);
       setBackgroundPresets(presetsData.data || []);
       setIsPublished(!!cardNewsData.publishedAt);
 
@@ -386,6 +390,20 @@ export default function EditCardNewsPage() {
           sx={{ mb: 2 }}
           required
         />
+
+        <FormControl fullWidth sx={{ mb: 2 }} disabled>
+          <InputLabel>카테고리</InputLabel>
+          <Select
+            value={categoryCode}
+            label="카테고리"
+          >
+            {categories.map((category) => (
+              <MenuItem key={category.code} value={category.code}>
+                {category.displayName}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
         <Divider sx={{ my: 3 }} />
 

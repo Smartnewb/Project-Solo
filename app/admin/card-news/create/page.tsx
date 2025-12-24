@@ -54,7 +54,8 @@ export default function CreateCardNewsPage() {
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const categoryCode = 'NOTICE'; // 공지사항으로 고정
+  const [categoryCode, setCategoryCode] = useState('');
+  const [categories, setCategories] = useState<Category[]>([]);
   const [pushTitle, setPushTitle] = useState('');
   const [pushMessage, setPushMessage] = useState('');
   const [hasReward, setHasReward] = useState(false);
@@ -67,6 +68,7 @@ export default function CreateCardNewsPage() {
   ]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [uploadingBackground, setUploadingBackground] = useState(false);
   const [presetUploadModalOpen, setPresetUploadModalOpen] = useState(false);
 
@@ -83,8 +85,36 @@ export default function CreateCardNewsPage() {
   }, [backgroundType, customBackgroundUrl, selectedPresetId, backgroundPresets]);
 
   useEffect(() => {
+    fetchCategories();
     fetchBackgroundPresets();
   }, []);
+
+  const fetchCategories = async () => {
+    try {
+      setCategoriesLoading(true);
+      const data = await AdminService.cardNews.getCategories();
+      setCategories(data);
+
+      // 공지사항 카테고리를 기본값으로 설정
+      const noticeCategory = data.find(cat =>
+        cat.displayName === '공지사항' ||
+        cat.code === 'NOTICE' ||
+        cat.code === 'notice' ||
+        cat.code === 'ANNOUNCEMENT'
+      );
+      if (noticeCategory) {
+        setCategoryCode(noticeCategory.code);
+      } else if (data.length > 0) {
+        // 공지사항을 못 찾으면 첫 번째 카테고리 사용
+        setCategoryCode(data[0].code);
+      }
+    } catch (err: any) {
+      console.error('카테고리 목록 조회 실패:', err);
+      setError('카테고리 목록을 불러오는데 실패했습니다.');
+    } finally {
+      setCategoriesLoading(false);
+    }
+  };
 
   const fetchBackgroundPresets = async () => {
     try {
@@ -187,6 +217,11 @@ export default function CreateCardNewsPage() {
       return false;
     }
 
+    if (!categoryCode) {
+      setError('카테고리를 선택해주세요.');
+      return false;
+    }
+
     if (backgroundType === 'PRESET' && !selectedPresetId) {
       setError('배경 프리셋을 선택해주세요.');
       return false;
@@ -282,6 +317,15 @@ export default function CreateCardNewsPage() {
     }
   };
 
+  if (categoriesLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+        <CircularProgress />
+        <Typography sx={{ ml: 2 }}>카테고리 목록을 불러오는 중...</Typography>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ p: 3, maxWidth: 1200, mx: 'auto' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
@@ -339,6 +383,21 @@ export default function CreateCardNewsPage() {
           sx={{ mb: 2 }}
           required
         />
+
+        <FormControl fullWidth sx={{ mb: 2 }} required>
+          <InputLabel>카테고리</InputLabel>
+          <Select
+            value={categoryCode}
+            onChange={(e) => setCategoryCode(e.target.value)}
+            label="카테고리"
+          >
+            {categories.map((category) => (
+              <MenuItem key={category.code} value={category.code}>
+                {category.displayName}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
         <Divider sx={{ my: 3 }} />
 
