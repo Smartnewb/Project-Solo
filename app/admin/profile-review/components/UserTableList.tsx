@@ -107,7 +107,7 @@ export default function UserTableList({ users, selectedUser, onUserSelect, pagin
               </TableCell>
               <TableCell>
                 <Typography variant="body2" sx={{ fontSize: '0.85rem', color: 'text.secondary' }}>
-                  {user.age}세 · {user.gender === 'male' ? '남' : user.gender === 'female' ? '여' : '-'}
+                  {user.age}세 · {user.gender === 'MALE' ? '남' : user.gender === 'FEMALE' ? '여' : '-'}
                 </Typography>
               </TableCell>
               <TableCell align="center">

@@ -200,7 +200,7 @@ export default function ImageReviewPanel({
         </Typography>
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
           <Chip label={`${user.age}세`} size="small" />
-          <Chip label={user.gender === 'male' ? '남성' : '여성'} size="small" />
+          <Chip label={user.gender === 'MALE' ? '남성' : '여성'} size="small" />
           <Chip label={user.mbti || 'MBTI 미입력'} size="small" color={user.mbti ? 'primary' : 'default'} />
         </Box>
         {(user.universityName || user.department) && (

@@ -40,7 +40,7 @@ export interface PendingUser {
   profileId: string;
   userName: string;
   age: number;
-  gender: 'male' | 'female';
+  gender: 'MALE' | 'FEMALE';
   isApproved: boolean;
   approved: boolean;
   pendingImages: PendingImage[];
