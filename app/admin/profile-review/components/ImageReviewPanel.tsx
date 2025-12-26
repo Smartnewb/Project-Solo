@@ -5,6 +5,14 @@ import CloseIcon from '@mui/icons-material/Close';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import InstagramIcon from '@mui/icons-material/Instagram';
+import WarningIcon from '@mui/icons-material/Warning';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import ChatIcon from '@mui/icons-material/Chat';
+import PeopleIcon from '@mui/icons-material/People';
+import PaymentIcon from '@mui/icons-material/Payment';
+import SchoolIcon from '@mui/icons-material/School';
+import NewReleasesIcon from '@mui/icons-material/NewReleases';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import AdminService from '@/app/services/admin';
 
 interface ImageReviewPanelProps {
@@ -241,6 +249,150 @@ export default function ImageReviewPanel({
 
       <Divider sx={{ mb: 2 }} />
 
+      {/* 심사 참고 정보 */}
+      {user.reviewContext && (
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            📋 심사 참고 정보
+          </Typography>
+
+          {/* 경고 배너: 신고/제재 이력 */}
+          {(user.reviewContext.reportCount > 0 || user.reviewContext.hasSuspensionHistory) && (
+            <Box
+              sx={{
+                mb: 2,
+                p: 1.5,
+                backgroundColor: '#ffebee',
+                borderRadius: 1,
+                border: '1px solid #ffcdd2',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}
+            >
+              <WarningIcon sx={{ color: '#d32f2f', fontSize: 20 }} />
+              <Box>
+                {user.reviewContext.reportCount > 0 && (
+                  <Typography variant="body2" sx={{ color: '#c62828', fontWeight: 600 }}>
+                    신고 {user.reviewContext.reportCount}회
+                  </Typography>
+                )}
+                {user.reviewContext.hasSuspensionHistory && (
+                  <Typography variant="body2" sx={{ color: '#c62828', fontWeight: 600 }}>
+                    제재 이력 있음
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+          )}
+
+          {/* 첫 심사 + 가입일 */}
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1.5 }}>
+            {user.reviewContext.isFirstReview && (
+              <Chip
+                icon={<NewReleasesIcon sx={{ fontSize: 16 }} />}
+                label="첫 심사"
+                size="small"
+                sx={{
+                  backgroundColor: '#e3f2fd',
+                  color: '#1565c0',
+                  fontWeight: 600,
+                  '& .MuiChip-icon': { color: '#1565c0' }
+                }}
+              />
+            )}
+            {user.reviewContext.isUniversityVerified && (
+              <Chip
+                icon={<SchoolIcon sx={{ fontSize: 16 }} />}
+                label="학교 인증"
+                size="small"
+                sx={{
+                  backgroundColor: '#e8f5e9',
+                  color: '#2e7d32',
+                  fontWeight: 600,
+                  '& .MuiChip-icon': { color: '#2e7d32' }
+                }}
+              />
+            )}
+            {user.reviewContext.hasPurchased && (
+              <Chip
+                icon={<PaymentIcon sx={{ fontSize: 16 }} />}
+                label={user.reviewContext.totalPurchaseAmount
+                  ? `결제 ${user.reviewContext.totalPurchaseAmount.toLocaleString()}원`
+                  : '유료 회원'}
+                size="small"
+                sx={{
+                  backgroundColor: '#fff3e0',
+                  color: '#e65100',
+                  fontWeight: 600,
+                  '& .MuiChip-icon': { color: '#e65100' }
+                }}
+              />
+            )}
+          </Box>
+
+          {/* 활동 통계 */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: 1,
+              p: 1.5,
+              backgroundColor: '#fafafa',
+              borderRadius: 1,
+              border: '1px solid #e0e0e0'
+            }}
+          >
+            <Box sx={{ textAlign: 'center' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'center', mb: 0.5 }}>
+                <PersonAddIcon sx={{ fontSize: 18, color: '#757575' }} />
+              </Box>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                가입일
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.75rem' }}>
+                {new Date(user.reviewContext.userCreatedAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+              </Typography>
+            </Box>
+            <Box sx={{ textAlign: 'center' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'center', mb: 0.5 }}>
+                <FavoriteIcon sx={{ fontSize: 18, color: '#e91e63' }} />
+              </Box>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                받은 좋아요
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {user.reviewContext.receivedLikeCount}
+              </Typography>
+            </Box>
+            <Box sx={{ textAlign: 'center' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'center', mb: 0.5 }}>
+                <PeopleIcon sx={{ fontSize: 18, color: '#9c27b0' }} />
+              </Box>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                매칭
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {user.reviewContext.matchCount}
+              </Typography>
+            </Box>
+            <Box sx={{ textAlign: 'center' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'center', mb: 0.5 }}>
+                <ChatIcon sx={{ fontSize: 18, color: '#2196f3' }} />
+              </Box>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                채팅방
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {user.reviewContext.chatRoomCount}
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+      )}
+
+      <Divider sx={{ mb: 2 }} />
+
       {/* Rank 관리 */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
@@ -326,6 +478,97 @@ export default function ImageReviewPanel({
               </Typography>
             </Box>
           ))}
+        </Box>
+      )}
+
+      {/* 거절된 이미지 */}
+      {user.rejectedImages && user.rejectedImages.length > 0 && (
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600, color: 'error.main' }}>
+            🚫 거절된 이미지 ({user.rejectedImages.length}장)
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+            {user.rejectedImages.map((image, index) => (
+              <Box
+                key={image.id}
+                sx={{
+                  position: 'relative',
+                  width: 100,
+                  borderRadius: 1.5,
+                  overflow: 'hidden',
+                  border: '2px solid #ffcdd2',
+                  backgroundColor: '#ffebee',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    borderColor: '#ef5350'
+                  }
+                }}
+                onClick={() => handleImageClick(image.imageUrl)}
+              >
+                <Box
+                  sx={{
+                    position: 'relative',
+                    paddingTop: '100%'
+                  }}
+                >
+                  <Box
+                    component="img"
+                    src={image.imageUrl}
+                    alt={`거절된 이미지 ${index + 1}`}
+                    sx={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      filter: 'grayscale(30%)',
+                      opacity: 0.8
+                    }}
+                  />
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      top: 4,
+                      right: 4,
+                      width: 20,
+                      height: 20,
+                      borderRadius: '50%',
+                      backgroundColor: 'rgba(244, 67, 54, 0.9)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <CloseIcon sx={{ fontSize: 14, color: '#fff' }} />
+                  </Box>
+                </Box>
+                <Box sx={{ p: 1 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      display: 'block',
+                      color: '#c62828',
+                      fontWeight: 500,
+                      fontSize: '0.7rem',
+                      lineHeight: 1.3,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {image.rejectionReason}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    sx={{ fontSize: '0.65rem', color: 'text.secondary' }}
+                  >
+                    {new Date(image.rejectedAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+                  </Typography>
+                </Box>
+              </Box>
+            ))}
+          </Box>
         </Box>
       )}
 

@@ -34,6 +34,27 @@ export interface PreferenceOption {
   options: string[];
 }
 
+export interface RejectedImage {
+  id: string;
+  imageUrl: string;
+  slotIndex: number;
+  rejectionReason: string;
+  rejectedAt: string;
+}
+
+export interface ReviewContext {
+  reportCount: number;
+  hasSuspensionHistory: boolean;
+  userCreatedAt: string;
+  isFirstReview: boolean;
+  receivedLikeCount: number;
+  matchCount: number;
+  chatRoomCount: number;
+  hasPurchased: boolean;
+  totalPurchaseAmount?: number;
+  isUniversityVerified: boolean;
+}
+
 export interface PendingUser {
   // 필수 필드 (API 응답에서 항상 존재)
   userId: string;
@@ -58,6 +79,8 @@ export interface PendingUser {
   instagramId?: string;
   preferences?: PreferenceOption[];
   rejectionHistory?: RejectionHistory[];
+  rejectedImages?: RejectedImage[];
+  reviewContext?: ReviewContext;
 
   // UI용 추가 필드 (하위 호환성)
   id?: string;
