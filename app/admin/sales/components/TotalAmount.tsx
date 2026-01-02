@@ -533,8 +533,8 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                                                 <tbody className="bg-white divide-y divide-gray-200">
                                                     {(() => {
                                                         const filteredData = selectedRegions.includes('all')
-                                                            ? totalData.regionalData
-                                                            : totalData.regionalData.filter(item => selectedRegions.includes(item.region));
+                                                            ? (totalData.regionalData || [])
+                                                            : (totalData.regionalData || []).filter(item => selectedRegions.includes(item.region));
                                                         return filteredData.map((regionData) => (
                                                         <tr key={regionData.region} className="hover:bg-gray-50">
                                                             <td className="px-6 py-4 whitespace-nowrap">
