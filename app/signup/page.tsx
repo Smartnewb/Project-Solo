@@ -6,6 +6,7 @@ import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import axios from "axios";
+import axiosServer from "@/utils/axios";
 
 // 개인정보 동의 모달 컴포넌트
 function PrivacyPolicyModal({
@@ -188,10 +189,9 @@ export default function SignUp() {
 
     try {
       // 1. 이메일 중복 확인
-      const checkEmailResponse = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/check/email`,
-        { email: formData.email }
-      );
+      const checkEmailResponse = await axiosServer.post('/auth/check/email', {
+        email: formData.email,
+      });
 
       // 2. 회원가입 요청
       const signupData = {
@@ -204,10 +204,7 @@ export default function SignUp() {
 
       console.log("회원가입 요청 데이터:", signupData);
 
-      const signupResponse = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/signup`,
-        signupData
-      );
+      const signupResponse = await axiosServer.post('/auth/signup', signupData);
 
       console.log("회원가입 성공 응답:", signupResponse.data);
 

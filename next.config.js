@@ -1,5 +1,20 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async rewrites() {
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api';
+    
+    return [
+      { source: '/api/admin/rematch-request', destination: `${backendUrl}/admin/matching/rematch-request` },
+      { source: '/api/notifications/:path*', destination: `${backendUrl}/notifications/:path*` },
+      { source: '/api/notifications', destination: `${backendUrl}/notifications` },
+      { source: '/api/matchings/:path*', destination: `${backendUrl}/matchings/:path*` },
+      { source: '/api/offline-meetings/:path*', destination: `${backendUrl}/offline-meetings/:path*` },
+      { source: '/api/offline-meetings', destination: `${backendUrl}/offline-meetings` },
+      { source: '/api/user-preferences', destination: `${backendUrl}/user-preferences` },
+      { source: '/api/profile', destination: `${backendUrl}/profile` },
+      { source: '/api/admin/:path*', destination: `${backendUrl}/admin/:path*` },
+    ];
+  },
   images: {
     remotePatterns: [
       {

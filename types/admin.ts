@@ -127,3 +127,218 @@ export interface UploadAndCreatePresetRequest {
 export interface BackgroundPresetsResponse {
   data: BackgroundPreset[];
 }
+
+export type BannerPosition = 'home' | 'moment';
+export type BannerActionType = 'internal' | 'external' | null;
+
+export interface Banner {
+  id: string;
+  imageUrl: string;
+  actionUrl: string | null;
+  actionType: BannerActionType;
+  position: BannerPosition;
+  order: number;
+  isActive: boolean;
+  startDate: string | null;
+  endDate: string | null;
+}
+
+export interface CreateBannerRequest {
+  position: BannerPosition;
+  actionUrl?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface UpdateBannerRequest {
+  actionUrl?: string;
+  isActive?: boolean;
+  startDate?: string | null;
+  endDate?: string | null;
+}
+
+export interface UpdateBannerOrderRequest {
+  banners: Array<{ id: string; order: number }>;
+}
+
+export interface DeletedFemale {
+  id: string;
+  name: string;
+  email: string | null;
+  phoneNumber: string;
+  gender: 'FEMALE';
+  deletedAt: string;
+  profileId: string | null;
+}
+
+export interface DeletedFemalesListResponse {
+  items: DeletedFemale[];
+  meta: {
+    page: number;
+    limit: number;
+    totalCount: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
+
+export interface RestoreFemaleResponse {
+  id: string;
+  email: string;
+  temporaryPassword: string;
+  isRetentionUser: boolean;
+  restoredAt: string;
+}
+
+export interface SleepFemaleResponse {
+  id: string;
+  deletedAt: string;
+}
+
+export interface DormantUserResponse {
+  id: string;
+  name: string;
+  phoneNumber: string;
+  gemBalance: number;
+  lastLoginAt: string | null;
+  daysSinceLastLogin: number;
+  pendingLikeCount: number;
+  canProcess: boolean;
+  cooldownRemainingMinutes: number | null;
+}
+
+export interface DormantLikesDashboardResponse {
+  totalPendingLikes: number;
+  todayProcessedCount: number;
+  todayViewedCount: number;
+  todayRejectedCount: number;
+  users: DormantUserResponse[];
+  totalUsers: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface DormantLikeDetailResponse {
+  matchLikeId: string;
+  connectionId: string;
+  senderUserId: string;
+  senderName: string;
+  senderAge: number;
+  senderUniversity: string;
+  senderMainImageUrl: string | null;
+  likedAt: string;
+  daysSinceLiked: number;
+}
+
+export interface CooldownStatusResponse {
+  isOnCooldown: boolean;
+  remainingMinutes: number;
+  lastProcessedAt: string | null;
+  canProcessAt: string | null;
+}
+
+export interface ProcessLikeDetail {
+  matchLikeId: string;
+  actionType: 'VIEW' | 'REJECT';
+  success: boolean;
+  error?: string;
+}
+
+export interface ProcessLikesRequest {
+  dormantUserId: string;
+  matchLikeIds: string[];
+  rejectionRate?: number;
+  note?: string;
+}
+
+export interface ProcessLikesResponse {
+  batchId: string;
+  processedCount: number;
+  viewedCount: number;
+  rejectedCount: number;
+  details: ProcessLikeDetail[];
+}
+
+export interface ActionLogResponse {
+  id: string;
+  adminUserName: string;
+  dormantUserName: string;
+  actionType: 'VIEW' | 'REJECT';
+  batchId: string;
+  delayMinutes: number;
+  createdAt: string;
+}
+
+export interface PaginationMeta {
+  currentPage: number;
+  itemsPerPage: number;
+  totalItems: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+export interface ActionLogsResponse {
+  items: ActionLogResponse[];
+  meta: PaginationMeta;
+}
+
+export interface RefundUserSearchResult {
+  userId: string;
+  name: string;
+  phoneNumber: string;
+}
+
+export interface RefundUserSearchResponse {
+  users: RefundUserSearchResult[];
+}
+
+export interface EligibleChatRoomPartnerInfo {
+  name: string;
+  university: string;
+  profileImageUrl?: string;
+}
+
+export interface EligibleChatRoom {
+  chatRoomId: string;
+  partnerInfo: EligibleChatRoomPartnerInfo;
+  createdAt: string;
+  totalMessageCount: number;
+  isRefunded: boolean;
+}
+
+export interface EligibleChatRoomsResponse {
+  eligibleRooms: EligibleChatRoom[];
+}
+
+export type RefundReasonCode = 'A' | 'B' | 'C' | 'D';
+
+export interface RefundPreviewRequest {
+  userId: string;
+  chatRoomId: string;
+  refundReasonCode: RefundReasonCode;
+}
+
+export interface RefundPreviewResponse {
+  userName: string;
+  phoneNumber: string;
+  refundGemAmount: number;
+  smsContent: string;
+  refundReasonCode: string;
+  refundReasonText: string;
+}
+
+export interface ProcessRefundRequest {
+  userId: string;
+  chatRoomId: string;
+  refundReasonCode: RefundReasonCode;
+  smsContent: string;
+}
+
+export interface ProcessRefundResponse {
+  success: boolean;
+  gemTransactionId: string;
+  smsSentAt?: string;
+  smsError?: string;
+}

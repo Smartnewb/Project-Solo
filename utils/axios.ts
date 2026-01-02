@@ -34,6 +34,10 @@ const requestInterceptor = (config: any) => {
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // x-country 헤더 추가 (Admin 국가 선택)
+    const country = localStorage.getItem('admin_selected_country') || 'kr';
+    config.headers['x-country'] = country;
   }
   return config;
 };

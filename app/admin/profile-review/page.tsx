@@ -23,6 +23,15 @@ export interface PendingImage {
   isMain: boolean;
 }
 
+export interface CurrentProfileImage {
+  id: string;
+  imageUrl: string;
+  imageOrder: number;
+  slotIndex: number;
+  isMain: boolean;
+  approvedAt: string;
+}
+
 export interface RejectionHistory {
   category: string;
   reason: string;
@@ -66,6 +75,7 @@ export interface PendingUser {
   approved: boolean;
   pendingImages: PendingImage[];
   approvedImageUrls: string[];
+  profileUsing?: CurrentProfileImage[];
   createdAt: string;
   rank?: 'S' | 'A' | 'B' | 'C' | 'UNKNOWN';
 

@@ -13,7 +13,9 @@ import PaymentIcon from '@mui/icons-material/Payment';
 import SchoolIcon from '@mui/icons-material/School';
 import NewReleasesIcon from '@mui/icons-material/NewReleases';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import AdminService from '@/app/services/admin';
+import { mapImagesBySlot, getSlotLabel, formatApprovedDate } from '../utils/imageMapper';
 
 interface ImageReviewPanelProps {
   user: PendingUser | null;
@@ -572,148 +574,215 @@ export default function ImageReviewPanel({
         </Box>
       )}
 
-      {/* 프로필 이미지 */}
+      {/* 프로필 이미지 - Before/After 비교 */}
       <Box sx={{ mb: 3 }}>
         <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
-          심사 대기 사진 ({user.pendingImages?.length || user.profileImages?.length || 0}장)
+          프로필 이미지 심사 ({user.pendingImages?.length || user.profileImages?.length || 0}장 대기 중)
         </Typography>
 
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 2
-          }}
-        >
-          {(user.pendingImages || user.profileImages || []).map((image, index) => (
-            <Box
-              key={image.id}
-              sx={{
-                position: 'relative',
-                borderRadius: 2,
-                overflow: 'visible',
-                backgroundColor: '#E0E0E0',
-                width: '100%',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-              }}
-            >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          {Array.from(mapImagesBySlot(user.profileUsing, user.pendingImages || user.profileImages || []))
+            .sort(([a], [b]) => a - b)
+            .map(([slotIndex, pair]) => (
               <Box
+                key={slotIndex}
                 sx={{
-                  position: 'relative',
-                  paddingTop: '75%',
-                  cursor: 'pointer',
-                  overflow: 'hidden',
+                  p: 2,
+                  backgroundColor: '#fafafa',
                   borderRadius: 2,
-                  '&:hover': {
-                    transform: 'scale(1.02)',
-                    transition: 'transform 0.2s'
-                  }
+                  border: '1px solid #e0e0e0'
                 }}
-                onClick={() => handleImageClick(image.imageUrl)}
               >
-                <Box
-                  component="img"
-                  src={image.imageUrl}
-                  alt={`프로필 이미지 ${index + 1}`}
-                  sx={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover'
-                  }}
-                />
-
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    top: 12,
-                    left: 12,
-                    display: 'flex',
-                    gap: 1,
-                    alignItems: 'center'
-                  }}
-                >
-                  <Box
-                    sx={{
-                      px: 1.5,
-                      py: 0.5,
-                      borderRadius: 1.5,
-                      fontSize: '0.75rem',
-                      fontWeight: 600,
-                      color: '#fff',
-                      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                      backdropFilter: 'blur(4px)'
-                    }}
-                  >
-                    사진 {index + 1}
-                  </Box>
-                  {image.slotIndex === 0 && (
-                    <Box
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <Typography variant="body2" fontWeight="bold">
+                    {getSlotLabel(slotIndex)}
+                  </Typography>
+                  {slotIndex === 0 && (
+                    <Chip
+                      label="대표"
+                      size="small"
                       sx={{
-                        px: 1.5,
-                        py: 0.5,
-                        borderRadius: 1.5,
-                        fontSize: '0.75rem',
+                        backgroundColor: '#ff9800',
+                        color: 'white',
                         fontWeight: 700,
-                        color: '#fff',
-                        backgroundColor: 'rgba(255, 152, 0, 0.9)',
-                        backdropFilter: 'blur(4px)',
-                        boxShadow: '0 2px 8px rgba(255, 152, 0, 0.4)'
+                        fontSize: '0.7rem'
                       }}
-                    >
-                      대표
-                    </Box>
+                    />
                   )}
                 </Box>
 
-                {/* 우측 하단 X, V 버튼 */}
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    bottom: 12,
-                    right: 12,
-                    display: 'flex',
-                    gap: 1,
-                    pointerEvents: 'auto'
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <IconButton
-                    size="small"
-                    onClick={() => handleRejectImageClick(image.id)}
-                    sx={{
-                      backgroundColor: 'rgba(244, 67, 54, 0.9)',
-                      color: '#fff',
-                      width: 40,
-                      height: 40,
-                      '&:hover': {
-                        backgroundColor: 'rgba(211, 47, 47, 1)'
-                      }
-                    }}
-                  >
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    onClick={() => handleApproveImage(image.id)}
-                    sx={{
-                      backgroundColor: 'rgba(76, 175, 80, 0.9)',
-                      color: '#fff',
-                      width: 40,
-                      height: 40,
-                      '&:hover': {
-                        backgroundColor: 'rgba(56, 142, 60, 1)'
-                      }
-                    }}
-                  >
-                    <CheckCircleIcon fontSize="small" />
-                  </IconButton>
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                  {/* 현재 사용 중인 이미지 */}
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                      현재 사용 중
+                    </Typography>
+                    {pair.current ? (
+                      <Box
+                        sx={{
+                          position: 'relative',
+                          borderRadius: 2,
+                          overflow: 'hidden',
+                          cursor: 'pointer',
+                          border: '2px solid #4caf50',
+                          '&:hover': { transform: 'scale(1.02)', transition: 'transform 0.2s' }
+                        }}
+                        onClick={() => handleImageClick(pair.current!.imageUrl)}
+                      >
+                        <Box sx={{ position: 'relative', paddingTop: '100%' }}>
+                          <Box
+                            component="img"
+                            src={pair.current.imageUrl}
+                            alt="현재 프로필"
+                            sx={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover'
+                            }}
+                          />
+                        </Box>
+                        <Box sx={{ p: 1, backgroundColor: '#e8f5e9' }}>
+                          <Typography variant="caption" sx={{ fontSize: '0.65rem', color: '#2e7d32' }}>
+                            승인일: {formatApprovedDate(pair.current.approvedAt)}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    ) : (
+                      <Box
+                        sx={{
+                          position: 'relative',
+                          paddingTop: '100%',
+                          backgroundColor: '#f5f5f5',
+                          borderRadius: 2,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)'
+                          }}
+                        >
+                          없음
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+
+                  {/* 화살표 */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: 1 }}>
+                    <ArrowForwardIcon sx={{ fontSize: 32, color: '#9e9e9e' }} />
+                  </Box>
+
+                  {/* 심사 대기 이미지 */}
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                      변경 예정
+                    </Typography>
+                    {pair.pending ? (
+                      <Box sx={{ position: 'relative' }}>
+                        <Box
+                          sx={{
+                            position: 'relative',
+                            borderRadius: 2,
+                            overflow: 'hidden',
+                            cursor: 'pointer',
+                            border: '2px solid #ff9800',
+                            '&:hover': { transform: 'scale(1.02)', transition: 'transform 0.2s' }
+                          }}
+                          onClick={() => handleImageClick(pair.pending!.imageUrl)}
+                        >
+                          <Box sx={{ position: 'relative', paddingTop: '100%' }}>
+                            <Box
+                              component="img"
+                              src={pair.pending.imageUrl}
+                              alt="대기 중인 프로필"
+                              sx={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover'
+                              }}
+                            />
+                          </Box>
+                        </Box>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            gap: 1,
+                            mt: 1,
+                            justifyContent: 'center'
+                          }}
+                        >
+                          <IconButton
+                            size="small"
+                            onClick={() => handleRejectImageClick(pair.pending!.id)}
+                            sx={{
+                              backgroundColor: '#f44336',
+                              color: '#fff',
+                              width: 36,
+                              height: 36,
+                              '&:hover': { backgroundColor: '#d32f2f' }
+                            }}
+                          >
+                            <CloseIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleApproveImage(pair.pending!.id)}
+                            sx={{
+                              backgroundColor: '#4caf50',
+                              color: '#fff',
+                              width: 36,
+                              height: 36,
+                              '&:hover': { backgroundColor: '#388e3c' }
+                            }}
+                          >
+                            <CheckCircleIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      </Box>
+                    ) : (
+                      <Box
+                        sx={{
+                          position: 'relative',
+                          paddingTop: '100%',
+                          backgroundColor: '#f5f5f5',
+                          borderRadius: 2,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)'
+                          }}
+                        >
+                          없음
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
                 </Box>
               </Box>
-            </Box>
-          ))}
+            ))}
         </Box>
       </Box>
 

@@ -11,6 +11,26 @@ import type {
   BackgroundPresetsResponse,
   CreatePresetRequest,
   UploadAndCreatePresetRequest,
+  Banner,
+  BannerPosition,
+  CreateBannerRequest,
+  UpdateBannerRequest,
+  UpdateBannerOrderRequest,
+  DeletedFemalesListResponse,
+  RestoreFemaleResponse,
+  SleepFemaleResponse,
+  DormantLikesDashboardResponse,
+  DormantLikeDetailResponse,
+  CooldownStatusResponse,
+  ProcessLikesRequest,
+  ProcessLikesResponse,
+  ActionLogsResponse,
+  RefundUserSearchResponse,
+  EligibleChatRoomsResponse,
+  RefundPreviewRequest,
+  RefundPreviewResponse,
+  ProcessRefundRequest,
+  ProcessRefundResponse,
 } from '@/types/admin';
 
 // 상단에 타입 정의 추가
@@ -30,6 +50,13 @@ interface FormattedData {
   stats: StatItem[];
   genderStats: GenderStatItem[];
 }
+
+const getCountryHeader = (): string => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('admin_selected_country') || 'kr';
+  }
+  return 'kr';
+};
 
 const auth = {
   cleanup: () => {
@@ -571,6 +598,7 @@ const userAppearance = {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
+                'x-country': getCountryHeader(),
                 ...(token ? { 'Authorization': `Bearer ${token}` } : {})
               },
               body: JSON.stringify(requestData)
@@ -2348,6 +2376,7 @@ const backgroundPresets = {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json',
+          'x-country': getCountryHeader(),
         },
         body: formData,
         credentials: 'include'
@@ -2397,6 +2426,7 @@ const backgroundPresets = {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'x-country': getCountryHeader(),
         },
         body: formData,
         credentials: 'include'
@@ -2453,6 +2483,7 @@ const cardNews = {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'x-country': getCountryHeader(),
         },
         body: formData,
         credentials: 'include'
@@ -2652,6 +2683,7 @@ const gems = {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'x-country': getCountryHeader(),
         },
         body: formData,
         credentials: 'include'
@@ -2673,6 +2705,246 @@ const gems = {
   }
 };
 
+const deletedFemales = {
+  getList: async (page: number = 1, limit: number = 20) => {
+    try {
+      const response = await axiosServer.get<DeletedFemalesListResponse>('/admin/deleted-females', {
+        params: { page, limit }
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('탈퇴 여성 회원 목록 조회 중 오류:', error);
+      throw error;
+    }
+  },
+
+  restore: async (id: string) => {
+    try {
+      const response = await axiosServer.patch<RestoreFemaleResponse>(`/admin/deleted-females/${id}/restore`);
+      return response.data;
+    } catch (error: any) {
+      console.error('회원 복구 중 오류:', error);
+      throw error;
+    }
+  },
+
+  sleep: async (id: string) => {
+    try {
+      const response = await axiosServer.patch<SleepFemaleResponse>(`/admin/deleted-females/${id}/sleep`);
+      return response.data;
+    } catch (error: any) {
+      console.error('회원 재탈퇴 처리 중 오류:', error);
+      throw error;
+    }
+  }
+};
+
+const banners = {
+  getList: async (position?: BannerPosition): Promise<Banner[]> => {
+    try {
+      const params = position ? { position } : {};
+      const response = await axiosServer.get<Banner[]>('/admin/banners', { params });
+      return response.data;
+    } catch (error: any) {
+      console.error('배너 목록 조회 중 오류:', error);
+      throw error;
+    }
+  },
+
+  create: async (imageFile: File, data: CreateBannerRequest): Promise<Banner> => {
+    try {
+      const formData = new FormData();
+      formData.append('image', imageFile);
+      formData.append('position', data.position);
+      if (data.actionUrl) formData.append('actionUrl', data.actionUrl);
+      if (data.startDate) formData.append('startDate', data.startDate);
+      if (data.endDate) formData.append('endDate', data.endDate);
+
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045/api';
+
+      const response = await fetch(`${baseURL}/admin/banners`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'x-country': getCountryHeader(),
+        },
+        body: formData,
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: '배너 등록 실패' }));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      return response.json();
+    } catch (error: any) {
+      console.error('배너 등록 중 오류:', error);
+      throw error;
+    }
+  },
+
+  update: async (id: string, data: UpdateBannerRequest): Promise<Banner> => {
+    try {
+      const response = await axiosServer.patch<Banner>(`/admin/banners/${id}`, data);
+      return response.data;
+    } catch (error: any) {
+      console.error('배너 수정 중 오류:', error);
+      throw error;
+    }
+  },
+
+  delete: async (id: string): Promise<void> => {
+    try {
+      await axiosServer.delete(`/admin/banners/${id}`);
+    } catch (error: any) {
+      console.error('배너 삭제 중 오류:', error);
+      throw error;
+    }
+  },
+
+  updateOrder: async (data: UpdateBannerOrderRequest): Promise<Banner[]> => {
+    try {
+      const response = await axiosServer.patch<Banner[]>('/admin/banners/order/bulk', data);
+      return response.data;
+    } catch (error: any) {
+      console.error('배너 순서 변경 중 오류:', error);
+      throw error;
+    }
+  }
+};
+
+const dormantLikes = {
+  getDashboard: async (page: number = 1, limit: number = 20, inactiveDays: number = 7) => {
+    try {
+      const response = await axiosServer.get<DormantLikesDashboardResponse>('/admin/dormant-likes', {
+        params: { page, limit, inactiveDays }
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('파묘 계정 대시보드 조회 중 오류:', error);
+      throw error;
+    }
+  },
+
+  getPendingLikes: async (userId: string) => {
+    try {
+      const response = await axiosServer.get<DormantLikeDetailResponse[]>(`/admin/dormant-likes/${userId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('미확인 좋아요 목록 조회 중 오류:', error);
+      throw error;
+    }
+  },
+
+  getCooldownStatus: async (userId: string) => {
+    try {
+      const response = await axiosServer.get<CooldownStatusResponse>(`/admin/dormant-likes/${userId}/cooldown`);
+      return response.data;
+    } catch (error: any) {
+      console.error('쿨다운 상태 조회 중 오류:', error);
+      throw error;
+    }
+  },
+
+  processLikes: async (data: ProcessLikesRequest) => {
+    try {
+      const response = await axiosServer.post<ProcessLikesResponse>('/admin/dormant-likes/process', data);
+      return response.data;
+    } catch (error: any) {
+      console.error('좋아요 처리 중 오류:', error);
+      throw error;
+    }
+  },
+
+  getActionLogs: async (
+    page: number = 1,
+    limit: number = 20,
+    filters?: {
+      adminUserId?: string;
+      dormantUserId?: string;
+      batchId?: string;
+    }
+  ) => {
+    try {
+      const response = await axiosServer.get<ActionLogsResponse>('/admin/dormant-likes/logs', {
+        params: { page, limit, ...filters }
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('처리 이력 조회 중 오류:', error);
+      throw error;
+    }
+  },
+};
+
+const chatRefund = {
+  searchUsers: async (name: string) => {
+    try {
+      const country = getCountryHeader();
+      const response = await axiosServer.get<RefundUserSearchResponse>('/admin/refund/users/search', {
+        params: { name },
+        headers: { 'X-Country': country }
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('사용자 검색 중 오류:', error);
+      throw error;
+    }
+  },
+
+  getEligibleRooms: async (userId: string) => {
+    try {
+      const country = getCountryHeader();
+      const response = await axiosServer.get<EligibleChatRoomsResponse>(
+        `/admin/refund/users/${userId}/eligible-rooms`,
+        {
+          headers: { 'X-Country': country }
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error('환불 가능 채팅방 조회 중 오류:', error);
+      throw error;
+    }
+  },
+
+  previewRefund: async (data: RefundPreviewRequest) => {
+    try {
+      const country = getCountryHeader();
+      const response = await axiosServer.post<RefundPreviewResponse>(
+        '/admin/refund/preview',
+        data,
+        {
+          headers: { 'X-Country': country }
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error('환불 미리보기 중 오류:', error);
+      throw error;
+    }
+  },
+
+  processRefund: async (data: ProcessRefundRequest) => {
+    try {
+      const country = getCountryHeader();
+      const response = await axiosServer.post<ProcessRefundResponse>(
+        '/admin/refund/process',
+        data,
+        {
+          headers: { 'X-Country': country }
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error('환불 처리 중 오류:', error);
+      throw error;
+    }
+  },
+};
+
 const AdminService = {
   auth,
   stats,
@@ -2688,7 +2960,10 @@ const AdminService = {
   cardNews,
   femaleRetention,
   gems,
-  // 기존 함수들을 reports 객체로 이동하기 전까지 임시로 유지
+  deletedFemales,
+  banners,
+  dormantLikes,
+  chatRefund,
   getProfileReports: reports.getProfileReports
 };
 

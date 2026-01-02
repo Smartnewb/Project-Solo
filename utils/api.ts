@@ -1,8 +1,10 @@
 export const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
   const accessToken = localStorage.getItem('accessToken');
+  const country = localStorage.getItem('admin_selected_country') || 'kr';
   
   const headers = {
     'Content-Type': 'application/json',
+    'x-country': country,
     ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}),
     ...options.headers,
   };

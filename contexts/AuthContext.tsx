@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
+import axiosServer from '@/utils/axios';
 
 export type User = {
   id: string;
@@ -83,11 +84,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const token = getAccessToken();
       if (!token || !state.user) return;
 
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/profile`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await axiosServer.get('/profile');
 
       console.log('받아온 프로필 데이터:', response.data);
       setState(prev => ({ ...prev, profile: response.data }));
@@ -114,9 +111,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // 토큰 갱신
   const refreshAccessToken = async (): Promise<boolean> => {
     try {
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`, {}, {
-        withCredentials: true
-      });
+      const response = await axiosServer.post('/auth/refresh', {});
 
       setAccessToken(response.data.accessToken);
       return true;
@@ -130,7 +125,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string) => {
     setState(prev => ({ ...prev, loading: true }));
     try {
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+      const response = await axiosServer.post('/auth/login', {
         email,
         password
       });
