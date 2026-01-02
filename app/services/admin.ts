@@ -24,6 +24,8 @@ import type {
   CooldownStatusResponse,
   ProcessLikesRequest,
   ProcessLikesResponse,
+  ViewProfileRequest,
+  ViewProfileResponse,
   ActionLogsResponse,
   RefundUserSearchResponse,
   EligibleChatRoomsResponse,
@@ -2816,7 +2818,7 @@ const banners = {
 };
 
 const dormantLikes = {
-  getDashboard: async (page: number = 1, limit: number = 20, inactiveDays: number = 7) => {
+  getDashboard: async (page: number = 1, limit: number = 20, inactiveDays: number = 0) => {
     try {
       const response = await axiosServer.get<DormantLikesDashboardResponse>('/admin/dormant-likes', {
         params: { page, limit, inactiveDays }
@@ -2874,6 +2876,16 @@ const dormantLikes = {
       return response.data;
     } catch (error: any) {
       console.error('처리 이력 조회 중 오류:', error);
+      throw error;
+    }
+  },
+
+  viewProfile: async (data: ViewProfileRequest) => {
+    try {
+      const response = await axiosServer.post<ViewProfileResponse>('/admin/dormant-likes/view-profile', data);
+      return response.data;
+    } catch (error: any) {
+      console.error('프로필 조회 트리거 중 오류:', error);
       throw error;
     }
   },

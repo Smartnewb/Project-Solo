@@ -99,14 +99,32 @@ export function GenderAnalysisTable({ startDate, endDate }: GenderAnalysisProps)
     const getChartColors = () => [
         '#87ceeb', '#d084d0', 
     ];
+
+    const getAnalysisData = () => {
+        if (!totalData) return [];
+        if (totalData.data) {
+            return totalData.data.map(item => ({
+                gender: item.gender,
+                totalAmount: item.amount,
+                count: item.count,
+                percentage: item.percentage,
+            }));
+        }
+        if (totalData.analysis) {
+            return totalData.analysis;
+        }
+        return [];
+    };
+
     const getPieChartData = () => {
-        if(!totalData?.analysis) return [];
-        return totalData.analysis.map(item => ({
+        const analysisData = getAnalysisData();
+        if (analysisData.length === 0) return [];
+        return analysisData.map(item => ({
             name: getGender(item.gender),
             value: item.totalAmount,
             count: item.count,
             percentage: item.percentage,
-        }))
+        }));
     };
 
     // MARK: - 파이차트 렌더링
@@ -162,8 +180,8 @@ export function GenderAnalysisTable({ startDate, endDate }: GenderAnalysisProps)
                     )}
 
                     <div className='flex gap-4 mb-24'>
-                        {totalData?.analysis?.map((item, index) => (
-                            <div className={`rounded-md ${item.gender === 'MALE' ? 'bg-blue-50' : 'bg-pink-50'} flex-1 text-center`}>
+                        {getAnalysisData().map((item, index) => (
+                            <div key={index} className={`rounded-md ${item.gender === 'MALE' ? 'bg-blue-50' : 'bg-pink-50'} flex-1 text-center`}>
                                 <p className={`text-xl font-semibold ${item.gender === 'MALE' ? 'text-[#1D4ED8]' : 'text-pink-700'}`}>{item.percentage}%</p>
                                 <p className='text-sm font-gray-900'>{item.gender === 'MALE' ? '남성' : '여성'}</p>
                                 <p className={`text-sm ${item.gender === 'MALE' ? 'text-[#1D4ED8]' : 'text-pink-700'}`}>{item.count}명</p>

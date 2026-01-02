@@ -127,10 +127,27 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
         return `${start.toLocaleDateString('ko-KR')} ~ ${end.toLocaleDateString('ko-KR')}`;
     };
 
-    // === 파이차트 데이터 변환 ===
+    const getAnalysisData = () => {
+        if (!paymentData) return [];
+        if (paymentData.data) {
+            return paymentData.data.map(item => ({
+                paymentType: item.method,
+                totalAmount: item.amount,
+                count: item.count,
+                percentage: item.percentage,
+                netAmount: undefined,
+            }));
+        }
+        if (paymentData.analysis) {
+            return paymentData.analysis;
+        }
+        return [];
+    };
+
     const getPieChartData = () => {
-        if (!paymentData?.analysis) return [];
-        return paymentData.analysis.map(item => ({
+        const analysisData = getAnalysisData();
+        if (analysisData.length === 0) return [];
+        return analysisData.map(item => ({
             name: getPaymentTypeName(item.paymentType),
             value: item.totalAmount,
             count: item.count,
@@ -269,7 +286,7 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
             )}
 
             {/* 데이터 테이블 */}
-            {!isLoading && paymentData?.analysis && (
+            {!isLoading && paymentData && getAnalysisData().length > 0 && (
                 <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                     <div className="px-6 py-4 border-b border-gray-200">
                         <h3 className="text-lg font-medium">결제수단별 상세 데이터</h3>
@@ -302,7 +319,7 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                                {paymentData.analysis.map((item, index) => (
+                                {getAnalysisData().map((item, index) => (
                                     <tr key={index} className="hover:bg-gray-50">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                             <div className="flex items-center gap-2">

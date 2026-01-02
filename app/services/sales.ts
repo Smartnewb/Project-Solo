@@ -16,6 +16,7 @@ import {
     PaymentAnalysis,
     GenderAnalysis,
     AgeAnalysis,
+    PaymentSuccessRateResponse,
 } from "../admin/sales/types";
 import { paymentType } from '@/app/admin/sales/types';
 import { da } from "date-fns/locale";
@@ -32,6 +33,7 @@ const SALES_ENDPOINT = {
     TREND_WEEKLY: '/admin/stats/sales/trend/weekly',
     TREND_MONTHLY: '/admin/stats/sales/trend/monthly',
     TREND_CUSTOM: '/admin/stats/sales/trend/custom-period',
+    SUCCESS_RATE: '/admin/stats/sales/success-rate',
     UNIVERSITY_RANKING: '/admin/stats/sales/university-ranking',
     PAYMENT_ANALYSIS: '/admin/stats/sales/payment-method-analysis',
     GENDER_ANALYSIS: '/admin/stats/sales/gender-analysis',
@@ -201,6 +203,16 @@ export const salesService = {
             return response.data;
         } catch(error) {
             throw new SalesApiError('사용자 지정 매출액 조회 실패:',error);
+        }
+    },
+
+    // MARK: - 결제 성공률 조회
+    async getSuccessRate(): Promise<PaymentSuccessRateResponse> {
+        try {
+            const response = await axiosServer.get(SALES_ENDPOINT.SUCCESS_RATE);
+            return response.data;
+        } catch(error) {
+            throw new SalesApiError('결제 성공률 조회 실패:', error);
         }
     },
 

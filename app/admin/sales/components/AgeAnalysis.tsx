@@ -113,14 +113,32 @@ export function AgeAnalysisComponent({ startDate, endDate}: AgeAnalysisProps) {
     ];
 
     const getChartColors = () => AGE_COLOR_SYSTEM.map(color => color.chart);
+
+    const getAnalysisData = () => {
+        if (!totalData) return [];
+        if (totalData.data) {
+            return totalData.data.map(item => ({
+                ageGroup: item.ageGroup,
+                totalAmount: item.amount,
+                count: item.count,
+                percentage: item.percentage,
+            }));
+        }
+        if (totalData.analysis) {
+            return totalData.analysis;
+        }
+        return [];
+    };
+
     const getPieChartData = () => {
-        if(!totalData?.analysis) return [];
-        return totalData.analysis.map(item => ({
+        const analysisData = getAnalysisData();
+        if (analysisData.length === 0) return [];
+        return analysisData.map(item => ({
             name: item.ageGroup,
             value: item.totalAmount,
             count: item.count,
             percentage: item.percentage,
-        }))
+        }));
     };
     // MARK: - 파이차트 렌더링
         const renderPieChart = () => {
@@ -174,7 +192,7 @@ export function AgeAnalysisComponent({ startDate, endDate}: AgeAnalysisProps) {
                         </div>
                     )}
                     <div className='flex flex-col gap-2'>
-                        {totalData?.analysis?.map((item, index) => {
+                        {getAnalysisData().map((item, index) => {
                             const colorSystem = AGE_COLOR_SYSTEM[index % AGE_COLOR_SYSTEM.length];
                             
                             return (

@@ -126,6 +126,25 @@ export function RankingByUniv ({startDate, endDate} : RankingByUnivProps) {
         setRefreshInterval(interval);
     };
 
+    const getRankingData = () => {
+        if (!totalData) return [];
+        if (totalData.data) {
+            return totalData.data.map((item, index) => ({
+                rank: index + 1,
+                universityName: item.universityName,
+                amount: item.amount,
+                count: item.count,
+                percentage: item.percentage,
+                paidUserCount: 0,
+                averageAmount: item.count > 0 ? item.amount / item.count : 0,
+            }));
+        }
+        if (totalData.rankings) {
+            return totalData.rankings;
+        }
+        return [];
+    };
+
 
     // === JSX ===
     return (
@@ -135,33 +154,31 @@ export function RankingByUniv ({startDate, endDate} : RankingByUnivProps) {
                 {/* MARK: - 메인 컨텐츠 */}
                 <div>
                     <table className='w-full'>
-                        {/* 테이블 헤더 */}
                         <thead className='bg-gray-50'>
                             <tr>
                                 <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>순위</th>
                                 <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>대학명</th>
                                 <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>매출</th>
                                 <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>결제건수</th>
-                                <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>유료 사용자 수</th>
+                                <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>비율</th>
                                 <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>평균매출</th>
-                                <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>사용자당 평균</th>
                             </tr>
                         </thead>
 
-                        {/* 테이블 바디 */}
                         <tbody className='bg-white divide-y divide-gray-200'>
-                            {totalData?.rankings.map((item, index) => (
+                            {getRankingData().map((item, index) => (
                                 <tr key={index} className='hover:bg-gray-50'>
                                     <td className='px-6 py-4 text-sm font-medium text-gray-900'>{item.rank}</td>
                                     <td className='px-6 py-4 text-sm font-medium text-gray-900'>{item.universityName}</td>
                                     <td className='px-6 py-4 text-sm font-medium text-blue-900'>{formatCurrency(item.amount)}</td>
-                                    <td className='px-6 py-4 text-sm font-medium text-gray-900'>{item.count}</td>
-                                    <td className='px-6 py-4 text-sm font-medium text-orange-900'>{item.paidUserCount || 0}</td>
-                                    <td className='px-6 py-4 text-sm font-medium text-gray-900'>{formatCurrency(item.averageAmount)}</td>
+                                    <td className='px-6 py-4 text-sm font-medium text-gray-900'>{item.count}건</td>
                                     <td className='px-6 py-4 text-sm font-medium text-purple-900'>
-                                        {item.paidUserCount > 0
-                                            ? formatCurrency(item.amount / item.paidUserCount)
-                                            : formatCurrency(0)
+                                        {item.percentage !== undefined ? `${item.percentage.toFixed(1)}%` : '-'}
+                                    </td>
+                                    <td className='px-6 py-4 text-sm font-medium text-gray-900'>
+                                        {item.averageAmount !== undefined 
+                                            ? formatCurrency(item.averageAmount) 
+                                            : (item.count > 0 ? formatCurrency(item.amount / item.count) : formatCurrency(0))
                                         }
                                     </td>
                                 </tr>

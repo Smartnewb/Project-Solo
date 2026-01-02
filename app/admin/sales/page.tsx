@@ -9,6 +9,7 @@ import { GenderAnalysisTable } from './components/GenderAnalysis';
 import { AgeAnalysisComponent } from './components/AgeAnalysis';
 import { MonthlyPaymentGraph } from './components/MonthlyPaymentGraph';
 import { DailySalesTrendGraph } from './components/DailySalesTrendGraph';
+import { SuccessRate } from './components/SuccessRate';
 
 // 타입 정의
 interface DateRange {
@@ -101,6 +102,9 @@ export default function SalesPage() {
                             )}
                         </div>
                     </div>
+
+                    {/* MARK: - 결제 성공률 컴포넌트 */}
+                    <SuccessRate />
 
                     {/* MARK: - 기간 선택 컴포넌트 */}
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200">

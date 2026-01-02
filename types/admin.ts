@@ -261,6 +261,18 @@ export interface ProcessLikesResponse {
   details: ProcessLikeDetail[];
 }
 
+export interface ViewProfileRequest {
+  viewerId: string;
+  viewedUserId: string;
+}
+
+export interface ViewProfileResponse {
+  success: boolean;
+  matchId: string;
+  isFirstView: boolean;
+  notificationSent: boolean;
+}
+
 export interface ActionLogResponse {
   id: string;
   adminUserName: string;
