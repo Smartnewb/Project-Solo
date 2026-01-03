@@ -69,6 +69,18 @@ export default function GemsManagementPage() {
     return pattern.test(cleaned);
   };
 
+  const formatPhoneNumberForDisplay = (value: string): string => {
+    const numbers = value.replace(/[^0-9]/g, '');
+    if (numbers.length <= 3) {
+      return numbers;
+    } else if (numbers.length <= 7) {
+      return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+    } else if (numbers.length <= 11) {
+      return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7)}`;
+    }
+    return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
+  };
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -427,7 +439,7 @@ export default function GemsManagementPage() {
                   <TableBody>
                     {result.errors.map((error, index) => (
                       <TableRow key={index}>
-                        <TableCell>{error.identifier}</TableCell>
+                        <TableCell>{formatPhoneNumberForDisplay(error.identifier)}</TableCell>
                         <TableCell>
                           <Chip
                             label={

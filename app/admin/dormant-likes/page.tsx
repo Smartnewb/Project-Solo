@@ -19,7 +19,6 @@ import {
   CardContent,
   Grid,
   Pagination,
-  TextField,
 } from '@mui/material';
 import AdminService from '@/app/services/admin';
 import type { DormantLikesDashboardResponse, DormantUserResponse } from '@/types/admin';
@@ -30,7 +29,6 @@ export default function DormantLikesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [page, setPage] = useState(1);
-  const [inactiveDays, setInactiveDays] = useState(7);
   const [selectedUser, setSelectedUser] = useState<DormantUserResponse | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -38,7 +36,7 @@ export default function DormantLikesPage() {
     try {
       setLoading(true);
       setError('');
-      const data = await AdminService.dormantLikes.getDashboard(page, 20, inactiveDays);
+      const data = await AdminService.dormantLikes.getDashboard(page, 20);
       setDashboardData(data);
     } catch (err: any) {
       setError(err.response?.data?.message || '대시보드를 불러오는데 실패했습니다.');
@@ -49,7 +47,7 @@ export default function DormantLikesPage() {
 
   useEffect(() => {
     fetchDashboard();
-  }, [page, inactiveDays]);
+  }, [page]);
 
   const handleUserClick = (user: DormantUserResponse) => {
     setSelectedUser(user);
@@ -81,7 +79,7 @@ export default function DormantLikesPage() {
           파묘 계정 좋아요 관리
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          7일 이상 미접속한 구슬 보유 여성 유저의 미확인 좋아요를 대리 처리합니다.
+          1일 이상 미접속한 구슬 보유 여성 유저의 미확인 좋아요에 대해 프로필 노출 또는 거절 처리합니다.
         </Typography>
       </Box>
 
@@ -121,7 +119,7 @@ export default function DormantLikesPage() {
           <Card sx={{ bgcolor: '#ecfdf5' }}>
             <CardContent>
               <Typography color="text.secondary" variant="body2">
-                오늘 조회
+                오늘 프로필 노출
               </Typography>
               <Typography variant="h4" fontWeight="bold" sx={{ color: '#10b981' }}>
                 {dashboardData?.todayViewedCount || 0}
@@ -143,25 +141,9 @@ export default function DormantLikesPage() {
         </Grid>
       </Grid>
 
-      {/* 필터 */}
-      <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
-        <TextField
-          label="미접속 기준 일수"
-          type="number"
-          value={inactiveDays}
-          onChange={(e) => {
-            const value = parseInt(e.target.value);
-            if (value >= 1) {
-              setInactiveDays(value);
-              setPage(1);
-            }
-          }}
-          size="small"
-          sx={{ width: 150 }}
-          InputProps={{ inputProps: { min: 1 } }}
-        />
+      <Box sx={{ mb: 2 }}>
         <Typography variant="body2" color="text.secondary">
-          총 {dashboardData?.totalUsers || 0}명의 파묘 계정
+          총 {dashboardData?.totalUsers || 0}명의 대상 계정
         </Typography>
       </Box>
 

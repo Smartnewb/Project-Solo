@@ -123,7 +123,7 @@ export default function PendingLikesModal({ open, onClose, user }: PendingLikesM
     const expectedRejections = Math.round(selectedLikeIds.length * rejectionRate);
     const confirmed = confirm(
       `선택한 ${selectedLikeIds.length}개의 좋아요를 처리하시겠습니까?\n\n` +
-      `약 ${expectedRejections}개는 거절, ${selectedLikeIds.length - expectedRejections}개는 조회 처리됩니다.`
+      `약 ${expectedRejections}개는 거절, ${selectedLikeIds.length - expectedRejections}개는 프로필 노출 처리됩니다.`
     );
 
     if (!confirmed) return;
@@ -138,7 +138,7 @@ export default function PendingLikesModal({ open, onClose, user }: PendingLikesM
 
       alert(
         `처리가 완료되었습니다.\n\n` +
-        `조회: ${result.viewedCount}개\n` +
+        `프로필 노출: ${result.viewedCount}개\n` +
         `거절: ${result.rejectedCount}개`
       );
 
@@ -198,8 +198,8 @@ export default function PendingLikesModal({ open, onClose, user }: PendingLikesM
     }
 
     const confirmed = confirm(
-      '이 사용자의 프로필을 조회 처리하시겠습니까?\n\n' +
-      '프로필 조회 기록이 생성되고, 좋아요를 보낸 사람에게 푸시 알림이 발송됩니다.'
+      '이 사용자의 프로필을 노출 처리하시겠습니까?\n\n' +
+      '좋아요를 보낸 남성에게 "상대방이 프로필을 봤어요" 푸시 알림이 발송됩니다.'
     );
 
     if (!confirmed) return;
@@ -213,15 +213,15 @@ export default function PendingLikesModal({ open, onClose, user }: PendingLikesM
 
       if (result.success) {
         alert(
-          `프로필 조회 처리가 완료되었습니다.\n\n` +
+          `프로필 노출 처리가 완료되었습니다.\n\n` +
           `매칭 ID: ${result.matchId}\n` +
-          `첫 조회 여부: ${result.isFirstView ? '예' : '아니오'}\n` +
+          `첫 노출 여부: ${result.isFirstView ? '예' : '아니오'}\n` +
           `알림 발송: ${result.notificationSent ? '성공' : '실패'}`
         );
         await fetchData();
       }
     } catch (err: any) {
-      const errorMsg = err.response?.data?.message || '프로필 조회 처리 중 오류가 발생했습니다.';
+      const errorMsg = err.response?.data?.message || '프로필 노출 처리 중 오류가 발생했습니다.';
       setError(errorMsg);
       alert(errorMsg);
     } finally {
@@ -306,7 +306,7 @@ export default function PendingLikesModal({ open, onClose, user }: PendingLikesM
                     <TableCell>나이</TableCell>
                     <TableCell>대학교</TableCell>
                     <TableCell>경과일</TableCell>
-                    <TableCell align="center">프로필 조회</TableCell>
+                      <TableCell align="center">프로필 노출</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -363,7 +363,7 @@ export default function PendingLikesModal({ open, onClose, user }: PendingLikesM
                             {viewingProfileId === like.senderUserId ? (
                               <CircularProgress size={16} />
                             ) : (
-                              '조회 처리'
+                              '프로필 노출'
                             )}
                           </Button>
                         </TableCell>
@@ -396,7 +396,8 @@ export default function PendingLikesModal({ open, onClose, user }: PendingLikesM
               />
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                 선택 {selectedLikeIds.length}개 중 약{' '}
-                {Math.round(selectedLikeIds.length * rejectionRate)}개 거절 예정
+                {Math.round(selectedLikeIds.length * rejectionRate)}개 거절,{' '}
+                {selectedLikeIds.length - Math.round(selectedLikeIds.length * rejectionRate)}개 프로필 노출 예정
               </Typography>
             </Box>
           </>

@@ -163,7 +163,7 @@ export default function DormantLikesLogsPage() {
                     <TableCell>{log.dormantUserName}</TableCell>
                     <TableCell align="center">
                       {log.actionType === 'VIEW' ? (
-                        <Chip label="조회" size="small" sx={{ bgcolor: '#3b82f6', color: 'white' }} />
+                        <Chip label="프로필 노출" size="small" sx={{ bgcolor: '#3b82f6', color: 'white' }} />
                       ) : (
                         <Chip label="거절" size="small" sx={{ bgcolor: '#ef4444', color: 'white' }} />
                       )}
