@@ -191,6 +191,11 @@ export default function AdminLayout({
                 </Link>
               </li>
               <li>
+                <Link href='/admin/ios-refund' className='block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors'>
+                  iOS 환불 관리
+                </Link>
+              </li>
+              <li>
                 <Link href="/admin/profile-review" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors" onClick={() => setSidebarOpen(false)}>
                   회원 적격 심사
                 </Link>

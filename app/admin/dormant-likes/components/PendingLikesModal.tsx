@@ -24,6 +24,7 @@ import {
   Grid,
 } from '@mui/material';
 import AdminService from '@/app/services/admin';
+import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
 import type {
   DormantUserResponse,
   DormantLikeDetailResponse,
@@ -44,6 +45,13 @@ export default function PendingLikesModal({ open, onClose, user }: PendingLikesM
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
+
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [userDetailModalOpen, setUserDetailModalOpen] = useState(false);
+  const [userDetail, setUserDetail] = useState<any>(null);
+  const [loadingUserDetail, setLoadingUserDetail] = useState(false);
+  const [userDetailError, setUserDetailError] = useState<string | null>(null);
+  const [viewingProfileId, setViewingProfileId] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -157,6 +165,70 @@ export default function PendingLikesModal({ open, onClose, user }: PendingLikesM
 
   const isSelected = (matchLikeId: string) => selectedLikeIds.indexOf(matchLikeId) !== -1;
 
+  const handleUserClick = async (userId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedUserId(userId);
+    setUserDetailModalOpen(true);
+    setLoadingUserDetail(true);
+    setUserDetailError(null);
+
+    try {
+      const response = await AdminService.userAppearance.getUserDetails(userId);
+      setUserDetail(response);
+    } catch (err: any) {
+      setUserDetailError(err.response?.data?.message || err.message || '사용자 정보를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setLoadingUserDetail(false);
+    }
+  };
+
+  const handleCloseUserDetailModal = () => {
+    setUserDetailModalOpen(false);
+    setSelectedUserId(null);
+    setUserDetail(null);
+    setUserDetailError(null);
+  };
+
+  const handleViewProfile = async (senderUserId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+
+    if (cooldownStatus?.isOnCooldown) {
+      alert(`쿨다운 중입니다. ${cooldownStatus.remainingMinutes}분 후에 다시 시도해주세요.`);
+      return;
+    }
+
+    const confirmed = confirm(
+      '이 사용자의 프로필을 조회 처리하시겠습니까?\n\n' +
+      '프로필 조회 기록이 생성되고, 좋아요를 보낸 사람에게 푸시 알림이 발송됩니다.'
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setViewingProfileId(senderUserId);
+      const result = await AdminService.dormantLikes.viewProfile({
+        viewerId: user.id,
+        viewedUserId: senderUserId,
+      });
+
+      if (result.success) {
+        alert(
+          `프로필 조회 처리가 완료되었습니다.\n\n` +
+          `매칭 ID: ${result.matchId}\n` +
+          `첫 조회 여부: ${result.isFirstView ? '예' : '아니오'}\n` +
+          `알림 발송: ${result.notificationSent ? '성공' : '실패'}`
+        );
+        await fetchData();
+      }
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.message || '프로필 조회 처리 중 오류가 발생했습니다.';
+      setError(errorMsg);
+      alert(errorMsg);
+    } finally {
+      setViewingProfileId(null);
+    }
+  };
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
@@ -234,6 +306,7 @@ export default function PendingLikesModal({ open, onClose, user }: PendingLikesM
                     <TableCell>나이</TableCell>
                     <TableCell>대학교</TableCell>
                     <TableCell>경과일</TableCell>
+                    <TableCell align="center">프로필 조회</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -253,16 +326,46 @@ export default function PendingLikesModal({ open, onClose, user }: PendingLikesM
                         <TableCell>
                           <Avatar
                             src={like.senderMainImageUrl || undefined}
-                            sx={{ width: 40, height: 40 }}
+                            sx={{
+                              width: 40,
+                              height: 40,
+                              cursor: 'pointer',
+                              '&:hover': { opacity: 0.8, boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }
+                            }}
+                            onClick={(e) => handleUserClick(like.senderUserId, e)}
                           >
                             {like.senderName[0]}
                           </Avatar>
                         </TableCell>
-                        <TableCell>{like.senderName}</TableCell>
+                        <TableCell
+                          sx={{
+                            cursor: 'pointer',
+                            '&:hover': { textDecoration: 'underline', color: 'primary.main' }
+                          }}
+                          onClick={(e) => handleUserClick(like.senderUserId, e)}
+                        >
+                          {like.senderName}
+                        </TableCell>
                         <TableCell>{like.senderAge}세</TableCell>
                         <TableCell>{like.senderUniversity}</TableCell>
                         <TableCell>
                           <Chip label={`${like.daysSinceLiked}일 전`} size="small" />
+                        </TableCell>
+                        <TableCell align="center">
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            color="primary"
+                            onClick={(e) => handleViewProfile(like.senderUserId, e)}
+                            disabled={viewingProfileId === like.senderUserId || cooldownStatus?.isOnCooldown}
+                            sx={{ minWidth: 80 }}
+                          >
+                            {viewingProfileId === like.senderUserId ? (
+                              <CircularProgress size={16} />
+                            ) : (
+                              '조회 처리'
+                            )}
+                          </Button>
                         </TableCell>
                       </TableRow>
                     );
@@ -317,6 +420,15 @@ export default function PendingLikesModal({ open, onClose, user }: PendingLikesM
           {processing ? '처리 중...' : '처리하기'}
         </Button>
       </DialogActions>
+
+      <UserDetailModal
+        open={userDetailModalOpen}
+        onClose={handleCloseUserDetailModal}
+        userId={selectedUserId}
+        userDetail={userDetail || {}}
+        loading={loadingUserDetail}
+        error={userDetailError}
+      />
     </Dialog>
   );
 }

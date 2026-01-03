@@ -33,6 +33,8 @@ import type {
   RefundPreviewResponse,
   ProcessRefundRequest,
   ProcessRefundResponse,
+  AppleRefundListResponse,
+  AppleRefundListParams,
 } from '@/types/admin';
 
 // 상단에 타입 정의 추가
@@ -652,14 +654,8 @@ const userAppearance = {
     try {
       console.log('유저 상세 정보 조회 시작:', userId);
 
-      // API 엔드포인트 (API 문서에서 확인한 정확한 경로)
-      // API 문서 확인 결과, 정확한 경로는 /admin/users/detail/{userId}
-      const endpoint = `/admin/users/detail/${userId}`;
+      const endpoint = `/admin/user-review/${userId}`;
       console.log(`API 엔드포인트: ${endpoint}`);
-
-      // axios 설정 확인
-      console.log('axios baseURL:', axiosServer.defaults.baseURL);
-      console.log('전체 URL:', `${axiosServer.defaults.baseURL}${endpoint.startsWith('/') ? endpoint : '/' + endpoint}`);
 
       const response = await axiosServer.get(endpoint);
       console.log('유저 상세 정보 응답:', response.data);
@@ -668,8 +664,6 @@ const userAppearance = {
     } catch (error: any) {
       console.error('유저 상세 정보 조회 중 오류:', error);
       console.error('오류 상세 정보:', error.response?.data || error.message);
-
-      // 오류 발생 시 예외 던지기
       throw error;
     }
   },
@@ -746,8 +740,7 @@ const userAppearance = {
   getUserGems: async (userId: string) => {
     try {
       console.log('사용자 구슬 조회 시작:', userId);
-      const endpoint = `/admin/users/gems/${userId}`;
-      console.log(`API 엔드포인트: ${endpoint}`);
+      const endpoint = `/admin/gems/users/${userId}/balance`;
 
       const response = await axiosServer.get(endpoint);
       console.log('사용자 구슬 조회 응답:', response.data);
@@ -764,13 +757,9 @@ const userAppearance = {
   addUserGems: async (userId: string, amount: number) => {
     try {
       console.log('사용자 구슬 추가 시작:', { userId, amount });
-      const endpoint = `/admin/users/gems/add`;
-      console.log(`API 엔드포인트: ${endpoint}`);
+      const endpoint = `/admin/gems/users/${userId}/add`;
 
-      const response = await axiosServer.post(endpoint, {
-        userId,
-        amount
-      });
+      const response = await axiosServer.post(endpoint, { amount });
 
       console.log('사용자 구슬 추가 응답:', response.data);
       return response.data;
@@ -785,13 +774,9 @@ const userAppearance = {
   removeUserGems: async (userId: string, amount: number) => {
     try {
       console.log('사용자 구슬 제거 시작:', { userId, amount });
-      const endpoint = `/admin/users/gems/remove`;
-      console.log(`API 엔드포인트: ${endpoint}`);
+      const endpoint = `/admin/gems/users/${userId}/deduct`;
 
-      const response = await axiosServer.post(endpoint, {
-        userId,
-        amount
-      });
+      const response = await axiosServer.post(endpoint, { amount });
 
       console.log('사용자 구슬 제거 응답:', response.data);
       return response.data;
@@ -2957,6 +2942,47 @@ const chatRefund = {
   },
 };
 
+const appleRefund = {
+  getList: async (params: AppleRefundListParams = {}) => {
+    try {
+      const response = await axiosServer.get<AppleRefundListResponse>('/admin/apple-refund', {
+        params: {
+          page: params.page || 1,
+          limit: params.limit || 20,
+          ...(params.status && { status: params.status }),
+          ...(params.startDate && { startDate: params.startDate }),
+          ...(params.endDate && { endDate: params.endDate }),
+          ...(params.searchTerm && { searchTerm: params.searchTerm }),
+        }
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('iOS 환불 내역 조회 중 오류:', error);
+      throw error;
+    }
+  },
+
+  getDetail: async (id: string) => {
+    try {
+      const response = await axiosServer.get(`/admin/apple-refund/${id}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('iOS 환불 상세 조회 중 오류:', error);
+      throw error;
+    }
+  },
+
+  syncRefundStatus: async () => {
+    try {
+      const response = await axiosServer.post('/admin/apple-refund/sync');
+      return response.data;
+    } catch (error: any) {
+      console.error('iOS 환불 상태 동기화 중 오류:', error);
+      throw error;
+    }
+  },
+};
+
 const AdminService = {
   auth,
   stats,
@@ -2976,6 +3002,7 @@ const AdminService = {
   banners,
   dormantLikes,
   chatRefund,
+  appleRefund,
   getProfileReports: reports.getProfileReports
 };
 

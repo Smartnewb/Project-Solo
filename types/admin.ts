@@ -354,3 +354,45 @@ export interface ProcessRefundResponse {
   smsSentAt?: string;
   smsError?: string;
 }
+
+export enum AppleRefundStatus {
+  NONE = 'NONE',
+  REFUNDED = 'REFUNDED',
+}
+
+export interface AppleRefundItem {
+  id: string;
+  userId: string;
+  userName: string;
+  transactionId: string;
+  originalTransactionId: string;
+  productId: string;
+  purchaseDate: string;
+  refundDate: string | null;
+  refundStatus: AppleRefundStatus;
+  amount: number;
+  currency: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AppleRefundListResponse {
+  items: AppleRefundItem[];
+  meta: {
+    page: number;
+    limit: number;
+    totalCount: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
+
+export interface AppleRefundListParams {
+  page?: number;
+  limit?: number;
+  status?: AppleRefundStatus;
+  startDate?: string;
+  endDate?: string;
+  searchTerm?: string;
+}
