@@ -82,10 +82,10 @@ export default function MatchingFunnelChart() {
             {item.label}
           </Typography>
           <Typography variant="body2">
-            건수: {item.count.toLocaleString()}건
+            건수: {(item.count ?? 0).toLocaleString()}건
           </Typography>
           <Typography variant="body2">
-            비율: {item.rate.toFixed(1)}%
+            비율: {(item.rate ?? 0).toFixed(1)}%
           </Typography>
         </Box>
       );
@@ -154,7 +154,7 @@ export default function MatchingFunnelChart() {
                   <LabelList
                     dataKey="rate"
                     position="right"
-                    formatter={(value: number) => `${value.toFixed(1)}%`}
+                    formatter={(value: number) => `${(value ?? 0).toFixed(1)}%`}
                     style={{ fontSize: 12, fill: '#666' }}
                   />
                 </Bar>
@@ -198,7 +198,8 @@ export default function MatchingFunnelChart() {
   );
 }
 
-function ConversionRateItem({ label, rate }: { label: string; rate: number }) {
+function ConversionRateItem({ label, rate }: { label: string; rate?: number }) {
+  const safeRate = rate ?? 0;
   const getColor = (r: number) => {
     if (r >= 70) return 'text-green-600';
     if (r >= 40) return 'text-yellow-600';
@@ -210,8 +211,8 @@ function ConversionRateItem({ label, rate }: { label: string; rate: number }) {
       <Typography variant="caption" color="textSecondary" className="block">
         {label}
       </Typography>
-      <Typography variant="body1" fontWeight="bold" className={getColor(rate)}>
-        {rate.toFixed(1)}%
+      <Typography variant="body1" fontWeight="bold" className={getColor(safeRate)}>
+        {safeRate.toFixed(1)}%
       </Typography>
     </Box>
   );

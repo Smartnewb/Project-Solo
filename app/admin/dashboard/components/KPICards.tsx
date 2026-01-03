@@ -110,10 +110,10 @@ export default function KPICards({ kpi, loading }: KPICardsProps) {
       <Grid item xs={12} md={6}>
         <KPICard
           title="가입자"
-          dailyValue={kpi?.dailySignups.value ?? 0}
-          dailyChange={kpi?.dailySignups.changePercent ?? 0}
-          weeklyValue={kpi?.weeklySignups.value ?? 0}
-          weeklyChange={kpi?.weeklySignups.changePercent ?? 0}
+          dailyValue={kpi?.dailySignups?.value ?? 0}
+          dailyChange={kpi?.dailySignups?.changePercent ?? 0}
+          weeklyValue={kpi?.weeklySignups?.value ?? 0}
+          weeklyChange={kpi?.weeklySignups?.changePercent ?? 0}
           formatter={formatNumber}
           loading={loading}
           color="#3B82F6"
@@ -122,10 +122,10 @@ export default function KPICards({ kpi, loading }: KPICardsProps) {
       <Grid item xs={12} md={6}>
         <KPICard
           title="매출"
-          dailyValue={kpi?.dailySales.value ?? 0}
-          dailyChange={kpi?.dailySales.changePercent ?? 0}
-          weeklyValue={kpi?.weeklySales.value ?? 0}
-          weeklyChange={kpi?.weeklySales.changePercent ?? 0}
+          dailyValue={kpi?.dailySales?.value ?? 0}
+          dailyChange={kpi?.dailySales?.changePercent ?? 0}
+          weeklyValue={kpi?.weeklySales?.value ?? 0}
+          weeklyChange={kpi?.weeklySales?.changePercent ?? 0}
           formatter={formatCurrency}
           loading={loading}
           color="#10B981"
