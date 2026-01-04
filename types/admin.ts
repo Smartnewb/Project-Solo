@@ -415,6 +415,7 @@ export interface MatchingPoolSummaryStats {
   genderRatio: number | null;
   avgAge: number;
   avgProfileCompleteness: number;
+  overallMutualLikeRate: number;
   overallMatchToChatRate: number;
 }
 
@@ -483,11 +484,17 @@ export interface MatchingPoolProfileCompleteness {
 }
 
 export interface MatchingPoolMatchingStats {
+  totalLikes: number;
+  mutualLikes: number;
+  mutualLikeRate: number;
+  /** 포맷: "+8.5%", "-3.2%" */
+  mutualLikeTrend: string;
+
   totalMatches: number;
   chatConversions: number;
   matchToChatRate: number;
-  /** 전주 대비 변화율 (포맷팅된 문자열, 예: "+8.5%", "-3.2%") */
-  trend: string;
+  /** 포맷: "+8.5%", "-3.2%" */
+  matchToChatTrend: string;
 }
 
 export type MatchingPoolActivityRank = 'high' | 'medium' | 'low';

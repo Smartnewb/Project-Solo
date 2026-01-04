@@ -397,7 +397,7 @@ export default function CountryOverview() {
           <>
             <Box sx={{ mb: 2 }}>
               <Grid container spacing={2}>
-                <Grid item xs={6} sm={3}>
+                <Grid item xs={6} sm={4} md>
                   <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
                     <Typography variant="h5" fontWeight="bold">
                       {mapStats.summary.totalUsers.toLocaleString()}
@@ -407,7 +407,7 @@ export default function CountryOverview() {
                     </Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={6} sm={3}>
+                <Grid item xs={6} sm={4} md>
                   <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
                     <Typography variant="h5" fontWeight="bold" color="primary">
                       {mapStats.summary.genderRatio !== null
@@ -419,7 +419,7 @@ export default function CountryOverview() {
                     </Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={6} sm={3}>
+                <Grid item xs={6} sm={4} md>
                   <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
                     <Typography variant="h5" fontWeight="bold">
                       {mapStats.summary.avgAge.toFixed(1)}세
@@ -429,7 +429,17 @@ export default function CountryOverview() {
                     </Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={6} sm={3}>
+                <Grid item xs={6} sm={4} md>
+                  <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                    <Typography variant="h5" fontWeight="bold" color="warning.main">
+                      {(mapStats.summary.overallMutualLikeRate * 100).toFixed(1)}%
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      상호 좋아요율
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={6} sm={4} md>
                   <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
                     <Typography variant="h5" fontWeight="bold" color="success.main">
                       {(mapStats.summary.overallMatchToChatRate * 100).toFixed(1)}%

@@ -7,8 +7,11 @@ interface RegionPopupContentProps {
 }
 
 export default function RegionPopupContent({ region }: RegionPopupContentProps) {
-  const trendValue = parseFloat(region.matchingStats.trend.replace(/[+%]/g, ''));
-  const trendIsPositive = trendValue >= 0;
+  const chatTrendValue = parseFloat(region.matchingStats.matchToChatTrend.replace(/[+%]/g, ''));
+  const chatTrendIsPositive = chatTrendValue >= 0;
+
+  const mutualTrendValue = parseFloat(region.matchingStats.mutualLikeTrend.replace(/[+%]/g, ''));
+  const mutualTrendIsPositive = mutualTrendValue >= 0;
 
   const formatGenderRatio = (ratio: number | null): string => {
     if (ratio === null) return 'N/A';
@@ -37,24 +40,24 @@ export default function RegionPopupContent({ region }: RegionPopupContentProps) 
 
       <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '12px', marginBottom: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+          <span style={{ fontSize: '13px', color: '#6b7280' }}>상호 좋아요율</span>
+          <span style={{ fontWeight: 600 }}>
+            {(region.matchingStats.mutualLikeRate * 100).toFixed(1)}%
+          </span>
+          <TrendBadge value={region.matchingStats.mutualLikeTrend} isPositive={mutualTrendIsPositive} />
+        </div>
+        <div style={{ fontSize: '12px', color: '#9ca3af' }}>
+          좋아요 {region.matchingStats.totalLikes}건 중{' '}
+          {region.matchingStats.mutualLikes}건 상호
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', marginBottom: '8px' }}>
           <span style={{ fontSize: '13px', color: '#6b7280' }}>채팅 전환율</span>
           <span style={{ fontWeight: 600 }}>
             {(region.matchingStats.matchToChatRate * 100).toFixed(1)}%
           </span>
-          <span
-            style={{
-              fontSize: '12px',
-              padding: '2px 6px',
-              borderRadius: '4px',
-              backgroundColor: trendIsPositive ? '#dcfce7' : '#fee2e2',
-              color: trendIsPositive ? '#16a34a' : '#dc2626',
-              fontWeight: 500,
-            }}
-          >
-            {region.matchingStats.trend}
-          </span>
+          <TrendBadge value={region.matchingStats.matchToChatTrend} isPositive={chatTrendIsPositive} />
         </div>
-
         <div style={{ fontSize: '12px', color: '#9ca3af' }}>
           매칭 {region.matchingStats.totalMatches}건 중{' '}
           {region.matchingStats.chatConversions}건 전환
@@ -122,5 +125,27 @@ function StatItem({ label, value, color }: StatItemProps) {
       <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '2px' }}>{label}</div>
       <div style={{ fontSize: '15px', fontWeight: 600, color: color || 'inherit' }}>{value}</div>
     </div>
+  );
+}
+
+interface TrendBadgeProps {
+  value: string;
+  isPositive: boolean;
+}
+
+function TrendBadge({ value, isPositive }: TrendBadgeProps) {
+  return (
+    <span
+      style={{
+        fontSize: '12px',
+        padding: '2px 6px',
+        borderRadius: '4px',
+        backgroundColor: isPositive ? '#dcfce7' : '#fee2e2',
+        color: isPositive ? '#16a34a' : '#dc2626',
+        fontWeight: 500,
+      }}
+    >
+      {value}
+    </span>
   );
 }
