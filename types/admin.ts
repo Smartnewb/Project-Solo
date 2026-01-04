@@ -396,3 +396,114 @@ export interface AppleRefundListParams {
   endDate?: string;
   searchTerm?: string;
 }
+
+export type MatchingPoolCountry = 'KR' | 'JP';
+
+export interface MatchingPoolStatsResponse {
+  country: MatchingPoolCountry;
+  cachedAt: string;
+  nextUpdateAt: string;
+  summary: MatchingPoolSummaryStats;
+  regions: MatchingPoolRegionStats[];
+}
+
+export interface MatchingPoolSummaryStats {
+  totalUsers: number;
+  maleCount: number;
+  femaleCount: number;
+  /** 성비 (남/여). female=0인 경우 null 반환 */
+  genderRatio: number | null;
+  avgAge: number;
+  avgProfileCompleteness: number;
+  overallMatchToChatRate: number;
+}
+
+export interface MatchingPoolRegionStats {
+  regionCode: string;
+  regionName: string;
+  coordinates: MatchingPoolCoordinates;
+  users: MatchingPoolUserStats;
+  ageDistribution: MatchingPoolAgeDistribution;
+  universities: MatchingPoolUniversityStats;
+  profileCompleteness: MatchingPoolProfileCompleteness;
+  matchingStats: MatchingPoolMatchingStats;
+  hourlyActivity: MatchingPoolHourlyActivity;
+}
+
+export interface MatchingPoolCoordinates {
+  lat: number;
+  lng: number;
+}
+
+export interface MatchingPoolUserStats {
+  total: number;
+  male: number;
+  female: number;
+  /** 성비 (남/여). female=0인 경우 null 반환 */
+  genderRatio: number | null;
+}
+
+export interface MatchingPoolAgeGroup {
+  count: number;
+  male: number;
+  female: number;
+}
+
+export interface MatchingPoolAgeDistribution {
+  '20-22': MatchingPoolAgeGroup;
+  '23-25': MatchingPoolAgeGroup;
+  '26-28': MatchingPoolAgeGroup;
+  '29+': MatchingPoolAgeGroup;
+}
+
+export interface MatchingPoolUniversityItem {
+  id: string;
+  name: string;
+  count: number;
+  male: number;
+  female: number;
+}
+
+export interface MatchingPoolUniversityStats {
+  topUniversities: MatchingPoolUniversityItem[];
+  totalUniversities: number;
+  otherCount: number;
+}
+
+export interface MatchingPoolCompletenessGroup {
+  range: string;
+  count: number;
+  percentage: number;
+}
+
+export interface MatchingPoolProfileCompleteness {
+  incomplete: MatchingPoolCompletenessGroup;
+  basic: MatchingPoolCompletenessGroup;
+  complete: MatchingPoolCompletenessGroup;
+}
+
+export interface MatchingPoolMatchingStats {
+  totalMatches: number;
+  chatConversions: number;
+  matchToChatRate: number;
+  /** 전주 대비 변화율 (포맷팅된 문자열, 예: "+8.5%", "-3.2%") */
+  trend: string;
+}
+
+export type MatchingPoolActivityRank = 'high' | 'medium' | 'low';
+
+export interface MatchingPoolHourlyActivity {
+  peakHours: number[];
+  lowHours: number[];
+  currentHourRank: MatchingPoolActivityRank;
+  /** 시간대별 활동 점수 (0-23시, 값: 0-100) */
+  distribution: Record<string, number>;
+}
+
+export type KoreaRegionCode =
+  | 'SEL' | 'BSN' | 'DGU' | 'ICN' | 'GWJ' | 'DJN' | 'ULS' | 'SJG'
+  | 'KYG' | 'GNG' | 'CCN' | 'CAN' | 'JJU' | 'YSU' | 'PHG' | 'CWN' | 'JJA';
+
+export type JapanRegionCode =
+  | 'TOKYO' | 'OSAKA' | 'KANAGAWA' | 'AICHI' | 'SAITAMA'
+  | 'CHIBA' | 'HYOGO' | 'HOKKAIDO' | 'FUKUOKA' | 'KYOTO';
