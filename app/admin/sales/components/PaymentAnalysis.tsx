@@ -129,19 +129,70 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
 
     const getAnalysisData = () => {
         if (!paymentData) return [];
+        
+        let rawData: Array<{
+            paymentType: string;
+            totalAmount: number;
+            count: number;
+            percentage: number;
+            netAmount?: number;
+        }> = [];
+        
         if (paymentData.data) {
-            return paymentData.data.map(item => ({
+            rawData = paymentData.data.map(item => ({
                 paymentType: item.method,
                 totalAmount: item.amount,
                 count: item.count,
                 percentage: item.percentage,
                 netAmount: undefined,
             }));
+        } else if (paymentData.analysis) {
+            rawData = paymentData.analysis;
         }
-        if (paymentData.analysis) {
-            return paymentData.analysis;
-        }
-        return [];
+        
+        if (rawData.length === 0) return [];
+        
+        // 병합 대상: kakaopay/KAKAOPAY → KAKAOPAY, tosspay/TOSSPAY → TOSSPAY
+        const mergeTargets: Record<string, string> = {
+            'kakaopay': 'KAKAOPAY',
+            'KAKAOPAY': 'KAKAOPAY',
+            'tosspay': 'TOSSPAY',
+            'TOSSPAY': 'TOSSPAY',
+        };
+        
+        const mergedMap = new Map<string, {
+            paymentType: string;
+            totalAmount: number;
+            count: number;
+            netAmount?: number;
+        }>();
+        
+        rawData.forEach(item => {
+            const normalizedType = mergeTargets[item.paymentType] || item.paymentType;
+            
+            if (mergedMap.has(normalizedType)) {
+                const existing = mergedMap.get(normalizedType)!;
+                existing.totalAmount += item.totalAmount;
+                existing.count += item.count;
+                if (item.netAmount !== undefined) {
+                    existing.netAmount = (existing.netAmount || 0) + item.netAmount;
+                }
+            } else {
+                mergedMap.set(normalizedType, {
+                    paymentType: normalizedType,
+                    totalAmount: item.totalAmount,
+                    count: item.count,
+                    netAmount: item.netAmount,
+                });
+            }
+        });
+        
+        const totalAmount = Array.from(mergedMap.values()).reduce((sum, item) => sum + item.totalAmount, 0);
+        
+        return Array.from(mergedMap.values()).map(item => ({
+            ...item,
+            percentage: totalAmount > 0 ? (item.totalAmount / totalAmount) * 100 : 0,
+        }));
     };
 
     const getPieChartData = () => {
@@ -162,11 +213,12 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
         '#8dd1e1', '#d084d0', '#ffb347', '#87ceeb'
     ];
 
-    // === 유틸리티 ===
     const getPaymentTypeName = (type: string): string => {
         const typeMap: Record<string, string> = {
             'PG': 'WELCOME payment',
             'IAP': 'Apple 인앱 결제',
+            'KAKAOPAY': '카카오페이',
+            'TOSSPAY': '토스페이',
         };
         return typeMap[type] || type;
     };
