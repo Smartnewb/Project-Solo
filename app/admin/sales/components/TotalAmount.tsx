@@ -125,6 +125,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
     const fetchIapStats = async () => {
         try {
             const response = await salesService.getIapStats();
+            console.log('IAP 통계 API 응답:', response);
             setIapStats(response);
         } catch (error) {
             console.error('IAP 통계 조회 실패:', error);

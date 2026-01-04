@@ -78,7 +78,7 @@ export default function ActionCards({ actionItems, matching, loading }: ActionCa
           title="승인 대기"
           count={pendingApprovals}
           icon={<ApprovalIcon sx={{ fontSize: 40 }} />}
-          link="/admin/users/appearance"
+          link="/admin/profile-review"
           color="#3B82F6"
           loading={loading}
         />
