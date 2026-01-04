@@ -463,7 +463,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                         <div className="text-4xl font-bold text-purple-600 mb-4">
                             {formatCurrency(getFilteredTotals().totalSales)}
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
                             <div className="text-center p-4 bg-gray-50 rounded-lg">
                                 <div className="text-sm text-gray-500">총 거래 건수</div>
                                 <div className="text-xl font-semibold text-gray-900">
@@ -473,7 +473,13 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                             <div className="text-center p-4 bg-orange-50 rounded-lg">
                                 <div className="text-sm text-gray-500">유료 사용자 수</div>
                                 <div className="text-xl font-semibold text-orange-900">
-                                    {formatNumber(getFilteredTotals().totalPaidUsers)}명
+                                    {formatNumber(iapStats?.paidUserCount ?? getFilteredTotals().totalPaidUsers)}명
+                                </div>
+                            </div>
+                            <div className="text-center p-4 bg-blue-50 rounded-lg">
+                                <div className="text-sm text-gray-500">ARPPU</div>
+                                <div className="text-xl font-semibold text-blue-900">
+                                    {formatCurrency(iapStats?.arppu ?? 0)}
                                 </div>
                             </div>
                             <div className="text-center p-4 bg-purple-50 rounded-lg">
@@ -483,29 +489,6 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                                 </div>
                             </div>
                         </div>
-                        
-                        {iapStats && (
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                                <div className="text-center p-4 bg-green-50 rounded-lg">
-                                    <div className="text-sm text-gray-500">IAP 유료 사용자 수</div>
-                                    <div className="text-xl font-semibold text-green-900">
-                                        {formatNumber(iapStats.paidUserCount)}명
-                                    </div>
-                                </div>
-                                <div className="text-center p-4 bg-blue-50 rounded-lg">
-                                    <div className="text-sm text-gray-500">ARPPU (유료 사용자 1인당 평균 결제액)</div>
-                                    <div className="text-xl font-semibold text-blue-900">
-                                        {formatCurrency(iapStats.arppu)}
-                                    </div>
-                                </div>
-                                <div className="text-center p-4 bg-indigo-50 rounded-lg">
-                                    <div className="text-sm text-gray-500">IAP 총 매출 추정</div>
-                                    <div className="text-xl font-semibold text-indigo-900">
-                                        {formatCurrency(iapStats.paidUserCount * iapStats.arppu)}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
                         
                         {/* 지역별 상세 데이터 표시 */}
                         {totalData.regionalData && totalData.regionalData.length > 0 && (
