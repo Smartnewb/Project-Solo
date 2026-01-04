@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { salesService } from '@/app/services/sales';
-import { CustomSalesResponse } from '../types';
+import { CustomSalesResponse, IapStatsResponse } from '../types';
 import { paymentType } from '../types';
 import { REGION_OPTIONS, getRegionLabel } from '../constants/regions';
 import { PAYMENT_TYPE_OPTIONS, getPaymentTypeLabel } from '../constants/paymentTypes';
@@ -16,13 +16,12 @@ interface TotalAmountProps {
 }
 
 export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
-    // === 상태 관리 ===
     const [totalData, setTotalData] = useState<CustomSalesResponse | null>(null);
+    const [iapStats, setIapStats] = useState<IapStatsResponse | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string>('');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     
-    // 필터 상태
     const [selectedRegions, setSelectedRegions] = useState<string[]>(['all']);
     const [selectedPaymentType, setSelectedPaymentType] = useState<paymentType>('all');
 
@@ -58,9 +57,9 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
         return new Intl.NumberFormat('ko-KR').format(num);
     };
 
-    // === hooks ===
     useEffect(() => {
         fetchTotalSales();
+        fetchIapStats();
     }, []);
 
     useEffect(() => {
@@ -123,8 +122,18 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
         }
     };
 
+    const fetchIapStats = async () => {
+        try {
+            const response = await salesService.getIapStats();
+            setIapStats(response);
+        } catch (error) {
+            console.error('IAP 통계 조회 실패:', error);
+        }
+    };
+
     const handleRefresh = () => {
         fetchTotalSales();
+        fetchIapStats();
     };
 
     const handleSortData = () => {
@@ -454,7 +463,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                         <div className="text-4xl font-bold text-purple-600 mb-4">
                             {formatCurrency(getFilteredTotals().totalSales)}
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
                             <div className="text-center p-4 bg-gray-50 rounded-lg">
                                 <div className="text-sm text-gray-500">총 거래 건수</div>
                                 <div className="text-xl font-semibold text-gray-900">
@@ -467,15 +476,6 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                                     {formatNumber(getFilteredTotals().totalPaidUsers)}명
                                 </div>
                             </div>
-                            <div className="text-center p-4 bg-blue-50 rounded-lg">
-                                <div className="text-sm text-gray-500">사용자당 평균 결제액(ARPU)</div>
-                                <div className="text-xl font-semibold text-blue-900">
-                                    {getFilteredTotals().totalPaidUsers > 0
-                                        ? formatCurrency(getFilteredTotals().totalSales / getFilteredTotals().totalPaidUsers)
-                                        : formatCurrency(0)
-                                    }
-                                </div>
-                            </div>
                             <div className="text-center p-4 bg-purple-50 rounded-lg">
                                 <div className="text-sm text-gray-500">결제 타입</div>
                                 <div className="text-xl font-semibold text-purple-900">
@@ -483,6 +483,29 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                                 </div>
                             </div>
                         </div>
+                        
+                        {iapStats && (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                                <div className="text-center p-4 bg-green-50 rounded-lg">
+                                    <div className="text-sm text-gray-500">IAP 유료 사용자 수</div>
+                                    <div className="text-xl font-semibold text-green-900">
+                                        {formatNumber(iapStats.paidUserCount)}명
+                                    </div>
+                                </div>
+                                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                                    <div className="text-sm text-gray-500">ARPPU (유료 사용자 1인당 평균 결제액)</div>
+                                    <div className="text-xl font-semibold text-blue-900">
+                                        {formatCurrency(iapStats.arppu)}
+                                    </div>
+                                </div>
+                                <div className="text-center p-4 bg-indigo-50 rounded-lg">
+                                    <div className="text-sm text-gray-500">IAP 총 매출 추정</div>
+                                    <div className="text-xl font-semibold text-indigo-900">
+                                        {formatCurrency(iapStats.paidUserCount * iapStats.arppu)}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                         
                         {/* 지역별 상세 데이터 표시 */}
                         {totalData.regionalData && totalData.regionalData.length > 0 && (

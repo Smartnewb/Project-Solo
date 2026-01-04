@@ -17,6 +17,7 @@ import {
     GenderAnalysis,
     AgeAnalysis,
     PaymentSuccessRateResponse,
+    IapStatsResponse,
 } from "../admin/sales/types";
 import { paymentType } from '@/app/admin/sales/types';
 import { da } from "date-fns/locale";
@@ -38,6 +39,7 @@ const SALES_ENDPOINT = {
     PAYMENT_ANALYSIS: '/admin/stats/sales/payment-method-analysis',
     GENDER_ANALYSIS: '/admin/stats/sales/gender-analysis',
     AGE_ANALYSIS: '/admin/stats/sales/age-analysis',
+    IAP_STATS: '/admin/iap-payments/stats',
 } as const;
 
 // MARK: - 공통 매출액 조회 파라미터
@@ -261,6 +263,16 @@ export const salesService = {
             return response.data;
         } catch(error) {
             throw new SalesApiError('연령대별 구매 분석 조회 실패:',error);
+        }
+    },
+
+    // MARK: - IAP 통계 조회
+    async getIapStats(): Promise<IapStatsResponse> {
+        try {
+            const response = await axiosServer.get(SALES_ENDPOINT.IAP_STATS);
+            return response.data;
+        } catch(error) {
+            throw new SalesApiError('IAP 통계 조회 실패:', error);
         }
     },
 };

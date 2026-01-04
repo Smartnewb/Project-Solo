@@ -205,6 +205,12 @@ export interface PaymentAnalysis {
 }
 
 
+// MARK: - IAP 통계 응답
+export interface IapStatsResponse {
+    paidUserCount: number;
+    arppu: number;
+}
+
 // MARK: - 성별 구매 분석
 export interface GenderSalesItem extends AnalysisItem {
     gender: 'MALE' | 'FEMALE';
