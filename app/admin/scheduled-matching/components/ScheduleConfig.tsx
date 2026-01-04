@@ -21,7 +21,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { Button } from '@/shared/ui';
 import { scheduledMatchingService } from '../service';
-import type { Country, ScheduledMatchingConfig, UpdateScheduledMatchingConfigRequest } from '../types';
+import type { Country, ScheduledMatchingConfig, CreateScheduledMatchingConfigRequest, UpdateScheduledMatchingConfigRequest } from '../types';
 import { parseCronToHumanReadable, CRON_PRESETS, TIMEZONE_OPTIONS } from '../utils';
 
 export default function ScheduleConfig() {
@@ -94,18 +94,35 @@ export default function ScheduleConfig() {
       setError(null);
       setSuccess(null);
 
-      const updateData: UpdateScheduledMatchingConfigRequest = {
-        isEnabled: formData.isEnabled,
-        cronExpression: formData.cronExpression,
-        timezone: formData.timezone,
-        batchSize: formData.batchSize,
-        delayBetweenUsersMs: formData.delayBetweenUsersMs,
-        maxRetryCount: formData.maxRetryCount,
-        description: formData.description || undefined,
-      };
+      const configExists = configs.some((c) => c.country === selectedCountry);
 
-      await scheduledMatchingService.updateConfig(selectedCountry, updateData);
-      setSuccess('설정이 저장되었습니다.');
+      if (configExists) {
+        const updateData: UpdateScheduledMatchingConfigRequest = {
+          isEnabled: formData.isEnabled,
+          cronExpression: formData.cronExpression,
+          timezone: formData.timezone,
+          batchSize: formData.batchSize,
+          delayBetweenUsersMs: formData.delayBetweenUsersMs,
+          maxRetryCount: formData.maxRetryCount,
+          description: formData.description || undefined,
+        };
+        await scheduledMatchingService.updateConfig(selectedCountry, updateData);
+        setSuccess('설정이 수정되었습니다.');
+      } else {
+        const createData: CreateScheduledMatchingConfigRequest = {
+          country: selectedCountry,
+          cronExpression: formData.cronExpression,
+          timezone: formData.timezone,
+          isEnabled: formData.isEnabled,
+          batchSize: formData.batchSize,
+          delayBetweenUsersMs: formData.delayBetweenUsersMs,
+          maxRetryCount: formData.maxRetryCount,
+          description: formData.description || undefined,
+        };
+        await scheduledMatchingService.createConfig(createData);
+        setSuccess('설정이 생성되었습니다.');
+      }
+
       fetchConfigs();
     } catch (err) {
       console.error('Failed to save config:', err);
