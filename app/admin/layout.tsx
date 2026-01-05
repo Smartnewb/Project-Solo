@@ -191,6 +191,11 @@ export default function AdminLayout({
                 </Link>
               </li>
               <li>
+                <Link href="/admin/moment" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors" onClick={() => setSidebarOpen(false)}>
+                  모먼트 관리
+                </Link>
+              </li>
+              <li>
                 <Link href='/admin/sales' className='block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors'>
                   매출 조회
                 </Link>

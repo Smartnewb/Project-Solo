@@ -2983,6 +2983,121 @@ const appleRefund = {
   },
 };
 
+import type {
+  GenerateQuestionsRequest,
+  GenerateQuestionsResponse,
+  BulkCreateQuestionsRequest,
+  BulkCreateQuestionsResponse,
+  GetQuestionsParams,
+  QuestionListResponse,
+  QuestionDetail,
+  UpdateQuestionRequest,
+  TranslateQuestionsRequest,
+  TranslateQuestionsResponse,
+} from '@/types/moment';
+
+const momentQuestions = {
+  generate: async (data: GenerateQuestionsRequest): Promise<GenerateQuestionsResponse> => {
+    try {
+      console.log('질문 생성 요청:', data);
+      const response = await axiosServer.post<GenerateQuestionsResponse>('/admin/questions/generate', data);
+      console.log('질문 생성 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('질문 생성 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  bulkCreate: async (data: BulkCreateQuestionsRequest): Promise<BulkCreateQuestionsResponse> => {
+    try {
+      console.log('질문 대량 저장 요청:', data);
+      const response = await axiosServer.post<BulkCreateQuestionsResponse>('/admin/questions/bulk-create', data);
+      console.log('질문 대량 저장 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('질문 대량 저장 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  getList: async (params: GetQuestionsParams = {}): Promise<QuestionListResponse> => {
+    try {
+      console.log('질문 목록 조회 요청:', params);
+      const queryParams: Record<string, string | number | boolean> = {};
+      
+      if (params.dimension) queryParams.dimension = params.dimension;
+      if (params.schema) queryParams.schema = params.schema;
+      if (params.isActive !== undefined) queryParams.isActive = params.isActive;
+      if (params.search) queryParams.search = params.search;
+      if (params.page) queryParams.page = params.page;
+      if (params.limit) queryParams.limit = params.limit;
+      if (params.translationStatus) queryParams.translationStatus = params.translationStatus;
+
+      const response = await axiosServer.get<QuestionListResponse>('/admin/questions', { params: queryParams });
+      console.log('질문 목록 조회 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('질문 목록 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  getDetail: async (id: string): Promise<QuestionDetail> => {
+    try {
+      console.log('질문 상세 조회 요청:', id);
+      const response = await axiosServer.get<QuestionDetail>(`/admin/questions/${id}`);
+      console.log('질문 상세 조회 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('질문 상세 조회 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  update: async (id: string, data: UpdateQuestionRequest): Promise<QuestionDetail> => {
+    try {
+      console.log('질문 수정 요청:', { id, data });
+      const response = await axiosServer.put<QuestionDetail>(`/admin/questions/${id}`, data);
+      console.log('질문 수정 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('질문 수정 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  delete: async (id: string): Promise<void> => {
+    try {
+      console.log('질문 삭제 요청:', id);
+      await axiosServer.delete(`/admin/questions/${id}`);
+      console.log('질문 삭제 완료');
+    } catch (error: any) {
+      console.error('질문 삭제 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  translate: async (data: TranslateQuestionsRequest): Promise<TranslateQuestionsResponse> => {
+    try {
+      console.log('질문 번역 요청:', data);
+      const response = await axiosServer.post<TranslateQuestionsResponse>('/admin/questions/translate', data);
+      console.log('질문 번역 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('질문 번역 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+};
+
 const AdminService = {
   auth,
   stats,
@@ -3003,6 +3118,7 @@ const AdminService = {
   dormantLikes,
   chatRefund,
   appleRefund,
+  momentQuestions,
   getProfileReports: reports.getProfileReports
 };
 

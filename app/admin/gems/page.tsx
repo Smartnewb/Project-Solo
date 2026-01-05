@@ -37,6 +37,30 @@ import AdminService from '@/app/services/admin';
 import DownloadIcon from '@mui/icons-material/Download';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import DiamondIcon from '@mui/icons-material/Diamond';
+import SearchIcon from '@mui/icons-material/Search';
+import PersonIcon from '@mui/icons-material/Person';
+import PhoneIcon from '@mui/icons-material/Phone';
+import AddIcon from '@mui/icons-material/Add';
+import {
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemText,
+  Avatar
+} from '@mui/material';
+import axiosServer from '@/utils/axios';
+
+interface UserSearchResult {
+  id: string;
+  name: string;
+  age: number;
+  gender: 'MALE' | 'FEMALE';
+  phoneNumber?: string;
+  profileImageUrl?: string;
+  appearanceGrade?: string;
+  university?: string | { name: string };
+  universityDetails?: { name: string; department?: string };
+}
 
 interface BulkGrantResponse {
   totalProcessed: number;
@@ -62,6 +86,77 @@ export default function GemsManagementPage() {
   const [result, setResult] = useState<BulkGrantResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+
+  const [userSearchTerm, setUserSearchTerm] = useState<string>('');
+  const [userSearchResults, setUserSearchResults] = useState<UserSearchResult[]>([]);
+  const [userSearchLoading, setUserSearchLoading] = useState(false);
+  const [userSearchError, setUserSearchError] = useState<string | null>(null);
+
+  const searchUsers = async () => {
+    if (!userSearchTerm.trim()) {
+      setUserSearchError('검색어를 입력해주세요.');
+      return;
+    }
+
+    setUserSearchLoading(true);
+    setUserSearchError(null);
+
+    try {
+      const response = await axiosServer.get('/admin/users/appearance', {
+        params: {
+          page: 1,
+          limit: 20,
+          searchTerm: userSearchTerm
+        }
+      });
+
+      let results: UserSearchResult[] = [];
+      if (response.data?.items && Array.isArray(response.data.items)) {
+        results = response.data.items;
+      } else if (Array.isArray(response.data)) {
+        results = response.data;
+      }
+
+      setUserSearchResults(results);
+      if (results.length === 0) {
+        setUserSearchError(`"${userSearchTerm}" 검색 결과가 없습니다.`);
+      }
+    } catch (err: any) {
+      console.error('사용자 검색 오류:', err);
+      setUserSearchError(err.response?.data?.message || '사용자 검색 중 오류가 발생했습니다.');
+      setUserSearchResults([]);
+    } finally {
+      setUserSearchLoading(false);
+    }
+  };
+
+  const handleAddUserPhone = (user: UserSearchResult) => {
+    if (!user.phoneNumber) {
+      alert('해당 사용자의 전화번호 정보가 없습니다.');
+      return;
+    }
+
+    const currentPhones = phoneNumbersText
+      .split(/[,\n]/)
+      .map(phone => phone.trim())
+      .filter(phone => phone.length > 0);
+
+    const normalizedNewPhone = user.phoneNumber.replace(/[\s-]/g, '');
+    const isDuplicate = currentPhones.some(
+      phone => phone.replace(/[\s-]/g, '') === normalizedNewPhone
+    );
+
+    if (isDuplicate) {
+      alert('이미 추가된 전화번호입니다.');
+      return;
+    }
+
+    if (phoneNumbersText.trim()) {
+      setPhoneNumbersText(prev => prev + ', ' + user.phoneNumber);
+    } else {
+      setPhoneNumbersText(user.phoneNumber || '');
+    }
+  };
 
   const validatePhoneNumber = (phoneNumber: string): boolean => {
     const cleaned = phoneNumber.replace(/[\s-]/g, '');
@@ -246,6 +341,106 @@ export default function GemsManagementPage() {
 
         {inputMethod === 'phoneNumbers' ? (
           <Box sx={{ mb: 3 }}>
+            <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: 'grey.50' }}>
+              <Typography variant="subtitle2" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <SearchIcon fontSize="small" />
+                사용자 검색으로 추가
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                <TextField
+                  size="small"
+                  fullWidth
+                  value={userSearchTerm}
+                  onChange={(e) => setUserSearchTerm(e.target.value)}
+                  placeholder="이름 또는 전화번호로 검색"
+                  onKeyPress={(e) => e.key === 'Enter' && searchUsers()}
+                />
+                <Button
+                  variant="contained"
+                  onClick={searchUsers}
+                  disabled={userSearchLoading}
+                  sx={{ minWidth: 80 }}
+                >
+                  {userSearchLoading ? <CircularProgress size={20} /> : '검색'}
+                </Button>
+              </Box>
+
+              {userSearchError && (
+                <Alert severity="info" sx={{ mb: 2 }} onClose={() => setUserSearchError(null)}>
+                  {userSearchError}
+                </Alert>
+              )}
+
+              {userSearchResults.length > 0 && (
+                <Paper variant="outlined" sx={{ maxHeight: 250, overflow: 'auto' }}>
+                  <List dense disablePadding>
+                    {userSearchResults.map((user) => (
+                      <ListItem
+                        key={user.id}
+                        divider
+                        secondaryAction={
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<AddIcon />}
+                            onClick={() => handleAddUserPhone(user)}
+                            disabled={!user.phoneNumber}
+                          >
+                            선택
+                          </Button>
+                        }
+                      >
+                        <ListItemAvatar>
+                          <Avatar src={user.profileImageUrl} sx={{ width: 36, height: 36 }}>
+                            <PersonIcon />
+                          </Avatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <Typography variant="body2" fontWeight="medium">
+                                {user.name} ({user.age}세, {user.gender === 'MALE' ? '남' : '여'})
+                              </Typography>
+                              {user.appearanceGrade && (
+                                <Chip
+                                  size="small"
+                                  label={user.appearanceGrade}
+                                  color={
+                                    user.appearanceGrade === 'S' ? 'secondary' :
+                                    user.appearanceGrade === 'A' ? 'primary' :
+                                    user.appearanceGrade === 'B' ? 'success' :
+                                    user.appearanceGrade === 'C' ? 'warning' : 'default'
+                                  }
+                                  sx={{ height: 18, fontSize: '0.65rem' }}
+                                />
+                              )}
+                            </Box>
+                          }
+                          secondary={
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                              {user.phoneNumber && (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  <PhoneIcon sx={{ fontSize: 12, color: 'text.secondary' }} />
+                                  <Typography variant="caption" color="text.secondary">
+                                    {user.phoneNumber}
+                                  </Typography>
+                                </Box>
+                              )}
+                              <Typography variant="caption" color="text.secondary">
+                                {user.university
+                                  ? (typeof user.university === 'string' ? user.university : user.university.name)
+                                  : user.universityDetails?.name || ''}
+                              </Typography>
+                            </Box>
+                          }
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                </Paper>
+              )}
+            </Paper>
+
             <Typography variant="subtitle2" sx={{ mb: 1 }}>
               전화번호
             </Typography>
