@@ -170,10 +170,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       if (userDetail.profileImageUrl) {
         return userDetail.profileImageUrl;
       }
-      // 기본 이미지 또는 빈 문자열
-      return userDetail.gender === 'MALE'
-        ? `https://randomuser.me/api/portraits/men/${Math.floor(Math.random() * 50) + 1}.jpg`
-        : `https://randomuser.me/api/portraits/women/${Math.floor(Math.random() * 50) + 1}.jpg`;
+      return '';
     })()
   );
 
@@ -198,10 +195,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       } else if (initialUserDetail.profileImageUrl) {
         setSelectedImage(initialUserDetail.profileImageUrl);
       } else {
-        const defaultImage = initialUserDetail.gender === 'MALE'
-          ? `https://randomuser.me/api/portraits/men/${Math.floor(Math.random() * 50) + 1}.jpg`
-          : `https://randomuser.me/api/portraits/women/${Math.floor(Math.random() * 50) + 1}.jpg`;
-        setSelectedImage(defaultImage);
+        setSelectedImage('');
       }
     }
   }, [initialUserDetail, initialLoading, initialError]);
@@ -564,11 +558,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       } else if (data.profileImageUrl) {
         setSelectedImage(data.profileImageUrl);
       } else {
-        // 기본 이미지 설정
-        const defaultImage = data.gender === 'MALE'
-          ? `https://randomuser.me/api/portraits/men/${Math.floor(Math.random() * 50) + 1}.jpg`
-          : `https://randomuser.me/api/portraits/women/${Math.floor(Math.random() * 50) + 1}.jpg`;
-        setSelectedImage(defaultImage);
+        setSelectedImage('');
       }
 
       // 외모 등급 상태 업데이트
@@ -869,22 +859,20 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                     }}
                   />
                 ) : (
-                  // 이미지가 없는 경우 성별에 따라 랜덤 이미지 표시
                   <Box
-                    component="img"
-                    src={userDetail.gender === 'MALE'
-                         ? `https://randomuser.me/api/portraits/men/${Math.floor(Math.random() * 50) + 1}.jpg`
-                         : `https://randomuser.me/api/portraits/women/${Math.floor(Math.random() * 50) + 1}.jpg`}
-                    alt={userDetail.name}
                     sx={{
                       width: '100%',
                       height: 400,
-                      objectFit: 'contain',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                       borderRadius: 2,
-                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-                      backgroundColor: '#f5f5f5'
+                      backgroundColor: '#f5f5f5',
+                      color: '#9e9e9e'
                     }}
-                  />
+                  >
+                    <PersonIcon sx={{ fontSize: 120 }} />
+                  </Box>
                 )}
               </Box>
 
@@ -941,75 +929,8 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                     </Box>
                   );
                 }
-                // 추가 이미지가 없는 경우 임의로 생성
                 else {
-                  // 성별에 따라 다른 이미지 세트 사용
-                  const genderPath = userDetail.gender === 'MALE' ? 'men' : 'women';
-
-                  // 첫 번째 이미지 ID (메인 이미지와 다른 ID 사용)
-                  const baseId = userDetail.gender === 'MALE' ? 50 : 60;
-
-                  // 임의로 2개의 추가 이미지 생성
-                  const additionalImages = [
-                    {
-                      id: `random-${baseId + 1}`,
-                      url: `https://randomuser.me/api/portraits/${genderPath}/${baseId + 1}.jpg`,
-                      index: 0
-                    },
-                    {
-                      id: `random-${baseId + 2}`,
-                      url: `https://randomuser.me/api/portraits/${genderPath}/${baseId + 2}.jpg`,
-                      index: 1
-                    }
-                  ];
-
-                  return (
-                    <Box>
-                      <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                        추가 이미지 (2장)
-                      </Typography>
-                      <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
-                        {additionalImages.map((image, index) => (
-                          <Box
-                            key={image.id}
-                            sx={{ position: 'relative' }}
-                          >
-                            <Box
-                              component="img"
-                              src={image.url}
-                              alt={`${userDetail.name} 프로필 이미지 ${index + 2}`}
-                              sx={{
-                                width: 100,
-                                height: 100,
-                                objectFit: 'cover',
-                                borderRadius: 1,
-                                cursor: 'pointer',
-                                '&:hover': {
-                                  opacity: 0.8,
-                                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
-                                }
-                              }}
-                            />
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                position: 'absolute',
-                                bottom: 0,
-                                left: 0,
-                                right: 0,
-                                backgroundColor: 'rgba(0,0,0,0.6)',
-                                color: 'white',
-                                textAlign: 'center',
-                                padding: '2px 0'
-                              }}
-                            >
-                              {index + 2}번째
-                            </Typography>
-                          </Box>
-                        ))}
-                      </Box>
-                    </Box>
-                  );
+                  return null;
                 }
               })()}
             </Grid>

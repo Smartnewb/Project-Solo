@@ -25,6 +25,19 @@ export const axiosMultipart = axios.create({
   // Content-Type 헤더를 설정하지 않음 - 브라우저가 자동으로 multipart/form-data; boundary=... 설정
 });
 
+// 차세대 본 서버(8044) 직접 연결용 axios 인스턴스
+export const axiosNextGen = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_NEXT_GEN_API_URL || 'http://localhost:8044/api',
+  timeout: 15000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  withCredentials: true,
+  validateStatus: (status) => {
+    return (status >= 200 && status < 300) || status === 304;
+  }
+});
+
 // 공통 요청 인터셉터 함수
 const requestInterceptor = (config: any) => {
   // 클라이언트 사이드에서만 localStorage에 접근
@@ -52,6 +65,9 @@ axiosServer.interceptors.request.use(requestInterceptor, requestErrorInterceptor
 
 // axiosMultipart 요청 인터셉터 (FormData 전용이므로 Content-Type 제거 로직 불필요)
 axiosMultipart.interceptors.request.use(requestInterceptor, requestErrorInterceptor);
+
+// axiosNextGen 요청 인터셉터
+axiosNextGen.interceptors.request.use(requestInterceptor, requestErrorInterceptor);
 
 // 공통 응답 인터셉터 함수
 const createResponseInterceptor = (axiosInstance: any) => {
@@ -146,6 +162,12 @@ axiosServer.interceptors.response.use(
 axiosMultipart.interceptors.response.use(
   (response: any) => response,
   createResponseInterceptor(axiosMultipart)
+);
+
+// axiosNextGen 응답 인터셉터
+axiosNextGen.interceptors.response.use(
+  (response: any) => response,
+  createResponseInterceptor(axiosNextGen)
 );
 
 export default axiosServer;

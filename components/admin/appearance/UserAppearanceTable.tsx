@@ -513,10 +513,7 @@ const UserAppearanceTable = forwardRef<
                   </TableCell>
                   <TableCell>
                     <Avatar
-                      src={user.profileImageUrl || user.profileImages?.[0]?.url ||
-                           (user.gender === 'MALE'
-                            ? `https://randomuser.me/api/portraits/men/${Math.floor(Math.random() * 50) + 1}.jpg`
-                            : `https://randomuser.me/api/portraits/women/${Math.floor(Math.random() * 50) + 1}.jpg`)}
+                      src={user.profileImageUrl || user.profileImages?.[0]?.url || ''}
                       alt={user.name}
                       sx={{
                         width: 40,

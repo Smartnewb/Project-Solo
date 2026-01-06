@@ -2445,6 +2445,31 @@ const backgroundPresets = {
       console.error('오류 상세 정보:', error.response?.data || error.message);
       throw error;
     }
+  },
+
+  update: async (id: string, data: Partial<CreatePresetRequest>): Promise<BackgroundPreset> => {
+    try {
+      console.log('배경 프리셋 수정 요청:', { id, data });
+      const response = await axiosServer.put(`/admin/background-presets/${id}`, data);
+      console.log('배경 프리셋 수정 응답:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('배경 프리셋 수정 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  delete: async (id: string): Promise<void> => {
+    try {
+      console.log('배경 프리셋 삭제 요청:', id);
+      await axiosServer.delete(`/admin/background-presets/${id}`);
+      console.log('배경 프리셋 삭제 완료');
+    } catch (error: any) {
+      console.error('배경 프리셋 삭제 중 오류:', error);
+      console.error('오류 상세 정보:', error.response?.data || error.message);
+      throw error;
+    }
   }
 };
 
@@ -2466,7 +2491,7 @@ const cardNews = {
       const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
       const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045/api';
 
-      const response = await fetch(`${baseURL}/admin/posts/card-news/section-images/upload`, {
+      const response = await fetch(`${baseURL}/admin/background-presets/upload`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

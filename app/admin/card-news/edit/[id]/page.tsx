@@ -14,26 +14,21 @@ import {
   Alert,
   CircularProgress,
   Divider,
-  Radio,
-  RadioGroup,
   FormControlLabel,
-  Checkbox,
-  Grid,
-  Card,
-  CardMedia,
-  CardActionArea
+  Checkbox
 } from '@mui/material';
 import { useRouter, useParams } from 'next/navigation';
 import AdminService from '@/app/services/admin';
 import CardEditor from '../../components/CardEditor';
 import PresetUploadModal from '../../components/PresetUploadModal';
+import PresetEditModal from '../../components/PresetEditModal';
+import BackgroundSelector from '../../components/BackgroundSelector';
 import CardNewsPreview from '../../components/CardNewsPreview';
 import CardNewsDetailPreview from '../../components/CardNewsDetailPreview';
 import type { BackgroundPreset } from '@/types/admin';
 import AddIcon from '@mui/icons-material/Add';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
 interface CardSection {
   order: number;
@@ -72,6 +67,9 @@ export default function EditCardNewsPage() {
   const [isPublished, setIsPublished] = useState(false);
   const [uploadingBackground, setUploadingBackground] = useState(false);
   const [presetUploadModalOpen, setPresetUploadModalOpen] = useState(false);
+  const [presetEditModalOpen, setPresetEditModalOpen] = useState(false);
+  const [editingPreset, setEditingPreset] = useState<BackgroundPreset | null>(null);
+  const [presetsLoading, setPresetsLoading] = useState(false);
 
   // 미리보기용 배경 이미지 URL 계산
   const previewBackgroundUrl = useMemo(() => {
@@ -91,10 +89,14 @@ export default function EditCardNewsPage() {
 
   const fetchBackgroundPresets = async () => {
     try {
+      setPresetsLoading(true);
       const response = await AdminService.backgroundPresets.getActive();
-      setBackgroundPresets(response.data || []);
+      const presets = Array.isArray(response) ? response : (response?.data || []);
+      setBackgroundPresets(presets);
     } catch (err: any) {
       console.error('배경 프리셋 목록 조회 실패:', err);
+    } finally {
+      setPresetsLoading(false);
     }
   };
 
@@ -115,13 +117,14 @@ export default function EditCardNewsPage() {
       setHasReward(cardNewsData.hasReward || false);
       setSections(cardNewsData.sections || []);
       setCategories(categoriesData);
-      setBackgroundPresets(presetsData.data || []);
+      const presets = Array.isArray(presetsData) ? presetsData : (presetsData?.data || []);
+      setBackgroundPresets(presets);
       setIsPublished(!!cardNewsData.publishedAt);
 
       if (cardNewsData.backgroundImage) {
         if (cardNewsData.backgroundImage.presetName) {
           setBackgroundType('PRESET');
-          const preset = presetsData.data?.find((p: BackgroundPreset) =>
+          const preset = presets.find((p: BackgroundPreset) =>
             p.displayName === cardNewsData.backgroundImage?.presetName
           );
           if (preset) {
@@ -144,20 +147,12 @@ export default function EditCardNewsPage() {
     await fetchBackgroundPresets();
   };
 
-  const handleBackgroundUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const handlePresetSelect = (preset: BackgroundPreset) => {
+    setSelectedPresetId(preset.id);
+    setBackgroundType('PRESET');
+  };
 
-    if (!file.type.match(/^image\/(jpeg|png)$/)) {
-      alert('JPG 또는 PNG 파일만 업로드 가능합니다.');
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert('파일 크기는 5MB 이하여야 합니다.');
-      return;
-    }
-
+  const handleBackgroundUpload = async (file: File) => {
     try {
       setUploadingBackground(true);
       const response = await AdminService.backgroundPresets.upload(file);
@@ -168,6 +163,28 @@ export default function EditCardNewsPage() {
       alert(err.response?.data?.message || '이미지 업로드에 실패했습니다.');
     } finally {
       setUploadingBackground(false);
+    }
+  };
+
+  const handleCustomBackgroundClear = () => {
+    setCustomBackgroundUrl('');
+  };
+
+  const handlePresetEdit = (preset: BackgroundPreset) => {
+    setEditingPreset(preset);
+    setPresetEditModalOpen(true);
+  };
+
+  const handlePresetDelete = async (presetId: string) => {
+    try {
+      await AdminService.backgroundPresets.delete(presetId);
+      if (selectedPresetId === presetId) {
+        setSelectedPresetId('');
+      }
+      await fetchBackgroundPresets();
+    } catch (err: any) {
+      console.error('프리셋 삭제 실패:', err);
+      alert(err.response?.data?.message || '프리셋 삭제에 실패했습니다.');
     }
   };
 
@@ -407,95 +424,20 @@ export default function EditCardNewsPage() {
 
         <Divider sx={{ my: 3 }} />
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="subtitle1" fontWeight="bold">
-            배경 이미지 설정
-          </Typography>
-          {backgroundType === 'PRESET' && (
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<CloudUploadIcon />}
-              onClick={() => setPresetUploadModalOpen(true)}
-            >
-              프리셋 추가
-            </Button>
-          )}
-        </Box>
-
-        <FormControl component="fieldset" sx={{ mb: 2 }}>
-          <RadioGroup
-            row
-            value={backgroundType}
-            onChange={(e) => setBackgroundType(e.target.value as 'PRESET' | 'CUSTOM')}
-          >
-            <FormControlLabel value="PRESET" control={<Radio />} label="프리셋 선택" />
-            <FormControlLabel value="CUSTOM" control={<Radio />} label="직접 업로드" />
-          </RadioGroup>
-        </FormControl>
-
-        {backgroundType === 'PRESET' ? (
-          <Grid container spacing={2} sx={{ mb: 2 }}>
-            {backgroundPresets.map((preset) => (
-              <Grid item xs={6} sm={4} md={3} key={preset.id}>
-                <Card
-                  variant="outlined"
-                  sx={{
-                    border: selectedPresetId === preset.id ? '2px solid #1976d2' : '1px solid #e0e0e0',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                      boxShadow: 2
-                    }
-                  }}
-                >
-                  <CardActionArea onClick={() => setSelectedPresetId(preset.id)}>
-                    <CardMedia
-                      component="img"
-                      height="140"
-                      image={preset.thumbnailUrl || preset.imageUrl}
-                      alt={preset.displayName}
-                      sx={{ objectFit: 'cover' }}
-                    />
-                    <Box sx={{ p: 1, textAlign: 'center' }}>
-                      <Typography variant="caption" fontWeight={selectedPresetId === preset.id ? 'bold' : 'normal'}>
-                        {preset.displayName}
-                      </Typography>
-                    </Box>
-                  </CardActionArea>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        ) : (
-          <Box sx={{ mb: 2 }}>
-            <Button
-              variant="outlined"
-              component="label"
-              disabled={uploadingBackground}
-            >
-              {uploadingBackground ? '업로드 중...' : customBackgroundUrl ? '다른 이미지 업로드' : '배경 이미지 업로드'}
-              <input
-                type="file"
-                hidden
-                accept="image/jpeg,image/png"
-                onChange={handleBackgroundUpload}
-              />
-            </Button>
-            {customBackgroundUrl && (
-              <Box sx={{ mt: 2 }}>
-                <img
-                  src={customBackgroundUrl}
-                  alt="업로드된 배경"
-                  style={{ maxWidth: '200px', borderRadius: '8px' }}
-                />
-              </Box>
-            )}
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-              JPG 또는 PNG 파일, 최대 5MB, 권장 비율 4:5 (예: 1080x1350)
-            </Typography>
-          </Box>
-        )}
+        <BackgroundSelector
+          presets={backgroundPresets}
+          selectedPresetId={selectedPresetId}
+          customBackgroundUrl={customBackgroundUrl}
+          backgroundType={backgroundType}
+          loading={presetsLoading}
+          uploadingBackground={uploadingBackground}
+          onPresetSelect={handlePresetSelect}
+          onPresetEdit={handlePresetEdit}
+          onCustomUpload={handleBackgroundUpload}
+          onCustomClear={handleCustomBackgroundClear}
+          onBackgroundTypeChange={setBackgroundType}
+          onAddPresetClick={() => setPresetUploadModalOpen(true)}
+        />
 
         <Divider sx={{ my: 3 }} />
 
@@ -600,6 +542,17 @@ export default function EditCardNewsPage() {
         open={presetUploadModalOpen}
         onClose={() => setPresetUploadModalOpen(false)}
         onSuccess={handlePresetUploadSuccess}
+      />
+
+      <PresetEditModal
+        open={presetEditModalOpen}
+        preset={editingPreset}
+        onClose={() => {
+          setPresetEditModalOpen(false);
+          setEditingPreset(null);
+        }}
+        onSuccess={fetchBackgroundPresets}
+        onDelete={handlePresetDelete}
       />
     </Box>
   );

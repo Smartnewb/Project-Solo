@@ -166,6 +166,11 @@ export default function AdminLayout({
                 </Link>
               </li>
               <li>
+                <Link href="/admin/support-chat" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors" onClick={() => setSidebarOpen(false)}>
+                  🎧 Q&A 처리
+                </Link>
+              </li>
+              <li>
                 <Link href="/admin/version-management" className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors" onClick={() => setSidebarOpen(false)}>
                   버전 관리
                 </Link>

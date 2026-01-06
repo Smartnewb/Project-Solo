@@ -47,8 +47,8 @@ export default function RegionPopupContent({ region }: RegionPopupContentProps) 
           <TrendBadge value={region.matchingStats.mutualLikeTrend} isPositive={mutualTrendIsPositive} />
         </div>
         <div style={{ fontSize: '12px', color: '#9ca3af' }}>
-          좋아요 {region.matchingStats.totalLikes}건 중{' '}
-          {region.matchingStats.mutualLikes}건 상호
+          매칭 {region.matchingStats.totalMatches}건 중{' '}
+          상호 좋아요 {region.matchingStats.mutualLikes}건
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', marginBottom: '8px' }}>
