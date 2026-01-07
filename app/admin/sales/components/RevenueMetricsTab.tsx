@@ -29,12 +29,40 @@ interface RevenueMetricsTabProps {
   endDate?: Date;
 }
 
+type Granularity = "daily" | "weekly" | "monthly";
+
+const METRIC_TOOLTIPS = {
+  ARPU: {
+    meaning: "전체 사용자 1인당 평균 매출",
+    formula: "총매출 ÷ 전체사용자수",
+    interpretation:
+      "값이 높을수록 사용자당 수익 창출력이 좋음. ARPPU와 PUR의 곱과 동일",
+  },
+  ARPPU: {
+    meaning: "유료 사용자 1인당 평균 매출",
+    formula: "총매출 ÷ 유료사용자수",
+    interpretation:
+      "결제 사용자의 지출 수준을 나타냄. 값이 높으면 고객 충성도가 높음",
+  },
+  PUR: {
+    meaning: "유료 사용자 비율",
+    formula: "유료사용자수 ÷ 전체사용자수 × 100",
+    interpretation:
+      "무료 사용자의 유료 전환율. 값이 높을수록 수익화가 잘 되고 있음",
+  },
+  AOV: {
+    meaning: "평균 주문 금액",
+    formula: "총매출 ÷ 총주문수",
+    interpretation: "한 번 결제 시 평균 지출 금액. 프라이싱 전략 효과를 나타냄",
+  },
+} as const;
+
 const formatNumber = (num: number): string => {
   return new Intl.NumberFormat("ko-KR").format(num);
 };
 
 const formatPercent = (value: number): string => {
-  return `${(value * 100).toFixed(1)}%`;
+  return `${value.toFixed(1)}%`;
 };
 
 const formatDateToString = (date: Date): string => {
@@ -43,6 +71,61 @@ const formatDateToString = (date: Date): string => {
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
+
+const getOneMonthAgo = (): string => {
+  const date = new Date();
+  date.setMonth(date.getMonth() - 1);
+  return formatDateToString(date);
+};
+
+const getToday = (): string => {
+  return formatDateToString(new Date());
+};
+
+function MetricTooltipIcon({
+  metricKey,
+}: {
+  metricKey: keyof typeof METRIC_TOOLTIPS;
+}) {
+  const [isVisible, setIsVisible] = useState(false);
+  const tooltip = METRIC_TOOLTIPS[metricKey];
+
+  return (
+    <div className="relative inline-block ml-1.5">
+      <button
+        type="button"
+        className="inline-flex items-center justify-center w-4 h-4 text-[10px] font-medium text-gray-400 bg-gray-100 rounded-full hover:bg-gray-200 hover:text-gray-600 transition-colors cursor-help"
+        onMouseEnter={() => setIsVisible(true)}
+        onMouseLeave={() => setIsVisible(false)}
+        onClick={() => setIsVisible(!isVisible)}
+      >
+        ?
+      </button>
+      {isVisible && (
+        <div className="absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 p-3 bg-white border border-gray-200 rounded-lg shadow-lg text-left">
+          <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-gray-200" />
+          <div className="absolute left-1/2 -translate-x-1/2 top-full -mt-[1px] w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[5px] border-t-white" />
+          <div className="space-y-2 text-xs">
+            <div>
+              <span className="font-semibold text-gray-700">뜻: </span>
+              <span className="text-gray-600">{tooltip.meaning}</span>
+            </div>
+            <div>
+              <span className="font-semibold text-gray-700">계산식: </span>
+              <span className="text-gray-600 font-mono text-[11px]">
+                {tooltip.formula}
+              </span>
+            </div>
+            <div>
+              <span className="font-semibold text-gray-700">해석: </span>
+              <span className="text-gray-600">{tooltip.interpretation}</span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function RevenueMetricsTab({
   startDate,
@@ -60,6 +143,11 @@ export function RevenueMetricsTab({
   const [ltvData, setLtvData] = useState<LtvAnalysisResponse | null>(null);
   const [trendData, setTrendData] =
     useState<RevenueMetricsTrendResponse | null>(null);
+
+  const [granularity, setGranularity] = useState<Granularity>("monthly");
+  const [trendStartDate, setTrendStartDate] =
+    useState<string>(getOneMonthAgo());
+  const [trendEndDate, setTrendEndDate] = useState<string>(getToday());
 
   const [loadingMetrics, setLoadingMetrics] = useState(false);
   const [loadingAov, setLoadingAov] = useState(false);
@@ -89,7 +177,6 @@ export function RevenueMetricsTab({
     setLoadingRepurchase(true);
     setLoadingConversion(true);
     setLoadingLtv(true);
-    setLoadingTrend(true);
 
     try {
       const metricsRes = await salesService.getRevenueMetrics(params);
@@ -136,10 +223,16 @@ export function RevenueMetricsTab({
       setLoadingLtv(false);
     }
 
+    await fetchTrendData();
+  };
+
+  const fetchTrendData = async () => {
+    setLoadingTrend(true);
     try {
       const trendRes = await salesService.getRevenueMetricsTrend({
-        ...params,
-        granularity: "monthly",
+        startDate: trendStartDate,
+        endDate: trendEndDate,
+        granularity,
       });
       setTrendData(trendRes);
     } catch (e) {
@@ -171,8 +264,8 @@ export function RevenueMetricsTab({
           {payload.map((item: any, index: number) => (
             <p key={index} style={{ color: item.color }} className="text-sm">
               {item.name}:{" "}
-              {item.name.includes("Rate") || item.name === "PUR"
-                ? formatPercent(item.value)
+              {item.name === "PUR"
+                ? `${item.value.toFixed(1)}%`
                 : formatCurrency(item.value)}
             </p>
           ))}
@@ -227,7 +320,10 @@ export function RevenueMetricsTab({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="text-sm text-gray-500 mb-1">ARPU</div>
+          <div className="flex items-center text-sm text-gray-500 mb-1">
+            ARPU
+            <MetricTooltipIcon metricKey="ARPU" />
+          </div>
           <div className="text-xs text-gray-400 mb-2">
             Average Revenue Per User
           </div>
@@ -248,7 +344,10 @@ export function RevenueMetricsTab({
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="text-sm text-gray-500 mb-1">ARPPU</div>
+          <div className="flex items-center text-sm text-gray-500 mb-1">
+            ARPPU
+            <MetricTooltipIcon metricKey="ARPPU" />
+          </div>
           <div className="text-xs text-gray-400 mb-2">
             Average Revenue Per Paying User
           </div>
@@ -271,7 +370,10 @@ export function RevenueMetricsTab({
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="text-sm text-gray-500 mb-1">PUR</div>
+          <div className="flex items-center text-sm text-gray-500 mb-1">
+            PUR
+            <MetricTooltipIcon metricKey="PUR" />
+          </div>
           <div className="text-xs text-gray-400 mb-2">Paying User Rate</div>
           {loadingMetrics ? (
             <div className="h-8 bg-gray-100 rounded animate-pulse" />
@@ -285,7 +387,10 @@ export function RevenueMetricsTab({
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="text-sm text-gray-500 mb-1">AOV</div>
+          <div className="flex items-center text-sm text-gray-500 mb-1">
+            AOV
+            <MetricTooltipIcon metricKey="AOV" />
+          </div>
           <div className="text-xs text-gray-400 mb-2">Average Order Value</div>
           {loadingAov ? (
             <div className="h-8 bg-gray-100 rounded animate-pulse" />
@@ -303,9 +408,52 @@ export function RevenueMetricsTab({
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          수익 지표 추이
-        </h3>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">
+            수익 지표 추이
+          </h3>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50">
+              {(["daily", "weekly", "monthly"] as const).map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => setGranularity(g)}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    granularity === g
+                      ? "bg-[#7D4EE4] text-white shadow-sm"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                  }`}
+                >
+                  {g === "daily" ? "일별" : g === "weekly" ? "주별" : "월별"}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={trendStartDate}
+                onChange={(e) => setTrendStartDate(e.target.value)}
+                className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7D4EE4] focus:border-transparent"
+              />
+              <span className="text-gray-400 text-sm">~</span>
+              <input
+                type="date"
+                value={trendEndDate}
+                onChange={(e) => setTrendEndDate(e.target.value)}
+                className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7D4EE4] focus:border-transparent"
+              />
+              <button
+                type="button"
+                onClick={fetchTrendData}
+                disabled={loadingTrend}
+                className="px-3 py-1.5 text-sm font-medium bg-[#7D4EE4] text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+              >
+                적용
+              </button>
+            </div>
+          </div>
+        </div>
         {loadingTrend ? (
           <div className="flex justify-center items-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
@@ -330,10 +478,10 @@ export function RevenueMetricsTab({
                 <YAxis
                   yAxisId="rate"
                   orientation="right"
-                  tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
+                  tickFormatter={(v) => `${v.toFixed(0)}%`}
                   tick={{ fontSize: 12 }}
                   width={50}
-                  domain={[0, 1]}
+                  domain={[0, "auto"]}
                 />
                 <Tooltip content={<MetricsTrendTooltip />} />
                 <Legend />
