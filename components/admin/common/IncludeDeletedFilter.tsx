@@ -1,20 +1,15 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import {
-  FormControlLabel,
-  Switch,
-  Box,
-  Typography
-} from '@mui/material';
+import { useState } from "react";
+import { FormControlLabel, Switch, Box, Typography } from "@mui/material";
 
 interface IncludeDeletedFilterProps {
   value: boolean;
   onChange: (includeDeleted: boolean) => void;
   disabled?: boolean;
-  size?: 'small' | 'medium';
+  size?: "small" | "medium";
   label?: string;
-  labelPlacement?: 'start' | 'end' | 'top' | 'bottom';
+  labelPlacement?: "start" | "end" | "top" | "bottom";
   sx?: any;
 }
 
@@ -22,14 +17,16 @@ export default function IncludeDeletedFilter({
   value,
   onChange,
   disabled = false,
-  size = 'medium',
-  label = '탈퇴자 포함',
-  labelPlacement = 'start',
-  sx = {}
+  size = "medium",
+  label,
+  labelPlacement = "start",
+  sx = {},
 }: IncludeDeletedFilterProps) {
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onChange(event.target.checked);
   };
+
+  const displayLabel = label ?? (value ? "탈퇴자 포함" : "탈퇴자 미포함");
 
   return (
     <Box sx={sx}>
@@ -43,7 +40,7 @@ export default function IncludeDeletedFilter({
             color="primary"
           />
         }
-        label={label}
+        label={displayLabel}
         labelPlacement={labelPlacement}
       />
     </Box>
@@ -61,11 +58,11 @@ export function useIncludeDeletedFilter(initialValue: boolean = false) {
   return {
     includeDeleted,
     setIncludeDeleted,
-    getIncludeDeletedParam
+    getIncludeDeletedParam,
   };
 }
 
 // 탈퇴자 포함 여부 라벨 반환 함수
 export function getIncludeDeletedLabel(includeDeleted: boolean): string {
-  return includeDeleted ? '탈퇴자 포함' : '탈퇴자 미포함';
+  return includeDeleted ? "탈퇴자 포함" : "탈퇴자 미포함";
 }

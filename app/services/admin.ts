@@ -78,8 +78,9 @@ const stats = {
     try {
       const params: any = {};
       if (region) params.region = region;
-      if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
-      if (useCluster !== undefined) params.useCluster = useCluster;
+      if (includeDeleted !== undefined)
+        params.includeDeleted = String(includeDeleted);
+      if (useCluster !== undefined) params.useCluster = String(useCluster);
 
       const response = await axiosServer.get("/admin/stats/users/total", {
         params,
@@ -102,8 +103,9 @@ const stats = {
     try {
       const params: any = {};
       if (region) params.region = region;
-      if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
-      if (useCluster !== undefined) params.useCluster = useCluster;
+      if (includeDeleted !== undefined)
+        params.includeDeleted = String(includeDeleted);
+      if (useCluster !== undefined) params.useCluster = String(useCluster);
 
       const response = await axiosServer.get("/admin/stats/users/daily", {
         params,
@@ -123,8 +125,9 @@ const stats = {
     try {
       const params: any = {};
       if (region) params.region = region;
-      if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
-      if (useCluster !== undefined) params.useCluster = useCluster;
+      if (includeDeleted !== undefined)
+        params.includeDeleted = String(includeDeleted);
+      if (useCluster !== undefined) params.useCluster = String(useCluster);
 
       const response = await axiosServer.get("/admin/stats/users/weekly", {
         params,
@@ -144,8 +147,9 @@ const stats = {
     try {
       const params: any = {};
       if (region) params.region = region;
-      if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
-      if (useCluster !== undefined) params.useCluster = useCluster;
+      if (includeDeleted !== undefined)
+        params.includeDeleted = String(includeDeleted);
+      if (useCluster !== undefined) params.useCluster = String(useCluster);
 
       const response = await axiosServer.get("/admin/stats/users/trend/daily", {
         params,
@@ -164,8 +168,9 @@ const stats = {
     try {
       const params: any = {};
       if (region) params.region = region;
-      if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
-      if (useCluster !== undefined) params.useCluster = useCluster;
+      if (includeDeleted !== undefined)
+        params.includeDeleted = String(includeDeleted);
+      if (useCluster !== undefined) params.useCluster = String(useCluster);
 
       const response = await axiosServer.get(
         "/admin/stats/users/trend/weekly",
@@ -185,8 +190,9 @@ const stats = {
     try {
       const params: any = {};
       if (region) params.region = region;
-      if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
-      if (useCluster !== undefined) params.useCluster = useCluster;
+      if (includeDeleted !== undefined)
+        params.includeDeleted = String(includeDeleted);
+      if (useCluster !== undefined) params.useCluster = String(useCluster);
 
       const response = await axiosServer.get(
         "/admin/stats/users/trend/monthly",
@@ -204,6 +210,7 @@ const stats = {
     startDate: string,
     endDate: string,
     region?: string,
+    includeDeleted?: boolean,
     useCluster?: boolean,
   ) => {
     try {
@@ -212,6 +219,7 @@ const stats = {
         startDate,
         endDate,
         region,
+        includeDeleted,
         useCluster,
       );
       const requestData: any = {
@@ -221,6 +229,10 @@ const stats = {
 
       if (region) {
         requestData.region = region;
+      }
+
+      if (includeDeleted !== undefined) {
+        requestData.includeDeleted = includeDeleted;
       }
 
       if (useCluster !== undefined) {
@@ -302,8 +314,9 @@ const stats = {
     try {
       const params: any = {};
       if (region) params.region = region;
-      if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
-      if (useCluster !== undefined) params.useCluster = useCluster;
+      if (includeDeleted !== undefined)
+        params.includeDeleted = String(includeDeleted);
+      if (useCluster !== undefined) params.useCluster = String(useCluster);
 
       const response = await axiosServer.get("/admin/stats/users/gender", {
         params,
@@ -345,8 +358,9 @@ const stats = {
     try {
       const params: any = {};
       if (region) params.region = region;
-      if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
-      if (useCluster !== undefined) params.useCluster = useCluster;
+      if (includeDeleted !== undefined)
+        params.includeDeleted = String(includeDeleted);
+      if (useCluster !== undefined) params.useCluster = String(useCluster);
 
       const response = await axiosServer.get(
         "/admin/stats/users/universities",
