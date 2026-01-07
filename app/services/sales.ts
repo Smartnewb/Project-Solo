@@ -29,6 +29,12 @@ import {
   PeriodAnalysisResponse,
   GemConsumptionResponse,
   SystemComparisonResponse,
+  GemTriggerResponse,
+  FeatureFunnelResponse,
+  FirstPurchaseResponse,
+  WhaleUserResponse,
+  GemEconomyResponse,
+  MatchingFunnelResponse,
 } from "../admin/sales/types";
 import { paymentType } from "@/app/admin/sales/types";
 import { da } from "date-fns/locale";
@@ -62,6 +68,12 @@ const SALES_ENDPOINT = {
   PERIOD_ANALYSIS: "/admin/stats/products/period-analysis",
   GEM_CONSUMPTION: "/admin/stats/products/gem-consumption",
   SYSTEM_COMPARISON: "/admin/stats/products/system-comparison",
+  INSIGHTS_GEM_TRIGGER: "/admin/stats/insights/gem-trigger",
+  INSIGHTS_FEATURE_FUNNEL: "/admin/stats/insights/feature-funnel",
+  INSIGHTS_FIRST_PURCHASE: "/admin/stats/insights/first-purchase",
+  INSIGHTS_WHALE_USERS: "/admin/stats/insights/whale-users",
+  INSIGHTS_GEM_ECONOMY: "/admin/stats/insights/gem-economy",
+  INSIGHTS_MATCHING_FUNNEL: "/admin/stats/insights/matching-funnel",
 } as const;
 
 // MARK: - 공통 매출액 조회 파라미터
@@ -458,6 +470,92 @@ export const salesService = {
       return response.data;
     } catch (error) {
       throw new SalesApiError("시스템 비교 조회 실패:", error);
+    }
+  },
+
+  async getGemTrigger(params?: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<GemTriggerResponse> {
+    try {
+      const response = await axiosServer.get(
+        SALES_ENDPOINT.INSIGHTS_GEM_TRIGGER,
+        { params },
+      );
+      return response.data;
+    } catch (error) {
+      throw new SalesApiError("구슬 잔액 트리거 분석 조회 실패:", error);
+    }
+  },
+
+  async getFeatureFunnel(params?: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<FeatureFunnelResponse> {
+    try {
+      const response = await axiosServer.get(
+        SALES_ENDPOINT.INSIGHTS_FEATURE_FUNNEL,
+        { params },
+      );
+      return response.data;
+    } catch (error) {
+      throw new SalesApiError("기능→결제 퍼널 분석 조회 실패:", error);
+    }
+  },
+
+  async getFirstPurchase(): Promise<FirstPurchaseResponse> {
+    try {
+      const response = await axiosServer.get(
+        SALES_ENDPOINT.INSIGHTS_FIRST_PURCHASE,
+      );
+      return response.data;
+    } catch (error) {
+      throw new SalesApiError("첫 결제 트리거 분석 조회 실패:", error);
+    }
+  },
+
+  async getWhaleUsers(params?: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<WhaleUserResponse> {
+    try {
+      const response = await axiosServer.get(
+        SALES_ENDPOINT.INSIGHTS_WHALE_USERS,
+        { params },
+      );
+      return response.data;
+    } catch (error) {
+      throw new SalesApiError("고래 유저 분석 조회 실패:", error);
+    }
+  },
+
+  async getGemEconomy(params?: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<GemEconomyResponse> {
+    try {
+      const response = await axiosServer.get(
+        SALES_ENDPOINT.INSIGHTS_GEM_ECONOMY,
+        { params },
+      );
+      return response.data;
+    } catch (error) {
+      throw new SalesApiError("구슬 경제 밸런스 분석 조회 실패:", error);
+    }
+  },
+
+  async getMatchingFunnel(params?: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<MatchingFunnelResponse> {
+    try {
+      const response = await axiosServer.get(
+        SALES_ENDPOINT.INSIGHTS_MATCHING_FUNNEL,
+        { params },
+      );
+      return response.data;
+    } catch (error) {
+      throw new SalesApiError("매칭→수익화 퍼널 분석 조회 실패:", error);
     }
   },
 };

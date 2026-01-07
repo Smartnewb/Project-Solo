@@ -12,8 +12,9 @@ import { DailySalesTrendGraph } from "./components/DailySalesTrendGraph";
 import { SuccessRate } from "./components/SuccessRate";
 import { RevenueMetricsTab } from "./components/RevenueMetricsTab";
 import { ProductAnalysisTab } from "./components/ProductAnalysisTab";
+import { InsightsTab } from "./components/InsightsTab";
 
-type MainTab = "sales" | "metrics" | "products";
+type MainTab = "sales" | "metrics" | "products" | "insights";
 
 interface DateRange {
   startDate: Date | undefined;
@@ -85,6 +86,16 @@ export default function SalesPage() {
             >
               상품 분석
             </button>
+            <button
+              onClick={() => setMainTab("insights")}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                mainTab === "insights"
+                  ? "border-purple-600 text-purple-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              인사이트
+            </button>
           </div>
         </div>
       </div>
@@ -97,6 +108,11 @@ export default function SalesPage() {
           />
         ) : mainTab === "products" ? (
           <ProductAnalysisTab
+            startDate={dateRange.startDate}
+            endDate={dateRange.endDate}
+          />
+        ) : mainTab === "insights" ? (
+          <InsightsTab
             startDate={dateRange.startDate}
             endDate={dateRange.endDate}
           />

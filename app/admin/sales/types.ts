@@ -477,3 +477,152 @@ export interface SystemComparisonResponse {
   gemSystemRevenue: number;
   revenueGrowthRate: number;
 }
+
+// === 고급 인사이트 타입 ===
+
+export interface GemBalanceDistributionItem {
+  balanceRange: string;
+  purchaseCount: number;
+  percentage: number;
+}
+
+export interface GemTriggerResponse {
+  distribution: GemBalanceDistributionItem[];
+  averageBalance: number;
+  medianBalance: number;
+  modeBalance: number;
+  recommendedThreshold: number;
+  totalPurchases: number;
+}
+
+export interface LastFeatureItem {
+  featureType: string;
+  featureName: string;
+  purchaseCount: number;
+  percentage: number;
+  avgTimeToPurchase: number;
+}
+
+export interface ConversionByFeatureItem {
+  featureType: string;
+  featureName: string;
+  usageCount: number;
+  purchaseWithin24h: number;
+  conversionRate: number;
+}
+
+export interface FeatureFunnelResponse {
+  lastFeatureBeforePurchase: LastFeatureItem[];
+  conversionByFeature: ConversionByFeatureItem[];
+  totalPurchases: number;
+}
+
+export interface DaysDistributionItem {
+  days: number;
+  userCount: number;
+  percentage: number;
+}
+
+export interface FeatureUsedItem {
+  featureType: string;
+  featureName: string;
+  userCount: number;
+  percentage: number;
+}
+
+export interface CohortConversionItem {
+  cohortWeek: string;
+  totalUsers: number;
+  convertedUsers: number;
+  conversionRate: number;
+}
+
+export interface FirstPurchaseResponse {
+  daysDistribution: DaysDistributionItem[];
+  averageDays: number;
+  medianDays: number;
+  featuresUsedBeforeFirst: FeatureUsedItem[];
+  cohortConversion: CohortConversionItem[];
+  totalFirstPurchaseUsers: number;
+}
+
+export interface RevenueConcentrationItem {
+  percentile: number;
+  userCount: number;
+  totalRevenue: number;
+  revenueShare: number;
+  avgRevenuePerUser: number;
+}
+
+export interface WhaleCharacteristics {
+  malePercentage: number;
+  femalePercentage: number;
+  avgAge: number;
+  avgPurchaseCount: number;
+  avgDaysSinceSignup: number;
+  topFeatures: string[];
+}
+
+export interface WhaleUserResponse {
+  revenueConcentration: RevenueConcentrationItem[];
+  whaleThreshold: number;
+  whaleCount: number;
+  whaleCharacteristics: WhaleCharacteristics;
+  totalUsers: number;
+  totalRevenue: number;
+}
+
+export interface DailyGemBalanceItem {
+  date: string;
+  totalCharged: number;
+  totalConsumed: number;
+  netFlow: number;
+  ratio: number;
+}
+
+export interface GemEconomySummary {
+  totalCharged: number;
+  totalConsumed: number;
+  overallRatio: number;
+  avgDailyCharge: number;
+  avgDailyConsume: number;
+  healthStatus: "healthy" | "inflation" | "deflation";
+}
+
+export interface GemSourceItem {
+  source: string;
+  sourceName: string;
+  charged: number;
+  consumed: number;
+}
+
+export interface GemEconomyResponse {
+  dailyBalance: DailyGemBalanceItem[];
+  summary: GemEconomySummary;
+  bySource: GemSourceItem[];
+}
+
+export interface MatchingFunnelData {
+  totalMatches: number;
+  matchesWithLike: number;
+  matchesWithChat: number;
+  matchesWithPurchase: number;
+  likeRate: number;
+  chatRate: number;
+  purchaseRate: number;
+  overallConversionRate: number;
+}
+
+export interface ConversionTrendItem {
+  period: string;
+  matchCount: number;
+  purchaseCount: number;
+  conversionRate: number;
+}
+
+export interface MatchingFunnelResponse {
+  funnel: MatchingFunnelData;
+  conversionTrend: ConversionTrendItem[];
+  avgRevenuePerMatch: number;
+  avgRevenuePerChat: number;
+}
