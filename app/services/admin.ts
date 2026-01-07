@@ -823,7 +823,19 @@ const userAppearance = {
       const response = await axiosServer.get(endpoint);
       console.log("유저 상세 정보 응답:", response.data);
 
-      return response.data;
+      const data = response.data;
+
+      if (data.profileImageUrls && Array.isArray(data.profileImageUrls) && data.profileImageUrls.length > 0) {
+        data.profileImages = data.profileImageUrls.map((url: string, index: number) => ({
+          id: `${userId}-${index}`,
+          url: url,
+          order: index,
+          isMain: index === 0
+        }));
+        data.profileImageUrl = data.profileImageUrls[0];
+      }
+
+      return data;
     } catch (error: any) {
       console.error("유저 상세 정보 조회 중 오류:", error);
       console.error("오류 상세 정보:", error.response?.data || error.message);

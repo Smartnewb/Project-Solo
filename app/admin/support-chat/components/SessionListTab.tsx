@@ -29,11 +29,14 @@ import type {
   SupportSessionStatus,
   SupportSessionSummary,
   AdminSessionsResponse,
+  SupportDomain,
 } from '@/app/types/support-chat';
 import {
   SESSION_STATUS_LABELS,
   SESSION_STATUS_COLORS,
   LANGUAGE_FLAGS,
+  DOMAIN_LABELS,
+  DOMAIN_COLORS,
 } from '@/app/types/support-chat';
 import ChatDetailDialog from './ChatDetailDialog';
 
@@ -45,13 +48,15 @@ export default function SessionListTab({ statusFilter }: SessionListTabProps) {
   const [loading, setLoading] = useState(false);
   const [sessions, setSessions] = useState<SupportSessionSummary[]>([]);
   const [error, setError] = useState<string>('');
-  
+
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [totalCount, setTotalCount] = useState(0);
 
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [chatDialogOpen, setChatDialogOpen] = useState(false);
+
+  const [domainFilter, setDomainFilter] = useState<SupportDomain | 'all'>('all');
 
   const fetchSessions = useCallback(async () => {
     setLoading(true);
@@ -64,7 +69,12 @@ export default function SessionListTab({ statusFilter }: SessionListTabProps) {
         limit: rowsPerPage,
       });
 
-      setSessions(response.sessions);
+      let filteredSessions = response.sessions;
+      if (domainFilter !== 'all') {
+        filteredSessions = filteredSessions.filter((session) => session.domain === domainFilter);
+      }
+
+      setSessions(filteredSessions);
       setTotalCount(response.pagination.total);
     } catch (err) {
       console.error('세션 목록 조회 실패:', err);
@@ -72,7 +82,7 @@ export default function SessionListTab({ statusFilter }: SessionListTabProps) {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, page, rowsPerPage]);
+  }, [statusFilter, page, rowsPerPage, domainFilter]);
 
   useEffect(() => {
     fetchSessions();
@@ -126,7 +136,7 @@ export default function SessionListTab({ statusFilter }: SessionListTabProps) {
       )}
 
       <Paper sx={{ p: 2, mb: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
             {statusFilter ? SESSION_STATUS_LABELS[statusFilter] : '전체'} 세션 목록
           </Typography>
@@ -139,6 +149,26 @@ export default function SessionListTab({ statusFilter }: SessionListTabProps) {
             새로고침
           </Button>
         </Box>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          <Chip
+            label="전체"
+            onClick={() => setDomainFilter('all')}
+            color={domainFilter === 'all' ? 'primary' : 'default'}
+            size="small"
+            variant={domainFilter === 'all' ? 'filled' : 'outlined'}
+          />
+          {(['payment', 'matching', 'chat', 'account', 'other'] as SupportDomain[]).map((domain) => (
+            <Chip
+              key={domain}
+              label={DOMAIN_LABELS[domain]}
+              onClick={() => setDomainFilter(domain)}
+              color={domainFilter === domain ? DOMAIN_COLORS[domain] : 'default'}
+              size="small"
+              variant={domainFilter === domain ? 'filled' : 'outlined'}
+              sx={{ fontSize: '0.75rem' }}
+            />
+          ))}
+        </Box>
       </Paper>
 
       <TableContainer component={Paper}>
@@ -149,6 +179,7 @@ export default function SessionListTab({ statusFilter }: SessionListTabProps) {
               <TableCell>사용자</TableCell>
               <TableCell>상태</TableCell>
               <TableCell>언어</TableCell>
+              <TableCell>도메인</TableCell>
               <TableCell>메시지 수</TableCell>
               <TableCell>마지막 메시지</TableCell>
               <TableCell>생성일</TableCell>
@@ -158,13 +189,13 @@ export default function SessionListTab({ statusFilter }: SessionListTabProps) {
           <TableBody>
             {loading && sessions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                   <CircularProgress />
                 </TableCell>
               </TableRow>
             ) : sessions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                   <Typography color="text.secondary">세션이 없습니다.</Typography>
                 </TableCell>
               </TableRow>
@@ -197,6 +228,18 @@ export default function SessionListTab({ statusFilter }: SessionListTabProps) {
                         {LANGUAGE_FLAGS[session.language]}
                       </span>
                     </Tooltip>
+                  </TableCell>
+                  <TableCell>
+                    {session.domain ? (
+                      <Chip
+                        label={DOMAIN_LABELS[session.domain]}
+                        color={DOMAIN_COLORS[session.domain]}
+                        size="small"
+                        sx={{ fontSize: '0.75rem' }}
+                      />
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">-</Typography>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2">{session.messageCount}</Typography>

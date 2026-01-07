@@ -39,6 +39,9 @@ import {
   SESSION_STATUS_COLORS,
   LANGUAGE_FLAGS,
   LANGUAGE_LABELS,
+  DOMAIN_LABELS,
+  INFO_KEY_LABELS,
+  PHASE_LABELS,
 } from '@/app/types/support-chat';
 
 interface ChatDetailDialogProps {
@@ -269,6 +272,14 @@ export default function ChatDetailDialog({
             borderRadius: 2,
           }}
         >
+          {message.senderType === 'bot' && message.metadata?.phase && (
+            <Chip
+              label={PHASE_LABELS[message.metadata.phase]}
+              size="small"
+              sx={{ fontSize: '0.65rem', height: 20, mb: 0.5 }}
+              color={message.metadata.phase === 'answering' ? 'success' : 'default'}
+            />
+          )}
           <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
             {message.content}
           </Typography>
@@ -365,6 +376,36 @@ export default function ChatDetailDialog({
                   </Box>
                 </Box>
               </Box>
+
+              {(session.domain || session.collectedInfo) && (
+                <Box sx={{ p: 2, bgcolor: 'info.lighter', borderBottom: 1, borderColor: 'divider' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <SmartToyIcon fontSize="small" />
+                    🤖 봇이 수집한 정보
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                    {session.domain && (
+                      <Box>
+                        <Typography variant="caption" color="text.secondary">도메인</Typography>
+                        <Typography variant="body2">{DOMAIN_LABELS[session.domain]}</Typography>
+                      </Box>
+                    )}
+                    {session.collectedInfo && Object.entries(session.collectedInfo).map(([key, value]) => (
+                      <Box key={key}>
+                        <Typography variant="caption" color="text.secondary">
+                          {INFO_KEY_LABELS[key] || key}
+                        </Typography>
+                        <Typography variant="body2">{value}</Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                  {session.domain && session.collectedInfo && Object.keys(session.collectedInfo).length > 0 && (
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                      💡 참고: 봇이 사용자와 대화하여 위 정보를 수집했습니다.
+                    </Typography>
+                  )}
+                </Box>
+              )}
 
               <Box sx={{ flex: 1, overflow: 'auto', p: 1 }}>
                 {session.messages.length === 0 ? (

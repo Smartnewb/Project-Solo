@@ -1,6 +1,8 @@
 export type SupportSessionStatus = 'bot_handling' | 'waiting_admin' | 'admin_handling' | 'resolved';
 export type SupportLanguage = 'ko' | 'ja';
 export type SupportSenderType = 'user' | 'bot' | 'admin';
+export type SupportDomain = 'payment' | 'matching' | 'chat' | 'account' | 'other';
+export type SupportPhase = 'asking' | 'answering';
 
 export interface SupportMessageMetadata {
   sources?: {
@@ -10,6 +12,9 @@ export interface SupportMessageMetadata {
   }[];
   confidence?: number;
   translatedFrom?: 'ko' | 'ja';
+  domain?: SupportDomain;
+  collectedInfo?: Record<string, string>;
+  phase?: SupportPhase;
 }
 
 export interface SupportMessage {
@@ -42,6 +47,8 @@ export interface SupportSessionSummary {
   language: SupportLanguage;
   messageCount: number;
   lastMessage?: string;
+  domain?: SupportDomain;
+  collectedInfo?: Record<string, string>;
   createdAt: string;
 }
 
@@ -58,6 +65,8 @@ export interface SupportSessionDetail {
   status: SupportSessionStatus;
   language: SupportLanguage;
   assignedAdminId?: string;
+  domain?: SupportDomain;
+  collectedInfo?: Record<string, string>;
   messages: SupportMessage[];
   createdAt: string;
 }
@@ -118,4 +127,36 @@ export const LANGUAGE_LABELS: Record<SupportLanguage, string> = {
 export const LANGUAGE_FLAGS: Record<SupportLanguage, string> = {
   ko: '🇰🇷',
   ja: '🇯🇵',
+};
+
+export const DOMAIN_LABELS: Record<SupportDomain, string> = {
+  payment: '💳 결제',
+  matching: '💕 매칭',
+  chat: '💬 채팅',
+  account: '👤 계정',
+  other: '📋 기타',
+};
+
+export const DOMAIN_COLORS: Record<SupportDomain, 'default' | 'warning' | 'primary' | 'success' | 'error'> = {
+  payment: 'warning',
+  matching: 'error',
+  chat: 'primary',
+  account: 'default',
+  other: 'default',
+};
+
+export const PHASE_LABELS: Record<SupportPhase, string> = {
+  asking: '📝 정보 수집',
+  answering: '✅ 답변 완료',
+};
+
+export const INFO_KEY_LABELS: Record<string, string> = {
+  paymentMethod: '결제 수단',
+  issueType: '문제 유형',
+  errorMessage: '에러 메시지',
+  matchingDate: '매칭 일시',
+  partnerNickname: '상대방 닉네임',
+  chatRoomId: '채팅방 ID',
+  accountEmail: '계정 이메일',
+  description: '상세 내용',
 };
