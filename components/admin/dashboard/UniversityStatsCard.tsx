@@ -187,6 +187,18 @@ function HorizontalBarChart({
   );
 }
 
+function formatGenderRatio(maleCount: number, femaleCount: number): string {
+  if (femaleCount === 0) return maleCount > 0 ? `${maleCount}:0` : "0:0";
+  if (maleCount === 0) return `0:${femaleCount > 0 ? 1 : 0}`;
+
+  const ratio = maleCount / femaleCount;
+  if (ratio >= 1) {
+    return `${ratio.toFixed(1)}:1`;
+  } else {
+    return `1:${(1 / ratio).toFixed(1)}`;
+  }
+}
+
 function StatsTable({
   data,
   totalCount,
@@ -202,7 +214,7 @@ function StatsTable({
       <Box
         className="grid gap-4 px-4 py-3 text-xs font-medium uppercase tracking-wider"
         sx={{
-          gridTemplateColumns: "1fr 100px 1fr 80px",
+          gridTemplateColumns: "1fr 80px 140px 70px 70px",
           backgroundColor: COLORS.lightGray,
           color: COLORS.gray,
           borderBottom: `1px solid ${COLORS.border}`,
@@ -210,7 +222,8 @@ function StatsTable({
       >
         <span>대학교</span>
         <span className="text-right">회원수</span>
-        <span className="text-center">성비</span>
+        <span className="text-center">성비 (남:여)</span>
+        <span className="text-center">남/여</span>
         <span className="text-right">비율</span>
       </Box>
 
@@ -219,17 +232,17 @@ function StatsTable({
         sx={{ "& > div:nth-of-type(odd)": { backgroundColor: "#fafafa" } }}
       >
         {data.map((uni, index) => {
-          const malePercent =
-            uni.totalCount > 0 ? (uni.maleCount / uni.totalCount) * 100 : 0;
-          const femalePercent =
-            uni.totalCount > 0 ? (uni.femaleCount / uni.totalCount) * 100 : 0;
+          const genderRatioStr = formatGenderRatio(
+            uni.maleCount,
+            uni.femaleCount,
+          );
 
           return (
             <Box
               key={index}
               className="grid gap-4 px-4 py-3 items-center transition-colors hover:bg-gray-50"
               sx={{
-                gridTemplateColumns: "1fr 100px 1fr 80px",
+                gridTemplateColumns: "1fr 80px 140px 70px 70px",
                 borderColor: COLORS.border,
               }}
             >
@@ -252,30 +265,28 @@ function StatsTable({
                 {uni.totalCount.toLocaleString()}
               </span>
 
-              <Box className="px-2">
-                <Box
-                  className="h-5 rounded-full overflow-hidden flex"
-                  sx={{ backgroundColor: COLORS.lightGray }}
+              <Box className="text-center">
+                <span
+                  className="inline-flex items-center px-2 py-1 rounded-md text-xs font-semibold"
+                  style={{
+                    backgroundColor: "#f3f4f6",
+                    color: "#374151",
+                  }}
                 >
-                  <Box
-                    className="h-full transition-all duration-300"
-                    sx={{
-                      width: `${malePercent}%`,
-                      backgroundColor: COLORS.blue,
-                    }}
-                  />
-                  <Box
-                    className="h-full transition-all duration-300"
-                    sx={{
-                      width: `${femalePercent}%`,
-                      backgroundColor: COLORS.pink,
-                    }}
-                  />
-                </Box>
-                <Box className="flex justify-between mt-1 text-[10px]">
-                  <span style={{ color: COLORS.blue }}>{uni.maleCount}</span>
-                  <span style={{ color: COLORS.pink }}>{uni.femaleCount}</span>
-                </Box>
+                  <span style={{ color: COLORS.blue }}>
+                    {genderRatioStr.split(":")[0]}
+                  </span>
+                  <span className="mx-1 text-gray-400">:</span>
+                  <span style={{ color: COLORS.pink }}>
+                    {genderRatioStr.split(":")[1]}
+                  </span>
+                </span>
+              </Box>
+
+              <Box className="text-center text-xs">
+                <span style={{ color: COLORS.blue }}>{uni.maleCount}</span>
+                <span className="text-gray-400">/</span>
+                <span style={{ color: COLORS.pink }}>{uni.femaleCount}</span>
               </Box>
 
               <Box className="text-right">
@@ -298,7 +309,7 @@ function StatsTable({
       <Box
         className="grid gap-4 px-4 py-3 items-center"
         sx={{
-          gridTemplateColumns: "1fr 100px 1fr 80px",
+          gridTemplateColumns: "1fr 80px 140px 70px 70px",
           backgroundColor: "#f0fdf4",
           borderTop: `1px solid ${COLORS.border}`,
         }}
@@ -307,6 +318,7 @@ function StatsTable({
         <span className="text-right font-bold text-gray-900 tabular-nums">
           {totalCount.toLocaleString()}
         </span>
+        <Box />
         <Box />
         <span className="text-right font-bold text-emerald-600">100%</span>
       </Box>

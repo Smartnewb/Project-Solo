@@ -17,14 +17,7 @@ import {
   Button,
   Stack,
 } from "@mui/material";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import AdminService from "@/app/services/admin";
 
 const COLORS = [
@@ -178,25 +171,6 @@ export default function WithdrawalReasonStats() {
     return null;
   };
 
-  const renderCustomLegend = (props: any) => {
-    const { payload } = props;
-    return (
-      <Box className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-2 px-2">
-        {payload.map((entry: any, index: number) => (
-          <Box key={`legend-${index}`} className="flex items-center gap-1.5">
-            <Box
-              className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-              style={{ backgroundColor: entry.color }}
-            />
-            <Typography className="text-xs text-slate-600 whitespace-nowrap">
-              {entry.value}
-            </Typography>
-          </Box>
-        ))}
-      </Box>
-    );
-  };
-
   if (loading) {
     return (
       <Box className="flex items-center justify-center py-12">
@@ -312,7 +286,7 @@ export default function WithdrawalReasonStats() {
                 <Pie
                   data={formatChartData()}
                   cx="50%"
-                  cy="45%"
+                  cy="50%"
                   innerRadius={50}
                   outerRadius={85}
                   paddingAngle={2}
@@ -328,14 +302,9 @@ export default function WithdrawalReasonStats() {
                   ))}
                 </Pie>
                 <Tooltip content={<CustomTooltip />} />
-                <Legend
-                  content={renderCustomLegend}
-                  verticalAlign="bottom"
-                  wrapperStyle={{ paddingTop: "8px" }}
-                />
               </PieChart>
             </ResponsiveContainer>
-            <Box className="absolute top-[45%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+            <Box className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
               <Typography className="text-2xl font-bold text-slate-800">
                 {totalCount.toLocaleString()}
               </Typography>

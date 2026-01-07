@@ -16,8 +16,6 @@ import {
 } from "@mui/icons-material";
 import AdminService from "@/app/services/admin";
 
-type PeriodType = "7days" | "30days" | "90days" | "all";
-
 interface ChurnRateCardProps {
   title: string;
   subtitle: string;
@@ -278,17 +276,9 @@ function ChurnRateCard({
   );
 }
 
-const periodOptions: { value: PeriodType; label: string }[] = [
-  { value: "7days", label: "최근 7일" },
-  { value: "30days", label: "최근 30일" },
-  { value: "90days", label: "최근 90일" },
-  { value: "all", label: "전체 기간" },
-];
-
 export default function ChurnRateStats() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedPeriod, setSelectedPeriod] = useState<PeriodType>("30days");
   const [churnRates, setChurnRates] = useState<{
     daily: number | null;
     weekly: number | null;
@@ -364,68 +354,6 @@ export default function ChurnRateStats() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Box sx={{ mb: 3 }}>
-        <Box
-          sx={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 1,
-            mb: 1.5,
-          }}
-        >
-          {periodOptions.map((option) => (
-            <Box
-              key={option.value}
-              onClick={() => setSelectedPeriod(option.value)}
-              sx={{
-                px: 2,
-                py: 0.75,
-                borderRadius: 2,
-                cursor: "pointer",
-                fontSize: "0.8125rem",
-                fontWeight: 500,
-                transition: "all 0.15s ease",
-                backgroundColor:
-                  selectedPeriod === option.value ? "#8b5cf6" : "#f3f4f6",
-                color: selectedPeriod === option.value ? "#fff" : "#6b7280",
-                border:
-                  selectedPeriod === option.value
-                    ? "1px solid #8b5cf6"
-                    : "1px solid #e5e7eb",
-                "&:hover": {
-                  backgroundColor:
-                    selectedPeriod === option.value ? "#7c3aed" : "#e5e7eb",
-                },
-              }}
-            >
-              {option.label}
-            </Box>
-          ))}
-        </Box>
-        <Typography
-          variant="caption"
-          sx={{
-            color: "#9ca3af",
-            fontSize: "0.7rem",
-            display: "flex",
-            alignItems: "center",
-            gap: 0.5,
-          }}
-        >
-          <Box
-            component="span"
-            sx={{
-              display: "inline-block",
-              width: 4,
-              height: 4,
-              borderRadius: "50%",
-              backgroundColor: "#d1d5db",
-            }}
-          />
-          기간 필터는 추후 지원 예정
-        </Typography>
-      </Box>
-
       {error && (
         <Alert
           severity="warning"
