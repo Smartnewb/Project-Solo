@@ -1,0 +1,204 @@
+"use client";
+
+import Link from "next/link";
+import { Box, Card, CardContent, Typography, Skeleton } from "@mui/material";
+import {
+  AssignmentInd as ProfileReviewIcon,
+  Report as ReportIcon,
+  Forum as CommunityIcon,
+  SupportAgent as SupportIcon,
+} from "@mui/icons-material";
+import { ActionItems } from "../types";
+
+interface ActionRequiredProps {
+  actionItems: ActionItems | null;
+  loading?: boolean;
+}
+
+interface ActionItemCardProps {
+  title: string;
+  count: number;
+  icon: React.ReactNode;
+  link: string;
+  color: string;
+  bgColor: string;
+  loading?: boolean;
+}
+
+function ActionItemCard({
+  title,
+  count,
+  icon,
+  link,
+  color,
+  bgColor,
+  loading,
+}: ActionItemCardProps) {
+  const hasItems = count > 0;
+
+  return (
+    <Link href={link} className="block flex-1 min-w-[140px]">
+      <Card
+        sx={{
+          height: "100%",
+          cursor: "pointer",
+          transition: "all 0.2s ease-in-out",
+          border: hasItems ? `2px solid ${color}` : "1px solid #e5e7eb",
+          backgroundColor: hasItems ? bgColor : "#f9fafb",
+          "&:hover": {
+            transform: "translateY(-2px)",
+            boxShadow: hasItems
+              ? `0 4px 12px ${color}40`
+              : "0 4px 12px rgba(0,0,0,0.1)",
+          },
+        }}
+      >
+        <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
+          <Box className="flex items-center gap-3">
+            <Box
+              sx={{
+                p: 1,
+                borderRadius: 2,
+                backgroundColor: hasItems ? color : "#9ca3af",
+                color: "white",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {icon}
+            </Box>
+            <Box className="flex-1">
+              <Typography
+                variant="caption"
+                sx={{
+                  color: hasItems ? "text.primary" : "text.secondary",
+                  fontWeight: 500,
+                }}
+              >
+                {title}
+              </Typography>
+              {loading ? (
+                <Skeleton width={40} height={28} />
+              ) : (
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontWeight: 700,
+                    color: hasItems ? color : "#9ca3af",
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {count}
+                  <Typography
+                    component="span"
+                    variant="body2"
+                    sx={{ ml: 0.5, color: "text.secondary" }}
+                  >
+                    건
+                  </Typography>
+                </Typography>
+              )}
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
+export default function ActionRequired({
+  actionItems,
+  loading,
+}: ActionRequiredProps) {
+  const pendingApprovals = actionItems?.pendingApprovals ?? 0;
+  const pendingProfileReports = actionItems?.pendingProfileReports ?? 0;
+  const pendingCommunityReports = actionItems?.pendingCommunityReports ?? 0;
+  const pendingImageApprovals = actionItems?.pendingImageApprovals ?? 0;
+
+  const totalPending =
+    pendingApprovals +
+    pendingProfileReports +
+    pendingCommunityReports +
+    pendingImageApprovals;
+
+  return (
+    <Card sx={{ mb: 3 }}>
+      <CardContent>
+        <Box className="flex items-center gap-2 mb-4">
+          <Box
+            sx={{
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              backgroundColor: totalPending > 0 ? "#ef4444" : "#22c55e",
+              animation: totalPending > 0 ? "pulse 2s infinite" : "none",
+              "@keyframes pulse": {
+                "0%, 100%": { opacity: 1 },
+                "50%": { opacity: 0.5 },
+              },
+            }}
+          />
+          <Typography variant="h6" fontWeight={600}>
+            긴급 처리 필요
+          </Typography>
+          {totalPending > 0 && (
+            <Typography
+              variant="caption"
+              sx={{
+                ml: 1,
+                px: 1.5,
+                py: 0.5,
+                borderRadius: 10,
+                backgroundColor: "#fef2f2",
+                color: "#dc2626",
+                fontWeight: 600,
+              }}
+            >
+              총 {totalPending}건
+            </Typography>
+          )}
+        </Box>
+
+        <Box className="flex gap-3 flex-wrap">
+          <ActionItemCard
+            title="회원 심사"
+            count={pendingApprovals}
+            icon={<ProfileReviewIcon fontSize="small" />}
+            link="/admin/profile-review"
+            color="#3b82f6"
+            bgColor="#eff6ff"
+            loading={loading}
+          />
+          <ActionItemCard
+            title="이미지 승인"
+            count={pendingImageApprovals}
+            icon={<ProfileReviewIcon fontSize="small" />}
+            link="/admin/users/appearance"
+            color="#8b5cf6"
+            bgColor="#f5f3ff"
+            loading={loading}
+          />
+          <ActionItemCard
+            title="신고 관리"
+            count={pendingProfileReports}
+            icon={<ReportIcon fontSize="small" />}
+            link="/admin/reports"
+            color="#ef4444"
+            bgColor="#fef2f2"
+            loading={loading}
+          />
+          <ActionItemCard
+            title="커뮤니티 신고"
+            count={pendingCommunityReports}
+            icon={<CommunityIcon fontSize="small" />}
+            link="/admin/community"
+            color="#f59e0b"
+            bgColor="#fffbeb"
+            loading={loading}
+          />
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
