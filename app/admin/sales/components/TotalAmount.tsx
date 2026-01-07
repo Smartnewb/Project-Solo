@@ -1,631 +1,766 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { salesService } from '@/app/services/sales';
-import { CustomSalesResponse, IapStatsResponse } from '../types';
-import { paymentType } from '../types';
-import { REGION_OPTIONS, getRegionLabel } from '../constants/regions';
-import { PAYMENT_TYPE_OPTIONS, getPaymentTypeLabel } from '../constants/paymentTypes';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { formatCurrency } from '../utils';
-
+import { useEffect, useState } from "react";
+import { salesService } from "@/app/services/sales";
+import { CustomSalesResponse, IapStatsResponse } from "../types";
+import { paymentType } from "../types";
+import { REGION_OPTIONS, getRegionLabel } from "../constants/regions";
+import {
+  PAYMENT_TYPE_OPTIONS,
+  getPaymentTypeLabel,
+} from "../constants/paymentTypes";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  Legend,
+} from "recharts";
+import { formatCurrency } from "../utils";
 
 interface TotalAmountProps {
-    startDate?: Date;
-    endDate?: Date;
+  startDate?: Date;
+  endDate?: Date;
 }
 
 export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
-    const [totalData, setTotalData] = useState<CustomSalesResponse | null>(null);
-    const [iapStats, setIapStats] = useState<IapStatsResponse | null>(null);
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [error, setError] = useState<string>('');
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-    
-    const [selectedRegions, setSelectedRegions] = useState<string[]>(['all']);
-    const [selectedPaymentType, setSelectedPaymentType] = useState<paymentType>('all');
+  const [totalData, setTotalData] = useState<CustomSalesResponse | null>(null);
+  const [iapStats, setIapStats] = useState<IapStatsResponse | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
-    // TODO: utils 분리
-    // === 기본 날짜 범위 계산  ===
-    const getDefaultDateRange = () => {
-        const today = new Date();
-        // 서비스 시작일을 더 과거로 설정 (또는 null로 전체 기간 조회)
-        const serviceStartDate = new Date('2019-01-01'); // 충분히 과거 날짜
-        return { start: serviceStartDate, end: today };
-    };
+  const [selectedRegions, setSelectedRegions] = useState<string[]>(["all"]);
+  const [selectedPaymentType, setSelectedPaymentType] =
+    useState<paymentType>("all");
+  const [showAllRegions, setShowAllRegions] = useState<boolean>(false);
 
-    // === 실제 사용할 날짜 계산 ===
-    const getEffectiveDates = () => {
-        if (startDate && endDate) {
-            return { start: startDate, end: endDate };
-        }
-        // startDate, endDate가 없으면 전체 기간으로 조회
-        return getDefaultDateRange();
-    };
+  // TODO: utils 분리
+  // === 기본 날짜 범위 계산  ===
+  const getDefaultDateRange = () => {
+    const today = new Date();
+    // 서비스 시작일을 더 과거로 설정 (또는 null로 전체 기간 조회)
+    const serviceStartDate = new Date("2019-01-01"); // 충분히 과거 날짜
+    return { start: serviceStartDate, end: today };
+  };
 
-    // FIXME: 삭제
-    const formatDateToString = (date: Date): string => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
+  // === 실제 사용할 날짜 계산 ===
+  const getEffectiveDates = () => {
+    if (startDate && endDate) {
+      return { start: startDate, end: endDate };
+    }
+    // startDate, endDate가 없으면 전체 기간으로 조회
+    return getDefaultDateRange();
+  };
 
-    
+  // FIXME: 삭제
+  const formatDateToString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
 
-    const formatNumber = (num: number): string => {
-        return new Intl.NumberFormat('ko-KR').format(num);
-    };
+  const formatNumber = (num: number): string => {
+    return new Intl.NumberFormat("ko-KR").format(num);
+  };
 
-    useEffect(() => {
-        fetchTotalSales();
-        fetchIapStats();
-    }, []);
+  useEffect(() => {
+    fetchTotalSales();
+    fetchIapStats();
+  }, []);
 
-    useEffect(() => {
-        if (startDate && endDate) {
-            fetchTotalSales();
-        }
-    }, [startDate, endDate]);
+  useEffect(() => {
+    if (startDate && endDate) {
+      fetchTotalSales();
+    }
+  }, [startDate, endDate]);
 
-    useEffect(() => {
-        fetchTotalSales();
-    }, [selectedPaymentType]); // 지역 필터는 제거 - 프론트엔드에서만 필터링
+  useEffect(() => {
+    fetchTotalSales();
+  }, [selectedPaymentType]); // 지역 필터는 제거 - 프론트엔드에서만 필터링
 
-    useEffect(()=>{
-        if (totalData) {
-            handleSortData();
-        }
-    },[sortOrder]);
+  useEffect(() => {
+    if (totalData) {
+      handleSortData();
+    }
+  }, [sortOrder]);
 
-    // === handlers 수정 ===
-    const fetchTotalSales = async () => {
-        setIsLoading(true);
-        setError('');
+  // === handlers 수정 ===
+  const fetchTotalSales = async () => {
+    setIsLoading(true);
+    setError("");
 
-        try {
-            const { start, end } = getEffectiveDates();
-            const startDateString = formatDateToString(start);
-            const endDateString = formatDateToString(end);
+    try {
+      const { start, end } = getEffectiveDates();
+      const startDateString = formatDateToString(start);
+      const endDateString = formatDateToString(end);
 
-            console.log('총 매출액 API 요청:', {
-                startDate: startDateString,
-                endDate: endDateString,
-                paymentType: selectedPaymentType !== 'all' ? selectedPaymentType : 'all',
-                byRegion: true,
-                isFullPeriod: !startDate && !endDate // 전체 기간 여부 표시
-            });
+      console.log("총 매출액 API 요청:", {
+        startDate: startDateString,
+        endDate: endDateString,
+        paymentType:
+          selectedPaymentType !== "all" ? selectedPaymentType : "all",
+        byRegion: true,
+        isFullPeriod: !startDate && !endDate, // 전체 기간 여부 표시
+      });
 
-            const response = await salesService.getSalesCustom({
-                startDate: startDateString,
-                endDate: endDateString,
-                paymentType: selectedPaymentType !== 'all' ? selectedPaymentType : 'all',
-                byRegion: true
-            });
+      const response = await salesService.getSalesCustom({
+        startDate: startDateString,
+        endDate: endDateString,
+        paymentType:
+          selectedPaymentType !== "all" ? selectedPaymentType : "all",
+        byRegion: true,
+      });
 
-            console.log('총 매출액 API 응답:', response);
-            console.log('필터 상태:', { selectedRegions, selectedPaymentType });
-            
-            if (response) {
-                setTotalData(response);
-            } else {
-                console.warn('API 응답이 비어있습니다.');
-                setError('매출 데이터를 불러올 수 없습니다.');
-                setTotalData(null);
-            }
-        } catch (error) {
-            console.error('총 매출액 조회 실패:', error);
-            setError('총 매출액 데이터를 불러오는데 실패했습니다.');
-            setTotalData(null);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+      console.log("총 매출액 API 응답:", response);
+      console.log("필터 상태:", { selectedRegions, selectedPaymentType });
 
-    const fetchIapStats = async () => {
-        try {
-            const response = await salesService.getIapStats();
-            console.log('IAP 통계 API 응답:', response);
-            setIapStats(response);
-        } catch (error) {
-            console.error('IAP 통계 조회 실패:', error);
-        }
-    };
+      if (response) {
+        setTotalData(response);
+      } else {
+        console.warn("API 응답이 비어있습니다.");
+        setError("매출 데이터를 불러올 수 없습니다.");
+        setTotalData(null);
+      }
+    } catch (error) {
+      console.error("총 매출액 조회 실패:", error);
+      setError("총 매출액 데이터를 불러오는데 실패했습니다.");
+      setTotalData(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    const handleRefresh = () => {
-        fetchTotalSales();
-        fetchIapStats();
-    };
+  const fetchIapStats = async () => {
+    try {
+      const response = await salesService.getIapStats();
+      console.log("IAP 통계 API 응답:", response);
+      setIapStats(response);
+    } catch (error) {
+      console.error("IAP 통계 조회 실패:", error);
+    }
+  };
 
-    const handleSortData = () => {
-        if (!totalData?.regionalData) return;
-        
-        // 지역별 데이터 매출액순으로 정렬
-        const sortedRegionalData = [...totalData.regionalData].sort((a, b) => {
-            const aValue = a.amount || 0;
-            const bValue = b.amount || 0;
-            return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
-        });
-        
-        
-        setTotalData(prev => prev ? { 
-            ...prev, 
-            regionalData: sortedRegionalData 
-        } : null);
-    };
+  const handleRefresh = () => {
+    fetchTotalSales();
+    fetchIapStats();
+  };
 
-    const handleToggleSort = () => {
-        setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
-    };
+  const handleSortData = () => {
+    if (!totalData?.regionalData) return;
 
-    const getCurrentDateRangeText = () => {
-        if (startDate && endDate) {
-            return `${startDate.toLocaleDateString('ko-KR')} ~ ${endDate.toLocaleDateString('ko-KR')}`;
-        }
-        // 전체 기간일 때는 실제 데이터 범위 표시
-        if (totalData && totalData.startDate && totalData.endDate) {
-            const apiStartDate = new Date(totalData.startDate);
-            const apiEndDate = new Date(totalData.endDate);
-            return `${apiStartDate.toLocaleDateString('ko-KR')} ~ ${apiEndDate.toLocaleDateString('ko-KR')} (전체 기간)`;
-        }
-        return '전체 기간 (서비스 시작일 ~ 오늘)';
-    };
+    // 지역별 데이터 매출액순으로 정렬
+    const sortedRegionalData = [...totalData.regionalData].sort((a, b) => {
+      const aValue = a.amount || 0;
+      const bValue = b.amount || 0;
+      return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
+    });
 
-    // 지역별 필터링된 총합 계산 함수
-    const getFilteredTotals = () => {
-        console.log('getFilteredTotals 호출:', { totalData, selectedRegions });
-
-        if (!totalData) {
-            console.log('totalData가 없음');
-            return { totalSales: 0, totalCount: 0, totalPaidUsers: 0 };
-        }
-
-        // 전체 지역 선택 시 원본 데이터 반환
-        if (selectedRegions.includes('all') || selectedRegions.length === 0) {
-            const result = {
-                totalSales: totalData.totalSales || 0,
-                totalCount: totalData.totalCount || 0,
-                totalPaidUsers: totalData.totalPaidUsers || 0
-            };
-            console.log('전체 지역 선택 결과:', result);
-            return result;
-        }
-
-        // 특정 지역들 선택 시 해당 지역들 데이터 합계
-        if (totalData.regionalData && totalData.regionalData.length > 0) {
-            const filteredRegionData = totalData.regionalData.filter(item =>
-                selectedRegions.includes(item.region)
-            );
-            console.log('선택된 지역들 데이터:', filteredRegionData);
-
-            if (filteredRegionData.length > 0) {
-                const result = filteredRegionData.reduce(
-                    (acc, regionData) => ({
-                        totalSales: acc.totalSales + (regionData.amount || 0),
-                        totalCount: acc.totalCount + (regionData.count || 0),
-                        totalPaidUsers: acc.totalPaidUsers + (regionData.paidUserCount || 0)
-                    }),
-                    { totalSales: 0, totalCount: 0, totalPaidUsers: 0 }
-                );
-                console.log('다중 지역 선택 결과:', result);
-                return result;
-            }
-        }
-
-        // 선택된 지역 데이터가 없는 경우
-        console.log('선택된 지역 데이터 없음');
-        return { totalSales: 0, totalCount: 0, totalPaidUsers: 0 };
-    };
-
-    // === 비율 계산 유틸리티 ===
-    const calculatePercentages = () => {
-        if (!totalData?.regionalData || totalData.regionalData.length === 0 || (totalData.totalSales || 0) <= 0) {
-            return {};
-        }
-
-        const totalSales = totalData.totalSales || 0;
-        const percentages = totalData.regionalData.map(regionData => 
-            ((regionData.amount || 0) / totalSales * 100)
-        );
-
-        // 반올림된 비율들 계산
-        const roundedPercentages = percentages.map(p => Math.round(p * 10) / 10);
-        const totalRounded = roundedPercentages.reduce((sum, p) => sum + p, 0);
-
-        // 100.0%에서 벗어나면 가장 큰 값에 오차 보정
-        if (Math.abs(totalRounded - 100) > 0.05 && roundedPercentages.length > 0) {
-            const maxIndex = percentages.reduce((maxIdx, current, index) => 
-                current > percentages[maxIdx] ? index : maxIdx, 0
-            );
-            roundedPercentages[maxIndex] = Math.round((roundedPercentages[maxIndex] + (100 - totalRounded)) * 10) / 10;
-        }
-
-        // 지역별 비율 맵 생성
-        const percentageMap: { [key: string]: number } = {};
-        totalData.regionalData.forEach((regionData, index) => {
-            percentageMap[regionData.region] = roundedPercentages[index];
-        });
-
-        return percentageMap;
-    };
-
-    // === 파이차트 관련 유틸리티 ===
-    const getPieChartData = () => {
-        if (!totalData?.regionalData || totalData.regionalData.length === 0) {
-            return [];
-        }
-
-        // 선택된 지역들이 있으면 해당 지역들만, 전체 선택이면 모든 지역
-        const filteredRegionalData = selectedRegions.includes('all')
-            ? totalData.regionalData
-            : totalData.regionalData.filter(regionData => selectedRegions.includes(regionData.region));
-
-        if (filteredRegionalData.length === 0) {
-            return [];
-        }
-
-        // 필터링된 데이터의 총합 계산
-        const filteredTotal = filteredRegionalData.reduce((sum, item) => sum + (item.amount || 0), 0);
-
-        const percentageMap = calculatePercentages();
-
-        return filteredRegionalData.map((regionData) => ({
-            name: getRegionLabel(regionData.region),
-            value: regionData.amount || 0,
-            count: regionData.count || 0,
-            paidUserCount: regionData.paidUserCount || 0,
-            region: regionData.region,
-            percentage: selectedRegions.includes('all')
-                ? (percentageMap[regionData.region] || 0)
-                : ((regionData.amount || 0) / filteredTotal * 100) // 다중 지역 선택 시 필터된 총액 기준 비율
-        }));
-    };
-
-    // 차트 색상 배열
-    const getChartColors = () => [
-        '#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', 
-        '#8dd1e1', '#d084d0', '#ffb347', '#87ceeb',
-        '#dda0dd', '#98fb98', '#f0e68c', '#ff6347'
-    ];
-
-    // 커스텀 툴팁 컴포넌트
-    const CustomTooltip = ({ active, payload }: any) => {
-        if (active && payload && payload.length) {
-            const data = payload[0].payload;
-            return (
-                <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
-                    <p className="font-medium text-gray-900">{data.name}</p>
-                    <p className="text-blue-600">
-                        매출액: {formatCurrency(data.value)}
-                    </p>
-                    <p className="text-green-600">
-                        거래건수: {formatNumber(data.count)}건
-                    </p>
-                    <p className="text-orange-600">
-                        유료 사용자: {formatNumber(data.paidUserCount || 0)}명
-                    </p>
-                    <p className="text-purple-600">
-                        비율: {data.percentage.toFixed(1)}%
-                    </p>
-                </div>
-            );
-        }
-        return null;
-    };
-
-    // === 파이차트 렌더링 함수 ===
-    const renderSalesPieChart = () => {
-        const data = getPieChartData();
-        const colors = getChartColors();
-
-        if (data.length === 0) {
-            return (
-                <div className="flex items-center justify-center h-80 text-gray-500">
-                    표시할 지역별 데이터가 없습니다.
-                </div>
-            );
-        }
-
-        return (
-            <ResponsiveContainer width="100%" height={320}>
-                <PieChart>
-                    <Pie
-                        data={data}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={{
-                            stroke: '#8884d8',
-                            strokeWidth: 1
-                        }}
-                        label={({ name, percentage }) => `${name} (${percentage.toFixed(1)}%)`}
-                        outerRadius={90} // 라벨 공간 확보
-                        fill="#8884d8"
-                        dataKey="value"
-                    >
-                        {data.map((entry, index) => (
-                            <Cell 
-                                key={`cell-${index}`} 
-                                fill={colors[index % colors.length]} 
-                            />
-                        ))}
-                    </Pie>
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend />
-                </PieChart>
-            </ResponsiveContainer>
-        );
-    };
-
-    // === JSX ===
-    return (
-        <div className="space-y-6">
-            {/* 헤더 */}
-            <div className="flex justify-between items-center">
-                <div>
-                    <h2 className="text-lg font-semibold">총 매출액</h2>
-                </div>
-                <div className="flex gap-2">
-                    <button
-                        onClick={handleRefresh}
-                        className="px-4 py-2 bg-[#7D4EE4] text-white rounded-lg hover:bg-purple-700 transition-colors"
-                    >
-                        새로고침
-                    </button>
-                </div>
-            </div>
-
-
-            {/* 필터 영역 */}
-            <div className="bg-white p-6 rounded-lg border border-gray-200">
-                <div className="flex flex-wrap gap-4 items-center mb-4">
-                    {/* 지역별 필터 */}
-                    <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">지역별</label>
-                        <div className="flex flex-wrap gap-2">
-                            {REGION_OPTIONS.map(option => (
-                                <label key={option.value} className="flex items-center gap-1 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={selectedRegions.includes(option.value)}
-                                        onChange={(e) => {
-                                            if (option.value === 'all') {
-                                                // 전체 선택/해제
-                                                if (e.target.checked) {
-                                                    setSelectedRegions(['all']);
-                                                } else {
-                                                    setSelectedRegions([]);
-                                                }
-                                            } else {
-                                                // 개별 지역 선택/해제
-                                                setSelectedRegions(prev => {
-                                                    const newRegions = prev.filter(r => r !== 'all'); // 전체 제거
-                                                    if (e.target.checked) {
-                                                        return [...newRegions, option.value];
-                                                    } else {
-                                                        return newRegions.filter(r => r !== option.value);
-                                                    }
-                                                });
-                                            }
-                                        }}
-                                        className="rounded"
-                                    />
-                                    <span className="text-sm text-gray-700">{option.label}</span>
-                                </label>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* 결제 타입별 필터 */}
-                    <div className="flex items-center gap-2">
-                        <label className="text-sm font-medium text-gray-700">결제 타입별</label>
-                        <select
-                            value={selectedPaymentType}
-                            onChange={(e) => setSelectedPaymentType(e.target.value as paymentType)}
-                            className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            {PAYMENT_TYPE_OPTIONS.map(option => (
-                                <option key={option.value} value={option.value}>
-                                    {option.label}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-
-            {/* 에러 메시지 */}
-            {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-                    {error}
-                </div>
-            )}
-
-            {/* 로딩 상태 */}
-            {isLoading && (
-                <div className="flex justify-center items-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                    <span className="ml-2">데이터를 불러오는 중...</span>
-                </div>
-            )}
-
-            {/* 총 매출액 표시 */}
-            {!isLoading && totalData && (
-                <div className="bg-white p-8 rounded-lg border border-gray-200">
-                    <div className="text-center">
-                        <h3 className="text-lg font-medium text-gray-700 mb-2">
-                            {selectedRegions.includes('all') || selectedRegions.length === 0
-                                ? '총 매출액'
-                                : selectedRegions.length === 1
-                                    ? `${getRegionLabel(selectedRegions[0])} 매출액`
-                                    : `선택된 지역 (${selectedRegions.length}개) 매출액`
-                            }
-                        </h3>
-                        <div className="text-4xl font-bold text-purple-600 mb-4">
-                            {formatCurrency(getFilteredTotals().totalSales)}
-                        </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-                            <div className="text-center p-4 bg-gray-50 rounded-lg">
-                                <div className="text-sm text-gray-500">총 거래 건수</div>
-                                <div className="text-xl font-semibold text-gray-900">
-                                    {formatNumber(getFilteredTotals().totalCount)}건
-                                </div>
-                            </div>
-                            <div className="text-center p-4 bg-orange-50 rounded-lg">
-                                <div className="text-sm text-gray-500">유료 사용자 수</div>
-                                <div className="text-xl font-semibold text-orange-900">
-                                    {formatNumber(iapStats?.paidUserCount ?? getFilteredTotals().totalPaidUsers)}명
-                                </div>
-                            </div>
-                            <div className="text-center p-4 bg-blue-50 rounded-lg">
-                                <div className="text-sm text-gray-500">ARPPU</div>
-                                <div className="text-xl font-semibold text-blue-900">
-                                    {formatCurrency(iapStats?.arppu ?? 0)}
-                                </div>
-                            </div>
-                            <div className="text-center p-4 bg-purple-50 rounded-lg">
-                                <div className="text-sm text-gray-500">결제 타입</div>
-                                <div className="text-xl font-semibold text-purple-900">
-                                    {getPaymentTypeLabel(selectedPaymentType)}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        {/* 지역별 상세 데이터 표시 */}
-                        {totalData.regionalData && totalData.regionalData.length > 0 && (
-                            <div className="mt-8">
-                                <h4 className="text-md font-medium text-gray-700 mb-6">지역별 상세 현황</h4>
-                                
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                    {/* 매출액 파이차트 */}
-                                    <div className="bg-white p-6 rounded-lg border border-border">
-                                        <h5 className="text-lg font-semibold text-gray-800 mb-4 text-center">
-                                            지역별 매출액 분포
-                                        </h5>
-                                        {renderSalesPieChart()}
-                                    </div>
-                                    
-                                    {/* MARK: - 지역별 상세 테이블 */}
-                                    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                                        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-                                            <h5 className="text-lg font-semibold text-gray-800">지역별 상세 통계</h5>
-                                        </div>
-                                        <div className="overflow-x-auto">
-                                            <table className="min-w-full divide-y divide-gray-200">
-                                                <thead className="bg-gray-50">
-                                                    <tr>
-                                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                            지역
-                                                        </th>
-                                                        <th
-                                                            className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                                                            onClick={handleToggleSort}
-                                                        >
-                                                            매출액 {sortOrder === 'desc' ? '↓' : '↑'}
-                                                        </th>
-                                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                            거래건수
-                                                        </th>
-                                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                            유료 사용자 수
-                                                        </th>
-                                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                            사용자당 평균
-                                                        </th>
-                                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                            비율
-                                                        </th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="bg-white divide-y divide-gray-200">
-                                                    {(() => {
-                                                        const filteredData = selectedRegions.includes('all')
-                                                            ? (totalData.regionalData || [])
-                                                            : (totalData.regionalData || []).filter(item => selectedRegions.includes(item.region));
-                                                        return filteredData.map((regionData) => (
-                                                        <tr key={regionData.region} className="hover:bg-gray-50">
-                                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                                <div className="text-sm font-medium text-gray-900">
-                                                                    {getRegionLabel(regionData.region)}
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                                <div className="text-sm font-semibold text-blue-900">
-                                                                    {formatCurrency(regionData.amount || 0)}
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                                <div className="text-sm text-gray-900">
-                                                                    {formatNumber(regionData.count || 0)}건
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                                <div className="text-sm text-orange-900 font-semibold">
-                                                                    {formatNumber(regionData.paidUserCount || 0)}명
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                                <div className="text-sm text-blue-900 font-semibold">
-                                                                    {(regionData.paidUserCount || 0) > 0
-                                                                        ? formatCurrency((regionData.amount || 0) / (regionData.paidUserCount || 0))
-                                                                        : formatCurrency(0)
-                                                                    }
-                                                                </div>
-                                                            </td>
-                                                            <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                                <div className="text-sm text-purple-600 font-medium">
-                                                                    {(() => {
-                                                                        const percentageMap = calculatePercentages();
-                                                                        return `${(percentageMap[regionData.region] || 0).toFixed(1)}%`;
-                                                                    })()}
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                        ));
-                                                    })()}
-                                                </tbody>
-                                                <tfoot className="bg-gray-50">
-                                                    <tr>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                                                            총계
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-blue-900">
-                                                            {formatCurrency(getFilteredTotals().totalSales)}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-gray-900">
-                                                            {formatNumber(getFilteredTotals().totalCount)}건
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-orange-900">
-                                                            {formatNumber(getFilteredTotals().totalPaidUsers)}명
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-blue-900">
-                                                            {getFilteredTotals().totalPaidUsers > 0
-                                                                ? formatCurrency(getFilteredTotals().totalSales / getFilteredTotals().totalPaidUsers)
-                                                                : formatCurrency(0)
-                                                            }
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-purple-600">
-                                                            100.0%
-                                                        </td>
-                                                    </tr>
-                                                </tfoot>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                    </div>
-                </div>
-            )}
-
-            {/* 데이터 없음 */}
-            {!isLoading && !totalData && !error && (
-                <div className="text-center py-12 text-gray-500">
-                    조건에 맞는 매출 데이터가 없습니다.
-                </div>
-            )}
-        </div>
+    setTotalData((prev) =>
+      prev
+        ? {
+            ...prev,
+            regionalData: sortedRegionalData,
+          }
+        : null,
     );
+  };
+
+  const handleToggleSort = () => {
+    setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"));
+  };
+
+  const getCurrentDateRangeText = () => {
+    if (startDate && endDate) {
+      return `${startDate.toLocaleDateString("ko-KR")} ~ ${endDate.toLocaleDateString("ko-KR")}`;
+    }
+    // 전체 기간일 때는 실제 데이터 범위 표시
+    if (totalData && totalData.startDate && totalData.endDate) {
+      const apiStartDate = new Date(totalData.startDate);
+      const apiEndDate = new Date(totalData.endDate);
+      return `${apiStartDate.toLocaleDateString("ko-KR")} ~ ${apiEndDate.toLocaleDateString("ko-KR")} (전체 기간)`;
+    }
+    return "전체 기간 (서비스 시작일 ~ 오늘)";
+  };
+
+  // 지역별 필터링된 총합 계산 함수
+  const getFilteredTotals = () => {
+    console.log("getFilteredTotals 호출:", { totalData, selectedRegions });
+
+    if (!totalData) {
+      console.log("totalData가 없음");
+      return { totalSales: 0, totalCount: 0, totalPaidUsers: 0 };
+    }
+
+    // 전체 지역 선택 시 원본 데이터 반환
+    if (selectedRegions.includes("all") || selectedRegions.length === 0) {
+      const result = {
+        totalSales: totalData.totalSales || 0,
+        totalCount: totalData.totalCount || 0,
+        totalPaidUsers: totalData.totalPaidUsers || 0,
+      };
+      console.log("전체 지역 선택 결과:", result);
+      return result;
+    }
+
+    // 특정 지역들 선택 시 해당 지역들 데이터 합계
+    if (totalData.regionalData && totalData.regionalData.length > 0) {
+      const filteredRegionData = totalData.regionalData.filter((item) =>
+        selectedRegions.includes(item.region),
+      );
+      console.log("선택된 지역들 데이터:", filteredRegionData);
+
+      if (filteredRegionData.length > 0) {
+        const result = filteredRegionData.reduce(
+          (acc, regionData) => ({
+            totalSales: acc.totalSales + (regionData.amount || 0),
+            totalCount: acc.totalCount + (regionData.count || 0),
+            totalPaidUsers:
+              acc.totalPaidUsers + (regionData.paidUserCount || 0),
+          }),
+          { totalSales: 0, totalCount: 0, totalPaidUsers: 0 },
+        );
+        console.log("다중 지역 선택 결과:", result);
+        return result;
+      }
+    }
+
+    // 선택된 지역 데이터가 없는 경우
+    console.log("선택된 지역 데이터 없음");
+    return { totalSales: 0, totalCount: 0, totalPaidUsers: 0 };
+  };
+
+  // === 비율 계산 유틸리티 ===
+  const calculatePercentages = () => {
+    if (
+      !totalData?.regionalData ||
+      totalData.regionalData.length === 0 ||
+      (totalData.totalSales || 0) <= 0
+    ) {
+      return {};
+    }
+
+    const totalSales = totalData.totalSales || 0;
+    const percentages = totalData.regionalData.map(
+      (regionData) => ((regionData.amount || 0) / totalSales) * 100,
+    );
+
+    // 반올림된 비율들 계산
+    const roundedPercentages = percentages.map((p) => Math.round(p * 10) / 10);
+    const totalRounded = roundedPercentages.reduce((sum, p) => sum + p, 0);
+
+    // 100.0%에서 벗어나면 가장 큰 값에 오차 보정
+    if (Math.abs(totalRounded - 100) > 0.05 && roundedPercentages.length > 0) {
+      const maxIndex = percentages.reduce(
+        (maxIdx, current, index) =>
+          current > percentages[maxIdx] ? index : maxIdx,
+        0,
+      );
+      roundedPercentages[maxIndex] =
+        Math.round((roundedPercentages[maxIndex] + (100 - totalRounded)) * 10) /
+        10;
+    }
+
+    // 지역별 비율 맵 생성
+    const percentageMap: { [key: string]: number } = {};
+    totalData.regionalData.forEach((regionData, index) => {
+      percentageMap[regionData.region] = roundedPercentages[index];
+    });
+
+    return percentageMap;
+  };
+
+  // === 파이차트 관련 유틸리티 ===
+  const getPieChartData = () => {
+    if (!totalData?.regionalData || totalData.regionalData.length === 0) {
+      return [];
+    }
+
+    const filteredRegionalData = selectedRegions.includes("all")
+      ? totalData.regionalData
+      : totalData.regionalData.filter((regionData) =>
+          selectedRegions.includes(regionData.region),
+        );
+
+    if (filteredRegionalData.length === 0) {
+      return [];
+    }
+
+    const filteredTotal = filteredRegionalData.reduce(
+      (sum, item) => sum + (item.amount || 0),
+      0,
+    );
+
+    const sortedData = [...filteredRegionalData].sort(
+      (a, b) => (b.amount || 0) - (a.amount || 0),
+    );
+
+    const TOP_N = 5;
+    const topRegions = sortedData.slice(0, TOP_N);
+    const otherRegions = sortedData.slice(TOP_N);
+
+    const chartData = topRegions.map((regionData) => ({
+      name: getRegionLabel(regionData.region),
+      value: regionData.amount || 0,
+      count: regionData.count || 0,
+      paidUserCount: regionData.paidUserCount || 0,
+      region: regionData.region,
+      percentage:
+        filteredTotal > 0
+          ? ((regionData.amount || 0) / filteredTotal) * 100
+          : 0,
+    }));
+
+    if (otherRegions.length > 0) {
+      const otherAmount = otherRegions.reduce(
+        (sum, item) => sum + (item.amount || 0),
+        0,
+      );
+      const otherCount = otherRegions.reduce(
+        (sum, item) => sum + (item.count || 0),
+        0,
+      );
+      const otherPaidUsers = otherRegions.reduce(
+        (sum, item) => sum + (item.paidUserCount || 0),
+        0,
+      );
+
+      chartData.push({
+        name: `기타 (${otherRegions.length}개 지역)`,
+        value: otherAmount,
+        count: otherCount,
+        paidUserCount: otherPaidUsers,
+        region: "others",
+        percentage: filteredTotal > 0 ? (otherAmount / filteredTotal) * 100 : 0,
+      });
+    }
+
+    return chartData;
+  };
+
+  // 차트 색상 배열
+  const getChartColors = () => [
+    "#8884d8",
+    "#82ca9d",
+    "#ffc658",
+    "#ff7c7c",
+    "#8dd1e1",
+    "#d084d0",
+    "#ffb347",
+    "#87ceeb",
+    "#dda0dd",
+    "#98fb98",
+    "#f0e68c",
+    "#ff6347",
+  ];
+
+  // 커스텀 툴팁 컴포넌트
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
+          <p className="font-medium text-gray-900">{data.name}</p>
+          <p className="text-blue-600">매출액: {formatCurrency(data.value)}</p>
+          <p className="text-green-600">
+            거래건수: {formatNumber(data.count)}건
+          </p>
+          <p className="text-orange-600">
+            유료 사용자: {formatNumber(data.paidUserCount || 0)}명
+          </p>
+          <p className="text-purple-600">비율: {data.percentage.toFixed(1)}%</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const renderLegendContent = (props: any) => {
+    const { payload } = props;
+    return (
+      <ul className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-4 text-sm">
+        {payload.map((entry: any, index: number) => (
+          <li key={`legend-${index}`} className="flex items-center gap-1.5">
+            <span
+              className="inline-block w-3 h-3 rounded-sm"
+              style={{ backgroundColor: entry.color }}
+            />
+            <span className="text-gray-700">
+              {entry.value} ({entry.payload.percentage.toFixed(1)}%)
+            </span>
+          </li>
+        ))}
+      </ul>
+    );
+  };
+
+  // === 파이차트 렌더링 함수 ===
+  const renderSalesPieChart = () => {
+    const data = getPieChartData();
+    const colors = getChartColors();
+
+    if (data.length === 0) {
+      return (
+        <div className="flex items-center justify-center h-80 text-gray-500">
+          표시할 지역별 데이터가 없습니다.
+        </div>
+      );
+    }
+
+    return (
+      <ResponsiveContainer width="100%" height={380}>
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="45%"
+            outerRadius={100}
+            innerRadius={40}
+            fill="#8884d8"
+            dataKey="value"
+            paddingAngle={2}
+          >
+            {data.map((entry, index) => (
+              <Cell
+                key={`cell-${index}`}
+                fill={colors[index % colors.length]}
+                stroke="#fff"
+                strokeWidth={2}
+              />
+            ))}
+          </Pie>
+          <Tooltip content={<CustomTooltip />} />
+          <Legend
+            content={renderLegendContent}
+            verticalAlign="bottom"
+            wrapperStyle={{ paddingTop: "20px" }}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+    );
+  };
+
+  // === JSX ===
+  return (
+    <div className="space-y-6">
+      {/* 헤더 */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-lg font-semibold">총 매출액</h2>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={handleRefresh}
+            className="px-4 py-2 bg-[#7D4EE4] text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            새로고침
+          </button>
+        </div>
+      </div>
+
+      {/* 필터 영역 */}
+      <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="flex flex-wrap gap-4 items-center mb-4">
+          {/* 지역별 필터 */}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-gray-700">지역별</label>
+            <div className="flex flex-wrap gap-2">
+              {REGION_OPTIONS.map((option) => (
+                <label
+                  key={option.value}
+                  className="flex items-center gap-1 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedRegions.includes(option.value)}
+                    onChange={(e) => {
+                      if (option.value === "all") {
+                        // 전체 선택/해제
+                        if (e.target.checked) {
+                          setSelectedRegions(["all"]);
+                        } else {
+                          setSelectedRegions([]);
+                        }
+                      } else {
+                        // 개별 지역 선택/해제
+                        setSelectedRegions((prev) => {
+                          const newRegions = prev.filter((r) => r !== "all"); // 전체 제거
+                          if (e.target.checked) {
+                            return [...newRegions, option.value];
+                          } else {
+                            return newRegions.filter((r) => r !== option.value);
+                          }
+                        });
+                      }
+                    }}
+                    className="rounded"
+                  />
+                  <span className="text-sm text-gray-700">{option.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* 결제 타입별 필터 */}
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700">
+              결제 타입별
+            </label>
+            <select
+              value={selectedPaymentType}
+              onChange={(e) =>
+                setSelectedPaymentType(e.target.value as paymentType)
+              }
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              {PAYMENT_TYPE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* 에러 메시지 */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          {error}
+        </div>
+      )}
+
+      {/* 로딩 상태 */}
+      {isLoading && (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <span className="ml-2">데이터를 불러오는 중...</span>
+        </div>
+      )}
+
+      {/* 총 매출액 표시 */}
+      {!isLoading && totalData && (
+        <div className="bg-white p-8 rounded-lg border border-gray-200">
+          <div className="text-center">
+            <h3 className="text-lg font-medium text-gray-700 mb-2">
+              {selectedRegions.includes("all") || selectedRegions.length === 0
+                ? "총 매출액"
+                : selectedRegions.length === 1
+                  ? `${getRegionLabel(selectedRegions[0])} 매출액`
+                  : `선택된 지역 (${selectedRegions.length}개) 매출액`}
+            </h3>
+            <div className="text-4xl font-bold text-purple-600 mb-4">
+              {formatCurrency(getFilteredTotals().totalSales)}
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+              <div className="text-center p-4 bg-gray-50 rounded-lg">
+                <div className="text-sm text-gray-500">총 거래 건수</div>
+                <div className="text-xl font-semibold text-gray-900">
+                  {formatNumber(getFilteredTotals().totalCount)}건
+                </div>
+              </div>
+              <div className="text-center p-4 bg-orange-50 rounded-lg">
+                <div className="text-sm text-gray-500">유료 사용자 수</div>
+                <div className="text-xl font-semibold text-orange-900">
+                  {formatNumber(
+                    iapStats?.paidUserCount ??
+                      getFilteredTotals().totalPaidUsers,
+                  )}
+                  명
+                </div>
+              </div>
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <div className="text-sm text-gray-500">ARPPU</div>
+                <div className="text-xl font-semibold text-blue-900">
+                  {formatCurrency(iapStats?.arppu ?? 0)}
+                </div>
+              </div>
+              <div className="text-center p-4 bg-purple-50 rounded-lg">
+                <div className="text-sm text-gray-500">결제 타입</div>
+                <div className="text-xl font-semibold text-purple-900">
+                  {getPaymentTypeLabel(selectedPaymentType)}
+                </div>
+              </div>
+            </div>
+
+            {/* 지역별 상세 데이터 표시 */}
+            {totalData.regionalData && totalData.regionalData.length > 0 && (
+              <div className="mt-8">
+                <h4 className="text-md font-medium text-gray-700 mb-6">
+                  지역별 상세 현황
+                </h4>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* 매출액 파이차트 */}
+                  <div className="bg-white p-6 rounded-lg border border-border">
+                    <h5 className="text-lg font-semibold text-gray-800 mb-4 text-center">
+                      지역별 매출액 분포
+                    </h5>
+                    {renderSalesPieChart()}
+                  </div>
+
+                  {/* MARK: - 지역별 상세 테이블 */}
+                  <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                    <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                      <h5 className="text-lg font-semibold text-gray-800">
+                        지역별 상세 통계
+                        <span className="ml-2 text-sm font-normal text-gray-500">
+                          {showAllRegions ? "(전체)" : "(Top 5)"}
+                        </span>
+                      </h5>
+                      {(() => {
+                        const filteredData = selectedRegions.includes("all")
+                          ? totalData.regionalData || []
+                          : (totalData.regionalData || []).filter((item) =>
+                              selectedRegions.includes(item.region),
+                            );
+                        return (
+                          filteredData.length > 5 && (
+                            <button
+                              onClick={() => setShowAllRegions((prev) => !prev)}
+                              className="px-3 py-1.5 text-sm font-medium text-[#7D4EE4] bg-purple-50 rounded-md hover:bg-purple-100 transition-colors"
+                            >
+                              {showAllRegions ? "접기" : "더보기"}
+                            </button>
+                          )
+                        );
+                      })()}
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              지역
+                            </th>
+                            <th
+                              className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                              onClick={handleToggleSort}
+                            >
+                              매출액 {sortOrder === "desc" ? "↓" : "↑"}
+                            </th>
+                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              거래건수
+                            </th>
+                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              유료 사용자
+                            </th>
+                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              비율
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {(() => {
+                            const filteredData = selectedRegions.includes("all")
+                              ? totalData.regionalData || []
+                              : (totalData.regionalData || []).filter((item) =>
+                                  selectedRegions.includes(item.region),
+                                );
+                            const displayData = showAllRegions
+                              ? filteredData
+                              : filteredData.slice(0, 5);
+                            return displayData.map((regionData, index) => (
+                              <tr
+                                key={regionData.region}
+                                className="hover:bg-gray-50"
+                              >
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="flex items-center gap-2">
+                                    <span
+                                      className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-medium ${
+                                        index < 3
+                                          ? "bg-[#7D4EE4] text-white"
+                                          : "bg-gray-200 text-gray-600"
+                                      }`}
+                                    >
+                                      {index + 1}
+                                    </span>
+                                    <span className="text-sm font-medium text-gray-900">
+                                      {getRegionLabel(regionData.region)}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-right">
+                                  <div className="text-sm font-semibold text-gray-900">
+                                    {formatCurrency(regionData.amount || 0)}
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-right">
+                                  <div className="text-sm text-gray-600">
+                                    {formatNumber(regionData.count || 0)}건
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-right">
+                                  <div className="text-sm text-gray-600">
+                                    {formatNumber(
+                                      regionData.paidUserCount || 0,
+                                    )}
+                                    명
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-right">
+                                  <div className="flex items-center justify-end gap-2">
+                                    <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                      <div
+                                        className="h-full bg-[#7D4EE4] rounded-full"
+                                        style={{
+                                          width: `${calculatePercentages()[regionData.region] || 0}%`,
+                                        }}
+                                      />
+                                    </div>
+                                    <span className="text-sm font-medium text-[#7D4EE4] min-w-[3rem] text-right">
+                                      {(
+                                        calculatePercentages()[
+                                          regionData.region
+                                        ] || 0
+                                      ).toFixed(1)}
+                                      %
+                                    </span>
+                                  </div>
+                                </td>
+                              </tr>
+                            ));
+                          })()}
+                        </tbody>
+                        <tfoot className="bg-gray-50 border-t-2 border-gray-200">
+                          <tr>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                              총계
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-gray-900">
+                              {formatCurrency(getFilteredTotals().totalSales)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-gray-600">
+                              {formatNumber(getFilteredTotals().totalCount)}건
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-gray-600">
+                              {formatNumber(getFilteredTotals().totalPaidUsers)}
+                              명
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-[#7D4EE4]">
+                              100.0%
+                            </td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 데이터 없음 */}
+      {!isLoading && !totalData && !error && (
+        <div className="text-center py-12 text-gray-500">
+          조건에 맞는 매출 데이터가 없습니다.
+        </div>
+      )}
+    </div>
+  );
 }

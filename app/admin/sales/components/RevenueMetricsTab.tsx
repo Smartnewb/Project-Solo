@@ -9,6 +9,7 @@ import {
   ConversionRateResponse,
   LtvAnalysisResponse,
   RevenueMetricsTrendResponse,
+  PaymentSuccessRateResponse,
 } from "../types";
 import { formatCurrency } from "../utils";
 import {
@@ -143,6 +144,8 @@ export function RevenueMetricsTab({
   const [ltvData, setLtvData] = useState<LtvAnalysisResponse | null>(null);
   const [trendData, setTrendData] =
     useState<RevenueMetricsTrendResponse | null>(null);
+  const [successRateData, setSuccessRateData] =
+    useState<PaymentSuccessRateResponse | null>(null);
 
   const [granularity, setGranularity] = useState<Granularity>("monthly");
   const [trendStartDate, setTrendStartDate] =
@@ -155,6 +158,7 @@ export function RevenueMetricsTab({
   const [loadingConversion, setLoadingConversion] = useState(false);
   const [loadingLtv, setLoadingLtv] = useState(false);
   const [loadingTrend, setLoadingTrend] = useState(false);
+  const [loadingSuccessRate, setLoadingSuccessRate] = useState(false);
 
   const [error, setError] = useState<string>("");
 
@@ -221,6 +225,16 @@ export function RevenueMetricsTab({
       console.error("LTV 분석 조회 실패:", e);
     } finally {
       setLoadingLtv(false);
+    }
+
+    setLoadingSuccessRate(true);
+    try {
+      const successRateRes = await salesService.getSuccessRate();
+      setSuccessRateData(successRateRes);
+    } catch (e) {
+      console.error("결제 성공률 조회 실패:", e);
+    } finally {
+      setLoadingSuccessRate(false);
     }
 
     await fetchTrendData();
@@ -297,7 +311,22 @@ export function RevenueMetricsTab({
     loadingRepurchase ||
     loadingConversion ||
     loadingLtv ||
-    loadingTrend;
+    loadingTrend ||
+    loadingSuccessRate;
+
+  const getSuccessRateColor = (rate: number): string => {
+    if (rate >= 95) return "text-green-600";
+    if (rate >= 90) return "text-blue-600";
+    if (rate >= 80) return "text-yellow-600";
+    return "text-red-600";
+  };
+
+  const getSuccessRateBgColor = (rate: number): string => {
+    if (rate >= 95) return "bg-green-50";
+    if (rate >= 90) return "bg-blue-50";
+    if (rate >= 80) return "bg-yellow-50";
+    return "bg-red-50";
+  };
 
   return (
     <div className="space-y-6">
@@ -529,6 +558,64 @@ export function RevenueMetricsTab({
           <div className="text-center py-12 text-gray-500">
             표시할 추이 데이터가 없습니다.
           </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          결제 성공률
+        </h3>
+        {loadingSuccessRate ? (
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500" />
+          </div>
+        ) : successRateData ? (
+          <div className="space-y-4">
+            <div
+              className={`text-center p-6 rounded-lg ${getSuccessRateBgColor(successRateData.successRate)}`}
+            >
+              <div
+                className={`text-4xl font-bold ${getSuccessRateColor(successRateData.successRate)}`}
+              >
+                {successRateData.successRate.toFixed(1)}%
+              </div>
+              <div className="text-sm text-gray-500 mt-1">
+                기준일: {successRateData.date}
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center p-3 bg-gray-50 rounded-lg">
+                <div className="text-lg font-semibold text-gray-900">
+                  {formatNumber(successRateData.totalAttempts)}건
+                </div>
+                <div className="text-xs text-gray-500">총 시도</div>
+              </div>
+              <div className="text-center p-3 bg-green-50 rounded-lg">
+                <div className="text-lg font-semibold text-green-600">
+                  {formatNumber(successRateData.successfulPayments)}건
+                </div>
+                <div className="text-xs text-gray-500">성공</div>
+              </div>
+              <div className="text-center p-3 bg-red-50 rounded-lg">
+                <div className="text-lg font-semibold text-red-600">
+                  {formatNumber(
+                    successRateData.totalAttempts -
+                      successRateData.successfulPayments,
+                  )}
+                  건
+                </div>
+                <div className="text-xs text-gray-500">실패</div>
+              </div>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-green-500 to-green-400 transition-all duration-500"
+                style={{ width: `${successRateData.successRate}%` }}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">데이터 없음</div>
         )}
       </div>
 

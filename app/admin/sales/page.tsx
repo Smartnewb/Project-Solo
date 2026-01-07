@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PaymentAnalysis } from "./components/PaymentAnalysis";
+
 import { PeriodSelector } from "./components/PeriodSelector";
 import { TotalAmount } from "./components/TotalAmount";
 import { RankingByUniv } from "./components/RankingByUniv";
@@ -9,7 +9,8 @@ import { GenderAnalysisTable } from "./components/GenderAnalysis";
 import { AgeAnalysisComponent } from "./components/AgeAnalysis";
 import { MonthlyPaymentGraph } from "./components/MonthlyPaymentGraph";
 import { DailySalesTrendGraph } from "./components/DailySalesTrendGraph";
-import { SuccessRate } from "./components/SuccessRate";
+import { SalesGrowthAnalysis } from "./components/SalesGrowthAnalysis";
+
 import { RevenueMetricsTab } from "./components/RevenueMetricsTab";
 import { ProductAnalysisTab } from "./components/ProductAnalysisTab";
 import { InsightsTab } from "./components/InsightsTab";
@@ -31,7 +32,6 @@ export default function SalesPage() {
   });
   const [salesTrendTab, setSalesTrendTab] = useState<SalesTrendTab>("monthly");
 
-  // === 핸들러 ===
   const handleDateRangeChange = (range: DateRange) => {
     setDateRange(range);
   };
@@ -119,7 +119,6 @@ export default function SalesPage() {
         ) : (
           <div className="space-y-8">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              {/* 탭 헤더 */}
               <div className="px-6 py-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <div>
@@ -130,7 +129,6 @@ export default function SalesPage() {
                       기간별 매출 추이를 확인하세요
                     </p>
                   </div>
-                  {/* 탭 버튼 */}
                   <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
                     <button
                       onClick={() => setSalesTrendTab("monthly")}
@@ -156,7 +154,6 @@ export default function SalesPage() {
                 </div>
               </div>
 
-              {/* 탭 콘텐츠 */}
               <div>
                 {salesTrendTab === "monthly" ? (
                   <MonthlyPaymentGraph />
@@ -166,10 +163,23 @@ export default function SalesPage() {
               </div>
             </div>
 
-            {/* MARK: - 결제 성공률 컴포넌트 */}
-            <SuccessRate />
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  매출 성장 분석
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  MoM, YoY 성장률 및 트렌드를 분석합니다
+                </p>
+              </div>
+              <div className="p-6">
+                <SalesGrowthAnalysis
+                  startDate={dateRange.startDate}
+                  endDate={dateRange.endDate}
+                />
+              </div>
+            </div>
 
-            {/* MARK: - 기간 선택 컴포넌트 */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900">
@@ -184,7 +194,6 @@ export default function SalesPage() {
               </div>
             </div>
 
-            {/* MARK: - 매출액 분석 컴포넌트 */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900">
@@ -202,25 +211,6 @@ export default function SalesPage() {
               </div>
             </div>
 
-            {/* MARK: - 결제수단별 분석 컴포넌트 */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">
-                  결제수단별 상세 분석
-                </h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  결제수단별 매출 분포와 통계를 분석하세요
-                </p>
-              </div>
-              <div className="p-6">
-                <PaymentAnalysis
-                  startDate={dateRange.startDate}
-                  endDate={dateRange.endDate}
-                />
-              </div>
-            </div>
-
-            {/* MARK: - 대학별 매출 순위 */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900">
