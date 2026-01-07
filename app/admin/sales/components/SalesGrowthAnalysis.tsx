@@ -166,7 +166,11 @@ export function SalesGrowthAnalysis({
         ? growthRates.reduce((sum, r) => sum + r, 0) / growthRates.length
         : 0;
 
-    const sortedByAmount = [...growthData].sort((a, b) => b.amount - a.amount);
+    const SERVICE_START_DATE = "2025-05";
+    const validData = growthData.filter(
+      (item) => item.label >= SERVICE_START_DATE && item.amount > 0,
+    );
+    const sortedByAmount = [...validData].sort((a, b) => b.amount - a.amount);
 
     return {
       currentMonthAmount: currentMonth.amount,
@@ -183,7 +187,11 @@ export function SalesGrowthAnalysis({
   }, [growthData]);
 
   const chartData = useMemo(() => {
-    return growthData.slice(-12).map((item) => ({
+    const SERVICE_START_DATE = "2025-05";
+    const filteredData = growthData.filter(
+      (item) => item.label >= SERVICE_START_DATE,
+    );
+    return filteredData.slice(-12).map((item) => ({
       ...item,
       momGrowthRate: item.momGrowthRate ?? 0,
       yoyGrowthRate: item.yoyGrowthRate ?? 0,

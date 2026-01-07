@@ -73,6 +73,25 @@ const formatDateToString = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
+const SERVICE_START_DATE = "2025-05-01";
+
+const getDateRangeForGranularity = (
+  granularity: Granularity,
+): { start: string; end: string } => {
+  const today = new Date();
+  const todayStr = formatDateToString(today);
+
+  if (granularity === "monthly") {
+    return { start: SERVICE_START_DATE, end: todayStr };
+  } else if (granularity === "weekly") {
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    return { start: formatDateToString(sixMonthsAgo), end: todayStr };
+  } else {
+    return { start: SERVICE_START_DATE, end: todayStr };
+  }
+};
+
 const getOneMonthAgo = (): string => {
   const date = new Date();
   date.setMonth(date.getMonth() - 1);
@@ -148,9 +167,11 @@ export function RevenueMetricsTab({
     useState<PaymentSuccessRateResponse | null>(null);
 
   const [granularity, setGranularity] = useState<Granularity>("monthly");
-  const [trendStartDate, setTrendStartDate] =
-    useState<string>(getOneMonthAgo());
-  const [trendEndDate, setTrendEndDate] = useState<string>(getToday());
+  const initialRange = getDateRangeForGranularity("monthly");
+  const [trendStartDate, setTrendStartDate] = useState<string>(
+    initialRange.start,
+  );
+  const [trendEndDate, setTrendEndDate] = useState<string>(initialRange.end);
 
   const [loadingMetrics, setLoadingMetrics] = useState(false);
   const [loadingAov, setLoadingAov] = useState(false);
@@ -265,6 +286,13 @@ export function RevenueMetricsTab({
       fetchAllData();
     }
   }, [startDate, endDate]);
+
+  const handleGranularityChange = (newGranularity: Granularity) => {
+    setGranularity(newGranularity);
+    const newRange = getDateRangeForGranularity(newGranularity);
+    setTrendStartDate(newRange.start);
+    setTrendEndDate(newRange.end);
+  };
 
   const handleRefresh = () => {
     fetchAllData();
@@ -447,7 +475,7 @@ export function RevenueMetricsTab({
                 <button
                   key={g}
                   type="button"
-                  onClick={() => setGranularity(g)}
+                  onClick={() => handleGranularityChange(g)}
                   className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                     granularity === g
                       ? "bg-[#7D4EE4] text-white shadow-sm"

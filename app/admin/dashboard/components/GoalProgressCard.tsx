@@ -37,7 +37,8 @@ interface GoalItemProps {
 }
 
 function GoalItem({ goal, onEdit, onDelete }: GoalItemProps) {
-  const progressColor = goal.achievementRate >= 100 ? 'success' : goal.achievementRate >= 70 ? 'primary' : 'warning';
+  const achievementRate = goal.achievementRate ?? 0;
+  const progressColor = achievementRate >= 100 ? 'success' : achievementRate >= 70 ? 'primary' : 'warning';
 
   return (
     <Box className="py-3">
@@ -60,12 +61,12 @@ function GoalItem({ goal, onEdit, onDelete }: GoalItemProps) {
           {goal.type === 'REVENUE' ? '원' : '명'}
         </Typography>
         <Typography variant="body2" fontWeight="bold" color={progressColor}>
-          {goal.achievementRate.toFixed(1)}%
+          {achievementRate.toFixed(1)}%
         </Typography>
       </Box>
       <LinearProgress
         variant="determinate"
-        value={Math.min(goal.achievementRate, 100)}
+        value={Math.min(achievementRate, 100)}
         color={progressColor}
         sx={{ height: 8, borderRadius: 4 }}
       />

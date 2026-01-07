@@ -69,6 +69,13 @@ const getToday = (): string => {
   return formatDateToString(new Date());
 };
 
+const PERIOD_DATE_RANGES: Record<string, { start: string; end: string }> = {
+  PERIOD_0: { start: "2025-05-01", end: "2025-07-07" },
+  PERIOD_1: { start: "2025-07-08", end: "2025-09-05" },
+  PERIOD_2: { start: "2025-09-06", end: "2025-12-25" },
+  PERIOD_3: { start: "2025-12-26", end: getToday() },
+};
+
 const PIE_COLORS = [
   "#7D4EE4",
   "#22c55e",
@@ -212,12 +219,27 @@ export function ProductAnalysisTab({
     if (days === null) {
       setFilterStartDate("");
       setFilterEndDate("");
+      setSelectedPeriod("");
     } else {
       const end = new Date();
       const start = new Date();
       start.setDate(start.getDate() - days);
       setFilterStartDate(formatDateToString(start));
       setFilterEndDate(formatDateToString(end));
+      setSelectedPeriod("");
+    }
+    setTimeout(() => fetchAllData(), 0);
+  };
+
+  const handlePeriodSelect = (period: string) => {
+    setSelectedPeriod(period);
+    if (period && PERIOD_DATE_RANGES[period]) {
+      const range = PERIOD_DATE_RANGES[period];
+      setFilterStartDate(range.start);
+      setFilterEndDate(range.end);
+    } else {
+      setFilterStartDate("");
+      setFilterEndDate("");
     }
     setTimeout(() => fetchAllData(), 0);
   };
@@ -424,7 +446,7 @@ export function ProductAnalysisTab({
           </div>
           <select
             value={selectedPeriod}
-            onChange={(e) => setSelectedPeriod(e.target.value)}
+            onChange={(e) => handlePeriodSelect(e.target.value)}
             className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7D4EE4] focus:border-transparent"
           >
             <option value="">전체 기간</option>
