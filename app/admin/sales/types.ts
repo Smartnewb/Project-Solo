@@ -394,11 +394,17 @@ export interface PeriodComparisonItem {
   periodName: string;
   startDate: string | null;
   endDate: string | null;
+  dayCount: number;
   totalRevenue: number;
   salesCount: number;
   uniqueBuyers: number;
+  totalActiveUsers: number;
   dailyAverageRevenue: number;
   dailyAverageSalesCount: number;
+  arpu: number;
+  arppu: number;
+  conversionRate: number;
+  growthRate: number | null;
 }
 
 export interface PriceElasticityItem {
@@ -444,10 +450,15 @@ export interface SystemComparisonItem {
   systemType: "REMATCHING_TICKET" | "GEM_SYSTEM";
   systemName: string;
   periodLabel: string;
+  dayCount: number;
   totalRevenue: number;
   salesCount: number;
   uniqueBuyers: number;
+  totalActiveUsers: number;
   dailyAverageRevenue: number;
+  arpu: number;
+  arppu: number;
+  conversionRate: number;
 }
 
 export interface PaymentMethodComparisonItem {

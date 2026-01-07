@@ -96,9 +96,8 @@ export function ProductAnalysisTab({
   const [systemComparison, setSystemComparison] =
     useState<SystemComparisonResponse | null>(null);
 
-  const [filterStartDate, setFilterStartDate] =
-    useState<string>(getOneMonthAgo());
-  const [filterEndDate, setFilterEndDate] = useState<string>(getToday());
+  const [filterStartDate, setFilterStartDate] = useState<string>("");
+  const [filterEndDate, setFilterEndDate] = useState<string>("");
   const [selectedPeriod, setSelectedPeriod] = useState<string>("");
 
   const [loadingProductSales, setLoadingProductSales] = useState(false);
@@ -207,6 +206,20 @@ export function ProductAnalysisTab({
 
   const handleApplyFilter = () => {
     fetchAllData();
+  };
+
+  const handleQuickSelect = (days: number | null) => {
+    if (days === null) {
+      setFilterStartDate("");
+      setFilterEndDate("");
+    } else {
+      const end = new Date();
+      const start = new Date();
+      start.setDate(start.getDate() - days);
+      setFilterStartDate(formatDateToString(start));
+      setFilterEndDate(formatDateToString(end));
+    }
+    setTimeout(() => fetchAllData(), 0);
   };
 
   const handleSort = (column: SortColumn) => {
@@ -345,6 +358,69 @@ export function ProductAnalysisTab({
               onChange={(e) => setFilterEndDate(e.target.value)}
               className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7D4EE4] focus:border-transparent"
             />
+          </div>
+          <div className="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50">
+            <button
+              onClick={() => handleQuickSelect(7)}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                filterStartDate ===
+                formatDateToString(
+                  (() => {
+                    const d = new Date();
+                    d.setDate(d.getDate() - 7);
+                    return d;
+                  })(),
+                )
+                  ? "bg-[#7D4EE4] text-white shadow-sm"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              }`}
+            >
+              최근 7일
+            </button>
+            <button
+              onClick={() => handleQuickSelect(14)}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                filterStartDate ===
+                formatDateToString(
+                  (() => {
+                    const d = new Date();
+                    d.setDate(d.getDate() - 14);
+                    return d;
+                  })(),
+                )
+                  ? "bg-[#7D4EE4] text-white shadow-sm"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              }`}
+            >
+              최근 14일
+            </button>
+            <button
+              onClick={() => handleQuickSelect(30)}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                filterStartDate ===
+                formatDateToString(
+                  (() => {
+                    const d = new Date();
+                    d.setDate(d.getDate() - 30);
+                    return d;
+                  })(),
+                )
+                  ? "bg-[#7D4EE4] text-white shadow-sm"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              }`}
+            >
+              최근 30일
+            </button>
+            <button
+              onClick={() => handleQuickSelect(null)}
+              className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                filterStartDate === "" && filterEndDate === ""
+                  ? "bg-[#7D4EE4] text-white shadow-sm"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              }`}
+            >
+              전체 기간
+            </button>
           </div>
           <select
             value={selectedPeriod}
@@ -754,6 +830,18 @@ export function ProductAnalysisTab({
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
                       일평균 판매
                     </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                      ARPU
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                      ARPPU
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                      전환율
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                      성장률
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -776,6 +864,31 @@ export function ProductAnalysisTab({
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-600">
                         {period.dailyAverageSalesCount.toFixed(1)}건
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-600">
+                        {formatCurrency(period.arpu)}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-600">
+                        {formatCurrency(period.arppu)}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-600">
+                        {formatPercent(period.conversionRate)}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium">
+                        {period.growthRate === null ? (
+                          <span className="text-gray-400">-</span>
+                        ) : (
+                          <span
+                            className={
+                              period.growthRate > 0
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }
+                          >
+                            {period.growthRate > 0 ? "+" : ""}
+                            {formatPercent(period.growthRate)}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -872,36 +985,71 @@ export function ProductAnalysisTab({
                 기능별 소비 분포
               </h4>
               {gemConsumption.byFeature.length > 0 ? (
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={gemConsumption.byFeature.map((f) => ({
-                          ...f,
-                          name: f.featureName,
-                          value: f.totalGemsConsumed,
-                        }))}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={true}
-                        label={({ name, consumptionShare }) =>
-                          `${name} (${formatPercent(consumptionShare)})`
-                        }
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {gemConsumption.byFeature.map((_, index) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={PIE_COLORS[index % PIE_COLORS.length]}
+                <div className="flex items-center gap-4">
+                  <div
+                    className="h-[300px] flex-shrink-0"
+                    style={{ width: "220px" }}
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={gemConsumption.byFeature.map((f) => ({
+                            ...f,
+                            name: f.featureName,
+                            value: f.totalGemsConsumed,
+                          }))}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={100}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {gemConsumption.byFeature.map((_, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={PIE_COLORS[index % PIE_COLORS.length]}
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip content={<GemConsumptionTooltip />} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    {gemConsumption.byFeature
+                      .slice(0, 5)
+                      .map((feature, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full flex-shrink-0"
+                            style={{
+                              backgroundColor:
+                                PIE_COLORS[index % PIE_COLORS.length],
+                            }}
                           />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<GemConsumptionTooltip />} />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between text-xs mb-1">
+                              <span className="text-gray-700 truncate">
+                                {feature.featureName}
+                              </span>
+                              <span className="text-gray-500 ml-2">
+                                {formatPercent(feature.consumptionShare)}
+                              </span>
+                            </div>
+                            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all"
+                                style={{
+                                  width: `${feature.consumptionShare}%`,
+                                  backgroundColor:
+                                    PIE_COLORS[index % PIE_COLORS.length],
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">
@@ -1072,7 +1220,7 @@ export function ProductAnalysisTab({
                     {system.periodLabel}
                   </div>
                   <div
-                    className={`text-2xl font-bold mb-2 ${
+                    className={`text-2xl font-bold mb-3 ${
                       system.systemType === "REMATCHING_TICKET"
                         ? "text-gray-700"
                         : "text-purple-600"
@@ -1093,31 +1241,128 @@ export function ProductAnalysisTab({
                         {formatNumber(system.uniqueBuyers)}명
                       </span>
                     </div>
-                    <div className="col-span-2 text-gray-500">
+                    <div className="text-gray-500">
                       일평균:{" "}
                       <span className="font-medium text-gray-700">
                         {formatCurrency(system.dailyAverageRevenue)}
                       </span>
                     </div>
+                    <div className="text-gray-500">
+                      활성유저:{" "}
+                      <span className="font-medium text-gray-700">
+                        {formatNumber(system.totalActiveUsers)}명
+                      </span>
+                    </div>
+                    <div className="text-gray-500">
+                      ARPU:{" "}
+                      <span className="font-medium text-gray-700">
+                        {formatCurrency(system.arpu)}
+                      </span>
+                    </div>
+                    <div className="text-gray-500">
+                      ARPPU:{" "}
+                      <span className="font-medium text-gray-700">
+                        {formatCurrency(system.arppu)}
+                      </span>
+                    </div>
+                    <div className="col-span-2 text-gray-500">
+                      전환율:{" "}
+                      <span className="font-medium text-gray-700">
+                        {formatPercent(system.conversionRate)}
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))}
-              <div className="p-6 rounded-lg bg-green-50 flex flex-col justify-center items-center">
-                <div className="text-sm text-gray-500 mb-1">성장률</div>
-                <div
-                  className={`text-3xl font-bold ${
-                    systemComparison.revenueGrowthRate > 0
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }`}
-                >
-                  {systemComparison.revenueGrowthRate > 0 ? "+" : ""}
-                  {formatPercent(systemComparison.revenueGrowthRate)}
-                </div>
-                <div className="text-xs text-gray-400 mt-1">
-                  구슬 시스템 전환 후
-                </div>
-              </div>
+              {(() => {
+                const rematching = systemComparison.systemComparison.find(
+                  (s) => s.systemType === "REMATCHING_TICKET",
+                );
+                const gem = systemComparison.systemComparison.find(
+                  (s) => s.systemType === "GEM_SYSTEM",
+                );
+                const calcGrowth = (gemVal: number, rematchVal: number) =>
+                  rematchVal === 0
+                    ? null
+                    : ((gemVal - rematchVal) / rematchVal) * 100;
+                const arpuGrowth =
+                  rematching && gem
+                    ? calcGrowth(gem.arpu, rematching.arpu)
+                    : null;
+                const arppuGrowth =
+                  rematching && gem
+                    ? calcGrowth(gem.arppu, rematching.arppu)
+                    : null;
+                const conversionChange =
+                  rematching && gem
+                    ? gem.conversionRate - rematching.conversionRate
+                    : null;
+                const dailyRevenueGrowth =
+                  rematching && gem
+                    ? calcGrowth(
+                        gem.dailyAverageRevenue,
+                        rematching.dailyAverageRevenue,
+                      )
+                    : null;
+
+                const renderGrowth = (
+                  value: number | null,
+                  isPercent = false,
+                ) => {
+                  if (value === null)
+                    return <span className="text-gray-400">-</span>;
+                  const isPositive = value > 0;
+                  return (
+                    <span
+                      className={isPositive ? "text-green-600" : "text-red-600"}
+                    >
+                      {isPositive ? "+" : ""}
+                      {isPercent
+                        ? `${value.toFixed(1)}%p`
+                        : formatPercent(value)}
+                    </span>
+                  );
+                };
+
+                return (
+                  <div className="p-6 rounded-lg bg-green-50">
+                    <div className="text-sm text-gray-500 mb-2 text-center">
+                      성장률
+                    </div>
+                    <div
+                      className={`text-2xl font-bold text-center mb-4 ${
+                        systemComparison.revenueGrowthRate > 0
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {systemComparison.revenueGrowthRate > 0 ? "+" : ""}
+                      {formatPercent(systemComparison.revenueGrowthRate)}
+                    </div>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">ARPU 성장</span>
+                        {renderGrowth(arpuGrowth)}
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">ARPPU 성장</span>
+                        {renderGrowth(arppuGrowth)}
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">전환율 변화</span>
+                        {renderGrowth(conversionChange, true)}
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">일평균 매출 성장</span>
+                        {renderGrowth(dailyRevenueGrowth)}
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-400 mt-3 text-center">
+                      구슬 시스템 전환 후
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {systemComparison.paymentMethodComparison.length > 0 && (
