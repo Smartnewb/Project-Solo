@@ -11,18 +11,9 @@ import {
   CircularProgress,
   FormControlLabel,
   Switch,
-  Skeleton,
-  Collapse,
-  IconButton,
 } from "@mui/material";
 import {
-  People as PeopleIcon,
-  PersonAdd as PersonAddIcon,
-  CalendarMonth as CalendarIcon,
-  Favorite as MatchIcon,
   TuneRounded as FilterIcon,
-  KeyboardArrowDown as ExpandIcon,
-  KeyboardArrowUp as CollapseIcon,
   TrendingUp as TrendingUpIcon,
   TrendingDown as TrendingDownIcon,
   WcOutlined as GenderIcon,
@@ -51,108 +42,6 @@ import RegionFilter, {
 import IncludeDeletedFilter, {
   useIncludeDeletedFilter,
 } from "@/components/admin/common/IncludeDeletedFilter";
-
-interface SummaryCardProps {
-  title: string;
-  value: string | number;
-  icon: React.ReactNode;
-  color: string;
-  bgColor: string;
-  loading?: boolean;
-  trend?: number;
-  trendLabel?: string;
-}
-
-function SummaryCard({
-  title,
-  value,
-  icon,
-  color,
-  bgColor,
-  loading,
-  trend,
-  trendLabel,
-}: SummaryCardProps) {
-  const isPositive = trend && trend > 0;
-  const isNegative = trend && trend < 0;
-
-  return (
-    <Box
-      sx={{
-        p: 3,
-        borderRadius: 3,
-        backgroundColor: "#fff",
-        border: "1px solid #e5e7eb",
-        height: "100%",
-        transition: "all 0.2s ease-in-out",
-        "&:hover": {
-          borderColor: color,
-          boxShadow: `0 4px 20px ${color}20`,
-          transform: "translateY(-2px)",
-        },
-      }}
-    >
-      <Box className="flex items-start justify-between">
-        <Box>
-          <Typography
-            variant="body2"
-            sx={{ color: "#6b7280", fontWeight: 500, mb: 1 }}
-          >
-            {title}
-          </Typography>
-          {loading ? (
-            <Skeleton width={80} height={40} />
-          ) : (
-            <>
-              <Typography
-                variant="h4"
-                sx={{ fontWeight: 700, color: "#111827", mb: 0.5 }}
-              >
-                {typeof value === "number" ? value.toLocaleString() : value}
-              </Typography>
-              {trend !== undefined && (
-                <Box className="flex items-center gap-1">
-                  {isPositive ? (
-                    <TrendingUpIcon sx={{ fontSize: 16, color: "#16a34a" }} />
-                  ) : isNegative ? (
-                    <TrendingDownIcon sx={{ fontSize: 16, color: "#dc2626" }} />
-                  ) : null}
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      fontWeight: 600,
-                      color: isPositive
-                        ? "#16a34a"
-                        : isNegative
-                          ? "#dc2626"
-                          : "#6b7280",
-                    }}
-                  >
-                    {trend > 0 ? "+" : ""}
-                    {trend}% {trendLabel}
-                  </Typography>
-                </Box>
-              )}
-            </>
-          )}
-        </Box>
-        <Box
-          sx={{
-            p: 1.5,
-            borderRadius: 2,
-            backgroundColor: bgColor,
-            color: color,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          {icon}
-        </Box>
-      </Box>
-    </Box>
-  );
-}
 
 interface SectionHeaderProps {
   icon: React.ReactNode;
@@ -200,11 +89,8 @@ function SectionHeader({
 
 export default function MemberStatsDashboard() {
   const router = useRouter();
-  const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [authChecking, setAuthChecking] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [filterExpanded, setFilterExpanded] = useState(false);
 
   const {
     region,
@@ -246,39 +132,6 @@ export default function MemberStatsDashboard() {
 
     checkAuth();
   }, [router]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (authChecking || authError) return;
-
-    const fetchStats = async () => {
-      try {
-        setLoading(true);
-        const token = localStorage.getItem("accessToken");
-        if (!token) return;
-
-        const response = await fetch("/api/admin/stats", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setStats(data);
-        }
-      } catch (error) {
-        console.error("Error fetching dashboard stats:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
-    const interval = setInterval(fetchStats, 60000);
-
-    return () => clearInterval(interval);
-  }, [authChecking, authError]);
 
   if (authChecking) {
     return (
@@ -390,19 +243,7 @@ export default function MemberStatsDashboard() {
                     onChange={setIncludeDeleted}
                     size="small"
                   />
-                </Box>
 
-                <IconButton
-                  size="small"
-                  onClick={() => setFilterExpanded(!filterExpanded)}
-                  sx={{ color: "#6b7280" }}
-                >
-                  {filterExpanded ? <CollapseIcon /> : <ExpandIcon />}
-                </IconButton>
-              </Box>
-
-              <Collapse in={filterExpanded}>
-                <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid #e5e7eb" }}>
                   <FormControlLabel
                     control={
                       <Switch
@@ -422,66 +263,17 @@ export default function MemberStatsDashboard() {
                     }
                     label={
                       <Typography variant="body2" sx={{ color: "#6b7280" }}>
-                        {useCluster ? "클러스터 단위 조회" : "개별 지역 조회"}
+                        {useCluster ? "클러스터 단위" : "개별 지역"}
                       </Typography>
                     }
                   />
                 </Box>
-              </Collapse>
+              </Box>
             </CardContent>
           </Card>
         </Box>
 
         <Box className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-          <Grid container spacing={3}>
-            <Grid item xs={12} sm={6} lg={3}>
-              <SummaryCard
-                title="총 회원 수"
-                value={loading ? "-" : stats?.totalUsers?.toLocaleString() || 0}
-                icon={<PeopleIcon />}
-                color="#3b82f6"
-                bgColor="#eff6ff"
-                loading={loading}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} lg={3}>
-              <SummaryCard
-                title="이번 주 가입"
-                value={
-                  loading ? "-" : stats?.weeklySignups?.toLocaleString() || 0
-                }
-                icon={<CalendarIcon />}
-                color="#8b5cf6"
-                bgColor="#f5f3ff"
-                loading={loading}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} lg={3}>
-              <SummaryCard
-                title="오늘 가입"
-                value={
-                  loading ? "-" : stats?.dailySignups?.toLocaleString() || 0
-                }
-                icon={<PersonAddIcon />}
-                color="#10b981"
-                bgColor="#ecfdf5"
-                loading={loading}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6} lg={3}>
-              <SummaryCard
-                title="총 매칭 수"
-                value={
-                  loading ? "-" : stats?.totalMatches?.toLocaleString() || 0
-                }
-                icon={<MatchIcon />}
-                color="#ec4899"
-                bgColor="#fdf2f8"
-                loading={loading}
-              />
-            </Grid>
-          </Grid>
-
           <Card
             sx={{
               borderRadius: 3,
@@ -508,42 +300,26 @@ export default function MemberStatsDashboard() {
             </Box>
             <CardContent sx={{ p: 3 }}>
               <Grid container spacing={3}>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid item xs={12} sm={6} md={4}>
                   <TotalUsersCard
                     region={getRegionParam()}
                     includeDeleted={getIncludeDeletedParam()}
                     useCluster={getUseClusterParam()}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid item xs={12} sm={6} md={4}>
                   <WeeklySignupsCard
                     region={getRegionParam()}
                     includeDeleted={getIncludeDeletedParam()}
                     useCluster={getUseClusterParam()}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid item xs={12} sm={6} md={4}>
                   <DailySignupsCard
                     region={getRegionParam()}
                     includeDeleted={getIncludeDeletedParam()}
                     useCluster={getUseClusterParam()}
                   />
-                </Grid>
-                <Grid item xs={12} sm={6} md={3}>
-                  <Card variant="outlined" sx={{ height: "100%" }}>
-                    <CardContent>
-                      <Typography color="textSecondary" gutterBottom>
-                        총 매칭 수
-                      </Typography>
-                      <Typography variant="h4">
-                        {loading ? (
-                          <Skeleton width={80} />
-                        ) : (
-                          stats?.totalMatches?.toLocaleString() || 0
-                        )}
-                      </Typography>
-                    </CardContent>
-                  </Card>
                 </Grid>
               </Grid>
             </CardContent>
