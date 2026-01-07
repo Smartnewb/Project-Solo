@@ -24,6 +24,11 @@ import {
   ConversionRateResponse,
   LtvAnalysisResponse,
   RevenueMetricsTrendResponse,
+  ProductSalesResponse,
+  ProductRankingResponse,
+  PeriodAnalysisResponse,
+  GemConsumptionResponse,
+  SystemComparisonResponse,
 } from "../admin/sales/types";
 import { paymentType } from "@/app/admin/sales/types";
 import { da } from "date-fns/locale";
@@ -52,6 +57,11 @@ const SALES_ENDPOINT = {
   CONVERSION_RATE: "/admin/stats/sales/conversion-rate",
   LTV: "/admin/stats/sales/ltv",
   REVENUE_METRICS_TREND: "/admin/stats/sales/revenue-metrics/trend",
+  PRODUCT_SALES: "/admin/stats/products/sales",
+  PRODUCT_RANKING: "/admin/stats/products/ranking",
+  PERIOD_ANALYSIS: "/admin/stats/products/period-analysis",
+  GEM_CONSUMPTION: "/admin/stats/products/gem-consumption",
+  SYSTEM_COMPARISON: "/admin/stats/products/system-comparison",
 } as const;
 
 // MARK: - 공통 매출액 조회 파라미터
@@ -386,6 +396,68 @@ export const salesService = {
       return response.data;
     } catch (error) {
       throw new SalesApiError("수익 지표 추이 조회 실패:", error);
+    }
+  },
+
+  async getProductSales(params?: {
+    startDate?: string;
+    endDate?: string;
+    pricePeriod?: string;
+  }): Promise<ProductSalesResponse> {
+    try {
+      const response = await axiosServer.get(SALES_ENDPOINT.PRODUCT_SALES, {
+        params,
+      });
+      return response.data;
+    } catch (error) {
+      throw new SalesApiError("상품별 판매 현황 조회 실패:", error);
+    }
+  },
+
+  async getProductRanking(params?: {
+    startDate?: string;
+    endDate?: string;
+    pricePeriod?: string;
+  }): Promise<ProductRankingResponse> {
+    try {
+      const response = await axiosServer.get(SALES_ENDPOINT.PRODUCT_RANKING, {
+        params,
+      });
+      return response.data;
+    } catch (error) {
+      throw new SalesApiError("상품 랭킹 조회 실패:", error);
+    }
+  },
+
+  async getPeriodAnalysis(): Promise<PeriodAnalysisResponse> {
+    try {
+      const response = await axiosServer.get(SALES_ENDPOINT.PERIOD_ANALYSIS);
+      return response.data;
+    } catch (error) {
+      throw new SalesApiError("기간별 분석 조회 실패:", error);
+    }
+  },
+
+  async getGemConsumption(params?: {
+    startDate?: string;
+    endDate?: string;
+  }): Promise<GemConsumptionResponse> {
+    try {
+      const response = await axiosServer.get(SALES_ENDPOINT.GEM_CONSUMPTION, {
+        params,
+      });
+      return response.data;
+    } catch (error) {
+      throw new SalesApiError("구슬 소비 분석 조회 실패:", error);
+    }
+  },
+
+  async getSystemComparison(): Promise<SystemComparisonResponse> {
+    try {
+      const response = await axiosServer.get(SALES_ENDPOINT.SYSTEM_COMPARISON);
+      return response.data;
+    } catch (error) {
+      throw new SalesApiError("시스템 비교 조회 실패:", error);
     }
   },
 };

@@ -11,8 +11,9 @@ import { MonthlyPaymentGraph } from "./components/MonthlyPaymentGraph";
 import { DailySalesTrendGraph } from "./components/DailySalesTrendGraph";
 import { SuccessRate } from "./components/SuccessRate";
 import { RevenueMetricsTab } from "./components/RevenueMetricsTab";
+import { ProductAnalysisTab } from "./components/ProductAnalysisTab";
 
-type MainTab = "sales" | "metrics";
+type MainTab = "sales" | "metrics" | "products";
 
 interface DateRange {
   startDate: Date | undefined;
@@ -74,6 +75,16 @@ export default function SalesPage() {
             >
               수익 지표
             </button>
+            <button
+              onClick={() => setMainTab("products")}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                mainTab === "products"
+                  ? "border-purple-600 text-purple-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              상품 분석
+            </button>
           </div>
         </div>
       </div>
@@ -81,6 +92,11 @@ export default function SalesPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {mainTab === "metrics" ? (
           <RevenueMetricsTab
+            startDate={dateRange.startDate}
+            endDate={dateRange.endDate}
+          />
+        ) : mainTab === "products" ? (
+          <ProductAnalysisTab
             startDate={dateRange.startDate}
             endDate={dateRange.endDate}
           />

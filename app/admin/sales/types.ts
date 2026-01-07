@@ -340,3 +340,129 @@ export interface RevenueMetricsTrendResponse {
   data: RevenueMetricsTrendPoint[];
   period?: RevenueMetricsPeriod;
 }
+
+export enum PricePeriod {
+  PERIOD_0 = "PERIOD_0",
+  PERIOD_1 = "PERIOD_1",
+  PERIOD_2 = "PERIOD_2",
+  PERIOD_3 = "PERIOD_3",
+}
+
+export const PRICE_PERIOD_NAMES: Record<PricePeriod, string> = {
+  [PricePeriod.PERIOD_0]: "재매칭권 시대 (~2025-07-07)",
+  [PricePeriod.PERIOD_1]: "구슬 초기/저가 정책 (2025-07-08 ~ 2025-09-05)",
+  [PricePeriod.PERIOD_2]: "구슬 인상/고가 정책 (2025-09-06 ~ 2025-12-25)",
+  [PricePeriod.PERIOD_3]: "현재 정책 (2025-12-26~)",
+};
+
+export interface ProductSalesItem {
+  productName: string;
+  salesCount: number;
+  totalRevenue: number;
+  uniqueBuyers: number;
+  gemAmount: number;
+  pricePerGem: number;
+  revenueShare: number;
+}
+
+export interface ProductSalesResponse {
+  products: ProductSalesItem[];
+  totalRevenue: number;
+  totalSalesCount: number;
+  totalUniqueBuyers: number;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface ProductRankingItem {
+  rank: number;
+  productName: string;
+  salesCount: number;
+  totalRevenue: number;
+  uniqueBuyers: number;
+}
+
+export interface ProductRankingResponse {
+  bestSellersByCount: ProductRankingItem[];
+  bestSellersByRevenue: ProductRankingItem[];
+  worstSellersByCount: ProductRankingItem[];
+  worstSellersByRevenue: ProductRankingItem[];
+}
+
+export interface PeriodComparisonItem {
+  periodId: PricePeriod;
+  periodName: string;
+  startDate: string | null;
+  endDate: string | null;
+  totalRevenue: number;
+  salesCount: number;
+  uniqueBuyers: number;
+  dailyAverageRevenue: number;
+  dailyAverageSalesCount: number;
+}
+
+export interface PriceElasticityItem {
+  productName: string;
+  beforeCount: number;
+  afterCount: number;
+  changeRate: number;
+  beforeDailyAverage: number;
+  afterDailyAverage: number;
+}
+
+export interface PeriodAnalysisResponse {
+  periods: PeriodComparisonItem[];
+  priceElasticity: PriceElasticityItem[];
+}
+
+export interface GemConsumptionItem {
+  featureType: string;
+  featureName: string;
+  usageCount: number;
+  totalGemsConsumed: number;
+  uniqueUsers: number;
+  consumptionShare: number;
+  costPerUse: number;
+}
+
+export interface HourlyConsumptionItem {
+  hour: number;
+  usageCount: number;
+  totalGemsConsumed: number;
+}
+
+export interface GemConsumptionResponse {
+  byFeature: GemConsumptionItem[];
+  byHour: HourlyConsumptionItem[];
+  totalGemsConsumed: number;
+  totalUsageCount: number;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface SystemComparisonItem {
+  systemType: "REMATCHING_TICKET" | "GEM_SYSTEM";
+  systemName: string;
+  periodLabel: string;
+  totalRevenue: number;
+  salesCount: number;
+  uniqueBuyers: number;
+  dailyAverageRevenue: number;
+}
+
+export interface PaymentMethodComparisonItem {
+  paymentMethod: string;
+  methodName: string;
+  totalRevenue: number;
+  salesCount: number;
+  uniqueBuyers: number;
+  revenueShare: number;
+}
+
+export interface SystemComparisonResponse {
+  systemComparison: SystemComparisonItem[];
+  paymentMethodComparison: PaymentMethodComparisonItem[];
+  rematchingTicketRevenue: number;
+  gemSystemRevenue: number;
+  revenueGrowthRate: number;
+}
