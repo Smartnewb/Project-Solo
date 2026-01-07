@@ -683,109 +683,26 @@ const userAppearance = {
     userId: string,
     grade: "S" | "A" | "B" | "C" | "UNKNOWN",
   ) => {
-    console.log("등급 설정 요청 (원본):", { userId, grade });
+    console.log("등급 설정 요청:", { userId, grade });
 
-    // userId와 grade 유효성 검사
     if (!userId) {
-      console.error("유저 ID가 없습니다.");
       throw new Error("유저 ID가 없습니다.");
     }
 
     if (!grade) {
-      console.error("등급이 없습니다.");
       throw new Error("등급이 없습니다.");
     }
 
     try {
-      // 요청 데이터 로깅
-      const requestData = {
-        userId: userId,
-        grade: grade,
-      };
-      console.log("요청 데이터 (JSON):", JSON.stringify(requestData));
-
-      // 여러 URL 경로 시도
-      let response;
-      let error;
-
-      // 첫 번째 시도: /admin/users/appearance/grade
-      try {
-        const url1 = "/admin/users/appearance/grade";
-        console.log("첫 번째 시도 URL (상대 경로):", url1);
-        console.log(
-          "첫 번째 시도 URL (전체 경로):",
-          process.env.NEXT_PUBLIC_API_URL + url1,
-        );
-
-        // 요청 헤더 로깅
-        console.log("요청 헤더:", {
-          "Content-Type": "application/json",
-          Authorization:
-            typeof window !== "undefined"
-              ? `Bearer ${localStorage.getItem("accessToken")}`
-              : "N/A",
-        });
-
-        response = await axiosServer.post(url1, requestData);
-        console.log("첫 번째 시도 성공!");
-      } catch (err) {
-        console.error("첫 번째 시도 실패:", err);
-        error = err;
-
-        // 두 번째 시도: /users/appearance/grade
-        try {
-          const url2 = "/users/appearance/grade";
-          console.log("두 번째 시도 URL (상대 경로):", url2);
-          console.log(
-            "두 번째 시도 URL (전체 경로):",
-            process.env.NEXT_PUBLIC_API_URL + url2,
-          );
-
-          response = await axiosServer.post(url2, requestData);
-          console.log("두 번째 시도 성공!");
-        } catch (err2) {
-          console.error("두 번째 시도 실패:", err2);
-
-          // 세 번째 시도: 직접 fetch 사용
-          try {
-            const url3 = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8044/api"}/admin/users/appearance/grade`;
-            console.log("세 번째 시도 URL (전체 경로):", url3);
-
-            const token =
-              typeof window !== "undefined"
-                ? localStorage.getItem("accessToken")
-                : null;
-            const fetchResponse = await fetch(url3, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "x-country": getCountryHeader(),
-                ...(token ? { Authorization: `Bearer ${token}` } : {}),
-              },
-              body: JSON.stringify(requestData),
-            });
-
-            if (!fetchResponse.ok) {
-              throw new Error(`HTTP error! status: ${fetchResponse.status}`);
-            }
-
-            response = { data: await fetchResponse.json() };
-            console.log("세 번째 시도 성공!");
-          } catch (err3) {
-            console.error("세 번째 시도 실패:", err3);
-            throw error; // 원래 오류 다시 던지기
-          }
-        }
-      }
+      const response = await axiosServer.patch(
+        `/admin/users/appearance/${userId}`,
+        { grade },
+      );
       console.log("등급 설정 응답:", response.data);
       return response.data;
     } catch (error: any) {
       console.error("유저 외모 등급 설정 중 오류:", error);
       console.error("오류 상세 정보:", error.response?.data || error.message);
-      console.error("오류 상태 코드:", error.response?.status);
-      console.error("오류 헤더:", error.response?.headers);
-      console.error("요청 URL:", "/admin/users/appearance/grade");
-      console.error("요청 데이터:", JSON.stringify({ userId, grade }));
       throw error;
     }
   },
@@ -798,13 +715,10 @@ const userAppearance = {
     console.log("일괄 등급 설정 요청:", { userIds: userIds.length, grade });
 
     try {
-      const response = await axiosServer.post(
-        "/admin/users/appearance/grade/bulk",
-        {
-          userIds,
-          grade,
-        },
-      );
+      const response = await axiosServer.patch("/admin/users/appearance/bulk", {
+        userIds,
+        grade,
+      });
       return response.data;
     } catch (error) {
       console.error("유저 외모 등급 일괄 설정 중 오류:", error);
@@ -825,13 +739,19 @@ const userAppearance = {
 
       const data = response.data;
 
-      if (data.profileImageUrls && Array.isArray(data.profileImageUrls) && data.profileImageUrls.length > 0) {
-        data.profileImages = data.profileImageUrls.map((url: string, index: number) => ({
-          id: `${userId}-${index}`,
-          url: url,
-          order: index,
-          isMain: index === 0
-        }));
+      if (
+        data.profileImageUrls &&
+        Array.isArray(data.profileImageUrls) &&
+        data.profileImageUrls.length > 0
+      ) {
+        data.profileImages = data.profileImageUrls.map(
+          (url: string, index: number) => ({
+            id: `${userId}-${index}`,
+            url: url,
+            order: index,
+            isMain: index === 0,
+          }),
+        );
         data.profileImageUrl = data.profileImageUrls[0];
       }
 
