@@ -1,14 +1,15 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Box, Card, CardContent, Typography, Skeleton } from "@mui/material";
 import {
   AssignmentInd as ProfileReviewIcon,
   Report as ReportIcon,
-  Forum as CommunityIcon,
   SupportAgent as SupportIcon,
 } from "@mui/icons-material";
 import { ActionItems } from "../types";
+import supportChatService from "@/app/services/support-chat";
 
 interface ActionRequiredProps {
   actionItems: ActionItems | null;
@@ -111,16 +112,33 @@ export default function ActionRequired({
   actionItems,
   loading,
 }: ActionRequiredProps) {
+  const [pendingQA, setPendingQA] = useState(0);
+  const [qaLoading, setQaLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchQACount = async () => {
+      try {
+        setQaLoading(true);
+        const response = await supportChatService.getSessions({
+          status: "waiting_admin",
+          limit: 1,
+        });
+        setPendingQA(response.pagination?.total ?? 0);
+      } catch (error) {
+        console.error("Q&A 대기 건수 조회 실패:", error);
+        setPendingQA(0);
+      } finally {
+        setQaLoading(false);
+      }
+    };
+
+    fetchQACount();
+  }, []);
+
   const pendingApprovals = actionItems?.pendingApprovals ?? 0;
   const pendingProfileReports = actionItems?.pendingProfileReports ?? 0;
-  const pendingCommunityReports = actionItems?.pendingCommunityReports ?? 0;
-  const pendingImageApprovals = actionItems?.pendingImageApprovals ?? 0;
 
-  const totalPending =
-    pendingApprovals +
-    pendingProfileReports +
-    pendingCommunityReports +
-    pendingImageApprovals;
+  const totalPending = pendingApprovals + pendingProfileReports + pendingQA;
 
   return (
     <Card sx={{ mb: 3 }}>
@@ -171,15 +189,6 @@ export default function ActionRequired({
             loading={loading}
           />
           <ActionItemCard
-            title="이미지 승인"
-            count={pendingImageApprovals}
-            icon={<ProfileReviewIcon fontSize="small" />}
-            link="/admin/users/appearance"
-            color="#8b5cf6"
-            bgColor="#f5f3ff"
-            loading={loading}
-          />
-          <ActionItemCard
             title="신고 관리"
             count={pendingProfileReports}
             icon={<ReportIcon fontSize="small" />}
@@ -189,13 +198,13 @@ export default function ActionRequired({
             loading={loading}
           />
           <ActionItemCard
-            title="커뮤니티 신고"
-            count={pendingCommunityReports}
-            icon={<CommunityIcon fontSize="small" />}
-            link="/admin/community"
-            color="#f59e0b"
-            bgColor="#fffbeb"
-            loading={loading}
+            title="Q&A 대기"
+            count={pendingQA}
+            icon={<SupportIcon fontSize="small" />}
+            link="/admin/support-chat"
+            color="#8b5cf6"
+            bgColor="#f5f3ff"
+            loading={qaLoading}
           />
         </Box>
       </CardContent>
