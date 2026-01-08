@@ -8,13 +8,8 @@ import {
   Typography,
   Skeleton,
   Button,
-  Divider,
 } from "@mui/material";
-import {
-  TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
-  ArrowForward as ArrowForwardIcon,
-} from "@mui/icons-material";
+import { ArrowForward as ArrowForwardIcon } from "@mui/icons-material";
 import { KPI } from "../types";
 
 interface RevenueOverviewProps {
@@ -35,89 +30,11 @@ const formatCurrency = (value: number) => {
   return `${value.toLocaleString()}`;
 };
 
-function TrendBadge({ change }: { change: number }) {
-  if (change === 0) {
-    return (
-      <Typography variant="caption" sx={{ color: "#6b7280" }}>
-        ±0%
-      </Typography>
-    );
-  }
-
-  const isPositive = change > 0;
-
-  return (
-    <Box
-      className="flex items-center gap-0.5"
-      sx={{
-        color: isPositive ? "#16a34a" : "#dc2626",
-      }}
-    >
-      {isPositive ? (
-        <TrendingUpIcon sx={{ fontSize: 16 }} />
-      ) : (
-        <TrendingDownIcon sx={{ fontSize: 16 }} />
-      )}
-      <Typography variant="body2" fontWeight={600}>
-        {isPositive ? "+" : ""}
-        {change.toFixed(1)}%
-      </Typography>
-    </Box>
-  );
-}
-
-interface RevenueItemProps {
-  label: string;
-  value: number;
-  changePercent?: number;
-  loading?: boolean;
-  highlight?: boolean;
-}
-
-function RevenueItem({
-  label,
-  value,
-  changePercent,
-  loading,
-  highlight,
-}: RevenueItemProps) {
-  return (
-    <Box className="flex items-center justify-between py-2">
-      <Typography
-        variant="body2"
-        sx={{
-          color: highlight ? "text.primary" : "text.secondary",
-          fontWeight: highlight ? 600 : 400,
-        }}
-      >
-        {label}
-      </Typography>
-      {loading ? (
-        <Skeleton width={100} height={24} />
-      ) : (
-        <Box className="flex items-center gap-2">
-          <Typography
-            variant={highlight ? "h6" : "body1"}
-            fontWeight={700}
-            sx={{ color: "#10b981" }}
-          >
-            ₩{formatCurrency(value)}
-          </Typography>
-          {changePercent !== undefined && <TrendBadge change={changePercent} />}
-        </Box>
-      )}
-    </Box>
-  );
-}
-
 export default function RevenueOverview({
   kpi,
   loading,
 }: RevenueOverviewProps) {
-  const dailySales = kpi?.dailySales?.value ?? 0;
-  const dailyChange = kpi?.dailySales?.changePercent ?? 0;
-  const weeklySales = kpi?.weeklySales?.value ?? 0;
-  const weeklyChange = kpi?.weeklySales?.changePercent ?? 0;
+  const monthlyRevenue = kpi?.monthlyRevenue ?? 0;
 
   return (
     <Card>
@@ -142,36 +59,19 @@ export default function RevenueOverview({
             p: 2,
             borderRadius: 2,
             backgroundColor: "#ecfdf5",
-            mb: 2,
           }}
         >
           <Typography variant="body2" color="text.secondary" gutterBottom>
-            오늘 매출
+            이번 달 매출
           </Typography>
           {loading ? (
             <Skeleton width={150} height={40} />
           ) : (
-            <Box className="flex items-center gap-3">
-              <Typography
-                variant="h4"
-                fontWeight={700}
-                sx={{ color: "#059669" }}
-              >
-                ₩{formatCurrency(dailySales)}
-              </Typography>
-              <TrendBadge change={dailyChange} />
-            </Box>
+            <Typography variant="h4" fontWeight={700} sx={{ color: "#059669" }}>
+              ₩{formatCurrency(monthlyRevenue)}
+            </Typography>
           )}
         </Box>
-
-        <Divider sx={{ my: 2 }} />
-
-        <RevenueItem
-          label="이번 주"
-          value={weeklySales}
-          changePercent={weeklyChange}
-          loading={loading}
-        />
       </CardContent>
     </Card>
   );

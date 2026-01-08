@@ -5,14 +5,14 @@ import Link from "next/link";
 import { Box, Card, CardContent, Typography, Skeleton } from "@mui/material";
 import {
   AssignmentInd as ProfileReviewIcon,
-  Report as ReportIcon,
+  ReportProblem as ReportIcon,
   SupportAgent as SupportIcon,
 } from "@mui/icons-material";
-import { ActionItems } from "../types";
+import { ActionItem } from "../types";
 import supportChatService from "@/app/services/support-chat";
 
 interface ActionRequiredProps {
-  actionItems: ActionItems | null;
+  actionItems: ActionItem[] | null;
   loading?: boolean;
 }
 
@@ -135,8 +135,10 @@ export default function ActionRequired({
     fetchQACount();
   }, []);
 
-  const pendingApprovals = actionItems?.pendingApprovals ?? 0;
-  const pendingProfileReports = actionItems?.pendingProfileReports ?? 0;
+  const pendingApprovals =
+    actionItems?.find((item) => item.type === "pending_approvals")?.count ?? 0;
+  const pendingProfileReports =
+    actionItems?.find((item) => item.type === "pending_reports")?.count ?? 0;
 
   const totalPending = pendingApprovals + pendingProfileReports + pendingQA;
 
