@@ -140,11 +140,10 @@ export default function MainDashboard() {
           </Grid>
           <Grid item xs={12} md={5}>
             <RevenueOverview kpi={summary?.kpi ?? null} loading={loading} />
-            <Box sx={{ mt: 3 }}>
-              <QuickAccess />
-            </Box>
           </Grid>
         </Grid>
+
+        <QuickAccess />
       </Box>
     </Box>
   );

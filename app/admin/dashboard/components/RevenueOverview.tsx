@@ -135,7 +135,7 @@ export default function RevenueOverview({
   const isLoading = loading || extendedLoading;
 
   return (
-    <Card sx={{ height: "100%" }}>
+    <Card>
       <CardContent>
         <Box className="flex items-center justify-between mb-3">
           <Typography variant="h6" fontWeight={600}>
