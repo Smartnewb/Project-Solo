@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -30,23 +30,28 @@ import {
   Grid,
   Card,
   CardContent,
-  Divider
-} from '@mui/material';
+  Tabs,
+  Tab,
+  ImageList,
+  ImageListItem,
+  Skeleton,
+} from "@mui/material";
 import {
   Visibility as VisibilityIcon,
-  Person as PersonIcon,
-  Report as ReportIcon
-} from '@mui/icons-material';
-import AdminService from '@/app/services/admin';
+  Report as ReportIcon,
+  Chat as ChatIcon,
+  Photo as PhotoIcon,
+  Description as DescriptionIcon,
+} from "@mui/icons-material";
+import AdminService from "@/app/services/admin";
 
-// 신고 데이터 타입 정의
 interface Reporter {
   id: string;
   name: string;
   email: string;
   phoneNumber: string;
   age: number;
-  gender: 'MALE' | 'FEMALE';
+  gender: "MALE" | "FEMALE";
   profileImageUrl: string;
 }
 
@@ -56,7 +61,7 @@ interface Reported {
   email: string;
   phoneNumber: string;
   age: number;
-  gender: 'MALE' | 'FEMALE';
+  gender: "MALE" | "FEMALE";
   profileImageUrl: string;
 }
 
@@ -67,22 +72,48 @@ interface Report {
   reason: string;
   description: string | null;
   evidenceImages: string[];
-  status: 'pending' | 'reviewing' | 'resolved' | 'rejected';
+  status: "pending" | "reviewing" | "resolved" | "rejected";
   createdAt: string;
   updatedAt: string | null;
+  chatRoomId?: string;
 }
 
-interface ReportsResponse {
-  items: Report[];
-  meta: {
+interface ReportDetail extends Report {
+  chatRoomId?: string;
+}
+
+interface ChatMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  content: string;
+  messageType: string;
+  mediaUrl?: string;
+  createdAt: string;
+}
+
+interface ChatHistoryResponse {
+  messages: ChatMessage[];
+  maleUser: { id: string; name: string };
+  femaleUser: { id: string; name: string };
+  pagination: {
     currentPage: number;
-    itemsPerPage: number;
-    totalItems: number;
     totalPages: number;
-    hasNextPage: boolean;
-    hasPreviousPage: boolean;
+    totalItems: number;
   };
 }
+
+type ReportStatus = "pending" | "reviewing" | "resolved" | "rejected";
+
+const STATUS_OPTIONS: { value: ReportStatus; label: string }[] = [
+  { value: "pending", label: "대기중" },
+  { value: "reviewing", label: "검토중" },
+  { value: "resolved", label: "처리완료" },
+  { value: "rejected", label: "반려" },
+];
+
+const REASONS_REQUIRING_CHAT = ["부적절한 언어 사용", "스팸/광고"];
+const REASONS_REQUIRING_PROFILE_IMAGES = ["허위 프로필", "부적절한 사진"];
 
 export default function ReportsManagement() {
   const [reports, setReports] = useState<Report[]>([]);
@@ -91,34 +122,46 @@ export default function ReportsManagement() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const [reporterNameFilter, setReporterNameFilter] = useState<string>('');
-  const [reportedNameFilter, setReportedNameFilter] = useState<string>('');
-  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [reporterNameFilter, setReporterNameFilter] = useState<string>("");
+  const [reportedNameFilter, setReportedNameFilter] = useState<string>("");
+  const [selectedReport, setSelectedReport] = useState<ReportDetail | null>(
+    null,
+  );
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 
-  // 신고 목록 조회
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
+  const [chatHistory, setChatHistory] = useState<ChatHistoryResponse | null>(
+    null,
+  );
+  const [chatLoading, setChatLoading] = useState(false);
+  const [profileImages, setProfileImages] = useState<string[]>([]);
+  const [profileImagesLoading, setProfileImagesLoading] = useState(false);
+  const [statusUpdating, setStatusUpdating] = useState(false);
+  const [newStatus, setNewStatus] = useState<ReportStatus>("pending");
+
   const fetchReports = async () => {
     try {
       setLoading(true);
       setError(null);
 
       const params = new URLSearchParams();
-      params.append('page', (page + 1).toString());
-      params.append('limit', rowsPerPage.toString());
-      
+      params.append("page", (page + 1).toString());
+      params.append("limit", rowsPerPage.toString());
+
       if (statusFilter) {
-        params.append('status', statusFilter);
+        params.append("status", statusFilter);
       }
       if (reporterNameFilter.trim()) {
-        params.append('reporterName', reporterNameFilter.trim());
+        params.append("reporterName", reporterNameFilter.trim());
       }
       if (reportedNameFilter.trim()) {
-        params.append('reportedName', reportedNameFilter.trim());
+        params.append("reportedName", reportedNameFilter.trim());
       }
 
       const response = await AdminService.getProfileReports(params);
-      
+
       if (response?.items) {
         setReports(response.items);
         setTotalCount(response.meta.totalItems);
@@ -126,90 +169,666 @@ export default function ReportsManagement() {
         setReports([]);
         setTotalCount(0);
       }
-    } catch (err: any) {
-      console.error('신고 목록 조회 오류:', err);
-      setError('신고 목록을 불러오는데 실패했습니다.');
+    } catch (err: unknown) {
+      console.error("신고 목록 조회 오류:", err);
+      setError("신고 목록을 불러오는데 실패했습니다.");
     } finally {
       setLoading(false);
     }
   };
 
-  // 컴포넌트 마운트 시 데이터 로드
   useEffect(() => {
     fetchReports();
   }, [page, rowsPerPage, statusFilter, reporterNameFilter, reportedNameFilter]);
 
-  // 페이지 변경 핸들러
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
 
-  // 페이지당 행 수 변경 핸들러
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChangeRowsPerPage = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
 
-  // 상태 필터 변경 핸들러
-  const handleStatusFilterChange = (event: any) => {
+  const handleStatusFilterChange = (event: { target: { value: string } }) => {
     setStatusFilter(event.target.value);
     setPage(0);
   };
 
-  // 신고자 이름 필터 변경 핸들러
-  const handleReporterNameFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleReporterNameFilterChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     setReporterNameFilter(event.target.value);
     setPage(0);
   };
 
-  // 신고당한 사용자 이름 필터 변경 핸들러
-  const handleReportedNameFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleReportedNameFilterChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     setReportedNameFilter(event.target.value);
     setPage(0);
   };
 
-  // 신고 상세 보기
-  const handleViewDetail = (report: Report) => {
-    setSelectedReport(report);
+  const handleViewDetail = async (report: Report) => {
     setDetailDialogOpen(true);
+    setDetailLoading(true);
+    setActiveTab(0);
+    setChatHistory(null);
+    setProfileImages([]);
+
+    try {
+      const detailResponse = await AdminService.reports.getProfileReportDetail(
+        report.id,
+      );
+      const reportDetail: ReportDetail = {
+        ...report,
+        ...detailResponse,
+      };
+      setSelectedReport(reportDetail);
+      setNewStatus(reportDetail.status);
+    } catch (err: unknown) {
+      console.error("신고 상세 조회 오류:", err);
+      setSelectedReport(report);
+      setNewStatus(report.status);
+    } finally {
+      setDetailLoading(false);
+    }
   };
 
+  const handleCloseDetailDialog = () => {
+    setDetailDialogOpen(false);
+    setSelectedReport(null);
+    setChatHistory(null);
+    setProfileImages([]);
+    setActiveTab(0);
+  };
 
+  const handleLoadChatHistory = useCallback(async () => {
+    if (!selectedReport?.chatRoomId) return;
 
-  // 상태 표시 함수
+    setChatLoading(true);
+    try {
+      const response = await AdminService.reports.getChatHistory(
+        selectedReport.chatRoomId,
+      );
+      setChatHistory(response);
+    } catch (err: unknown) {
+      console.error("채팅 내역 조회 오류:", err);
+      alert("채팅 내역을 불러오는데 실패했습니다.");
+    } finally {
+      setChatLoading(false);
+    }
+  }, [selectedReport?.chatRoomId]);
+
+  const handleLoadProfileImages = useCallback(async () => {
+    if (!selectedReport?.reported?.id) return;
+
+    setProfileImagesLoading(true);
+    try {
+      const images = await AdminService.reports.getUserProfileImages(
+        selectedReport.reported.id,
+      );
+      setProfileImages(images);
+    } catch (err: unknown) {
+      console.error("프로필 이미지 조회 오류:", err);
+      alert("프로필 이미지를 불러오는데 실패했습니다.");
+    } finally {
+      setProfileImagesLoading(false);
+    }
+  }, [selectedReport?.reported?.id]);
+
+  const handleStatusChange = async () => {
+    if (!selectedReport) return;
+
+    setStatusUpdating(true);
+    try {
+      await AdminService.reports.updateReportStatus(
+        selectedReport.id,
+        newStatus,
+      );
+      alert("상태가 변경되었습니다.");
+      setSelectedReport({ ...selectedReport, status: newStatus });
+      fetchReports();
+    } catch (err: unknown) {
+      console.error("상태 변경 오류:", err);
+      alert("상태 변경에 실패했습니다.");
+    } finally {
+      setStatusUpdating(false);
+    }
+  };
+
   const getStatusChip = (status: string) => {
     const statusMap = {
-      pending: { label: '대기중', color: 'warning' as const },
-      reviewing: { label: '검토중', color: 'info' as const },
-      resolved: { label: '처리완료', color: 'success' as const },
-      rejected: { label: '반려', color: 'error' as const }
+      pending: { label: "대기중", color: "warning" as const },
+      reviewing: { label: "검토중", color: "info" as const },
+      resolved: { label: "처리완료", color: "success" as const },
+      rejected: { label: "반려", color: "error" as const },
     };
 
-    const statusInfo = statusMap[status as keyof typeof statusMap] || { label: status, color: 'default' as const };
-    return <Chip label={statusInfo.label} color={statusInfo.color} size="small" />;
+    const statusInfo = statusMap[status as keyof typeof statusMap] || {
+      label: status,
+      color: "default" as const,
+    };
+    return (
+      <Chip label={statusInfo.label} color={statusInfo.color} size="small" />
+    );
   };
 
-  // 성별 표시 함수
   const getGenderText = (gender: string) => {
-    return gender === 'MALE' ? '남성' : '여성';
+    return gender === "MALE" ? "남성" : "여성";
   };
 
-  // 날짜 포맷 함수
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
+    return date.toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
     });
+  };
+
+  const formatReasonDisplay = (report: Report) => {
+    if (report.reason === "기타" && report.description) {
+      const truncatedDesc =
+        report.description.length > 20
+          ? `${report.description.slice(0, 20)}...`
+          : report.description;
+      return `기타(${truncatedDesc})`;
+    }
+    return report.reason;
+  };
+
+  const requiresChatHistory = (reason: string) =>
+    REASONS_REQUIRING_CHAT.includes(reason);
+  const requiresProfileImages = (reason: string) =>
+    REASONS_REQUIRING_PROFILE_IMAGES.includes(reason);
+
+  const renderChatMessages = () => {
+    if (!chatHistory) return null;
+
+    const { messages, maleUser, femaleUser } = chatHistory;
+    const reporterId = selectedReport?.reporter?.id;
+
+    return (
+      <Box
+        sx={{
+          maxHeight: 400,
+          overflowY: "auto",
+          p: 2,
+          bgcolor: "#f5f5f5",
+          borderRadius: 2,
+        }}
+      >
+        {messages.length === 0 ? (
+          <Typography color="text.secondary" textAlign="center">
+            채팅 내역이 없습니다.
+          </Typography>
+        ) : (
+          messages.map((msg) => {
+            const isReporter = msg.senderId === reporterId;
+            const senderLabel =
+              msg.senderId === maleUser?.id ? maleUser?.name : femaleUser?.name;
+
+            return (
+              <Box
+                key={msg.id}
+                sx={{
+                  display: "flex",
+                  justifyContent: isReporter ? "flex-end" : "flex-start",
+                  mb: 1.5,
+                }}
+              >
+                <Box
+                  sx={{
+                    maxWidth: "70%",
+                    bgcolor: isReporter ? "#e3f2fd" : "#fff",
+                    p: 1.5,
+                    borderRadius: 2,
+                    boxShadow: 1,
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: "block", mb: 0.5 }}
+                  >
+                    {senderLabel || msg.senderName}
+                  </Typography>
+                  {msg.messageType === "image" && msg.mediaUrl ? (
+                    <Box
+                      component="img"
+                      src={msg.mediaUrl}
+                      alt="채팅 이미지"
+                      sx={{ maxWidth: "100%", borderRadius: 1 }}
+                    />
+                  ) : (
+                    <Typography variant="body2">{msg.content}</Typography>
+                  )}
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: "block", mt: 0.5, textAlign: "right" }}
+                  >
+                    {formatDate(msg.createdAt)}
+                  </Typography>
+                </Box>
+              </Box>
+            );
+          })
+        )}
+      </Box>
+    );
+  };
+
+  const renderProfileImagesGrid = () => {
+    if (profileImagesLoading) {
+      return (
+        <Grid container spacing={2}>
+          {[1, 2, 3, 4].map((i) => (
+            <Grid item xs={6} sm={4} md={3} key={i}>
+              <Skeleton
+                variant="rectangular"
+                height={200}
+                sx={{ borderRadius: 1 }}
+              />
+            </Grid>
+          ))}
+        </Grid>
+      );
+    }
+
+    if (profileImages.length === 0) {
+      return (
+        <Typography color="text.secondary" textAlign="center" py={4}>
+          프로필 이미지가 없습니다.
+        </Typography>
+      );
+    }
+
+    return (
+      <ImageList cols={4} gap={12}>
+        {profileImages.map((imageUrl, index) => (
+          <ImageListItem key={index}>
+            <Box
+              component="img"
+              src={imageUrl}
+              alt={`프로필 이미지 ${index + 1}`}
+              sx={{
+                width: "100%",
+                height: 200,
+                objectFit: "cover",
+                borderRadius: 1,
+                cursor: "pointer",
+                "&:hover": { opacity: 0.8 },
+              }}
+              onClick={() => window.open(imageUrl, "_blank")}
+            />
+          </ImageListItem>
+        ))}
+      </ImageList>
+    );
+  };
+
+  const renderDetailTabs = () => {
+    if (!selectedReport) return null;
+
+    const showChatTab =
+      requiresChatHistory(selectedReport.reason) && selectedReport.chatRoomId;
+    const showProfileImagesTab = requiresProfileImages(selectedReport.reason);
+    const showDescriptionTab = selectedReport.reason === "기타";
+
+    const tabs = [{ label: "기본 정보", icon: <DescriptionIcon /> }];
+
+    if (showChatTab) {
+      tabs.push({ label: "채팅 내역", icon: <ChatIcon /> });
+    }
+    if (showProfileImagesTab) {
+      tabs.push({ label: "피신고자 프로필 이미지", icon: <PhotoIcon /> });
+    }
+    if (showDescriptionTab && selectedReport.description) {
+      tabs.push({ label: "상세 사유", icon: <DescriptionIcon /> });
+    }
+
+    return (
+      <>
+        <Tabs
+          value={activeTab}
+          onChange={(_e, newValue) => setActiveTab(newValue)}
+          sx={{ borderBottom: 1, borderColor: "divider", mb: 2 }}
+        >
+          {tabs.map((tab, index) => (
+            <Tab
+              key={index}
+              label={tab.label}
+              icon={tab.icon}
+              iconPosition="start"
+            />
+          ))}
+        </Tabs>
+
+        {activeTab === 0 && renderBasicInfo()}
+
+        {showChatTab && activeTab === 1 && (
+          <Box>
+            {!chatHistory ? (
+              <Box textAlign="center" py={4}>
+                <Button
+                  variant="contained"
+                  startIcon={<ChatIcon />}
+                  onClick={handleLoadChatHistory}
+                  disabled={chatLoading}
+                >
+                  {chatLoading ? (
+                    <CircularProgress size={24} />
+                  ) : (
+                    "채팅 내역 불러오기"
+                  )}
+                </Button>
+              </Box>
+            ) : (
+              renderChatMessages()
+            )}
+          </Box>
+        )}
+
+        {showProfileImagesTab && activeTab === (showChatTab ? 2 : 1) && (
+          <Box>
+            {profileImages.length === 0 && !profileImagesLoading ? (
+              <Box textAlign="center" py={4}>
+                <Button
+                  variant="contained"
+                  startIcon={<PhotoIcon />}
+                  onClick={handleLoadProfileImages}
+                  disabled={profileImagesLoading}
+                >
+                  {profileImagesLoading ? (
+                    <CircularProgress size={24} />
+                  ) : (
+                    "프로필 이미지 불러오기"
+                  )}
+                </Button>
+              </Box>
+            ) : (
+              renderProfileImagesGrid()
+            )}
+          </Box>
+        )}
+
+        {showDescriptionTab &&
+          selectedReport.description &&
+          activeTab === tabs.length - 1 && (
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  상세 사유
+                </Typography>
+                <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
+                  {selectedReport.description}
+                </Typography>
+              </CardContent>
+            </Card>
+          )}
+      </>
+    );
+  };
+
+  const renderBasicInfo = () => {
+    if (!selectedReport) return null;
+
+    return (
+      <Box>
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                mb: 2,
+              }}
+            >
+              <Typography variant="h6">신고 정보</Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <FormControl size="small" sx={{ minWidth: 140 }}>
+                  <InputLabel>상태 변경</InputLabel>
+                  <Select
+                    value={newStatus}
+                    onChange={(e) =>
+                      setNewStatus(e.target.value as ReportStatus)
+                    }
+                    label="상태 변경"
+                  >
+                    {STATUS_OPTIONS.map((option) => (
+                      <MenuItem key={option.value} value={option.value}>
+                        {option.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <Button
+                  variant="contained"
+                  size="small"
+                  onClick={handleStatusChange}
+                  disabled={
+                    statusUpdating || newStatus === selectedReport.status
+                  }
+                >
+                  {statusUpdating ? <CircularProgress size={20} /> : "변경"}
+                </Button>
+              </Box>
+            </Box>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="body2" color="text.secondary">
+                  신고 ID
+                </Typography>
+                <Typography variant="body1" sx={{ fontFamily: "monospace" }}>
+                  {selectedReport.id}
+                </Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="body2" color="text.secondary">
+                  현재 상태
+                </Typography>
+                <Box sx={{ mt: 0.5 }}>
+                  {getStatusChip(selectedReport.status)}
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="body2" color="text.secondary">
+                  신고일시
+                </Typography>
+                <Typography variant="body1">
+                  {formatDate(selectedReport.createdAt)}
+                </Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="body2" color="text.secondary">
+                  최종 수정일시
+                </Typography>
+                <Typography variant="body1">
+                  {selectedReport.updatedAt
+                    ? formatDate(selectedReport.updatedAt)
+                    : "없음"}
+                </Typography>
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="body2" color="text.secondary">
+                  신고 사유
+                </Typography>
+                <Typography variant="body1">{selectedReport.reason}</Typography>
+              </Grid>
+              {selectedReport.description &&
+                selectedReport.reason !== "기타" && (
+                  <Grid item xs={12}>
+                    <Typography variant="body2" color="text.secondary">
+                      상세 설명
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedReport.description}
+                    </Typography>
+                  </Grid>
+                )}
+            </Grid>
+          </CardContent>
+        </Card>
+
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              신고자 정보
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={3}>
+                <Box sx={{ display: "flex", justifyContent: "center" }}>
+                  <Avatar
+                    src={selectedReport.reporter.profileImageUrl}
+                    sx={{ width: 80, height: 80 }}
+                  />
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={9}>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      이름
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedReport.reporter.name}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      이메일
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedReport.reporter.email || "-"}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      전화번호
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedReport.reporter.phoneNumber || "-"}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      나이/성별
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedReport.reporter.age
+                        ? `${selectedReport.reporter.age}세`
+                        : "-"}{" "}
+                      / {getGenderText(selectedReport.reporter.gender)}
+                    </Typography>
+                  </Grid>
+                </Grid>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              피신고자 정보
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={3}>
+                <Box sx={{ display: "flex", justifyContent: "center" }}>
+                  <Avatar
+                    src={selectedReport.reported.profileImageUrl}
+                    sx={{ width: 80, height: 80 }}
+                  />
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={9}>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      이름
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedReport.reported.name}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      이메일
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedReport.reported.email || "-"}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      전화번호
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedReport.reported.phoneNumber || "-"}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      나이/성별
+                    </Typography>
+                    <Typography variant="body1">
+                      {selectedReport.reported.age
+                        ? `${selectedReport.reported.age}세`
+                        : "-"}{" "}
+                      / {getGenderText(selectedReport.reported.gender)}
+                    </Typography>
+                  </Grid>
+                </Grid>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+
+        {selectedReport.evidenceImages &&
+          selectedReport.evidenceImages.length > 0 && (
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  증거 이미지
+                </Typography>
+                <Grid container spacing={2}>
+                  {selectedReport.evidenceImages.map((imageUrl, index) => (
+                    <Grid item xs={12} sm={6} md={4} key={index}>
+                      <Box
+                        component="img"
+                        src={imageUrl}
+                        alt={`증거 이미지 ${index + 1}`}
+                        sx={{
+                          width: "100%",
+                          height: 200,
+                          objectFit: "cover",
+                          borderRadius: 1,
+                          border: "1px solid #e0e0e0",
+                          cursor: "pointer",
+                        }}
+                        onClick={() => window.open(imageUrl, "_blank")}
+                      />
+                    </Grid>
+                  ))}
+                </Grid>
+              </CardContent>
+            </Card>
+          )}
+      </Box>
+    );
   };
 
   return (
     <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <ReportIcon sx={{ fontSize: 36, mr: 2, color: 'primary.main' }} />
+      <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
+        <ReportIcon sx={{ fontSize: 36, mr: 2, color: "primary.main" }} />
         <Typography variant="h4" sx={{ fontWeight: 600 }}>
           신고 관리
         </Typography>
@@ -221,7 +840,6 @@ export default function ReportsManagement() {
         </Alert>
       )}
 
-      {/* 필터 섹션 */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <Typography variant="h6" gutterBottom>
           필터
@@ -257,16 +875,15 @@ export default function ReportsManagement() {
             <TextField
               fullWidth
               size="small"
-              label="신고당한 사용자 이름"
+              label="피신고자 이름"
               value={reportedNameFilter}
               onChange={handleReportedNameFilterChange}
-              placeholder="신고당한 사용자 이름 검색"
+              placeholder="피신고자 이름 검색"
             />
           </Grid>
         </Grid>
       </Paper>
 
-      {/* 신고 목록 테이블 */}
       <Paper>
         <TableContainer>
           <Table>
@@ -274,7 +891,7 @@ export default function ReportsManagement() {
               <TableRow>
                 <TableCell>신고 ID</TableCell>
                 <TableCell>신고자</TableCell>
-                <TableCell>신고당한 사용자</TableCell>
+                <TableCell>피신고자</TableCell>
                 <TableCell>신고 사유</TableCell>
                 <TableCell>상태</TableCell>
                 <TableCell>신고일시</TableCell>
@@ -298,12 +915,17 @@ export default function ReportsManagement() {
                 reports.map((report) => (
                   <TableRow key={report.id}>
                     <TableCell>
-                      <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                      <Typography
+                        variant="body2"
+                        sx={{ fontFamily: "monospace" }}
+                      >
                         {report.id.slice(0, 8)}...
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
                         <Avatar
                           src={report.reporter.profileImageUrl}
                           sx={{ width: 32, height: 32 }}
@@ -313,13 +935,16 @@ export default function ReportsManagement() {
                             {report.reporter.name}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            {getGenderText(report.reporter.gender)}, {report.reporter.age}세
+                            {getGenderText(report.reporter.gender)},{" "}
+                            {report.reporter.age}세
                           </Typography>
                         </Box>
                       </Box>
                     </TableCell>
                     <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
                         <Avatar
                           src={report.reported.profileImageUrl}
                           sx={{ width: 32, height: 32 }}
@@ -329,19 +954,18 @@ export default function ReportsManagement() {
                             {report.reported.name}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            {getGenderText(report.reported.gender)}, {report.reported.age}세
+                            {getGenderText(report.reported.gender)},{" "}
+                            {report.reported.age}세
                           </Typography>
                         </Box>
                       </Box>
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2">
-                        {report.reason}
+                        {formatReasonDisplay(report)}
                       </Typography>
                     </TableCell>
-                    <TableCell>
-                      {getStatusChip(report.status)}
-                    </TableCell>
+                    <TableCell>{getStatusChip(report.status)}</TableCell>
                     <TableCell>
                       <Typography variant="body2">
                         {formatDate(report.createdAt)}
@@ -378,228 +1002,29 @@ export default function ReportsManagement() {
         />
       </Paper>
 
-      {/* 신고 상세 다이얼로그 */}
       <Dialog
         open={detailDialogOpen}
-        onClose={() => setDetailDialogOpen(false)}
+        onClose={handleCloseDetailDialog}
         maxWidth="md"
         fullWidth
       >
         <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <ReportIcon color="primary" />
             <Typography variant="h6">신고 상세 정보</Typography>
           </Box>
         </DialogTitle>
         <DialogContent>
-          {selectedReport && (
-            <Box sx={{ mt: 2 }}>
-              {/* 신고 기본 정보 */}
-              <Card sx={{ mb: 3 }}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    신고 정보
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
-                      <Typography variant="body2" color="text.secondary">
-                        신고 ID
-                      </Typography>
-                      <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
-                        {selectedReport.id}
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <Typography variant="body2" color="text.secondary">
-                        상태
-                      </Typography>
-                      <Box sx={{ mt: 0.5 }}>
-                        {getStatusChip(selectedReport.status)}
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <Typography variant="body2" color="text.secondary">
-                        신고일시
-                      </Typography>
-                      <Typography variant="body1">
-                        {formatDate(selectedReport.createdAt)}
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <Typography variant="body2" color="text.secondary">
-                        최종 수정일시
-                      </Typography>
-                      <Typography variant="body1">
-                        {selectedReport.updatedAt ? formatDate(selectedReport.updatedAt) : '없음'}
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={12}>
-                      <Typography variant="body2" color="text.secondary">
-                        신고 사유
-                      </Typography>
-                      <Typography variant="body1">
-                        {selectedReport.reason}
-                      </Typography>
-                    </Grid>
-                    {selectedReport.description && (
-                      <Grid item xs={12}>
-                        <Typography variant="body2" color="text.secondary">
-                          상세 설명
-                        </Typography>
-                        <Typography variant="body1">
-                          {selectedReport.description}
-                        </Typography>
-                      </Grid>
-                    )}
-                  </Grid>
-                </CardContent>
-              </Card>
-
-              {/* 신고자 정보 */}
-              <Card sx={{ mb: 3 }}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    신고자 정보
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={3}>
-                      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                        <Avatar
-                          src={selectedReport.reporter.profileImageUrl}
-                          sx={{ width: 80, height: 80 }}
-                        />
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={9}>
-                      <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant="body2" color="text.secondary">
-                            이름
-                          </Typography>
-                          <Typography variant="body1">
-                            {selectedReport.reporter.name}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant="body2" color="text.secondary">
-                            이메일
-                          </Typography>
-                          <Typography variant="body1">
-                            {selectedReport.reporter.email}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant="body2" color="text.secondary">
-                            전화번호
-                          </Typography>
-                          <Typography variant="body1">
-                            {selectedReport.reporter.phoneNumber}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant="body2" color="text.secondary">
-                            나이/성별
-                          </Typography>
-                          <Typography variant="body1">
-                            {selectedReport.reporter.age}세 / {getGenderText(selectedReport.reporter.gender)}
-                          </Typography>
-                        </Grid>
-                      </Grid>
-                    </Grid>
-                  </Grid>
-                </CardContent>
-              </Card>
-
-              {/* 신고당한 사용자 정보 */}
-              <Card sx={{ mb: 3 }}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    신고당한 사용자 정보
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={3}>
-                      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                        <Avatar
-                          src={selectedReport.reported.profileImageUrl}
-                          sx={{ width: 80, height: 80 }}
-                        />
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} sm={9}>
-                      <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant="body2" color="text.secondary">
-                            이름
-                          </Typography>
-                          <Typography variant="body1">
-                            {selectedReport.reported.name}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant="body2" color="text.secondary">
-                            이메일
-                          </Typography>
-                          <Typography variant="body1">
-                            {selectedReport.reported.email}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant="body2" color="text.secondary">
-                            전화번호
-                          </Typography>
-                          <Typography variant="body1">
-                            {selectedReport.reported.phoneNumber}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant="body2" color="text.secondary">
-                            나이/성별
-                          </Typography>
-                          <Typography variant="body1">
-                            {selectedReport.reported.age}세 / {getGenderText(selectedReport.reported.gender)}
-                          </Typography>
-                        </Grid>
-                      </Grid>
-                    </Grid>
-                  </Grid>
-                </CardContent>
-              </Card>
-
-              {/* 증거 이미지 */}
-              {selectedReport.evidenceImages && selectedReport.evidenceImages.length > 0 && (
-                <Card>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      증거 이미지
-                    </Typography>
-                    <Grid container spacing={2}>
-                      {selectedReport.evidenceImages.map((imageUrl, index) => (
-                        <Grid item xs={12} sm={6} md={4} key={index}>
-                          <Box
-                            component="img"
-                            src={imageUrl}
-                            alt={`증거 이미지 ${index + 1}`}
-                            sx={{
-                              width: '100%',
-                              height: 200,
-                              objectFit: 'cover',
-                              borderRadius: 1,
-                              border: '1px solid #e0e0e0'
-                            }}
-                          />
-                        </Grid>
-                      ))}
-                    </Grid>
-                  </CardContent>
-                </Card>
-              )}
+          {detailLoading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+              <CircularProgress />
             </Box>
-          )}
+          ) : selectedReport ? (
+            <Box sx={{ mt: 2 }}>{renderDetailTabs()}</Box>
+          ) : null}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDetailDialogOpen(false)}>
-            닫기
-          </Button>
+          <Button onClick={handleCloseDetailDialog}>닫기</Button>
         </DialogActions>
       </Dialog>
     </Box>

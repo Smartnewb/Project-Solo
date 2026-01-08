@@ -3081,8 +3081,8 @@ const reports = {
           profileImageUrl: "",
         },
         reason: item.reason || "",
-        description: null,
-        evidenceImages: [],
+        description: item.description || null,
+        evidenceImages: item.evidenceImages || [],
         status: item.status || "pending",
         createdAt: item.createdAt,
         updatedAt: null,
@@ -3094,6 +3094,64 @@ const reports = {
       };
     } catch (error: any) {
       console.error("프로필 신고 목록 조회 중 오류:", error);
+      throw error;
+    }
+  },
+
+  getProfileReportDetail: async (reportId: string) => {
+    try {
+      const response = await axiosServer.get(
+        `/admin/community/reports/profiles/${reportId}/detail`,
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error("프로필 신고 상세 조회 중 오류:", error);
+      throw error;
+    }
+  },
+
+  updateReportStatus: async (
+    reportId: string,
+    status: "pending" | "reviewing" | "resolved" | "rejected",
+    adminMemo?: string,
+  ) => {
+    try {
+      const response = await axiosServer.patch(
+        `/admin/community/reports/profiles/${reportId}/status`,
+        { status, adminMemo },
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error("신고 상태 변경 중 오류:", error);
+      throw error;
+    }
+  },
+
+  getChatHistory: async (
+    chatRoomId: string,
+    page: number = 1,
+    limit: number = 50,
+  ) => {
+    try {
+      const response = await axiosServer.get(
+        `/admin/community/chat/${chatRoomId}/messages`,
+        { params: { page, limit } },
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error("채팅 내역 조회 중 오류:", error);
+      throw error;
+    }
+  },
+
+  getUserProfileImages: async (userId: string) => {
+    try {
+      const response = await axiosServer.get(
+        `/admin/community/users/${userId}/profile-images`,
+      );
+      return response.data.images || [];
+    } catch (error: any) {
+      console.error("프로필 이미지 조회 중 오류:", error);
       throw error;
     }
   },
