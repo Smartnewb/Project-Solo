@@ -156,6 +156,8 @@ export interface RevenueComparison {
   weeklyAverage: number;
   dailyAverage: number;
   today: number;
+  lastWeekSameDay: number;
+  sameDayChange: number;
 }
 
 export interface ExtendedRevenueResponse {

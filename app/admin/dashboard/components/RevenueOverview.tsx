@@ -39,6 +39,11 @@ const formatCurrency = (value: number) => {
   return `${value.toLocaleString()}`;
 };
 
+const getDayName = () => {
+  const days = ["일", "월", "화", "수", "목", "금", "토"];
+  return days[new Date().getDay()] + "요일";
+};
+
 interface MetricItemProps {
   label: string;
   value: number;
@@ -201,7 +206,12 @@ export default function RevenueOverview({
                 <Box
                   sx={{ p: 1.5, borderRadius: 1, backgroundColor: "#fefce8" }}
                 >
-                  <MetricItem label="오늘" value={revenue?.today ?? 0} />
+                  <MetricItem
+                    label="오늘"
+                    value={revenue?.today ?? 0}
+                    comparison={revenue?.sameDayChange}
+                    comparisonLabel={`지난주 ${getDayName()}: ₩${formatCurrency(revenue?.lastWeekSameDay ?? 0)}`}
+                  />
                 </Box>
               </Grid>
             </Grid>
