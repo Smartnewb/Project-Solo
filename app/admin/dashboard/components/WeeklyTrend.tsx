@@ -56,7 +56,12 @@ export default function WeeklyTrend({ compact = false }: WeeklyTrendProps) {
       const sevenDaysAgo = new Date(today);
       sevenDaysAgo.setDate(today.getDate() - 6);
 
-      const formatDate = (d: Date) => d.toISOString().split("T")[0];
+      const formatDate = (d: Date) => {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      };
       const startDate = formatDate(sevenDaysAgo);
       const endDate = formatDate(today);
 
