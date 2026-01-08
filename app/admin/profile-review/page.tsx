@@ -7,7 +7,14 @@ import {
   CircularProgress,
   Alert,
   Dialog,
+  IconButton,
+  TextField,
+  InputAdornment,
+  Tooltip,
+  Collapse,
 } from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
+import CloseIcon from "@mui/icons-material/Close";
 import AdminService from "@/app/services/admin";
 import UserTableList from "./components/UserTableList";
 import ImageReviewPanel from "./components/ImageReviewPanel";
@@ -111,7 +118,6 @@ export interface PendingUser {
   status?: string;
   statusAt?: string | null;
   instagram?: string;
-  instagramId?: string | null;
   instagramUrl?: string | null;
   appearanceGrade?: string;
   rejectionReason?: string | null;
@@ -145,6 +151,8 @@ export default function ProfileReviewPage() {
     hasMore: false,
   });
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchExpanded, setSearchExpanded] = useState(false);
+  const [localSearchTerm, setLocalSearchTerm] = useState("");
 
   useEffect(() => {
     fetchPendingUsers();
@@ -368,6 +376,24 @@ export default function ProfileReviewPage() {
     fetchPendingUsers(1, term);
   };
 
+  const handleSearchToggle = () => {
+    if (searchExpanded && localSearchTerm) {
+      setLocalSearchTerm("");
+      handleSearch("");
+    }
+    setSearchExpanded(!searchExpanded);
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSearch(localSearchTerm);
+  };
+
+  const handleSearchClear = () => {
+    setLocalSearchTerm("");
+    handleSearch("");
+  };
+
   const handleRejectConfirm = async (category: string, reason: string) => {
     if (!currentRejectUserId) return;
 
@@ -431,9 +457,51 @@ export default function ProfileReviewPage() {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h5" gutterBottom sx={{ mb: 3 }}>
-        회원 적격 심사
-      </Typography>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          mb: 3,
+        }}
+      >
+        <Typography variant="h5">회원 적격 심사</Typography>
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          <Collapse in={searchExpanded} orientation="horizontal" timeout={200}>
+            <Box
+              component="form"
+              onSubmit={handleSearchSubmit}
+              sx={{ display: "flex", alignItems: "center", mr: 1 }}
+            >
+              <TextField
+                size="small"
+                placeholder="이름, 전화번호, 이메일 검색"
+                value={localSearchTerm}
+                onChange={(e) => setLocalSearchTerm(e.target.value)}
+                autoFocus
+                sx={{ width: 250 }}
+                InputProps={{
+                  endAdornment: localSearchTerm && (
+                    <InputAdornment position="end">
+                      <IconButton size="small" onClick={handleSearchClear}>
+                        <CloseIcon fontSize="small" />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Box>
+          </Collapse>
+          <Tooltip title={searchExpanded ? "검색 닫기" : "검색"}>
+            <IconButton
+              onClick={handleSearchToggle}
+              color={searchTerm ? "primary" : "default"}
+            >
+              <SearchIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </Box>
 
       {error && (
         <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
@@ -449,7 +517,6 @@ export default function ProfileReviewPage() {
             onUserSelect={handleUserSelect}
             pagination={pagination}
             onPageChange={(page) => fetchPendingUsers(page)}
-            onSearch={handleSearch}
             searchTerm={searchTerm}
           />
         </Box>

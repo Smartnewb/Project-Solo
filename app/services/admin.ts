@@ -1900,6 +1900,23 @@ const profileImages = {
       throw error;
     }
   },
+
+  setMainImage: async (userId: string, imageId: string) => {
+    try {
+      console.log("대표 사진 변경 요청:", { userId, imageId });
+
+      const response = await axiosServer.post(
+        `/admin/profile-images/users/${userId}/set-main/${imageId}`,
+      );
+
+      console.log("대표 사진 변경 응답:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("대표 사진 변경 중 오류:", error);
+      console.error("오류 상세 정보:", error.response?.data || error.message);
+      throw error;
+    }
+  },
 };
 
 // 유저 심사 관련 API

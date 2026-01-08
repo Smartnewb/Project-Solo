@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   Paper,
   Table,
@@ -12,13 +11,7 @@ import {
   Chip,
   TablePagination,
   Tooltip,
-  IconButton,
-  TextField,
-  InputAdornment,
-  Collapse,
 } from "@mui/material";
-import SearchIcon from "@mui/icons-material/Search";
-import CloseIcon from "@mui/icons-material/Close";
 import { PendingUser } from "../page";
 import { format } from "date-fns";
 
@@ -33,7 +26,6 @@ interface UserTableListProps {
     hasMore: boolean;
   };
   onPageChange: (page: number) => void;
-  onSearch: (searchTerm: string) => void;
   searchTerm: string;
 }
 
@@ -99,30 +91,8 @@ export default function UserTableList({
   onUserSelect,
   pagination,
   onPageChange,
-  onSearch,
   searchTerm,
 }: UserTableListProps) {
-  const [searchExpanded, setSearchExpanded] = useState(false);
-  const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
-
-  const handleSearchToggle = () => {
-    if (searchExpanded && localSearchTerm) {
-      setLocalSearchTerm("");
-      onSearch("");
-    }
-    setSearchExpanded(!searchExpanded);
-  };
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSearch(localSearchTerm);
-  };
-
-  const handleSearchClear = () => {
-    setLocalSearchTerm("");
-    onSearch("");
-  };
-
   if (users.length === 0 && !searchTerm) {
     return (
       <Paper sx={{ p: 4, textAlign: "center" }}>
@@ -135,50 +105,6 @@ export default function UserTableList({
 
   return (
     <TableContainer component={Paper}>
-      <Box
-        sx={{
-          p: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "flex-end",
-          borderBottom: "1px solid #e0e0e0",
-        }}
-      >
-        <Collapse in={searchExpanded} orientation="horizontal" timeout={200}>
-          <Box
-            component="form"
-            onSubmit={handleSearchSubmit}
-            sx={{ display: "flex", alignItems: "center", mr: 1 }}
-          >
-            <TextField
-              size="small"
-              placeholder="이름, 전화번호, 이메일 검색"
-              value={localSearchTerm}
-              onChange={(e) => setLocalSearchTerm(e.target.value)}
-              autoFocus
-              sx={{ width: 250 }}
-              InputProps={{
-                endAdornment: localSearchTerm && (
-                  <InputAdornment position="end">
-                    <IconButton size="small" onClick={handleSearchClear}>
-                      <CloseIcon fontSize="small" />
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </Box>
-        </Collapse>
-        <Tooltip title={searchExpanded ? "검색 닫기" : "검색"}>
-          <IconButton
-            onClick={handleSearchToggle}
-            color={searchTerm ? "primary" : "default"}
-          >
-            <SearchIcon />
-          </IconButton>
-        </Tooltip>
-      </Box>
-
       {users.length === 0 && searchTerm ? (
         <Box sx={{ p: 4, textAlign: "center" }}>
           <Typography variant="body1" color="text.secondary">
