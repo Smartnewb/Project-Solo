@@ -45,8 +45,11 @@ export default function AppearanceGradePage() {
   const [stats, setStats] = useState<UserAppearanceGradeStatsResponse | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0); // 강제 새로고침을 위한 상태
 
-  // UserAppearanceTable 컴포넌트에 대한 참조
   const tableRef = useRef<{
+    handleApplyFilter: (filters: any) => void;
+  } | null>(null);
+
+  const pendingTableRef = useRef<{
     handleApplyFilter: (filters: any) => void;
   } | null>(null);
 
@@ -184,7 +187,8 @@ export default function AppearanceGradePage() {
       {/* 탭 메뉴 */}
       <Box sx={{ mb: 3 }}>
         <Tabs value={activeTab} onChange={handleTabChange} aria-label="사용자 관리 탭">
-          <Tab label="전체 사용자" />
+          <Tab label="승인된 사용자" />
+          <Tab label="미승인 사용자" />
           <Tab label="승인 관리" />
           <Tab label="프로필 이미지 승인" />
           <Tab label="블랙리스트" />
@@ -201,43 +205,53 @@ export default function AppearanceGradePage() {
           <Box>
             <AppearanceFilterPanel
               onFilter={(filters) => {
-                // 필터가 변경되면 UserAppearanceTable의 handleApplyFilter 함수 호출
-                console.log('필터 변경됨:', filters);
-                console.log('tableRef.current 존재 여부:', !!tableRef.current);
-
                 if (tableRef.current) {
-                  console.log('필터 적용 시도');
                   tableRef.current.handleApplyFilter(filters);
-                } else {
-                  console.error('tableRef.current가 없습니다. 필터를 적용할 수 없습니다.');
                 }
               }}
             />
             <UserAppearanceTable
               initialFilters={{}}
+              userStatus="approved"
               ref={tableRef}
             />
           </Box>
         )}
         {activeTab === 1 && (
-          <ApprovalManagementPanel />
+          <Box>
+            <AppearanceFilterPanel
+              onFilter={(filters) => {
+                if (pendingTableRef.current) {
+                  pendingTableRef.current.handleApplyFilter(filters);
+                }
+              }}
+            />
+            <UserAppearanceTable
+              initialFilters={{}}
+              userStatus="pending"
+              ref={pendingTableRef}
+            />
+          </Box>
         )}
         {activeTab === 2 && (
-          <ProfileImageApprovalPanel />
+          <ApprovalManagementPanel />
         )}
         {activeTab === 3 && (
-          <BlacklistUsersPanel />
+          <ProfileImageApprovalPanel />
         )}
         {activeTab === 4 && (
-          <UnclassifiedUsersPanel />
+          <BlacklistUsersPanel />
         )}
         {activeTab === 5 && (
-          <DuplicatePhoneUsersPanel />
+          <UnclassifiedUsersPanel />
         )}
         {activeTab === 6 && (
-          <VerifiedUsersPanel />
+          <DuplicatePhoneUsersPanel />
         )}
         {activeTab === 7 && (
+          <VerifiedUsersPanel />
+        )}
+        {activeTab === 8 && (
           <UniversityVerificationPendingPanel />
         )}
       </Box>

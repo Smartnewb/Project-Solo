@@ -4,6 +4,9 @@ export type AppearanceGrade = 'S' | 'A' | 'B' | 'C' | 'UNKNOWN';
 // 성별 타입
 export type Gender = 'MALE' | 'FEMALE';
 
+// 유저 상태 타입
+export type UserStatus = 'pending' | 'approved' | 'rejected';
+
 // 프로필 이미지 타입
 export interface ProfileImage {
   id: string;

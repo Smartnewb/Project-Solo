@@ -585,7 +585,7 @@ const userAppearance = {
   getUsersWithAppearanceGrade: async (params: {
     page?: number;
     limit?: number;
-    gender?: "MALE" | "FEMALE"; // 다시 대문자로 변경
+    gender?: "MALE" | "FEMALE";
     appearanceGrade?: "S" | "A" | "B" | "C" | "UNKNOWN";
     universityName?: string;
     minAge?: number;
@@ -596,6 +596,7 @@ const userAppearance = {
     isLongTermInactive?: boolean;
     hasPreferences?: boolean;
     includeDeleted?: boolean;
+    userStatus?: "pending" | "approved" | "rejected";
   }) => {
     try {
       console.log(
@@ -637,6 +638,8 @@ const userAppearance = {
         queryParams.append("hasPreferences", params.hasPreferences.toString());
       if (params.includeDeleted !== undefined)
         queryParams.append("includeDeleted", params.includeDeleted.toString());
+      if (params.userStatus)
+        queryParams.append("userStatus", params.userStatus);
 
       const url = `/admin/users/appearance?${queryParams.toString()}`;
       console.log("최종 API 요청 URL:", url);

@@ -39,7 +39,8 @@ import {
   UserProfileWithAppearance,
   AppearanceGrade,
   Gender,
-  PaginatedResponse
+  PaginatedResponse,
+  UserStatus
 } from '@/app/admin/users/appearance/types';
 import { formatDateWithoutTimezoneConversion, formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
 import { appearanceGradeEventBus } from '@/app/admin/users/appearance/page';
@@ -102,6 +103,7 @@ interface UserAppearanceTableProps {
     hasPreferences?: boolean;
     includeDeleted?: boolean;
   };
+  userStatus?: UserStatus;
 }
 
 // forwardRef를 사용하여 ref를 전달받을 수 있도록 수정
@@ -115,7 +117,7 @@ interface UserAppearanceTableRef {
 const UserAppearanceTable = forwardRef<
   UserAppearanceTableRef,
   UserAppearanceTableProps
->(({ initialFilters }, ref) => {
+>(({ initialFilters, userStatus }, ref) => {
   const [users, setUsers] = useState<UserProfileWithAppearance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -159,9 +161,10 @@ const UserAppearanceTable = forwardRef<
       setError(null);
 
       const response = await AdminService.userAppearance.getUsersWithAppearanceGrade({
-        page: page + 1, // API는 1부터 시작하는 페이지 번호 사용
+        page: page + 1,
         limit: rowsPerPage,
-        ...filters
+        ...filters,
+        ...(userStatus && { userStatus })
       });
 
       setUsers(response.items);
@@ -174,10 +177,9 @@ const UserAppearanceTable = forwardRef<
     }
   };
 
-  // 필터 또는 페이지 변경 시 데이터 조회
   useEffect(() => {
     fetchUsers();
-  }, [page, rowsPerPage, filters]);
+  }, [page, rowsPerPage, filters, userStatus]);
 
   // 페이지 변경 핸들러
   const handleChangePage = (event: unknown, newPage: number) => {
