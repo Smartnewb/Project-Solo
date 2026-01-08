@@ -34,7 +34,11 @@ interface TrendData {
 
 type MetricType = "signups" | "sales";
 
-export default function WeeklyTrend() {
+interface WeeklyTrendProps {
+  compact?: boolean;
+}
+
+export default function WeeklyTrend({ compact = false }: WeeklyTrendProps) {
   const [loading, setLoading] = useState(true);
   const [metric, setMetric] = useState<MetricType>("signups");
   const [signupData, setSignupData] = useState<TrendData[]>([]);
@@ -175,11 +179,11 @@ export default function WeeklyTrend() {
         {loading ? (
           <Skeleton
             variant="rectangular"
-            height={200}
+            height={compact ? 150 : 200}
             sx={{ borderRadius: 2 }}
           />
         ) : (
-          <Box sx={{ width: "100%", height: 200 }}>
+          <Box sx={{ width: "100%", height: compact ? 150 : 200 }}>
             <ResponsiveContainer>
               <AreaChart
                 data={currentData}

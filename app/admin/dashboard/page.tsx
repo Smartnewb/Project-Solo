@@ -134,15 +134,17 @@ export default function MainDashboard() {
         <Grid container spacing={3}>
           <Grid item xs={12} md={7}>
             <TodayMetrics kpi={summary?.kpi ?? null} loading={loading} />
+            <Box sx={{ mt: 3 }}>
+              <WeeklyTrend compact />
+            </Box>
           </Grid>
           <Grid item xs={12} md={5}>
             <RevenueOverview kpi={summary?.kpi ?? null} loading={loading} />
+            <Box sx={{ mt: 3 }}>
+              <QuickAccess />
+            </Box>
           </Grid>
         </Grid>
-
-        <QuickAccess />
-
-        <WeeklyTrend />
       </Box>
     </Box>
   );

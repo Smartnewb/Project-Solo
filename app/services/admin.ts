@@ -1904,12 +1904,16 @@ const profileImages = {
 
 // 유저 심사 관련 API
 const userReview = {
-  getPendingUsers: async (page: number = 1, limit: number = 20) => {
+  getPendingUsers: async (
+    page: number = 1,
+    limit: number = 20,
+    search?: string,
+  ) => {
     try {
-      console.log("심사 대기 유저 목록 조회 요청:", { page, limit });
+      console.log("심사 대기 유저 목록 조회 요청:", { page, limit, search });
 
       const response = await axiosServer.get("/admin/profile-images/pending", {
-        params: { page, limit },
+        params: { page, limit, ...(search ? { search } : {}) },
       });
 
       console.log("심사 대기 유저 목록 응답:", response.data);

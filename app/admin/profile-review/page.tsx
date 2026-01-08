@@ -1,11 +1,17 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Box, Typography, CircularProgress, Alert, Dialog } from '@mui/material';
-import AdminService from '@/app/services/admin';
-import UserTableList from './components/UserTableList';
-import ImageReviewPanel from './components/ImageReviewPanel';
-import RejectReasonModal from './components/RejectReasonModal';
+import { useState, useEffect } from "react";
+import {
+  Box,
+  Typography,
+  CircularProgress,
+  Alert,
+  Dialog,
+} from "@mui/material";
+import AdminService from "@/app/services/admin";
+import UserTableList from "./components/UserTableList";
+import ImageReviewPanel from "./components/ImageReviewPanel";
+import RejectReasonModal from "./components/RejectReasonModal";
 
 export interface PendingProfileImage {
   id: string;
@@ -70,14 +76,14 @@ export interface PendingUser {
   profileId: string;
   userName: string;
   age: number;
-  gender: 'MALE' | 'FEMALE';
+  gender: "MALE" | "FEMALE";
   isApproved: boolean;
   approved: boolean;
   pendingImages: PendingImage[];
   approvedImageUrls: string[];
   profileUsing?: CurrentProfileImage[];
   createdAt: string;
-  rank?: 'S' | 'A' | 'B' | 'C' | 'UNKNOWN';
+  rank?: "S" | "A" | "B" | "C" | "UNKNOWN";
 
   // 선택적 필드
   email?: string;
@@ -129,13 +135,16 @@ export default function ProfileReviewPage() {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
-  const [currentRejectUserId, setCurrentRejectUserId] = useState<string | null>(null);
+  const [currentRejectUserId, setCurrentRejectUserId] = useState<string | null>(
+    null,
+  );
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
     total: 0,
-    hasMore: false
+    hasMore: false,
   });
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     fetchPendingUsers();
@@ -143,29 +152,45 @@ export default function ProfileReviewPage() {
 
   const extractImageIdFromUrl = (url: string): string => {
     const matches = url.match(/\/([0-9a-f-]+)\.(jpg|jpeg|png|gif|webp)$/i);
-    return matches ? matches[1] : `url-${url.split('/').pop()?.split('.')[0] || 'unknown'}`;
+    return matches
+      ? matches[1]
+      : `url-${url.split("/").pop()?.split(".")[0] || "unknown"}`;
   };
 
-  const fetchPendingUsers = async (page: number = 1) => {
+  const fetchPendingUsers = async (page: number = 1, search?: string) => {
     try {
       setLoading(true);
       setError(null);
 
-      console.log('심사 대기 유저 목록 조회 시작... (page:', page, ')');
-      const response: PendingUsersResponse = await AdminService.userReview.getPendingUsers(page);
+      const searchQuery = search !== undefined ? search : searchTerm;
+      console.log(
+        "심사 대기 유저 목록 조회 시작... (page:",
+        page,
+        ", search:",
+        searchQuery,
+        ")",
+      );
+      const response: PendingUsersResponse =
+        await AdminService.userReview.getPendingUsers(
+          page,
+          20,
+          searchQuery || undefined,
+        );
 
-      console.log('API 응답 데이터:', response);
+      console.log("API 응답 데이터:", response);
 
       if (!response || !response.users) {
-        throw new Error('API 응답 형식이 올바르지 않습니다. users 배열이 없습니다.');
+        throw new Error(
+          "API 응답 형식이 올바르지 않습니다. users 배열이 없습니다.",
+        );
       }
 
       // 응답 데이터 정규화 (UI 호환성을 위한 추가 필드)
-      const normalizedUsers: PendingUser[] = response.users.map(user => {
+      const normalizedUsers: PendingUser[] = response.users.map((user) => {
         // 전체 이미지 URL 목록 (승인된 이미지 + 대기 중인 이미지)
         const allImageUrls = [
           ...(user.approvedImageUrls || []),
-          ...(user.pendingImages || []).map(img => img.imageUrl)
+          ...(user.pendingImages || []).map((img) => img.imageUrl),
         ];
 
         return {
@@ -177,36 +202,37 @@ export default function ProfileReviewPage() {
           profileImageUrls: allImageUrls,
           // 기본값 설정
           preferences: user.preferences || [],
-          rejectionHistory: user.rejectionHistory || []
+          rejectionHistory: user.rejectionHistory || [],
         };
       });
 
-      console.log('정규화된 사용자 데이터:', normalizedUsers);
+      console.log("정규화된 사용자 데이터:", normalizedUsers);
 
       setUsers(normalizedUsers);
       setPagination(response.pagination);
       return normalizedUsers;
     } catch (err: any) {
-      console.error('심사 대기 목록 조회 중 오류:', err);
-      console.error('오류 메시지:', err.message);
-      console.error('오류 스택:', err.stack);
-      console.error('HTTP 응답:', err.response);
-      console.error('HTTP 상태:', err.response?.status);
-      console.error('응답 데이터:', err.response?.data);
+      console.error("심사 대기 목록 조회 중 오류:", err);
+      console.error("오류 메시지:", err.message);
+      console.error("오류 스택:", err.stack);
+      console.error("HTTP 응답:", err.response);
+      console.error("HTTP 상태:", err.response?.status);
+      console.error("응답 데이터:", err.response?.data);
 
       // 401 에러 처리 (인증 실패)
       if (err.response?.status === 401) {
-        console.error('인증 오류 발생 - 로그인이 필요합니다.');
-        setError('인증이 만료되었습니다. 다시 로그인해주세요.');
+        console.error("인증 오류 발생 - 로그인이 필요합니다.");
+        setError("인증이 만료되었습니다. 다시 로그인해주세요.");
         // axios interceptor가 자동으로 refresh를 시도하고 실패하면 로그인 페이지로 리다이렉트됩니다.
         return [];
       }
 
-      const errorMessage = err.response?.data?.message
-        || err.message
-        || '심사 대기 목록을 불러오는 중 오류가 발생했습니다.';
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        "심사 대기 목록을 불러오는 중 오류가 발생했습니다.";
 
-      setError(`${errorMessage} (상태코드: ${err.response?.status || 'N/A'})`);
+      setError(`${errorMessage} (상태코드: ${err.response?.status || "N/A"})`);
       return [];
     } finally {
       setLoading(false);
@@ -222,31 +248,38 @@ export default function ProfileReviewPage() {
     if (!selectedUser) return;
 
     // 선택된 사용자의 pendingImages에서 해당 이미지 제거
-    const updatedPendingImages = (selectedUser.pendingImages || []).filter(img => img.id !== imageId);
+    const updatedPendingImages = (selectedUser.pendingImages || []).filter(
+      (img) => img.id !== imageId,
+    );
     const updatedUser = {
       ...selectedUser,
-      pendingImages: updatedPendingImages
+      pendingImages: updatedPendingImages,
     };
 
     // 사용자 목록에서도 업데이트
-    setUsers(prevUsers => prevUsers.map(u => {
-      if (u.userId === selectedUser.userId || u.id === selectedUser.id) {
-        // pendingImages가 비어있으면 해당 사용자를 목록에서 제거
-        if (updatedPendingImages.length === 0) {
-          return null;
-        }
-        return updatedUser;
-      }
-      return u;
-    }).filter(Boolean) as PendingUser[]);
+    setUsers(
+      (prevUsers) =>
+        prevUsers
+          .map((u) => {
+            if (u.userId === selectedUser.userId || u.id === selectedUser.id) {
+              // pendingImages가 비어있으면 해당 사용자를 목록에서 제거
+              if (updatedPendingImages.length === 0) {
+                return null;
+              }
+              return updatedUser;
+            }
+            return u;
+          })
+          .filter(Boolean) as PendingUser[],
+    );
 
     // pendingImages가 비어있으면 선택 해제, 아니면 업데이트된 사용자로 설정
     if (updatedPendingImages.length === 0) {
       setSelectedUser(null);
       // 페이지네이션 total 업데이트
-      setPagination(prev => ({
+      setPagination((prev) => ({
         ...prev,
-        total: Math.max(0, prev.total - 1)
+        total: Math.max(0, prev.total - 1),
       }));
     } else {
       setSelectedUser(updatedUser);
@@ -257,31 +290,38 @@ export default function ProfileReviewPage() {
     if (!selectedUser) return;
 
     // 선택된 사용자의 pendingImages에서 해당 이미지 제거
-    const updatedPendingImages = (selectedUser.pendingImages || []).filter(img => img.id !== imageId);
+    const updatedPendingImages = (selectedUser.pendingImages || []).filter(
+      (img) => img.id !== imageId,
+    );
     const updatedUser = {
       ...selectedUser,
-      pendingImages: updatedPendingImages
+      pendingImages: updatedPendingImages,
     };
 
     // 사용자 목록에서도 업데이트
-    setUsers(prevUsers => prevUsers.map(u => {
-      if (u.userId === selectedUser.userId || u.id === selectedUser.id) {
-        // pendingImages가 비어있으면 해당 사용자를 목록에서 제거
-        if (updatedPendingImages.length === 0) {
-          return null;
-        }
-        return updatedUser;
-      }
-      return u;
-    }).filter(Boolean) as PendingUser[]);
+    setUsers(
+      (prevUsers) =>
+        prevUsers
+          .map((u) => {
+            if (u.userId === selectedUser.userId || u.id === selectedUser.id) {
+              // pendingImages가 비어있으면 해당 사용자를 목록에서 제거
+              if (updatedPendingImages.length === 0) {
+                return null;
+              }
+              return updatedUser;
+            }
+            return u;
+          })
+          .filter(Boolean) as PendingUser[],
+    );
 
     // pendingImages가 비어있으면 선택 해제, 아니면 업데이트된 사용자로 설정
     if (updatedPendingImages.length === 0) {
       setSelectedUser(null);
       // 페이지네이션 total 업데이트
-      setPagination(prev => ({
+      setPagination((prev) => ({
         ...prev,
-        total: Math.max(0, prev.total - 1)
+        total: Math.max(0, prev.total - 1),
       }));
     } else {
       setSelectedUser(updatedUser);
@@ -294,7 +334,9 @@ export default function ProfileReviewPage() {
       await AdminService.userReview.approveUser(userId);
 
       // 상태에서 해당 사용자 제거 (승인 완료)
-      setUsers(prevUsers => prevUsers.filter(u => u.userId !== userId && u.id !== userId));
+      setUsers((prevUsers) =>
+        prevUsers.filter((u) => u.userId !== userId && u.id !== userId),
+      );
 
       // 선택된 사용자가 승인된 경우 선택 해제
       if (selectedUser?.userId === userId || selectedUser?.id === userId) {
@@ -302,13 +344,15 @@ export default function ProfileReviewPage() {
       }
 
       // 페이지네이션 total 업데이트
-      setPagination(prev => ({
+      setPagination((prev) => ({
         ...prev,
-        total: Math.max(0, prev.total - 1)
+        total: Math.max(0, prev.total - 1),
       }));
     } catch (err: any) {
-      console.error('유저 승인 중 오류:', err);
-      setError(err.response?.data?.message || '유저 승인 중 오류가 발생했습니다.');
+      console.error("유저 승인 중 오류:", err);
+      setError(
+        err.response?.data?.message || "유저 승인 중 오류가 발생했습니다.",
+      );
     } finally {
       setProcessing(false);
     }
@@ -319,32 +363,51 @@ export default function ProfileReviewPage() {
     setRejectModalOpen(true);
   };
 
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    fetchPendingUsers(1, term);
+  };
+
   const handleRejectConfirm = async (category: string, reason: string) => {
     if (!currentRejectUserId) return;
 
     try {
       setProcessing(true);
       setRejectModalOpen(false);
-      await AdminService.userReview.rejectUser(currentRejectUserId, category, reason);
+      await AdminService.userReview.rejectUser(
+        currentRejectUserId,
+        category,
+        reason,
+      );
 
       // 상태에서 해당 사용자 제거 (거절 완료)
-      setUsers(prevUsers => prevUsers.filter(u => u.userId !== currentRejectUserId && u.id !== currentRejectUserId));
+      setUsers((prevUsers) =>
+        prevUsers.filter(
+          (u) =>
+            u.userId !== currentRejectUserId && u.id !== currentRejectUserId,
+        ),
+      );
 
       // 선택된 사용자가 거절된 경우 선택 해제
-      if (selectedUser?.userId === currentRejectUserId || selectedUser?.id === currentRejectUserId) {
+      if (
+        selectedUser?.userId === currentRejectUserId ||
+        selectedUser?.id === currentRejectUserId
+      ) {
         setSelectedUser(null);
       }
 
       // 페이지네이션 total 업데이트
-      setPagination(prev => ({
+      setPagination((prev) => ({
         ...prev,
-        total: Math.max(0, prev.total - 1)
+        total: Math.max(0, prev.total - 1),
       }));
 
       setCurrentRejectUserId(null);
     } catch (err: any) {
-      console.error('유저 반려 중 오류:', err);
-      setError(err.response?.data?.message || '유저 반려 중 오류가 발생했습니다.');
+      console.error("유저 반려 중 오류:", err);
+      setError(
+        err.response?.data?.message || "유저 반려 중 오류가 발생했습니다.",
+      );
     } finally {
       setProcessing(false);
     }
@@ -352,7 +415,14 @@ export default function ProfileReviewPage() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "60vh",
+        }}
+      >
         <CircularProgress />
         <Typography sx={{ ml: 2 }}>심사 대기 목록을 불러오는 중...</Typography>
       </Box>
@@ -371,18 +441,20 @@ export default function ProfileReviewPage() {
         </Alert>
       )}
 
-      <Box sx={{ display: 'flex', gap: 3, height: 'calc(100vh - 200px)' }}>
-        <Box sx={{ flex: '7', overflow: 'auto' }}>
+      <Box sx={{ display: "flex", gap: 3, height: "calc(100vh - 200px)" }}>
+        <Box sx={{ flex: "7", overflow: "auto" }}>
           <UserTableList
             users={users}
             selectedUser={selectedUser}
             onUserSelect={handleUserSelect}
             pagination={pagination}
             onPageChange={(page) => fetchPendingUsers(page)}
+            onSearch={handleSearch}
+            searchTerm={searchTerm}
           />
         </Box>
 
-        <Box sx={{ flex: '3', overflow: 'auto' }}>
+        <Box sx={{ flex: "3", overflow: "auto" }}>
           <ImageReviewPanel
             user={selectedUser}
             onApprove={handleApproveUser}
@@ -408,22 +480,22 @@ export default function ProfileReviewPage() {
         open={processing}
         PaperProps={{
           sx: {
-            backgroundColor: 'transparent',
-            boxShadow: 'none',
-            overflow: 'hidden'
-          }
+            backgroundColor: "transparent",
+            boxShadow: "none",
+            overflow: "hidden",
+          },
         }}
       >
         <Box
           sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
             p: 4,
-            backgroundColor: 'white',
+            backgroundColor: "white",
             borderRadius: 2,
-            minWidth: 200
+            minWidth: 200,
           }}
         >
           <CircularProgress size={60} />

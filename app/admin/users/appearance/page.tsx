@@ -53,15 +53,11 @@ export default function AppearanceGradePage() {
     handleApplyFilter: (filters: any) => void;
   } | null>(null);
 
-  const pendingTableRef = useRef<{
-    handleApplyFilter: (filters: any) => void;
-  } | null>(null);
-
   useEffect(() => {
     const tabParam = searchParams.get("tab");
     if (tabParam) {
       const tabIndex = parseInt(tabParam, 10);
-      if (!isNaN(tabIndex) && tabIndex >= 0 && tabIndex <= 6) {
+      if (!isNaN(tabIndex) && tabIndex >= 0 && tabIndex <= 5) {
         setActiveTab(tabIndex);
       }
     }
@@ -216,7 +212,6 @@ export default function AppearanceGradePage() {
           aria-label="사용자 관리 탭"
         >
           <Tab label="승인된 사용자" />
-          <Tab label="미승인 사용자" />
           <Tab label="블랙리스트" />
           <Tab label="미분류 사용자" />
           <Tab label="중복 휴대폰 번호" />
@@ -243,27 +238,11 @@ export default function AppearanceGradePage() {
             />
           </Box>
         )}
-        {activeTab === 1 && (
-          <Box>
-            <AppearanceFilterPanel
-              onFilter={(filters) => {
-                if (pendingTableRef.current) {
-                  pendingTableRef.current.handleApplyFilter(filters);
-                }
-              }}
-            />
-            <UserAppearanceTable
-              initialFilters={{}}
-              userStatus="pending"
-              ref={pendingTableRef}
-            />
-          </Box>
-        )}
-        {activeTab === 2 && <BlacklistUsersPanel />}
-        {activeTab === 3 && <UnclassifiedUsersPanel />}
-        {activeTab === 4 && <DuplicatePhoneUsersPanel />}
-        {activeTab === 5 && <VerifiedUsersPanel />}
-        {activeTab === 6 && <UniversityVerificationPendingPanel />}
+        {activeTab === 1 && <BlacklistUsersPanel />}
+        {activeTab === 2 && <UnclassifiedUsersPanel />}
+        {activeTab === 3 && <DuplicatePhoneUsersPanel />}
+        {activeTab === 4 && <VerifiedUsersPanel />}
+        {activeTab === 5 && <UniversityVerificationPendingPanel />}
       </Box>
     </Box>
   );
