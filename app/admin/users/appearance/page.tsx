@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Box,
   Typography,
@@ -37,7 +38,10 @@ export const appearanceGradeEventBus = {
 };
 
 export default function AppearanceGradePage() {
-  const [activeTab, setActiveTab] = useState(0);
+  const searchParams = useSearchParams();
+  const initialTab = parseInt(searchParams.get("tab") || "0", 10);
+  
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<UserAppearanceGradeStatsResponse | null>(
@@ -52,6 +56,16 @@ export default function AppearanceGradePage() {
   const pendingTableRef = useRef<{
     handleApplyFilter: (filters: any) => void;
   } | null>(null);
+
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam) {
+      const tabIndex = parseInt(tabParam, 10);
+      if (!isNaN(tabIndex) && tabIndex >= 0 && tabIndex <= 6) {
+        setActiveTab(tabIndex);
+      }
+    }
+  }, [searchParams]);
 
   // 통계 데이터 로드 함수
   const fetchStats = async () => {

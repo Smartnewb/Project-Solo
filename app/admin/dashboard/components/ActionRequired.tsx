@@ -7,9 +7,11 @@ import {
   AssignmentInd as ProfileReviewIcon,
   ReportProblem as ReportIcon,
   SupportAgent as SupportIcon,
+  School as SchoolIcon,
 } from "@mui/icons-material";
 import { ActionItem } from "../types";
 import supportChatService from "@/app/services/support-chat";
+import AdminService from "@/app/services/admin";
 
 interface ActionRequiredProps {
   actionItems: ActionItem[] | null;
@@ -114,6 +116,8 @@ export default function ActionRequired({
 }: ActionRequiredProps) {
   const [pendingQA, setPendingQA] = useState(0);
   const [qaLoading, setQaLoading] = useState(true);
+  const [pendingCertification, setPendingCertification] = useState(0);
+  const [certificationLoading, setCertificationLoading] = useState(true);
 
   useEffect(() => {
     const fetchQACount = async () => {
@@ -132,7 +136,29 @@ export default function ActionRequired({
       }
     };
 
+    const fetchCertificationCount = async () => {
+      try {
+        setCertificationLoading(true);
+        const response =
+          await AdminService.userAppearance.getUniversityVerificationPendingUsers(
+            {
+              page: 1,
+              limit: 1,
+            },
+          );
+        setPendingCertification(
+          response.pagination?.total ?? response.total ?? 0,
+        );
+      } catch (error) {
+        console.error("학생증 인증 대기 건수 조회 실패:", error);
+        setPendingCertification(0);
+      } finally {
+        setCertificationLoading(false);
+      }
+    };
+
     fetchQACount();
+    fetchCertificationCount();
   }, []);
 
   const pendingApprovals =
@@ -140,7 +166,8 @@ export default function ActionRequired({
   const pendingProfileReports =
     actionItems?.find((item) => item.type === "pending_reports")?.count ?? 0;
 
-  const totalPending = pendingApprovals + pendingProfileReports + pendingQA;
+  const totalPending =
+    pendingApprovals + pendingProfileReports + pendingQA + pendingCertification;
 
   return (
     <Card sx={{ mb: 3 }}>
@@ -207,6 +234,15 @@ export default function ActionRequired({
             color="#8b5cf6"
             bgColor="#f5f3ff"
             loading={qaLoading}
+          />
+          <ActionItemCard
+            title="학생증 인증"
+            count={pendingCertification}
+            icon={<SchoolIcon fontSize="small" />}
+            link="/admin/users/appearance?tab=6"
+            color="#f59e0b"
+            bgColor="#fffbeb"
+            loading={certificationLoading}
           />
         </Box>
       </CardContent>
