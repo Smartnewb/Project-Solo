@@ -80,11 +80,11 @@ export default function WeeklyTrend() {
         const displayDate = `${date.getMonth() + 1}/${date.getDate()}`;
 
         const signupItem = signupResponse?.data?.find(
-          (item: any) => item.date === dateStr || item.label === dateStr,
+          (item: any) => item.date === dateStr,
         );
         processedSignups.push({
           date: displayDate,
-          value: signupItem?.count ?? signupItem?.value ?? 0,
+          value: signupItem?.count ?? 0,
         });
 
         const salesItem = salesResponse?.data?.find(

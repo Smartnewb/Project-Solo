@@ -143,3 +143,21 @@ export const GOAL_TYPE_LABELS: Record<GoalType, string> = {
   SIGNUP: "가입자 수",
   REVENUE: "매출",
 };
+
+// === 확장 매출 현황 타입 ===
+export interface RevenueComparison {
+  thisMonth: number;
+  lastMonth: number;
+  monthOverMonthChange: number;
+  monthlyAverage: number;
+  thisWeek: number;
+  lastWeek: number;
+  weekOverWeekChange: number;
+  weeklyAverage: number;
+  dailyAverage: number;
+  today: number;
+}
+
+export interface ExtendedRevenueResponse {
+  revenue: RevenueComparison;
+}

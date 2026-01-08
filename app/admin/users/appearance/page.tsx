@@ -40,7 +40,7 @@ export const appearanceGradeEventBus = {
 export default function AppearanceGradePage() {
   const searchParams = useSearchParams();
   const initialTab = parseInt(searchParams.get("tab") || "0", 10);
-  
+
   const [activeTab, setActiveTab] = useState(initialTab);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -259,46 +259,11 @@ export default function AppearanceGradePage() {
             />
           </Box>
         )}
-        {activeTab === 2 && (
-          <BlacklistUsersPanel />
-        )}
-        {activeTab === 3 && (
-          <UnclassifiedUsersPanel />
-        )}
-        {activeTab === 4 && (
-          <DuplicatePhoneUsersPanel />
-        )}
-        {activeTab === 5 && (
-          <VerifiedUsersPanel />
-        )}
-        {activeTab === 6 && (
-          <UniversityVerificationPendingPanel />
-        )}
-      </Box>
-        )}
-        {activeTab === 1 && (
-          <Box>
-            <AppearanceFilterPanel
-              onFilter={(filters) => {
-                if (pendingTableRef.current) {
-                  pendingTableRef.current.handleApplyFilter(filters);
-                }
-              }}
-            />
-            <UserAppearanceTable
-              initialFilters={{}}
-              userStatus="pending"
-              ref={pendingTableRef}
-            />
-          </Box>
-        )}
-        {activeTab === 2 && <ApprovalManagementPanel />}
-        {activeTab === 3 && <ProfileImageApprovalPanel />}
-        {activeTab === 4 && <BlacklistUsersPanel />}
-        {activeTab === 5 && <UnclassifiedUsersPanel />}
-        {activeTab === 6 && <DuplicatePhoneUsersPanel />}
-        {activeTab === 7 && <VerifiedUsersPanel />}
-        {activeTab === 8 && <UniversityVerificationPendingPanel />}
+        {activeTab === 2 && <BlacklistUsersPanel />}
+        {activeTab === 3 && <UnclassifiedUsersPanel />}
+        {activeTab === 4 && <DuplicatePhoneUsersPanel />}
+        {activeTab === 5 && <VerifiedUsersPanel />}
+        {activeTab === 6 && <UniversityVerificationPendingPanel />}
       </Box>
     </Box>
   );
