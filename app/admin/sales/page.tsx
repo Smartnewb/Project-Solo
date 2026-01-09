@@ -10,6 +10,7 @@ import { AgeAnalysisComponent } from "./components/AgeAnalysis";
 import { MonthlyPaymentGraph } from "./components/MonthlyPaymentGraph";
 import { DailySalesTrendGraph } from "./components/DailySalesTrendGraph";
 import { SalesGrowthAnalysis } from "./components/SalesGrowthAnalysis";
+import { PeriodSalesSummary } from "./components/PeriodSalesSummary";
 
 import { RevenueMetricsTab } from "./components/RevenueMetricsTab";
 import { ProductAnalysisTab } from "./components/ProductAnalysisTab";
@@ -118,6 +119,12 @@ export default function SalesPage() {
           />
         ) : (
           <div className="space-y-8">
+            {/* 주간/월간 매출 요약 */}
+            <PeriodSalesSummary
+              startDate={dateRange.startDate}
+              endDate={dateRange.endDate}
+            />
+
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="px-6 py-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">

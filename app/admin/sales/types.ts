@@ -63,6 +63,11 @@ export interface WeeklySalesResponse {
   // 확장 필드
   weeklyPaidUsers?: number;
   regionalData?: RegionSales[];
+  // 예측치 필드
+  projectedWeeklySales?: number;
+  projectedWeeklyCount?: number;
+  elapsedDays?: number;
+  remainingDays?: number;
 }
 
 // MARK: - 월간 매출액 조회 응답
@@ -72,6 +77,12 @@ export interface MonthlySalesResponse {
   // 확장 필드
   monthlyPaidUsers?: number;
   regionalData?: RegionSales[];
+  // 예측치 필드
+  projectedMonthlySales?: number;
+  projectedMonthlyCount?: number;
+  elapsedDays?: number;
+  remainingDays?: number;
+  totalDaysInMonth?: number;
 }
 
 // MARK: - 사용자 지정 기간 매출액 조회 요청
