@@ -117,10 +117,10 @@ export function PeriodSalesSummary({
           </button>
         </div>
         <div className="text-2xl font-bold text-purple-600 mb-1">
-          {weeklyData ? formatCurrency(weeklyData.weeklySales) : "-"}
+          {weeklyData ? formatCurrency(weeklyData.weeklySales ?? 0) : "-"}
         </div>
         <div className="text-sm text-gray-500 mb-2">
-          {weeklyData ? `${weeklyData.weeklyCount.toLocaleString()}건` : "-"}
+          {weeklyData ? `${(weeklyData.weeklyCount ?? 0).toLocaleString()}건` : "-"}
         </div>
 
         {/* 예측치 표시 */}
@@ -153,10 +153,10 @@ export function PeriodSalesSummary({
           <h3 className="text-sm font-medium text-gray-500">이번 달 매출</h3>
         </div>
         <div className="text-2xl font-bold text-blue-600 mb-1">
-          {monthlyData ? formatCurrency(monthlyData.monthlySales) : "-"}
+          {monthlyData ? formatCurrency(monthlyData.monthlySales ?? 0) : "-"}
         </div>
         <div className="text-sm text-gray-500 mb-2">
-          {monthlyData ? `${monthlyData.monthlyCount.toLocaleString()}건` : "-"}
+          {monthlyData ? `${(monthlyData.monthlyCount ?? 0).toLocaleString()}건` : "-"}
         </div>
 
         {/* 예측치 표시 */}
