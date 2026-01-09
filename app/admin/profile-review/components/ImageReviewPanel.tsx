@@ -271,17 +271,28 @@ export default function ImageReviewPanel({
   const handleSetMainImage = async (imageId: string) => {
     if (!user) return;
 
+    const targetImage = (user.pendingImages || user.profileImages || []).find(
+      (img) => img.id === imageId,
+    );
+    const isPendingImage = targetImage !== undefined;
+
     const confirmed = window.confirm(
-      "이 이미지를 대표 사진으로 설정하시겠습니까?\n\n" +
-        "현재 대표 사진과 위치가 서로 교체됩니다.",
+      isPendingImage
+        ? "이 이미지를 대표 사진으로 승인하시겠습니까?\n\n대표 프로필 승인 시 회원 상태가 \"승인됨\"으로 자동 변경됩니다."
+        : "이 이미지를 대표 사진으로 설정하시겠습니까?\n\n현재 대표 사진과 위치가 서로 교체됩니다.",
     );
     if (!confirmed) return;
 
     try {
       setProcessing(true);
       await AdminService.profileImages.setMainImage(user.userId, imageId);
-      alert("대표 사진이 변경되었습니다.\n페이지를 새로고침합니다.");
-      window.location.reload();
+
+      if (isPendingImage) {
+        onImageApproved(imageId);
+        alert("대표 사진으로 승인되었습니다.");
+      } else {
+        alert("대표 사진이 변경되었습니다.");
+      }
     } catch (error: any) {
       console.error("대표 사진 변경 중 오류:", error);
       alert(
@@ -1155,6 +1166,8 @@ export default function ImageReviewPanel({
               {[
                 "얼굴 식별 불가",
                 "화질 불량",
+                "동물 사진",
+                "동일 사진",
                 "부적절한 노출",
                 "타인 사진 도용",
               ].map((template) => (
@@ -1213,6 +1226,8 @@ export default function ImageReviewPanel({
                   "단체 사진",
                   "풍경/사물 사진",
                   "어린 시절 사진",
+                  "동물 사진",
+                  "동일 사진",
                 ].map((template) => (
                   <Chip
                     key={template}
