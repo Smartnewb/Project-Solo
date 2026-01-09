@@ -141,6 +141,40 @@ export default function ReportsManagement() {
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [newStatus, setNewStatus] = useState<ReportStatus>("pending");
 
+  const [userDetailOpen, setUserDetailOpen] = useState(false);
+  const [userDetailLoading, setUserDetailLoading] = useState(false);
+  const [selectedUserDetail, setSelectedUserDetail] = useState<{
+    id: string;
+    name: string;
+    age: number;
+    gender: "MALE" | "FEMALE";
+    instagramId?: string;
+    profileImages: {
+      id: string;
+      url: string;
+      order: number;
+      isMain: boolean;
+    }[];
+    universityDetails?: {
+      name: string;
+      department: string;
+      authentication: boolean;
+    };
+    preferences?: {
+      self?: {
+        typeName: string;
+        selectedOptions: { id: string; displayName: string }[];
+      }[];
+      partner?: {
+        typeName: string;
+        selectedOptions: { id: string; displayName: string }[];
+      }[];
+    };
+  } | null>(null);
+  const [selectedUserImage, setSelectedUserImage] = useState<string | null>(
+    null,
+  );
+
   const fetchReports = async () => {
     try {
       setLoading(true);
@@ -297,6 +331,35 @@ export default function ReportsManagement() {
     } finally {
       setStatusUpdating(false);
     }
+  };
+
+  const handleOpenUserDetail = async (userId: string) => {
+    setUserDetailOpen(true);
+    setUserDetailLoading(true);
+    setSelectedUserImage(null);
+
+    try {
+      const userDetail = await AdminService.userReview.getUserDetail(userId);
+      setSelectedUserDetail(userDetail);
+      if (userDetail.profileImages?.length > 0) {
+        const mainImage = userDetail.profileImages.find(
+          (img: { isMain: boolean }) => img.isMain,
+        );
+        setSelectedUserImage(mainImage?.url || userDetail.profileImages[0].url);
+      }
+    } catch (err: unknown) {
+      console.error("사용자 상세 정보 조회 오류:", err);
+      alert("사용자 정보를 불러오는데 실패했습니다.");
+      setUserDetailOpen(false);
+    } finally {
+      setUserDetailLoading(false);
+    }
+  };
+
+  const handleCloseUserDetail = () => {
+    setUserDetailOpen(false);
+    setSelectedUserDetail(null);
+    setSelectedUserImage(null);
   };
 
   const getStatusChip = (status: string) => {
@@ -479,7 +542,6 @@ export default function ReportsManagement() {
     const showChatTab =
       requiresChatHistory(selectedReport.reason) && selectedReport.chatRoomId;
     const showProfileImagesTab = requiresProfileImages(selectedReport.reason);
-    const showDescriptionTab = selectedReport.reason === "기타";
 
     const tabs = [{ label: "기본 정보", icon: <DescriptionIcon /> }];
 
@@ -489,26 +551,27 @@ export default function ReportsManagement() {
     if (showProfileImagesTab) {
       tabs.push({ label: "피신고자 프로필 이미지", icon: <PhotoIcon /> });
     }
-    if (showDescriptionTab && selectedReport.description) {
-      tabs.push({ label: "상세 사유", icon: <DescriptionIcon /> });
-    }
+
+    const hasTabs = tabs.length > 1;
 
     return (
       <>
-        <Tabs
-          value={activeTab}
-          onChange={(_e, newValue) => setActiveTab(newValue)}
-          sx={{ borderBottom: 1, borderColor: "divider", mb: 2 }}
-        >
-          {tabs.map((tab, index) => (
-            <Tab
-              key={index}
-              label={tab.label}
-              icon={tab.icon}
-              iconPosition="start"
-            />
-          ))}
-        </Tabs>
+        {hasTabs && (
+          <Tabs
+            value={activeTab}
+            onChange={(_e, newValue) => setActiveTab(newValue)}
+            sx={{ borderBottom: 1, borderColor: "divider", mb: 2 }}
+          >
+            {tabs.map((tab, index) => (
+              <Tab
+                key={index}
+                label={tab.label}
+                icon={tab.icon}
+                iconPosition="start"
+              />
+            ))}
+          </Tabs>
+        )}
 
         {activeTab === 0 && renderBasicInfo()}
 
@@ -557,21 +620,6 @@ export default function ReportsManagement() {
             )}
           </Box>
         )}
-
-        {showDescriptionTab &&
-          selectedReport.description &&
-          activeTab === tabs.length - 1 && (
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  상세 사유
-                </Typography>
-                <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
-                  {selectedReport.description}
-                </Typography>
-              </CardContent>
-            </Card>
-          )}
       </>
     );
   };
@@ -662,26 +710,53 @@ export default function ReportsManagement() {
                 </Typography>
                 <Typography variant="body1">{selectedReport.reason}</Typography>
               </Grid>
-              {selectedReport.description &&
-                selectedReport.reason !== "기타" && (
-                  <Grid item xs={12}>
-                    <Typography variant="body2" color="text.secondary">
-                      상세 설명
-                    </Typography>
-                    <Typography variant="body1">
-                      {selectedReport.description}
-                    </Typography>
-                  </Grid>
-                )}
+              {selectedReport.description && (
+                <Grid item xs={12}>
+                  <Typography variant="body2" color="text.secondary">
+                    상세 설명
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    sx={{
+                      whiteSpace: "pre-wrap",
+                      bgcolor: "#f5f5f5",
+                      p: 1.5,
+                      borderRadius: 1,
+                      mt: 0.5,
+                    }}
+                  >
+                    {selectedReport.description}
+                  </Typography>
+                </Grid>
+              )}
             </Grid>
           </CardContent>
         </Card>
 
-        <Card sx={{ mb: 3 }}>
+        <Card
+          sx={{
+            mb: 3,
+            cursor: "pointer",
+            transition: "box-shadow 0.2s",
+            "&:hover": { boxShadow: 4 },
+          }}
+          onClick={() => handleOpenUserDetail(selectedReport.reporter.id)}
+        >
           <CardContent>
-            <Typography variant="h6" gutterBottom>
-              신고자 정보
-            </Typography>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Typography variant="h6" gutterBottom>
+                신고자 정보
+              </Typography>
+              <Typography variant="caption" color="primary">
+                클릭하여 상세 보기
+              </Typography>
+            </Box>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={3}>
                 <Box sx={{ display: "flex", justifyContent: "center" }}>
@@ -734,11 +809,30 @@ export default function ReportsManagement() {
           </CardContent>
         </Card>
 
-        <Card sx={{ mb: 3 }}>
+        <Card
+          sx={{
+            mb: 3,
+            cursor: "pointer",
+            transition: "box-shadow 0.2s",
+            "&:hover": { boxShadow: 4 },
+          }}
+          onClick={() => handleOpenUserDetail(selectedReport.reported.id)}
+        >
           <CardContent>
-            <Typography variant="h6" gutterBottom>
-              피신고자 정보
-            </Typography>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Typography variant="h6" gutterBottom>
+                피신고자 정보
+              </Typography>
+              <Typography variant="caption" color="primary">
+                클릭하여 상세 보기
+              </Typography>
+            </Box>
             <Grid container spacing={2}>
               <Grid item xs={12} sm={3}>
                 <Box sx={{ display: "flex", justifyContent: "center" }}>
@@ -1025,6 +1119,269 @@ export default function ReportsManagement() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDetailDialog}>닫기</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={userDetailOpen}
+        onClose={handleCloseUserDetail}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <VisibilityIcon color="primary" />
+            <Typography variant="h6">사용자 상세 정보</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {userDetailLoading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : selectedUserDetail ? (
+            <Box sx={{ mt: 2 }}>
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={5}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 2,
+                    }}
+                  >
+                    <Box
+                      component="img"
+                      src={
+                        selectedUserImage ||
+                        selectedUserDetail.profileImages?.[0]?.url
+                      }
+                      alt={selectedUserDetail.name}
+                      sx={{
+                        width: 200,
+                        height: 200,
+                        objectFit: "cover",
+                        borderRadius: 2,
+                        border: "1px solid #e0e0e0",
+                      }}
+                    />
+                    {selectedUserDetail.profileImages &&
+                      selectedUserDetail.profileImages.length > 1 && (
+                        <Box
+                          sx={{
+                            display: "flex",
+                            gap: 1,
+                            flexWrap: "wrap",
+                            justifyContent: "center",
+                          }}
+                        >
+                          {selectedUserDetail.profileImages.map((img) => (
+                            <Box
+                              key={img.id}
+                              component="img"
+                              src={img.url}
+                              alt="프로필 이미지"
+                              sx={{
+                                width: 50,
+                                height: 50,
+                                objectFit: "cover",
+                                borderRadius: 1,
+                                cursor: "pointer",
+                                border:
+                                  selectedUserImage === img.url
+                                    ? "2px solid #1976d2"
+                                    : "1px solid #e0e0e0",
+                                "&:hover": { opacity: 0.8 },
+                              }}
+                              onClick={() => setSelectedUserImage(img.url)}
+                            />
+                          ))}
+                        </Box>
+                      )}
+                  </Box>
+                </Grid>
+                <Grid item xs={12} md={7}>
+                  <Card sx={{ mb: 2 }}>
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom>
+                        기본 정보
+                      </Typography>
+                      <Grid container spacing={2}>
+                        <Grid item xs={6}>
+                          <Typography variant="body2" color="text.secondary">
+                            이름
+                          </Typography>
+                          <Typography variant="body1">
+                            {selectedUserDetail.name}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={6}>
+                          <Typography variant="body2" color="text.secondary">
+                            나이/성별
+                          </Typography>
+                          <Typography variant="body1">
+                            {selectedUserDetail.age}세 /{" "}
+                            {getGenderText(selectedUserDetail.gender)}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={12}>
+                          <Typography variant="body2" color="text.secondary">
+                            인스타그램
+                          </Typography>
+                          <Typography variant="body1">
+                            {selectedUserDetail.instagramId ? (
+                              <a
+                                href={`https://instagram.com/${selectedUserDetail.instagramId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ color: "#1976d2" }}
+                              >
+                                @{selectedUserDetail.instagramId}
+                              </a>
+                            ) : (
+                              "-"
+                            )}
+                          </Typography>
+                        </Grid>
+                      </Grid>
+                    </CardContent>
+                  </Card>
+
+                  {selectedUserDetail.universityDetails && (
+                    <Card sx={{ mb: 2 }}>
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom>
+                          대학교 정보
+                        </Typography>
+                        <Grid container spacing={2}>
+                          <Grid item xs={6}>
+                            <Typography variant="body2" color="text.secondary">
+                              학교명
+                            </Typography>
+                            <Typography variant="body1">
+                              {selectedUserDetail.universityDetails.name}
+                            </Typography>
+                          </Grid>
+                          <Grid item xs={6}>
+                            <Typography variant="body2" color="text.secondary">
+                              학과
+                            </Typography>
+                            <Typography variant="body1">
+                              {selectedUserDetail.universityDetails.department}
+                            </Typography>
+                          </Grid>
+                          <Grid item xs={12}>
+                            <Typography variant="body2" color="text.secondary">
+                              인증 상태
+                            </Typography>
+                            <Chip
+                              label={
+                                selectedUserDetail.universityDetails
+                                  .authentication
+                                  ? "인증됨"
+                                  : "미인증"
+                              }
+                              color={
+                                selectedUserDetail.universityDetails
+                                  .authentication
+                                  ? "success"
+                                  : "default"
+                              }
+                              size="small"
+                            />
+                          </Grid>
+                        </Grid>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {selectedUserDetail.preferences?.self &&
+                    selectedUserDetail.preferences.self.length > 0 && (
+                      <Card sx={{ mb: 2 }}>
+                        <CardContent>
+                          <Typography variant="h6" gutterBottom>
+                            프로필 정보
+                          </Typography>
+                          {selectedUserDetail.preferences.self.map(
+                            (pref, idx) => (
+                              <Box key={idx} sx={{ mb: 1.5 }}>
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
+                                  {pref.typeName}
+                                </Typography>
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    gap: 0.5,
+                                    flexWrap: "wrap",
+                                    mt: 0.5,
+                                  }}
+                                >
+                                  {pref.selectedOptions.map((opt) => (
+                                    <Chip
+                                      key={opt.id}
+                                      label={opt.displayName}
+                                      size="small"
+                                      variant="outlined"
+                                    />
+                                  ))}
+                                </Box>
+                              </Box>
+                            ),
+                          )}
+                        </CardContent>
+                      </Card>
+                    )}
+
+                  {selectedUserDetail.preferences?.partner &&
+                    selectedUserDetail.preferences.partner.length > 0 && (
+                      <Card>
+                        <CardContent>
+                          <Typography variant="h6" gutterBottom>
+                            이상형 정보
+                          </Typography>
+                          {selectedUserDetail.preferences.partner.map(
+                            (pref, idx) => (
+                              <Box key={idx} sx={{ mb: 1.5 }}>
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
+                                  {pref.typeName}
+                                </Typography>
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    gap: 0.5,
+                                    flexWrap: "wrap",
+                                    mt: 0.5,
+                                  }}
+                                >
+                                  {pref.selectedOptions.map((opt) => (
+                                    <Chip
+                                      key={opt.id}
+                                      label={opt.displayName}
+                                      size="small"
+                                      variant="outlined"
+                                    />
+                                  ))}
+                                </Box>
+                              </Box>
+                            ),
+                          )}
+                        </CardContent>
+                      </Card>
+                    )}
+                </Grid>
+              </Grid>
+            </Box>
+          ) : null}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseUserDetail}>닫기</Button>
         </DialogActions>
       </Dialog>
     </Box>
