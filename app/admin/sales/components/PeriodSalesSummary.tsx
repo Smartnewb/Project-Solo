@@ -45,13 +45,18 @@ export function PeriodSalesSummary({
     setError("");
 
     try {
+      const baseParams = {
+        paymentType: "all" as const, // IAP 포함 전체 매출
+      };
+
       const params =
         startDate && endDate
           ? {
+              ...baseParams,
               startDate: formatDateToString(startDate),
               endDate: formatDateToString(endDate),
             }
-          : {};
+          : baseParams;
 
       const [weeklyRes, monthlyRes] = await Promise.all([
         salesService.getSalesWeekly(params),
