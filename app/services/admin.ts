@@ -3063,22 +3063,26 @@ const reports = {
       const transformedItems = (response.data.items || []).map((item: any) => ({
         id: item.id,
         reporter: {
-          id: item.reporterId,
-          name: item.reporterName || "알 수 없음",
-          email: "",
-          phoneNumber: "",
-          age: item.reporterAge || 0,
-          gender: (item.reporterGender || "MALE") as "MALE" | "FEMALE",
-          profileImageUrl: "",
+          id: item.reporter?.id || item.reporterId,
+          name: item.reporter?.name || item.reporterName || "알 수 없음",
+          email: item.reporter?.email || "",
+          phoneNumber: item.reporter?.phoneNumber || "",
+          age: item.reporter?.age || item.reporterAge || 0,
+          gender: (item.reporter?.gender || item.reporterGender || "MALE") as
+            | "MALE"
+            | "FEMALE",
+          profileImageUrl: item.reporter?.profileImageUrl || "",
         },
         reported: {
-          id: item.reportedId,
-          name: item.reportedName || "알 수 없음",
-          email: "",
-          phoneNumber: "",
-          age: item.reportedAge || 0,
-          gender: (item.reportedGender || "MALE") as "MALE" | "FEMALE",
-          profileImageUrl: "",
+          id: item.reported?.id || item.reportedId,
+          name: item.reported?.name || item.reportedName || "알 수 없음",
+          email: item.reported?.email || "",
+          phoneNumber: item.reported?.phoneNumber || "",
+          age: item.reported?.age || item.reportedAge || 0,
+          gender: (item.reported?.gender || item.reportedGender || "MALE") as
+            | "MALE"
+            | "FEMALE",
+          profileImageUrl: item.reported?.profileImageUrl || "",
         },
         reason: item.reason || "",
         description: item.description || null,

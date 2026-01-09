@@ -44,6 +44,9 @@ import {
   Description as DescriptionIcon,
 } from "@mui/icons-material";
 import AdminService from "@/app/services/admin";
+import UserDetailModal, {
+  type UserDetail,
+} from "@/components/admin/appearance/UserDetailModal";
 
 interface Reporter {
   id: string;
@@ -141,39 +144,11 @@ export default function ReportsManagement() {
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [newStatus, setNewStatus] = useState<ReportStatus>("pending");
 
-  const [userDetailOpen, setUserDetailOpen] = useState(false);
+  const [userDetailModalOpen, setUserDetailModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [userDetail, setUserDetail] = useState<UserDetail | null>(null);
   const [userDetailLoading, setUserDetailLoading] = useState(false);
-  const [selectedUserDetail, setSelectedUserDetail] = useState<{
-    id: string;
-    name: string;
-    age: number;
-    gender: "MALE" | "FEMALE";
-    instagramId?: string;
-    profileImages: {
-      id: string;
-      url: string;
-      order: number;
-      isMain: boolean;
-    }[];
-    universityDetails?: {
-      name: string;
-      department: string;
-      authentication: boolean;
-    };
-    preferences?: {
-      self?: {
-        typeName: string;
-        selectedOptions: { id: string; displayName: string }[];
-      }[];
-      partner?: {
-        typeName: string;
-        selectedOptions: { id: string; displayName: string }[];
-      }[];
-    };
-  } | null>(null);
-  const [selectedUserImage, setSelectedUserImage] = useState<string | null>(
-    null,
-  );
+  const [userDetailError, setUserDetailError] = useState<string | null>(null);
 
   const fetchReports = async () => {
     try {
@@ -333,33 +308,31 @@ export default function ReportsManagement() {
     }
   };
 
-  const handleOpenUserDetail = async (userId: string) => {
-    setUserDetailOpen(true);
-    setUserDetailLoading(true);
-    setSelectedUserImage(null);
-
+  const handleOpenUserDetailModal = async (userId: string) => {
     try {
-      const userDetail = await AdminService.userReview.getUserDetail(userId);
-      setSelectedUserDetail(userDetail);
-      if (userDetail.profileImages?.length > 0) {
-        const mainImage = userDetail.profileImages.find(
-          (img: { isMain: boolean }) => img.isMain,
-        );
-        setSelectedUserImage(mainImage?.url || userDetail.profileImages[0].url);
-      }
-    } catch (err: unknown) {
+      setSelectedUserId(userId);
+      setUserDetailModalOpen(true);
+      setUserDetailLoading(true);
+      setUserDetailError(null);
+      setUserDetail(null);
+
+      const data = await AdminService.userAppearance.getUserDetails(userId);
+      setUserDetail(data);
+    } catch (err: any) {
       console.error("사용자 상세 정보 조회 오류:", err);
-      alert("사용자 정보를 불러오는데 실패했습니다.");
-      setUserDetailOpen(false);
+      setUserDetailError(
+        err.message || "사용자 정보를 불러오는데 실패했습니다.",
+      );
     } finally {
       setUserDetailLoading(false);
     }
   };
 
-  const handleCloseUserDetail = () => {
-    setUserDetailOpen(false);
-    setSelectedUserDetail(null);
-    setSelectedUserImage(null);
+  const handleCloseUserDetailModal = () => {
+    setUserDetailModalOpen(false);
+    setSelectedUserId(null);
+    setUserDetail(null);
+    setUserDetailError(null);
   };
 
   const getStatusChip = (status: string) => {
@@ -740,7 +713,7 @@ export default function ReportsManagement() {
             transition: "box-shadow 0.2s",
             "&:hover": { boxShadow: 4 },
           }}
-          onClick={() => handleOpenUserDetail(selectedReport.reporter.id)}
+          onClick={() => handleOpenUserDetailModal(selectedReport.reporter.id)}
         >
           <CardContent>
             <Box
@@ -816,7 +789,7 @@ export default function ReportsManagement() {
             transition: "box-shadow 0.2s",
             "&:hover": { boxShadow: 4 },
           }}
-          onClick={() => handleOpenUserDetail(selectedReport.reported.id)}
+          onClick={() => handleOpenUserDetailModal(selectedReport.reported.id)}
         >
           <CardContent>
             <Box
@@ -1122,268 +1095,17 @@ export default function ReportsManagement() {
         </DialogActions>
       </Dialog>
 
-      <Dialog
-        open={userDetailOpen}
-        onClose={handleCloseUserDetail}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <VisibilityIcon color="primary" />
-            <Typography variant="h6">사용자 상세 정보</Typography>
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          {userDetailLoading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-              <CircularProgress />
-            </Box>
-          ) : selectedUserDetail ? (
-            <Box sx={{ mt: 2 }}>
-              <Grid container spacing={3}>
-                <Grid item xs={12} md={5}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: 2,
-                    }}
-                  >
-                    <Box
-                      component="img"
-                      src={
-                        selectedUserImage ||
-                        selectedUserDetail.profileImages?.[0]?.url
-                      }
-                      alt={selectedUserDetail.name}
-                      sx={{
-                        width: 200,
-                        height: 200,
-                        objectFit: "cover",
-                        borderRadius: 2,
-                        border: "1px solid #e0e0e0",
-                      }}
-                    />
-                    {selectedUserDetail.profileImages &&
-                      selectedUserDetail.profileImages.length > 1 && (
-                        <Box
-                          sx={{
-                            display: "flex",
-                            gap: 1,
-                            flexWrap: "wrap",
-                            justifyContent: "center",
-                          }}
-                        >
-                          {selectedUserDetail.profileImages.map((img) => (
-                            <Box
-                              key={img.id}
-                              component="img"
-                              src={img.url}
-                              alt="프로필 이미지"
-                              sx={{
-                                width: 50,
-                                height: 50,
-                                objectFit: "cover",
-                                borderRadius: 1,
-                                cursor: "pointer",
-                                border:
-                                  selectedUserImage === img.url
-                                    ? "2px solid #1976d2"
-                                    : "1px solid #e0e0e0",
-                                "&:hover": { opacity: 0.8 },
-                              }}
-                              onClick={() => setSelectedUserImage(img.url)}
-                            />
-                          ))}
-                        </Box>
-                      )}
-                  </Box>
-                </Grid>
-                <Grid item xs={12} md={7}>
-                  <Card sx={{ mb: 2 }}>
-                    <CardContent>
-                      <Typography variant="h6" gutterBottom>
-                        기본 정보
-                      </Typography>
-                      <Grid container spacing={2}>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="text.secondary">
-                            이름
-                          </Typography>
-                          <Typography variant="body1">
-                            {selectedUserDetail.name}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={6}>
-                          <Typography variant="body2" color="text.secondary">
-                            나이/성별
-                          </Typography>
-                          <Typography variant="body1">
-                            {selectedUserDetail.age}세 /{" "}
-                            {getGenderText(selectedUserDetail.gender)}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={12}>
-                          <Typography variant="body2" color="text.secondary">
-                            인스타그램
-                          </Typography>
-                          <Typography variant="body1">
-                            {selectedUserDetail.instagramId ? (
-                              <a
-                                href={`https://instagram.com/${selectedUserDetail.instagramId}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{ color: "#1976d2" }}
-                              >
-                                @{selectedUserDetail.instagramId}
-                              </a>
-                            ) : (
-                              "-"
-                            )}
-                          </Typography>
-                        </Grid>
-                      </Grid>
-                    </CardContent>
-                  </Card>
-
-                  {selectedUserDetail.universityDetails && (
-                    <Card sx={{ mb: 2 }}>
-                      <CardContent>
-                        <Typography variant="h6" gutterBottom>
-                          대학교 정보
-                        </Typography>
-                        <Grid container spacing={2}>
-                          <Grid item xs={6}>
-                            <Typography variant="body2" color="text.secondary">
-                              학교명
-                            </Typography>
-                            <Typography variant="body1">
-                              {selectedUserDetail.universityDetails.name}
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={6}>
-                            <Typography variant="body2" color="text.secondary">
-                              학과
-                            </Typography>
-                            <Typography variant="body1">
-                              {selectedUserDetail.universityDetails.department}
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={12}>
-                            <Typography variant="body2" color="text.secondary">
-                              인증 상태
-                            </Typography>
-                            <Chip
-                              label={
-                                selectedUserDetail.universityDetails
-                                  .authentication
-                                  ? "인증됨"
-                                  : "미인증"
-                              }
-                              color={
-                                selectedUserDetail.universityDetails
-                                  .authentication
-                                  ? "success"
-                                  : "default"
-                              }
-                              size="small"
-                            />
-                          </Grid>
-                        </Grid>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {selectedUserDetail.preferences?.self &&
-                    selectedUserDetail.preferences.self.length > 0 && (
-                      <Card sx={{ mb: 2 }}>
-                        <CardContent>
-                          <Typography variant="h6" gutterBottom>
-                            프로필 정보
-                          </Typography>
-                          {selectedUserDetail.preferences.self.map(
-                            (pref, idx) => (
-                              <Box key={idx} sx={{ mb: 1.5 }}>
-                                <Typography
-                                  variant="body2"
-                                  color="text.secondary"
-                                >
-                                  {pref.typeName}
-                                </Typography>
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    gap: 0.5,
-                                    flexWrap: "wrap",
-                                    mt: 0.5,
-                                  }}
-                                >
-                                  {pref.selectedOptions.map((opt) => (
-                                    <Chip
-                                      key={opt.id}
-                                      label={opt.displayName}
-                                      size="small"
-                                      variant="outlined"
-                                    />
-                                  ))}
-                                </Box>
-                              </Box>
-                            ),
-                          )}
-                        </CardContent>
-                      </Card>
-                    )}
-
-                  {selectedUserDetail.preferences?.partner &&
-                    selectedUserDetail.preferences.partner.length > 0 && (
-                      <Card>
-                        <CardContent>
-                          <Typography variant="h6" gutterBottom>
-                            이상형 정보
-                          </Typography>
-                          {selectedUserDetail.preferences.partner.map(
-                            (pref, idx) => (
-                              <Box key={idx} sx={{ mb: 1.5 }}>
-                                <Typography
-                                  variant="body2"
-                                  color="text.secondary"
-                                >
-                                  {pref.typeName}
-                                </Typography>
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    gap: 0.5,
-                                    flexWrap: "wrap",
-                                    mt: 0.5,
-                                  }}
-                                >
-                                  {pref.selectedOptions.map((opt) => (
-                                    <Chip
-                                      key={opt.id}
-                                      label={opt.displayName}
-                                      size="small"
-                                      variant="outlined"
-                                    />
-                                  ))}
-                                </Box>
-                              </Box>
-                            ),
-                          )}
-                        </CardContent>
-                      </Card>
-                    )}
-                </Grid>
-              </Grid>
-            </Box>
-          ) : null}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseUserDetail}>닫기</Button>
-        </DialogActions>
-      </Dialog>
+      {userDetail && (
+        <UserDetailModal
+          open={userDetailModalOpen}
+          onClose={handleCloseUserDetailModal}
+          userId={selectedUserId}
+          userDetail={userDetail}
+          loading={userDetailLoading}
+          error={userDetailError}
+          onRefresh={fetchReports}
+        />
+      )}
     </Box>
   );
 }
