@@ -35,7 +35,9 @@ const PRESET_REASONS: Record<string, string[]> = {
     '얼굴 식별 불가',
     '부적절한 노출',
     '도용 의심',
-    '화질 불량'
+    '화질 불량',
+    '동물 사진',
+    '동일 사진'
   ],
   'FAKE_PROFILE': [
     '연예인/유명인 사진',
@@ -114,6 +116,8 @@ export default function RejectReasonModal({ open, onClose, onConfirm }: RejectRe
   const commonTemplates = [
     { category: 'INAPPROPRIATE_PROFILE_IMAGE', reason: '얼굴 식별 불가', label: '얼굴 식별 불가' },
     { category: 'INAPPROPRIATE_PROFILE_IMAGE', reason: '화질 불량', label: '화질 불량' },
+    { category: 'INAPPROPRIATE_PROFILE_IMAGE', reason: '동물 사진', label: '동물 사진' },
+    { category: 'INAPPROPRIATE_PROFILE_IMAGE', reason: '동일 사진', label: '동일 사진' },
     { category: 'FAKE_PROFILE', reason: '타인 사진 도용', label: '사진 도용' },
     { category: 'INCOMPLETE_PROFILE', reason: '필수 정보 미입력', label: '정보 미입력' },
   ];
