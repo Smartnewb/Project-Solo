@@ -177,7 +177,7 @@ export default function AdminLayout({
                   className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors"
                   onClick={() => setSidebarOpen(false)}
                 >
-                  신고 관리
+                  프로필 신고 관리
                 </Link>
               </li>
               <li>

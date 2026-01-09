@@ -924,7 +924,7 @@ export default function ReportsManagement() {
       <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
         <ReportIcon sx={{ fontSize: 36, mr: 2, color: "primary.main" }} />
         <Typography variant="h4" sx={{ fontWeight: 600 }}>
-          신고 관리
+          프로필 신고 관리
         </Typography>
       </Box>
 
