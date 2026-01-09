@@ -268,42 +268,6 @@ export default function ImageReviewPanel({
     setImageRejectionReason("");
   };
 
-  const handleSetMainImage = async (imageId: string) => {
-    if (!user) return;
-
-    const targetImage = (user.pendingImages || user.profileImages || []).find(
-      (img) => img.id === imageId,
-    );
-    const isPendingImage = targetImage !== undefined;
-
-    const confirmed = window.confirm(
-      isPendingImage
-        ? "이 이미지를 대표 사진으로 승인하시겠습니까?\n\n대표 프로필 승인 시 회원 상태가 \"승인됨\"으로 자동 변경됩니다."
-        : "이 이미지를 대표 사진으로 설정하시겠습니까?\n\n현재 대표 사진과 위치가 서로 교체됩니다.",
-    );
-    if (!confirmed) return;
-
-    try {
-      setProcessing(true);
-      await AdminService.profileImages.setMainImage(user.userId, imageId);
-
-      if (isPendingImage) {
-        onImageApproved(imageId);
-        alert("대표 사진으로 승인되었습니다.");
-      } else {
-        alert("대표 사진이 변경되었습니다.");
-      }
-    } catch (error: any) {
-      console.error("대표 사진 변경 중 오류:", error);
-      alert(
-        error.response?.data?.message ||
-          "대표 사진 변경 중 오류가 발생했습니다.",
-      );
-    } finally {
-      setProcessing(false);
-    }
-  };
-
   return (
     <Paper sx={{ p: 3, display: "flex", flexDirection: "column" }}>
       {/* 유저 정보 */}
@@ -850,30 +814,6 @@ export default function ImageReviewPanel({
                             승인일:{" "}
                             {formatApprovedDate(pair.current.approvedAt)}
                           </Typography>
-                          {slotIndex !== 0 && (
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSetMainImage(pair.current!.id);
-                              }}
-                              sx={{
-                                fontSize: "0.6rem",
-                                py: 0,
-                                px: 0.5,
-                                minWidth: "auto",
-                                borderColor: "#ff9800",
-                                color: "#ff9800",
-                                "&:hover": {
-                                  borderColor: "#f57c00",
-                                  backgroundColor: "#fff3e0",
-                                },
-                              }}
-                            >
-                              대표로
-                            </Button>
-                          )}
                         </Box>
                       </Box>
                     ) : (
@@ -1000,25 +940,6 @@ export default function ImageReviewPanel({
                               <CheckCircleIcon fontSize="small" />
                             </IconButton>
                           </Box>
-                          {/* 대표로 승인 버튼 - 서브 사진(slot 1, 2)에만 표시 */}
-                          {slotIndex !== 0 && (
-                            <Button
-                              size="small"
-                              variant="contained"
-                              onClick={() => handleSetMainImage(pair.pending!.id)}
-                              sx={{
-                                fontSize: "0.7rem",
-                                py: 0.5,
-                                px: 1,
-                                backgroundColor: "#ff9800",
-                                "&:hover": {
-                                  backgroundColor: "#f57c00",
-                                },
-                              }}
-                            >
-                              대표로 승인
-                            </Button>
-                          )}
                         </Box>
                       </Box>
                     ) : (
