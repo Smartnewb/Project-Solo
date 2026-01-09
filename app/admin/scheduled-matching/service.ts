@@ -86,9 +86,13 @@ export const scheduledMatchingService = {
     return response.data;
   },
 
-  getMatchingPoolStats: async (country: MatchingPoolCountry): Promise<MatchingPoolStatsResponse> => {
+  getMatchingPoolStats: async (
+    country: MatchingPoolCountry,
+    startDate?: string,
+    endDate?: string
+  ): Promise<MatchingPoolStatsResponse> => {
     const response = await axiosServer.get('/admin/stats/matching-pool', {
-      params: { country },
+      params: { country, startDate, endDate },
     });
     return response.data;
   },
