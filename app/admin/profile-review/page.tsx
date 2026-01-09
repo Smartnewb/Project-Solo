@@ -12,13 +12,23 @@ import {
   InputAdornment,
   Tooltip,
   Collapse,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Button,
+  Chip,
+  Badge,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
-import AdminService from "@/app/services/admin";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import AdminService, { PendingUsersFilter } from "@/app/services/admin";
 import UserTableList from "./components/UserTableList";
 import ImageReviewPanel from "./components/ImageReviewPanel";
 import RejectReasonModal from "./components/RejectReasonModal";
+import { REGION_MAP } from "../sales/constants/regions";
 
 export interface PendingProfileImage {
   id: string;
@@ -134,6 +144,41 @@ export interface PendingUsersResponse {
   };
 }
 
+// 건너뛴 유저 관리 유틸리티
+const SKIPPED_USERS_KEY = "skippedReviewUsers";
+
+const getSkippedUsers = (): string[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    return JSON.parse(localStorage.getItem(SKIPPED_USERS_KEY) || "[]");
+  } catch {
+    return [];
+  }
+};
+
+const addSkippedUser = (userId: string): void => {
+  const skipped = getSkippedUsers();
+  if (!skipped.includes(userId)) {
+    skipped.push(userId);
+    localStorage.setItem(SKIPPED_USERS_KEY, JSON.stringify(skipped));
+  }
+};
+
+const removeSkippedUser = (userId: string): void => {
+  const skipped = getSkippedUsers();
+  const updated = skipped.filter((id) => id !== userId);
+  localStorage.setItem(SKIPPED_USERS_KEY, JSON.stringify(updated));
+};
+
+const clearAllSkippedUsers = (): void => {
+  localStorage.removeItem(SKIPPED_USERS_KEY);
+};
+
+// 지역 옵션 (전체 제외)
+const REGION_OPTIONS = Object.entries(REGION_MAP)
+  .filter(([code]) => code !== "all")
+  .map(([code, name]) => ({ value: code, label: name }));
+
 export default function ProfileReviewPage() {
   const [users, setUsers] = useState<PendingUser[]>([]);
   const [selectedUser, setSelectedUser] = useState<PendingUser | null>(null);
@@ -154,6 +199,16 @@ export default function ProfileReviewPage() {
   const [searchExpanded, setSearchExpanded] = useState(false);
   const [localSearchTerm, setLocalSearchTerm] = useState("");
 
+  // 필터 상태
+  const [filterExpanded, setFilterExpanded] = useState(false);
+  const [filters, setFilters] = useState<PendingUsersFilter>({});
+  const [skippedUsers, setSkippedUsers] = useState<string[]>([]);
+
+  // 건너뛴 유저 목록 로드
+  useEffect(() => {
+    setSkippedUsers(getSkippedUsers());
+  }, []);
+
   useEffect(() => {
     fetchPendingUsers();
   }, []);
@@ -165,17 +220,24 @@ export default function ProfileReviewPage() {
       : `url-${url.split("/").pop()?.split(".")[0] || "unknown"}`;
   };
 
-  const fetchPendingUsers = async (page: number = 1, search?: string) => {
+  const fetchPendingUsers = async (
+    page: number = 1,
+    search?: string,
+    currentFilters?: PendingUsersFilter,
+  ) => {
     try {
       setLoading(true);
       setError(null);
 
       const searchQuery = search !== undefined ? search : searchTerm;
+      const appliedFilters = currentFilters !== undefined ? currentFilters : filters;
       console.log(
         "심사 대기 유저 목록 조회 시작... (page:",
         page,
         ", search:",
         searchQuery,
+        ", filters:",
+        appliedFilters,
         ")",
       );
       const response: PendingUsersResponse =
@@ -183,6 +245,7 @@ export default function ProfileReviewPage() {
           page,
           20,
           searchQuery || undefined,
+          Object.keys(appliedFilters).length > 0 ? appliedFilters : undefined,
         );
 
       console.log("API 응답 데이터:", response);
@@ -373,8 +436,59 @@ export default function ProfileReviewPage() {
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
-    fetchPendingUsers(1, term);
+    fetchPendingUsers(1, term, filters);
   };
+
+  // 필터 변경 핸들러
+  const handleFilterChange = (key: keyof PendingUsersFilter, value: any) => {
+    const newFilters = { ...filters };
+    if (value === "" || value === null || value === undefined) {
+      delete newFilters[key];
+    } else {
+      newFilters[key] = value;
+    }
+    setFilters(newFilters);
+  };
+
+  const handleApplyFilters = () => {
+    fetchPendingUsers(1, searchTerm, filters);
+  };
+
+  const handleClearFilters = () => {
+    setFilters({});
+    fetchPendingUsers(1, searchTerm, {});
+  };
+
+  const getActiveFilterCount = () => {
+    return Object.keys(filters).filter(
+      (key) => filters[key as keyof PendingUsersFilter] !== undefined,
+    ).length;
+  };
+
+  // 건너뛰기 핸들러
+  const handleSkipUser = (userId: string) => {
+    addSkippedUser(userId);
+    setSkippedUsers(getSkippedUsers());
+    // 선택된 사용자가 건너뛴 경우 선택 해제
+    if (selectedUser?.userId === userId || selectedUser?.id === userId) {
+      setSelectedUser(null);
+    }
+  };
+
+  const handleRestoreSkippedUser = (userId: string) => {
+    removeSkippedUser(userId);
+    setSkippedUsers(getSkippedUsers());
+  };
+
+  const handleClearAllSkipped = () => {
+    clearAllSkippedUsers();
+    setSkippedUsers([]);
+  };
+
+  // 건너뛴 유저 필터링된 목록
+  const filteredUsers = users.filter(
+    (user) => !skippedUsers.includes(user.userId),
+  );
 
   const handleSearchToggle = () => {
     if (searchExpanded && localSearchTerm) {
@@ -462,11 +576,39 @@ export default function ProfileReviewPage() {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          mb: 3,
+          mb: 2,
         }}
       >
         <Typography variant="h5">회원 적격 심사</Typography>
-        <Box sx={{ display: "flex", alignItems: "center" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {/* 건너뛴 유저 복원 버튼 */}
+          {skippedUsers.length > 0 && (
+            <Tooltip title={`건너뛴 ${skippedUsers.length}명 복원`}>
+              <Button
+                size="small"
+                variant="outlined"
+                color="warning"
+                onClick={handleClearAllSkipped}
+                startIcon={<RefreshIcon />}
+              >
+                건너뛴 {skippedUsers.length}명
+              </Button>
+            </Tooltip>
+          )}
+
+          {/* 필터 버튼 */}
+          <Tooltip title="필터">
+            <IconButton
+              onClick={() => setFilterExpanded(!filterExpanded)}
+              color={getActiveFilterCount() > 0 ? "primary" : "default"}
+            >
+              <Badge badgeContent={getActiveFilterCount()} color="primary">
+                <FilterListIcon />
+              </Badge>
+            </IconButton>
+          </Tooltip>
+
+          {/* 검색 */}
           <Collapse in={searchExpanded} orientation="horizontal" timeout={200}>
             <Box
               component="form"
@@ -503,8 +645,142 @@ export default function ProfileReviewPage() {
         </Box>
       </Box>
 
+      {/* 필터 패널 */}
+      <Collapse in={filterExpanded}>
+        <Box
+          sx={{
+            mb: 2,
+            p: 2,
+            backgroundColor: "#f5f5f5",
+            borderRadius: 2,
+            display: "flex",
+            gap: 2,
+            flexWrap: "wrap",
+            alignItems: "center",
+          }}
+        >
+          {/* 성별 필터 */}
+          <FormControl size="small" sx={{ minWidth: 100 }}>
+            <InputLabel>성별</InputLabel>
+            <Select
+              value={filters.gender || ""}
+              label="성별"
+              onChange={(e) => handleFilterChange("gender", e.target.value)}
+            >
+              <MenuItem value="">전체</MenuItem>
+              <MenuItem value="MALE">남성</MenuItem>
+              <MenuItem value="FEMALE">여성</MenuItem>
+            </Select>
+          </FormControl>
+
+          {/* 나이 필터 */}
+          <TextField
+            size="small"
+            type="number"
+            label="최소 나이"
+            value={filters.minAge || ""}
+            onChange={(e) =>
+              handleFilterChange(
+                "minAge",
+                e.target.value ? Number(e.target.value) : undefined,
+              )
+            }
+            sx={{ width: 100 }}
+            InputProps={{ inputProps: { min: 18, max: 100 } }}
+          />
+          <Typography variant="body2" color="text.secondary">
+            ~
+          </Typography>
+          <TextField
+            size="small"
+            type="number"
+            label="최대 나이"
+            value={filters.maxAge || ""}
+            onChange={(e) =>
+              handleFilterChange(
+                "maxAge",
+                e.target.value ? Number(e.target.value) : undefined,
+              )
+            }
+            sx={{ width: 100 }}
+            InputProps={{ inputProps: { min: 18, max: 100 } }}
+          />
+
+          {/* 지역 필터 */}
+          <FormControl size="small" sx={{ minWidth: 120 }}>
+            <InputLabel>지역</InputLabel>
+            <Select
+              value={filters.region || ""}
+              label="지역"
+              onChange={(e) => handleFilterChange("region", e.target.value)}
+            >
+              <MenuItem value="">전체</MenuItem>
+              {REGION_OPTIONS.map((region) => (
+                <MenuItem key={region.value} value={region.value}>
+                  {region.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* 필터 적용/초기화 버튼 */}
+          <Button
+            variant="contained"
+            size="small"
+            onClick={handleApplyFilters}
+            sx={{ height: 40 }}
+          >
+            적용
+          </Button>
+          {getActiveFilterCount() > 0 && (
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleClearFilters}
+              sx={{ height: 40 }}
+            >
+              초기화
+            </Button>
+          )}
+
+          {/* 현재 적용된 필터 표시 */}
+          {getActiveFilterCount() > 0 && (
+            <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap", ml: 1 }}>
+              {filters.gender && (
+                <Chip
+                  label={`성별: ${filters.gender === "MALE" ? "남성" : "여성"}`}
+                  size="small"
+                  onDelete={() => handleFilterChange("gender", undefined)}
+                />
+              )}
+              {filters.minAge && (
+                <Chip
+                  label={`최소: ${filters.minAge}세`}
+                  size="small"
+                  onDelete={() => handleFilterChange("minAge", undefined)}
+                />
+              )}
+              {filters.maxAge && (
+                <Chip
+                  label={`최대: ${filters.maxAge}세`}
+                  size="small"
+                  onDelete={() => handleFilterChange("maxAge", undefined)}
+                />
+              )}
+              {filters.region && (
+                <Chip
+                  label={`지역: ${REGION_MAP[filters.region] || filters.region}`}
+                  size="small"
+                  onDelete={() => handleFilterChange("region", undefined)}
+                />
+              )}
+            </Box>
+          )}
+        </Box>
+      </Collapse>
+
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
@@ -512,11 +788,12 @@ export default function ProfileReviewPage() {
       <Box sx={{ display: "flex", gap: 3, height: "calc(100vh - 200px)" }}>
         <Box sx={{ flex: "7", overflow: "auto" }}>
           <UserTableList
-            users={users}
+            users={filteredUsers}
             selectedUser={selectedUser}
             onUserSelect={handleUserSelect}
+            onSkipUser={handleSkipUser}
             pagination={pagination}
-            onPageChange={(page) => fetchPendingUsers(page)}
+            onPageChange={(page) => fetchPendingUsers(page, searchTerm, filters)}
             searchTerm={searchTerm}
           />
         </Box>

@@ -11,7 +11,9 @@ import {
   Chip,
   TablePagination,
   Tooltip,
+  IconButton,
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import { PendingUser } from "../page";
 import { format } from "date-fns";
 
@@ -19,6 +21,7 @@ interface UserTableListProps {
   users: PendingUser[];
   selectedUser: PendingUser | null;
   onUserSelect: (user: PendingUser) => void;
+  onSkipUser?: (userId: string) => void;
   pagination: {
     page: number;
     limit: number;
@@ -89,6 +92,7 @@ export default function UserTableList({
   users,
   selectedUser,
   onUserSelect,
+  onSkipUser,
   pagination,
   onPageChange,
   searchTerm,
@@ -124,6 +128,7 @@ export default function UserTableList({
               <TableCell>MBTI</TableCell>
               <TableCell align="center">최초심사</TableCell>
               <TableCell>등록일시</TableCell>
+              {onSkipUser && <TableCell align="center" sx={{ width: 50 }}></TableCell>}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -211,6 +216,28 @@ export default function UserTableList({
                     {format(new Date(user.createdAt), "yyyy-MM-dd HH:mm")}
                   </Typography>
                 </TableCell>
+                {onSkipUser && (
+                  <TableCell align="center" sx={{ p: 0.5 }}>
+                    <Tooltip title="건너뛰기">
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSkipUser(user.userId);
+                        }}
+                        sx={{
+                          color: "#9e9e9e",
+                          "&:hover": {
+                            color: "#f44336",
+                            backgroundColor: "#ffebee",
+                          },
+                        }}
+                      >
+                        <CloseIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>

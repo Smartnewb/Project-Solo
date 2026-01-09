@@ -953,39 +953,61 @@ export default function ImageReviewPanel({
                         <Box
                           sx={{
                             display: "flex",
+                            flexDirection: "column",
                             gap: 1,
                             mt: 1,
-                            justifyContent: "center",
+                            alignItems: "center",
                           }}
                         >
-                          <IconButton
-                            size="small"
-                            onClick={() =>
-                              handleRejectImageClick(pair.pending!.id)
-                            }
-                            sx={{
-                              backgroundColor: "#f44336",
-                              color: "#fff",
-                              width: 36,
-                              height: 36,
-                              "&:hover": { backgroundColor: "#d32f2f" },
-                            }}
-                          >
-                            <CloseIcon fontSize="small" />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleApproveImage(pair.pending!.id)}
-                            sx={{
-                              backgroundColor: "#4caf50",
-                              color: "#fff",
-                              width: 36,
-                              height: 36,
-                              "&:hover": { backgroundColor: "#388e3c" },
-                            }}
-                          >
-                            <CheckCircleIcon fontSize="small" />
-                          </IconButton>
+                          <Box sx={{ display: "flex", gap: 1 }}>
+                            <IconButton
+                              size="small"
+                              onClick={() =>
+                                handleRejectImageClick(pair.pending!.id)
+                              }
+                              sx={{
+                                backgroundColor: "#f44336",
+                                color: "#fff",
+                                width: 36,
+                                height: 36,
+                                "&:hover": { backgroundColor: "#d32f2f" },
+                              }}
+                            >
+                              <CloseIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleApproveImage(pair.pending!.id)}
+                              sx={{
+                                backgroundColor: "#4caf50",
+                                color: "#fff",
+                                width: 36,
+                                height: 36,
+                                "&:hover": { backgroundColor: "#388e3c" },
+                              }}
+                            >
+                              <CheckCircleIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
+                          {/* 대표로 승인 버튼 - 서브 사진(slot 1, 2)에만 표시 */}
+                          {slotIndex !== 0 && (
+                            <Button
+                              size="small"
+                              variant="contained"
+                              onClick={() => handleSetMainImage(pair.pending!.id)}
+                              sx={{
+                                fontSize: "0.7rem",
+                                py: 0.5,
+                                px: 1,
+                                backgroundColor: "#ff9800",
+                                "&:hover": {
+                                  backgroundColor: "#f57c00",
+                                },
+                              }}
+                            >
+                              대표로 승인
+                            </Button>
+                          )}
                         </Box>
                       </Box>
                     ) : (

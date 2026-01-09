@@ -1920,17 +1920,39 @@ const profileImages = {
 };
 
 // 유저 심사 관련 API
+export interface PendingUsersFilter {
+  gender?: "MALE" | "FEMALE";
+  minAge?: number;
+  maxAge?: number;
+  universityId?: string;
+  region?: string;
+}
+
 const userReview = {
   getPendingUsers: async (
     page: number = 1,
     limit: number = 20,
     search?: string,
+    filters?: PendingUsersFilter,
   ) => {
     try {
-      console.log("심사 대기 유저 목록 조회 요청:", { page, limit, search });
+      console.log("심사 대기 유저 목록 조회 요청:", {
+        page,
+        limit,
+        search,
+        filters,
+      });
+
+      const params: Record<string, any> = { page, limit };
+      if (search) params.search = search;
+      if (filters?.gender) params.gender = filters.gender;
+      if (filters?.minAge) params.minAge = filters.minAge;
+      if (filters?.maxAge) params.maxAge = filters.maxAge;
+      if (filters?.universityId) params.universityId = filters.universityId;
+      if (filters?.region) params.region = filters.region;
 
       const response = await axiosServer.get("/admin/profile-images/pending", {
-        params: { page, limit, ...(search ? { search } : {}) },
+        params,
       });
 
       console.log("심사 대기 유저 목록 응답:", response.data);
