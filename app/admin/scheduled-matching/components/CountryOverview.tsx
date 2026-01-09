@@ -14,6 +14,7 @@ import {
   Tooltip,
   ToggleButtonGroup,
   ToggleButton,
+  TextField,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -22,7 +23,26 @@ import MapIcon from '@mui/icons-material/Map';
 import { Button } from '@/shared/ui';
 import { scheduledMatchingService } from '../service';
 import type { Country, ScheduledMatchingConfig, JobStatus, BatchHistory } from '../types';
-import type { MatchingPoolStatsResponse, MatchingPoolCountry } from '@/types/admin';
+import type { MatchingPoolStatsResponse, MatchingPoolCountry, MatchTypeStats } from '@/types/admin';
+
+type MatchingType = 'scheduled' | 'rematching';
+
+const formatDate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const getDefaultDateRange = () => {
+  const endDate = new Date();
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - 6);
+  return {
+    startDate: formatDate(startDate),
+    endDate: formatDate(endDate),
+  };
+};
 import { parseCronToHumanReadable, formatNextExecution, getTimeDiff } from '../utils';
 import RegionMapView from './RegionMapView';
 
@@ -210,6 +230,8 @@ export default function CountryOverview() {
   const [mapStats, setMapStats] = useState<MatchingPoolStatsResponse | null>(null);
   const [mapLoading, setMapLoading] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [matchingType, setMatchingType] = useState<MatchingType>('scheduled');
+  const [dateRange, setDateRange] = useState(getDefaultDateRange);
 
   const fetchData = useCallback(async () => {
     try {
@@ -253,11 +275,15 @@ export default function CountryOverview() {
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  const fetchMapStats = useCallback(async (country: MatchingPoolCountry) => {
+  const fetchMapStats = useCallback(async (
+    country: MatchingPoolCountry,
+    startDate: string,
+    endDate: string
+  ) => {
     try {
       setMapLoading(true);
       setMapError(null);
-      const stats = await scheduledMatchingService.getMatchingPoolStats(country);
+      const stats = await scheduledMatchingService.getMatchingPoolStats(country, startDate, endDate);
       setMapStats(stats);
     } catch (err) {
       console.error('Failed to fetch map stats:', err);
@@ -269,14 +295,26 @@ export default function CountryOverview() {
   }, []);
 
   useEffect(() => {
-    fetchMapStats(mapCountry);
-  }, [mapCountry, fetchMapStats]);
+    fetchMapStats(mapCountry, dateRange.startDate, dateRange.endDate);
+  }, [mapCountry, dateRange, fetchMapStats]);
 
   const handleMapCountryChange = (_: React.MouseEvent<HTMLElement>, newCountry: MatchingPoolCountry | null) => {
     if (newCountry) {
       setMapCountry(newCountry);
     }
   };
+
+  const handleMatchingTypeChange = (_: React.MouseEvent<HTMLElement>, newType: MatchingType | null) => {
+    if (newType) {
+      setMatchingType(newType);
+    }
+  };
+
+  const handleDateChange = (field: 'startDate' | 'endDate') => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDateRange(prev => ({ ...prev, [field]: e.target.value }));
+  };
+
+  const currentStats: MatchTypeStats | null = mapStats ? mapStats[matchingType] : null;
 
   const handleTrigger = async (country: Country) => {
     try {
@@ -360,27 +398,59 @@ export default function CountryOverview() {
       </Grid>
 
       <Paper sx={{ mt: 4, p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <MapIcon color="primary" />
             <Typography variant="h6">매칭풀 지역별 현황</Typography>
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <ToggleButtonGroup
-              value={mapCountry}
-              exclusive
-              onChange={handleMapCountryChange}
+          <Tooltip title="지도 새로고침">
+            <IconButton
+              onClick={() => fetchMapStats(mapCountry, dateRange.startDate, dateRange.endDate)}
               size="small"
+              disabled={mapLoading}
             >
-              <ToggleButton value="KR">🇰🇷 한국</ToggleButton>
-              <ToggleButton value="JP">🇯🇵 일본</ToggleButton>
-            </ToggleButtonGroup>
-            <Tooltip title="지도 새로고침">
-              <IconButton onClick={() => fetchMapStats(mapCountry)} size="small" disabled={mapLoading}>
-                <RefreshIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
+              <RefreshIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
+
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3, alignItems: 'center' }}>
+          <TextField
+            type="date"
+            label="시작일"
+            value={dateRange.startDate}
+            onChange={handleDateChange('startDate')}
+            size="small"
+            InputLabelProps={{ shrink: true }}
+            sx={{ width: 160 }}
+          />
+          <TextField
+            type="date"
+            label="종료일"
+            value={dateRange.endDate}
+            onChange={handleDateChange('endDate')}
+            size="small"
+            InputLabelProps={{ shrink: true }}
+            sx={{ width: 160 }}
+          />
+          <ToggleButtonGroup
+            value={mapCountry}
+            exclusive
+            onChange={handleMapCountryChange}
+            size="small"
+          >
+            <ToggleButton value="KR">🇰🇷 한국</ToggleButton>
+            <ToggleButton value="JP">🇯🇵 일본</ToggleButton>
+          </ToggleButtonGroup>
+          <ToggleButtonGroup
+            value={matchingType}
+            exclusive
+            onChange={handleMatchingTypeChange}
+            size="small"
+          >
+            <ToggleButton value="scheduled">스케줄 매칭</ToggleButton>
+            <ToggleButton value="rematching">재매칭</ToggleButton>
+          </ToggleButtonGroup>
         </Box>
 
         {mapError && (
@@ -393,25 +463,25 @@ export default function CountryOverview() {
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 1000 }}>
             <CircularProgress />
           </Box>
-        ) : mapStats ? (
+        ) : currentStats ? (
           <>
             <Box sx={{ mb: 2 }}>
               <Grid container spacing={2}>
-                <Grid item xs={6} sm={4} md>
+                <Grid item xs={6} sm={4} md={2}>
                   <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
                     <Typography variant="h5" fontWeight="bold">
-                      {mapStats.summary.totalUsers.toLocaleString()}
+                      {currentStats.summary.totalUsers.toLocaleString()}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       총 유저
                     </Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={6} sm={4} md>
+                <Grid item xs={6} sm={4} md={2}>
                   <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
                     <Typography variant="h5" fontWeight="bold" color="primary">
-                      {mapStats.summary.genderRatio !== null
-                        ? `${mapStats.summary.genderRatio.toFixed(2)}:1`
+                      {currentStats.summary.genderRatio !== null
+                        ? `${currentStats.summary.genderRatio.toFixed(2)}:1`
                         : 'N/A'}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
@@ -419,30 +489,40 @@ export default function CountryOverview() {
                     </Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={6} sm={4} md>
+                <Grid item xs={6} sm={4} md={2}>
                   <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
                     <Typography variant="h5" fontWeight="bold">
-                      {mapStats.summary.avgAge.toFixed(1)}세
+                      {currentStats.summary.avgAge.toFixed(1)}세
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       평균 나이
                     </Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={6} sm={4} md>
+                <Grid item xs={6} sm={4} md={2}>
                   <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
                     <Typography variant="h5" fontWeight="bold" color="warning.main">
-                      {(mapStats.summary.overallMutualLikeRate * 100).toFixed(1)}%
+                      {(currentStats.summary.overallMutualLikeRate * 100).toFixed(1)}%
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       상호 좋아요율
                     </Typography>
                   </Box>
                 </Grid>
-                <Grid item xs={6} sm={4} md>
+                <Grid item xs={6} sm={4} md={2}>
+                  <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                    <Typography variant="h5" fontWeight="bold" color="info.main">
+                      {(currentStats.summary.overallLikeConversionRate * 100).toFixed(1)}%
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      좋아요 전환율
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={6} sm={4} md={2}>
                   <Box sx={{ textAlign: 'center', p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
                     <Typography variant="h5" fontWeight="bold" color="success.main">
-                      {(mapStats.summary.overallMatchToChatRate * 100).toFixed(1)}%
+                      {(currentStats.summary.overallMatchToChatRate * 100).toFixed(1)}%
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       채팅 전환율
@@ -452,7 +532,7 @@ export default function CountryOverview() {
               </Grid>
             </Box>
 
-            <RegionMapView data={mapStats} />
+            <RegionMapView data={{ country: mapCountry, regions: currentStats.regions }} />
 
             <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Box sx={{ display: 'flex', gap: 2 }}>
@@ -470,7 +550,7 @@ export default function CountryOverview() {
                 </Box>
               </Box>
               <Typography variant="caption" color="text.secondary">
-                업데이트: {new Date(mapStats.cachedAt).toLocaleString('ko-KR')}
+                업데이트: {mapStats && new Date(mapStats.cachedAt).toLocaleString('ko-KR')}
               </Typography>
             </Box>
           </>

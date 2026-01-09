@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { Box, CircularProgress } from '@mui/material';
-import type { MatchingPoolStatsResponse } from '@/types/admin';
+import type { MatchingPoolCountry, MatchingPoolRegionStats } from '@/types/admin';
 
 const RegionMapCore = dynamic(() => import('./RegionMapCore'), {
   ssr: false,
@@ -22,8 +22,13 @@ const RegionMapCore = dynamic(() => import('./RegionMapCore'), {
   ),
 });
 
+export interface RegionMapData {
+  country: MatchingPoolCountry;
+  regions: MatchingPoolRegionStats[];
+}
+
 interface RegionMapViewProps {
-  data: MatchingPoolStatsResponse;
+  data: RegionMapData;
 }
 
 export default function RegionMapView({ data }: RegionMapViewProps) {

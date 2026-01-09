@@ -3,12 +3,13 @@
 import { useState, useMemo } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import type { MatchingPoolStatsResponse, MatchingPoolRegionStats } from '@/types/admin';
+import type { MatchingPoolRegionStats } from '@/types/admin';
+import type { RegionMapData } from './RegionMapView';
 import { MAP_CENTER } from '../constants/regionCoordinates';
 import RegionPopupContent from './RegionPopupContent';
 
 interface RegionMapCoreProps {
-  data: MatchingPoolStatsResponse;
+  data: RegionMapData;
 }
 
 export default function RegionMapCore({ data }: RegionMapCoreProps) {

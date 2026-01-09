@@ -13,6 +13,9 @@ export default function RegionPopupContent({ region }: RegionPopupContentProps) 
   const mutualTrendValue = parseFloat(region.matchingStats.mutualLikeTrend.replace(/[+%]/g, ''));
   const mutualTrendIsPositive = mutualTrendValue >= 0;
 
+  const likeConversionTrendValue = parseFloat(region.matchingStats.likeConversionTrend.replace(/[+%]/g, ''));
+  const likeConversionTrendIsPositive = likeConversionTrendValue >= 0;
+
   const formatGenderRatio = (ratio: number | null): string => {
     if (ratio === null) return 'N/A';
     return `${ratio.toFixed(2)}:1`;
@@ -48,6 +51,18 @@ export default function RegionPopupContent({ region }: RegionPopupContentProps) 
         </div>
         <div style={{ fontSize: '12px', color: '#9ca3af' }}>
           매칭 {region.matchingStats.totalMatches}건 중{' '}
+          상호 좋아요 {region.matchingStats.mutualLikes}건
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', marginBottom: '8px' }}>
+          <span style={{ fontSize: '13px', color: '#6b7280' }}>좋아요 전환율</span>
+          <span style={{ fontWeight: 600 }}>
+            {(region.matchingStats.likeConversionRate * 100).toFixed(1)}%
+          </span>
+          <TrendBadge value={region.matchingStats.likeConversionTrend} isPositive={likeConversionTrendIsPositive} />
+        </div>
+        <div style={{ fontSize: '12px', color: '#9ca3af' }}>
+          좋아요 {region.matchingStats.matchesWithAnyLike}건 중{' '}
           상호 좋아요 {region.matchingStats.mutualLikes}건
         </div>
 
