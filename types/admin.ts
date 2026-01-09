@@ -401,8 +401,15 @@ export type MatchingPoolCountry = 'KR' | 'JP';
 
 export interface MatchingPoolStatsResponse {
   country: MatchingPoolCountry;
+  startDate: string;
+  endDate: string;
   cachedAt: string;
   nextUpdateAt: string;
+  scheduled: MatchTypeStats;
+  rematching: MatchTypeStats;
+}
+
+export interface MatchTypeStats {
   summary: MatchingPoolSummaryStats;
   regions: MatchingPoolRegionStats[];
 }
@@ -416,6 +423,8 @@ export interface MatchingPoolSummaryStats {
   avgAge: number;
   avgProfileCompleteness: number;
   overallMutualLikeRate: number;
+  /** 좋아요 전환율 (상호 좋아요 / 한쪽이라도 좋아요한 매칭) */
+  overallLikeConversionRate: number;
   overallMatchToChatRate: number;
 }
 
@@ -484,15 +493,20 @@ export interface MatchingPoolProfileCompleteness {
 }
 
 export interface MatchingPoolMatchingStats {
-  totalLikes: number;
-  mutualLikes: number;
-  mutualLikeRate: number;
-  /** 포맷: "+8.5%", "-3.2%" */
-  mutualLikeTrend: string;
-
   totalMatches: number;
+  /** 한쪽이라도 좋아요한 매칭 수 */
+  matchesWithAnyLike: number;
+  mutualLikes: number;
+  /** 상호 좋아요 비율 (mutualLikes / totalMatches) */
+  mutualLikeRate: number;
+  /** 좋아요 전환율 (mutualLikes / matchesWithAnyLike) */
+  likeConversionRate: number;
   chatConversions: number;
   matchToChatRate: number;
+  /** 포맷: "+8.5%", "-3.2%" */
+  mutualLikeTrend: string;
+  /** 포맷: "+8.5%", "-3.2%" */
+  likeConversionTrend: string;
   /** 포맷: "+8.5%", "-3.2%" */
   matchToChatTrend: string;
 }
