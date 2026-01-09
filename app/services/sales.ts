@@ -152,10 +152,10 @@ export const salesService = {
   // MARK: - 월간 매출액 조회
   async getSalesMonthly(data: GetSales): Promise<MonthlySalesResponse> {
     try {
-      const reponse = await axiosServer.get(SALES_ENDPOINT.TREND_MONTHLY, {
+      const response = await axiosServer.get(SALES_ENDPOINT.MONTHLY, {
         params: data,
       });
-      return reponse.data;
+      return response.data;
     } catch (error) {
       throw new SalesApiError("월간 매출액 조회", error);
     }
