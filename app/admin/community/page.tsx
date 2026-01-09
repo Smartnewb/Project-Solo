@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import communityService, { Category } from '@/app/services/community';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import communityService, { Category } from "@/app/services/community";
 import {
   Box,
   Typography,
@@ -33,15 +33,14 @@ import {
   Tooltip,
   Tabs,
   Tab,
-  Avatar
-} from '@mui/material';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
+  Avatar,
+} from "@mui/material";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import {
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
   Comment as CommentIcon,
-
   Forum as ForumIcon,
   Article as ArticleIcon,
   Refresh as RefreshIcon,
@@ -49,10 +48,10 @@ import {
   Favorite as FavoriteIcon,
   Delete as DeleteIcon,
   MoveToInbox as MoveToInboxIcon,
-  Person as PersonIcon
-} from '@mui/icons-material';
-import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
-import AdminService from '@/app/services/admin';
+  Person as PersonIcon,
+} from "@mui/icons-material";
+import UserDetailModal from "@/components/admin/appearance/UserDetailModal";
+import AdminService from "@/app/services/admin";
 
 // 게시글 목록 컴포넌트
 function ArticleList() {
@@ -62,29 +61,30 @@ function ArticleList() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
-  const [filter, setFilter] = useState<'all' | 'reported' | 'blinded'>('all');
+  const [filter, setFilter] = useState<"all" | "reported" | "blinded">("all");
   const [selectedArticles, setSelectedArticles] = useState<string[]>([]);
   const [openBlindDialog, setOpenBlindDialog] = useState(false);
-  const [blindAction, setBlindAction] = useState<'blind' | 'unblind'>('blind');
-  const [blindReason, setBlindReason] = useState('');
+  const [blindAction, setBlindAction] = useState<"blind" | "unblind">("blind");
+  const [blindReason, setBlindReason] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
 
   // 게시글 삭제 관련 상태
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-  const [deleteTargetId, setDeleteTargetId] = useState<string>('');
+  const [deleteTargetId, setDeleteTargetId] = useState<string>("");
 
   // 카테고리 이전 관련 상태
   const [openCategoryDialog, setOpenCategoryDialog] = useState(false);
-  const [categoryTargetId, setCategoryTargetId] = useState<string>('');
+  const [categoryTargetId, setCategoryTargetId] = useState<string>("");
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>("");
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedArticleDetail, setSelectedArticleDetail] = useState<any>(null);
   const [startDate, setStartDate] = useState<Date | null>(new Date());
   const [endDate, setEndDate] = useState<Date | null>(new Date());
   // 카테고리 필터 상태
-  const [selectedFilterCategoryId, setSelectedFilterCategoryId] = useState<string>('');
+  const [selectedFilterCategoryId, setSelectedFilterCategoryId] =
+    useState<string>("");
   // 사용자 프로필 상세 모달 상태
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -95,14 +95,28 @@ function ArticleList() {
       setLoading(true);
       setError(null);
       const categoryId = selectedFilterCategoryId || null;
-      const response = await communityService.getArticles(filter, page + 1, rowsPerPage, startDate, endDate, categoryId);
+      const response = await communityService.getArticles(
+        filter,
+        page + 1,
+        rowsPerPage,
+        startDate,
+        endDate,
+        categoryId,
+      );
       setArticles(response.items ?? []);
       setTotalCount(response.meta?.totalItems ?? 0);
-      console.log('페이지네이션 정보:', response.meta);
-      console.log('게시글 목록 데이터:', response.items?.map(item => ({ id: item.id, isBlinded: item.isBlinded, blindedAt: (item as any).blindedAt })));
+      console.log("페이지네이션 정보:", response.meta);
+      console.log(
+        "게시글 목록 데이터:",
+        response.items?.map((item) => ({
+          id: item.id,
+          isBlinded: item.isBlinded,
+          blindedAt: (item as any).blindedAt,
+        })),
+      );
     } catch (error) {
-      console.error('게시글 목록 조회 중 오류:', error);
-      setError('게시글 목록을 불러오는 중 오류가 발생했습니다.');
+      console.error("게시글 목록 조회 중 오류:", error);
+      setError("게시글 목록을 불러오는 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);
     }
@@ -126,21 +140,23 @@ function ArticleList() {
   };
 
   // 페이지당 행 수 변경 시
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChangeRowsPerPage = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
 
   // 필터 변경 시
   const handleFilterChange = (event: any) => {
-    setFilter(event.target.value as 'all' | 'reported' | 'blinded');
+    setFilter(event.target.value as "all" | "reported" | "blinded");
     setPage(0);
   };
 
   // 필터 초기화
   const handleResetFilters = () => {
-    setFilter('all');
-    setSelectedFilterCategoryId('');
+    setFilter("all");
+    setSelectedFilterCategoryId("");
     setStartDate(new Date());
     setEndDate(new Date());
     setPage(0);
@@ -148,9 +164,9 @@ function ArticleList() {
 
   // 게시글 선택 시
   const handleSelectArticle = (id: string) => {
-    setSelectedArticles(prev => {
+    setSelectedArticles((prev) => {
       if (prev.includes(id)) {
-        return prev.filter(articleId => articleId !== id);
+        return prev.filter((articleId) => articleId !== id);
       } else {
         return [...prev, id];
       }
@@ -162,14 +178,14 @@ function ArticleList() {
     if (selectedArticles.length === articles.length) {
       setSelectedArticles([]);
     } else {
-      setSelectedArticles(articles.map(article => article.id));
+      setSelectedArticles(articles.map((article) => article.id));
     }
   };
 
   // 블라인드 다이얼로그 열기
-  const handleOpenBlindDialog = (action: 'blind' | 'unblind') => {
+  const handleOpenBlindDialog = (action: "blind" | "unblind") => {
     setBlindAction(action);
-    setBlindReason('');
+    setBlindReason("");
     setOpenBlindDialog(true);
   };
 
@@ -182,14 +198,19 @@ function ArticleList() {
   const handleBlindArticles = async () => {
     try {
       setActionLoading(true);
-      await communityService.bulkBlindArticles(selectedArticles, blindAction === 'blind');
-      setSuccessMessage(`선택한 게시글을 ${blindAction === 'blind' ? '블라인드' : '블라인드 해제'} 처리했습니다.`);
+      await communityService.bulkBlindArticles(
+        selectedArticles,
+        blindAction === "blind",
+      );
+      setSuccessMessage(
+        `선택한 게시글을 ${blindAction === "blind" ? "블라인드" : "블라인드 해제"} 처리했습니다.`,
+      );
       setSelectedArticles([]);
       fetchArticles();
       handleCloseBlindDialog();
     } catch (error) {
-      console.error('게시글 블라인드 처리 중 오류:', error);
-      setError('게시글 블라인드 처리 중 오류가 발생했습니다.');
+      console.error("게시글 블라인드 처리 중 오류:", error);
+      setError("게시글 블라인드 처리 중 오류가 발생했습니다.");
     } finally {
       setActionLoading(false);
     }
@@ -200,13 +221,13 @@ function ArticleList() {
     try {
       setActionLoading(true);
       await communityService.deleteArticle(deleteTargetId);
-      setSuccessMessage('게시글을 삭제했습니다.');
+      setSuccessMessage("게시글을 삭제했습니다.");
       fetchArticles();
       setOpenDeleteDialog(false);
-      setDeleteTargetId('');
+      setDeleteTargetId("");
     } catch (error) {
-      console.error('게시글 삭제 중 오류:', error);
-      setError('게시글 삭제 중 오류가 발생했습니다.');
+      console.error("게시글 삭제 중 오류:", error);
+      setError("게시글 삭제 중 오류가 발생했습니다.");
     } finally {
       setActionLoading(false);
     }
@@ -216,15 +237,18 @@ function ArticleList() {
   const handleMoveCategory = async () => {
     try {
       setActionLoading(true);
-      await communityService.moveArticleCategory(categoryTargetId, selectedCategoryId);
-      setSuccessMessage('게시글 카테고리를 이전했습니다.');
+      await communityService.moveArticleCategory(
+        categoryTargetId,
+        selectedCategoryId,
+      );
+      setSuccessMessage("게시글 카테고리를 이전했습니다.");
       fetchArticles();
       setOpenCategoryDialog(false);
-      setCategoryTargetId('');
-      setSelectedCategoryId('');
+      setCategoryTargetId("");
+      setSelectedCategoryId("");
     } catch (error) {
-      console.error('게시글 카테고리 이전 중 오류:', error);
-      setError('게시글 카테고리 이전 중 오류가 발생했습니다.');
+      console.error("게시글 카테고리 이전 중 오류:", error);
+      setError("게시글 카테고리 이전 중 오류가 발생했습니다.");
     } finally {
       setActionLoading(false);
     }
@@ -236,46 +260,52 @@ function ArticleList() {
       setActionLoading(true);
 
       // 현재 목록에서 해당 ID의 게시글 찾기
-      const selectedArticle = articles.find(article => article.id === id);
+      const selectedArticle = articles.find((article) => article.id === id);
       if (!selectedArticle) {
-        throw new Error('게시글을 찾을 수 없습니다.');
+        throw new Error("게시글을 찾을 수 없습니다.");
       }
 
       // 게시글 ID를 이용해 댓글 정보 가져오기
       const commentsResponse = await communityService.getComments(id);
 
-      console.log('댓글 원본 데이터:', commentsResponse?.items);
+      console.log("댓글 원본 데이터:", commentsResponse?.items);
 
-      const commentsWithAuthor = commentsResponse?.items?.map((comment: any) => {
-        console.log('댓글 정보:', comment);
-        return {
-          ...comment,
-          author: {
-            id: comment.author_id ?? comment.userId ?? '',
-            name: comment.author_name ?? comment.author?.name ?? comment.nickname ?? '익명',
-          }
-        };
-      }) ?? [];
+      const commentsWithAuthor =
+        commentsResponse?.items?.map((comment: any) => {
+          console.log("댓글 정보:", comment);
+          return {
+            ...comment,
+            author: {
+              id: comment.author_id ?? comment.userId ?? "",
+              name:
+                comment.author_name ??
+                comment.author?.name ??
+                comment.nickname ??
+                "익명",
+            },
+          };
+        }) ?? [];
 
       // 게시글 상세 정보 구성
       const articleDetail = {
         ...selectedArticle,
         likeCount: selectedArticle.likeCount ?? 0,
         author: {
-          id: selectedArticle.author?.id ?? selectedArticle.userId ?? '',
-          name: selectedArticle.author?.name ?? selectedArticle.nickname ?? '익명',
+          id: selectedArticle.author?.id ?? selectedArticle.userId ?? "",
+          name:
+            selectedArticle.author?.name ?? selectedArticle.nickname ?? "익명",
         },
         comments: commentsWithAuthor,
-        reports: []
+        reports: [],
       };
 
-      console.log('게시글 상세 정보:', articleDetail);
+      console.log("게시글 상세 정보:", articleDetail);
 
       setSelectedArticleDetail(articleDetail);
       setDetailDialogOpen(true);
     } catch (error) {
-      console.error('게시글 상세 정보 조회 중 오류:', error);
-      setError('게시글 상세 정보를 불러오는 중 오류가 발생했습니다.');
+      console.error("게시글 상세 정보 조회 중 오류:", error);
+      setError("게시글 상세 정보를 불러오는 중 오류가 발생했습니다.");
     } finally {
       setActionLoading(false);
     }
@@ -308,7 +338,7 @@ function ArticleList() {
       const response = await communityService.getCategories();
       setCategories(response.categories ?? []);
     } catch (error) {
-      console.error('카테고리 목록 조회 중 오류:', error);
+      console.error("카테고리 목록 조회 중 오류:", error);
     }
   };
 
@@ -319,11 +349,16 @@ function ArticleList() {
   return (
     <Box>
       {/* 필터 및 액션 버튼 */}
-      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Typography variant="h6">
-            게시글 관리 ({totalCount})
-          </Typography>
+      <Box
+        sx={{
+          mb: 2,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Typography variant="h6">게시글 관리 ({totalCount})</Typography>
 
           <FormControl variant="outlined" size="small" sx={{ minWidth: 150 }}>
             <InputLabel id="filter-label">필터</InputLabel>
@@ -365,9 +400,9 @@ function ArticleList() {
               onChange={handleStartDateChange}
               slotProps={{
                 textField: {
-                  size: 'small',
-                  sx: { width: 180 }
-                }
+                  size: "small",
+                  sx: { width: 180 },
+                },
               }}
             />
           </LocalizationProvider>
@@ -379,9 +414,9 @@ function ArticleList() {
               onChange={handleEndDateChange}
               slotProps={{
                 textField: {
-                  size: 'small',
-                  sx: { width: 180 }
-                }
+                  size: "small",
+                  sx: { width: 180 },
+                },
               }}
             />
           </LocalizationProvider>
@@ -406,11 +441,11 @@ function ArticleList() {
         </Box>
 
         {selectedArticles.length > 0 && (
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box sx={{ display: "flex", gap: 1 }}>
             <Button
               variant="outlined"
               color="primary"
-              onClick={() => handleOpenBlindDialog('blind')}
+              onClick={() => handleOpenBlindDialog("blind")}
               startIcon={<VisibilityOffIcon />}
               disabled={actionLoading}
             >
@@ -419,7 +454,7 @@ function ArticleList() {
             <Button
               variant="outlined"
               color="secondary"
-              onClick={() => handleOpenBlindDialog('unblind')}
+              onClick={() => handleOpenBlindDialog("unblind")}
               startIcon={<VisibilityIcon />}
               disabled={actionLoading}
             >
@@ -448,8 +483,14 @@ function ArticleList() {
             <TableRow>
               <TableCell padding="checkbox">
                 <Checkbox
-                  checked={articles.length > 0 && selectedArticles.length === articles.length}
-                  indeterminate={selectedArticles.length > 0 && selectedArticles.length < articles.length}
+                  checked={
+                    articles.length > 0 &&
+                    selectedArticles.length === articles.length
+                  }
+                  indeterminate={
+                    selectedArticles.length > 0 &&
+                    selectedArticles.length < articles.length
+                  }
                   onChange={handleSelectAll}
                 />
               </TableCell>
@@ -489,15 +530,28 @@ function ArticleList() {
                   <TableCell>
                     <Typography
                       variant="body2"
-                      sx={{ color: 'primary.main', textDecoration: 'underline', cursor: 'pointer', display: 'inline' }}
+                      sx={{
+                        color: "primary.main",
+                        textDecoration: "underline",
+                        cursor: "pointer",
+                        display: "inline",
+                      }}
                       onClick={() => {
                         const uid = article.author?.id ?? article.userId;
-                        if (uid) { setSelectedUserId(uid); setUserModalOpen(true); }
+                        if (uid) {
+                          setSelectedUserId(uid);
+                          setUserModalOpen(true);
+                        }
                       }}
-                   >
-                      {(article.author?.name ?? article.nickname ?? '익명')}{article.anonymous ? ` (${article.anonymous})` : ''}
+                    >
+                      {article.author?.name ?? article.nickname ?? "익명"}
+                      {article.anonymous ? ` (${article.anonymous})` : ""}
                     </Typography>
-                    <Typography variant="caption" color="textSecondary" display="block">
+                    <Typography
+                      variant="caption"
+                      color="textSecondary"
+                      display="block"
+                    >
                       ID: {article.author?.id ?? article.userId}
                     </Typography>
                   </TableCell>
@@ -506,14 +560,20 @@ function ArticleList() {
                       variant="body2"
                       sx={{
                         maxWidth: 200,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        textDecoration: (article.isBlinded || (article as any).blindedAt) ? 'line-through' : 'none',
-                        color: (article.isBlinded || (article as any).blindedAt) ? 'text.disabled' : 'text.primary'
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        textDecoration:
+                          article.isBlinded || (article as any).blindedAt
+                            ? "line-through"
+                            : "none",
+                        color:
+                          article.isBlinded || (article as any).blindedAt
+                            ? "text.disabled"
+                            : "text.primary",
                       }}
                     >
-                      {article.title ?? '제목 없음'}
+                      {article.title ?? "제목 없음"}
                     </Typography>
                   </TableCell>
                   <TableCell>
@@ -521,11 +581,17 @@ function ArticleList() {
                       variant="body2"
                       sx={{
                         maxWidth: 200,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        textDecoration: (article.isBlinded || (article as any).blindedAt) ? 'line-through' : 'none',
-                        color: (article.isBlinded || (article as any).blindedAt) ? 'text.disabled' : 'text.primary'
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        textDecoration:
+                          article.isBlinded || (article as any).blindedAt
+                            ? "line-through"
+                            : "none",
+                        color:
+                          article.isBlinded || (article as any).blindedAt
+                            ? "text.disabled"
+                            : "text.primary",
                       }}
                     >
                       {article.emoji} {article.content}
@@ -542,11 +608,11 @@ function ArticleList() {
                         icon={<ReportIcon />}
                       />
                     ) : (
-                      '0'
+                      "0"
                     )}
                   </TableCell>
                   <TableCell>
-                    {(article.isBlinded || (article as any).blindedAt) ? (
+                    {article.isBlinded || (article as any).blindedAt ? (
                       <Chip label="블라인드" color="error" size="small" />
                     ) : (
                       <Chip label="정상" color="success" size="small" />
@@ -565,14 +631,14 @@ function ArticleList() {
                         <ArticleIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
-                    {(article.isBlinded || (article as any).blindedAt) ? (
+                    {article.isBlinded || (article as any).blindedAt ? (
                       <Tooltip title="블라인드 해제">
                         <IconButton
                           size="small"
                           color="secondary"
                           onClick={() => {
                             setSelectedArticles([article.id]);
-                            handleOpenBlindDialog('unblind');
+                            handleOpenBlindDialog("unblind");
                           }}
                         >
                           <VisibilityIcon fontSize="small" />
@@ -585,7 +651,7 @@ function ArticleList() {
                           color="warning"
                           onClick={() => {
                             setSelectedArticles([article.id]);
-                            handleOpenBlindDialog('blind');
+                            handleOpenBlindDialog("blind");
                           }}
                         >
                           <VisibilityOffIcon fontSize="small" />
@@ -639,13 +705,15 @@ function ArticleList() {
       {/* 블라인드 다이얼로그 */}
       <Dialog open={openBlindDialog} onClose={handleCloseBlindDialog}>
         <DialogTitle>
-          게시글 {blindAction === 'blind' ? '블라인드' : '블라인드 해제'}
+          게시글 {blindAction === "blind" ? "블라인드" : "블라인드 해제"}
         </DialogTitle>
         <DialogContent>
           <Typography variant="body1" sx={{ mb: 2 }}>
-            선택한 {selectedArticles.length}개의 게시글을 {blindAction === 'blind' ? '블라인드' : '블라인드 해제'} 처리하시겠습니까?
+            선택한 {selectedArticles.length}개의 게시글을{" "}
+            {blindAction === "blind" ? "블라인드" : "블라인드 해제"}{" "}
+            처리하시겠습니까?
           </Typography>
-          {blindAction === 'blind' && (
+          {blindAction === "blind" && (
             <TextField
               label="블라인드 사유"
               fullWidth
@@ -663,10 +731,16 @@ function ArticleList() {
           </Button>
           <Button
             onClick={handleBlindArticles}
-            color={blindAction === 'blind' ? 'warning' : 'primary'}
+            color={blindAction === "blind" ? "warning" : "primary"}
             disabled={actionLoading}
           >
-            {actionLoading ? <CircularProgress size={24} /> : (blindAction === 'blind' ? '블라인드' : '블라인드 해제')}
+            {actionLoading ? (
+              <CircularProgress size={24} />
+            ) : blindAction === "blind" ? (
+              "블라인드"
+            ) : (
+              "블라인드 해제"
+            )}
           </Button>
         </DialogActions>
       </Dialog>
@@ -685,37 +759,61 @@ function ArticleList() {
               <Typography variant="subtitle1">작성자 정보</Typography>
               <Typography
                 variant="body2"
-                sx={{ color: 'primary.main', textDecoration: 'underline', cursor: 'pointer', display: 'inline' }}
+                sx={{
+                  color: "primary.main",
+                  textDecoration: "underline",
+                  cursor: "pointer",
+                  display: "inline",
+                }}
                 onClick={() => {
-                  const uid = selectedArticleDetail.author?.id ?? selectedArticleDetail.userId;
-                  if (uid) { setSelectedUserId(uid); setUserModalOpen(true); }
+                  const uid =
+                    selectedArticleDetail.author?.id ??
+                    selectedArticleDetail.userId;
+                  if (uid) {
+                    setSelectedUserId(uid);
+                    setUserModalOpen(true);
+                  }
                 }}
               >
-                {(selectedArticleDetail.author?.name ?? selectedArticleDetail.nickname ?? '익명')}{selectedArticleDetail.anonymous ? ` (${selectedArticleDetail.anonymous})` : ''}
+                {selectedArticleDetail.author?.name ??
+                  selectedArticleDetail.nickname ??
+                  "익명"}
+                {selectedArticleDetail.anonymous
+                  ? ` (${selectedArticleDetail.anonymous})`
+                  : ""}
               </Typography>
               <Typography variant="caption" display="block">
-                ID: {selectedArticleDetail.author?.id ?? selectedArticleDetail.userId}
+                ID:{" "}
+                {selectedArticleDetail.author?.id ??
+                  selectedArticleDetail.userId}
               </Typography>
               <Typography variant="caption" display="block" sx={{ mb: 2 }}>
-                작성일: {new Date(selectedArticleDetail.createdAt).toLocaleString()}
-                {selectedArticleDetail.isEdited && ' (수정됨)'}
+                작성일:{" "}
+                {new Date(selectedArticleDetail.createdAt).toLocaleString()}
+                {selectedArticleDetail.isEdited && " (수정됨)"}
               </Typography>
 
               <Typography variant="subtitle1">게시글 제목</Typography>
-              <Paper variant="outlined" sx={{ p: 2, mb: 2, bgcolor: 'background.default' }}>
-                <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                  {selectedArticleDetail.title ?? '제목 없음'}
+              <Paper
+                variant="outlined"
+                sx={{ p: 2, mb: 2, bgcolor: "background.default" }}
+              >
+                <Typography variant="body1" sx={{ fontWeight: "bold" }}>
+                  {selectedArticleDetail.title ?? "제목 없음"}
                 </Typography>
               </Paper>
 
               <Typography variant="subtitle1">게시글 내용</Typography>
-              <Paper variant="outlined" sx={{ p: 2, mb: 2, bgcolor: 'background.default' }}>
+              <Paper
+                variant="outlined"
+                sx={{ p: 2, mb: 2, bgcolor: "background.default" }}
+              >
                 <Typography variant="body1">
                   {selectedArticleDetail.emoji} {selectedArticleDetail.content}
                 </Typography>
               </Paper>
 
-              <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+              <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
                 <Chip
                   icon={<CommentIcon />}
                   label={`댓글 ${selectedArticleDetail.commentCount}개`}
@@ -735,7 +833,8 @@ function ArticleList() {
                     variant="outlined"
                   />
                 )}
-                {(selectedArticleDetail.isBlinded || (selectedArticleDetail as any).blindedAt) && (
+                {(selectedArticleDetail.isBlinded ||
+                  (selectedArticleDetail as any).blindedAt) && (
                   <Chip
                     icon={<VisibilityOffIcon />}
                     label="블라인드"
@@ -744,11 +843,13 @@ function ArticleList() {
                 )}
               </Box>
 
-              {(selectedArticleDetail.isBlinded || (selectedArticleDetail as any).blindedAt) && (
+              {(selectedArticleDetail.isBlinded ||
+                (selectedArticleDetail as any).blindedAt) && (
                 <Alert severity="warning" sx={{ mb: 2 }}>
                   <Typography variant="subtitle2">블라인드 사유</Typography>
                   <Typography variant="body2">
-                    {selectedArticleDetail.blindReason ?? '사유가 지정되지 않았습니다.'}
+                    {selectedArticleDetail.blindReason ??
+                      "사유가 지정되지 않았습니다."}
                   </Typography>
                 </Alert>
               )}
@@ -758,24 +859,38 @@ function ArticleList() {
                 댓글 목록
               </Typography>
               <Paper variant="outlined" sx={{ mb: 2 }}>
-                {selectedArticleDetail.comments && selectedArticleDetail.comments.length > 0 ? (
+                {selectedArticleDetail.comments &&
+                selectedArticleDetail.comments.length > 0 ? (
                   selectedArticleDetail.comments.map((comment: any) => (
                     <Box
                       key={comment.id}
                       sx={{
                         p: 1.5,
-                        borderBottom: '1px solid',
-                        borderColor: 'divider',
-                        '&:last-child': { borderBottom: 'none' }
+                        borderBottom: "1px solid",
+                        borderColor: "divider",
+                        "&:last-child": { borderBottom: "none" },
                       }}
                     >
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
                         <Box>
                           <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                            {comment.isAnonymous ? '익명' : (comment.author?.name ?? comment.author_name ?? comment.nickname)}
+                            {comment.isAnonymous
+                              ? "익명"
+                              : (comment.author?.name ??
+                                comment.author_name ??
+                                comment.nickname)}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            ID: {comment.author?.id ?? comment.author_id ?? comment.userId}
+                            ID:{" "}
+                            {comment.author?.id ??
+                              comment.author_id ??
+                              comment.userId}
                           </Typography>
                         </Box>
                         <Typography variant="caption">
@@ -786,21 +901,26 @@ function ArticleList() {
                         variant="body2"
                         sx={{
                           mt: 0.5,
-                          textDecoration: comment.isBlinded ? 'line-through' : 'none',
-                          color: comment.isBlinded ? 'text.disabled' : 'text.primary'
+                          textDecoration: comment.isBlinded
+                            ? "line-through"
+                            : "none",
+                          color: comment.isBlinded
+                            ? "text.disabled"
+                            : "text.primary",
                         }}
                       >
                         {comment.emoji} {comment.content}
                       </Typography>
                       {comment.isBlinded && (
                         <Typography variant="caption" color="error">
-                          (블라인드 처리됨: {comment.blindReason ?? '사유 없음'})
+                          (블라인드 처리됨: {comment.blindReason ?? "사유 없음"}
+                          )
                         </Typography>
                       )}
                     </Box>
                   ))
                 ) : (
-                  <Box sx={{ p: 2, textAlign: 'center' }}>
+                  <Box sx={{ p: 2, textAlign: "center" }}>
                     <Typography variant="body2" color="text.secondary">
                       댓글이 없습니다.
                     </Typography>
@@ -808,50 +928,72 @@ function ArticleList() {
                 )}
               </Paper>
 
-              {selectedArticleDetail.reports && selectedArticleDetail.reports.length > 0 && (
-                <>
-                  <Typography variant="subtitle1" sx={{ mt: 2 }}>
-                    신고 내역
-                  </Typography>
-                  <Paper variant="outlined" sx={{ mb: 2 }}>
-                    {selectedArticleDetail.reports.map((report: any) => (
-                      <Box
-                        key={report.id}
-                        sx={{
-                          p: 1.5,
-                          borderBottom: '1px solid',
-                          borderColor: 'divider',
-                          '&:last-child': { borderBottom: 'none' }
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                            신고자: {report.reporterNickname}
-                          </Typography>
-                          <Typography variant="caption">
-                            {new Date(report.createdAt).toLocaleString()}
-                          </Typography>
-                        </Box>
-                        <Typography variant="body2" sx={{ mt: 0.5 }}>
-                          사유: {report.reason}
-                        </Typography>
-                        {report.description && (
+              {selectedArticleDetail.reports &&
+                selectedArticleDetail.reports.length > 0 && (
+                  <>
+                    <Typography variant="subtitle1" sx={{ mt: 2 }}>
+                      신고 내역
+                    </Typography>
+                    <Paper variant="outlined" sx={{ mb: 2 }}>
+                      {selectedArticleDetail.reports.map((report: any) => (
+                        <Box
+                          key={report.id}
+                          sx={{
+                            p: 1.5,
+                            borderBottom: "1px solid",
+                            borderColor: "divider",
+                            "&:last-child": { borderBottom: "none" },
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                            }}
+                          >
+                            <Typography
+                              variant="body2"
+                              sx={{ fontWeight: 500 }}
+                            >
+                              신고자: {report.reporterNickname}
+                            </Typography>
+                            <Typography variant="caption">
+                              {new Date(report.createdAt).toLocaleString()}
+                            </Typography>
+                          </Box>
                           <Typography variant="body2" sx={{ mt: 0.5 }}>
-                            설명: {report.description}
+                            사유: {report.reason}
                           </Typography>
-                        )}
-                        <Box sx={{ mt: 1 }}>
-                          <Chip
-                            size="small"
-                            label={report.status === 'pending' ? '처리 대기' : (report.result === 'accepted' ? '수락됨' : '거절됨')}
-                            color={report.status === 'pending' ? 'warning' : (report.result === 'accepted' ? 'success' : 'error')}
-                          />
+                          {report.description && (
+                            <Typography variant="body2" sx={{ mt: 0.5 }}>
+                              설명: {report.description}
+                            </Typography>
+                          )}
+                          <Box sx={{ mt: 1 }}>
+                            <Chip
+                              size="small"
+                              label={
+                                report.status === "pending"
+                                  ? "처리 대기"
+                                  : report.result === "accepted"
+                                    ? "수락됨"
+                                    : "거절됨"
+                              }
+                              color={
+                                report.status === "pending"
+                                  ? "warning"
+                                  : report.result === "accepted"
+                                    ? "success"
+                                    : "error"
+                              }
+                            />
+                          </Box>
                         </Box>
-                      </Box>
-                    ))}
-                  </Paper>
-                </>
-              )}
+                      ))}
+                    </Paper>
+                  </>
+                )}
             </Box>
           )}
         </DialogContent>
@@ -859,13 +1001,14 @@ function ArticleList() {
           <Button onClick={handleCloseDetailDialog}>닫기</Button>
           {selectedArticleDetail && (
             <>
-              {(selectedArticleDetail.isBlinded || (selectedArticleDetail as any).blindedAt) ? (
+              {selectedArticleDetail.isBlinded ||
+              (selectedArticleDetail as any).blindedAt ? (
                 <Button
                   color="primary"
                   onClick={() => {
                     setSelectedArticles([selectedArticleDetail.id]);
                     handleCloseDetailDialog();
-                    handleOpenBlindDialog('unblind');
+                    handleOpenBlindDialog("unblind");
                   }}
                   startIcon={<VisibilityIcon />}
                 >
@@ -877,7 +1020,7 @@ function ArticleList() {
                   onClick={() => {
                     setSelectedArticles([selectedArticleDetail.id]);
                     handleCloseDetailDialog();
-                    handleOpenBlindDialog('blind');
+                    handleOpenBlindDialog("blind");
                   }}
                   startIcon={<VisibilityOffIcon />}
                 >
@@ -912,7 +1055,10 @@ function ArticleList() {
       </Dialog>
 
       {/* 게시글 삭제 확인 다이얼로그 */}
-      <Dialog open={openDeleteDialog} onClose={() => setOpenDeleteDialog(false)}>
+      <Dialog
+        open={openDeleteDialog}
+        onClose={() => setOpenDeleteDialog(false)}
+      >
         <DialogTitle>게시글 삭제 확인</DialogTitle>
         <DialogContent>
           <Typography>
@@ -920,7 +1066,10 @@ function ArticleList() {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenDeleteDialog(false)} disabled={actionLoading}>
+          <Button
+            onClick={() => setOpenDeleteDialog(false)}
+            disabled={actionLoading}
+          >
             취소
           </Button>
           <Button
@@ -928,13 +1077,16 @@ function ArticleList() {
             color="error"
             disabled={actionLoading}
           >
-            {actionLoading ? <CircularProgress size={24} /> : '삭제'}
+            {actionLoading ? <CircularProgress size={24} /> : "삭제"}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* 카테고리 이전 다이얼로그 */}
-      <Dialog open={openCategoryDialog} onClose={() => setOpenCategoryDialog(false)}>
+      <Dialog
+        open={openCategoryDialog}
+        onClose={() => setOpenCategoryDialog(false)}
+      >
         <DialogTitle>게시글 카테고리 이전</DialogTitle>
         <DialogContent>
           <Typography sx={{ mb: 2 }}>
@@ -956,7 +1108,10 @@ function ArticleList() {
           </FormControl>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenCategoryDialog(false)} disabled={actionLoading}>
+          <Button
+            onClick={() => setOpenCategoryDialog(false)}
+            disabled={actionLoading}
+          >
             취소
           </Button>
           <Button
@@ -964,7 +1119,7 @@ function ArticleList() {
             color="primary"
             disabled={actionLoading || !selectedCategoryId}
           >
-            {actionLoading ? <CircularProgress size={24} /> : '이전'}
+            {actionLoading ? <CircularProgress size={24} /> : "이전"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -974,13 +1129,17 @@ function ArticleList() {
         open={userModalOpen}
         onClose={() => setUserModalOpen(false)}
         userId={selectedUserId}
-        userDetail={{ id: '', name: '', age: 0, gender: 'MALE', profileImages: [] }}
+        userDetail={{
+          id: "",
+          name: "",
+          age: 0,
+          gender: "MALE",
+          profileImages: [],
+        }}
         loading={false}
         error={null}
       />
-
     </Box>
-
   );
 }
 
@@ -992,9 +1151,11 @@ function ReportList() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
-  const [statusFilter, setStatusFilter] = useState<'pending' | 'reviewing' | 'resolved' | 'rejected'>('pending');
-  const [reporterNameFilter, setReporterNameFilter] = useState('');
-  const [reportedNameFilter, setReportedNameFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<
+    "pending" | "reviewing" | "resolved" | "rejected"
+  >("pending");
+  const [reporterNameFilter, setReporterNameFilter] = useState("");
+  const [reportedNameFilter, setReportedNameFilter] = useState("");
   const [selectedReport, setSelectedReport] = useState<any>(null);
   const [openDetailDialog, setOpenDetailDialog] = useState(false);
 
@@ -1009,8 +1170,10 @@ function ReportList() {
   const [actionLoading, setActionLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [openBlindDialog, setOpenBlindDialog] = useState(false);
-  const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
-  const [blindAction, setBlindAction] = useState<'blind' | 'unblind'>('blind');
+  const [selectedArticleId, setSelectedArticleId] = useState<string | null>(
+    null,
+  );
+  const [blindAction, setBlindAction] = useState<"blind" | "unblind">("blind");
 
   // 신고 목록 조회
   const fetchReports = async () => {
@@ -1022,14 +1185,14 @@ function ReportList() {
         rowsPerPage,
         statusFilter,
         reporterNameFilter || undefined,
-        reportedNameFilter || undefined
+        reportedNameFilter || undefined,
       );
       setReports(response.items ?? []);
       setTotalCount(response.meta?.totalItems ?? 0);
-      console.log('신고 목록 데이터:', response.items);
+      console.log("신고 목록 데이터:", response.items);
     } catch (error) {
-      console.error('신고 목록 조회 중 오류:', error);
-      setError('신고 목록을 불러오는 중 오류가 발생했습니다.');
+      console.error("신고 목록 조회 중 오류:", error);
+      setError("신고 목록을 불러오는 중 오류가 발생했습니다.");
     } finally {
       setLoading(false);
     }
@@ -1041,7 +1204,9 @@ function ReportList() {
   };
 
   // 페이지당 행 수 변경
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChangeRowsPerPage = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
@@ -1053,12 +1218,16 @@ function ReportList() {
   };
 
   // 신고자 이름 필터 변경
-  const handleReporterNameFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleReporterNameFilterChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     setReporterNameFilter(event.target.value);
   };
 
   // 신고당한 사용자 이름 필터 변경
-  const handleReportedNameFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleReportedNameFilterChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     setReportedNameFilter(event.target.value);
   };
 
@@ -1083,14 +1252,16 @@ function ReportList() {
       setUserDetailError(null);
       setUserDetail(null);
 
-      console.log('유저 상세 정보 조회 요청:', userId);
+      console.log("유저 상세 정보 조회 요청:", userId);
       const data = await AdminService.userAppearance.getUserDetails(userId);
-      console.log('유저 상세 정보 응답:', data);
+      console.log("유저 상세 정보 응답:", data);
 
       setUserDetail(data);
     } catch (error: any) {
-      console.error('유저 상세 정보 조회 중 오류:', error);
-      setUserDetailError(error.message || '유저 상세 정보를 불러오는 중 오류가 발생했습니다.');
+      console.error("유저 상세 정보 조회 중 오류:", error);
+      setUserDetailError(
+        error.message || "유저 상세 정보를 불러오는 중 오류가 발생했습니다.",
+      );
     } finally {
       setLoadingUserDetail(false);
     }
@@ -1104,7 +1275,7 @@ function ReportList() {
   // 게시글 블라인드 처리
   const handleBlindArticle = (articleId: string, isBlinded: boolean) => {
     setSelectedArticleId(articleId);
-    setBlindAction(isBlinded ? 'unblind' : 'blind');
+    setBlindAction(isBlinded ? "unblind" : "blind");
     setOpenBlindDialog(true);
   };
 
@@ -1114,16 +1285,18 @@ function ReportList() {
 
     try {
       setActionLoading(true);
-      const isBlinded = blindAction === 'blind';
+      const isBlinded = blindAction === "blind";
 
       await communityService.blindArticle(selectedArticleId, isBlinded);
 
-      setSuccessMessage(`게시글이 ${isBlinded ? '블라인드' : '블라인드 해제'} 처리되었습니다.`);
+      setSuccessMessage(
+        `게시글이 ${isBlinded ? "블라인드" : "블라인드 해제"} 처리되었습니다.`,
+      );
       setOpenBlindDialog(false);
       fetchReports(); // 목록 새로고침
     } catch (error) {
-      console.error('게시글 블라인드 처리 중 오류:', error);
-      setError('게시글 블라인드 처리 중 오류가 발생했습니다.');
+      console.error("게시글 블라인드 처리 중 오류:", error);
+      setError("게시글 블라인드 처리 중 오류가 발생했습니다.");
     } finally {
       setActionLoading(false);
     }
@@ -1131,18 +1304,18 @@ function ReportList() {
 
   // 게시글 삭제
   const handleDeleteArticle = async (articleId: string) => {
-    if (!confirm('정말로 이 게시글을 삭제하시겠습니까?')) return;
+    if (!confirm("정말로 이 게시글을 삭제하시겠습니까?")) return;
 
     try {
       setActionLoading(true);
 
       await communityService.deleteArticle(articleId);
 
-      setSuccessMessage('게시글이 삭제되었습니다.');
+      setSuccessMessage("게시글이 삭제되었습니다.");
       fetchReports(); // 목록 새로고침
     } catch (error) {
-      console.error('게시글 삭제 중 오류:', error);
-      setError('게시글 삭제 중 오류가 발생했습니다.');
+      console.error("게시글 삭제 중 오류:", error);
+      setError("게시글 삭제 중 오류가 발생했습니다.");
     } finally {
       setActionLoading(false);
     }
@@ -1166,33 +1339,48 @@ function ReportList() {
   // 상태에 따른 칩 색상
   const getStatusChipColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'warning';
-      case 'reviewing': return 'info';
-      case 'resolved': return 'success';
-      case 'rejected': return 'error';
-      default: return 'default';
+      case "pending":
+        return "warning";
+      case "reviewing":
+        return "info";
+      case "resolved":
+        return "success";
+      case "rejected":
+        return "error";
+      default:
+        return "default";
     }
   };
 
   // 상태 한글 변환
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'pending': return '대기중';
-      case 'reviewing': return '검토중';
-      case 'resolved': return '처리완료';
-      case 'rejected': return '반려';
-      default: return status;
+      case "pending":
+        return "대기중";
+      case "reviewing":
+        return "검토중";
+      case "resolved":
+        return "처리완료";
+      case "rejected":
+        return "반려";
+      default:
+        return status;
     }
   };
 
   return (
     <Box>
       {/* 필터 및 검색 */}
-      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Typography variant="h6">
-            신고 관리 ({totalCount})
-          </Typography>
+      <Box
+        sx={{
+          mb: 2,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <Typography variant="h6">신고 관리 ({totalCount})</Typography>
 
           <FormControl variant="outlined" size="small" sx={{ minWidth: 120 }}>
             <InputLabel id="status-filter-label">상태</InputLabel>
@@ -1290,65 +1478,71 @@ function ReportList() {
               reports.map((report) => (
                 <TableRow key={report.id}>
                   <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <Avatar
                         src={report.reporter?.profileImageUrl}
                         sx={{
                           width: 32,
                           height: 32,
-                          cursor: 'pointer',
-                          '&:hover': {
-                            opacity: 0.8
-                          }
+                          cursor: "pointer",
+                          "&:hover": {
+                            opacity: 0.8,
+                          },
                         }}
-                        onClick={() => handleOpenUserDetailModal(report.reporter?.id)}
+                        onClick={() =>
+                          handleOpenUserDetailModal(report.reporter?.id)
+                        }
                       >
                         <PersonIcon />
                       </Avatar>
                       <Box>
                         <Typography variant="body2" fontWeight="medium">
-                          {report.reporter?.name || '알 수 없음'}
+                          {report.reporter?.name || "알 수 없음"}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {report.reporter?.phoneNumber || ''}
+                          {report.reporter?.phoneNumber || ""}
                         </Typography>
                       </Box>
                     </Box>
                   </TableCell>
                   <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <Avatar
                         src={report.reported?.profileImageUrl}
                         sx={{
                           width: 32,
                           height: 32,
-                          cursor: 'pointer',
-                          '&:hover': {
-                            opacity: 0.8
-                          }
+                          cursor: "pointer",
+                          "&:hover": {
+                            opacity: 0.8,
+                          },
                         }}
-                        onClick={() => handleOpenUserDetailModal(report.reported?.id)}
+                        onClick={() =>
+                          handleOpenUserDetailModal(report.reported?.id)
+                        }
                       >
                         <PersonIcon />
                       </Avatar>
                       <Box>
                         <Typography variant="body2" fontWeight="medium">
-                          {report.reported?.name || '알 수 없음'}
+                          {report.reported?.name || "알 수 없음"}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {report.reported?.phoneNumber || ''}
+                          {report.reported?.phoneNumber || ""}
                         </Typography>
                       </Box>
                     </Box>
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
-                      {report.article?.title || '제목 없음'}
+                      {report.article?.title || "제목 없음"}
                     </Typography>
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" noWrap sx={{ maxWidth: 150 }}>
-                      {report.reason || '사유 없음'}
+                      {report.reason === "기타" && report.description
+                        ? `기타(${report.description.length > 15 ? report.description.slice(0, 15) + "..." : report.description})`
+                        : report.reason || "사유 없음"}
                     </Typography>
                   </TableCell>
                   <TableCell>
@@ -1360,17 +1554,17 @@ function ReportList() {
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2">
-                      {new Date(report.createdAt).toLocaleDateString('ko-KR', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit'
+                      {new Date(report.createdAt).toLocaleDateString("ko-KR", {
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
                       })}
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
                       <Button
                         size="small"
                         variant="outlined"
@@ -1381,11 +1575,20 @@ function ReportList() {
                       <Button
                         size="small"
                         variant="outlined"
-                        color={report.article?.blindedAt ? "success" : "warning"}
-                        onClick={() => handleBlindArticle(report.article?.id, !!report.article?.blindedAt)}
+                        color={
+                          report.article?.blindedAt ? "success" : "warning"
+                        }
+                        onClick={() =>
+                          handleBlindArticle(
+                            report.article?.id,
+                            !!report.article?.blindedAt,
+                          )
+                        }
                         disabled={actionLoading}
                       >
-                        {report.article?.blindedAt ? '블라인드 해제' : '블라인드'}
+                        {report.article?.blindedAt
+                          ? "블라인드 해제"
+                          : "블라인드"}
                       </Button>
                       <Button
                         size="small"
@@ -1429,43 +1632,208 @@ function ReportList() {
         <DialogContent>
           {selectedReport && (
             <Box sx={{ mt: 1 }}>
-              <Typography variant="h6" gutterBottom>신고 정보</Typography>
+              <Typography variant="h6" gutterBottom>
+                신고 정보
+              </Typography>
               <Box sx={{ mb: 2 }}>
-                <Typography><Box component="span" fontWeight="bold">신고 ID:</Box> {selectedReport.id}</Typography>
-                <Typography><Box component="span" fontWeight="bold">신고 사유:</Box> {selectedReport.reason}</Typography>
-                <Typography><Box component="span" fontWeight="bold">상태:</Box> {getStatusText(selectedReport.status)}</Typography>
-                <Typography><Box component="span" fontWeight="bold">신고일:</Box> {new Date(selectedReport.createdAt).toLocaleString('ko-KR')}</Typography>
+                <Typography>
+                  <Box component="span" fontWeight="bold">
+                    신고 ID:
+                  </Box>{" "}
+                  {selectedReport.id}
+                </Typography>
+                <Typography>
+                  <Box component="span" fontWeight="bold">
+                    신고 사유:
+                  </Box>{" "}
+                  {selectedReport.reason}
+                </Typography>
+                {selectedReport.description && (
+                  <Box sx={{ mt: 1 }}>
+                    <Typography>
+                      <Box component="span" fontWeight="bold">
+                        상세 설명:
+                      </Box>
+                    </Typography>
+                    <Paper sx={{ p: 1.5, mt: 0.5, backgroundColor: "#fff3e0" }}>
+                      <Typography
+                        variant="body2"
+                        style={{ whiteSpace: "pre-wrap" }}
+                      >
+                        {selectedReport.description}
+                      </Typography>
+                    </Paper>
+                  </Box>
+                )}
+                <Typography sx={{ mt: 1 }}>
+                  <Box component="span" fontWeight="bold">
+                    상태:
+                  </Box>{" "}
+                  {getStatusText(selectedReport.status)}
+                </Typography>
+                <Typography>
+                  <Box component="span" fontWeight="bold">
+                    신고일:
+                  </Box>{" "}
+                  {new Date(selectedReport.createdAt).toLocaleString("ko-KR")}
+                </Typography>
               </Box>
 
-              <Typography variant="h6" gutterBottom>신고자 정보</Typography>
-              <Box sx={{ mb: 2 }}>
-                <Typography><Box component="span" fontWeight="bold">이름:</Box> {selectedReport.reporter?.name}</Typography>
-                <Typography><Box component="span" fontWeight="bold">이메일:</Box> {selectedReport.reporter?.email}</Typography>
-                <Typography><Box component="span" fontWeight="bold">전화번호:</Box> {selectedReport.reporter?.phoneNumber}</Typography>
-                <Typography><Box component="span" fontWeight="bold">나이:</Box> {selectedReport.reporter?.age}세</Typography>
-                <Typography><Box component="span" fontWeight="bold">성별:</Box> {selectedReport.reporter?.gender === 'MALE' ? '남성' : '여성'}</Typography>
+              <Typography variant="h6" gutterBottom>
+                신고자 정보
+              </Typography>
+              <Box
+                sx={{
+                  mb: 2,
+                  display: "flex",
+                  gap: 2,
+                  alignItems: "flex-start",
+                }}
+              >
+                <Avatar
+                  src={selectedReport.reporter?.profileImageUrl}
+                  sx={{ width: 64, height: 64 }}
+                >
+                  <PersonIcon />
+                </Avatar>
+                <Box>
+                  <Typography>
+                    <Box component="span" fontWeight="bold">
+                      이름:
+                    </Box>{" "}
+                    {selectedReport.reporter?.name || "-"}
+                  </Typography>
+                  <Typography>
+                    <Box component="span" fontWeight="bold">
+                      이메일:
+                    </Box>{" "}
+                    {selectedReport.reporter?.email || "-"}
+                  </Typography>
+                  <Typography>
+                    <Box component="span" fontWeight="bold">
+                      전화번호:
+                    </Box>{" "}
+                    {selectedReport.reporter?.phoneNumber || "-"}
+                  </Typography>
+                  <Typography>
+                    <Box component="span" fontWeight="bold">
+                      나이/성별:
+                    </Box>{" "}
+                    {selectedReport.reporter?.age
+                      ? `${selectedReport.reporter.age}세`
+                      : "-"}{" "}
+                    /{" "}
+                    {selectedReport.reporter?.gender === "MALE"
+                      ? "남성"
+                      : selectedReport.reporter?.gender === "FEMALE"
+                        ? "여성"
+                        : "-"}
+                  </Typography>
+                </Box>
               </Box>
 
-              <Typography variant="h6" gutterBottom>신고당한 사용자 정보</Typography>
-              <Box sx={{ mb: 2 }}>
-                <Typography><Box component="span" fontWeight="bold">이름:</Box> {selectedReport.reported?.name}</Typography>
-                <Typography><Box component="span" fontWeight="bold">이메일:</Box> {selectedReport.reported?.email}</Typography>
-                <Typography><Box component="span" fontWeight="bold">전화번호:</Box> {selectedReport.reported?.phoneNumber}</Typography>
-                <Typography><Box component="span" fontWeight="bold">나이:</Box> {selectedReport.reported?.age}세</Typography>
-                <Typography><Box component="span" fontWeight="bold">성별:</Box> {selectedReport.reported?.gender === 'MALE' ? '남성' : '여성'}</Typography>
+              <Typography variant="h6" gutterBottom>
+                신고당한 사용자 정보
+              </Typography>
+              <Box
+                sx={{
+                  mb: 2,
+                  display: "flex",
+                  gap: 2,
+                  alignItems: "flex-start",
+                }}
+              >
+                <Avatar
+                  src={selectedReport.reported?.profileImageUrl}
+                  sx={{ width: 64, height: 64 }}
+                >
+                  <PersonIcon />
+                </Avatar>
+                <Box>
+                  <Typography>
+                    <Box component="span" fontWeight="bold">
+                      이름:
+                    </Box>{" "}
+                    {selectedReport.reported?.name || "-"}
+                  </Typography>
+                  <Typography>
+                    <Box component="span" fontWeight="bold">
+                      이메일:
+                    </Box>{" "}
+                    {selectedReport.reported?.email || "-"}
+                  </Typography>
+                  <Typography>
+                    <Box component="span" fontWeight="bold">
+                      전화번호:
+                    </Box>{" "}
+                    {selectedReport.reported?.phoneNumber || "-"}
+                  </Typography>
+                  <Typography>
+                    <Box component="span" fontWeight="bold">
+                      나이/성별:
+                    </Box>{" "}
+                    {selectedReport.reported?.age
+                      ? `${selectedReport.reported.age}세`
+                      : "-"}{" "}
+                    /{" "}
+                    {selectedReport.reported?.gender === "MALE"
+                      ? "남성"
+                      : selectedReport.reported?.gender === "FEMALE"
+                        ? "여성"
+                        : "-"}
+                  </Typography>
+                </Box>
               </Box>
 
-              <Typography variant="h6" gutterBottom>게시글 정보</Typography>
+              <Typography variant="h6" gutterBottom>
+                신고된 게시글
+              </Typography>
               <Box sx={{ mb: 2 }}>
-                <Typography><Box component="span" fontWeight="bold">제목:</Box> {selectedReport.article?.title}</Typography>
-                <Typography><Box component="span" fontWeight="bold">내용:</Box></Typography>
-                <Paper sx={{ p: 2, mt: 1, backgroundColor: '#f5f5f5' }}>
-                  <Typography variant="body2" style={{ whiteSpace: 'pre-wrap' }}>
-                    {selectedReport.article?.content}
+                <Typography>
+                  <Box component="span" fontWeight="bold">
+                    제목:
+                  </Box>{" "}
+                  {selectedReport.article?.title || "제목 없음"}
+                </Typography>
+                <Typography sx={{ mt: 1 }}>
+                  <Box component="span" fontWeight="bold">
+                    내용:
+                  </Box>
+                </Typography>
+                <Paper sx={{ p: 2, mt: 1, backgroundColor: "#f5f5f5" }}>
+                  <Typography
+                    variant="body2"
+                    style={{ whiteSpace: "pre-wrap" }}
+                  >
+                    {selectedReport.article?.content || "내용 없음"}
                   </Typography>
                 </Paper>
-                <Typography><Box component="span" fontWeight="bold">작성일:</Box> {new Date(selectedReport.article?.createdAt).toLocaleString('ko-KR')}</Typography>
-                <Typography><Box component="span" fontWeight="bold">블라인드 상태:</Box> {selectedReport.article?.blindedAt ? '블라인드 처리됨' : '정상'}</Typography>
+                <Typography sx={{ mt: 1 }}>
+                  <Box component="span" fontWeight="bold">
+                    작성일:
+                  </Box>{" "}
+                  {selectedReport.article?.createdAt
+                    ? new Date(selectedReport.article.createdAt).toLocaleString(
+                        "ko-KR",
+                      )
+                    : "-"}
+                </Typography>
+                <Typography>
+                  <Box component="span" fontWeight="bold">
+                    블라인드 상태:
+                  </Box>{" "}
+                  <Chip
+                    label={
+                      selectedReport.article?.blindedAt
+                        ? "블라인드 처리됨"
+                        : "정상"
+                    }
+                    color={
+                      selectedReport.article?.blindedAt ? "error" : "success"
+                    }
+                    size="small"
+                  />
+                </Typography>
               </Box>
             </Box>
           )}
@@ -1483,22 +1851,28 @@ function ReportList() {
         fullWidth
       >
         <DialogTitle>
-          게시글 {blindAction === 'blind' ? '블라인드' : '블라인드 해제'} 확인
+          게시글 {blindAction === "blind" ? "블라인드" : "블라인드 해제"} 확인
         </DialogTitle>
         <DialogContent>
           <Typography>
-            정말로 이 게시글을 {blindAction === 'blind' ? '블라인드' : '블라인드 해제'} 처리하시겠습니까?
+            정말로 이 게시글을{" "}
+            {blindAction === "blind" ? "블라인드" : "블라인드 해제"}{" "}
+            처리하시겠습니까?
           </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenBlindDialog(false)}>취소</Button>
           <Button
             onClick={handleConfirmBlind}
-            color={blindAction === 'blind' ? 'warning' : 'success'}
+            color={blindAction === "blind" ? "warning" : "success"}
             variant="contained"
             disabled={actionLoading}
           >
-            {actionLoading ? '처리중...' : (blindAction === 'blind' ? '블라인드' : '블라인드 해제')}
+            {actionLoading
+              ? "처리중..."
+              : blindAction === "blind"
+                ? "블라인드"
+                : "블라인드 해제"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1534,13 +1908,20 @@ export default function AdminCommunity() {
   // 관리자 권한 확인
   useEffect(() => {
     if (!loading && (!user || !isAdmin)) {
-      router.push('/');
+      router.push("/");
     }
   }, [user, loading, isAdmin, router]);
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
         <CircularProgress />
       </Box>
     );
@@ -1551,49 +1932,55 @@ export default function AdminCommunity() {
   }
 
   return (
-    <Box sx={{
-      p: 4,
-      maxWidth: '100%',
-      background: 'linear-gradient(to right bottom, #ffffff, #f8f9fa)',
-      borderRadius: 2,
-      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
-      minHeight: 'calc(100vh - 100px)'
-    }}>
-      <Box sx={{
-        display: 'flex',
-        alignItems: 'center',
-        mb: 4,
-        pb: 2,
-        borderBottom: '1px solid rgba(0, 0, 0, 0.06)'
-      }}>
-        <ForumIcon sx={{ fontSize: 36, mr: 2, color: 'primary.main' }} />
+    <Box
+      sx={{
+        p: 4,
+        maxWidth: "100%",
+        background: "linear-gradient(to right bottom, #ffffff, #f8f9fa)",
+        borderRadius: 2,
+        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.05)",
+        minHeight: "calc(100vh - 100px)",
+      }}
+    >
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          mb: 4,
+          pb: 2,
+          borderBottom: "1px solid rgba(0, 0, 0, 0.06)",
+        }}
+      >
+        <ForumIcon sx={{ fontSize: 36, mr: 2, color: "primary.main" }} />
         <Typography
           variant="h4"
           sx={{
             fontWeight: 600,
-            background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent'
+            background: "linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
           }}
         >
           커뮤니티 관리
         </Typography>
       </Box>
 
-      <Box sx={{
-        backgroundColor: '#fff',
-        borderRadius: 2,
-        p: 0,
-        boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)'
-      }}>
+      <Box
+        sx={{
+          backgroundColor: "#fff",
+          borderRadius: 2,
+          p: 0,
+          boxShadow: "0 2px 12px rgba(0, 0, 0, 0.08)",
+        }}
+      >
         {/* 탭 네비게이션 */}
         <Tabs
           value={currentTab}
           onChange={handleTabChange}
           sx={{
             borderBottom: 1,
-            borderColor: 'divider',
-            px: 2
+            borderColor: "divider",
+            px: 2,
           }}
         >
           <Tab
@@ -1601,11 +1988,7 @@ export default function AdminCommunity() {
             icon={<ArticleIcon />}
             iconPosition="start"
           />
-          <Tab
-            label="신고 관리"
-            icon={<ReportIcon />}
-            iconPosition="start"
-          />
+          <Tab label="신고 관리" icon={<ReportIcon />} iconPosition="start" />
         </Tabs>
 
         {/* 탭 컨텐츠 */}
