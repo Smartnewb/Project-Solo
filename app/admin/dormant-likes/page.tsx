@@ -19,10 +19,13 @@ import {
   CardContent,
   Grid,
   Pagination,
+  Checkbox,
+  Tooltip,
 } from '@mui/material';
 import AdminService from '@/app/services/admin';
 import type { DormantLikesDashboardResponse, DormantUserResponse } from '@/types/admin';
 import PendingLikesModal from './components/PendingLikesModal';
+import BulkProcessModal from './components/BulkProcessModal';
 
 export default function DormantLikesPage() {
   const [dashboardData, setDashboardData] = useState<DormantLikesDashboardResponse | null>(null);
@@ -31,6 +34,8 @@ export default function DormantLikesPage() {
   const [page, setPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState<DormantUserResponse | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [bulkProcessModalOpen, setBulkProcessModalOpen] = useState(false);
 
   const fetchDashboard = async () => {
     try {
@@ -59,6 +64,34 @@ export default function DormantLikesPage() {
     setSelectedUser(null);
     fetchDashboard();
   };
+
+  const processableUsers = dashboardData?.users.filter((u) => u.canProcess) || [];
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedUserIds(processableUsers.map((u) => u.id));
+    } else {
+      setSelectedUserIds([]);
+    }
+  };
+
+  const handleSelectUser = (userId: string, canProcess: boolean) => {
+    if (!canProcess) return;
+    setSelectedUserIds((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const handleBulkProcessComplete = () => {
+    setSelectedUserIds([]);
+    fetchDashboard();
+  };
+
+  const selectedUsers = dashboardData?.users.filter((u) =>
+    selectedUserIds.includes(u.id)
+  ) || [];
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '로그인 기록 없음';
@@ -141,10 +174,33 @@ export default function DormantLikesPage() {
         </Grid>
       </Grid>
 
-      <Box sx={{ mb: 2 }}>
+      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="body2" color="text.secondary">
           총 {dashboardData?.totalUsers || 0}명의 대상 계정
         </Typography>
+        {selectedUserIds.length > 0 && (
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <Chip
+              label={`${selectedUserIds.length}명 선택됨`}
+              color="primary"
+              size="small"
+            />
+            <Button
+              variant="contained"
+              size="small"
+              onClick={() => setBulkProcessModalOpen(true)}
+            >
+              일괄 처리
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => setSelectedUserIds([])}
+            >
+              선택 해제
+            </Button>
+          </Box>
+        )}
       </Box>
 
       {loading ? (
@@ -163,6 +219,20 @@ export default function DormantLikesPage() {
             <Table>
               <TableHead>
                 <TableRow>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      indeterminate={
+                        selectedUserIds.length > 0 &&
+                        selectedUserIds.length < processableUsers.length
+                      }
+                      checked={
+                        processableUsers.length > 0 &&
+                        selectedUserIds.length === processableUsers.length
+                      }
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      disabled={processableUsers.length === 0}
+                    />
+                  </TableCell>
                   <TableCell>이름</TableCell>
                   <TableCell>전화번호</TableCell>
                   <TableCell align="center">구슬</TableCell>
@@ -175,7 +245,28 @@ export default function DormantLikesPage() {
               </TableHead>
               <TableBody>
                 {dashboardData.users.map((user) => (
-                  <TableRow key={user.id} hover>
+                  <TableRow
+                    key={user.id}
+                    hover
+                    selected={selectedUserIds.includes(user.id)}
+                  >
+                    <TableCell padding="checkbox">
+                      <Tooltip
+                        title={
+                          user.canProcess
+                            ? ''
+                            : `${user.cooldownRemainingMinutes}분 후 처리 가능`
+                        }
+                      >
+                        <span>
+                          <Checkbox
+                            checked={selectedUserIds.includes(user.id)}
+                            onChange={() => handleSelectUser(user.id, user.canProcess)}
+                            disabled={!user.canProcess}
+                          />
+                        </span>
+                      </Tooltip>
+                    </TableCell>
                     <TableCell>{user.name}</TableCell>
                     <TableCell>{user.phoneNumber}</TableCell>
                     <TableCell align="center">
@@ -240,6 +331,13 @@ export default function DormantLikesPage() {
           user={selectedUser}
         />
       )}
+
+      <BulkProcessModal
+        open={bulkProcessModalOpen}
+        onClose={() => setBulkProcessModalOpen(false)}
+        selectedUsers={selectedUsers}
+        onComplete={handleBulkProcessComplete}
+      />
     </Box>
   );
 }
