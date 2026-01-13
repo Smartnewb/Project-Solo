@@ -198,6 +198,15 @@ export default function AdminLayout({
                   Q&A 처리
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/admin/universities"
+                  className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors"
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  대학 관리
+                </Link>
+              </li>
             </ul>
 
             {/* 💕 매칭/채팅 */}
