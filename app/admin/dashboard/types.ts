@@ -178,6 +178,14 @@ export interface MatchingTypeFunnel {
   steps: MatchingTypeFunnelStep[];
 }
 
+export interface GemSystemFunnelDebugInfo {
+  matchesQuery: string;
+  likesQuery: string;
+  mutualLikesQuery: string;
+  chatRoomsQuery: string;
+  rawResults: Record<string, unknown>;
+}
+
 export interface GemSystemFunnelResponse {
   period: {
     startDate: string;
@@ -186,4 +194,5 @@ export interface GemSystemFunnelResponse {
   gemSystemStartDate: string;
   funnelByType: MatchingTypeFunnel[];
   totalFunnel: MatchingTypeFunnel;
+  debug?: GemSystemFunnelDebugInfo;
 }

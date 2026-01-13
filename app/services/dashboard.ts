@@ -158,12 +158,13 @@ export const dashboardService = {
   async getGemSystemFunnel(
     startDate?: string,
     endDate?: string,
+    debug?: boolean,
   ): Promise<GemSystemFunnelResponse> {
     try {
       const response = await axiosServer.get(
         DASHBOARD_ENDPOINT.GEM_SYSTEM_FUNNEL,
         {
-          params: { startDate, endDate },
+          params: { startDate, endDate, debug: debug ? "true" : undefined },
         },
       );
       return response.data;
