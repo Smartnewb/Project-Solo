@@ -2042,35 +2042,131 @@ const userReview = {
 
 // 대학교 및 학과 관련 API
 const universities = {
-  // 대학교 목록 조회
-  getUniversities: async () => {
-    try {
-      console.log("대학교 목록 조회 시작");
-      const response = await axiosServer.get("/admin/universities");
-      console.log("대학교 목록 조회 응답:", response.data);
-      return response.data;
-    } catch (error: any) {
-      console.error("대학교 목록 조회 중 오류:", error);
-      console.error("오류 상세 정보:", error.response?.data || error.message);
-      throw error;
-    }
+  meta: {
+    getRegions: async () => {
+      const response = await axiosServer.get('/admin/universities/meta/regions');
+      return response.data.regions;
+    },
+
+    getTypes: async () => {
+      const response = await axiosServer.get('/admin/universities/meta/types');
+      return response.data.types;
+    },
+
+    getFoundations: async () => {
+      const response = await axiosServer.get('/admin/universities/meta/foundations');
+      return response.data.foundations;
+    },
   },
 
-  // 학과 목록 조회
+  getList: async (params?: import('@/types/admin').UniversityListParams) => {
+    const response = await axiosServer.get('/admin/universities', { params });
+    return response.data;
+  },
+
+  getById: async (id: string): Promise<import('@/types/admin').UniversityDetail> => {
+    const response = await axiosServer.get(`/admin/universities/${id}`);
+    return response.data;
+  },
+
+  create: async (data: import('@/types/admin').CreateUniversityRequest) => {
+    const response = await axiosServer.post('/admin/universities', data);
+    return response.data;
+  },
+
+  update: async (id: string, data: import('@/types/admin').UpdateUniversityRequest) => {
+    const response = await axiosServer.put(`/admin/universities/${id}`, data);
+    return response.data;
+  },
+
+  delete: async (id: string) => {
+    const response = await axiosServer.delete(`/admin/universities/${id}`);
+    return response.data;
+  },
+
+  uploadLogo: async (id: string, file: File) => {
+    const formData = new FormData();
+    formData.append('logo', file);
+    const response = await axiosServer.post(`/admin/universities/${id}/logo`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  deleteLogo: async (id: string) => {
+    const response = await axiosServer.delete(`/admin/universities/${id}/logo`);
+    return response.data;
+  },
+
+  departments: {
+    getList: async (universityId: string, params?: import('@/types/admin').DepartmentListParams) => {
+      const response = await axiosServer.get(`/admin/universities/${universityId}/departments`, { params });
+      return response.data;
+    },
+
+    getById: async (universityId: string, id: string) => {
+      const response = await axiosServer.get(`/admin/universities/${universityId}/departments/${id}`);
+      return response.data;
+    },
+
+    create: async (universityId: string, data: import('@/types/admin').CreateDepartmentRequest) => {
+      const response = await axiosServer.post(`/admin/universities/${universityId}/departments`, data);
+      return response.data;
+    },
+
+    update: async (universityId: string, id: string, data: import('@/types/admin').UpdateDepartmentRequest) => {
+      const response = await axiosServer.put(`/admin/universities/${universityId}/departments/${id}`, data);
+      return response.data;
+    },
+
+    delete: async (universityId: string, id: string) => {
+      const response = await axiosServer.delete(`/admin/universities/${universityId}/departments/${id}`);
+      return response.data;
+    },
+
+    bulkCreate: async (universityId: string, data: import('@/types/admin').BulkCreateDepartmentsRequest) => {
+      const response = await axiosServer.post(`/admin/universities/${universityId}/departments/bulk`, data);
+      return response.data;
+    },
+
+    downloadTemplate: async (universityId: string) => {
+      const response = await axiosServer.get(`/admin/universities/${universityId}/departments/template`, {
+        responseType: 'blob',
+      });
+      return response.data;
+    },
+
+    uploadCsv: async (universityId: string, file: File): Promise<import('@/types/admin').UploadDepartmentsCsvResponse> => {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await axiosServer.post(`/admin/universities/${universityId}/departments/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    },
+  },
+
+  getUniversities: async () => {
+    const response = await axiosServer.get("/admin/universities");
+    return response.data;
+  },
+
   getDepartments: async (university: string) => {
+    const response = await axiosServer.get("/universities/departments", {
+      params: { university },
+    });
+    return response.data;
+  },
+
+  _legacyGetDepartments: async (university: string) => {
     try {
-      console.log("학과 목록 조회 시작:", university);
       const response = await axiosServer.get("/universities/departments", {
         params: { university },
       });
-      console.log("학과 목록 조회 응답:", response.data);
       return response.data;
     } catch (error: any) {
       console.error("학과 목록 조회 중 오류:", error);
-      console.error("오류 상세 정보:", error.response?.data || error.message);
 
-      // 오류 발생 시 실제 DB에 있는 학과 목록 반환
-      // 대학교에 따라 다른 학과 목록 반환
       const departmentsByUniversity: { [key: string]: string[] } = {
         "건양대학교(메디컬캠퍼스)": [
           "간호학과",
