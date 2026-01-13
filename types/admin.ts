@@ -528,3 +528,159 @@ export type KoreaRegionCode =
 export type JapanRegionCode =
   | 'TOKYO' | 'OSAKA' | 'KANAGAWA' | 'AICHI' | 'SAITAMA'
   | 'CHIBA' | 'HYOGO' | 'HOKKAIDO' | 'FUKUOKA' | 'KYOTO';
+
+export type UniversityType = 'UNIVERSITY' | 'COLLEGE';
+
+export interface RegionMetaItem {
+  code: string;
+  nameLocal: string;
+  name: string;
+}
+
+export interface TypeMetaItem {
+  code: string;
+  name: string;
+}
+
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
+export interface DepartmentSummary {
+  id: string;
+  name: string;
+  code?: string;
+  nameEn?: string;
+  displayOrder: number;
+  isActive: boolean;
+}
+
+export interface UniversityItem {
+  id: string;
+  name: string;
+  region: string;
+  regionName?: string;
+  code?: string;
+  en?: string;
+  type: UniversityType;
+  foundation?: string;
+  logoUrl?: string;
+  isActive: boolean;
+  departmentCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UniversityDetail extends UniversityItem {
+  departments: DepartmentSummary[];
+}
+
+export interface UniversityListResponse {
+  items: UniversityItem[];
+  meta: PaginationMeta;
+}
+
+export interface UniversityListParams {
+  page?: number;
+  limit?: number;
+  name?: string;
+  region?: string;
+  isActive?: boolean;
+  type?: UniversityType;
+  sortBy?: 'name' | 'createdAt' | 'region';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface CreateUniversityRequest {
+  name: string;
+  region: string;
+  code?: string;
+  en?: string;
+  type: UniversityType;
+  foundation?: string;
+  isActive?: boolean;
+}
+
+export interface UpdateUniversityRequest {
+  name?: string;
+  region?: string;
+  code?: string;
+  en?: string;
+  type?: UniversityType;
+  foundation?: string;
+  isActive?: boolean;
+}
+
+export interface DepartmentItem {
+  id: string;
+  universityId: string;
+  name: string;
+  code?: string;
+  nameEn?: string;
+  displayOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DepartmentListResponse {
+  items: DepartmentItem[];
+  meta: PaginationMeta;
+}
+
+export interface DepartmentListParams {
+  page?: number;
+  limit?: number;
+  name?: string;
+  isActive?: boolean;
+  sortBy?: 'name' | 'displayOrder' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface CreateDepartmentRequest {
+  name: string;
+  code?: string;
+  nameEn?: string;
+  displayOrder?: number;
+  isActive?: boolean;
+}
+
+export interface UpdateDepartmentRequest {
+  name?: string;
+  code?: string;
+  nameEn?: string;
+  displayOrder?: number;
+  isActive?: boolean;
+}
+
+export interface BulkCreateDepartmentsRequest {
+  departments: CreateDepartmentRequest[];
+}
+
+export interface BulkCreateDepartmentsResponse {
+  created: number;
+  message: string;
+}
+
+export interface UploadLogoResponse {
+  success: boolean;
+  logoUrl: string;
+  message: string;
+}
+
+export interface DeleteResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface UploadDepartmentsCsvResponse {
+  success: boolean;
+  deleted: number;
+  created: number;
+  message: string;
+  warnings?: string[];
+}
