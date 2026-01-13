@@ -11,6 +11,7 @@ import TodayMetrics from "./components/TodayMetrics";
 import RevenueOverview from "./components/RevenueOverview";
 import QuickAccess from "./components/QuickAccess";
 import WeeklyTrend from "./components/WeeklyTrend";
+import GemSystemFunnel from "./components/GemSystemFunnel";
 
 export default function MainDashboard() {
   const router = useRouter();
@@ -142,6 +143,8 @@ export default function MainDashboard() {
             <RevenueOverview kpi={summary?.kpi ?? null} loading={loading} />
           </Grid>
         </Grid>
+
+        <GemSystemFunnel />
 
         <QuickAccess />
       </Box>

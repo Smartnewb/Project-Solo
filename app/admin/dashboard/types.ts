@@ -163,3 +163,27 @@ export interface RevenueComparison {
 export interface ExtendedRevenueResponse {
   revenue: RevenueComparison;
 }
+
+// === 구슬 시스템 매칭 퍼널 타입 ===
+export interface MatchingTypeFunnelStep {
+  name: string;
+  count: number;
+  conversionRate: number;
+  overallConversionRate: number;
+}
+
+export interface MatchingTypeFunnel {
+  type: 'scheduled' | 'rematching' | 'total';
+  typeName: string;
+  steps: MatchingTypeFunnelStep[];
+}
+
+export interface GemSystemFunnelResponse {
+  period: {
+    startDate: string;
+    endDate: string;
+  };
+  gemSystemStartDate: string;
+  funnelByType: MatchingTypeFunnel[];
+  totalFunnel: MatchingTypeFunnel;
+}

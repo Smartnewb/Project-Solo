@@ -8,6 +8,7 @@ import {
   GoalCreateRequest,
   GoalUpdateRequest,
   ExtendedRevenueResponse,
+  GemSystemFunnelResponse,
 } from "@/app/admin/dashboard/types";
 
 const DASHBOARD_ENDPOINT = {
@@ -16,6 +17,7 @@ const DASHBOARD_ENDPOINT = {
   HOURLY_SIGNUPS: "/admin/dashboard/stats/signups/hourly",
   GOALS: "/admin/goals",
   EXTENDED_REVENUE: "/admin/dashboard/revenue/extended",
+  GEM_SYSTEM_FUNNEL: "/admin/dashboard/matching/gem-system-funnel",
 } as const;
 
 // 에러 클래스
@@ -150,6 +152,27 @@ export const dashboardService = {
     } catch (error) {
       console.error("확장 매출 현황 조회 실패:", error);
       throw new DashboardApiError("확장 매출 현황 조회에 실패했습니다.", error);
+    }
+  },
+
+  async getGemSystemFunnel(
+    startDate?: string,
+    endDate?: string,
+  ): Promise<GemSystemFunnelResponse> {
+    try {
+      const response = await axiosServer.get(
+        DASHBOARD_ENDPOINT.GEM_SYSTEM_FUNNEL,
+        {
+          params: { startDate, endDate },
+        },
+      );
+      return response.data;
+    } catch (error) {
+      console.error("구슬 시스템 퍼널 조회 실패:", error);
+      throw new DashboardApiError(
+        "구슬 시스템 퍼널 조회에 실패했습니다.",
+        error,
+      );
     }
   },
 };
