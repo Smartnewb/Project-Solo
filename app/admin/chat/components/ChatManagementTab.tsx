@@ -26,6 +26,7 @@ import {
   ListItemAvatar,
   Card,
   Typography,
+  ButtonGroup,
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
@@ -34,15 +35,26 @@ import {
   Person as PersonIcon,
   Refresh as RefreshIcon,
   Close as CloseIcon,
-  AccessTime as AccessTimeIcon
+  AccessTime as AccessTimeIcon,
+  Download as DownloadIcon,
 } from '@mui/icons-material';
 import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
 import chatService, {
   ChatRoom,
-  ChatMessage
+  ChatMessage,
+  DatePreset,
 } from '@/app/services/chat';
 import AdminService from '@/app/services/admin';
 import { UserDetail } from '@/components/admin/appearance/UserDetailModal';
+
+const DATE_PRESETS: { label: string; value: DatePreset }[] = [
+  { label: '오늘', value: 'today' },
+  { label: '어제', value: 'yesterday' },
+  { label: '7일', value: '7days' },
+  { label: '14일', value: '14days' },
+  { label: '30일', value: '30days' },
+  { label: '전체', value: 'all' },
+];
 
 export default function ChatManagementTab() {
   const [loading, setLoading] = useState(false);
@@ -57,8 +69,10 @@ export default function ChatManagementTab() {
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [totalCount, setTotalCount] = useState(0);
 
-  const [startDate, setStartDate] = useState<Date | null>(new Date());
-  const [endDate, setEndDate] = useState<Date | null>(new Date());
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [selectedPreset, setSelectedPreset] = useState<DatePreset>('7days');
+  const [appliedDateRange, setAppliedDateRange] = useState<{ start: string | null; end: string | null }>({ start: null, end: null });
 
   const [chatDetailOpen, setChatDetailOpen] = useState(false);
   const [userDetailOpen, setUserDetailOpen] = useState(false);
@@ -72,23 +86,35 @@ export default function ChatManagementTab() {
   const [previewImageUrl, setPreviewImageUrl] = useState<string>('');
 
   const [error, setError] = useState<string>('');
+  const [csvExporting, setCsvExporting] = useState(false);
 
-  const fetchChatRooms = async () => {
-    if (!startDate || !endDate) return;
-
+  const fetchChatRooms = async (preset?: DatePreset) => {
     setLoading(true);
     setError('');
 
     try {
-      const response = await chatService.getChatRooms({
-        startDate: startDate.toISOString().split('T')[0],
-        endDate: endDate.toISOString().split('T')[0],
+      const params: any = {
         page: page + 1,
         limit: rowsPerPage
-      });
+      };
+
+      if (preset) {
+        params.preset = preset;
+      } else if (startDate && endDate) {
+        params.startDate = startDate.toISOString().split('T')[0];
+        params.endDate = endDate.toISOString().split('T')[0];
+      } else {
+        params.preset = selectedPreset;
+      }
+
+      const response = await chatService.getChatRooms(params);
 
       setChatRooms(response.chatRooms);
       setTotalCount(response.total);
+      setAppliedDateRange({
+        start: response.appliedStartDate,
+        end: response.appliedEndDate
+      });
     } catch (error: any) {
       console.error('채팅방 목록 조회 실패:', error);
       setError(error.message || '채팅방 목록을 불러오는데 실패했습니다.');
@@ -113,6 +139,42 @@ export default function ChatManagementTab() {
       setError(error.message || '채팅 메시지를 불러오는데 실패했습니다.');
     } finally {
       setMessagesLoading(false);
+    }
+  };
+
+  const handlePresetClick = (preset: DatePreset) => {
+    setSelectedPreset(preset);
+    setStartDate(null);
+    setEndDate(null);
+    setPage(0);
+    fetchChatRooms(preset);
+  };
+
+  const handleCustomDateSearch = () => {
+    if (!startDate || !endDate) return;
+    setPage(0);
+    fetchChatRooms();
+  };
+
+  const handleCsvExport = async () => {
+    setCsvExporting(true);
+    setError('');
+
+    try {
+      const params: any = {};
+      if (startDate && endDate) {
+        params.startDate = startDate.toISOString().split('T')[0];
+        params.endDate = endDate.toISOString().split('T')[0];
+      } else {
+        params.preset = selectedPreset;
+      }
+
+      await chatService.exportChatsToCsv(params);
+    } catch (error: any) {
+      console.error('CSV 내보내기 실패:', error);
+      setError(error.message || 'CSV 내보내기에 실패했습니다.');
+    } finally {
+      setCsvExporting(false);
     }
   };
 
@@ -155,7 +217,11 @@ export default function ChatManagementTab() {
   };
 
   useEffect(() => {
-    if (startDate && endDate) {
+    fetchChatRooms(selectedPreset);
+  }, []);
+
+  useEffect(() => {
+    if (page > 0 || rowsPerPage !== 20) {
       fetchChatRooms();
     }
   }, [page, rowsPerPage]);
@@ -178,12 +244,15 @@ export default function ChatManagementTab() {
       )}
 
       <Paper sx={{ p: 2, mb: 2 }}>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', mb: 2 }}>
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             <DatePicker
               label="시작 날짜"
               value={startDate}
-              onChange={setStartDate}
+              onChange={(date) => {
+                setStartDate(date);
+                setSelectedPreset('7days');
+              }}
               slotProps={{
                 textField: { size: 'small' }
               }}
@@ -191,7 +260,10 @@ export default function ChatManagementTab() {
             <DatePicker
               label="종료 날짜"
               value={endDate}
-              onChange={setEndDate}
+              onChange={(date) => {
+                setEndDate(date);
+                setSelectedPreset('7days');
+              }}
               slotProps={{
                 textField: { size: 'small' }
               }}
@@ -200,13 +272,42 @@ export default function ChatManagementTab() {
 
           <Button
             variant="contained"
-            onClick={fetchChatRooms}
+            onClick={handleCustomDateSearch}
             disabled={loading || !startDate || !endDate}
             startIcon={loading ? <CircularProgress size={20} /> : <RefreshIcon />}
           >
             조회
           </Button>
+
+          <ButtonGroup variant="outlined" size="small">
+            {DATE_PRESETS.map((preset) => (
+              <Button
+                key={preset.value}
+                onClick={() => handlePresetClick(preset.value)}
+                variant={selectedPreset === preset.value && !startDate && !endDate ? 'contained' : 'outlined'}
+                disabled={loading}
+              >
+                {preset.label}
+              </Button>
+            ))}
+          </ButtonGroup>
+
+          <Button
+            variant="outlined"
+            onClick={handleCsvExport}
+            disabled={csvExporting || loading}
+            startIcon={csvExporting ? <CircularProgress size={20} /> : <DownloadIcon />}
+            color="secondary"
+          >
+            CSV 다운로드
+          </Button>
         </Box>
+
+        {appliedDateRange.start && appliedDateRange.end && (
+          <Typography variant="caption" color="text.secondary">
+            조회 기간: {appliedDateRange.start} ~ {appliedDateRange.end}
+          </Typography>
+        )}
       </Paper>
 
       <TableContainer component={Paper}>
@@ -530,7 +631,7 @@ export default function ChatManagementTab() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => window.open(previewImageUrl, '_blank')}>
+          <Button onClick={() => globalThis.open(previewImageUrl, '_blank')}>
             새 탭에서 열기
           </Button>
           <Button onClick={() => setImagePreviewOpen(false)}>

@@ -10,9 +10,11 @@ import {
 import {
   Chat as ChatIcon,
   AccountBalance as AccountBalanceIcon,
+  Analytics as AnalyticsIcon,
 } from '@mui/icons-material';
 import ChatManagementTab from './components/ChatManagementTab';
 import ChatRefundTab from './components/ChatRefundTab';
+import ChatStatsTab from './components/ChatStatsTab';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -66,6 +68,13 @@ export default function ChatPage() {
             id="chat-tab-1"
             aria-controls="chat-tabpanel-1"
           />
+          <Tab
+            label="채팅 통계"
+            icon={<AnalyticsIcon />}
+            iconPosition="start"
+            id="chat-tab-2"
+            aria-controls="chat-tabpanel-2"
+          />
         </Tabs>
       </Box>
 
@@ -75,6 +84,10 @@ export default function ChatPage() {
 
       <TabPanel value={tabValue} index={1}>
         <ChatRefundTab />
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={2}>
+        <ChatStatsTab />
       </TabPanel>
     </Box>
   );
