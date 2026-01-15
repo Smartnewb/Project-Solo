@@ -413,21 +413,12 @@ export default function ProfileReviewPage() {
       setProcessing(true);
       await AdminService.userReview.approveUser(userId);
 
-      // 상태에서 해당 사용자 제거 (승인 완료)
-      setUsers((prevUsers) =>
-        prevUsers.filter((u) => u.userId !== userId && u.id !== userId),
-      );
-
       // 선택된 사용자가 승인된 경우 선택 해제
       if (selectedUser?.userId === userId || selectedUser?.id === userId) {
         setSelectedUser(null);
       }
 
-      // 페이지네이션 total 업데이트
-      setPagination((prev) => ({
-        ...prev,
-        total: Math.max(0, prev.total - 1),
-      }));
+      await fetchPendingUsers(pagination.page, searchTerm, filters);
     } catch (err: any) {
       console.error("유저 승인 중 오류:", err);
       setError(
@@ -552,18 +543,9 @@ export default function ProfileReviewPage() {
       const successCount = results.filter((r) => r.success).length;
       const failCount = results.length - successCount;
 
-      setUsers((prevUsers) =>
-        prevUsers.filter((u) => !selectedUserIds.includes(u.userId)),
-      );
-
       if (selectedUser && selectedUserIds.includes(selectedUser.userId)) {
         setSelectedUser(null);
       }
-
-      setPagination((prev) => ({
-        ...prev,
-        total: Math.max(0, prev.total - successCount),
-      }));
 
       setSelectedUserIds([]);
       setBulkRejectProgress(null);
@@ -573,6 +555,8 @@ export default function ProfileReviewPage() {
           `${successCount}명 반려 완료, ${failCount}명 실패했습니다.`,
         );
       }
+
+      await fetchPendingUsers(pagination.page, searchTerm, filters);
     } catch (err: any) {
       console.error("일괄 반려 중 오류:", err);
       setError(
@@ -597,14 +581,6 @@ export default function ProfileReviewPage() {
         reason,
       );
 
-      // 상태에서 해당 사용자 제거 (거절 완료)
-      setUsers((prevUsers) =>
-        prevUsers.filter(
-          (u) =>
-            u.userId !== currentRejectUserId && u.id !== currentRejectUserId,
-        ),
-      );
-
       // 선택된 사용자가 거절된 경우 선택 해제
       if (
         selectedUser?.userId === currentRejectUserId ||
@@ -613,13 +589,9 @@ export default function ProfileReviewPage() {
         setSelectedUser(null);
       }
 
-      // 페이지네이션 total 업데이트
-      setPagination((prev) => ({
-        ...prev,
-        total: Math.max(0, prev.total - 1),
-      }));
-
       setCurrentRejectUserId(null);
+
+      await fetchPendingUsers(pagination.page, searchTerm, filters);
     } catch (err: any) {
       console.error("유저 반려 중 오류:", err);
       setError(
