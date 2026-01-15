@@ -12,6 +12,7 @@ import {
   TablePagination,
   Tooltip,
   IconButton,
+  Checkbox,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { PendingUser } from "../page";
@@ -30,6 +31,9 @@ interface UserTableListProps {
   };
   onPageChange: (page: number) => void;
   searchTerm: string;
+  selectedUserIds?: string[];
+  onUserCheck?: (userId: string, checked: boolean) => void;
+  onSelectAllCheck?: (checked: boolean) => void;
 }
 
 const getRankConfig = (rank?: string) => {
@@ -96,7 +100,13 @@ export default function UserTableList({
   pagination,
   onPageChange,
   searchTerm,
+  selectedUserIds = [],
+  onUserCheck,
+  onSelectAllCheck,
 }: UserTableListProps) {
+  const isAllSelected = users.length > 0 && users.every(user => selectedUserIds.includes(user.userId));
+  const isSomeSelected = selectedUserIds.length > 0 && !isAllSelected;
+
   if (users.length === 0 && !searchTerm) {
     return (
       <Paper sx={{ p: 4, textAlign: "center" }}>
@@ -119,6 +129,15 @@ export default function UserTableList({
         <Table>
           <TableHead>
             <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
+              {onUserCheck && (
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    indeterminate={isSomeSelected}
+                    checked={isAllSelected}
+                    onChange={(e) => onSelectAllCheck?.(e.target.checked)}
+                  />
+                </TableCell>
+              )}
               <TableCell>이름</TableCell>
               <TableCell>나이/성별</TableCell>
               <TableCell align="center">Rank</TableCell>
@@ -132,22 +151,32 @@ export default function UserTableList({
             </TableRow>
           </TableHead>
           <TableBody>
-            {users.map((user) => (
-              <TableRow
-                key={user.id}
-                hover
-                onClick={() => onUserSelect(user)}
-                sx={{
-                  cursor: "pointer",
-                  backgroundColor:
-                    selectedUser?.id === user.id ? "#e3f2fd" : "inherit",
-                  "&:hover": {
+            {users.map((user) => {
+              const isChecked = selectedUserIds.includes(user.userId);
+              return (
+                <TableRow
+                  key={user.id}
+                  hover
+                  onClick={() => onUserSelect(user)}
+                  sx={{
+                    cursor: "pointer",
                     backgroundColor:
-                      selectedUser?.id === user.id ? "#bbdefb" : "#f5f5f5",
-                  },
-                }}
-              >
-                <TableCell>
+                      selectedUser?.id === user.id ? "#e3f2fd" : "inherit",
+                    "&:hover": {
+                      backgroundColor:
+                        selectedUser?.id === user.id ? "#bbdefb" : "#f5f5f5",
+                    },
+                  }}
+                >
+                  {onUserCheck && (
+                    <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={isChecked}
+                        onChange={(e) => onUserCheck(user.userId, e.target.checked)}
+                      />
+                    </TableCell>
+                  )}
+                  <TableCell>
                   <Typography variant="body2" fontWeight="medium">
                     {user.name}
                   </Typography>
@@ -239,7 +268,8 @@ export default function UserTableList({
                   </TableCell>
                 )}
               </TableRow>
-            ))}
+            );
+            })}
           </TableBody>
         </Table>
       )}
@@ -247,7 +277,7 @@ export default function UserTableList({
         component="div"
         count={pagination.total}
         page={pagination.page - 1}
-        onPageChange={(event, newPage) => onPageChange(newPage + 1)}
+        onPageChange={(_event, newPage) => onPageChange(newPage + 1)}
         rowsPerPage={pagination.limit}
         rowsPerPageOptions={[20]}
         labelDisplayedRows={({ from, to, count }) =>

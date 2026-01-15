@@ -19,6 +19,7 @@ import {
   Button,
   Chip,
   Badge,
+  LinearProgress,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
@@ -203,6 +204,14 @@ export default function ProfileReviewPage() {
   const [filterExpanded, setFilterExpanded] = useState(false);
   const [filters, setFilters] = useState<PendingUsersFilter>({});
   const [skippedUsers, setSkippedUsers] = useState<string[]>([]);
+
+  // 일괄 반려 상태
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [bulkRejectModalOpen, setBulkRejectModalOpen] = useState(false);
+  const [bulkRejectProgress, setBulkRejectProgress] = useState<{
+    current: number;
+    total: number;
+  } | null>(null);
 
   // 건너뛴 유저 목록 로드
   useEffect(() => {
@@ -508,6 +517,74 @@ export default function ProfileReviewPage() {
     handleSearch("");
   };
 
+  const handleUserCheck = (userId: string, checked: boolean) => {
+    setSelectedUserIds((prev) =>
+      checked ? [...prev, userId] : prev.filter((id) => id !== userId),
+    );
+  };
+
+  const handleSelectAllCheck = (checked: boolean) => {
+    setSelectedUserIds(checked ? filteredUsers.map((user) => user.userId) : []);
+  };
+
+  const handleBulkReject = () => {
+    if (selectedUserIds.length === 0) return;
+    setBulkRejectModalOpen(true);
+  };
+
+  const handleBulkRejectConfirm = async (category: string, reason: string) => {
+    if (selectedUserIds.length === 0) return;
+
+    try {
+      setProcessing(true);
+      setBulkRejectModalOpen(false);
+      setBulkRejectProgress({ current: 0, total: selectedUserIds.length });
+
+      const results = await AdminService.userReview.bulkRejectUsers(
+        selectedUserIds,
+        category,
+        reason,
+        (current, total) => {
+          setBulkRejectProgress({ current, total });
+        },
+      );
+
+      const successCount = results.filter((r) => r.success).length;
+      const failCount = results.length - successCount;
+
+      setUsers((prevUsers) =>
+        prevUsers.filter((u) => !selectedUserIds.includes(u.userId)),
+      );
+
+      if (selectedUser && selectedUserIds.includes(selectedUser.userId)) {
+        setSelectedUser(null);
+      }
+
+      setPagination((prev) => ({
+        ...prev,
+        total: Math.max(0, prev.total - successCount),
+      }));
+
+      setSelectedUserIds([]);
+      setBulkRejectProgress(null);
+
+      if (failCount > 0) {
+        setError(
+          `${successCount}명 반려 완료, ${failCount}명 실패했습니다.`,
+        );
+      }
+    } catch (err: any) {
+      console.error("일괄 반려 중 오류:", err);
+      setError(
+        err.response?.data?.message ||
+          "일괄 반려 중 오류가 발생했습니다.",
+      );
+      setBulkRejectProgress(null);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const handleRejectConfirm = async (category: string, reason: string) => {
     if (!currentRejectUserId) return;
 
@@ -644,6 +721,33 @@ export default function ProfileReviewPage() {
           </Tooltip>
         </Box>
       </Box>
+
+      {/* 일괄 반려 버튼 */}
+      {selectedUserIds.length > 0 && (
+        <Box sx={{ mb: 2 }}>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleBulkReject}
+            disabled={processing}
+          >
+            선택된 {selectedUserIds.length}명 일괄 반려
+          </Button>
+        </Box>
+      )}
+
+      {/* 진행 상태 표시 */}
+      {bulkRejectProgress && (
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            반려 진행 중: {bulkRejectProgress.current} / {bulkRejectProgress.total}
+          </Typography>
+          <LinearProgress
+            variant="determinate"
+            value={(bulkRejectProgress.current / bulkRejectProgress.total) * 100}
+          />
+        </Box>
+      )}
 
       {/* 필터 패널 */}
       <Collapse in={filterExpanded}>
@@ -795,6 +899,9 @@ export default function ProfileReviewPage() {
             pagination={pagination}
             onPageChange={(page) => fetchPendingUsers(page, searchTerm, filters)}
             searchTerm={searchTerm}
+            selectedUserIds={selectedUserIds}
+            onUserCheck={handleUserCheck}
+            onSelectAllCheck={handleSelectAllCheck}
           />
         </Box>
 
@@ -818,6 +925,14 @@ export default function ProfileReviewPage() {
           setCurrentRejectUserId(null);
         }}
         onConfirm={handleRejectConfirm}
+      />
+
+      <RejectReasonModal
+        open={bulkRejectModalOpen}
+        onClose={() => {
+          setBulkRejectModalOpen(false);
+        }}
+        onConfirm={handleBulkRejectConfirm}
       />
 
       <Dialog

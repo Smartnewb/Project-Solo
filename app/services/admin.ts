@@ -2001,9 +2001,10 @@ const userReview = {
       console.log("유저 반려 요청:", { userId, category, reason });
 
       const response = await axiosServer.post(
-        `/admin/profile-images/users/${userId}/reject`,
+        `/admin/user-review/${userId}/reject`,
         {
-          rejectionReason: reason,
+          category,
+          reason,
         },
       );
 
@@ -2014,6 +2015,34 @@ const userReview = {
       console.error("오류 상세 정보:", error.response?.data || error.message);
       throw error;
     }
+  },
+
+  bulkRejectUsers: async (
+    userIds: string[],
+    category: string,
+    reason: string,
+    onProgress?: (current: number, total: number) => void,
+  ) => {
+    const results: Array<{ userId: string; success: boolean; error?: string }> = [];
+
+    for (let i = 0; i < userIds.length; i++) {
+      const userId = userIds[i];
+      try {
+        await userReview.rejectUser(userId, category, reason);
+        results.push({ userId, success: true });
+        onProgress?.(i + 1, userIds.length);
+      } catch (error: any) {
+        console.error(`유저 ${userId} 반려 실패:`, error);
+        results.push({
+          userId,
+          success: false,
+          error: error.response?.data?.message || error.message,
+        });
+        onProgress?.(i + 1, userIds.length);
+      }
+    }
+
+    return results;
   },
 
   updateUserRank: async (
