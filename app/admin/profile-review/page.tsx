@@ -324,7 +324,7 @@ export default function ProfileReviewPage() {
     setSelectedUser(user);
   };
 
-  const handleImageApproved = (imageId: string) => {
+  const handleImageApproved = async (imageId: string) => {
     if (!selectedUser) return;
 
     // 선택된 사용자의 pendingImages에서 해당 이미지 제거
@@ -336,37 +336,27 @@ export default function ProfileReviewPage() {
       pendingImages: updatedPendingImages,
     };
 
-    // 사용자 목록에서도 업데이트
-    setUsers(
-      (prevUsers) =>
-        prevUsers
-          .map((u) => {
-            if (u.userId === selectedUser.userId || u.id === selectedUser.id) {
-              // pendingImages가 비어있으면 해당 사용자를 목록에서 제거
-              if (updatedPendingImages.length === 0) {
-                return null;
-              }
-              return updatedUser;
-            }
-            return u;
-          })
-          .filter(Boolean) as PendingUser[],
-    );
-
-    // pendingImages가 비어있으면 선택 해제, 아니면 업데이트된 사용자로 설정
+    // pendingImages가 비어있으면 서버에서 새 목록 가져오기
     if (updatedPendingImages.length === 0) {
       setSelectedUser(null);
-      // 페이지네이션 total 업데이트
-      setPagination((prev) => ({
-        ...prev,
-        total: Math.max(0, prev.total - 1),
-      }));
+      await fetchPendingUsers(pagination.page, searchTerm, filters);
     } else {
+      // 사용자 목록에서도 업데이트
+      setUsers(
+        (prevUsers) =>
+          prevUsers
+            .map((u) => {
+              if (u.userId === selectedUser.userId || u.id === selectedUser.id) {
+                return updatedUser;
+              }
+              return u;
+            }) as PendingUser[],
+      );
       setSelectedUser(updatedUser);
     }
   };
 
-  const handleImageRejected = (imageId: string) => {
+  const handleImageRejected = async (imageId: string) => {
     if (!selectedUser) return;
 
     // 선택된 사용자의 pendingImages에서 해당 이미지 제거
@@ -378,32 +368,22 @@ export default function ProfileReviewPage() {
       pendingImages: updatedPendingImages,
     };
 
-    // 사용자 목록에서도 업데이트
-    setUsers(
-      (prevUsers) =>
-        prevUsers
-          .map((u) => {
-            if (u.userId === selectedUser.userId || u.id === selectedUser.id) {
-              // pendingImages가 비어있으면 해당 사용자를 목록에서 제거
-              if (updatedPendingImages.length === 0) {
-                return null;
-              }
-              return updatedUser;
-            }
-            return u;
-          })
-          .filter(Boolean) as PendingUser[],
-    );
-
-    // pendingImages가 비어있으면 선택 해제, 아니면 업데이트된 사용자로 설정
+    // pendingImages가 비어있으면 서버에서 새 목록 가져오기
     if (updatedPendingImages.length === 0) {
       setSelectedUser(null);
-      // 페이지네이션 total 업데이트
-      setPagination((prev) => ({
-        ...prev,
-        total: Math.max(0, prev.total - 1),
-      }));
+      await fetchPendingUsers(pagination.page, searchTerm, filters);
     } else {
+      // 사용자 목록에서도 업데이트
+      setUsers(
+        (prevUsers) =>
+          prevUsers
+            .map((u) => {
+              if (u.userId === selectedUser.userId || u.id === selectedUser.id) {
+                return updatedUser;
+              }
+              return u;
+            }) as PendingUser[],
+      );
       setSelectedUser(updatedUser);
     }
   };
