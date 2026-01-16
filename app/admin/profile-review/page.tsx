@@ -453,12 +453,16 @@ export default function ProfileReviewPage() {
     addSkippedUser(userId);
     const updatedSkippedUsers = getSkippedUsers();
     setSkippedUsers(updatedSkippedUsers);
+
+    // 즉시 UI에서 해당 유저 제거
+    setUsers((prevUsers) => prevUsers.filter((user) => user.userId !== userId));
+
     // 선택된 사용자가 건너뛴 경우 선택 해제
     if (selectedUser?.userId === userId || selectedUser?.id === userId) {
       setSelectedUser(null);
     }
-    // 서버에서 건너뛴 유저 제외하고 목록 새로고침
-    await fetchPendingUsers(pagination.page, searchTerm, filters, updatedSkippedUsers);
+    // 서버에서 건너뛴 유저 제외하고 목록 새로고침 (백그라운드)
+    fetchPendingUsers(pagination.page, searchTerm, filters, updatedSkippedUsers);
   };
 
   const handleRestoreSkippedUser = async (userId: string) => {
