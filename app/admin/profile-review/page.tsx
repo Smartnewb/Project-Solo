@@ -470,6 +470,16 @@ export default function ProfileReviewPage() {
     (user) => !skippedUsers.includes(user.userId),
   );
 
+  // 디버깅 로그
+  console.log("=== 프로필 심사 디버깅 ===");
+  console.log("서버에서 받은 users:", users.length);
+  console.log("건너뛴 유저 수 (skippedUsers):", skippedUsers.length);
+  console.log("필터링 후 (filteredUsers):", filteredUsers.length);
+  console.log("pagination.total:", pagination.total);
+  if (skippedUsers.length > 0) {
+    console.log("건너뛴 유저 IDs:", skippedUsers);
+  }
+
   const handleSearchToggle = () => {
     if (searchExpanded && localSearchTerm) {
       setLocalSearchTerm("");
