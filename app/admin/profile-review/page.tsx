@@ -233,6 +233,7 @@ export default function ProfileReviewPage() {
     page: number = 1,
     search?: string,
     currentFilters?: PendingUsersFilter,
+    currentSkippedUsers?: string[],
   ) => {
     try {
       setLoading(true);
@@ -240,6 +241,7 @@ export default function ProfileReviewPage() {
 
       const searchQuery = search !== undefined ? search : searchTerm;
       const appliedFilters = currentFilters !== undefined ? currentFilters : filters;
+      const excludeUserIds = currentSkippedUsers !== undefined ? currentSkippedUsers : getSkippedUsers();
       console.log(
         "심사 대기 유저 목록 조회 시작... (page:",
         page,
@@ -255,6 +257,7 @@ export default function ProfileReviewPage() {
           20,
           searchQuery || undefined,
           Object.keys(appliedFilters).length > 0 ? appliedFilters : undefined,
+          excludeUserIds.length > 0 ? excludeUserIds : undefined,
         );
 
       console.log("API 응답 데이터:", response);
@@ -446,39 +449,32 @@ export default function ProfileReviewPage() {
   };
 
   // 건너뛰기 핸들러
-  const handleSkipUser = (userId: string) => {
+  const handleSkipUser = async (userId: string) => {
     addSkippedUser(userId);
-    setSkippedUsers(getSkippedUsers());
+    const updatedSkippedUsers = getSkippedUsers();
+    setSkippedUsers(updatedSkippedUsers);
     // 선택된 사용자가 건너뛴 경우 선택 해제
     if (selectedUser?.userId === userId || selectedUser?.id === userId) {
       setSelectedUser(null);
     }
+    // 서버에서 건너뛴 유저 제외하고 목록 새로고침
+    await fetchPendingUsers(pagination.page, searchTerm, filters, updatedSkippedUsers);
   };
 
-  const handleRestoreSkippedUser = (userId: string) => {
+  const handleRestoreSkippedUser = async (userId: string) => {
     removeSkippedUser(userId);
-    setSkippedUsers(getSkippedUsers());
+    const updatedSkippedUsers = getSkippedUsers();
+    setSkippedUsers(updatedSkippedUsers);
+    // 서버에서 목록 새로고침
+    await fetchPendingUsers(pagination.page, searchTerm, filters, updatedSkippedUsers);
   };
 
-  const handleClearAllSkipped = () => {
+  const handleClearAllSkipped = async () => {
     clearAllSkippedUsers();
     setSkippedUsers([]);
+    // 서버에서 목록 새로고침 (건너뛴 유저 없이)
+    await fetchPendingUsers(pagination.page, searchTerm, filters, []);
   };
-
-  // 건너뛴 유저 필터링된 목록
-  const filteredUsers = users.filter(
-    (user) => !skippedUsers.includes(user.userId),
-  );
-
-  // 디버깅 로그
-  console.log("=== 프로필 심사 디버깅 ===");
-  console.log("서버에서 받은 users:", users.length);
-  console.log("건너뛴 유저 수 (skippedUsers):", skippedUsers.length);
-  console.log("필터링 후 (filteredUsers):", filteredUsers.length);
-  console.log("pagination.total:", pagination.total);
-  if (skippedUsers.length > 0) {
-    console.log("건너뛴 유저 IDs:", skippedUsers);
-  }
 
   const handleSearchToggle = () => {
     if (searchExpanded && localSearchTerm) {
@@ -505,7 +501,7 @@ export default function ProfileReviewPage() {
   };
 
   const handleSelectAllCheck = (checked: boolean) => {
-    setSelectedUserIds(checked ? filteredUsers.map((user) => user.userId) : []);
+    setSelectedUserIds(checked ? users.map((user) => user.userId) : []);
   };
 
   const handleBulkReject = () => {
@@ -854,7 +850,7 @@ export default function ProfileReviewPage() {
       <Box sx={{ display: "flex", gap: 3, height: "calc(100vh - 200px)" }}>
         <Box sx={{ flex: "7", overflow: "auto" }}>
           <UserTableList
-            users={filteredUsers}
+            users={users}
             selectedUser={selectedUser}
             onUserSelect={handleUserSelect}
             onSkipUser={handleSkipUser}

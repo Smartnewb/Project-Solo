@@ -1934,6 +1934,7 @@ const userReview = {
     limit: number = 20,
     search?: string,
     filters?: PendingUsersFilter,
+    excludeUserIds?: string[],
   ) => {
     try {
       console.log("심사 대기 유저 목록 조회 요청:", {
@@ -1941,6 +1942,7 @@ const userReview = {
         limit,
         search,
         filters,
+        excludeUserIds: excludeUserIds?.length ?? 0,
       });
 
       const params: Record<string, any> = { page, limit };
@@ -1950,6 +1952,9 @@ const userReview = {
       if (filters?.maxAge) params.maxAge = filters.maxAge;
       if (filters?.universityId) params.universityId = filters.universityId;
       if (filters?.region) params.region = filters.region;
+      if (excludeUserIds && excludeUserIds.length > 0) {
+        params.excludeUserIds = excludeUserIds.join(",");
+      }
 
       const response = await axiosServer.get("/admin/profile-images/pending", {
         params,
