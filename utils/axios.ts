@@ -38,19 +38,29 @@ export const axiosNextGen = axios.create({
   },
 });
 
+// Auth 관련 엔드포인트 (항상 kr 스키마 사용)
+const AUTH_ENDPOINTS = ["/auth/login", "/auth/refresh", "/auth/logout"];
+
+const isAuthEndpoint = (url: string | undefined): boolean => {
+  if (!url) return false;
+  return AUTH_ENDPOINTS.some((endpoint) => url.includes(endpoint));
+};
+
 // 공통 요청 인터셉터 함수
 const requestInterceptor = (config: any) => {
-  // 클라이언트 사이드에서만 localStorage에 접근
   if (typeof window !== "undefined") {
-    // 토큰이 있다면 헤더에 추가
     const token = localStorage.getItem("accessToken");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
 
-    // x-country 헤더 추가 (Admin 국가 선택)
-    const country = localStorage.getItem("admin_selected_country") || "kr";
-    config.headers["x-country"] = country;
+    // Auth API는 항상 kr 스키마 사용 (Admin 계정은 kr 스키마에만 존재)
+    if (isAuthEndpoint(config.url)) {
+      config.headers["x-country"] = "kr";
+    } else {
+      const country = localStorage.getItem("admin_selected_country") || "kr";
+      config.headers["x-country"] = country;
+    }
   }
   return config;
 };
@@ -110,12 +120,15 @@ const createResponseInterceptor = (axiosInstance: any) => {
         try {
           console.log("토큰 만료 감지, 새로고침 시도");
 
-          // 토큰 새로고침 요청
+          // 토큰 새로고침 요청 (Auth API는 항상 kr 스키마 사용)
           const response = await axios.post(
             `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
             {},
             {
               withCredentials: true,
+              headers: {
+                "x-country": "kr",
+              },
             },
           );
 
