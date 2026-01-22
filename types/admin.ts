@@ -684,3 +684,57 @@ export interface UploadDepartmentsCsvResponse {
   message: string;
   warnings?: string[];
 }
+
+// Likes 관련 타입
+export type LikeStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
+
+export interface AdminLikesParams {
+  page?: number;
+  limit?: number;
+  status?: LikeStatus;
+  hasLetter?: boolean;
+  isMutualLike?: boolean;
+  senderUserId?: string;
+  forwardUserId?: string;
+  startDate?: string;
+  endDate?: string;
+  sortBy?: 'createdAt' | 'viewedAt' | 'mutualLikeAt';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface LikeUserInfo {
+  userId: string;
+  name: string;
+  age: number;
+  mainImageUrl: string | null;
+  university: string;
+}
+
+export interface LikeDetail {
+  id: string;
+  connectionId: string;
+  sender: LikeUserInfo;
+  forwardUser: LikeUserInfo;
+  status: LikeStatus;
+  createdAt: string;
+  viewedAt: string | null;
+  hasLetter: boolean;
+  letterContent: string | null;
+  isMutualLike: boolean;
+  mutualLikeAt: string | null;
+  reverseLikeId: string | null;
+  matchId: string;
+  matchExpiredAt: string;
+  isMatchExpired: boolean;
+}
+
+export interface AdminLikesResponse {
+  items: LikeDetail[];
+  meta: {
+    currentPage: number;
+    itemsPerPage: number;
+    totalItems: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+}

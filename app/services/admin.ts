@@ -35,6 +35,8 @@ import type {
   ProcessRefundResponse,
   AppleRefundListResponse,
   AppleRefundListParams,
+  AdminLikesParams,
+  AdminLikesResponse,
 } from "@/types/admin";
 
 // 상단에 타입 정의 추가
@@ -4253,6 +4255,13 @@ import type {
   TranslateQuestionsResponse,
 } from "@/types/moment";
 
+const likes = {
+  getList: async (params: AdminLikesParams): Promise<AdminLikesResponse> => {
+    const response = await axiosServer.get("/admin/likes", { params });
+    return response.data;
+  },
+};
+
 const momentQuestions = {
   generate: async (
     data: GenerateQuestionsRequest,
@@ -4404,6 +4413,7 @@ const AdminService = {
   dormantLikes,
   chatRefund,
   appleRefund,
+  likes,
   momentQuestions,
   getProfileReports: reports.getProfileReports,
 };

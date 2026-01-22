@@ -225,6 +225,15 @@ export default function AdminLayout({
               </li>
               <li>
                 <Link
+                  href="/admin/likes"
+                  className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors"
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  좋아요 관리
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/admin/scheduled-matching"
                   className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors"
                   onClick={() => setSidebarOpen(false)}
