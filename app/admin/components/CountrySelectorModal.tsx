@@ -39,10 +39,14 @@ export default function CountrySelectorModal({ open, onClose }: CountrySelectorM
       return;
     }
 
+    console.log("[CountrySelectorModal] 국가 변경:", country, "->", code);
+    console.log("[CountrySelectorModal] localStorage 변경 전:", localStorage.getItem("admin_selected_country"));
     setCountry(code);
+    console.log("[CountrySelectorModal] localStorage 변경 후:", localStorage.getItem("admin_selected_country"));
     onClose();
 
     setTimeout(() => {
+      console.log("[CountrySelectorModal] 페이지 새로고침 실행");
       window.location.reload();
     }, 300);
   };
