@@ -3,6 +3,7 @@
 import {
 	Chat as ChatIcon,
 	Favorite as FavoriteIcon,
+	HelpOutline as HelpOutlineIcon,
 	ThumbUp as ThumbUpIcon,
 	TrendingUp as TrendingUpIcon,
 } from '@mui/icons-material';
@@ -12,13 +13,18 @@ import {
 	CircularProgress,
 	FormControlLabel,
 	Grid,
+	IconButton,
 	Paper,
 	Switch,
+	ToggleButton,
+	ToggleButtonGroup,
 	Tooltip,
 	Typography,
 } from '@mui/material';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import AdminService from '@/app/services/admin';
+
+type PeriodType = 'all' | 'year' | 'month' | 'week' | 'day';
 
 interface StatMetric {
 	mean: number;
@@ -40,8 +46,9 @@ interface UserEngagementStatsData {
 		mutualLikeEngagement: EngagementRate;
 		chatOpenEngagement: EngagementRate;
 	};
-	startDate: string;
+	startDate: string | null;
 	endDate: string;
+	periodType: 'all' | 'custom';
 }
 
 interface StatCardProps {
@@ -51,6 +58,50 @@ interface StatCardProps {
 	metric: StatMetric;
 	engagement: EngagementRate;
 }
+
+const PERIOD_LABELS: Record<PeriodType, string> = {
+	all: '전체',
+	year: '올해',
+	month: '이번 달',
+	week: '이번 주',
+	day: '오늘',
+};
+
+const PERIOD_DESCRIPTIONS: Record<PeriodType, string> = {
+	all: '서비스 시작부터 현재까지 가입한 전체 유저 대비 참여율',
+	year: '올해 가입한 유저 중 참여율',
+	month: '이번 달 가입한 유저 중 참여율',
+	week: '이번 주 가입한 유저 중 참여율',
+	day: '오늘 가입한 유저 중 참여율',
+};
+
+const getDateRange = (period: PeriodType): { startDate?: string; endDate?: string } => {
+	const now = new Date();
+	const formatDate = (d: Date) => d.toISOString().split('T')[0];
+
+	switch (period) {
+		case 'all':
+			return {};
+		case 'year': {
+			const startOfYear = new Date(now.getFullYear(), 0, 1);
+			return { startDate: formatDate(startOfYear), endDate: formatDate(now) };
+		}
+		case 'month': {
+			const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+			return { startDate: formatDate(startOfMonth), endDate: formatDate(now) };
+		}
+		case 'week': {
+			const dayOfWeek = now.getDay();
+			const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+			const startOfWeek = new Date(now);
+			startOfWeek.setDate(now.getDate() - diff);
+			return { startDate: formatDate(startOfWeek), endDate: formatDate(now) };
+		}
+		case 'day': {
+			return { startDate: formatDate(now), endDate: formatDate(now) };
+		}
+	}
+};
 
 const StatCard = ({ title, icon, color, metric, engagement }: StatCardProps) => {
 	return (
@@ -106,7 +157,7 @@ const StatCard = ({ title, icon, color, metric, engagement }: StatCardProps) => 
 				<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
 					<TrendingUpIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
 					<Typography variant="caption" color="text.secondary">
-						전체 유저 참여율
+						참여율
 					</Typography>
 				</Box>
 				<Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
@@ -137,14 +188,17 @@ export default function UserEngagementStats() {
 	const [error, setError] = useState<string | null>(null);
 	const [data, setData] = useState<UserEngagementStatsData | null>(null);
 	const [includeDeleted, setIncludeDeleted] = useState(false);
+	const [period, setPeriod] = useState<PeriodType>('all');
+
+	const dateRange = useMemo(() => getDateRange(period), [period]);
 
 	const fetchData = useCallback(async () => {
 		try {
 			setLoading(true);
 			setError(null);
 			const response = await AdminService.userEngagement.getStats(
-				undefined,
-				undefined,
+				dateRange.startDate,
+				dateRange.endDate,
 				includeDeleted,
 			);
 			setData(response);
@@ -154,7 +208,7 @@ export default function UserEngagementStats() {
 		} finally {
 			setLoading(false);
 		}
-	}, [includeDeleted]);
+	}, [dateRange.startDate, dateRange.endDate, includeDeleted]);
 
 	useEffect(() => {
 		fetchData();
@@ -164,7 +218,23 @@ export default function UserEngagementStats() {
 		setIncludeDeleted(event.target.checked);
 	};
 
-	if (loading) {
+	const handlePeriodChange = (
+		_event: React.MouseEvent<HTMLElement>,
+		newPeriod: PeriodType | null,
+	) => {
+		if (newPeriod !== null) {
+			setPeriod(newPeriod);
+		}
+	};
+
+	const periodDescription = PERIOD_DESCRIPTIONS[period];
+	const displayDateRange = data
+		? data.startDate
+			? `${data.startDate} ~ ${data.endDate}`
+			: `전체 기간 ~ ${data.endDate}`
+		: '';
+
+	if (loading && !data) {
 		return (
 			<Paper sx={{ p: 3 }}>
 				<Box
@@ -196,7 +266,7 @@ export default function UserEngagementStats() {
 		return null;
 	}
 
-	const { stats, startDate, endDate } = data;
+	const { stats } = data;
 
 	return (
 		<Paper sx={{ p: 3 }}>
@@ -205,65 +275,107 @@ export default function UserEngagementStats() {
 					display: 'flex',
 					justifyContent: 'space-between',
 					alignItems: 'flex-start',
-					mb: 3,
+					mb: 2,
+					flexWrap: 'wrap',
+					gap: 2,
 				}}
 			>
-				<Box>
+				<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
 					<Typography variant="h6" fontWeight="bold">
 						유저 참여 통계
 					</Typography>
-					<Typography variant="caption" color="text.secondary">
-						{startDate} ~ {endDate}
-					</Typography>
+					<Tooltip
+						title={
+							<Box>
+								<Typography variant="body2" fontWeight="bold" sx={{ mb: 1 }}>
+									참여율 계산 기준
+								</Typography>
+								<Typography variant="body2">{periodDescription}</Typography>
+								<Typography variant="body2" sx={{ mt: 1, color: 'grey.400' }}>
+									• 평균/중앙값: 해당 활동을 1회 이상 한 유저 기준
+								</Typography>
+								<Typography variant="body2" sx={{ color: 'grey.400' }}>
+									• 참여율: 선택 기간 내 가입 유저 중 활동 유저 비율
+								</Typography>
+							</Box>
+						}
+						arrow
+						placement="right"
+					>
+						<IconButton size="small" sx={{ color: 'text.secondary' }}>
+							<HelpOutlineIcon fontSize="small" />
+						</IconButton>
+					</Tooltip>
 				</Box>
-				<FormControlLabel
-					control={
-						<Switch checked={includeDeleted} onChange={handleIncludeDeletedChange} size="small" />
-					}
-					label={
-						<Typography variant="caption" color="text.secondary">
-							탈퇴자 포함
-						</Typography>
-					}
-					labelPlacement="start"
-					sx={{ mr: 0 }}
-				/>
+				<Box
+					sx={{
+						display: 'flex',
+						alignItems: 'center',
+						gap: 2,
+						flexWrap: 'wrap',
+					}}
+				>
+					<ToggleButtonGroup value={period} exclusive onChange={handlePeriodChange} size="small">
+						{(Object.keys(PERIOD_LABELS) as PeriodType[]).map((key) => (
+							<ToggleButton key={key} value={key} sx={{ px: 1.5, py: 0.5 }}>
+								<Typography variant="caption">{PERIOD_LABELS[key]}</Typography>
+							</ToggleButton>
+						))}
+					</ToggleButtonGroup>
+					<FormControlLabel
+						control={
+							<Switch checked={includeDeleted} onChange={handleIncludeDeletedChange} size="small" />
+						}
+						label={
+							<Typography variant="caption" color="text.secondary">
+								탈퇴자 포함
+							</Typography>
+						}
+						labelPlacement="start"
+						sx={{ mr: 0, ml: 0 }}
+					/>
+				</Box>
 			</Box>
 
-			<Grid container spacing={2}>
-				<Grid item xs={12} md={4}>
-					<StatCard
-						title="좋아요"
-						icon={<ThumbUpIcon />}
-						color="#2196F3"
-						metric={stats.likesPerUser}
-						engagement={stats.likeEngagement}
-					/>
-				</Grid>
-				<Grid item xs={12} md={4}>
-					<StatCard
-						title="상호 좋아요"
-						icon={<FavoriteIcon />}
-						color="#E91E63"
-						metric={stats.mutualLikesPerUser}
-						engagement={stats.mutualLikeEngagement}
-					/>
-				</Grid>
-				<Grid item xs={12} md={4}>
-					<StatCard
-						title="채팅 오픈"
-						icon={<ChatIcon />}
-						color="#4CAF50"
-						metric={stats.chatOpensPerUser}
-						engagement={stats.chatOpenEngagement}
-					/>
-				</Grid>
-			</Grid>
-
-			<Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2 }}>
-				* 평균/중앙값은 해당 활동을 1회 이상 한 유저 기준입니다. 참여율은 전체 유저 대비 해당 활동을
-				한 유저 비율입니다.
+			<Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+				{displayDateRange}
 			</Typography>
+
+			{loading ? (
+				<Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+					<CircularProgress size={24} />
+				</Box>
+			) : (
+				<Grid container spacing={2}>
+					<Grid item xs={12} md={4}>
+						<StatCard
+							title="좋아요"
+							icon={<ThumbUpIcon />}
+							color="#2196F3"
+							metric={stats.likesPerUser}
+							engagement={stats.likeEngagement}
+						/>
+					</Grid>
+					<Grid item xs={12} md={4}>
+						<StatCard
+							title="상호 좋아요"
+							icon={<FavoriteIcon />}
+							color="#E91E63"
+							metric={stats.mutualLikesPerUser}
+							engagement={stats.mutualLikeEngagement}
+						/>
+					</Grid>
+					<Grid item xs={12} md={4}>
+						<StatCard
+							title="채팅 오픈"
+							icon={<ChatIcon />}
+							color="#4CAF50"
+							metric={stats.chatOpensPerUser}
+							engagement={stats.chatOpenEngagement}
+						/>
+					</Grid>
+				</Grid>
+			)}
 		</Paper>
 	);
 }
