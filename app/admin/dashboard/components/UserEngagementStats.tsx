@@ -6,7 +6,17 @@ import {
 	ThumbUp as ThumbUpIcon,
 	TrendingUp as TrendingUpIcon,
 } from '@mui/icons-material';
-import { Alert, Box, CircularProgress, Grid, Paper, Tooltip, Typography } from '@mui/material';
+import {
+	Alert,
+	Box,
+	CircularProgress,
+	FormControlLabel,
+	Grid,
+	Paper,
+	Switch,
+	Tooltip,
+	Typography,
+} from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
 import AdminService from '@/app/services/admin';
 
@@ -126,12 +136,17 @@ export default function UserEngagementStats() {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [data, setData] = useState<UserEngagementStatsData | null>(null);
+	const [includeDeleted, setIncludeDeleted] = useState(false);
 
 	const fetchData = useCallback(async () => {
 		try {
 			setLoading(true);
 			setError(null);
-			const response = await AdminService.userEngagement.getStats();
+			const response = await AdminService.userEngagement.getStats(
+				undefined,
+				undefined,
+				includeDeleted,
+			);
 			setData(response);
 		} catch (err) {
 			console.error('유저 참여 통계 조회 실패:', err);
@@ -139,11 +154,15 @@ export default function UserEngagementStats() {
 		} finally {
 			setLoading(false);
 		}
-	}, []);
+	}, [includeDeleted]);
 
 	useEffect(() => {
 		fetchData();
 	}, [fetchData]);
+
+	const handleIncludeDeletedChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		setIncludeDeleted(event.target.checked);
+	};
 
 	if (loading) {
 		return (
@@ -181,13 +200,34 @@ export default function UserEngagementStats() {
 
 	return (
 		<Paper sx={{ p: 3 }}>
-			<Box sx={{ mb: 3 }}>
-				<Typography variant="h6" fontWeight="bold">
-					유저 참여 통계
-				</Typography>
-				<Typography variant="caption" color="text.secondary">
-					{startDate} ~ {endDate}
-				</Typography>
+			<Box
+				sx={{
+					display: 'flex',
+					justifyContent: 'space-between',
+					alignItems: 'flex-start',
+					mb: 3,
+				}}
+			>
+				<Box>
+					<Typography variant="h6" fontWeight="bold">
+						유저 참여 통계
+					</Typography>
+					<Typography variant="caption" color="text.secondary">
+						{startDate} ~ {endDate}
+					</Typography>
+				</Box>
+				<FormControlLabel
+					control={
+						<Switch checked={includeDeleted} onChange={handleIncludeDeletedChange} size="small" />
+					}
+					label={
+						<Typography variant="caption" color="text.secondary">
+							탈퇴자 포함
+						</Typography>
+					}
+					labelPlacement="start"
+					sx={{ mr: 0 }}
+				/>
 			</Box>
 
 			<Grid container spacing={2}>

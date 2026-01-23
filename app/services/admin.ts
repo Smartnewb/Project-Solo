@@ -4083,11 +4083,12 @@ const momentQuestions = {
 };
 
 const userEngagement = {
-	getStats: async (startDate?: string, endDate?: string) => {
+	getStats: async (startDate?: string, endDate?: string, includeDeleted?: boolean) => {
 		try {
 			const params: Record<string, string> = {};
 			if (startDate) params.startDate = startDate;
 			if (endDate) params.endDate = endDate;
+			if (includeDeleted !== undefined) params.includeDeleted = String(includeDeleted);
 
 			const response = await axiosServer.get('/admin/stats/user-engagement', {
 				params,
