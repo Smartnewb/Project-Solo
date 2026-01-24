@@ -154,6 +154,7 @@ const communityService = {
 			const articles = rawArticles.map((a: any) => ({
 				...a,
 				content: a.contentPreview ?? a.content ?? '',
+				author: a.authorName ? { id: a.authorId, name: a.authorName } : undefined,
 			}));
 			const pagination = response.data.pagination;
 			return {
