@@ -150,7 +150,11 @@ const communityService = {
 			console.log('게시글 목록 조회 응답:', response.data);
 
 			// API 응답 구조에 맞게 데이터 반환 (백엔드는 articles/pagination 구조 사용)
-			const articles = response.data.articles ?? [];
+			const rawArticles = response.data.articles ?? [];
+			const articles = rawArticles.map((a: any) => ({
+				...a,
+				content: a.contentPreview ?? a.content ?? '',
+			}));
 			const pagination = response.data.pagination;
 			return {
 				items: articles,
