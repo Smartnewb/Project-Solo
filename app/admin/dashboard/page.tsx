@@ -4,6 +4,7 @@ import { Alert, Box, CircularProgress, Grid, Typography } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { dashboardService } from '@/app/services/dashboard';
+import ActionableInsights from './components/ActionableInsights';
 import ActionRequired from './components/ActionRequired';
 import GemSystemFunnel from './components/GemSystemFunnel';
 import QuickAccess from './components/QuickAccess';
@@ -142,6 +143,8 @@ export default function MainDashboard() {
 				<GemSystemFunnel />
 
 				<UserEngagementStats />
+
+				<ActionableInsights />
 
 				<QuickAccess />
 			</Box>

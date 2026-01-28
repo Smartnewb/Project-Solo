@@ -196,3 +196,91 @@ export interface GemSystemFunnelResponse {
   totalFunnel: MatchingTypeFunnel;
   debug?: GemSystemFunnelDebugInfo;
 }
+
+// === 실행 가능한 인사이트 타입 ===
+
+export type InsightSeverity = 'critical' | 'warning' | 'info';
+export type InsightCategory = 'retention' | 'revenue' | 'engagement' | 'matching' | 'user_experience';
+export type UrgencyLevel = 'critical' | 'warning';
+
+export interface HealthScore {
+  overall: number;
+  userGrowth: number;
+  retention: number;
+  revenue: number;
+  matchingQuality: number;
+  userSatisfaction: number;
+}
+
+export interface UrgentAction {
+  urgency: UrgencyLevel;
+  title: string;
+  description: string;
+  count: number;
+  action: string;
+  actionUrl: string;
+  deadlineHours?: number;
+}
+
+export interface ActionableInsight {
+  id: string;
+  title: string;
+  description: string;
+  severity: InsightSeverity;
+  category: InsightCategory;
+  currentValue: number;
+  previousValue?: number;
+  changeRate?: number;
+  recommendations: string[];
+  relatedDashboard?: string;
+  affectedUsers: number;
+  potentialRevenueImpact?: number;
+}
+
+export interface FunnelBottleneck {
+  stage: string;
+  conversionRate: number;
+  benchmarkRate: number;
+  droppedUsers: number;
+  possibleCauses: string[];
+}
+
+export interface UserPainPoint {
+  id: string;
+  description: string;
+  affectedUsers: number;
+  percentage: number;
+  avgWaitDays?: number;
+  churnRisk: number;
+  solutions: string[];
+}
+
+export interface ActionableInsightsResponse {
+  generatedAt: string;
+  period: {
+    startDate: string;
+    endDate: string;
+  };
+  healthScore: HealthScore;
+  urgentActions: UrgentAction[];
+  insights: ActionableInsight[];
+  funnelBottlenecks: FunnelBottleneck[];
+  userPainPoints: UserPainPoint[];
+  summary: string;
+}
+
+// === 인사이트 카테고리 라벨 매핑 ===
+export const INSIGHT_CATEGORY_LABELS: Record<InsightCategory, string> = {
+  retention: '리텐션',
+  revenue: '매출',
+  engagement: '참여도',
+  matching: '매칭',
+  user_experience: '사용자 경험',
+};
+
+// === 인사이트 심각도 라벨 매핑 ===
+export const INSIGHT_SEVERITY_LABELS: Record<InsightSeverity, string> = {
+  critical: '심각',
+  warning: '주의',
+  info: '정보',
+};
