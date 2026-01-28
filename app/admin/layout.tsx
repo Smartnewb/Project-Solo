@@ -345,6 +345,15 @@ export default function AdminLayout({
                   배너 관리
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/admin/sometime-articles"
+                  className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors"
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  썸타임 이야기
+                </Link>
+              </li>
             </ul>
 
             {/* 🔄 리텐션 */}

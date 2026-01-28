@@ -738,3 +738,95 @@ export interface AdminLikesResponse {
     hasPreviousPage: boolean;
   };
 }
+
+// Sometime Article Types
+export type SometimeArticleStatus = 'draft' | 'scheduled' | 'published' | 'archived';
+
+export type SometimeArticleCategory = 'story' | 'interview' | 'tips' | 'team' | 'update' | 'safety';
+
+export interface SometimeMediaAsset {
+  type: 'image' | 'video';
+  url: string;
+  alt?: string;
+  width?: number;
+  height?: number;
+  mimeType?: string;
+}
+
+export interface SometimeArticleAuthor {
+  id: string;
+  name: string;
+  avatar?: string;
+  role?: string;
+}
+
+export interface SometimeArticleSEO {
+  metaTitle?: string;
+  metaDescription?: string;
+  ogImage?: string;
+  keywords?: string[];
+}
+
+export interface AdminSometimeArticleItem {
+  id: string;
+  slug: string;
+  status: SometimeArticleStatus;
+  category: SometimeArticleCategory;
+  title: string;
+  subtitle?: string;
+  excerpt?: string;
+  thumbnail?: SometimeMediaAsset;
+  author?: SometimeArticleAuthor;
+  viewCount: number;
+  publishedAt: string | null;
+}
+
+export interface AdminSometimeArticleDetail extends AdminSometimeArticleItem {
+  content: string;
+  coverImage?: SometimeMediaAsset;
+  shareCount: number;
+  seo?: SometimeArticleSEO;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminSometimeArticleListResponse {
+  items: AdminSometimeArticleItem[];
+  meta: {
+    currentPage: number;
+    itemsPerPage: number;
+    totalItems: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+}
+
+export interface CreateSometimeArticleRequest {
+  slug: string;
+  status?: SometimeArticleStatus;
+  category: SometimeArticleCategory;
+  title: string;
+  subtitle?: string;
+  content: string;
+  excerpt?: string;
+  thumbnail?: SometimeMediaAsset;
+  coverImage?: SometimeMediaAsset;
+  author: SometimeArticleAuthor;
+  seo?: SometimeArticleSEO;
+  publishedAt?: string;
+}
+
+export interface UpdateSometimeArticleRequest {
+  slug?: string;
+  status?: SometimeArticleStatus;
+  category?: SometimeArticleCategory;
+  title?: string;
+  subtitle?: string;
+  content?: string;
+  excerpt?: string;
+  thumbnail?: SometimeMediaAsset;
+  coverImage?: SometimeMediaAsset;
+  author?: SometimeArticleAuthor;
+  seo?: SometimeArticleSEO;
+  publishedAt?: string;
+}

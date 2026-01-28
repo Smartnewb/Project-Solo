@@ -4,6 +4,9 @@ import type {
 	AdminCardNewsListResponse,
 	AdminLikesParams,
 	AdminLikesResponse,
+	AdminSometimeArticleDetail,
+	AdminSometimeArticleItem,
+	AdminSometimeArticleListResponse,
 	AppleRefundListParams,
 	AppleRefundListResponse,
 	BackgroundPreset,
@@ -14,6 +17,7 @@ import type {
 	CreateBannerRequest,
 	CreateCardNewsRequest,
 	CreatePresetRequest,
+	CreateSometimeArticleRequest,
 	DeletedFemalesListResponse,
 	DormantLikeDetailResponse,
 	DormantLikesDashboardResponse,
@@ -32,6 +36,7 @@ import type {
 	UpdateBannerOrderRequest,
 	UpdateBannerRequest,
 	UpdateCardNewsRequest,
+	UpdateSometimeArticleRequest,
 	UploadAndCreatePresetRequest,
 	UploadImageResponse,
 	ViewProfileRequest,
@@ -3969,6 +3974,142 @@ const likes = {
 	},
 };
 
+const sometimeArticles = {
+  uploadImage: async (imageFile: File): Promise<UploadImageResponse> => {
+    try {
+      console.log("썸타임 이야기 이미지 업로드 요청");
+      console.log("File 정보:", {
+        name: imageFile.name,
+        type: imageFile.type,
+        size: imageFile.size,
+      });
+
+      const formData = new FormData();
+      formData.append("image", imageFile);
+
+      const token =
+        typeof window !== "undefined"
+          ? localStorage.getItem("accessToken")
+          : null;
+      const baseURL =
+        process.env.NEXT_PUBLIC_NEXT_GEN_API_URL || "http://localhost:8044/api";
+
+      const response = await fetch(
+        `${baseURL}/admin/sometime-articles/upload`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "x-country": getCountryHeader(),
+          },
+          body: formData,
+          credentials: "include",
+        },
+      );
+
+      if (!response.ok) {
+        const errorData = await response
+          .json()
+          .catch(() => ({ message: "Upload failed" }));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("썸타임 이야기 이미지 업로드 응답:", data);
+      return data;
+    } catch (error: any) {
+      console.error("썸타임 이야기 이미지 업로드 중 오류:", error);
+      throw error;
+    }
+  },
+
+  getList: async (params?: {
+    category?: string;
+    status?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<AdminSometimeArticleListResponse> => {
+    try {
+      console.log("썸타임 이야기 목록 조회 요청:", params);
+      const response =
+        await axiosNextGen.get<AdminSometimeArticleListResponse>(
+          "/admin/sometime-articles",
+          { params },
+        );
+      console.log("썸타임 이야기 목록 응답:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("썸타임 이야기 목록 조회 중 오류:", error);
+      console.error("오류 상세 정보:", error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  get: async (id: string): Promise<AdminSometimeArticleDetail> => {
+    try {
+      console.log("썸타임 이야기 조회 요청:", id);
+      const response = await axiosNextGen.get<AdminSometimeArticleDetail>(
+        `/admin/sometime-articles/${id}`,
+      );
+      console.log("썸타임 이야기 조회 응답:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("썸타임 이야기 조회 중 오류:", error);
+      console.error("오류 상세 정보:", error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  create: async (
+    data: CreateSometimeArticleRequest,
+  ): Promise<AdminSometimeArticleDetail> => {
+    try {
+      console.log("썸타임 이야기 생성 요청:", data);
+      const response = await axiosNextGen.post<AdminSometimeArticleDetail>(
+        "/admin/sometime-articles",
+        data,
+      );
+      console.log("썸타임 이야기 생성 응답:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("썸타임 이야기 생성 중 오류:", error);
+      console.error("오류 상세 정보:", error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  update: async (
+    id: string,
+    data: UpdateSometimeArticleRequest,
+  ): Promise<AdminSometimeArticleDetail> => {
+    try {
+      console.log("썸타임 이야기 수정 요청:", { id, data });
+      const response = await axiosNextGen.patch<AdminSometimeArticleDetail>(
+        `/admin/sometime-articles/${id}`,
+        data,
+      );
+      console.log("썸타임 이야기 수정 응답:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("썸타임 이야기 수정 중 오류:", error);
+      console.error("오류 상세 정보:", error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  delete: async (id: string): Promise<void> => {
+    try {
+      console.log("썸타임 이야기 삭제 요청:", id);
+      await axiosNextGen.delete(`/admin/sometime-articles/${id}`);
+      console.log("썸타임 이야기 삭제 완료");
+    } catch (error: any) {
+      console.error("썸타임 이야기 삭제 중 오류:", error);
+      console.error("오류 상세 정보:", error.response?.data || error.message);
+      throw error;
+    }
+  },
+};
+
 const momentQuestions = {
 	generate: async (data: GenerateQuestionsRequest): Promise<GenerateQuestionsResponse> => {
 		try {
@@ -4123,6 +4264,7 @@ const AdminService = {
 	appleRefund,
 	likes,
 	momentQuestions,
+	sometimeArticles,
 	userEngagement,
 	getProfileReports: reports.getProfileReports,
 };
