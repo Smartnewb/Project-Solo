@@ -37,6 +37,12 @@ interface EngagementRate {
 	rate: number;
 }
 
+interface PeriodEngagement {
+	likeEngagement: EngagementRate;
+	mutualLikeEngagement: EngagementRate;
+	chatOpenEngagement: EngagementRate;
+}
+
 interface UserEngagementStatsData {
 	stats: {
 		likesPerUser: StatMetric;
@@ -45,6 +51,7 @@ interface UserEngagementStatsData {
 		likeEngagement: EngagementRate;
 		mutualLikeEngagement: EngagementRate;
 		chatOpenEngagement: EngagementRate;
+		periodEngagement?: PeriodEngagement;
 	};
 	startDate: string | null;
 	endDate: string;
@@ -57,6 +64,7 @@ interface StatCardProps {
 	color: string;
 	metric: StatMetric;
 	engagement: EngagementRate;
+	periodEngagement?: EngagementRate;
 }
 
 const PERIOD_LABELS: Record<PeriodType, string> = {
@@ -103,7 +111,51 @@ const getDateRange = (period: PeriodType): { startDate?: string; endDate?: strin
 	}
 };
 
-const StatCard = ({ title, icon, color, metric, engagement }: StatCardProps) => {
+const EngagementRateDisplay = ({
+	label,
+	engagement,
+	isPrimary = false,
+}: {
+	label: string;
+	engagement: EngagementRate;
+	isPrimary?: boolean;
+}) => (
+	<Box sx={{ flex: 1 }}>
+		<Tooltip title={label}>
+			<Typography
+				variant="caption"
+				color="text.secondary"
+				sx={{
+					display: 'block',
+					mb: 0.5,
+					fontSize: isPrimary ? '0.75rem' : '0.7rem',
+				}}
+			>
+				{label}
+			</Typography>
+		</Tooltip>
+		<Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5, flexWrap: 'wrap' }}>
+			<Typography
+				variant={isPrimary ? 'h4' : 'h5'}
+				fontWeight="bold"
+				color={
+					engagement.rate >= 30
+						? 'success.main'
+						: engagement.rate >= 15
+							? 'warning.main'
+							: 'error.main'
+				}
+			>
+				{engagement.rate}%
+			</Typography>
+			<Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
+				({engagement.activeUsers.toLocaleString()}/{engagement.totalUsers.toLocaleString()})
+			</Typography>
+		</Box>
+	</Box>
+);
+
+const StatCard = ({ title, icon, color, metric, engagement, periodEngagement }: StatCardProps) => {
 	return (
 		<Paper
 			sx={{
@@ -154,29 +206,25 @@ const StatCard = ({ title, icon, color, metric, engagement }: StatCardProps) => 
 					borderColor: 'divider',
 				}}
 			>
-				<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+				<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
 					<TrendingUpIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
 					<Typography variant="caption" color="text.secondary">
 						참여율
 					</Typography>
 				</Box>
-				<Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-					<Typography
-						variant="h4"
-						fontWeight="bold"
-						color={
-							engagement.rate >= 30
-								? 'success.main'
-								: engagement.rate >= 15
-									? 'warning.main'
-									: 'error.main'
-						}
-					>
-						{engagement.rate}%
-					</Typography>
-					<Typography variant="caption" color="text.secondary">
-						({engagement.activeUsers.toLocaleString()} / {engagement.totalUsers.toLocaleString()})
-					</Typography>
+				<Box sx={{ display: 'flex', gap: 2 }}>
+					<EngagementRateDisplay
+						label="전체 대상"
+						engagement={engagement}
+						isPrimary={!periodEngagement}
+					/>
+					{periodEngagement && (
+						<EngagementRateDisplay
+							label="기간 내 가입자"
+							engagement={periodEngagement}
+							isPrimary
+						/>
+					)}
 				</Box>
 			</Box>
 		</Paper>
@@ -354,6 +402,7 @@ export default function UserEngagementStats() {
 							color="#2196F3"
 							metric={stats.likesPerUser}
 							engagement={stats.likeEngagement}
+							periodEngagement={stats.periodEngagement?.likeEngagement}
 						/>
 					</Grid>
 					<Grid item xs={12} md={4}>
@@ -363,6 +412,7 @@ export default function UserEngagementStats() {
 							color="#E91E63"
 							metric={stats.mutualLikesPerUser}
 							engagement={stats.mutualLikeEngagement}
+							periodEngagement={stats.periodEngagement?.mutualLikeEngagement}
 						/>
 					</Grid>
 					<Grid item xs={12} md={4}>
@@ -372,6 +422,7 @@ export default function UserEngagementStats() {
 							color="#4CAF50"
 							metric={stats.chatOpensPerUser}
 							engagement={stats.chatOpenEngagement}
+							periodEngagement={stats.periodEngagement?.chatOpenEngagement}
 						/>
 					</Grid>
 				</Grid>
