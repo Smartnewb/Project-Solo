@@ -37,15 +37,6 @@ interface UserProfile {
   createdAt: string;
 }
 
-interface ScheduledNotification {
-  id: string;
-  title: string;
-  message: string;
-  userIds: string[];
-  scheduledAt: string;
-  adminId: string;
-}
-
 export default function PushNotificationsPage() {
   const [filters, setFilters] = useState<FilterState>({
     isDormant: false,
@@ -80,10 +71,7 @@ export default function PushNotificationsPage() {
 
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
-  const [scheduledAt, setScheduledAt] = useState('');
-  const [sendType, setSendType] = useState<'immediate' | 'scheduled'>('immediate');
 
-  const [scheduledNotifications, setScheduledNotifications] = useState<ScheduledNotification[]>([]);
   const [universitySearch, setUniversitySearch] = useState('');
   const [showUniversityDropdown, setShowUniversityDropdown] = useState(false);
 
@@ -131,7 +119,6 @@ export default function PushNotificationsPage() {
       return;
     }
 
-    loadScheduledNotifications();
     loadUniversities();
   }, []);
 
@@ -156,15 +143,6 @@ export default function PushNotificationsPage() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const loadScheduledNotifications = async () => {
-    try {
-      const data = await AdminService.pushNotifications.getScheduledNotifications();
-      setScheduledNotifications(data);
-    } catch (error) {
-      console.error('예약된 알림 조회 실패:', error);
-    }
-  };
 
   const handleFilterUsers = async (page: number = currentPage) => {
     setLoading(true);
@@ -228,64 +206,37 @@ export default function PushNotificationsPage() {
       return;
     }
 
-    if (sendType === 'scheduled' && !scheduledAt) {
-      alert('예약 발송 시간을 선택해주세요.');
-      return;
-    }
-
     // 토큰 확인
     const token = localStorage.getItem('accessToken');
-    const isAdmin = localStorage.getItem('isAdmin');
-    console.log('🔐 토큰 상태:', { hasToken: !!token, isAdmin, tokenPreview: token?.substring(0, 20) + '...' });
-
     if (!token) {
       alert('로그인 토큰이 없습니다. 다시 로그인해주세요.');
       window.location.href = '/';
       return;
     }
 
-    const confirmMessage = sendType === 'immediate'
-      ? `총 ${targetUsers.length}명에게 즉시 푸시 알림을 발송하시겠습니까?`
-      : `총 ${targetUsers.length}명에게 ${scheduledAt}에 푸시 알림을 예약하시겠습니까?`;
-
-    if (!confirm(confirmMessage)) {
+    if (!confirm(`총 ${targetUsers.length}명에게 푸시 알림을 발송하시겠습니까?`)) {
       return;
     }
 
     setLoading(true);
     try {
-      const data: any = {
+      const data = {
+        userIds: targetUsers.map(u => u.id),
         title,
         message,
-        userIds: targetUsers.map(u => u.id), // 발송 대상자 리스트의 userId 배열 전달
       };
 
-      if (sendType === 'scheduled') {
-        data.scheduledAt = scheduledAt;
-      }
-
       console.log('📤 푸시 알림 발송 요청:', data);
-      const result = await AdminService.pushNotifications.sendPushNotification(data);
+      const result = await AdminService.pushNotifications.sendBulkNotification(data);
       console.log('✅ 푸시 알림 발송 성공:', result);
 
-      if (sendType === 'immediate') {
-        alert(`푸시 알림 발송 완료\n성공: ${result.successCount}건\n실패: ${result.failureCount}건`);
-      } else {
-        alert('푸시 알림이 예약되었습니다.');
-        loadScheduledNotifications();
-      }
+      alert(`푸시 알림 발송 완료\n성공: ${result.successCount}건\n실패: ${result.failureCount}건\n총 대상: ${result.totalCount}건`);
 
       setTitle('');
       setMessage('');
-      setScheduledAt('');
-      setTargetUsers([]); // 발송 후 리스트 초기화
+      setTargetUsers([]);
     } catch (error: any) {
       console.error('❌ 푸시 알림 발송 실패:', error);
-      console.error('에러 상세:', {
-        status: error?.response?.status,
-        data: error?.response?.data,
-        message: error?.message,
-      });
 
       if (error?.response?.status === 401) {
         alert('인증이 만료되었습니다. 다시 로그인해주세요.');
@@ -296,21 +247,6 @@ export default function PushNotificationsPage() {
       }
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleCancelScheduled = async (scheduleId: string) => {
-    if (!confirm('예약된 푸시 알림을 취소하시겠습니까?')) {
-      return;
-    }
-
-    try {
-      await AdminService.pushNotifications.cancelScheduledNotification(scheduleId);
-      alert('예약이 취소되었습니다.');
-      loadScheduledNotifications();
-    } catch (error) {
-      console.error('예약 취소 실패:', error);
-      alert('예약 취소에 실패했습니다.');
     }
   };
 
@@ -787,44 +723,6 @@ export default function PushNotificationsPage() {
         
         <div className="space-y-4">
           <div>
-            <label className="block mb-2 font-medium">발송 유형</label>
-            <div className="flex gap-4">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  value="immediate"
-                  checked={sendType === 'immediate'}
-                  onChange={(e) => setSendType(e.target.value as 'immediate')}
-                  className="mr-2"
-                />
-                즉시 발송
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  value="scheduled"
-                  checked={sendType === 'scheduled'}
-                  onChange={(e) => setSendType(e.target.value as 'scheduled')}
-                  className="mr-2"
-                />
-                예약 발송
-              </label>
-            </div>
-          </div>
-
-          {sendType === 'scheduled' && (
-            <div>
-              <label className="block mb-2 font-medium">예약 시간</label>
-              <input
-                type="datetime-local"
-                value={scheduledAt}
-                onChange={(e) => setScheduledAt(e.target.value)}
-                className="border rounded px-3 py-2 w-full"
-              />
-            </div>
-          )}
-
-          <div>
             <label className="block mb-2 font-medium">제목</label>
             <input
               type="text"
@@ -851,42 +749,10 @@ export default function PushNotificationsPage() {
             disabled={loading || targetUsers.length === 0}
             className="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 disabled:bg-gray-400"
           >
-            {loading ? '발송 중...' : sendType === 'immediate' ? `즉시 발송 (총 ${targetUsers.length}명)` : `예약 발송 (총 ${targetUsers.length}명)`}
+            {loading ? '발송 중...' : `푸시 알림 발송 (총 ${targetUsers.length}명)`}
           </button>
         </div>
       </div>
-
-      {/* 예약된 푸시 알림 목록 */}
-      {scheduledNotifications.length > 0 && (
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-4">예약된 푸시 알림</h2>
-          
-          <div className="space-y-4">
-            {scheduledNotifications.map(notification => (
-              <div key={notification.id} className="border rounded p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-semibold">{notification.title}</h3>
-                    <p className="text-gray-600">{notification.message}</p>
-                    <p className="text-sm text-gray-500 mt-2">
-                      예약 시간: {new Date(notification.scheduledAt).toLocaleString('ko-KR')}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      대상: {notification.userIds.length}명
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => handleCancelScheduled(notification.id)}
-                    className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-                  >
-                    취소
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* 프로필 상세 모달 */}
       {showProfileModal && (

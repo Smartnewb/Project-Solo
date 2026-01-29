@@ -3152,45 +3152,20 @@ const pushNotifications = {
 		}
 	},
 
-	sendPushNotification: async (data: {
+	sendBulkNotification: async (data: {
+		userIds: string[];
 		title: string;
 		message: string;
-		isDormant?: boolean;
-		universities?: string[];
-		gender?: string;
-		hasPreferences?: boolean;
-		ranks?: string[];
-		regions?: string[];
-		phoneNumber?: string;
-		scheduledAt?: string;
-	}) => {
+	}): Promise<{
+		successCount: number;
+		failureCount: number;
+		totalCount: number;
+	}> => {
 		try {
-			const response = await axiosServer.post('/admin/push-notifications/send', data);
+			const response = await axiosServer.post('/admin/notifications/bulk', data);
 			return response.data;
 		} catch (error) {
-			console.error('푸시 알림 발송 중 오류:', error);
-			throw error;
-		}
-	},
-
-	getScheduledNotifications: async () => {
-		try {
-			const response = await axiosServer.get('/admin/push-notifications/scheduled');
-			return response.data;
-		} catch (error) {
-			console.error('예약된 푸시 알림 조회 중 오류:', error);
-			throw error;
-		}
-	},
-
-	cancelScheduledNotification: async (scheduleId: string) => {
-		try {
-			const response = await axiosServer.delete(
-				`/admin/push-notifications/scheduled/${scheduleId}`,
-			);
-			return response.data;
-		} catch (error) {
-			console.error('예약된 푸시 알림 취소 중 오류:', error);
+			console.error('대량 푸시 알림 발송 중 오류:', error);
 			throw error;
 		}
 	},
