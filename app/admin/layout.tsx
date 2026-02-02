@@ -268,15 +268,6 @@ export default function AdminLayout({
                   모먼트 관리
                 </Link>
               </li>
-              <li>
-                <Link
-                  href="/admin/force-matching"
-                  className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors"
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  강제 매칭
-                </Link>
-              </li>
             </ul>
 
             {/* 💰 결제/매출 */}

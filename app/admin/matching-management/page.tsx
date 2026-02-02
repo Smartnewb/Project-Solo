@@ -33,6 +33,7 @@ import MatcherHistory from './components/MatcherHistory';
 import TicketManagement from './components/TicketManagement';
 import GemsManagement from './components/GemsManagement';
 import LikeHistory from './components/LikeHistory';
+import ForceMatchingTab from './components/ForceMatchingTab';
 import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
 
 // 타입 임포트
@@ -632,7 +633,7 @@ export default function MatchingManagement() {
         매칭 관리
       </Typography>
 
-      <Tabs value={activeTab} onChange={handleTabChange} aria-label="매칭 관리 탭">
+      <Tabs value={activeTab} onChange={handleTabChange} aria-label="매칭 관리 탭" variant="scrollable" scrollButtons="auto">
         <Tab label="구슬 관리" />
         <Tab label="매칭 내역 조회" />
         <Tab label="좋아요 이력" />
@@ -642,6 +643,7 @@ export default function MatchingManagement() {
         <Tab label="매칭 대기 사용자" />
         <Tab label="단일 매칭" />
         <Tab label="매칭 시뮬레이션" />
+        <Tab label="강제 매칭" />
         <Tab label="00시 매칭 여부" />
         <Tab label="잔여 사용자 매칭" />
         <Tab label="임베드 데이터 갱신" />
@@ -1169,8 +1171,13 @@ export default function MatchingManagement() {
         />
       </TabPanel>
 
-      {/* 00시 매칭 여부 */}
+      {/* 강제 매칭 */}
       <TabPanel value={activeTab} index={9}>
+        <ForceMatchingTab />
+      </TabPanel>
+
+      {/* 00시 매칭 여부 */}
+      <TabPanel value={activeTab} index={10}>
         <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
           <Typography variant="h6" gutterBottom>
             00시 매칭 On/Off
@@ -1192,7 +1199,7 @@ export default function MatchingManagement() {
       </TabPanel>
 
       {/* 잔여 사용자 매칭 */}
-      <TabPanel value={activeTab} index={10}>
+      <TabPanel value={activeTab} index={11}>
         <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
           <Typography variant="h6" gutterBottom>
             (굉장히 급조한 API) 잔여 사용자 매칭 (위험)
@@ -1213,7 +1220,7 @@ export default function MatchingManagement() {
       </TabPanel>
 
       {/* 임베드 데이터 갱신 */}
-      <TabPanel value={activeTab} index={11}>
+      <TabPanel value={activeTab} index={12}>
         <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
           <Typography variant="h6" gutterBottom>
             매칭 조건에 포함되는 전체 사용자의 벡터 갱신 (오래걸림)

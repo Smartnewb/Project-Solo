@@ -4229,11 +4229,15 @@ const forceMatching = {
 	}) => {
 		try {
 			const country = getCountryHeader();
+			// API 스펙: gender는 대문자(MALE, FEMALE), status는 소문자(approved)
+			const genderParam = params.gender ? params.gender.toUpperCase() : undefined;
+			const statusParam = (params.status || 'approved').toLowerCase();
+
 			const response = await axiosServer.get('/admin/users', {
 				params: {
 					search: params.search,
-					gender: params.gender,
-					status: params.status || 'APPROVED',
+					gender: genderParam,
+					status: statusParam,
 					page: params.page || 1,
 					limit: params.limit || 10,
 				},
