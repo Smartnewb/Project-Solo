@@ -4217,6 +4217,50 @@ const userEngagement = {
 	},
 };
 
+// 강제 매칭 API
+const forceMatching = {
+	// 유저 검색 (기존 /admin/users API 활용)
+	searchUsers: async (params: {
+		search?: string;
+		gender?: 'male' | 'female';
+		status?: string;
+		page?: number;
+		limit?: number;
+	}) => {
+		try {
+			const country = getCountryHeader();
+			const response = await axiosServer.get('/admin/users', {
+				params: {
+					search: params.search,
+					gender: params.gender,
+					status: params.status || 'APPROVED',
+					page: params.page || 1,
+					limit: params.limit || 10,
+				},
+				headers: { 'X-Country': country },
+			});
+			return response.data;
+		} catch (error: any) {
+			console.error('유저 검색 중 오류:', error);
+			throw error;
+		}
+	},
+
+	// 강제 채팅방 생성
+	createForceChatRoom: async (data: { userIdA: string; userIdB: string; reason?: string }) => {
+		try {
+			const country = getCountryHeader();
+			const response = await axiosServer.post('/admin/force-chat-room', data, {
+				headers: { 'X-Country': country },
+			});
+			return response.data;
+		} catch (error: any) {
+			console.error('강제 채팅방 생성 중 오류:', error);
+			throw error;
+		}
+	},
+};
+
 const AdminService = {
 	auth,
 	stats,
@@ -4241,6 +4285,7 @@ const AdminService = {
 	momentQuestions,
 	sometimeArticles,
 	userEngagement,
+	forceMatching,
 	getProfileReports: reports.getProfileReports,
 };
 
