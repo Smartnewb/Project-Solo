@@ -13,6 +13,8 @@ import type {
   ManualMatchingListResponse,
   ManualMatchingListParams,
   ValidateMatchingResponse,
+  ScheduleMatchingRequest,
+  ScheduleMatchingResponse,
 } from './types';
 import type { MatchingPoolStatsResponse, MatchingPoolCountry } from '@/types/admin';
 
@@ -136,6 +138,15 @@ export const scheduledMatchingService = {
   executeManualMatching: async (id: string): Promise<ManualMatching> => {
     const response = await axiosServer.post(`/admin/matching/manual/${id}/execute`);
     return response.data.data;
+  },
+
+  // ==================== Schedule Matching API ====================
+
+  executeScheduleMatching: async (
+    data: ScheduleMatchingRequest
+  ): Promise<ScheduleMatchingResponse> => {
+    const response = await axiosServer.post('/admin/matching/schedule', data);
+    return response.data;
   },
 };
 

@@ -208,3 +208,23 @@ export interface ManualMatchingListParams {
   page?: number;
   limit?: number;
 }
+
+// ==================== Schedule Matching Types ====================
+
+export interface ScheduleMatchingNotification {
+  title: string;
+  description: string;
+}
+
+export interface ScheduleMatchingRequest {
+  targetDate: string;
+  notification?: ScheduleMatchingNotification;
+}
+
+export interface ScheduleMatchingResponse {
+  success: boolean;
+  message: string;
+  eligibleUsersCount: number;
+  targetDate: string;
+  batchId?: string;
+}

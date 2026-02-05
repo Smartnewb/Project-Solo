@@ -20,9 +20,10 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
 import MapIcon from '@mui/icons-material/Map';
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import { Button } from '@/shared/ui';
 import { scheduledMatchingService } from '../service';
-import type { Country, ScheduledMatchingConfig, JobStatus, BatchHistory } from '../types';
+import type { Country, ScheduledMatchingConfig, JobStatus, BatchHistory, ScheduleMatchingResponse } from '../types';
 import type { MatchingPoolStatsResponse, MatchingPoolCountry, MatchTypeStats } from '@/types/admin';
 
 type MatchingType = 'scheduled' | 'rematching';
@@ -233,6 +234,12 @@ export default function CountryOverview() {
   const [matchingType, setMatchingType] = useState<MatchingType>('scheduled');
   const [dateRange, setDateRange] = useState(getDefaultDateRange);
 
+  // Schedule matching state
+  const [scheduleCountry, setScheduleCountry] = useState<Country>('KR');
+  const [scheduleExecuting, setScheduleExecuting] = useState(false);
+  const [scheduleResult, setScheduleResult] = useState<ScheduleMatchingResponse | null>(null);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+
   const fetchData = useCallback(async () => {
     try {
       setError(null);
@@ -342,6 +349,32 @@ export default function CountryOverview() {
     }
   };
 
+  const handleScheduleMatching = async () => {
+    if (!confirm(`${scheduleCountry === 'KR' ? '한국' : '일본'} 오늘자 스케줄 매칭을 실행하시겠습니까?`)) {
+      return;
+    }
+
+    try {
+      setScheduleExecuting(true);
+      setScheduleError(null);
+      setScheduleResult(null);
+
+      const today = formatDate(new Date());
+      const result = await scheduledMatchingService.executeScheduleMatching({
+        targetDate: today,
+      });
+
+      setScheduleResult(result);
+      fetchData();
+    } catch (err: unknown) {
+      console.error('Schedule matching failed:', err);
+      const errorMessage = err instanceof Error ? err.message : '스케줄 매칭 실행에 실패했습니다.';
+      setScheduleError(errorMessage);
+    } finally {
+      setScheduleExecuting(false);
+    }
+  };
+
   const getConfigForCountry = (country: Country) =>
     configs.find((c) => c.country === country) || null;
 
@@ -396,6 +429,63 @@ export default function CountryOverview() {
           </Grid>
         ))}
       </Grid>
+
+      {/* 수동 스케줄 매칭 실행 */}
+      <Paper sx={{ mt: 4, p: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <RocketLaunchIcon color="primary" />
+          <Typography variant="h6">수동 스케줄 매칭 실행</Typography>
+        </Box>
+
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          오늘 날짜 기준으로 적격 유저들의 스케줄 매칭을 수동으로 실행합니다.
+          매칭은 Queue를 통해 순차 처리됩니다.
+        </Typography>
+
+        {scheduleError && (
+          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setScheduleError(null)}>
+            {scheduleError}
+          </Alert>
+        )}
+
+        {scheduleResult && (
+          <Alert severity="success" sx={{ mb: 2 }} onClose={() => setScheduleResult(null)}>
+            {scheduleResult.message}
+            <br />
+            <Typography variant="caption">
+              대상 유저: {scheduleResult.eligibleUsersCount}명 | 배치 ID: {scheduleResult.batchId}
+            </Typography>
+          </Alert>
+        )}
+
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          <ToggleButtonGroup
+            value={scheduleCountry}
+            exclusive
+            onChange={(_, value) => value && setScheduleCountry(value)}
+            size="small"
+          >
+            <ToggleButton value="KR">🇰🇷 한국</ToggleButton>
+            <ToggleButton value="JP">🇯🇵 일본</ToggleButton>
+          </ToggleButtonGroup>
+
+          <Typography variant="body2" color="text.secondary">
+            대상일: {formatDate(new Date())}
+          </Typography>
+
+          <Button
+            onClick={handleScheduleMatching}
+            disabled={scheduleExecuting}
+          >
+            {scheduleExecuting ? (
+              <CircularProgress size={16} sx={{ mr: 1 }} />
+            ) : (
+              <PlayArrowIcon sx={{ fontSize: 18, mr: 0.5 }} />
+            )}
+            스케줄 매칭 실행
+          </Button>
+        </Box>
+      </Paper>
 
       <Paper sx={{ mt: 4, p: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
