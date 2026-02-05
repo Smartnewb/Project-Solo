@@ -13,6 +13,8 @@ export interface ScheduledMatchingConfig {
   batchSize: number;
   delayBetweenUsersMs: number;
   maxRetryCount: number;
+  loginWindowDays: number;
+  includeUnknownRank: boolean;
   description: string | null;
   lastModifiedBy: string | null;
   createdAt: string;
@@ -28,6 +30,8 @@ export interface CreateScheduledMatchingConfigRequest {
   batchSize?: number;
   delayBetweenUsersMs?: number;
   maxRetryCount?: number;
+  loginWindowDays?: number;
+  includeUnknownRank?: boolean;
   description?: string;
 }
 
@@ -38,6 +42,8 @@ export interface UpdateScheduledMatchingConfigRequest {
   batchSize?: number;
   delayBetweenUsersMs?: number;
   maxRetryCount?: number;
+  loginWindowDays?: number;
+  includeUnknownRank?: boolean;
   description?: string;
   lastModifiedBy?: string;
 }

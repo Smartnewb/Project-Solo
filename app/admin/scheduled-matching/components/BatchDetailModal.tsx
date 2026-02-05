@@ -56,7 +56,7 @@ export default function BatchDetailModal({ batchId, open, onClose }: BatchDetail
     try {
       setLoading(true);
       setError(null);
-      const result = await scheduledMatchingService.getBatchDetails(batchId, 200, 0);
+      const result = await scheduledMatchingService.getBatchDetails(batchId, 100, 0);
       setData(result);
     } catch (err) {
       console.error('Failed to fetch batch details:', err);

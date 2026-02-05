@@ -20,11 +20,13 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { Button } from '@/shared/ui';
+import { useAuth } from '@/contexts/AuthContext';
 import { scheduledMatchingService } from '../service';
 import type { Country, ScheduledMatchingConfig, CreateScheduledMatchingConfigRequest, UpdateScheduledMatchingConfigRequest } from '../types';
 import { parseCronToHumanReadable, CRON_PRESETS, TIMEZONE_OPTIONS } from '../utils';
 
 export default function ScheduleConfig() {
+  const { user } = useAuth();
   const [selectedCountry, setSelectedCountry] = useState<Country>('KR');
   const [configs, setConfigs] = useState<ScheduledMatchingConfig[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,6 +42,8 @@ export default function ScheduleConfig() {
     batchSize: 5,
     delayBetweenUsersMs: 120,
     maxRetryCount: 1,
+    loginWindowDays: 60,
+    includeUnknownRank: true,
     description: '',
   });
 
@@ -58,6 +62,8 @@ export default function ScheduleConfig() {
           batchSize: currentConfig.batchSize,
           delayBetweenUsersMs: currentConfig.delayBetweenUsersMs,
           maxRetryCount: currentConfig.maxRetryCount,
+          loginWindowDays: currentConfig.loginWindowDays ?? 60,
+          includeUnknownRank: currentConfig.includeUnknownRank ?? true,
           description: currentConfig.description || '',
         });
       }
@@ -83,6 +89,8 @@ export default function ScheduleConfig() {
         batchSize: currentConfig.batchSize,
         delayBetweenUsersMs: currentConfig.delayBetweenUsersMs,
         maxRetryCount: currentConfig.maxRetryCount,
+        loginWindowDays: currentConfig.loginWindowDays ?? 60,
+        includeUnknownRank: currentConfig.includeUnknownRank ?? true,
         description: currentConfig.description || '',
       });
     }
@@ -104,7 +112,10 @@ export default function ScheduleConfig() {
           batchSize: formData.batchSize,
           delayBetweenUsersMs: formData.delayBetweenUsersMs,
           maxRetryCount: formData.maxRetryCount,
+          loginWindowDays: formData.loginWindowDays,
+          includeUnknownRank: formData.includeUnknownRank,
           description: formData.description || undefined,
+          lastModifiedBy: user?.email || undefined,
         };
         await scheduledMatchingService.updateConfig(selectedCountry, updateData);
         setSuccess('설정이 수정되었습니다.');
@@ -117,6 +128,8 @@ export default function ScheduleConfig() {
           batchSize: formData.batchSize,
           delayBetweenUsersMs: formData.delayBetweenUsersMs,
           maxRetryCount: formData.maxRetryCount,
+          loginWindowDays: formData.loginWindowDays,
+          includeUnknownRank: formData.includeUnknownRank,
           description: formData.description || undefined,
         };
         await scheduledMatchingService.createConfig(createData);
@@ -302,8 +315,47 @@ export default function ScheduleConfig() {
                 }
                 helperText="매칭 실패 시 재시도 횟수 (0~5)"
                 size="small"
+                sx={{ mb: 2 }}
                 inputProps={{ min: 0, max: 5 }}
               />
+
+              <Divider sx={{ my: 2 }} />
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                매칭 필터 설정
+              </Typography>
+
+              <TextField
+                fullWidth
+                type="number"
+                label="로그인 기준일"
+                value={formData.loginWindowDays}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    loginWindowDays: Math.min(365, Math.max(1, parseInt(e.target.value) || 1)),
+                  }))
+                }
+                helperText="최근 N일 이내 로그인한 사용자만 매칭 대상 (1~365)"
+                size="small"
+                sx={{ mb: 2 }}
+                inputProps={{ min: 1, max: 365 }}
+              />
+
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.includeUnknownRank}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, includeUnknownRank: e.target.checked }))
+                    }
+                  />
+                }
+                label="UNKNOWN 랭크 포함"
+                sx={{ display: 'block' }}
+              />
+              <Typography variant="caption" color="text.secondary">
+                랭크가 UNKNOWN인 사용자도 매칭 대상에 포함
+              </Typography>
             </Box>
           </Collapse>
         </Box>
