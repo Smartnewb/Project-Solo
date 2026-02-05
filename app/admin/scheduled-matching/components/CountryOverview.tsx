@@ -15,6 +15,9 @@ import {
   ToggleButtonGroup,
   ToggleButton,
   TextField,
+  Switch,
+  FormControlLabel,
+  Divider,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -458,7 +461,7 @@ export default function CountryOverview() {
           </Alert>
         )}
 
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 3 }}>
           <ToggleButtonGroup
             value={scheduleCountry}
             exclusive
@@ -485,6 +488,81 @@ export default function CountryOverview() {
             스케줄 매칭 실행
           </Button>
         </Box>
+
+        <Divider sx={{ my: 2 }} />
+
+        {/* 현재 매칭 필터 설정 표시 */}
+        {(() => {
+          const currentConfig = getConfigForCountry(scheduleCountry);
+          if (!currentConfig) {
+            return (
+              <Alert severity="warning" sx={{ mt: 2 }}>
+                {scheduleCountry === 'KR' ? '한국' : '일본'} 설정이 없습니다. 스케줄 설정 탭에서 먼저 설정을 생성해주세요.
+              </Alert>
+            );
+          }
+          return (
+            <Box>
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                현재 매칭 필터 설정 ({scheduleCountry === 'KR' ? '한국' : '일본'})
+              </Typography>
+              <Grid container spacing={2} sx={{ mt: 1 }}>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      로그인 기준일
+                    </Typography>
+                    <Typography variant="h6">
+                      {currentConfig.loginWindowDays ?? 60}일
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      최근 {currentConfig.loginWindowDays ?? 60}일 이내 로그인한 유저만 대상
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      UNKNOWN 랭크 포함
+                    </Typography>
+                    <Typography variant="h6">
+                      <Chip
+                        label={currentConfig.includeUnknownRank ? 'ON' : 'OFF'}
+                        color={currentConfig.includeUnknownRank ? 'success' : 'default'}
+                        size="small"
+                      />
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {currentConfig.includeUnknownRank
+                        ? '랭크 미산정 유저 포함'
+                        : '랭크 미산정 유저 제외'}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      스케줄 상태
+                    </Typography>
+                    <Typography variant="h6">
+                      <Chip
+                        label={currentConfig.isEnabled ? '활성화' : '비활성화'}
+                        color={currentConfig.isEnabled ? 'success' : 'default'}
+                        size="small"
+                      />
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {currentConfig.cronExpression}
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
+              <Alert severity="info" sx={{ mt: 2 }}>
+                매칭 필터 설정을 변경하려면 <strong>스케줄 설정</strong> 탭에서 수정해주세요.
+              </Alert>
+            </Box>
+          );
+        })()}
       </Paper>
 
       <Paper sx={{ mt: 4, p: 3 }}>
