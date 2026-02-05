@@ -5,6 +5,7 @@ import { Box, Typography, Tabs, Tab } from '@mui/material';
 import CountryOverview from './components/CountryOverview';
 import ScheduleConfig from './components/ScheduleConfig';
 import BatchHistory from './components/BatchHistory';
+import ManualMatching from './components/ManualMatching';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -43,6 +44,7 @@ export default function ScheduledMatchingPage() {
         <Tab label="국가별 현황" />
         <Tab label="스케줄 설정" />
         <Tab label="배치 히스토리" />
+        <Tab label="수동 매칭" />
       </Tabs>
 
       <TabPanel value={activeTab} index={0}>
@@ -55,6 +57,10 @@ export default function ScheduledMatchingPage() {
 
       <TabPanel value={activeTab} index={2}>
         <BatchHistory />
+      </TabPanel>
+
+      <TabPanel value={activeTab} index={3}>
+        <ManualMatching />
       </TabPanel>
     </Box>
   );

@@ -8,6 +8,11 @@ import type {
   BatchHistory,
   BatchDetailsWithStats,
   TriggerManualExecutionResponse,
+  ManualMatchingRequest,
+  ManualMatching,
+  ManualMatchingListResponse,
+  ManualMatchingListParams,
+  ValidateMatchingResponse,
 } from './types';
 import type { MatchingPoolStatsResponse, MatchingPoolCountry } from '@/types/admin';
 
@@ -95,6 +100,42 @@ export const scheduledMatchingService = {
       params: { country, startDate, endDate },
     });
     return response.data;
+  },
+
+  // ==================== Manual Matching APIs ====================
+
+  createManualMatching: async (data: ManualMatchingRequest): Promise<ManualMatching> => {
+    const response = await axiosServer.post('/admin/matching/manual', data);
+    return response.data.data;
+  },
+
+  validateManualMatching: async (userIds: string[]): Promise<ValidateMatchingResponse> => {
+    const response = await axiosServer.post('/admin/matching/validate', { userIds });
+    return response.data.data;
+  },
+
+  getManualMatchingList: async (
+    params: ManualMatchingListParams = {}
+  ): Promise<ManualMatchingListResponse> => {
+    const response = await axiosServer.get('/admin/matching/manual', { params });
+    return response.data;
+  },
+
+  getManualMatchingDetail: async (id: string): Promise<ManualMatching> => {
+    const response = await axiosServer.get(`/admin/matching/manual/${id}`);
+    return response.data.data;
+  },
+
+  cancelManualMatching: async (id: string, reason: string): Promise<ManualMatching> => {
+    const response = await axiosServer.delete(`/admin/matching/manual/${id}`, {
+      data: { reason },
+    });
+    return response.data.data;
+  },
+
+  executeManualMatching: async (id: string): Promise<ManualMatching> => {
+    const response = await axiosServer.post(`/admin/matching/manual/${id}/execute`);
+    return response.data.data;
   },
 };
 
