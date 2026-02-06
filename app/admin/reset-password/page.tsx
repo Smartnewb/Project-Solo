@@ -100,7 +100,7 @@ export default function ResetPasswordPage() {
 
     try {
       setResetLoading(true);
-      const result = await AdminService.userAppearance.resetPassword(selectedUser.id);
+      const result = await AdminService.userAppearance.resetPassword(selectedUser.userId || selectedUser.id);
       setTemporaryPassword(result.temporaryPassword || result.data?.temporaryPassword || '');
       setConfirmDialogOpen(false);
       setPasswordDialogOpen(true);
@@ -206,7 +206,7 @@ export default function ResetPasswordPage() {
               </TableHead>
               <TableBody>
                 {users.map((user) => (
-                  <TableRow key={user.id}>
+                  <TableRow key={user.userId || user.id}>
                     <TableCell>{user.name || '-'}</TableCell>
                     <TableCell>{user.email || '-'}</TableCell>
                     <TableCell>{user.phoneNumber || user.phone_number || '-'}</TableCell>
