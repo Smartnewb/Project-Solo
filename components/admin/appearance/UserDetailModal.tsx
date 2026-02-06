@@ -49,6 +49,8 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
 import DiamondIcon from '@mui/icons-material/Diamond';
+import LockResetIcon from '@mui/icons-material/LockReset';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import AdminService from '@/app/services/admin';
 import { formatDateWithoutTimezoneConversion, formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
 
@@ -268,6 +270,12 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const [revokeReason, setRevokeReason] = useState<string>('');
   const [customRevokeReason, setCustomRevokeReason] = useState<string>('');
   const [revokeActionLoading, setRevokeActionLoading] = useState(false);
+
+  // 비밀번호 초기화 관련 상태
+  const [resetPasswordConfirmOpen, setResetPasswordConfirmOpen] = useState(false);
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+  const [resetPasswordResultOpen, setResetPasswordResultOpen] = useState(false);
+  const [temporaryPassword, setTemporaryPassword] = useState('');
 
   const rejectionReasons = [
     { value: 'LONG_TERM_INACTIVE_REAPPLY', label: '[장기 미접속]-재심사를 요청해주세요' },
@@ -691,6 +699,45 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     setCustomRevokeReason('');
   };
 
+  // 비밀번호 초기화 메뉴 클릭
+  const handleResetPasswordClick = () => {
+    handleCloseMenu();
+    setResetPasswordConfirmOpen(true);
+  };
+
+  // 비밀번호 초기화 실행
+  const handleConfirmResetPassword = async () => {
+    if (!userId) return;
+
+    try {
+      setResetPasswordLoading(true);
+      const result = await AdminService.userAppearance.resetPassword(userId);
+      setTemporaryPassword(result.temporaryPassword || result.data?.temporaryPassword || '');
+      setResetPasswordConfirmOpen(false);
+      setResetPasswordResultOpen(true);
+    } catch (error: any) {
+      console.error('비밀번호 초기화 중 오류:', error);
+      setActionError(error.response?.data?.message || error.message || '비밀번호 초기화에 실패했습니다.');
+      setResetPasswordConfirmOpen(false);
+    } finally {
+      setResetPasswordLoading(false);
+    }
+  };
+
+  // 임시 비밀번호 복사
+  const handleCopyTemporaryPassword = () => {
+    if (temporaryPassword) {
+      navigator.clipboard.writeText(temporaryPassword);
+      setActionSuccess('임시 비밀번호가 복사되었습니다.');
+    }
+  };
+
+  // 비밀번호 결과 다이얼로그 닫기
+  const handleResetPasswordResultClose = () => {
+    setResetPasswordResultOpen(false);
+    setTemporaryPassword('');
+  };
+
   return (
     <Dialog
       open={open}
@@ -761,6 +808,12 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
             <PhoneIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText>SMS 발송</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleResetPasswordClick} disabled={actionLoading}>
+          <ListItemIcon>
+            <LockResetIcon fontSize="small" color="warning" />
+          </ListItemIcon>
+          <ListItemText primary="비밀번호 초기화" primaryTypographyProps={{ color: 'warning.main' }} />
         </MenuItem>
         <Divider />
         <MenuItem onClick={handleDeleteUser} disabled={actionLoading}>
@@ -1989,6 +2042,62 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
             }
           >
             {revokeActionLoading ? <CircularProgress size={20} /> : '승인 취소'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 비밀번호 초기화 확인 다이얼로그 */}
+      <Dialog open={resetPasswordConfirmOpen} onClose={() => setResetPasswordConfirmOpen(false)}>
+        <DialogTitle>비밀번호 초기화</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            <strong>{userDetail?.name}</strong>님의 비밀번호를 초기화하시겠습니까?
+            <br />
+            <br />
+            초기화 시 임시 비밀번호가 발급되며, 기존 비밀번호는 사용할 수 없게 됩니다.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setResetPasswordConfirmOpen(false)} disabled={resetPasswordLoading}>
+            취소
+          </Button>
+          <Button
+            onClick={handleConfirmResetPassword}
+            color="warning"
+            variant="contained"
+            disabled={resetPasswordLoading}
+          >
+            {resetPasswordLoading ? <CircularProgress size={20} /> : '초기화'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 임시 비밀번호 결과 다이얼로그 */}
+      <Dialog open={resetPasswordResultOpen} onClose={handleResetPasswordResultClose}>
+        <DialogTitle>비밀번호 초기화 완료</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            비밀번호가 성공적으로 초기화되었습니다.
+            <br />
+            아래 임시 비밀번호를 회원에게 전달해주세요.
+          </DialogContentText>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <TextField
+              fullWidth
+              label="임시 비밀번호"
+              value={temporaryPassword}
+              InputProps={{
+                readOnly: true,
+              }}
+            />
+            <IconButton onClick={handleCopyTemporaryPassword} color="primary">
+              <ContentCopyIcon />
+            </IconButton>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleResetPasswordResultClose} variant="contained">
+            확인
           </Button>
         </DialogActions>
       </Dialog>

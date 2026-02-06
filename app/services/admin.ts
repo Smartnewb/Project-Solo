@@ -1541,6 +1541,22 @@ const userAppearance = {
 		}
 	},
 
+	// 비밀번호 초기화
+	resetPassword: async (userId: string) => {
+		try {
+			console.log('비밀번호 초기화 요청:', { userId });
+
+			const response = await axiosServer.patch(`/admin/users/${userId}/reset-password`);
+
+			console.log('비밀번호 초기화 응답:', response.data);
+			return response.data;
+		} catch (error: any) {
+			console.error('비밀번호 초기화 중 오류:', error);
+			console.error('오류 상세 정보:', error.response?.data || error.message);
+			throw error;
+		}
+	},
+
 	// 재심사 요청 사용자 조회
 	getReapplyUsers: async (page: number = 1, limit: number = 10, region?: string, name?: string) => {
 		try {
