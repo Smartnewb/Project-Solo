@@ -61,11 +61,11 @@ export default function ResetPasswordPage() {
         status: 'approved',
       });
 
-      setUsers(data.data || data.items || []);
-      const meta = data.meta || data.pagination;
+      setUsers(data.users || data.data || data.items || []);
+      const meta = data.pagination || data.meta;
       if (meta) {
         setTotalPages(meta.totalPages || 1);
-        setTotalCount(meta.totalCount || meta.total || 0);
+        setTotalCount(meta.total || meta.totalCount || 0);
       }
       setPage(pageNum);
     } catch (err: any) {
