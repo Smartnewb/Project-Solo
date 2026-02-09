@@ -71,8 +71,8 @@ export function useSupportChatSocket({
     }
 
     const socket = io(`${SOCKET_URL}/support-chat`, {
-      auth: {
-        token: `Bearer ${token}`,
+      auth: (cb) => {
+        cb({ token: `Bearer ${getAccessToken()}` });
       },
       transports: ['websocket'],
       reconnection: true,
