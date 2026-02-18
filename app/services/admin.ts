@@ -1541,6 +1541,29 @@ const userAppearance = {
 		}
 	},
 
+	// 유저 검색 (탈퇴회원 포함) - 비밀번호 초기화용
+	searchUsersForReset: async (params: {
+		name?: string;
+		phoneNumber?: string;
+		page?: number;
+		limit?: number;
+	}) => {
+		try {
+			const response = await axiosServer.get('/admin/users/search', {
+				params: {
+					name: params.name || undefined,
+					phoneNumber: params.phoneNumber || undefined,
+					page: params.page || 1,
+					limit: params.limit || 10,
+				},
+			});
+			return response.data;
+		} catch (error: any) {
+			console.error('유저 검색 중 오류:', error);
+			throw error;
+		}
+	},
+
 	// 비밀번호 초기화
 	resetPassword: async (userId: string) => {
 		try {
@@ -4281,6 +4304,108 @@ const forceMatching = {
 	},
 };
 
+const kpiReport = {
+	getLatest: async () => {
+		try {
+			const response = await axiosServer.get('/kpi-report/latest');
+			return response.data;
+		} catch (error: any) {
+			console.error('최신 KPI 리포트 조회 중 오류:', error);
+			throw error;
+		}
+	},
+
+	getByWeek: async (year: number, week: number) => {
+		try {
+			const response = await axiosServer.get(`/kpi-report/${year}/${week}`);
+			return response.data;
+		} catch (error: any) {
+			console.error('주간 KPI 리포트 조회 중 오류:', error);
+			throw error;
+		}
+	},
+
+	getDefinitions: async () => {
+		try {
+			const response = await axiosServer.get('/kpi-report/definitions');
+			return response.data;
+		} catch (error: any) {
+			console.error('KPI 정의 조회 중 오류:', error);
+			throw error;
+		}
+	},
+
+	generate: async (year?: number, week?: number) => {
+		try {
+			const response = await axiosServer.post('/kpi-report/generate', { year, week });
+			return response.data;
+		} catch (error: any) {
+			console.error('KPI 리포트 생성 중 오류:', error);
+			throw error;
+		}
+	},
+};
+
+// ==================== 앱 리뷰 ====================
+export interface AppReviewItem {
+	pk: string;
+	store: 'APP_STORE' | 'PLAY_STORE';
+	reviewId: string;
+	rating: number;
+	title: string;
+	body: string;
+	author: string;
+	appVersion: string;
+	language: string;
+	createdAt: string;
+	collectedAt: string;
+}
+
+export interface AppReviewsResponse {
+	items: AppReviewItem[];
+	nextCursor: string | null;
+	totalScannedCount: number;
+}
+
+export interface AppReviewStatsResponse {
+	totalCount: number;
+	averageRating: number;
+	byStore: { store: string; count: number; averageRating: number }[];
+	ratingDistribution: { rating: number; count: number }[];
+	lastCollectedAt: string;
+}
+
+export interface AppReviewsParams {
+	store?: 'APP_STORE' | 'PLAY_STORE';
+	rating?: number;
+	startDate?: string;
+	endDate?: string;
+	limit?: number;
+	cursor?: string;
+}
+
+const appReviews = {
+	getList: async (params: AppReviewsParams = {}): Promise<AppReviewsResponse> => {
+		try {
+			const response = await axiosServer.get('/admin/app-reviews', { params });
+			return response.data;
+		} catch (error: any) {
+			console.error('앱 리뷰 목록 조회 중 오류:', error);
+			throw error;
+		}
+	},
+
+	getStats: async (): Promise<AppReviewStatsResponse> => {
+		try {
+			const response = await axiosServer.get('/admin/app-reviews/stats');
+			return response.data;
+		} catch (error: any) {
+			console.error('앱 리뷰 통계 조회 중 오류:', error);
+			throw error;
+		}
+	},
+};
+
 const AdminService = {
 	auth,
 	stats,
@@ -4306,6 +4431,8 @@ const AdminService = {
 	sometimeArticles,
 	userEngagement,
 	forceMatching,
+	kpiReport,
+	appReviews,
 	getProfileReports: reports.getProfileReports,
 };
 

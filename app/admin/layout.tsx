@@ -146,6 +146,24 @@ export default function AdminLayout({
                   회원 통계
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/admin/kpi-report"
+                  className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors"
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  KPI 주간 리포트
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/admin/app-reviews"
+                  className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors"
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  앱 리뷰 관리
+                </Link>
+              </li>
             </ul>
 
             {/* 👥 회원 관리 */}
