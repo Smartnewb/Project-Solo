@@ -333,6 +333,7 @@ export const salesService = {
   async getRevenueMetrics(params?: {
     startDate?: string;
     endDate?: string;
+    includeDeleted?: boolean;
   }): Promise<RevenueMetricsResponse> {
     try {
       const response = await axiosServer.get(SALES_ENDPOINT.REVENUE_METRICS, {
@@ -348,6 +349,7 @@ export const salesService = {
   async getAverageOrderValue(params?: {
     startDate?: string;
     endDate?: string;
+    includeDeleted?: boolean;
   }): Promise<AverageOrderValueResponse> {
     try {
       const response = await axiosServer.get(SALES_ENDPOINT.AOV, { params });
@@ -399,6 +401,7 @@ export const salesService = {
     startDate?: string;
     endDate?: string;
     granularity?: "daily" | "weekly" | "monthly";
+    includeDeleted?: boolean;
   }): Promise<RevenueMetricsTrendResponse> {
     try {
       const response = await axiosServer.get(

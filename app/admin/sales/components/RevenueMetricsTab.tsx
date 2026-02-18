@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { salesService } from "@/app/services/sales";
 import {
   RevenueMetricsResponse,
@@ -31,6 +31,12 @@ interface RevenueMetricsTabProps {
 }
 
 type Granularity = "daily" | "weekly" | "monthly";
+type CardPeriodType = "week" | "weekly" | "monthly" | "custom";
+
+interface CardDateRange {
+  startDate: string;
+  endDate: string;
+}
 
 const METRIC_TOOLTIPS = {
   ARPU: {
@@ -74,6 +80,12 @@ const formatDateToString = (date: Date): string => {
 };
 
 const SERVICE_START_DATE = "2025-05-01";
+const CARD_PERIOD_LABELS: Record<CardPeriodType, string> = {
+  week: "일주일",
+  weekly: "주별",
+  monthly: "월별",
+  custom: "기간 선택",
+};
 
 const getDateRangeForGranularity = (
   granularity: Granularity,
@@ -100,6 +112,40 @@ const getOneMonthAgo = (): string => {
 
 const getToday = (): string => {
   return formatDateToString(new Date());
+};
+
+const getCardDateRange = (
+  periodType: Exclude<CardPeriodType, "custom">,
+): CardDateRange => {
+  const today = new Date();
+
+  if (periodType === "week") {
+    const start = new Date(today);
+    const day = start.getDay();
+    const diffFromMonday = day === 0 ? 6 : day - 1;
+    start.setDate(start.getDate() - diffFromMonday);
+    return {
+      startDate: formatDateToString(start),
+      endDate: formatDateToString(today),
+    };
+  }
+
+  if (periodType === "weekly") {
+    const start = new Date(today);
+    start.setDate(start.getDate() - 55);
+    return {
+      startDate: formatDateToString(start),
+      endDate: formatDateToString(today),
+    };
+  }
+
+  const start = new Date(today);
+  start.setMonth(start.getMonth() - 11);
+  start.setDate(1);
+  return {
+    startDate: formatDateToString(start),
+    endDate: formatDateToString(today),
+  };
 };
 
 function MetricTooltipIcon({
@@ -151,6 +197,9 @@ export function RevenueMetricsTab({
   startDate,
   endDate,
 }: RevenueMetricsTabProps) {
+  const initialCardRange = getCardDateRange("monthly");
+  const initialTrendRange = getDateRangeForGranularity("monthly");
+
   const [revenueMetrics, setRevenueMetrics] =
     useState<RevenueMetricsResponse | null>(null);
   const [aovData, setAovData] = useState<AverageOrderValueResponse | null>(
@@ -166,12 +215,19 @@ export function RevenueMetricsTab({
   const [successRateData, setSuccessRateData] =
     useState<PaymentSuccessRateResponse | null>(null);
 
+  const [includeDeleted, setIncludeDeleted] = useState(false);
+  const [cardPeriodType, setCardPeriodType] = useState<CardPeriodType>("monthly");
+  const [cardStartDate, setCardStartDate] = useState(initialCardRange.startDate);
+  const [cardEndDate, setCardEndDate] = useState(initialCardRange.endDate);
+  const [customStartDate, setCustomStartDate] = useState(getOneMonthAgo());
+  const [customEndDate, setCustomEndDate] = useState(getToday());
+  const [cardPeriodError, setCardPeriodError] = useState<string>("");
+
   const [granularity, setGranularity] = useState<Granularity>("monthly");
-  const initialRange = getDateRangeForGranularity("monthly");
   const [trendStartDate, setTrendStartDate] = useState<string>(
-    initialRange.start,
+    initialTrendRange.start,
   );
-  const [trendEndDate, setTrendEndDate] = useState<string>(initialRange.end);
+  const [trendEndDate, setTrendEndDate] = useState<string>(initialTrendRange.end);
 
   const [loadingMetrics, setLoadingMetrics] = useState(false);
   const [loadingAov, setLoadingAov] = useState(false);
@@ -182,6 +238,7 @@ export function RevenueMetricsTab({
   const [loadingSuccessRate, setLoadingSuccessRate] = useState(false);
 
   const [error, setError] = useState<string>("");
+  const hasInitialized = useRef(false);
 
   const getDateParams = () => {
     if (startDate && endDate) {
@@ -193,15 +250,16 @@ export function RevenueMetricsTab({
     return undefined;
   };
 
-  const fetchAllData = async () => {
-    setError("");
-    const params = getDateParams();
+  const fetchRevenueCards = async (range?: CardDateRange) => {
+    const activeRange = range ?? { startDate: cardStartDate, endDate: cardEndDate };
+    const params = {
+      startDate: activeRange.startDate,
+      endDate: activeRange.endDate,
+      includeDeleted,
+    };
 
     setLoadingMetrics(true);
     setLoadingAov(true);
-    setLoadingRepurchase(true);
-    setLoadingConversion(true);
-    setLoadingLtv(true);
 
     try {
       const metricsRes = await salesService.getRevenueMetrics(params);
@@ -220,6 +278,17 @@ export function RevenueMetricsTab({
     } finally {
       setLoadingAov(false);
     }
+  };
+
+  const fetchAllData = async () => {
+    setError("");
+    const params = getDateParams();
+
+    setLoadingRepurchase(true);
+    setLoadingConversion(true);
+    setLoadingLtv(true);
+
+    await fetchRevenueCards();
 
     try {
       const repurchaseRes = await salesService.getRepurchaseAnalysis();
@@ -268,6 +337,7 @@ export function RevenueMetricsTab({
         startDate: trendStartDate,
         endDate: trendEndDate,
         granularity,
+        includeDeleted,
       });
       setTrendData(trendRes);
     } catch (e) {
@@ -278,14 +348,22 @@ export function RevenueMetricsTab({
   };
 
   useEffect(() => {
-    fetchAllData();
+    fetchAllData().finally(() => {
+      hasInitialized.current = true;
+    });
   }, []);
 
   useEffect(() => {
-    if (startDate && endDate) {
+    if (hasInitialized.current && startDate && endDate) {
       fetchAllData();
     }
   }, [startDate, endDate]);
+
+  useEffect(() => {
+    if (!hasInitialized.current) return;
+    fetchRevenueCards();
+    fetchTrendData();
+  }, [includeDeleted]);
 
   const handleGranularityChange = (newGranularity: Granularity) => {
     setGranularity(newGranularity);
@@ -296,6 +374,37 @@ export function RevenueMetricsTab({
 
   const handleRefresh = () => {
     fetchAllData();
+  };
+
+  const handleCardPeriodChange = (periodType: CardPeriodType) => {
+    setCardPeriodType(periodType);
+    setCardPeriodError("");
+
+    if (periodType === "custom") {
+      return;
+    }
+
+    const nextRange = getCardDateRange(periodType);
+    setCardStartDate(nextRange.startDate);
+    setCardEndDate(nextRange.endDate);
+    fetchRevenueCards(nextRange);
+  };
+
+  const handleApplyCustomPeriod = () => {
+    if (!customStartDate || !customEndDate) {
+      setCardPeriodError("시작일과 종료일을 모두 선택해주세요.");
+      return;
+    }
+    if (customStartDate > customEndDate) {
+      setCardPeriodError("시작일은 종료일보다 이전이어야 합니다.");
+      return;
+    }
+
+    const nextRange = { startDate: customStartDate, endDate: customEndDate };
+    setCardPeriodError("");
+    setCardStartDate(nextRange.startDate);
+    setCardEndDate(nextRange.endDate);
+    fetchRevenueCards(nextRange);
   };
 
   const MetricsTrendTooltip = ({ active, payload, label }: any) => {
@@ -374,6 +483,77 @@ export function RevenueMetricsTab({
           {error}
         </div>
       )}
+
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50">
+              {(Object.keys(CARD_PERIOD_LABELS) as CardPeriodType[]).map((period) => (
+                <button
+                  key={period}
+                  type="button"
+                  onClick={() => handleCardPeriodChange(period)}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    cardPeriodType === period
+                      ? "bg-[#7D4EE4] text-white shadow-sm"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                  }`}
+                >
+                  {CARD_PERIOD_LABELS[period]}
+                </button>
+              ))}
+            </div>
+
+            <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={includeDeleted}
+                onChange={(e) => setIncludeDeleted(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-[#7D4EE4] focus:ring-[#7D4EE4]"
+              />
+              탈퇴자 포함
+            </label>
+          </div>
+
+          {cardPeriodType === "custom" && (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7D4EE4] focus:border-transparent"
+              />
+              <span className="text-gray-400 text-sm">~</span>
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7D4EE4] focus:border-transparent"
+              />
+              <button
+                type="button"
+                onClick={handleApplyCustomPeriod}
+                className="px-3 py-1.5 text-sm font-medium bg-[#7D4EE4] text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
+                적용
+              </button>
+            </div>
+          )}
+
+          <p className="text-xs text-gray-500">
+            이 기간은 ARPU/ARPPU/PUR/AOV 카드에만 적용됩니다. 현재 카드 기준:{" "}
+            <span className="font-medium text-gray-700">
+              {cardStartDate} ~ {cardEndDate}
+            </span>
+          </p>
+
+          {cardPeriodError && (
+            <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded px-2 py-1">
+              {cardPeriodError}
+            </p>
+          )}
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
