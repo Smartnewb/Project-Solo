@@ -54,19 +54,20 @@ export default function ResetPasswordPage() {
       setError('');
       setSearched(true);
 
-      const data = await AdminService.forceMatching.searchUsers({
-        search: searchQuery.trim(),
+      const query = searchQuery.trim();
+      const isPhoneNumber = /^[\d\-]+$/.test(query);
+
+      const data = await AdminService.userAppearance.searchUsersForReset({
+        name: isPhoneNumber ? undefined : query,
+        phoneNumber: isPhoneNumber ? query : undefined,
         page: pageNum,
         limit: 10,
-        status: 'approved',
       });
 
-      setUsers(data.users || data.data || data.items || []);
-      const meta = data.pagination || data.meta;
-      if (meta) {
-        setTotalPages(meta.totalPages || 1);
-        setTotalCount(meta.total || meta.totalCount || 0);
-      }
+      setUsers(data.users || []);
+      const total = data.total || 0;
+      setTotalCount(total);
+      setTotalPages(Math.ceil(total / 10) || 1);
       setPage(pageNum);
     } catch (err: any) {
       setError(err.response?.data?.message || '검색 중 오류가 발생했습니다.');
@@ -149,7 +150,7 @@ export default function ResetPasswordPage() {
       <Box sx={{ mb: 3, display: 'flex', gap: 1, alignItems: 'center' }}>
         <TextField
           size="small"
-          placeholder="이름, 전화번호, 이메일, ID로 검색"
+          placeholder="이름 또는 전화번호로 검색"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={handleKeyPress}
@@ -198,19 +199,29 @@ export default function ResetPasswordPage() {
               <TableHead>
                 <TableRow>
                   <TableCell>이름</TableCell>
-                  <TableCell>이메일</TableCell>
                   <TableCell>전화번호</TableCell>
+                  <TableCell>상태</TableCell>
                   <TableCell>가입일</TableCell>
                   <TableCell align="center">액션</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {users.map((user) => (
-                  <TableRow key={user.userId || user.id}>
+                  <TableRow key={user.userId} sx={user.deletedAt ? { opacity: 0.6 } : {}}>
                     <TableCell>{user.name || '-'}</TableCell>
-                    <TableCell>{user.email || '-'}</TableCell>
-                    <TableCell>{user.phoneNumber || user.phone_number || '-'}</TableCell>
-                    <TableCell>{formatDate(user.createdAt || user.created_at)}</TableCell>
+                    <TableCell>{user.phoneNumber || '-'}</TableCell>
+                    <TableCell>
+                      {user.deletedAt
+                        ? `탈퇴 (${formatDate(user.deletedAt)})`
+                        : user.status === 'approved'
+                          ? '활성'
+                          : user.status === 'pending'
+                            ? '대기'
+                            : user.status === 'rejected'
+                              ? '거절'
+                              : user.status || '-'}
+                    </TableCell>
+                    <TableCell>{formatDate(user.createdAt)}</TableCell>
                     <TableCell align="center">
                       <Button
                         variant="outlined"
