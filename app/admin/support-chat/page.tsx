@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Box, useMediaQuery, useTheme } from '@mui/material';
 import StatusCountBar from './components/StatusCountBar';
 import SessionQueue from './components/SessionQueue';
@@ -11,14 +12,31 @@ import type { SupportDomain } from '@/app/types/support-chat';
 export default function SupportChatPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const sessionFromUrl = searchParams.get('session');
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(sessionFromUrl);
   const [activeTab, setActiveTab] = useState<'active' | 'resolved'>('active');
   const [domainFilter, setDomainFilter] = useState<SupportDomain | 'all'>('all');
   const [unreadMap, setUnreadMap] = useState<Record<string, number>>({});
   const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
 
   const prevMessageCountsRef = useRef<Record<string, number>>({});
+  const initializedFromUrlRef = useRef(false);
+
+  // Sync URL → state (when URL changes externally, e.g. browser back/forward)
+  useEffect(() => {
+    if (sessionFromUrl && sessionFromUrl !== selectedSessionId) {
+      setSelectedSessionId(sessionFromUrl);
+      if (isMobile) {
+        setMobileView('chat');
+      }
+    } else if (!sessionFromUrl && selectedSessionId && !initializedFromUrlRef.current) {
+      setSelectedSessionId(null);
+    }
+    initializedFromUrlRef.current = true;
+  }, [sessionFromUrl]);
 
   const {
     activeSessions,
@@ -55,6 +73,10 @@ export default function SupportChatPage() {
 
   const handleSelectSession = useCallback((sessionId: string) => {
     setSelectedSessionId(sessionId);
+    // Update URL with session ID
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('session', sessionId);
+    router.replace(`/admin/support-chat?${params.toString()}`, { scroll: false });
     // Clear unread for selected session
     setUnreadMap((prev) => {
       if (!prev[sessionId]) return prev;
@@ -65,7 +87,7 @@ export default function SupportChatPage() {
     if (isMobile) {
       setMobileView('chat');
     }
-  }, [isMobile]);
+  }, [isMobile, router, searchParams]);
 
   const handleSessionUpdated = useCallback(() => {
     refresh();
@@ -73,7 +95,9 @@ export default function SupportChatPage() {
 
   const handleMobileBack = useCallback(() => {
     setMobileView('list');
-  }, []);
+    setSelectedSessionId(null);
+    router.replace('/admin/support-chat', { scroll: false });
+  }, [router]);
 
   // Mobile layout
   if (isMobile) {
