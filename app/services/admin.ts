@@ -1775,6 +1775,45 @@ const profileImages = {
 	},
 };
 
+// 심사 이력 관련 타입
+export interface ReviewHistoryFilter {
+	reviewType?: 'admin' | 'auto';
+	result?: 'approved' | 'rejected';
+	gender?: 'MALE' | 'FEMALE';
+	startDate?: string;
+	endDate?: string;
+	search?: string;
+	page?: number;
+	limit?: number;
+}
+
+export interface ReviewHistoryItem {
+	id: string;
+	imageUrl: string;
+	userId: string;
+	userName: string;
+	gender: 'MALE' | 'FEMALE';
+	age: number;
+	slotIndex: number;
+	isMain: boolean;
+	result: 'approved' | 'rejected';
+	reviewType: 'admin' | 'auto';
+	rejectionCategory?: string;
+	rejectionReason?: string;
+	reviewerName?: string;
+	reviewedAt: string;
+}
+
+export interface ReviewHistoryResponse {
+	items: ReviewHistoryItem[];
+	pagination: {
+		page: number;
+		limit: number;
+		total: number;
+		hasMore: boolean;
+	};
+}
+
 // 유저 심사 관련 API
 export interface PendingUsersFilter {
 	gender?: 'MALE' | 'FEMALE';
@@ -1920,6 +1959,29 @@ const userReview = {
 		} catch (error: any) {
 			console.error('유저 Rank 업데이트 중 오류:', error);
 			console.error('오류 상세 정보:', error.response?.data || error.message);
+			throw error;
+		}
+	},
+
+	getReviewHistory: async (filters: ReviewHistoryFilter = {}): Promise<ReviewHistoryResponse> => {
+		try {
+			const params: Record<string, any> = {};
+			if (filters.page) params.page = filters.page;
+			if (filters.limit) params.limit = filters.limit;
+			if (filters.reviewType) params.reviewType = filters.reviewType;
+			if (filters.result) params.result = filters.result;
+			if (filters.gender) params.gender = filters.gender;
+			if (filters.startDate) params.startDate = filters.startDate;
+			if (filters.endDate) params.endDate = filters.endDate;
+			if (filters.search) params.search = filters.search;
+
+			const response = await axiosServer.get('/admin/profile-images/review-history', {
+				params,
+			});
+
+			return response.data;
+		} catch (error: any) {
+			console.error('심사 이력 조회 중 오류:', error);
 			throw error;
 		}
 	},

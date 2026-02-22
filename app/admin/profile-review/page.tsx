@@ -20,6 +20,8 @@ import {
   Chip,
   Badge,
   LinearProgress,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
@@ -29,6 +31,7 @@ import AdminService, { PendingUsersFilter } from "@/app/services/admin";
 import UserTableList from "./components/UserTableList";
 import ImageReviewPanel from "./components/ImageReviewPanel";
 import RejectReasonModal from "./components/RejectReasonModal";
+import ReviewHistoryTab from "./components/ReviewHistoryTab";
 import { REGION_MAP } from "../sales/constants/regions";
 
 export interface PendingProfileImage {
@@ -180,7 +183,28 @@ const REGION_OPTIONS = Object.entries(REGION_MAP)
   .filter(([code]) => code !== "all")
   .map(([code, name]) => ({ value: code, label: name }));
 
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel({ children, value, index, ...other }: TabPanelProps) {
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`review-tabpanel-${index}`}
+      aria-labelledby={`review-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ pt: 2 }}>{children}</Box>}
+    </div>
+  );
+}
+
 export default function ProfileReviewPage() {
+  const [activeTab, setActiveTab] = useState(0);
   const [users, setUsers] = useState<PendingUser[]>([]);
   const [selectedUser, setSelectedUser] = useState<PendingUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -592,7 +616,7 @@ export default function ProfileReviewPage() {
     }
   };
 
-  if (loading) {
+  if (loading && activeTab === 0) {
     return (
       <Box
         sx={{
@@ -610,6 +634,19 @@ export default function ProfileReviewPage() {
 
   return (
     <Box sx={{ p: 3 }}>
+      <Typography variant="h5" sx={{ mb: 2 }}>프로필 이미지 심사</Typography>
+
+      <Tabs
+        value={activeTab}
+        onChange={(_, newValue) => setActiveTab(newValue)}
+        aria-label="프로필 이미지 심사 탭"
+        sx={{ mb: 1, borderBottom: 1, borderColor: "divider" }}
+      >
+        <Tab label="적격 심사" />
+        <Tab label="이력 보기" />
+      </Tabs>
+
+      <TabPanel value={activeTab} index={0}>
       <Box
         sx={{
           display: "flex",
@@ -618,7 +655,7 @@ export default function ProfileReviewPage() {
           mb: 2,
         }}
       >
-        <Typography variant="h5">회원 적격 심사</Typography>
+        <Box />
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           {/* 건너뛴 유저 복원 버튼 */}
           {skippedUsers.length > 0 && (
@@ -925,6 +962,11 @@ export default function ProfileReviewPage() {
           </Typography>
         </Box>
       </Dialog>
+      </TabPanel>
+
+      <TabPanel value={activeTab} index={1}>
+        <ReviewHistoryTab />
+      </TabPanel>
     </Box>
   );
 }
