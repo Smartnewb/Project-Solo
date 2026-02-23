@@ -10,10 +10,6 @@ import {
   Divider,
   TextField,
   Link,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
   Tooltip,
 } from "@mui/material";
 import { PendingUser } from "../page";
@@ -110,24 +106,14 @@ export default function ImageReviewPanel({
   const handleRankChange = async (newRank: string) => {
     if (!user || newRank === currentRank) return;
 
-    const confirmed = window.confirm(
-      `정말로 이 유저의 Rank를 ${newRank}(으)로 변경하시겠습니까?`,
-    );
-
-    if (!confirmed) return;
-
     const previousRank = currentRank;
     setCurrentRank(newRank);
     setIsUpdatingRank(true);
 
     try {
-      const result = await AdminService.userReview.updateUserRank(
+      await AdminService.userReview.updateUserRank(
         user.userId,
         newRank as any,
-      );
-
-      alert(
-        `Rank가 ${result.previousRank}에서 ${result.updatedRank}(으)로 변경되었습니다.`,
       );
     } catch (error: any) {
       console.error("Rank 업데이트 실패:", error);
@@ -507,55 +493,6 @@ export default function ImageReviewPanel({
           </Box>
         </Box>
       )}
-
-      <Divider sx={{ mb: 2 }} />
-
-      {/* Rank 관리 */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
-          유저 Rank 관리
-        </Typography>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Box>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ display: "block", mb: 0.5 }}
-            >
-              현재 Rank
-            </Typography>
-            <Tooltip title={getRankConfig(currentRank).tooltip}>
-              <Chip
-                label={getRankConfig(currentRank).label}
-                sx={{
-                  backgroundColor: getRankConfig(currentRank).bgColor,
-                  color: getRankConfig(currentRank).color,
-                  fontWeight: "bold",
-                  minWidth: 80,
-                  fontSize: "0.9rem",
-                }}
-              />
-            </Tooltip>
-          </Box>
-          <Box sx={{ flex: 1 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Rank 변경</InputLabel>
-              <Select
-                value={currentRank}
-                label="Rank 변경"
-                onChange={(e) => handleRankChange(e.target.value)}
-                disabled={isUpdatingRank}
-              >
-                <MenuItem value="S">S등급 (최상위)</MenuItem>
-                <MenuItem value="A">A등급 (상위)</MenuItem>
-                <MenuItem value="B">B등급 (중위)</MenuItem>
-                <MenuItem value="C">C등급 (하위)</MenuItem>
-                <MenuItem value="UNKNOWN">미분류</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-        </Box>
-      </Box>
 
       <Divider sx={{ mb: 2 }} />
 
@@ -975,6 +912,53 @@ export default function ImageReviewPanel({
         </Box>
       </Box>
 
+      {/* Rank 선택 (필수) */}
+      <Box sx={{ mb: 3, mt: 2 }}>
+        <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>
+          Rank 선택
+        </Typography>
+        {currentRank === "UNKNOWN" && (
+          <Typography
+            variant="caption"
+            sx={{ color: "#ed6c02", display: "block", mb: 1 }}
+          >
+            승인하려면 Rank를 먼저 선택해주세요
+          </Typography>
+        )}
+        <Box sx={{ display: "flex", gap: 1 }}>
+          {(["S", "A", "B", "C"] as const).map((rank) => {
+            const config = getRankConfig(rank);
+            const isSelected = currentRank === rank;
+            return (
+              <Chip
+                key={rank}
+                label={`${rank}등급`}
+                onClick={() => handleRankChange(rank)}
+                disabled={isUpdatingRank}
+                sx={{
+                  flex: 1,
+                  height: 40,
+                  fontSize: "0.9rem",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                  backgroundColor: isSelected ? config.color : config.bgColor,
+                  color: isSelected ? "#fff" : config.color,
+                  border: isSelected
+                    ? `2px solid ${config.color}`
+                    : "2px solid transparent",
+                  "&:hover": {
+                    backgroundColor: isSelected
+                      ? config.color
+                      : config.bgColor,
+                    opacity: 0.85,
+                  },
+                }}
+              />
+            );
+          })}
+        </Box>
+      </Box>
+
       {/* 승인/거절 버튼 */}
       <Box sx={{ display: "flex", gap: 1.5 }}>
         <Button
@@ -988,12 +972,27 @@ export default function ImageReviewPanel({
         </Button>
         <Button
           variant="contained"
-          color="primary"
           fullWidth
+          disabled={currentRank === "UNKNOWN" || processing}
           onClick={handleApprove}
-          sx={{ height: 48 }}
+          sx={{
+            height: 48,
+            backgroundColor:
+              currentRank !== "UNKNOWN"
+                ? getRankConfig(currentRank).color
+                : undefined,
+            "&:hover": {
+              backgroundColor:
+                currentRank !== "UNKNOWN"
+                  ? getRankConfig(currentRank).color
+                  : undefined,
+              opacity: 0.9,
+            },
+          }}
         >
-          승인하기
+          {currentRank !== "UNKNOWN"
+            ? `${currentRank}등급으로 승인하기`
+            : "승인하기"}
         </Button>
       </Box>
 
