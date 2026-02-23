@@ -851,8 +851,16 @@ export default function ProfileReviewPage() {
         </Alert>
       )}
 
-      <Box sx={{ display: "flex", gap: 3, height: "calc(100vh - 200px)" }}>
-        <Box sx={{ flex: "7", overflow: "auto" }}>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+          height: "calc(100vh - 200px)",
+        }}
+      >
+        {/* 상단: 유저 테이블 */}
+        <Box sx={{ flex: "4", overflow: "auto", minHeight: 0 }}>
           <UserTableList
             users={users}
             selectedUser={selectedUser}
@@ -867,7 +875,8 @@ export default function ProfileReviewPage() {
           />
         </Box>
 
-        <Box sx={{ flex: "3", overflow: "auto" }}>
+        {/* 하단: 심사 패널 (전체 너비) */}
+        <Box sx={{ flex: "6", overflow: "auto", minHeight: 0 }}>
           <ImageReviewPanel
             user={selectedUser}
             onApprove={handleApproveUser}
