@@ -531,6 +531,28 @@ export type JapanRegionCode =
 
 export type UniversityType = 'UNIVERSITY' | 'COLLEGE';
 
+export interface ClusterRegionItem {
+  code: string;
+  name: string;
+}
+
+export interface ClusterUniversityItem {
+  id: string;
+  name: string;
+  region: string;
+  code?: string;
+  en?: string;
+  userCount: number;
+}
+
+export interface AdminClusterItem {
+  id: string;
+  name: string;
+  regions: ClusterRegionItem[];
+  userCount: number;
+  universities: ClusterUniversityItem[];
+}
+
 export interface RegionMetaItem {
   code: string;
   nameLocal: string;

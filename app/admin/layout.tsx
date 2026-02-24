@@ -227,6 +227,15 @@ export default function AdminLayout({
               </li>
               <li>
                 <Link
+                  href="/admin/universities/clusters"
+                  className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors"
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  대학 클러스터 현황
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/admin/reset-password"
                   className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors"
                   onClick={() => setSidebarOpen(false)}
