@@ -1778,30 +1778,33 @@ const profileImages = {
 // 심사 이력 관련 타입
 export interface ReviewHistoryFilter {
 	reviewType?: 'admin' | 'auto';
-	result?: 'approved' | 'rejected';
+	reviewStatus?: 'approved' | 'rejected';
 	gender?: 'MALE' | 'FEMALE';
-	startDate?: string;
-	endDate?: string;
-	search?: string;
+	from?: string;
+	to?: string;
+	searchTerm?: string;
+	universityId?: string;
+	reviewedBy?: string;
 	page?: number;
 	limit?: number;
 }
 
 export interface ReviewHistoryItem {
-	id: string;
+	imageId: string;
 	imageUrl: string;
-	userId: string;
-	userName: string;
-	gender: 'MALE' | 'FEMALE';
-	age: number;
 	slotIndex: number;
 	isMain: boolean;
-	result: 'approved' | 'rejected';
-	reviewType: 'admin' | 'auto';
-	rejectionCategory?: string;
-	rejectionReason?: string;
-	reviewerName?: string;
-	reviewedAt: string;
+	reviewStatus: 'approved' | 'rejected';
+	reviewType: 'admin' | 'auto' | null;
+	reviewedBy: string | null;
+	reviewedAt: string | null;
+	rejectionReason: string | null;
+	user: {
+		userId: string;
+		name: string | null;
+		gender: string | null;
+		age: number | null;
+	};
 }
 
 export interface ReviewHistoryResponse {
@@ -1969,11 +1972,13 @@ const userReview = {
 			if (filters.page) params.page = filters.page;
 			if (filters.limit) params.limit = filters.limit;
 			if (filters.reviewType) params.reviewType = filters.reviewType;
-			if (filters.result) params.result = filters.result;
+			if (filters.reviewStatus) params.reviewStatus = filters.reviewStatus;
 			if (filters.gender) params.gender = filters.gender;
-			if (filters.startDate) params.startDate = filters.startDate;
-			if (filters.endDate) params.endDate = filters.endDate;
-			if (filters.search) params.search = filters.search;
+			if (filters.from) params.from = filters.from;
+			if (filters.to) params.to = filters.to;
+			if (filters.searchTerm) params.searchTerm = filters.searchTerm;
+			if (filters.universityId) params.universityId = filters.universityId;
+			if (filters.reviewedBy) params.reviewedBy = filters.reviewedBy;
 
 			const response = await axiosServer.get('/admin/profile-images/review-history', {
 				params,
@@ -2130,6 +2135,11 @@ const universities = {
 
 	getUniversities: async () => {
 		const response = await axiosServer.get('/admin/universities');
+		return response.data;
+	},
+
+	getClusters: async (): Promise<import('@/types/admin').AdminClusterItem[]> => {
+		const response = await axiosServer.get('/admin/universities/clusters');
 		return response.data;
 	},
 

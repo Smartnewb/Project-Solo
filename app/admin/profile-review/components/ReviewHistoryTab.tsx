@@ -47,11 +47,11 @@ export default function ReviewHistoryTab() {
 
   // 필터 상태
   const [reviewType, setReviewType] = useState<string>("");
-  const [result, setResult] = useState<string>("");
+  const [reviewStatus, setReviewStatus] = useState<string>("");
   const [gender, setGender] = useState<string>("");
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
-  const [search, setSearch] = useState<string>("");
+  const [from, setFrom] = useState<string>("");
+  const [to, setTo] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState<string>("");
   const [searchInput, setSearchInput] = useState<string>("");
 
   // 이미지 미리보기
@@ -65,11 +65,12 @@ export default function ReviewHistoryTab() {
 
         const filters: ReviewHistoryFilter = { page, limit };
         if (reviewType) filters.reviewType = reviewType as "admin" | "auto";
-        if (result) filters.result = result as "approved" | "rejected";
+        if (reviewStatus)
+          filters.reviewStatus = reviewStatus as "approved" | "rejected";
         if (gender) filters.gender = gender as "MALE" | "FEMALE";
-        if (startDate) filters.startDate = startDate;
-        if (endDate) filters.endDate = endDate;
-        if (search) filters.search = search;
+        if (from) filters.from = from;
+        if (to) filters.to = to;
+        if (searchTerm) filters.searchTerm = searchTerm;
 
         const response: ReviewHistoryResponse =
           await AdminService.userReview.getReviewHistory(filters);
@@ -86,7 +87,7 @@ export default function ReviewHistoryTab() {
         setLoading(false);
       }
     },
-    [reviewType, result, gender, startDate, endDate, search, pagination.limit],
+    [reviewType, reviewStatus, gender, from, to, searchTerm, pagination.limit],
   );
 
   useEffect(() => {
@@ -94,7 +95,7 @@ export default function ReviewHistoryTab() {
   }, [fetchHistory]);
 
   const handleSearch = () => {
-    setSearch(searchInput);
+    setSearchTerm(searchInput);
   };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent) => {
@@ -105,11 +106,11 @@ export default function ReviewHistoryTab() {
 
   const handleClearFilters = () => {
     setReviewType("");
-    setResult("");
+    setReviewStatus("");
     setGender("");
-    setStartDate("");
-    setEndDate("");
-    setSearch("");
+    setFrom("");
+    setTo("");
+    setSearchTerm("");
     setSearchInput("");
   };
 
@@ -124,21 +125,28 @@ export default function ReviewHistoryTab() {
     fetchHistory(1, newLimit);
   };
 
-  const getResultChip = (resultValue: string) => {
-    if (resultValue === "approved") {
+  const getResultChip = (status: string) => {
+    if (status === "approved") {
       return <Chip label="승인" size="small" color="success" />;
     }
     return <Chip label="반려" size="small" color="error" />;
   };
 
-  const getReviewTypeChip = (type: string) => {
+  const getReviewTypeChip = (type: string | null) => {
     if (type === "admin") {
       return (
         <Chip label="수동" size="small" variant="outlined" color="primary" />
       );
     }
+    if (type === "auto") {
+      return (
+        <Chip label="자동" size="small" variant="outlined" color="default" />
+      );
+    }
     return (
-      <Chip label="자동" size="small" variant="outlined" color="default" />
+      <Typography variant="body2" color="text.secondary">
+        -
+      </Typography>
     );
   };
 
@@ -147,7 +155,8 @@ export default function ReviewHistoryTab() {
     return `서브 ${slotIndex}`;
   };
 
-  const formatDate = (dateStr: string) => {
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return "-";
     const date = new Date(dateStr);
     return date.toLocaleString("ko-KR", {
       year: "numeric",
@@ -159,7 +168,7 @@ export default function ReviewHistoryTab() {
   };
 
   const hasActiveFilters =
-    reviewType || result || gender || startDate || endDate || search;
+    reviewType || reviewStatus || gender || from || to || searchTerm;
 
   return (
     <Box>
@@ -189,9 +198,9 @@ export default function ReviewHistoryTab() {
           <FormControl size="small" sx={{ minWidth: 120 }}>
             <InputLabel>심사 결과</InputLabel>
             <Select
-              value={result}
+              value={reviewStatus}
               label="심사 결과"
-              onChange={(e) => setResult(e.target.value)}
+              onChange={(e) => setReviewStatus(e.target.value)}
             >
               <MenuItem value="">전체</MenuItem>
               <MenuItem value="approved">승인</MenuItem>
@@ -216,8 +225,8 @@ export default function ReviewHistoryTab() {
             size="small"
             type="date"
             label="시작일"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
             InputLabelProps={{ shrink: true }}
             sx={{ width: 160 }}
           />
@@ -226,19 +235,19 @@ export default function ReviewHistoryTab() {
             size="small"
             type="date"
             label="종료일"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
             InputLabelProps={{ shrink: true }}
             sx={{ width: 160 }}
           />
 
           <TextField
             size="small"
-            placeholder="유저명 검색"
+            placeholder="이름, 이메일, 전화번호 검색"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             onKeyDown={handleSearchKeyDown}
-            sx={{ width: 180 }}
+            sx={{ width: 220 }}
             InputProps={{
               endAdornment: (
                 <IconButton size="small" onClick={handleSearch}>
@@ -297,7 +306,7 @@ export default function ReviewHistoryTab() {
                 </TableRow>
               ) : (
                 items.map((item) => (
-                  <TableRow key={item.id} hover>
+                  <TableRow key={item.imageId} hover>
                     <TableCell>
                       <Avatar
                         src={item.imageUrl}
@@ -310,28 +319,23 @@ export default function ReviewHistoryTab() {
                         onClick={() => setPreviewImage(item.imageUrl)}
                       />
                     </TableCell>
-                    <TableCell>{item.userName}</TableCell>
+                    <TableCell>{item.user.name || "-"}</TableCell>
                     <TableCell>
-                      {item.gender === "MALE" ? "남" : "여"}
+                      {item.user.gender === "MALE"
+                        ? "남"
+                        : item.user.gender === "FEMALE"
+                          ? "여"
+                          : "-"}
                     </TableCell>
-                    <TableCell>{item.age}</TableCell>
+                    <TableCell>{item.user.age ?? "-"}</TableCell>
                     <TableCell>
                       {getSlotLabel(item.slotIndex, item.isMain)}
                     </TableCell>
-                    <TableCell>{getResultChip(item.result)}</TableCell>
+                    <TableCell>{getResultChip(item.reviewStatus)}</TableCell>
                     <TableCell>{getReviewTypeChip(item.reviewType)}</TableCell>
                     <TableCell sx={{ maxWidth: 200 }}>
                       {item.rejectionReason ? (
-                        <Tooltip
-                          title={
-                            <>
-                              {item.rejectionCategory && (
-                                <div>분류: {item.rejectionCategory}</div>
-                              )}
-                              <div>{item.rejectionReason}</div>
-                            </>
-                          }
-                        >
+                        <Tooltip title={item.rejectionReason}>
                           <Typography
                             variant="body2"
                             noWrap
@@ -347,7 +351,7 @@ export default function ReviewHistoryTab() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {item.reviewerName || (
+                      {item.reviewedBy || (
                         <Typography variant="body2" color="text.secondary">
                           시스템
                         </Typography>
