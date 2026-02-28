@@ -1807,6 +1807,31 @@ export interface ReviewHistoryItem {
 	};
 }
 
+export interface VisionFaceAnnotation {
+	detectionConfidence: number;
+	landmarkingConfidence: number;
+	joyLikelihood: string;
+	sorrowLikelihood: string;
+	angerLikelihood: string;
+	surpriseLikelihood: string;
+	underExposedLikelihood: string;
+	blurredLikelihood: string;
+	headwearLikelihood: string;
+	rollAngle: number;
+	panAngle: number;
+	tiltAngle: number;
+}
+
+export interface ImageValidationResponse {
+	id: string;
+	photoId: string;
+	visionResponse: VisionFaceAnnotation[];
+	totalScore: number;
+	autoDecision: string;
+	decisionReason: string;
+	createdAt: string;
+}
+
 export interface ReviewHistoryResponse {
 	items: ReviewHistoryItem[];
 	pagination: {
@@ -1964,6 +1989,11 @@ const userReview = {
 			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
+	},
+
+	getImageValidation: async (imageId: string) => {
+		const response = await axiosServer.get(`/admin/profile-images/${imageId}/validation`);
+		return response.data;
 	},
 
 	getReviewHistory: async (filters: ReviewHistoryFilter = {}): Promise<ReviewHistoryResponse> => {

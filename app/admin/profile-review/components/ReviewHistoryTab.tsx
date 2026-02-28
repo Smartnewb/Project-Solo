@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Fragment } from "react";
 import {
   Box,
   Typography,
@@ -25,14 +25,135 @@ import {
   IconButton,
   CircularProgress,
   Alert,
+  Collapse,
+  LinearProgress,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import SearchIcon from "@mui/icons-material/Search";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import AdminService, {
   ReviewHistoryFilter,
   ReviewHistoryItem,
   ReviewHistoryResponse,
+  ImageValidationResponse,
 } from "@/app/services/admin";
+
+const LIKELIHOOD_CONFIG: Record<string, { label: string; color: "success" | "warning" | "error" | "default" }> = {
+  VERY_UNLIKELY: { label: "매우 낮음", color: "success" },
+  UNLIKELY: { label: "낮음", color: "success" },
+  POSSIBLE: { label: "가능", color: "warning" },
+  LIKELY: { label: "높음", color: "warning" },
+  VERY_LIKELY: { label: "매우 높음", color: "error" },
+  UNKNOWN: { label: "알 수 없음", color: "default" },
+};
+
+function getLikelihoodChip(value: string, label: string) {
+  const config = LIKELIHOOD_CONFIG[value] || LIKELIHOOD_CONFIG.UNKNOWN;
+  return (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+      <Typography variant="caption" color="text.secondary" sx={{ minWidth: 40 }}>
+        {label}
+      </Typography>
+      <Chip label={config.label} size="small" color={config.color} variant="outlined" />
+    </Box>
+  );
+}
+
+function VisionDataCard({ data }: { data: ImageValidationResponse }) {
+  const face = data.visionResponse?.[0];
+
+  if (!face) {
+    return (
+      <Alert severity="info" sx={{ m: 1 }}>
+        Vision 응답에 얼굴 데이터가 없습니다.
+      </Alert>
+    );
+  }
+
+  return (
+    <Box
+      sx={{
+        p: 2,
+        mx: 1,
+        mb: 1,
+        backgroundColor: "#fafafa",
+        borderRadius: 1,
+        border: "1px solid #e0e0e0",
+      }}
+    >
+      {/* 신뢰도 프로그레스바 */}
+      <Box sx={{ display: "flex", gap: 4, mb: 2 }}>
+        <Box sx={{ flex: 1, maxWidth: 240 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
+            <Typography variant="caption" color="text.secondary">
+              얼굴 검출
+            </Typography>
+            <Typography variant="caption" fontWeight={600}>
+              {(face.detectionConfidence * 100).toFixed(0)}%
+            </Typography>
+          </Box>
+          <LinearProgress
+            variant="determinate"
+            value={face.detectionConfidence * 100}
+            sx={{ height: 6, borderRadius: 3 }}
+          />
+        </Box>
+        <Box sx={{ flex: 1, maxWidth: 240 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
+            <Typography variant="caption" color="text.secondary">
+              랜드마크
+            </Typography>
+            <Typography variant="caption" fontWeight={600}>
+              {(face.landmarkingConfidence * 100).toFixed(0)}%
+            </Typography>
+          </Box>
+          <LinearProgress
+            variant="determinate"
+            value={face.landmarkingConfidence * 100}
+            color="secondary"
+            sx={{ height: 6, borderRadius: 3 }}
+          />
+        </Box>
+      </Box>
+
+      {/* Likelihood Chips */}
+      <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 2 }}>
+        {getLikelihoodChip(face.joyLikelihood, "기쁨")}
+        {getLikelihoodChip(face.sorrowLikelihood, "슬픔")}
+        {getLikelihoodChip(face.angerLikelihood, "분노")}
+        {getLikelihoodChip(face.surpriseLikelihood, "놀람")}
+        {getLikelihoodChip(face.blurredLikelihood, "흐림")}
+        {getLikelihoodChip(face.underExposedLikelihood, "저노출")}
+        {getLikelihoodChip(face.headwearLikelihood, "모자")}
+      </Box>
+
+      {/* 판정 + 각도 */}
+      <Box sx={{ display: "flex", gap: 3, alignItems: "center", flexWrap: "wrap" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+          <Typography variant="caption" color="text.secondary">판정:</Typography>
+          <Chip
+            label={data.autoDecision}
+            size="small"
+            color={data.autoDecision === "approved" ? "success" : data.autoDecision === "rejected" ? "error" : "default"}
+          />
+        </Box>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+          <Typography variant="caption" color="text.secondary">점수:</Typography>
+          <Typography variant="body2" fontWeight={600}>{data.totalScore}</Typography>
+        </Box>
+        <Typography variant="caption" color="text.secondary">
+          각도: R {face.rollAngle.toFixed(1)}° / P {face.panAngle.toFixed(1)}° / T {face.tiltAngle.toFixed(1)}°
+        </Typography>
+        {data.decisionReason && (
+          <Typography variant="caption" color="text.secondary" sx={{ fontStyle: "italic" }}>
+            {data.decisionReason}
+          </Typography>
+        )}
+      </Box>
+    </Box>
+  );
+}
 
 export default function ReviewHistoryTab() {
   const [items, setItems] = useState<ReviewHistoryItem[]>([]);
@@ -57,6 +178,11 @@ export default function ReviewHistoryTab() {
   // 이미지 미리보기
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
+  // Vision 데이터 확장
+  const [expandedImageId, setExpandedImageId] = useState<string | null>(null);
+  const [visionDataCache, setVisionDataCache] = useState<Record<string, ImageValidationResponse | null>>({});
+  const [visionLoading, setVisionLoading] = useState<string | null>(null);
+
   const fetchHistory = useCallback(
     async (page: number = 1, limit: number = pagination.limit) => {
       try {
@@ -77,6 +203,7 @@ export default function ReviewHistoryTab() {
 
         setItems(response.items);
         setPagination(response.pagination);
+        setExpandedImageId(null);
       } catch (err: any) {
         console.error("심사 이력 조회 오류:", err);
         setError(
@@ -93,6 +220,32 @@ export default function ReviewHistoryTab() {
   useEffect(() => {
     fetchHistory();
   }, [fetchHistory]);
+
+  const handleToggleVision = async (imageId: string) => {
+    if (expandedImageId === imageId) {
+      setExpandedImageId(null);
+      return;
+    }
+
+    setExpandedImageId(imageId);
+
+    if (visionDataCache[imageId] !== undefined) return;
+
+    try {
+      setVisionLoading(imageId);
+      const data = await AdminService.userReview.getImageValidation(imageId);
+      setVisionDataCache((prev) => ({ ...prev, [imageId]: data }));
+    } catch (err: any) {
+      if (err.response?.status === 404) {
+        setVisionDataCache((prev) => ({ ...prev, [imageId]: null }));
+      } else {
+        console.error("Vision 데이터 조회 오류:", err);
+        setVisionDataCache((prev) => ({ ...prev, [imageId]: null }));
+      }
+    } finally {
+      setVisionLoading(null);
+    }
+  };
 
   const handleSearch = () => {
     setSearchTerm(searchInput);
@@ -305,63 +458,117 @@ export default function ReviewHistoryTab() {
                   </TableCell>
                 </TableRow>
               ) : (
-                items.map((item) => (
-                  <TableRow key={item.imageId} hover>
-                    <TableCell>
-                      <Avatar
-                        src={item.imageUrl}
-                        variant="rounded"
+                items.map((item) => {
+                  const isAuto = item.reviewType === "auto";
+                  const isExpanded = expandedImageId === item.imageId;
+
+                  return (
+                    <Fragment key={item.imageId}>
+                      <TableRow
+                        hover
+                        onClick={isAuto ? () => handleToggleVision(item.imageId) : undefined}
                         sx={{
-                          width: 48,
-                          height: 48,
-                          cursor: "pointer",
+                          cursor: isAuto ? "pointer" : "default",
+                          ...(isExpanded && {
+                            backgroundColor: "action.selected",
+                          }),
                         }}
-                        onClick={() => setPreviewImage(item.imageUrl)}
-                      />
-                    </TableCell>
-                    <TableCell>{item.user.name || "-"}</TableCell>
-                    <TableCell>
-                      {item.user.gender === "MALE"
-                        ? "남"
-                        : item.user.gender === "FEMALE"
-                          ? "여"
-                          : "-"}
-                    </TableCell>
-                    <TableCell>{item.user.age ?? "-"}</TableCell>
-                    <TableCell>
-                      {getSlotLabel(item.slotIndex, item.isMain)}
-                    </TableCell>
-                    <TableCell>{getResultChip(item.reviewStatus)}</TableCell>
-                    <TableCell>{getReviewTypeChip(item.reviewType)}</TableCell>
-                    <TableCell sx={{ maxWidth: 200 }}>
-                      {item.rejectionReason ? (
-                        <Tooltip title={item.rejectionReason}>
-                          <Typography
-                            variant="body2"
-                            noWrap
-                            sx={{ cursor: "help" }}
+                      >
+                        <TableCell>
+                          <Avatar
+                            src={item.imageUrl}
+                            variant="rounded"
+                            sx={{
+                              width: 48,
+                              height: 48,
+                              cursor: "pointer",
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreviewImage(item.imageUrl);
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell>{item.user.name || "-"}</TableCell>
+                        <TableCell>
+                          {item.user.gender === "MALE"
+                            ? "남"
+                            : item.user.gender === "FEMALE"
+                              ? "여"
+                              : "-"}
+                        </TableCell>
+                        <TableCell>{item.user.age ?? "-"}</TableCell>
+                        <TableCell>
+                          {getSlotLabel(item.slotIndex, item.isMain)}
+                        </TableCell>
+                        <TableCell>{getResultChip(item.reviewStatus)}</TableCell>
+                        <TableCell>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                            {getReviewTypeChip(item.reviewType)}
+                            {isAuto && (
+                              isExpanded ? (
+                                <ExpandLessIcon fontSize="small" color="action" />
+                              ) : (
+                                <ExpandMoreIcon fontSize="small" color="action" />
+                              )
+                            )}
+                          </Box>
+                        </TableCell>
+                        <TableCell sx={{ maxWidth: 200 }}>
+                          {item.rejectionReason ? (
+                            <Tooltip title={item.rejectionReason}>
+                              <Typography
+                                variant="body2"
+                                noWrap
+                                sx={{ cursor: "help" }}
+                              >
+                                {item.rejectionReason}
+                              </Typography>
+                            </Tooltip>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">
+                              -
+                            </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {item.reviewedBy || (
+                            <Typography variant="body2" color="text.secondary">
+                              시스템
+                            </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell sx={{ whiteSpace: "nowrap" }}>
+                          {formatDate(item.reviewedAt)}
+                        </TableCell>
+                      </TableRow>
+
+                      {/* Vision 데이터 확장 Row */}
+                      {isAuto && (
+                        <TableRow>
+                          <TableCell
+                            colSpan={10}
+                            sx={{ py: 0, borderBottom: isExpanded ? undefined : "none" }}
                           >
-                            {item.rejectionReason}
-                          </Typography>
-                        </Tooltip>
-                      ) : (
-                        <Typography variant="body2" color="text.secondary">
-                          -
-                        </Typography>
+                            <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+                              {visionLoading === item.imageId ? (
+                                <Box sx={{ display: "flex", justifyContent: "center", py: 2 }}>
+                                  <CircularProgress size={24} />
+                                </Box>
+                              ) : visionDataCache[item.imageId] === null ? (
+                                <Alert severity="info" sx={{ m: 1 }}>
+                                  해당 이미지의 Vision 검증 데이터가 없습니다.
+                                </Alert>
+                              ) : visionDataCache[item.imageId] ? (
+                                <VisionDataCard data={visionDataCache[item.imageId]} />
+                              ) : null}
+                            </Collapse>
+                          </TableCell>
+                        </TableRow>
                       )}
-                    </TableCell>
-                    <TableCell>
-                      {item.reviewedBy || (
-                        <Typography variant="body2" color="text.secondary">
-                          시스템
-                        </Typography>
-                      )}
-                    </TableCell>
-                    <TableCell sx={{ whiteSpace: "nowrap" }}>
-                      {formatDate(item.reviewedAt)}
-                    </TableCell>
-                  </TableRow>
-                ))
+                    </Fragment>
+                  );
+                })
               )}
             </TableBody>
           </Table>
