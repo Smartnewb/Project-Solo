@@ -2170,7 +2170,7 @@ const universities = {
 
 	getClusters: async (): Promise<import('@/types/admin').AdminClusterItem[]> => {
 		const response = await axiosServer.get('/admin/universities/clusters');
-		return response.data;
+		return response.data.clusters;
 	},
 
 	getDepartments: async (university: string) => {
