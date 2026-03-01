@@ -136,9 +136,9 @@ export default function UniversityClustersPage() {
       ) : (
         <>
           {viewMode === 'map' ? (
-            <ClusterMapView clusters={clusters} country={country as 'KR' | 'JP'} />
+            <ClusterMapView clusters={clusters} country={country.toUpperCase() as 'KR' | 'JP'} />
           ) : (
-            <ClusterTreemapView clusters={clusters} country={country as 'KR' | 'JP'} />
+            <ClusterTreemapView clusters={clusters} country={country.toUpperCase() as 'KR' | 'JP'} />
           )}
         </>
       )}
