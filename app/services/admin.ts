@@ -4508,6 +4508,63 @@ const appReviews = {
 	},
 };
 
+// ==================== FCM 토큰 현황 ====================
+export interface FcmTokenSummary {
+	totalUsers: number;
+	withToken: number;
+	withoutToken: number;
+	iosCount: number;
+	androidCount: number;
+	activeUserTokenRate: number;
+}
+
+export interface FcmTokenMeta {
+	platform: 'ios' | 'android';
+	deviceId: string;
+	isActive: boolean;
+	createdAt: string;
+}
+
+export interface FcmTokenProfile {
+	name: string;
+	gender: 'male' | 'female' | null;
+	age: number | null;
+	rank: 'S' | 'A' | 'B' | 'C' | 'UNKNOWN';
+	title: string | null;
+	isApproved: boolean;
+}
+
+export interface FcmTokenUserItem {
+	userId: string;
+	email: string | null;
+	name: string;
+	phoneNumber: string;
+	lastLoginAt: string | null;
+	profile: FcmTokenProfile | null;
+	tokens: FcmTokenMeta[];
+}
+
+export interface FcmTokensResponse {
+	summary: FcmTokenSummary;
+	items: FcmTokenUserItem[];
+	meta: {
+		currentPage: number;
+		itemsPerPage: number;
+		totalItems: number;
+		hasNextPage: boolean;
+		hasPreviousPage: boolean;
+	};
+}
+
+const fcmTokens = {
+	getTokens: async (page: number = 1, limit: number = 20, hasToken?: boolean): Promise<FcmTokensResponse> => {
+		const params: any = { page, limit };
+		if (hasToken !== undefined) params.hasToken = hasToken;
+		const response = await axiosServer.get('/admin/fcm-tokens', { params });
+		return response.data;
+	},
+};
+
 const AdminService = {
 	auth,
 	stats,
@@ -4535,6 +4592,7 @@ const AdminService = {
 	forceMatching,
 	kpiReport,
 	appReviews,
+	fcmTokens,
 	getProfileReports: reports.getProfileReports,
 };
 

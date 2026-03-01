@@ -365,6 +365,15 @@ export default function AdminLayout({
               </li>
               <li>
                 <Link
+                  href="/admin/fcm-tokens"
+                  className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors"
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  FCM 토큰 현황
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/admin/card-news"
                   className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors"
                   onClick={() => setSidebarOpen(false)}
