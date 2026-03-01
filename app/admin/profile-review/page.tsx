@@ -105,6 +105,8 @@ export interface PendingUser {
   profileUsing?: CurrentProfileImage[];
   createdAt: string;
   rank?: "S" | "A" | "B" | "C" | "UNKNOWN";
+  pcRank?: "S" | "A" | "B" | "C" | "UNKNOWN";
+  mobileRank?: "S" | "A" | "B" | "C" | "UNKNOWN";
 
   // 선택적 필드
   email?: string;
@@ -307,6 +309,9 @@ export default function ProfileReviewPage() {
           name: user.userName,
           profileImages: user.pendingImages,
           profileImageUrls: allImageUrls,
+          // PC/Mobile Rank 매핑 (rank 폴백)
+          pcRank: user.pcRank || user.rank || "UNKNOWN",
+          mobileRank: user.mobileRank || user.rank || "UNKNOWN",
           // 기본값 설정
           preferences: user.preferences || [],
           rejectionHistory: user.rejectionHistory || [],
@@ -896,8 +901,8 @@ export default function ProfileReviewPage() {
           height: "calc(100vh - 200px)",
         }}
       >
-        {/* 좌: 컴팩트 유저 테이블 (30%) */}
-        <Box sx={{ flex: "0 0 30%", overflow: "auto", minWidth: 0 }}>
+        {/* 좌: 유저 테이블 (40%) */}
+        <Box sx={{ flex: "0 0 40%", overflow: "auto", minWidth: 0 }}>
           <UserTableList
             users={users}
             selectedUser={selectedUser}
@@ -909,11 +914,10 @@ export default function ProfileReviewPage() {
             selectedUserIds={selectedUserIds}
             onUserCheck={handleUserCheck}
             onSelectAllCheck={handleSelectAllCheck}
-            compact
           />
         </Box>
 
-        {/* 우: 심사 패널 (70%) */}
+        {/* 우: 심사 패널 (60%) */}
         <Box sx={{ flex: 1, overflow: "auto", minWidth: 0 }}>
           <ImageReviewPanel
             user={selectedUser}

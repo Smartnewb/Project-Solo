@@ -34,7 +34,6 @@ interface UserTableListProps {
   selectedUserIds?: string[];
   onUserCheck?: (userId: string, checked: boolean) => void;
   onSelectAllCheck?: (checked: boolean) => void;
-  compact?: boolean;
 }
 
 const getRankConfig = (rank?: string) => {
@@ -64,7 +63,7 @@ const getRankConfig = (rank?: string) => {
       tooltip: "하위 등급",
     },
     UNKNOWN: {
-      label: "미분류",
+      label: "-",
       color: "#9e9e9e",
       bgColor: "#f5f5f5",
       tooltip: "등급 미정",
@@ -74,21 +73,52 @@ const getRankConfig = (rank?: string) => {
   return configs[rank as keyof typeof configs] || configs.UNKNOWN;
 };
 
-const RankBadge = ({ rank }: { rank?: string }) => {
+const RankBadge = ({ rank, label }: { rank?: string; label?: string }) => {
   const config = getRankConfig(rank);
 
   return (
-    <Tooltip title={config.tooltip}>
-      <Chip
-        label={config.label}
-        size="small"
-        sx={{
-          backgroundColor: config.bgColor,
-          color: config.color,
-          fontWeight: "bold",
-          minWidth: 60,
-        }}
-      />
+    <Chip
+      label={label ? `${label}${config.label}` : config.label}
+      size="small"
+      sx={{
+        backgroundColor: config.bgColor,
+        color: config.color,
+        fontWeight: "bold",
+        minWidth: label ? 42 : 28,
+        height: 22,
+        fontSize: "0.7rem",
+        "& .MuiChip-label": { px: 0.75 },
+      }}
+    />
+  );
+};
+
+const PcMobileRankBadge = ({
+  pcRank,
+  mobileRank,
+}: {
+  pcRank?: string;
+  mobileRank?: string;
+}) => {
+  const pc = pcRank || "UNKNOWN";
+  const mobile = mobileRank || "UNKNOWN";
+
+  if (pc === mobile) {
+    return (
+      <Tooltip title="PC/M 동일">
+        <Box>
+          <RankBadge rank={pc} />
+        </Box>
+      </Tooltip>
+    );
+  }
+
+  return (
+    <Tooltip title={`PC: ${pc} / Mobile: ${mobile}`}>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.25, alignItems: "center" }}>
+        <RankBadge rank={pc} label="P" />
+        <RankBadge rank={mobile} label="M" />
+      </Box>
     </Tooltip>
   );
 };
@@ -104,7 +134,6 @@ export default function UserTableList({
   selectedUserIds = [],
   onUserCheck,
   onSelectAllCheck,
-  compact = false,
 }: UserTableListProps) {
   const isAllSelected = users.length > 0 && users.every(user => selectedUserIds.includes(user.userId));
   const isSomeSelected = selectedUserIds.length > 0 && !isAllSelected;
@@ -124,11 +153,11 @@ export default function UserTableList({
       {users.length === 0 && searchTerm ? (
         <Box sx={{ p: 4, textAlign: "center" }}>
           <Typography variant="body1" color="text.secondary">
-            '{searchTerm}'에 대한 검색 결과가 없습니다.
+            &apos;{searchTerm}&apos;에 대한 검색 결과가 없습니다.
           </Typography>
         </Box>
       ) : (
-        <Table>
+        <Table size="small">
           <TableHead>
             <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
               {onUserCheck && (
@@ -141,15 +170,13 @@ export default function UserTableList({
                 </TableCell>
               )}
               <TableCell>이름</TableCell>
-              {!compact && <TableCell>나이/성별</TableCell>}
+              <TableCell>나이/성별</TableCell>
               <TableCell align="center">Rank</TableCell>
-              {!compact && <TableCell>대학교</TableCell>}
-              {!compact && <TableCell>학과</TableCell>}
-              <TableCell align="center">사진 수</TableCell>
-              {!compact && <TableCell>MBTI</TableCell>}
-              {!compact && <TableCell align="center">최초심사</TableCell>}
-              {!compact && <TableCell>등록일시</TableCell>}
-              {onSkipUser && <TableCell align="center" sx={{ width: 50 }}></TableCell>}
+              <TableCell>대학교</TableCell>
+              <TableCell align="center">사진</TableCell>
+              <TableCell align="center">최초심사</TableCell>
+              <TableCell>등록일시</TableCell>
+              {onSkipUser && <TableCell align="center" sx={{ width: 40 }}></TableCell>}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -179,115 +206,89 @@ export default function UserTableList({
                     </TableCell>
                   )}
                   <TableCell>
-                  <Typography variant="body2" fontWeight="medium">
-                    {user.name}
-                  </Typography>
-                  {compact && (
-                    <Typography variant="caption" sx={{ color: "text.secondary", fontSize: "0.75rem" }}>
-                      {user.age}세 · {user.gender === "MALE" ? "남" : user.gender === "FEMALE" ? "여" : "-"}
+                    <Typography variant="body2" fontWeight="medium" sx={{ fontSize: "0.85rem" }}>
+                      {user.name}
                     </Typography>
-                  )}
-                </TableCell>
-                {!compact && (
-                <TableCell>
-                  <Typography
-                    variant="body2"
-                    sx={{ fontSize: "0.85rem", color: "text.secondary" }}
-                  >
-                    {user.age}세 ·{" "}
-                    {user.gender === "MALE"
-                      ? "남"
-                      : user.gender === "FEMALE"
-                        ? "여"
-                        : "-"}
-                  </Typography>
-                </TableCell>
-                )}
-                <TableCell align="center">
-                  <RankBadge rank={user.rank} />
-                </TableCell>
-                {!compact && (
-                <TableCell>
-                  <Typography
-                    variant="body2"
-                    sx={{ fontSize: "0.85rem", color: "text.secondary" }}
-                  >
-                    {user.universityName || "-"}
-                  </Typography>
-                </TableCell>
-                )}
-                {!compact && (
-                <TableCell>
-                  <Typography
-                    variant="body2"
-                    sx={{ fontSize: "0.85rem", color: "text.secondary" }}
-                  >
-                    {user.department || "-"}
-                  </Typography>
-                </TableCell>
-                )}
-                <TableCell align="center">
-                  <Chip
-                    label={`${user.pendingImages?.length || 0}장`}
-                    size="small"
-                    sx={{
-                      backgroundColor: "#fff3e0",
-                      color: "#e65100",
-                      fontWeight: "bold",
-                    }}
-                  />
-                </TableCell>
-                {!compact && (
-                <TableCell>
-                  <Typography variant="body2" sx={{ fontSize: "0.8rem" }}>
-                    {user.mbti || "-"}
-                  </Typography>
-                </TableCell>
-                )}
-                {!compact && (
-                <TableCell align="center">
-                  <Chip
-                    label={user.approved ? "아니오" : "예"}
-                    size="small"
-                    color={user.approved ? "default" : "warning"}
-                    sx={{
-                      fontWeight: 600,
-                      minWidth: 50,
-                    }}
-                  />
-                </TableCell>
-                )}
-                {!compact && (
-                <TableCell>
-                  <Typography variant="body2" sx={{ fontSize: "0.8rem" }}>
-                    {format(new Date(user.createdAt), "yyyy-MM-dd HH:mm")}
-                  </Typography>
-                </TableCell>
-                )}
-                {onSkipUser && (
-                  <TableCell align="center" sx={{ p: 0.5 }}>
-                    <Tooltip title="건너뛰기">
-                      <IconButton
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSkipUser(user.userId);
-                        }}
-                        sx={{
-                          color: "#9e9e9e",
-                          "&:hover": {
-                            color: "#f44336",
-                            backgroundColor: "#ffebee",
-                          },
-                        }}
-                      >
-                        <CloseIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
                   </TableCell>
-                )}
-              </TableRow>
-            );
+                  <TableCell>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontSize: "0.8rem", color: "text.secondary" }}
+                    >
+                      {user.age}세 ·{" "}
+                      {user.gender === "MALE"
+                        ? "남"
+                        : user.gender === "FEMALE"
+                          ? "여"
+                          : "-"}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="center">
+                    <PcMobileRankBadge pcRank={user.pcRank} mobileRank={user.mobileRank} />
+                  </TableCell>
+                  <TableCell>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontSize: "0.8rem", color: "text.secondary" }}
+                    >
+                      {user.universityName || "-"}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="center">
+                    <Chip
+                      label={`${user.pendingImages?.length || 0}장`}
+                      size="small"
+                      sx={{
+                        backgroundColor: "#fff3e0",
+                        color: "#e65100",
+                        fontWeight: "bold",
+                        height: 22,
+                        fontSize: "0.75rem",
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell align="center">
+                    <Chip
+                      label={user.approved ? "아니오" : "예"}
+                      size="small"
+                      color={user.approved ? "default" : "warning"}
+                      sx={{
+                        fontWeight: 600,
+                        minWidth: 44,
+                        height: 22,
+                        fontSize: "0.75rem",
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ fontSize: "0.75rem" }}>
+                      {format(new Date(user.createdAt), "MM-dd HH:mm")}
+                    </Typography>
+                  </TableCell>
+                  {onSkipUser && (
+                    <TableCell align="center" sx={{ p: 0.5 }}>
+                      <Tooltip title="건너뛰기">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSkipUser(user.userId);
+                          }}
+                          sx={{
+                            color: "#9e9e9e",
+                            "&:hover": {
+                              color: "#f44336",
+                              backgroundColor: "#ffebee",
+                            },
+                          }}
+                        >
+                          <CloseIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  )}
+                </TableRow>
+              );
             })}
           </TableBody>
         </Table>
