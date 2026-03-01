@@ -105,8 +105,6 @@ export interface PendingUser {
   profileUsing?: CurrentProfileImage[];
   createdAt: string;
   rank?: "S" | "A" | "B" | "C" | "UNKNOWN";
-  pcRank?: "S" | "A" | "B" | "C" | "UNKNOWN";
-  mobileRank?: "S" | "A" | "B" | "C" | "UNKNOWN";
 
   // 선택적 필드
   email?: string;
@@ -309,9 +307,6 @@ export default function ProfileReviewPage() {
           name: user.userName,
           profileImages: user.pendingImages,
           profileImageUrls: allImageUrls,
-          // PC/Mobile Rank 매핑 (rank 폴백)
-          pcRank: user.pcRank || user.rank || "UNKNOWN",
-          mobileRank: user.mobileRank || user.rank || "UNKNOWN",
           // 기본값 설정
           preferences: user.preferences || [],
           rejectionHistory: user.rejectionHistory || [],

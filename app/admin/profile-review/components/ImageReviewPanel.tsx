@@ -97,55 +97,30 @@ export default function ImageReviewPanel({
   const [rejectImageModalOpen, setRejectImageModalOpen] = useState(false);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [imageRejectionReason, setImageRejectionReason] = useState("");
-  const [currentPcRank, setCurrentPcRank] = useState<string>("UNKNOWN");
-  const [currentMobileRank, setCurrentMobileRank] = useState<string>("UNKNOWN");
+  const [currentRank, setCurrentRank] = useState<string>("UNKNOWN");
   const [isUpdatingRank, setIsUpdatingRank] = useState(false);
   const [showReviewContext, setShowReviewContext] = useState(false);
 
   useEffect(() => {
-    setCurrentPcRank(user?.pcRank || user?.rank || "UNKNOWN");
-    setCurrentMobileRank(user?.mobileRank || user?.rank || "UNKNOWN");
+    setCurrentRank(user?.rank || "UNKNOWN");
   }, [user]);
 
-  const handlePcRankChange = async (newRank: string) => {
-    if (!user || newRank === currentPcRank) return;
+  const handleRankChange = async (newRank: string) => {
+    if (!user || newRank === currentRank) return;
 
-    const previousRank = currentPcRank;
-    setCurrentPcRank(newRank);
+    const previousRank = currentRank;
+    setCurrentRank(newRank);
     setIsUpdatingRank(true);
 
     try {
       await AdminService.userReview.updateUserRank(
         user.userId,
         newRank as any,
-        "PC",
       );
     } catch (error: any) {
-      console.error("PC Rank 업데이트 실패:", error);
-      setCurrentPcRank(previousRank);
-      alert(error.response?.data?.message || "PC Rank 업데이트에 실패했습니다.");
-    } finally {
-      setIsUpdatingRank(false);
-    }
-  };
-
-  const handleMobileRankChange = async (newRank: string) => {
-    if (!user || newRank === currentMobileRank) return;
-
-    const previousRank = currentMobileRank;
-    setCurrentMobileRank(newRank);
-    setIsUpdatingRank(true);
-
-    try {
-      await AdminService.userReview.updateUserRank(
-        user.userId,
-        newRank as any,
-        "MOBILE",
-      );
-    } catch (error: any) {
-      console.error("Mobile Rank 업데이트 실패:", error);
-      setCurrentMobileRank(previousRank);
-      alert(error.response?.data?.message || "Mobile Rank 업데이트에 실패했습니다.");
+      console.error("Rank 업데이트 실패:", error);
+      setCurrentRank(previousRank);
+      alert(error.response?.data?.message || "Rank 업데이트에 실패했습니다.");
     } finally {
       setIsUpdatingRank(false);
     }
@@ -275,21 +250,7 @@ export default function ImageReviewPanel({
     setImageRejectionReason("");
   };
 
-  const bothRanksSelected =
-    currentPcRank !== "UNKNOWN" && currentMobileRank !== "UNKNOWN";
-
-  const getApproveButtonText = () => {
-    if (!bothRanksSelected) return "승인하기";
-    if (currentPcRank === currentMobileRank) {
-      return `${currentPcRank}등급으로 승인하기`;
-    }
-    return `${currentPcRank}(PC)/${currentMobileRank}(M) 등급으로 승인`;
-  };
-
-  const getApproveButtonColor = () => {
-    if (!bothRanksSelected) return undefined;
-    return getRankConfig(currentPcRank).color;
-  };
+  const rankSelected = currentRank !== "UNKNOWN";
 
   return (
     <Paper sx={{ p: 3, display: "flex", flexDirection: "column" }}>
@@ -330,89 +291,48 @@ export default function ImageReviewPanel({
         )}
       </Box>
 
-      {/* PC/Mobile Rank 선택 (이미지 위) */}
+      {/* Rank 선택 (이미지 위) */}
       <Box sx={{ mb: 2, p: 1.5, backgroundColor: "#fafafa", borderRadius: 2, border: "1px solid #e0e0e0" }}>
-        {(currentPcRank === "UNKNOWN" || currentMobileRank === "UNKNOWN") && (
+        {!rankSelected && (
           <Typography
             variant="caption"
             sx={{ color: "#ed6c02", display: "block", mb: 1 }}
           >
-            승인하려면 PC와 Mobile Rank를 모두 선택해주세요
+            승인하려면 Rank를 먼저 선택해주세요
           </Typography>
         )}
-        <Box sx={{ display: "flex", gap: 2 }}>
-          {/* PC Rank */}
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="caption" sx={{ fontWeight: 700, mb: 0.5, display: "block", color: "#344054" }}>
-              PC Rank
-            </Typography>
-            <Box sx={{ display: "flex", gap: 0.5 }}>
-              {(["S", "A", "B", "C"] as const).map((rank) => {
-                const config = getRankConfig(rank);
-                const isSelected = currentPcRank === rank;
-                return (
-                  <Chip
-                    key={rank}
-                    label={rank}
-                    onClick={() => handlePcRankChange(rank)}
-                    disabled={isUpdatingRank}
-                    sx={{
-                      flex: 1,
-                      height: 32,
-                      fontSize: "0.85rem",
-                      fontWeight: "bold",
-                      cursor: "pointer",
-                      backgroundColor: isSelected ? config.color : config.bgColor,
-                      color: isSelected ? "#fff" : config.color,
-                      border: isSelected
-                        ? `2px solid ${config.color}`
-                        : "2px solid transparent",
-                      "&:hover": {
-                        backgroundColor: isSelected ? config.color : config.bgColor,
-                        opacity: 0.85,
-                      },
-                    }}
-                  />
-                );
-              })}
-            </Box>
-          </Box>
-          {/* Mobile Rank */}
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="caption" sx={{ fontWeight: 700, mb: 0.5, display: "block", color: "#344054" }}>
-              Mobile Rank
-            </Typography>
-            <Box sx={{ display: "flex", gap: 0.5 }}>
-              {(["S", "A", "B", "C"] as const).map((rank) => {
-                const config = getRankConfig(rank);
-                const isSelected = currentMobileRank === rank;
-                return (
-                  <Chip
-                    key={rank}
-                    label={rank}
-                    onClick={() => handleMobileRankChange(rank)}
-                    disabled={isUpdatingRank}
-                    sx={{
-                      flex: 1,
-                      height: 32,
-                      fontSize: "0.85rem",
-                      fontWeight: "bold",
-                      cursor: "pointer",
-                      backgroundColor: isSelected ? config.color : config.bgColor,
-                      color: isSelected ? "#fff" : config.color,
-                      border: isSelected
-                        ? `2px solid ${config.color}`
-                        : "2px solid transparent",
-                      "&:hover": {
-                        backgroundColor: isSelected ? config.color : config.bgColor,
-                        opacity: 0.85,
-                      },
-                    }}
-                  />
-                );
-              })}
-            </Box>
-          </Box>
+        <Typography variant="caption" sx={{ fontWeight: 700, mb: 0.5, display: "block", color: "#344054" }}>
+          Rank 선택
+        </Typography>
+        <Box sx={{ display: "flex", gap: 0.5 }}>
+          {(["S", "A", "B", "C"] as const).map((rank) => {
+            const config = getRankConfig(rank);
+            const isSelected = currentRank === rank;
+            return (
+              <Chip
+                key={rank}
+                label={`${rank}등급`}
+                onClick={() => handleRankChange(rank)}
+                disabled={isUpdatingRank}
+                sx={{
+                  flex: 1,
+                  height: 36,
+                  fontSize: "0.85rem",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                  backgroundColor: isSelected ? config.color : config.bgColor,
+                  color: isSelected ? "#fff" : config.color,
+                  border: isSelected
+                    ? `2px solid ${config.color}`
+                    : "2px solid transparent",
+                  "&:hover": {
+                    backgroundColor: isSelected ? config.color : config.bgColor,
+                    opacity: 0.85,
+                  },
+                }}
+              />
+            );
+          })}
         </Box>
       </Box>
 
@@ -430,18 +350,24 @@ export default function ImageReviewPanel({
         <Button
           variant="contained"
           fullWidth
-          disabled={!bothRanksSelected || processing}
+          disabled={!rankSelected || processing}
           onClick={handleApprove}
           sx={{
             height: 44,
-            backgroundColor: getApproveButtonColor(),
+            backgroundColor: rankSelected
+              ? getRankConfig(currentRank).color
+              : undefined,
             "&:hover": {
-              backgroundColor: getApproveButtonColor(),
+              backgroundColor: rankSelected
+                ? getRankConfig(currentRank).color
+                : undefined,
               opacity: 0.9,
             },
           }}
         >
-          {getApproveButtonText()}
+          {rankSelected
+            ? `${currentRank}등급으로 승인하기`
+            : "승인하기"}
         </Button>
       </Box>
 

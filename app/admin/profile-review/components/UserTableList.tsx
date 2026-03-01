@@ -73,52 +73,24 @@ const getRankConfig = (rank?: string) => {
   return configs[rank as keyof typeof configs] || configs.UNKNOWN;
 };
 
-const RankBadge = ({ rank, label }: { rank?: string; label?: string }) => {
+const RankBadge = ({ rank }: { rank?: string }) => {
   const config = getRankConfig(rank);
 
   return (
-    <Chip
-      label={label ? `${label}${config.label}` : config.label}
-      size="small"
-      sx={{
-        backgroundColor: config.bgColor,
-        color: config.color,
-        fontWeight: "bold",
-        minWidth: label ? 42 : 28,
-        height: 22,
-        fontSize: "0.7rem",
-        "& .MuiChip-label": { px: 0.75 },
-      }}
-    />
-  );
-};
-
-const PcMobileRankBadge = ({
-  pcRank,
-  mobileRank,
-}: {
-  pcRank?: string;
-  mobileRank?: string;
-}) => {
-  const pc = pcRank || "UNKNOWN";
-  const mobile = mobileRank || "UNKNOWN";
-
-  if (pc === mobile) {
-    return (
-      <Tooltip title="PC/M 동일">
-        <Box>
-          <RankBadge rank={pc} />
-        </Box>
-      </Tooltip>
-    );
-  }
-
-  return (
-    <Tooltip title={`PC: ${pc} / Mobile: ${mobile}`}>
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.25, alignItems: "center" }}>
-        <RankBadge rank={pc} label="P" />
-        <RankBadge rank={mobile} label="M" />
-      </Box>
+    <Tooltip title={config.tooltip}>
+      <Chip
+        label={config.label}
+        size="small"
+        sx={{
+          backgroundColor: config.bgColor,
+          color: config.color,
+          fontWeight: "bold",
+          minWidth: 40,
+          height: 22,
+          fontSize: "0.7rem",
+          "& .MuiChip-label": { px: 0.75 },
+        }}
+      />
     </Tooltip>
   );
 };
@@ -224,7 +196,7 @@ export default function UserTableList({
                     </Typography>
                   </TableCell>
                   <TableCell align="center">
-                    <PcMobileRankBadge pcRank={user.pcRank} mobileRank={user.mobileRank} />
+                    <RankBadge rank={user.rank} />
                   </TableCell>
                   <TableCell>
                     <Typography

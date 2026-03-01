@@ -1971,15 +1971,14 @@ const userReview = {
 	updateUserRank: async (
 		userId: string,
 		rank: 'S' | 'A' | 'B' | 'C' | 'UNKNOWN',
-		platform?: 'PC' | 'MOBILE',
 		emitEvent: boolean = false,
 	) => {
 		try {
-			console.log('유저 Rank 업데이트 요청:', { userId, rank, platform, emitEvent });
+			console.log('유저 Rank 업데이트 요청:', { userId, rank, emitEvent });
 
 			const response = await axiosServer.patch(
 				`/admin/profiles/${userId}/rank`,
-				{ rank, ...(platform && { platform }) },
+				{ rank },
 				{ params: { emitEvent } },
 			);
 
