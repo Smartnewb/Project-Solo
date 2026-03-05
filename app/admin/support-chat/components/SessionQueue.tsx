@@ -10,7 +10,6 @@ import {
   Alert,
   ButtonGroup,
   Button,
-  TablePagination,
 } from '@mui/material';
 import {
   FiberManualRecord as DotIcon,
@@ -32,9 +31,6 @@ interface SessionQueueProps {
   newSessionIds: Set<string>;
   onClearNewSessionIds: () => void;
   unreadMap: Record<string, number>;
-  resolvedPage: number;
-  resolvedTotal: number;
-  onResolvedPageChange: (page: number) => void;
 }
 
 const statusDotColor: Record<string, string> = {
@@ -158,9 +154,6 @@ export default function SessionQueue({
   newSessionIds,
   onClearNewSessionIds,
   unreadMap,
-  resolvedPage,
-  resolvedTotal,
-  onResolvedPageChange,
 }: SessionQueueProps) {
   const sessions = activeTab === 'active' ? activeSessions : resolvedSessions;
 
@@ -253,20 +246,6 @@ export default function SessionQueue({
           ))
         )}
       </Box>
-
-      {/* Resolved pagination */}
-      {activeTab === 'resolved' && (
-        <TablePagination
-          component="div"
-          count={resolvedTotal}
-          page={resolvedPage - 1}
-          onPageChange={(_e, newPage) => onResolvedPageChange(newPage + 1)}
-          rowsPerPage={20}
-          rowsPerPageOptions={[20]}
-          labelDisplayedRows={({ from, to, count }) => `${from}-${to} / ${count}`}
-          sx={{ borderTop: 1, borderColor: 'divider' }}
-        />
-      )}
     </Box>
   );
 }
