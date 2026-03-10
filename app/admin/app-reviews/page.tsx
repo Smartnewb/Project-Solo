@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import { Box, Typography, Tabs, Tab, Chip } from '@mui/material';
 import RateReviewIcon from '@mui/icons-material/RateReview';
+import PublicIcon from '@mui/icons-material/Public';
 import ReviewDashboard from './components/ReviewDashboard';
 import ReviewList from './components/ReviewList';
+import PublicReviewManagement from './components/PublicReviewManagement';
 
 export default function AppReviewsPage() {
 	const [activeTab, setActiveTab] = useState(0);
@@ -74,6 +76,14 @@ export default function AppReviewsPage() {
 								</Box>
 							}
 						/>
+						<Tab
+							label={
+								<Box className="flex items-center gap-1">
+									<PublicIcon sx={{ fontSize: 16 }} />
+									외부 공개 관리
+								</Box>
+							}
+						/>
 					</Tabs>
 				</Box>
 			</Box>
@@ -90,6 +100,9 @@ export default function AppReviewsPage() {
 							onFilterClear={() => setFilterFromChart(null)}
 						/>
 					)}
+				</Box>
+				<Box role="tabpanel" hidden={activeTab !== 2}>
+					{activeTab === 2 && <PublicReviewManagement />}
 				</Box>
 			</Box>
 		</Box>

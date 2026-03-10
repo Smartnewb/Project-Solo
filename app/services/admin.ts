@@ -4461,6 +4461,29 @@ export interface AppReviewItem {
 	language: string;
 	createdAt: string;
 	collectedAt: string;
+	isFeatured?: boolean;
+	featuredAt?: string;
+	displayNickname?: string;
+	displayUniversity?: { name: string; logoFile: string | null };
+}
+
+export interface CommunityReviewArticle {
+	id: string;
+	title: string | null;
+	body: string;
+	author: {
+		nickname: string;
+		university: { name: string; logoFile: string | null } | null;
+	} | null;
+	isFeatured: boolean;
+	featuredAt: string | null;
+	createdAt: string;
+}
+
+export interface CommunityReviewArticlesResponse {
+	items: CommunityReviewArticle[];
+	nextCursor: string | null;
+	total: number;
 }
 
 export interface AppReviewsResponse {
@@ -4503,6 +4526,98 @@ const appReviews = {
 			return response.data;
 		} catch (error: any) {
 			console.error('앱 리뷰 통계 조회 중 오류:', error);
+			throw error;
+		}
+	},
+
+	toggleFeatured: async (pk: string): Promise<{ pk: string; isFeatured: boolean }> => {
+		try {
+			const response = await axiosServer.patch(
+				`/admin/app-reviews/${encodeURIComponent(pk)}/featured`,
+			);
+			return response.data;
+		} catch (error: any) {
+			console.error('앱 리뷰 외부 공개 토글 중 오류:', error);
+			throw error;
+		}
+	},
+};
+
+const communityReviewArticles = {
+	getList: async (
+		params: { limit?: number; cursor?: string } = {},
+	): Promise<CommunityReviewArticlesResponse> => {
+		try {
+			const response = await axiosServer.get('/admin/community/articles', {
+				params: { ...params, category: 'review' },
+			});
+			return response.data;
+		} catch (error: any) {
+			console.error('커뮤니티 리뷰 게시글 조회 중 오류:', error);
+			throw error;
+		}
+	},
+
+	toggleFeatured: async (
+		articleId: string,
+	): Promise<{ id: string; isFeatured: boolean; featuredAt: string | null }> => {
+		try {
+			const response = await axiosServer.patch(
+				`/admin/community/articles/${articleId}/featured`,
+			);
+			return response.data;
+		} catch (error: any) {
+			console.error('커뮤니티 리뷰 외부 공개 토글 중 오류:', error);
+			throw error;
+		}
+	},
+};
+
+// ==================== 통합 리뷰 (Public) ====================
+export type PublicReviewSource = 'APP_STORE' | 'PLAY_STORE' | 'COMMUNITY' | 'HOT';
+
+export interface PublicReviewItem {
+	id: string;
+	source: PublicReviewSource;
+	rating: number | null;
+	title: string | null;
+	body: string;
+	author: {
+		nickname: string;
+		university: { name: string; logoFile: string | null } | null;
+	} | null;
+	featuredAt: string;
+	createdAt: string;
+}
+
+export interface PublicReviewsResponse {
+	items: PublicReviewItem[];
+}
+
+export interface FeaturedAppReviewsResponse {
+	items: AppReviewItem[];
+	nextCursor: string | null;
+}
+
+const publicReviews = {
+	getList: async (params: { type?: 'app' | 'community'; limit?: number } = {}): Promise<PublicReviewsResponse> => {
+		try {
+			const response = await axiosServer.get('/public-reviews', { params });
+			return response.data;
+		} catch (error: any) {
+			console.error('통합 리뷰 조회 중 오류:', error);
+			throw error;
+		}
+	},
+
+	getFeaturedAppReviews: async (
+		params: { store?: 'APP_STORE' | 'PLAY_STORE'; limit?: number; cursor?: string } = {},
+	): Promise<FeaturedAppReviewsResponse> => {
+		try {
+			const response = await axiosServer.get('/app-reviews/featured', { params });
+			return response.data;
+		} catch (error: any) {
+			console.error('Featured 앱 리뷰 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -4592,6 +4707,8 @@ const AdminService = {
 	forceMatching,
 	kpiReport,
 	appReviews,
+	communityReviewArticles,
+	publicReviews,
 	fcmTokens,
 	getProfileReports: reports.getProfileReports,
 };

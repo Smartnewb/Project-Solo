@@ -41,7 +41,7 @@ const STORE_LABELS: Record<string, string> = {
 	PLAY_STORE: 'Play Store',
 };
 
-const RATING_COLORS: Record<number, string> = {
+export const RATING_COLORS: Record<number, string> = {
 	1: '#ef4444',
 	2: '#f97316',
 	3: '#eab308',
