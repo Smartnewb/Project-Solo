@@ -19,6 +19,8 @@ import {
 	Select,
 	MenuItem,
 	TextField,
+	Tooltip,
+	Snackbar,
 } from '@mui/material';
 import AppleIcon from '@mui/icons-material/Apple';
 import ShopIcon from '@mui/icons-material/Shop';
@@ -26,6 +28,8 @@ import PhoneAndroidIcon from '@mui/icons-material/PhoneAndroid';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import StarIcon from '@mui/icons-material/Star';
+import PublicIcon from '@mui/icons-material/Public';
+import PublicOffIcon from '@mui/icons-material/PublicOff';
 import AdminService, {
 	type AppReviewItem,
 	type AppReviewsParams,
@@ -55,6 +59,12 @@ export default function ReviewList({ initialFilter, onFilterClear }: ReviewListP
 	const [loadingMore, setLoadingMore] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [nextCursor, setNextCursor] = useState<string | null>(null);
+	const [togglingId, setTogglingId] = useState<string | null>(null);
+	const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'info' | 'error' }>({
+		open: false,
+		message: '',
+		severity: 'info',
+	});
 
 	// 필터 상태
 	const [store, setStore] = useState<'APP_STORE' | 'PLAY_STORE' | 'ALL'>(
@@ -115,6 +125,33 @@ export default function ReviewList({ initialFilter, onFilterClear }: ReviewListP
 		},
 		[buildParams, nextCursor],
 	);
+
+	const handleToggleFeatured = async (review: AppReviewItem) => {
+		setTogglingId(review.pk);
+		try {
+			const result = await AdminService.appReviews.toggleFeatured(review.pk);
+			setReviews((prev) =>
+				prev.map((r) =>
+					r.pk === review.pk
+						? {
+								...r,
+								isFeatured: result.isFeatured,
+								featuredAt: result.isFeatured ? new Date().toISOString() : undefined,
+							}
+						: r,
+				),
+			);
+			setSnackbar({
+				open: true,
+				message: result.isFeatured ? '외부 공개 처리되었습니다.' : '외부 공개가 해제되었습니다.',
+				severity: result.isFeatured ? 'success' : 'info',
+			});
+		} catch {
+			setSnackbar({ open: true, message: '처리 중 오류가 발생했습니다.', severity: 'error' });
+		} finally {
+			setTogglingId(null);
+		}
+	};
 
 	// 필터 변경 시 재조회
 	useEffect(() => {
@@ -316,7 +353,12 @@ export default function ReviewList({ initialFilter, onFilterClear }: ReviewListP
 			) : (
 				<Box className="space-y-3">
 					{reviews.map((review) => (
-						<ReviewCard key={review.pk} review={review} />
+						<ReviewCard
+							key={review.pk}
+							review={review}
+							toggling={togglingId === review.pk}
+							onToggleFeatured={() => handleToggleFeatured(review)}
+						/>
 					))}
 				</Box>
 			)}
@@ -340,12 +382,35 @@ export default function ReviewList({ initialFilter, onFilterClear }: ReviewListP
 					</Button>
 				</Box>
 			)}
+
+			<Snackbar
+				open={snackbar.open}
+				autoHideDuration={3000}
+				onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+				anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+			>
+				<Alert
+					severity={snackbar.severity}
+					onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+					sx={{ width: '100%' }}
+				>
+					{snackbar.message}
+				</Alert>
+			</Snackbar>
 		</Box>
 	);
 }
 
 // ─── 리뷰 카드 컴포넌트 ─────────────────────────────────
-function ReviewCard({ review }: { review: AppReviewItem }) {
+function ReviewCard({
+	review,
+	toggling,
+	onToggleFeatured,
+}: {
+	review: AppReviewItem;
+	toggling: boolean;
+	onToggleFeatured: () => void;
+}) {
 	const isAppStore = review.store === 'APP_STORE';
 	const storeColor = isAppStore ? '#007AFF' : '#34A853';
 
@@ -353,15 +418,16 @@ function ReviewCard({ review }: { review: AppReviewItem }) {
 		<Card
 			sx={{
 				borderLeft: `4px solid ${storeColor}`,
+				opacity: toggling ? 0.7 : 1,
+				transition: 'all 0.15s ease',
 				'&:hover': {
 					boxShadow: 3,
 					transform: 'translateY(-1px)',
-					transition: 'all 0.15s ease',
 				},
 			}}
 		>
 			<CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
-				{/* 상단: 별점 + 스토어 배지 */}
+				{/* 상단: 별점 + 스토어 배지 + 공개 토글 */}
 				<Box className="flex items-center justify-between mb-1.5">
 					<Box className="flex items-center gap-2">
 						<Rating
@@ -380,17 +446,42 @@ function ReviewCard({ review }: { review: AppReviewItem }) {
 							</Typography>
 						)}
 					</Box>
-					<Chip
-						label={isAppStore ? 'App Store' : 'Play Store'}
-						size="small"
-						icon={isAppStore ? <AppleIcon /> : <ShopIcon />}
-						sx={{
-							backgroundColor: isAppStore ? '#f0f4ff' : '#f0fdf4',
-							color: storeColor,
-							fontWeight: 500,
-							'& .MuiChip-icon': { color: storeColor },
-						}}
-					/>
+					<Box className="flex items-center gap-2">
+						<Chip
+							label={isAppStore ? 'App Store' : 'Play Store'}
+							size="small"
+							icon={isAppStore ? <AppleIcon /> : <ShopIcon />}
+							sx={{
+								backgroundColor: isAppStore ? '#f0f4ff' : '#f0fdf4',
+								color: storeColor,
+								fontWeight: 500,
+								'& .MuiChip-icon': { color: storeColor },
+							}}
+						/>
+						<Tooltip title={review.isFeatured ? '외부 공개 해제' : '외부 공개 처리'}>
+							<span>
+								<Button
+									variant={review.isFeatured ? 'contained' : 'outlined'}
+									size="small"
+									onClick={onToggleFeatured}
+									disabled={toggling}
+									startIcon={
+										toggling ? (
+											<CircularProgress size={14} />
+										) : review.isFeatured ? (
+											<PublicIcon />
+										) : (
+											<PublicOffIcon />
+										)
+									}
+									color={review.isFeatured ? 'success' : 'inherit'}
+									sx={{ minWidth: 90, fontWeight: 600, whiteSpace: 'nowrap' }}
+								>
+									{review.isFeatured ? '공개 중' : '비공개'}
+								</Button>
+							</span>
+						</Tooltip>
+					</Box>
 				</Box>
 
 				{/* 본문 */}
@@ -443,6 +534,29 @@ function ReviewCard({ review }: { review: AppReviewItem }) {
 						</>
 					)}
 				</Box>
+
+				{/* 공개 닉네임 표시 */}
+				{review.isFeatured && review.displayNickname && (
+					<Box
+						sx={{
+							mt: 1,
+							px: 1.5,
+							py: 0.75,
+							borderRadius: 1.5,
+							backgroundColor: '#f0fdf4',
+							border: '1px solid #bbf7d0',
+							display: 'inline-flex',
+							alignItems: 'center',
+							gap: 1,
+						}}
+					>
+						<PublicIcon sx={{ fontSize: 14, color: '#22c55e' }} />
+						<Typography variant="caption" color="success.main">
+							공개 닉네임: {review.displayNickname}
+							{review.displayUniversity && ` · ${review.displayUniversity.name}`}
+						</Typography>
+					</Box>
+				)}
 			</CardContent>
 		</Card>
 	);
