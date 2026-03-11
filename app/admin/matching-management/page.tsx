@@ -695,6 +695,7 @@ export default function MatchingManagement() {
                   type="text"
                   value={historySearchName}
                   onChange={(e) => setHistorySearchName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSearchMatchingHistory(); }}
                   placeholder="이름으로 검색"
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
@@ -973,6 +974,7 @@ export default function MatchingManagement() {
                   type="text"
                   value={failureSearchName}
                   onChange={(e) => setFailureSearchName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleSearchMatchingFailures(); }}
                   placeholder="이름으로 검색"
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
