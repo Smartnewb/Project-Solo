@@ -43,7 +43,7 @@ import { formatSimpleDate } from '@/app/utils/formatters';
 
 type ManageSourceFilter = 'ALL' | 'APP_STORE' | 'PLAY_STORE' | 'COMMUNITY';
 type FeaturedFilter = 'ALL' | 'FEATURED' | 'UNFEATURED';
-type PublicSourceFilter = 'ALL' | 'app' | 'community';
+type PublicSourceFilter = 'ALL' | 'app' | 'community' | 'inapp' | 'hot' | 'review';
 type ViewMode = 'manage' | 'public';
 
 const SOURCE_CONFIG: Record<
@@ -483,6 +483,18 @@ function PublicView() {
 							<ToggleButton value="app" sx={{ px: 2, py: 0.5 }}>
 								<PhoneAndroidIcon sx={{ fontSize: 18, mr: 0.5 }} />
 								스토어 + 인기글
+							</ToggleButton>
+							<ToggleButton value="inapp" sx={{ px: 2, py: 0.5 }}>
+								<WhatshotIcon sx={{ fontSize: 18, mr: 0.5 }} />
+								인앱 리뷰
+							</ToggleButton>
+							<ToggleButton value="hot" sx={{ px: 2, py: 0.5 }}>
+								<WhatshotIcon sx={{ fontSize: 18, mr: 0.5 }} />
+								인기글만
+							</ToggleButton>
+							<ToggleButton value="review" sx={{ px: 2, py: 0.5 }}>
+								<ForumIcon sx={{ fontSize: 18, mr: 0.5 }} />
+								리뷰만
 							</ToggleButton>
 							<ToggleButton value="community" sx={{ px: 2, py: 0.5 }}>
 								<ForumIcon sx={{ fontSize: 18, mr: 0.5 }} />

@@ -4600,7 +4600,7 @@ export interface FeaturedAppReviewsResponse {
 }
 
 const publicReviews = {
-	getList: async (params: { type?: 'app' | 'community'; limit?: number } = {}): Promise<PublicReviewsResponse> => {
+	getList: async (params: { type?: 'app' | 'community' | 'inapp' | 'hot' | 'review'; limit?: number } = {}): Promise<PublicReviewsResponse> => {
 		try {
 			const response = await axiosServer.get('/public-reviews', { params });
 			return response.data;
