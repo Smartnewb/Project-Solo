@@ -49,6 +49,7 @@ export interface ChatRoomsParams {
   startDate?: string;
   endDate?: string;
   preset?: DatePreset;
+  searchName?: string;
   page?: number;
   limit?: number;
 }
@@ -117,6 +118,7 @@ class ChatService {
           startDate: params.startDate,
           endDate: params.endDate,
           preset: params.preset,
+          searchName: params.searchName,
           page: params.page || 1,
           limit: params.limit || 20
         }

@@ -718,6 +718,7 @@ export interface AdminLikesParams {
   isMutualLike?: boolean;
   senderUserId?: string;
   forwardUserId?: string;
+  searchName?: string;
   startDate?: string;
   endDate?: string;
   sortBy?: 'createdAt' | 'viewedAt' | 'mutualLikeAt';
