@@ -101,6 +101,24 @@ export interface Category {
 	displayName: string;
 }
 
+// 백엔드 응답을 Article 인터페이스로 정규화
+const normalizeArticle = (a: any): Article => ({
+	...a,
+	content: a.contentPreview ?? a.content ?? '',
+	commentCount:
+		a.commentCount ?? a.comment_count ?? a.comments_count ??
+		(Array.isArray(a.comments) ? a.comments.length : 0),
+	likeCount:
+		a.likeCount ?? a.like_count ?? a.likes_count ??
+		(Array.isArray(a.likes) ? a.likes.length : 0),
+	reportCount:
+		a.reportCount ?? a.report_count ?? a.reports_count ??
+		(Array.isArray(a.reports) ? a.reports.length : 0),
+	author: a.authorName
+		? { id: a.authorId, name: a.authorName }
+		: a.author ?? undefined,
+});
+
 // 커뮤니티 관리 API 서비스
 const communityService = {
 	// 게시글 목록 조회
@@ -151,11 +169,7 @@ const communityService = {
 
 			// API 응답 구조에 맞게 데이터 반환 (백엔드는 articles/pagination 구조 사용)
 			const rawArticles = response.data.articles ?? [];
-			const articles = rawArticles.map((a: any) => ({
-				...a,
-				content: a.contentPreview ?? a.content ?? '',
-				author: a.authorName ? { id: a.authorId, name: a.authorName } : undefined,
-			}));
+			const articles = rawArticles.map(normalizeArticle);
 			const pagination = response.data.pagination;
 			return {
 				items: articles,
@@ -203,13 +217,15 @@ const communityService = {
 			// 댓글 정보 가져오기
 			const commentsResponse = await axiosServer.get(`/admin/community/comments`, {
 				params: {
+					articleId: id,
 					article_id: id,
 				},
 			});
 
 			// 게시글 상세 정보 구성
+			const normalized = normalizeArticle(article);
 			const articleDetail: ArticleDetail = {
-				...article,
+				...normalized,
 				comments: commentsResponse.data?.comments ?? [],
 				reports: [],
 			};
