@@ -15,9 +15,10 @@ import { getRegionLabel } from '@/components/admin/common/RegionFilter';
 
 interface WithdrawalStatsCardProps {
   region?: string;
+  useCluster?: boolean;
 }
 
-export default function WithdrawalStatsCard({ region }: WithdrawalStatsCardProps) {
+export default function WithdrawalStatsCard({ region, useCluster }: WithdrawalStatsCardProps) {
   const [stats, setStats] = useState<{
     totalWithdrawals: number | null;
     dailyWithdrawals: number | null;
@@ -33,7 +34,7 @@ export default function WithdrawalStatsCard({ region }: WithdrawalStatsCardProps
   const [error, setError] = useState<string | null>(null);
 
   // 지역 라벨 생성
-  const regionLabel = region ? getRegionLabel(region as any) : '전체 지역';
+  const regionLabel = region ? getRegionLabel(region as any, useCluster) : '전체 지역';
 
   useEffect(() => {
     const fetchWithdrawalStats = async () => {
@@ -44,10 +45,10 @@ export default function WithdrawalStatsCard({ region }: WithdrawalStatsCardProps
         // 병렬로 모든 API 호출
         try {
           const [totalResponse, dailyResponse, weeklyResponse, monthlyResponse] = await Promise.all([
-            AdminService.stats.getTotalWithdrawalsCount(region),
-            AdminService.stats.getDailyWithdrawalCount(region),
-            AdminService.stats.getWeeklyWithdrawalCount(),
-            AdminService.stats.getMonthlyWithdrawalCount()
+            AdminService.stats.getTotalWithdrawalsCount(region, useCluster),
+            AdminService.stats.getDailyWithdrawalCount(region, useCluster),
+            AdminService.stats.getWeeklyWithdrawalCount(region, useCluster),
+            AdminService.stats.getMonthlyWithdrawalCount(region, useCluster)
           ]);
 
           console.log('탈퇴 통계 응답:', { totalResponse, dailyResponse, weeklyResponse, monthlyResponse });
@@ -82,7 +83,7 @@ export default function WithdrawalStatsCard({ region }: WithdrawalStatsCardProps
     const interval = setInterval(fetchWithdrawalStats, 60000);
 
     return () => clearInterval(interval);
-  }, [region]);
+  }, [region, useCluster]);
 
   if (loading) {
     return (

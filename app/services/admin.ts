@@ -350,7 +350,7 @@ const stats = {
 		try {
 			const params: any = {};
 			if (region) params.region = region;
-			if (useCluster !== undefined) params.useCluster = useCluster;
+			if (useCluster !== undefined) params.useCluster = String(useCluster);
 
 			const response = await axiosServer.get('/admin/stats/withdrawals/total', {
 				params,
@@ -367,7 +367,7 @@ const stats = {
 		try {
 			const params: any = {};
 			if (region) params.region = region;
-			if (useCluster !== undefined) params.useCluster = useCluster;
+			if (useCluster !== undefined) params.useCluster = String(useCluster);
 
 			const response = await axiosServer.get('/admin/stats/withdrawals/daily', {
 				params,
@@ -380,9 +380,13 @@ const stats = {
 	},
 
 	// 주간 탈퇴자 수 조회
-	getWeeklyWithdrawalCount: async () => {
+	getWeeklyWithdrawalCount: async (region?: string, useCluster?: boolean) => {
 		try {
-			const response = await axiosServer.get('/admin/stats/withdrawals/weekly');
+			const params: any = {};
+			if (region) params.region = region;
+			if (useCluster !== undefined) params.useCluster = String(useCluster);
+
+			const response = await axiosServer.get('/admin/stats/withdrawals/weekly', { params });
 			return response.data || { weeklyWithdrawals: 0 };
 		} catch (error) {
 			console.error('이번 주 탈퇴한 회원 수 조회 중 오류:', error);
@@ -391,9 +395,13 @@ const stats = {
 	},
 
 	// 월간 탈퇴자 수 조회
-	getMonthlyWithdrawalCount: async () => {
+	getMonthlyWithdrawalCount: async (region?: string, useCluster?: boolean) => {
 		try {
-			const response = await axiosServer.get('/admin/stats/withdrawals/monthly');
+			const params: any = {};
+			if (region) params.region = region;
+			if (useCluster !== undefined) params.useCluster = String(useCluster);
+
+			const response = await axiosServer.get('/admin/stats/withdrawals/monthly', { params });
 			return response.data || { monthlyWithdrawals: 0 };
 		} catch (error) {
 			console.error('이번 달 탈퇴한 회원 수 조회 중 오류:', error);
@@ -417,9 +425,13 @@ const stats = {
 	},
 
 	// 일별 탈퇴 추이 조회
-	getDailyWithdrawalTrend: async () => {
+	getDailyWithdrawalTrend: async (region?: string, useCluster?: boolean) => {
 		try {
-			const response = await axiosServer.get('/admin/stats/withdrawals/trend/daily');
+			const params: any = {};
+			if (region) params.region = region;
+			if (useCluster !== undefined) params.useCluster = String(useCluster);
+
+			const response = await axiosServer.get('/admin/stats/withdrawals/trend/daily', { params });
 			return response.data || { data: [] };
 		} catch (error) {
 			console.error('일별 탈퇴 추이 조회 중 오류:', error);
@@ -428,9 +440,13 @@ const stats = {
 	},
 
 	// 주별 탈퇴 추이 조회
-	getWeeklyWithdrawalTrend: async () => {
+	getWeeklyWithdrawalTrend: async (region?: string, useCluster?: boolean) => {
 		try {
-			const response = await axiosServer.get('/admin/stats/withdrawals/trend/weekly');
+			const params: any = {};
+			if (region) params.region = region;
+			if (useCluster !== undefined) params.useCluster = String(useCluster);
+
+			const response = await axiosServer.get('/admin/stats/withdrawals/trend/weekly', { params });
 			return response.data || { data: [] };
 		} catch (error) {
 			console.error('주별 탈퇴 추이 조회 중 오류:', error);
@@ -439,9 +455,13 @@ const stats = {
 	},
 
 	// 월별 탈퇴 추이 조회
-	getMonthlyWithdrawalTrend: async () => {
+	getMonthlyWithdrawalTrend: async (region?: string, useCluster?: boolean) => {
 		try {
-			const response = await axiosServer.get('/admin/stats/withdrawals/trend/monthly');
+			const params: any = {};
+			if (region) params.region = region;
+			if (useCluster !== undefined) params.useCluster = String(useCluster);
+
+			const response = await axiosServer.get('/admin/stats/withdrawals/trend/monthly', { params });
 			return response.data || { data: [] };
 		} catch (error) {
 			console.error('월별 탈퇴 추이 조회 중 오류:', error);
@@ -450,13 +470,17 @@ const stats = {
 	},
 
 	// 사용자 지정 기간 탈퇴 추이 조회
-	getCustomPeriodWithdrawalTrend: async (startDate: string, endDate: string) => {
+	getCustomPeriodWithdrawalTrend: async (startDate: string, endDate: string, region?: string, useCluster?: boolean) => {
 		try {
 			console.log('사용자 지정 기간 탈퇴 추이 조회:', startDate, endDate);
-			const response = await axiosServer.post('/admin/stats/withdrawals/trend/custom-period', {
+			const requestData: any = {
 				startDate,
 				endDate,
-			});
+			};
+			if (region) requestData.region = region;
+			if (useCluster !== undefined) requestData.useCluster = useCluster;
+
+			const response = await axiosServer.post('/admin/stats/withdrawals/trend/custom-period', requestData);
 			return response.data || { data: [] };
 		} catch (error) {
 			console.error('사용자 지정 기간 탈퇴 추이 조회 중 오류:', error);

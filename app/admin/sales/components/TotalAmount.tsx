@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { salesService } from "@/app/services/sales";
 import { CustomSalesResponse, IapStatsResponse } from "../types";
 import { paymentType } from "../types";
-import { REGION_OPTIONS, getRegionLabel } from "../constants/regions";
+import { CLUSTER_REGION_OPTIONS, getClusterRegionLabel } from "../constants/regions";
 import {
   PAYMENT_TYPE_OPTIONS,
   getPaymentTypeLabel,
@@ -302,7 +302,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
     const otherRegions = sortedData.slice(TOP_N);
 
     const chartData = topRegions.map((regionData) => ({
-      name: getRegionLabel(regionData.region),
+      name: getClusterRegionLabel(regionData.region),
       value: regionData.amount || 0,
       count: regionData.count || 0,
       paidUserCount: regionData.paidUserCount || 0,
@@ -467,7 +467,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-gray-700">지역별</label>
             <div className="flex flex-wrap gap-2">
-              {REGION_OPTIONS.map((option) => (
+              {CLUSTER_REGION_OPTIONS.map((option) => (
                 <label
                   key={option.value}
                   className="flex items-center gap-1 cursor-pointer"
@@ -548,7 +548,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
               {selectedRegions.includes("all") || selectedRegions.length === 0
                 ? "총 매출액"
                 : selectedRegions.length === 1
-                  ? `${getRegionLabel(selectedRegions[0])} 매출액`
+                  ? `${getClusterRegionLabel(selectedRegions[0])} 매출액`
                   : `선택된 지역 (${selectedRegions.length}개) 매출액`}
             </h3>
             <div className="text-4xl font-bold text-purple-600 mb-4">
@@ -679,7 +679,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                                       {index + 1}
                                     </span>
                                     <span className="text-sm font-medium text-gray-900">
-                                      {getRegionLabel(regionData.region)}
+                                      {getClusterRegionLabel(regionData.region)}
                                     </span>
                                   </div>
                                 </td>

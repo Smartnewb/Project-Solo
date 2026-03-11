@@ -199,7 +199,12 @@ const WithdrawalChart = ({ data, color, interval = 1 }: { data: any[], color: st
   </Box>
 );
 
-export default function WithdrawalStatsDashboard() {
+interface WithdrawalStatsDashboardProps {
+  region?: string;
+  useCluster?: boolean;
+}
+
+export default function WithdrawalStatsDashboard({ region, useCluster }: WithdrawalStatsDashboardProps) {
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -234,7 +239,7 @@ export default function WithdrawalStatsDashboard() {
 
         // 일별 데이터 조회
         try {
-          const dailyResponse = await AdminService.stats.getDailyWithdrawalTrend();
+          const dailyResponse = await AdminService.stats.getDailyWithdrawalTrend(region, useCluster);
           console.log('일별 데이터 응답:', dailyResponse);
           if (dailyResponse?.data && Array.isArray(dailyResponse.data) && dailyResponse.data.length > 0) {
             setDailyData(dailyResponse.data);
@@ -245,7 +250,7 @@ export default function WithdrawalStatsDashboard() {
 
         // 주별 데이터 조회
         try {
-          const weeklyResponse = await AdminService.stats.getWeeklyWithdrawalTrend();
+          const weeklyResponse = await AdminService.stats.getWeeklyWithdrawalTrend(region, useCluster);
           console.log('주별 데이터 응답:', weeklyResponse);
           if (weeklyResponse?.data && Array.isArray(weeklyResponse.data) && weeklyResponse.data.length > 0) {
             setWeeklyData(weeklyResponse.data);
@@ -256,7 +261,7 @@ export default function WithdrawalStatsDashboard() {
 
         // 월별 데이터 조회
         try {
-          const monthlyResponse = await AdminService.stats.getMonthlyWithdrawalTrend();
+          const monthlyResponse = await AdminService.stats.getMonthlyWithdrawalTrend(region, useCluster);
           console.log('월별 데이터 응답:', monthlyResponse);
           if (monthlyResponse?.data && Array.isArray(monthlyResponse.data) && monthlyResponse.data.length > 0) {
             setMonthlyData(monthlyResponse.data);
@@ -278,7 +283,7 @@ export default function WithdrawalStatsDashboard() {
     };
 
     fetchData();
-  }, []);
+  }, [region, useCluster]);
 
   // 사용자 지정 기간 데이터 조회
   const fetchCustomPeriodData = async () => {
@@ -301,7 +306,9 @@ export default function WithdrawalStatsDashboard() {
 
       const response = await AdminService.stats.getCustomPeriodWithdrawalTrend(
         formattedStartDate,
-        formattedEndDate
+        formattedEndDate,
+        region,
+        useCluster,
       );
 
       console.log('사용자 지정 기간 데이터 응답:', response);

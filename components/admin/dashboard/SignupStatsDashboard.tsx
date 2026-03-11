@@ -149,7 +149,7 @@ export default function SignupStatsDashboard({
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
-	const regionLabel = region ? getRegionLabel(region as any) : '전체 지역';
+	const regionLabel = region ? getRegionLabel(region as any, useCluster) : '전체 지역';
 
 	const [startDate, setStartDate] = useState<Date | null>(addDays(new Date(), -30));
 	const [endDate, setEndDate] = useState<Date | null>(new Date());
