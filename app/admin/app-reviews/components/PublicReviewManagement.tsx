@@ -41,7 +41,7 @@ import AdminService, {
 import { RATING_COLORS } from './ReviewList';
 import { formatSimpleDate } from '@/app/utils/formatters';
 
-type ManageSourceFilter = 'ALL' | 'APP_STORE' | 'PLAY_STORE' | 'COMMUNITY';
+type ManageSourceFilter = 'ALL' | 'APP_STORE' | 'PLAY_STORE' | 'COMMUNITY' | 'INAPP';
 type FeaturedFilter = 'ALL' | 'FEATURED' | 'UNFEATURED';
 type PublicSourceFilter = 'ALL' | 'app' | 'community' | 'inapp' | 'hot' | 'review';
 type ViewMode = 'manage' | 'public';
@@ -226,25 +226,28 @@ function ManageView() {
 
 	const showAppReviews =
 		sourceFilter === 'ALL' || sourceFilter === 'APP_STORE' || sourceFilter === 'PLAY_STORE';
-	const showCommunity = sourceFilter === 'ALL' || sourceFilter === 'COMMUNITY';
+	const showCommunity =
+		sourceFilter === 'ALL' || sourceFilter === 'COMMUNITY' || sourceFilter === 'INAPP';
 
 	const { filteredAppReviews, filteredCommunity, featuredAppCount, featuredCommunityCount } =
 		useMemo(() => {
-			const filteredApp = appReviews.filter(
+			const apps = appReviews ?? [];
+			const comms = communityArticles ?? [];
+			const filteredApp = apps.filter(
 				(r) =>
 					(sourceFilter === 'ALL' || sourceFilter === r.store) &&
 					applyFeaturedFilter(r.isFeatured, featuredFilter),
 			);
-			const filteredComm = communityArticles.filter(
+			const filteredComm = comms.filter(
 				(a) =>
-					(sourceFilter === 'ALL' || sourceFilter === 'COMMUNITY') &&
+					(sourceFilter === 'ALL' || sourceFilter === 'COMMUNITY' || sourceFilter === 'INAPP') &&
 					applyFeaturedFilter(a.isFeatured, featuredFilter),
 			);
 			return {
 				filteredAppReviews: filteredApp,
 				filteredCommunity: filteredComm,
-				featuredAppCount: appReviews.filter((r) => r.isFeatured).length,
-				featuredCommunityCount: communityArticles.filter((a) => a.isFeatured).length,
+				featuredAppCount: apps.filter((r) => r.isFeatured).length,
+				featuredCommunityCount: comms.filter((a) => a.isFeatured).length,
 			};
 		}, [appReviews, communityArticles, sourceFilter, featuredFilter]);
 
@@ -297,6 +300,10 @@ function ManageView() {
 							<ToggleButton value="PLAY_STORE" sx={{ px: 2, py: 0.5 }}>
 								<ShopIcon sx={{ fontSize: 18, mr: 0.5 }} />
 								Play Store
+							</ToggleButton>
+							<ToggleButton value="INAPP" sx={{ px: 2, py: 0.5 }}>
+								<WhatshotIcon sx={{ fontSize: 18, mr: 0.5 }} />
+								인앱
 							</ToggleButton>
 							<ToggleButton value="COMMUNITY" sx={{ px: 2, py: 0.5 }}>
 								<ForumIcon sx={{ fontSize: 18, mr: 0.5 }} />
