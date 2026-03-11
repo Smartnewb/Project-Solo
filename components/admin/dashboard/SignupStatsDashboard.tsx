@@ -42,6 +42,7 @@ interface MonthlySignupTrendItem {
 interface SignupStatsDashboardProps {
 	region?: string;
 	includeDeleted?: boolean;
+	useCluster?: boolean;
 }
 
 type TabType = 'daily' | 'weekly' | 'monthly' | 'custom';
@@ -139,6 +140,7 @@ function StatCard({ label, value, color, bgColor, subValue, subLabel }: StatCard
 export default function SignupStatsDashboard({
 	region,
 	includeDeleted = false,
+	useCluster,
 }: SignupStatsDashboardProps) {
 	const [activeTab, setActiveTab] = useState<TabType>('daily');
 	const [dailyData, setDailyData] = useState<DailySignupTrendItem[]>([]);
@@ -266,6 +268,7 @@ export default function SignupStatsDashboard({
 					const dailyResponse = await AdminService.stats.getDailySignupTrend(
 						region,
 						includeDeleted,
+						useCluster,
 					);
 					if (dailyResponse?.data?.length > 0) {
 						setDailyData(dailyResponse.data);
@@ -280,6 +283,7 @@ export default function SignupStatsDashboard({
 					const weeklyResponse = await AdminService.stats.getWeeklySignupTrend(
 						region,
 						includeDeleted,
+						useCluster,
 					);
 					if (weeklyResponse?.data?.length > 0) {
 						setWeeklyData(weeklyResponse.data);
@@ -294,6 +298,7 @@ export default function SignupStatsDashboard({
 					const monthlyResponse = await AdminService.stats.getMonthlySignupTrend(
 						region,
 						includeDeleted,
+						useCluster,
 					);
 					if (monthlyResponse?.data?.length > 0) {
 						setMonthlyData(monthlyResponse.data);
@@ -316,7 +321,7 @@ export default function SignupStatsDashboard({
 		fetchTrendData();
 		const interval = setInterval(fetchTrendData, 5 * 60 * 1000);
 		return () => clearInterval(interval);
-	}, [region, includeDeleted]);
+	}, [region, includeDeleted, useCluster]);
 
 	const isDateRangeValid = () => {
 		if (!startDate || !endDate) return false;
@@ -344,6 +349,7 @@ export default function SignupStatsDashboard({
 				formattedEndDate,
 				region,
 				includeDeleted,
+				useCluster,
 			);
 
 			let count = 0;
@@ -387,6 +393,7 @@ export default function SignupStatsDashboard({
 				formattedEndDate,
 				region,
 				includeDeleted,
+				useCluster,
 			);
 
 			let trendDataArray: any[] = [];
@@ -456,7 +463,7 @@ export default function SignupStatsDashboard({
 		if (startDate && endDate && isDateRangeValid()) {
 			fetchCustomPeriodData();
 		}
-	}, []);
+	}, [region, includeDeleted, useCluster]);
 
 	const currentChartData = useMemo((): ChartDataItem[] => {
 		switch (activeTab) {
