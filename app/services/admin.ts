@@ -473,14 +473,14 @@ const stats = {
 	getCustomPeriodWithdrawalTrend: async (startDate: string, endDate: string, region?: string, useCluster?: boolean) => {
 		try {
 			console.log('사용자 지정 기간 탈퇴 추이 조회:', startDate, endDate);
-			const params: any = {};
-			if (region) params.region = region;
-			if (useCluster !== undefined) params.useCluster = String(useCluster);
-
-			const response = await axiosServer.post('/admin/stats/withdrawals/trend/custom-period', {
+			const requestData: any = {
 				startDate,
 				endDate,
-			}, { params });
+			};
+			if (region) requestData.region = region;
+			if (useCluster !== undefined) requestData.useCluster = useCluster;
+
+			const response = await axiosServer.post('/admin/stats/withdrawals/trend/custom-period', requestData);
 			return response.data || { data: [] };
 		} catch (error) {
 			console.error('사용자 지정 기간 탈퇴 추이 조회 중 오류:', error);

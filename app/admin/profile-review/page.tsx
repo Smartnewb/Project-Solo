@@ -32,7 +32,7 @@ import UserTableList from "./components/UserTableList";
 import ImageReviewPanel from "./components/ImageReviewPanel";
 import RejectReasonModal from "./components/RejectReasonModal";
 import ReviewHistoryTab from "./components/ReviewHistoryTab";
-import { REGION_MAP } from "../sales/constants/regions";
+import { CLUSTER_CLUSTER_REGION_MAP } from "../sales/constants/regions";
 
 export interface PendingProfileImage {
   id: string;
@@ -179,7 +179,7 @@ const clearAllSkippedUsers = (): void => {
 };
 
 // 지역 옵션 (전체 제외)
-const REGION_OPTIONS = Object.entries(REGION_MAP)
+const REGION_OPTIONS = Object.entries(CLUSTER_REGION_MAP)
   .filter(([code]) => code !== "all")
   .map(([code, name]) => ({ value: code, label: name }));
 
@@ -872,7 +872,7 @@ export default function ProfileReviewPage() {
               )}
               {filters.region && (
                 <Chip
-                  label={`지역: ${REGION_MAP[filters.region] || filters.region}`}
+                  label={`지역: ${CLUSTER_REGION_MAP[filters.region] || filters.region}`}
                   size="small"
                   onDelete={() => handleFilterChange("region", undefined)}
                 />
