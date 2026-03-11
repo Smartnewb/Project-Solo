@@ -51,12 +51,13 @@ function fetchClusters(country: string): Promise<AdminClusterItem[]> {
   return promise;
 }
 
-// Fix 3: 클러스터 ID를 value로 사용 - regions[0].code 의존 제거
+// 클러스터 옵션 value는 첫 번째 지역 코드 사용 (백엔드 stats API가 지역 코드를 기대)
+// regions가 비어있는 경우 c.id를 폴백으로 사용
 function buildClusterOptions(clusters: AdminClusterItem[]): RegionOption[] {
   return [
     ALL_OPTION,
     ...clusters.map(c => ({
-      value: c.id,
+      value: c.regions[0]?.code ?? c.id,
       label: c.name,
     })),
   ];
