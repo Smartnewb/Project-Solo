@@ -12,7 +12,9 @@ export const REGION_MAP: Record<string, string> = {
     'SEL': '서울',
     'KYG': '경기',
     'CAN': '천안',
-    'GWJ': '광주'
+    'GWJ': '광주',
+    'GNG': '강원',
+    'JJA': '제주'
 };
 
 // 지역 옵션 배열 (select 옵션용)

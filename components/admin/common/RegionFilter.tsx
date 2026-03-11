@@ -14,17 +14,17 @@ import {
 } from '@mui/material';
 
 // 지역 타입 정의 (클러스터 기반)
-export type Region = 'ALL' | 'DJN' | 'SJG' | 'CAN' | 'BSN' | 'DGU' | 'ICN' | 'CJU' | 'GJJ' | 'GHE' | 'SEL' | 'KYG' | 'GWJ';
+export type Region = 'ALL' | 'DJN' | 'SJG' | 'CAN' | 'BSN' | 'DGU' | 'ICN' | 'CJU' | 'GJJ' | 'GHE' | 'SEL' | 'KYG' | 'GWJ' | 'GNG' | 'JJA';
 
 const CLUSTER_REGION_OPTIONS = [
   { value: 'ALL', label: '전체 지역' },
-  { value: 'DJN', label: '대전/공주 클러스터' },
-  { value: 'SJG', label: '청주/세종 클러스터' },
-  { value: 'CAN', label: '천안 클러스터' },
-  { value: 'BSN', label: '부산/김해 클러스터' },
-  { value: 'ICN', label: '인천/서울/경기 클러스터' },
+  { value: 'ICN', label: '수도권' },
+  { value: 'DJN', label: '충청권' },
+  { value: 'BSN', label: '부산/김해' },
   { value: 'DGU', label: '대구' },
-  { value: 'GWJ', label: '광주' }
+  { value: 'GWJ', label: '광주' },
+  { value: 'GNG', label: '강원권' },
+  { value: 'JJA', label: '제주권' },
 ] as const;
 
 const INDIVIDUAL_REGION_OPTIONS = [
@@ -40,7 +40,9 @@ const INDIVIDUAL_REGION_OPTIONS = [
   { value: 'SEL', label: '서울' },
   { value: 'KYG', label: '경기' },
   { value: 'CAN', label: '천안' },
-  { value: 'GWJ', label: '광주' }
+  { value: 'GWJ', label: '광주' },
+  { value: 'GNG', label: '강원' },
+  { value: 'JJA', label: '제주' },
 ] as const;
 
 interface RegionFilterProps {

@@ -386,6 +386,7 @@ export default function MemberStatsDashboard() {
               <SignupStatsDashboard
                 region={getRegionParam()}
                 includeDeleted={getIncludeDeletedParam()}
+                useCluster={getUseClusterParam()}
               />
             </CardContent>
           </Card>
@@ -493,7 +494,7 @@ export default function MemberStatsDashboard() {
               />
             </Box>
             <CardContent sx={{ p: 0 }}>
-              <WithdrawalStatsCard region={getRegionParam()} />
+              <WithdrawalStatsCard region={getRegionParam()} useCluster={getUseClusterParam()} />
             </CardContent>
           </Card>
 
@@ -522,7 +523,7 @@ export default function MemberStatsDashboard() {
               />
             </Box>
             <CardContent sx={{ p: 0 }}>
-              <WithdrawalStatsDashboard />
+              <WithdrawalStatsDashboard region={getRegionParam()} useCluster={getUseClusterParam()} />
             </CardContent>
           </Card>
 
