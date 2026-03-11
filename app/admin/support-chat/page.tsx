@@ -45,9 +45,6 @@ export default function SupportChatPage() {
     newSessionIds,
     clearNewSessionIds,
     refresh,
-    resolvedPage,
-    resolvedTotal,
-    setResolvedPage,
   } = useSessionPolling();
 
   // Track unread messages
@@ -122,9 +119,6 @@ export default function SupportChatPage() {
               newSessionIds={newSessionIds}
               onClearNewSessionIds={clearNewSessionIds}
               unreadMap={unreadMap}
-              resolvedPage={resolvedPage}
-              resolvedTotal={resolvedTotal}
-              onResolvedPageChange={setResolvedPage}
             />
           </Box>
         ) : (
@@ -171,9 +165,6 @@ export default function SupportChatPage() {
           newSessionIds={newSessionIds}
           onClearNewSessionIds={clearNewSessionIds}
           unreadMap={unreadMap}
-          resolvedPage={resolvedPage}
-          resolvedTotal={resolvedTotal}
-          onResolvedPageChange={setResolvedPage}
         />
         <ChatPanel
           sessionId={selectedSessionId}

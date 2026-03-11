@@ -5,6 +5,8 @@ import supportChatService from '@/app/services/support-chat';
 import type { SupportSessionSummary } from '@/app/types/support-chat';
 
 const POLLING_INTERVAL = 30_000;
+const RESOLVED_FETCH_LIMIT = 100;
+const MAX_RESOLVED_PAGES = 200;
 
 interface StatusCounts {
   waiting: number;
@@ -21,9 +23,6 @@ interface UseSessionPollingReturn {
   newSessionIds: Set<string>;
   clearNewSessionIds: () => void;
   refresh: () => Promise<void>;
-  resolvedPage: number;
-  resolvedTotal: number;
-  setResolvedPage: (page: number) => void;
 }
 
 export function useSessionPolling(): UseSessionPollingReturn {
@@ -33,8 +32,6 @@ export function useSessionPolling(): UseSessionPollingReturn {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newSessionIds, setNewSessionIds] = useState<Set<string>>(new Set());
-  const [resolvedPage, setResolvedPage] = useState(1);
-  const [resolvedTotal, setResolvedTotal] = useState(0);
 
   const prevWaitingIdsRef = useRef<Set<string>>(new Set());
   const isFirstFetchRef = useRef(true);
@@ -75,16 +72,54 @@ export function useSessionPolling(): UseSessionPollingReturn {
     return combined;
   }, []);
 
+  const fetchAllResolvedSessions = useCallback(async () => {
+    let page = 1;
+    let totalPages = 1;
+    let total = 0;
+    const aggregated: SupportSessionSummary[] = [];
+
+    while (page <= totalPages && page <= MAX_RESOLVED_PAGES) {
+      const res = await supportChatService.getSessions({
+        status: 'resolved',
+        page,
+        limit: RESOLVED_FETCH_LIMIT,
+      });
+
+      aggregated.push(...res.sessions);
+      total = res.pagination.total || total;
+
+      const pageLimit = res.pagination.limit || RESOLVED_FETCH_LIMIT;
+      const derivedTotalPages =
+        res.pagination.totalPages ||
+        Math.ceil((res.pagination.total || aggregated.length) / Math.max(pageLimit, 1)) ||
+        1;
+      totalPages = Math.max(totalPages, derivedTotalPages);
+
+      if (res.sessions.length === 0 || page >= derivedTotalPages) {
+        break;
+      }
+      page += 1;
+    }
+
+    if (totalPages > MAX_RESOLVED_PAGES) {
+      console.warn(`resolved 세션 조회가 최대 페이지(${MAX_RESOLVED_PAGES})를 초과했습니다.`);
+    }
+
+    const uniqueSessions = Array.from(
+      new Map(aggregated.map((session) => [session.sessionId, session])).values()
+    );
+
+    return {
+      sessions: uniqueSessions,
+      total: total || uniqueSessions.length,
+    };
+  }, []);
+
   const fetchResolved = useCallback(async () => {
-    const res = await supportChatService.getSessions({
-      status: 'resolved',
-      page: resolvedPage,
-      limit: 20,
-    });
+    const res = await fetchAllResolvedSessions();
     setResolvedSessions(res.sessions);
-    setResolvedTotal(res.pagination.total);
-    setStatusCounts((prev) => ({ ...prev, resolved: res.pagination.total }));
-  }, [resolvedPage]);
+    setStatusCounts((prev) => ({ ...prev, resolved: res.total }));
+  }, [fetchAllResolvedSessions]);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -121,8 +156,5 @@ export function useSessionPolling(): UseSessionPollingReturn {
     newSessionIds,
     clearNewSessionIds,
     refresh,
-    resolvedPage,
-    resolvedTotal,
-    setResolvedPage,
   };
 }
