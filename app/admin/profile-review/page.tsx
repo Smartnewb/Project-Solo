@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -32,7 +32,7 @@ import UserTableList from "./components/UserTableList";
 import ImageReviewPanel from "./components/ImageReviewPanel";
 import RejectReasonModal from "./components/RejectReasonModal";
 import ReviewHistoryTab from "./components/ReviewHistoryTab";
-import { REGION_MAP } from "../sales/constants/regions";
+import { useClusterOptions, getIndividualRegionLabel } from "@/components/admin/common/RegionFilter";
 
 export interface PendingProfileImage {
   id: string;
@@ -178,10 +178,7 @@ const clearAllSkippedUsers = (): void => {
   localStorage.removeItem(SKIPPED_USERS_KEY);
 };
 
-// 지역 옵션 (전체 제외)
-const REGION_OPTIONS = Object.entries(REGION_MAP)
-  .filter(([code]) => code !== "all")
-  .map(([code, name]) => ({ value: code, label: name }));
+// 지역 옵션은 useClusterOptions 훅에서 동적으로 가져옴 (컴포넌트 내부에서 사용)
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -204,6 +201,11 @@ function TabPanel({ children, value, index, ...other }: TabPanelProps) {
 }
 
 export default function ProfileReviewPage() {
+  const { individualOptions } = useClusterOptions();
+  const REGION_OPTIONS = useMemo(
+    () => individualOptions.filter(opt => opt.value !== 'ALL'),
+    [individualOptions]
+  );
   const [activeTab, setActiveTab] = useState(0);
   const [users, setUsers] = useState<PendingUser[]>([]);
   const [selectedUser, setSelectedUser] = useState<PendingUser | null>(null);
@@ -872,7 +874,7 @@ export default function ProfileReviewPage() {
               )}
               {filters.region && (
                 <Chip
-                  label={`지역: ${REGION_MAP[filters.region] || filters.region}`}
+                  label={`지역: ${getIndividualRegionLabel(filters.region)}`}
                   size="small"
                   onDelete={() => handleFilterChange("region", undefined)}
                 />
