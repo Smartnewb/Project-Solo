@@ -386,6 +386,7 @@ export default function MemberStatsDashboard() {
               <SignupStatsDashboard
                 region={getRegionParam()}
                 includeDeleted={getIncludeDeletedParam()}
+                useCluster={getUseClusterParam()}
               />
             </CardContent>
           </Card>
