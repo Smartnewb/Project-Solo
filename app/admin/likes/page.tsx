@@ -61,6 +61,7 @@ export default function LikesManagementPage() {
   const [totalItems, setTotalItems] = useState(0);
 
   const [searchName, setSearchName] = useState('');
+  const [appliedSearchName, setAppliedSearchName] = useState('');
   const [filters, setFilters] = useState<Filters>({
     status: 'ALL',
     hasLetter: 'ALL',
@@ -83,8 +84,8 @@ export default function LikesManagementPage() {
         sortOrder: filters.sortOrder,
       };
 
-      if (searchName.trim()) {
-        params.searchName = searchName.trim();
+      if (appliedSearchName) {
+        params.searchName = appliedSearchName;
       }
       if (filters.status !== 'ALL') {
         params.status = filters.status;
@@ -111,7 +112,7 @@ export default function LikesManagementPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, filters]);
+  }, [page, filters, appliedSearchName]);
 
   useEffect(() => {
     fetchLikes();
@@ -122,12 +123,13 @@ export default function LikesManagementPage() {
   };
 
   const handleSearch = () => {
+    setAppliedSearchName(searchName.trim());
     setPage(1);
-    fetchLikes();
   };
 
   const handleReset = () => {
     setSearchName('');
+    setAppliedSearchName('');
     setFilters({
       status: 'ALL',
       hasLetter: 'ALL',
