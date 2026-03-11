@@ -3757,6 +3757,13 @@ const gems = {
 	},
 };
 
+const gemPricing = {
+	getAll: async () => {
+		const response = await axiosServer.get('/admin/gem-pricing');
+		return response.data;
+	},
+};
+
 const deletedFemales = {
 	getList: async (page: number = 1, limit: number = 20) => {
 		try {
@@ -4695,6 +4702,7 @@ const AdminService = {
 	cardNews,
 	femaleRetention,
 	gems,
+	gemPricing,
 	deletedFemales,
 	banners,
 	dormantLikes,

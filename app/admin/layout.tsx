@@ -331,6 +331,15 @@ export default function AdminLayout({
               </li>
               <li>
                 <Link
+                  href="/admin/gems/pricing"
+                  className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors"
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  구슬 가격표
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/admin/ios-refund"
                   className="block px-4 py-2 text-gray-600 hover:bg-primary-DEFAULT hover:text-white transition-colors"
                   onClick={() => setSidebarOpen(false)}
