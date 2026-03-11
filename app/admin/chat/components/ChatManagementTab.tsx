@@ -27,6 +27,8 @@ import {
   Card,
   Typography,
   ButtonGroup,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
@@ -37,6 +39,7 @@ import {
   Close as CloseIcon,
   AccessTime as AccessTimeIcon,
   Download as DownloadIcon,
+  Search as SearchIcon,
 } from '@mui/icons-material';
 import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
 import chatService, {
@@ -85,6 +88,7 @@ export default function ChatManagementTab() {
   const [imagePreviewOpen, setImagePreviewOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string>('');
 
+  const [searchName, setSearchName] = useState('');
   const [error, setError] = useState<string>('');
   const [csvExporting, setCsvExporting] = useState(false);
 
@@ -97,6 +101,10 @@ export default function ChatManagementTab() {
         page: page + 1,
         limit: rowsPerPage
       };
+
+      if (searchName.trim()) {
+        params.searchName = searchName.trim();
+      }
 
       if (preset) {
         params.preset = preset;
@@ -245,6 +253,22 @@ export default function ChatManagementTab() {
 
       <Paper sx={{ p: 2, mb: 2 }}>
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap', mb: 2 }}>
+          <TextField
+            size="small"
+            placeholder="사용자 이름 검색"
+            value={searchName}
+            onChange={(e) => setSearchName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { setPage(0); fetchChatRooms(); } }}
+            sx={{ minWidth: 180 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" color="action" />
+                </InputAdornment>
+              ),
+            }}
+          />
+
           <LocalizationProvider dateAdapter={AdapterDateFns}>
             <DatePicker
               label="시작 날짜"

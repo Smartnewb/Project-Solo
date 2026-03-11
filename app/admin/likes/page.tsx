@@ -23,6 +23,8 @@ import {
   Avatar,
   Tooltip,
   IconButton,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -30,6 +32,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { ko } from 'date-fns/locale';
 import MailOutlineIcon from '@mui/icons-material/MailOutline';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import SearchIcon from '@mui/icons-material/Search';
 import AdminService from '@/app/services/admin';
 import type { LikeDetail, AdminLikesParams, LikeStatus } from '@/types/admin';
 
@@ -57,6 +60,7 @@ export default function LikesManagementPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
+  const [searchName, setSearchName] = useState('');
   const [filters, setFilters] = useState<Filters>({
     status: 'ALL',
     hasLetter: 'ALL',
@@ -79,6 +83,9 @@ export default function LikesManagementPage() {
         sortOrder: filters.sortOrder,
       };
 
+      if (searchName.trim()) {
+        params.searchName = searchName.trim();
+      }
       if (filters.status !== 'ALL') {
         params.status = filters.status;
       }
@@ -120,6 +127,7 @@ export default function LikesManagementPage() {
   };
 
   const handleReset = () => {
+    setSearchName('');
     setFilters({
       status: 'ALL',
       hasLetter: 'ALL',
@@ -200,6 +208,22 @@ export default function LikesManagementPage() {
         {/* 필터 영역 */}
         <Paper sx={{ p: 2, mb: 3 }}>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+            <TextField
+              size="small"
+              placeholder="이름 검색"
+              value={searchName}
+              onChange={(e) => setSearchName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
+              sx={{ minWidth: 180 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon fontSize="small" color="action" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+
             <FormControl size="small" sx={{ minWidth: 120 }}>
               <InputLabel>상태</InputLabel>
               <Select
