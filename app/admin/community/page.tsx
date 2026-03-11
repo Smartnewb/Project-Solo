@@ -276,6 +276,7 @@ function ArticleList() {
 			// 게시글 상세 정보 구성
 			const articleDetail = {
 				...selectedArticle,
+				commentCount: commentsResponse?.meta?.totalItems ?? selectedArticle.commentCount ?? commentsWithAuthor.length,
 				likeCount: selectedArticle.likeCount ?? 0,
 				author: {
 					id: selectedArticle.author?.id ?? selectedArticle.userId ?? '',
