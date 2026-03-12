@@ -10,7 +10,10 @@
     "start": "next start",
     "lint": "next lint",
     "matching": "ts-node scripts/matching-cron.ts",
-    "test": "jest"
+    "test": "jest",
+    "typecheck:admin-v2": "tsc --project tsconfig.admin-v2.json",
+    "lint:admin-v2": "ESLINT_USE_FLAT_CONFIG=false eslint --config .eslintrc.admin-v2.json --ext .ts,.tsx features/admin/ shared/auth/ shared/lib/http/ shared/ui/admin/ app/api/admin/ --no-error-on-unmatched-pattern",
+    "quality:admin-v2": "pnpm typecheck:admin-v2 && pnpm lint:admin-v2"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -69,6 +72,8 @@
     "@types/react-dom": "^18",
     "@types/react-slick": "^0.23.13",
     "@types/uuid": "^9.0.8",
+    "@typescript-eslint/eslint-plugin": "^8.57.0",
+    "@typescript-eslint/parser": "^8.57.0",
     "autoprefixer": "^10.4.21",
     "dotenv": "^16.4.7",
     "eslint": "^8",
