@@ -106,13 +106,13 @@ const normalizeArticle = (a: any): Article => ({
 	...a,
 	content: a.contentPreview ?? a.content ?? '',
 	commentCount:
-		a.commentCount ?? a.comment_count ?? a.comments_count ??
+		a.commentCount ?? a.comment_count ?? a.comments_count ?? a.commentsCount ??
 		(Array.isArray(a.comments) ? a.comments.length : 0),
 	likeCount:
-		a.likeCount ?? a.like_count ?? a.likes_count ??
+		a.likeCount ?? a.like_count ?? a.likes_count ?? a.likesCount ??
 		(Array.isArray(a.likes) ? a.likes.length : 0),
 	reportCount:
-		a.reportCount ?? a.report_count ?? a.reports_count ??
+		a.reportCount ?? a.report_count ?? a.reports_count ?? a.reportsCount ??
 		(Array.isArray(a.reports) ? a.reports.length : 0),
 	author: a.authorName
 		? { id: a.authorId, name: a.authorName }

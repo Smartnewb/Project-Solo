@@ -2,7 +2,13 @@
 
 export type KpiStatus = 'good' | 'warning' | 'critical' | 'neutral';
 export type TrendDirection = 'up' | 'down' | 'stable';
-export type KpiCategory = 'acquisition' | 'onboarding' | 'engagement' | 'activation' | 'matching' | 'monetization';
+export type KpiCategory =
+	| 'acquisition'
+	| 'onboarding'
+	| 'engagement'
+	| 'activation'
+	| 'matching'
+	| 'monetization';
 
 export interface KpiValue {
 	name: string;
@@ -75,7 +81,7 @@ export interface KpiDefinitionsResponse {
 
 export const CATEGORY_CONFIG: Record<KpiCategory, { label: string; color: string; bgColor: string; icon: string }> = {
 	acquisition: { label: '가입/전환', color: '#3b82f6', bgColor: '#eff6ff', icon: '📥' },
-	onboarding: { label: '온보딩', color: '#06b6d4', bgColor: '#ecfeff', icon: '🚀' },
+	onboarding: { label: '온보딩', color: '#14b8a6', bgColor: '#f0fdfa', icon: '🧭' },
 	engagement: { label: '프로필/활성', color: '#8b5cf6', bgColor: '#f5f3ff', icon: '✏️' },
 	activation: { label: '활성 유저', color: '#10b981', bgColor: '#ecfdf5', icon: '🔥' },
 	matching: { label: '매칭', color: '#f59e0b', bgColor: '#fffbeb', icon: '💕' },
