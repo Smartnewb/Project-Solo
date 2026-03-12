@@ -16,6 +16,10 @@ export interface AdminSessionData {
   meta: AdminSessionMeta;
 }
 
+if (process.env.NODE_ENV === 'production' && !process.env.ADMIN_SESSION_SECRET) {
+  throw new Error('ADMIN_SESSION_SECRET must be set in production');
+}
+
 export const sessionOptions: SessionOptions = {
   password: process.env.ADMIN_SESSION_SECRET || 'DEVELOPMENT_SECRET_MUST_BE_32_CHARS_LONG!!',
   cookieName: ADMIN_META_COOKIE,
