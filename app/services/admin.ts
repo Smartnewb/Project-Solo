@@ -43,7 +43,7 @@ import type {
 	ViewProfileResponse,
 } from '@/types/admin';
 import axiosServer, { axiosMultipart, axiosNextGen } from '@/utils/axios';
-import { adminRequest } from '@/shared/lib/http/admin-fetch';
+import { adminGet, adminPost, adminRequest } from '@/shared/lib/http/admin-fetch';
 
 // 상단에 타입 정의 추가
 interface StatItem {
@@ -642,6 +642,26 @@ const userAppearance = {
 			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
+	},
+
+	getUniversityVerificationPendingUsers: async (params: {
+		page?: number;
+		limit?: number;
+		name?: string;
+		university?: string;
+	}) => {
+		return adminGet<{
+			users: unknown[];
+			total: number;
+			page: number;
+			limit: number;
+			totalPages: number;
+		}>('/admin/university-verification/pending', {
+			page: String(params.page ?? 1),
+			limit: String(params.limit ?? 10),
+			name: params.name,
+			university: params.university,
+		});
 	},
 
 	// 유저 외모 등급 일괄 설정
@@ -4344,10 +4364,7 @@ const forceMatching = {
 const kpiReport = {
 	getLatest: async () => {
 		try {
-			const response = await axiosServer.get('/admin/kpi-report/latest', {
-				timeout: 60000,
-			});
-			return response.data;
+			return await adminGet('/admin/kpi-report/latest');
 		} catch (error: any) {
 			console.error('최신 KPI 리포트 조회 중 오류:', error);
 			throw error;
@@ -4356,10 +4373,7 @@ const kpiReport = {
 
 	getByWeek: async (year: number, week: number) => {
 		try {
-			const response = await axiosServer.get(`/admin/kpi-report/${year}/${week}`, {
-				timeout: 60000,
-			});
-			return response.data;
+			return await adminGet(`/admin/kpi-report/${year}/${week}`);
 		} catch (error: any) {
 			console.error('주간 KPI 리포트 조회 중 오류:', error);
 			throw error;
@@ -4368,8 +4382,7 @@ const kpiReport = {
 
 	getDefinitions: async () => {
 		try {
-			const response = await axiosServer.get('/admin/kpi-report/definitions');
-			return response.data;
+			return await adminGet('/admin/kpi-report/definitions');
 		} catch (error: any) {
 			console.error('KPI 정의 조회 중 오류:', error);
 			throw error;
@@ -4378,12 +4391,7 @@ const kpiReport = {
 
 	generate: async (year?: number, week?: number) => {
 		try {
-			const response = await axiosServer.post(
-				'/admin/kpi-report/generate',
-				{ year, week },
-				{ timeout: 60000 },
-			);
-			return response.data;
+			return await adminPost('/admin/kpi-report/generate', { year, week });
 		} catch (error: any) {
 			console.error('KPI 리포트 생성 중 오류:', error);
 			throw error;

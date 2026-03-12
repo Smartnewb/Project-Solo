@@ -3,6 +3,11 @@
 const PROXY_BASE = '/api/admin-proxy';
 
 export class AdminApiError extends Error {
+  public response: {
+    status: number;
+    data?: unknown;
+  };
+
   constructor(
     message: string,
     public status: number,
@@ -10,6 +15,10 @@ export class AdminApiError extends Error {
   ) {
     super(message);
     this.name = 'AdminApiError';
+    this.response = {
+      status,
+      data: body,
+    };
   }
 }
 
