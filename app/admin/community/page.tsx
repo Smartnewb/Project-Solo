@@ -52,6 +52,7 @@ import AdminService from '@/app/services/admin';
 import communityService, { Category } from '@/app/services/community';
 import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
 import { useAuth } from '@/contexts/AuthContext';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
 // 게시글 목록 컴포넌트
 function ArticleList() {
@@ -1755,7 +1756,7 @@ function ReportList() {
 	);
 }
 
-export default function AdminCommunity() {
+function AdminCommunityContent() {
 	const router = useRouter();
 	const { user, loading, isAdmin } = useAuth();
 	const [currentTab, setCurrentTab] = useState(0);
@@ -1855,4 +1856,12 @@ export default function AdminCommunity() {
 			</Box>
 		</Box>
 	);
+}
+
+export default function AdminCommunity() {
+  return (
+    <LegacyPageAdapter>
+      <AdminCommunityContent />
+    </LegacyPageAdapter>
+  );
 }

@@ -26,8 +26,9 @@ import AdminService from '@/app/services/admin';
 import type { DormantLikesDashboardResponse, DormantUserResponse } from '@/types/admin';
 import PendingLikesModal from './components/PendingLikesModal';
 import BulkProcessModal from './components/BulkProcessModal';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
-export default function DormantLikesPage() {
+function DormantLikesPageContent() {
   const [dashboardData, setDashboardData] = useState<DormantLikesDashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -339,5 +340,13 @@ export default function DormantLikesPage() {
         onComplete={handleBulkProcessComplete}
       />
     </Box>
+  );
+}
+
+export default function DormantLikesPage() {
+  return (
+    <LegacyPageAdapter>
+      <DormantLikesPageContent />
+    </LegacyPageAdapter>
   );
 }

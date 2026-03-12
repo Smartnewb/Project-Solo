@@ -26,8 +26,9 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import AdminService from '@/app/services/admin';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
-export default function ResetPasswordPage() {
+function ResetPasswordPageContent() {
   const [searchQuery, setSearchQuery] = useState('');
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -307,5 +308,13 @@ export default function ResetPasswordPage() {
         </DialogActions>
       </Dialog>
     </Box>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <LegacyPageAdapter>
+      <ResetPasswordPageContent />
+    </LegacyPageAdapter>
   );
 }

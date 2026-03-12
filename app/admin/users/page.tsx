@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import axiosServer from '@/utils/axios';
 import { formatDateWithoutTimezoneConversion, formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
 type ProfileImage = {
   id: string;
@@ -70,7 +71,7 @@ const getGenderText = (gender: string) => {
   return '미지정';
 };
 
-export default function UsersAdmin() {
+function UsersAdminContent() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -919,5 +920,13 @@ export default function UsersAdmin() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function UsersAdmin() {
+  return (
+    <LegacyPageAdapter>
+      <UsersAdminContent />
+    </LegacyPageAdapter>
   );
 }

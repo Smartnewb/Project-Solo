@@ -47,6 +47,7 @@ import AdminService from "@/app/services/admin";
 import UserDetailModal, {
   type UserDetail,
 } from "@/components/admin/appearance/UserDetailModal";
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
 interface Reporter {
   id: string;
@@ -118,7 +119,7 @@ const STATUS_OPTIONS: { value: ReportStatus; label: string }[] = [
 const REASONS_REQUIRING_CHAT = ["부적절한 언어 사용", "스팸/광고"];
 const REASONS_REQUIRING_PROFILE_IMAGES = ["허위 프로필", "부적절한 사진"];
 
-export default function ReportsManagement() {
+function ReportsManagementContent() {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1107,5 +1108,13 @@ export default function ReportsManagement() {
         />
       )}
     </Box>
+  );
+}
+
+export default function ReportsManagement() {
+  return (
+    <LegacyPageAdapter>
+      <ReportsManagementContent />
+    </LegacyPageAdapter>
   );
 }

@@ -200,7 +200,7 @@ function TabPanel({ children, value, index, ...other }: TabPanelProps) {
   );
 }
 
-export default function ProfileReviewPage() {
+function ProfileReviewPageContent() {
   const { individualOptions } = useClusterOptions();
   const REGION_OPTIONS = useMemo(
     () => individualOptions.filter(opt => opt.value !== 'ALL'),
@@ -979,5 +979,13 @@ export default function ProfileReviewPage() {
         <ReviewHistoryTab />
       </TabPanel>
     </Box>
+  );
+}
+
+export default function ProfileReviewPage() {
+  return (
+    <LegacyPageAdapter>
+      <ProfileReviewPageContent />
+    </LegacyPageAdapter>
   );
 }

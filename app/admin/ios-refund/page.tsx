@@ -3,10 +3,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import AdminService from '@/app/services/admin';
 import { AppleRefundItem, AppleRefundStatus, AppleRefundListParams } from '@/types/admin';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
 type FilterStatus = 'ALL' | AppleRefundStatus;
 
-export default function IOSRefundPage() {
+function IOSRefundPageContent() {
   const [items, setItems] = useState<AppleRefundItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -333,5 +334,13 @@ export default function IOSRefundPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function IOSRefundPage() {
+  return (
+    <LegacyPageAdapter>
+      <IOSRefundPageContent />
+    </LegacyPageAdapter>
   );
 }

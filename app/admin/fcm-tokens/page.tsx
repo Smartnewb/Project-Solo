@@ -6,8 +6,9 @@ import AdminService, {
 	FcmTokenSummary,
 	FcmTokenUserItem,
 } from '@/app/services/admin';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
-export default function FcmTokensPage() {
+function FcmTokensPageContent() {
 	const [loading, setLoading] = useState(false);
 	const [summary, setSummary] = useState<FcmTokenSummary | null>(null);
 	const [items, setItems] = useState<FcmTokenUserItem[]>([]);
@@ -282,4 +283,12 @@ export default function FcmTokensPage() {
 			{renderPagination()}
 		</div>
 	);
+}
+
+export default function FcmTokensPage() {
+  return (
+    <LegacyPageAdapter>
+      <FcmTokensPageContent />
+    </LegacyPageAdapter>
+  );
 }

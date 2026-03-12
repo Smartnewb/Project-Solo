@@ -28,6 +28,7 @@ import AdminService from '@/app/services/admin';
 import KeyIcon from '@mui/icons-material/Key';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
 interface InactiveUser {
   id: string;
@@ -47,7 +48,7 @@ interface PaginationInfo {
   offset: number;
 }
 
-export default function FemaleRetentionPage() {
+function FemaleRetentionPageContent() {
   const [users, setUsers] = useState<InactiveUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
@@ -361,5 +362,13 @@ export default function FemaleRetentionPage() {
         </DialogActions>
       </Dialog>
     </Box>
+  );
+}
+
+export default function FemaleRetentionPage() {
+  return (
+    <LegacyPageAdapter>
+      <FemaleRetentionPageContent />
+    </LegacyPageAdapter>
   );
 }

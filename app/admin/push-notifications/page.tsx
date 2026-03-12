@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import AdminService from '@/app/services/admin';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
 interface FilterState {
   isDormant: boolean;
@@ -37,7 +38,7 @@ interface UserProfile {
   createdAt: string;
 }
 
-export default function PushNotificationsPage() {
+function PushNotificationsPageContent() {
   const [filters, setFilters] = useState<FilterState>({
     isDormant: false,
     gender: '',
@@ -869,6 +870,14 @@ export default function PushNotificationsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function PushNotificationsPage() {
+  return (
+    <LegacyPageAdapter>
+      <PushNotificationsPageContent />
+    </LegacyPageAdapter>
   );
 }
 

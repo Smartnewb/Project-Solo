@@ -8,8 +8,9 @@ import SessionQueue from './components/SessionQueue';
 import ChatPanel from './components/ChatPanel';
 import { useSessionPolling } from './hooks/useSessionPolling';
 import type { SupportDomain } from '@/app/types/support-chat';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
-export default function SupportChatPage() {
+function SupportChatPageContent() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const router = useRouter();
@@ -172,5 +173,13 @@ export default function SupportChatPage() {
         />
       </Box>
     </Box>
+  );
+}
+
+export default function SupportChatPage() {
+  return (
+    <LegacyPageAdapter>
+      <SupportChatPageContent />
+    </LegacyPageAdapter>
   );
 }

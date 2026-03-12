@@ -36,8 +36,9 @@ import {
   Visibility as ViewIcon,
   Update as UpdateIcon
 } from '@mui/icons-material';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
-export default function VersionManagement() {
+function VersionManagementContent() {
   const { isAdmin } = useAuth();
   const [versions, setVersions] = useState<VersionUpdate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -414,5 +415,13 @@ export default function VersionManagement() {
         </DialogActions>
       </Dialog>
     </Box>
+  );
+}
+
+export default function VersionManagement() {
+  return (
+    <LegacyPageAdapter>
+      <VersionManagementContent />
+    </LegacyPageAdapter>
   );
 }

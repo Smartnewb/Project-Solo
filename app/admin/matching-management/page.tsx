@@ -49,6 +49,7 @@ import { formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
 // 탭 인터페이스
 interface TabPanelProps {
@@ -116,7 +117,7 @@ const batchAllMatchableUsers = () =>
     timeout: 1000 * 60 * 60
   });
 
-export default function MatchingManagement() {
+function MatchingManagementContent() {
   const [activeTab, setActiveTab] = useState<number>(0);
   const {
     status: batchStatus,
@@ -1256,5 +1257,13 @@ export default function MatchingManagement() {
       />
 
     </Box>
+  );
+}
+
+export default function MatchingManagement() {
+  return (
+    <LegacyPageAdapter>
+      <MatchingManagementContent />
+    </LegacyPageAdapter>
   );
 }

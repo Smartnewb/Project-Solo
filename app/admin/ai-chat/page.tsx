@@ -51,8 +51,9 @@ import {
   AIChatSessionStatus
 } from './types';
 import AIChatMessageDetail from './components/AIChatMessageDetail';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
-export default function AIChatManagementPage() {
+function AIChatManagementPageContent() {
   const [loading, setLoading] = useState(false);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [sessions, setSessions] = useState<AIChatSession[]>([]);
@@ -432,5 +433,13 @@ export default function AIChatManagementPage() {
         />
       </Box>
     </LocalizationProvider>
+  );
+}
+
+export default function AIChatManagementPage() {
+  return (
+    <LegacyPageAdapter>
+      <AIChatManagementPageContent />
+    </LegacyPageAdapter>
   );
 }

@@ -26,10 +26,11 @@ import AdminService from '@/app/services/admin';
 import BannerCard from './components/BannerCard';
 import BannerFormDialog from './components/BannerFormDialog';
 import type { Banner, BannerPosition, CreateBannerRequest, UpdateBannerRequest } from '@/types/admin';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
 type TabValue = 'all' | BannerPosition;
 
-export default function BannersPage() {
+function BannersPageContent() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -253,5 +254,13 @@ export default function BannersPage() {
         </DialogActions>
       </Dialog>
     </Box>
+  );
+}
+
+export default function BannersPage() {
+  return (
+    <LegacyPageAdapter>
+      <BannersPageContent />
+    </LegacyPageAdapter>
   );
 }

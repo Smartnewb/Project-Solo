@@ -29,10 +29,11 @@ import type {
   TypeMetaItem,
   UniversityType,
 } from '@/types/admin';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
 type TabValue = 'all' | 'active' | 'inactive';
 
-export default function UniversitiesPage() {
+function UniversitiesPageContent() {
   const [universities, setUniversities] = useState<UniversityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -289,5 +290,13 @@ export default function UniversitiesPage() {
         />
       )}
     </Box>
+  );
+}
+
+export default function UniversitiesPage() {
+  return (
+    <LegacyPageAdapter>
+      <UniversitiesPageContent />
+    </LegacyPageAdapter>
   );
 }

@@ -35,6 +35,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import SearchIcon from '@mui/icons-material/Search';
 import AdminService from '@/app/services/admin';
 import type { LikeDetail, AdminLikesParams, LikeStatus } from '@/types/admin';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
 type FilterStatus = LikeStatus | 'ALL';
 type FilterBoolean = 'ALL' | 'true' | 'false';
@@ -51,7 +52,7 @@ interface Filters {
   sortOrder: SortOrder;
 }
 
-export default function LikesManagementPage() {
+function LikesManagementPageContent() {
   const [likes, setLikes] = useState<LikeDetail[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -418,5 +419,13 @@ export default function LikesManagementPage() {
         )}
       </Box>
     </LocalizationProvider>
+  );
+}
+
+export default function LikesManagementPage() {
+  return (
+    <LegacyPageAdapter>
+      <LikesManagementPageContent />
+    </LegacyPageAdapter>
   );
 }

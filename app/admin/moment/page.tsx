@@ -10,10 +10,11 @@ import {
 import QuestionGenerationTab from './components/QuestionGenerationTab';
 import QuestionListTab from './components/QuestionListTab';
 import QuestionTranslationTab from './components/QuestionTranslationTab';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
 type TabValue = 'generation' | 'list' | 'translation';
 
-export default function MomentManagementPage() {
+function MomentManagementPageContent() {
   const [tabValue, setTabValue] = useState<TabValue>('list');
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: TabValue) => {
@@ -36,5 +37,13 @@ export default function MomentManagementPage() {
       {tabValue === 'generation' && <QuestionGenerationTab />}
       {tabValue === 'translation' && <QuestionTranslationTab />}
     </Box>
+  );
+}
+
+export default function MomentManagementPage() {
+  return (
+    <LegacyPageAdapter>
+      <MomentManagementPageContent />
+    </LegacyPageAdapter>
   );
 }

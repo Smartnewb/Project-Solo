@@ -7,8 +7,9 @@ import { TemplateManager } from './components/TemplateManager';
 import { MessageComposer } from './components/MessageComposer';
 import { SmsHistoryTable } from './components/SmsHistoryTable';
 import { User, SmsTemplate } from './types';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
-export default function Smspage() {
+function SmspageContent() {
     // === 상태관리 ===
     const [selectedRecipients, setSelectedRecipients] = useState<User[]>([]);
     const [selectedTemplate, setSelectedTemplate] = useState<SmsTemplate | null>(null);
@@ -47,4 +48,10 @@ export default function Smspage() {
     );
 }
 
-
+export default function Smspage() {
+  return (
+    <LegacyPageAdapter>
+      <SmspageContent />
+    </LegacyPageAdapter>
+  );
+}

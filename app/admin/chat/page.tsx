@@ -15,6 +15,7 @@ import {
 import ChatManagementTab from './components/ChatManagementTab';
 import ChatRefundTab from './components/ChatRefundTab';
 import ChatStatsTab from './components/ChatStatsTab';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -38,7 +39,7 @@ const TabPanel = (props: TabPanelProps) => {
   );
 };
 
-export default function ChatPage() {
+function ChatPageContent() {
   const [tabValue, setTabValue] = useState(0);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -90,5 +91,13 @@ export default function ChatPage() {
         <ChatStatsTab />
       </TabPanel>
     </Box>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <LegacyPageAdapter>
+      <ChatPageContent />
+    </LegacyPageAdapter>
   );
 }

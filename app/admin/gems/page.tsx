@@ -49,6 +49,7 @@ import {
   Avatar
 } from '@mui/material';
 import axiosServer from '@/utils/axios';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
 interface UserSearchResult {
   id: string;
@@ -76,7 +77,7 @@ interface BulkGrantResponse {
   };
 }
 
-export default function GemsManagementPage() {
+function GemsManagementPageContent() {
   const [inputMethod, setInputMethod] = useState<'phoneNumbers' | 'csvFile'>('phoneNumbers');
   const [phoneNumbersText, setPhoneNumbersText] = useState<string>('');
   const [csvFile, setCsvFile] = useState<File | null>(null);
@@ -685,5 +686,13 @@ export default function GemsManagementPage() {
         </DialogActions>
       </Dialog>
     </Box>
+  );
+}
+
+export default function GemsManagementPage() {
+  return (
+    <LegacyPageAdapter>
+      <GemsManagementPageContent />
+    </LegacyPageAdapter>
   );
 }

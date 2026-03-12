@@ -37,6 +37,7 @@ import type {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PublishIcon from '@mui/icons-material/Publish';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
 const STATUS_LABELS: Record<SometimeArticleStatus, string> = {
   draft: '초안',
@@ -61,7 +62,7 @@ const CATEGORY_LABELS: Record<SometimeArticleCategory, string> = {
   safety: '안전 가이드',
 };
 
-export default function SometimeArticlesPage() {
+function SometimeArticlesPageContent() {
   const router = useRouter();
   const [articles, setArticles] = useState<AdminSometimeArticleItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -358,5 +359,13 @@ export default function SometimeArticlesPage() {
         </DialogActions>
       </Dialog>
     </Box>
+  );
+}
+
+export default function SometimeArticlesPage() {
+  return (
+    <LegacyPageAdapter>
+      <SometimeArticlesPageContent />
+    </LegacyPageAdapter>
   );
 }

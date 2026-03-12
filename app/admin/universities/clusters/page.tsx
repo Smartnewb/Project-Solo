@@ -18,6 +18,7 @@ import { useCountry } from '@/contexts/CountryContext';
 import AdminService from '@/app/services/admin';
 import type { AdminClusterItem } from '@/types/admin';
 import ClusterTreemapView from './components/ClusterTreemapView';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
 const ClusterMapView = dynamic(
   () => import('./components/ClusterMapView'),
@@ -43,7 +44,7 @@ function MapLoadingPlaceholder() {
 
 type ViewMode = 'map' | 'treemap';
 
-export default function UniversityClustersPage() {
+function UniversityClustersPageContent() {
   const { country } = useCountry();
   const [clusters, setClusters] = useState<AdminClusterItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -143,6 +144,14 @@ export default function UniversityClustersPage() {
         </>
       )}
     </Box>
+  );
+}
+
+export default function UniversityClustersPage() {
+  return (
+    <LegacyPageAdapter>
+      <UniversityClustersPageContent />
+    </LegacyPageAdapter>
   );
 }
 

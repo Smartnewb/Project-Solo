@@ -17,8 +17,9 @@ import {
 	getCurrentWeekInfo,
 	getWeekLabel,
 } from './types';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
-export default function KpiReportPage() {
+function KpiReportPageContent() {
 	const router = useRouter();
 	const [authChecking, setAuthChecking] = useState(true);
 	const [loading, setLoading] = useState(true);
@@ -194,4 +195,12 @@ export default function KpiReportPage() {
 			</Box>
 		</Box>
 	);
+}
+
+export default function KpiReportPage() {
+  return (
+    <LegacyPageAdapter>
+      <KpiReportPageContent />
+    </LegacyPageAdapter>
+  );
 }

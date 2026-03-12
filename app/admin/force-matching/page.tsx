@@ -2,8 +2,9 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
-export default function ForceMatchingPage() {
+function ForceMatchingPageContent() {
 	const router = useRouter();
 
 	useEffect(() => {
@@ -16,4 +17,12 @@ export default function ForceMatchingPage() {
 			<p className="text-gray-500">매칭 관리 페이지로 이동 중...</p>
 		</div>
 	);
+}
+
+export default function ForceMatchingPage() {
+  return (
+    <LegacyPageAdapter>
+      <ForceMatchingPageContent />
+    </LegacyPageAdapter>
+  );
 }

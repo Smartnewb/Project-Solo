@@ -13,8 +13,9 @@ import TodayMetrics from './components/TodayMetrics';
 import UserEngagementStats from './components/UserEngagementStats';
 import WeeklyTrend from './components/WeeklyTrend';
 import { DashboardSummaryResponse } from './types';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
-export default function MainDashboard() {
+function MainDashboardContent() {
 	const router = useRouter();
 	const [authChecking, setAuthChecking] = useState(true);
 	const [authError, setAuthError] = useState<string | null>(null);
@@ -150,4 +151,12 @@ export default function MainDashboard() {
 			</Box>
 		</Box>
 	);
+}
+
+export default function MainDashboard() {
+  return (
+    <LegacyPageAdapter>
+      <MainDashboardContent />
+    </LegacyPageAdapter>
+  );
 }

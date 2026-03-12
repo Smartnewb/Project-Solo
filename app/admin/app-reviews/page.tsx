@@ -7,8 +7,9 @@ import PublicIcon from '@mui/icons-material/Public';
 import ReviewDashboard from './components/ReviewDashboard';
 import ReviewList from './components/ReviewList';
 import PublicReviewManagement from './components/PublicReviewManagement';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
-export default function AppReviewsPage() {
+function AppReviewsPageContent() {
 	const [activeTab, setActiveTab] = useState(0);
 	const [filterFromChart, setFilterFromChart] = useState<{
 		rating?: number;
@@ -107,4 +108,12 @@ export default function AppReviewsPage() {
 			</Box>
 		</Box>
 	);
+}
+
+export default function AppReviewsPage() {
+  return (
+    <LegacyPageAdapter>
+      <AppReviewsPageContent />
+    </LegacyPageAdapter>
+  );
 }

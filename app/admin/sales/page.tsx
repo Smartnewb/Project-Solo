@@ -15,6 +15,7 @@ import { PeriodSalesSummary } from "./components/PeriodSalesSummary";
 import { RevenueMetricsTab } from "./components/RevenueMetricsTab";
 import { ProductAnalysisTab } from "./components/ProductAnalysisTab";
 import { InsightsTab } from "./components/InsightsTab";
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
 type MainTab = "sales" | "metrics" | "products" | "insights";
 
@@ -25,7 +26,7 @@ interface DateRange {
 
 type SalesTrendTab = "monthly" | "daily";
 
-export default function SalesPage() {
+function SalesPageContent() {
   const [mainTab, setMainTab] = useState<MainTab>("sales");
   const [dateRange, setDateRange] = useState<DateRange>({
     startDate: undefined,
@@ -253,5 +254,13 @@ export default function SalesPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function SalesPage() {
+  return (
+    <LegacyPageAdapter>
+      <SalesPageContent />
+    </LegacyPageAdapter>
   );
 }

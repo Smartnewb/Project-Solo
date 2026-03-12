@@ -30,8 +30,9 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SendIcon from '@mui/icons-material/Send';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
-export default function CardNewsPage() {
+function CardNewsPageContent() {
   const router = useRouter();
   const [cardNewsList, setCardNewsList] = useState<AdminCardNewsItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -342,5 +343,13 @@ export default function CardNewsPage() {
         </DialogActions>
       </Dialog>
     </Box>
+  );
+}
+
+export default function CardNewsPage() {
+  return (
+    <LegacyPageAdapter>
+      <CardNewsPageContent />
+    </LegacyPageAdapter>
   );
 }

@@ -30,6 +30,7 @@ import type {
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
 const STATUS_OPTIONS: { value: SometimeArticleStatus; label: string }[] = [
   { value: 'draft', label: '초안' },
@@ -55,7 +56,7 @@ const generateSlug = (title: string): string => {
     .trim();
 };
 
-export default function CreateSometimeArticlePage() {
+function CreateSometimeArticlePageContent() {
   const router = useRouter();
 
   // Basic Info
@@ -463,5 +464,13 @@ export default function CreateSometimeArticlePage() {
         </Button>
       </Box>
     </Box>
+  );
+}
+
+export default function CreateSometimeArticlePage() {
+  return (
+    <LegacyPageAdapter>
+      <CreateSometimeArticlePageContent />
+    </LegacyPageAdapter>
   );
 }

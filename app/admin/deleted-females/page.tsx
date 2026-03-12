@@ -26,8 +26,9 @@ import {
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import AdminService from '@/app/services/admin';
 import type { DeletedFemale, RestoreFemaleResponse } from '@/types/admin';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
-export default function DeletedFemalesPage() {
+function DeletedFemalesPageContent() {
   const [females, setFemales] = useState<DeletedFemale[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -303,5 +304,13 @@ export default function DeletedFemalesPage() {
         </DialogActions>
       </Dialog>
     </Box>
+  );
+}
+
+export default function DeletedFemalesPage() {
+  return (
+    <LegacyPageAdapter>
+      <DeletedFemalesPageContent />
+    </LegacyPageAdapter>
   );
 }

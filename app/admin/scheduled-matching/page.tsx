@@ -6,6 +6,7 @@ import CountryOverview from './components/CountryOverview';
 import ScheduleConfig from './components/ScheduleConfig';
 import BatchHistory from './components/BatchHistory';
 import ManualMatching from './components/ManualMatching';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -27,7 +28,7 @@ function TabPanel({ children, value, index, ...other }: TabPanelProps) {
   );
 }
 
-export default function ScheduledMatchingPage() {
+function ScheduledMatchingPageContent() {
   const [activeTab, setActiveTab] = useState(0);
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
@@ -63,5 +64,13 @@ export default function ScheduledMatchingPage() {
         <ManualMatching />
       </TabPanel>
     </Box>
+  );
+}
+
+export default function ScheduledMatchingPage() {
+  return (
+    <LegacyPageAdapter>
+      <ScheduledMatchingPageContent />
+    </LegacyPageAdapter>
   );
 }

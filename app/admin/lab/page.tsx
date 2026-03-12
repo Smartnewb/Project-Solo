@@ -12,6 +12,7 @@ import {
   PhotoCamera as PhotoCameraIcon,
 } from '@mui/icons-material';
 import VisionPhotoTestTab from './components/VisionPhotoTestTab';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -35,7 +36,7 @@ const TabPanel = (props: TabPanelProps) => {
   );
 };
 
-export default function LabPage() {
+function LabPageContent() {
   const [tabValue, setTabValue] = useState(0);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -65,5 +66,13 @@ export default function LabPage() {
         <VisionPhotoTestTab />
       </TabPanel>
     </Box>
+  );
+}
+
+export default function LabPage() {
+  return (
+    <LegacyPageAdapter>
+      <LabPageContent />
+    </LegacyPageAdapter>
   );
 }

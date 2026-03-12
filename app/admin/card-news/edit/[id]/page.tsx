@@ -29,6 +29,7 @@ import type { BackgroundPreset } from '@/types/admin';
 import AddIcon from '@mui/icons-material/Add';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
 interface CardSection {
   order: number;
@@ -44,7 +45,7 @@ interface Category {
   emojiUrl: string;
 }
 
-export default function EditCardNewsPage() {
+function EditCardNewsPageContent() {
   const router = useRouter();
   const params = useParams();
   const id = (params?.id || '') as string;
@@ -555,5 +556,13 @@ export default function EditCardNewsPage() {
         onDelete={handlePresetDelete}
       />
     </Box>
+  );
+}
+
+export default function EditCardNewsPage() {
+  return (
+    <LegacyPageAdapter>
+      <EditCardNewsPageContent />
+    </LegacyPageAdapter>
   );
 }
