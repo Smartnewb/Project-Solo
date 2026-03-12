@@ -2788,6 +2788,9 @@ const matching = {
 		} catch (error: any) {
 			console.error('매칭 내역 조회 중 오류:', error);
 			console.error('오류 상세 정보:', error.response?.data || error.message);
+			console.error('[디버그] 요청 전체 URL:', `${error.config?.baseURL || ''}${error.config?.url || ''}`);
+			console.error('[디버그] 요청 파라미터:', JSON.stringify(error.config?.params));
+			console.error('[디버그] 응답 상태 코드:', error.response?.status);
 			throw error;
 		}
 	},
@@ -2869,7 +2872,7 @@ const matching = {
 				params.name = name.trim();
 			}
 
-			const response = await axiosServer.get('/admin/matching/matcher-history', { params });
+			const response = await axiosServer.get('/admin/matching/match-history', { params });
 
 			console.log('매칭 상대 이력 조회 응답:', response.data);
 			return response.data;
@@ -2905,16 +2908,21 @@ const matching = {
 	},
 
 	// 매칭 실패 내역 조회
-	getFailureLogs: async (date: string, page: number = 1, limit: number = 10, name?: string) => {
+	getFailureLogs: async (date: string, page: number = 1, limit: number = 10, reason?: string) => {
 		try {
-			console.log('매칭 실패 내역 조회 요청:', { date, page, limit, name });
+			console.log('매칭 실패 내역 조회 요청:', { date, page, limit, reason });
 
-			// 파라미터 객체 생성
-			const params: any = { date, page, limit };
+			// 백엔드 DTO: { startDate, endDate, page, limit, reason }
+			const params: any = {
+				startDate: date,
+				endDate: date,
+				page,
+				limit,
+			};
 
-			// 이름 검색어가 있는 경우 추가
-			if (name && name.trim() !== '') {
-				params.name = name.trim();
+			// 사유 검색어가 있는 경우 추가
+			if (reason && reason.trim() !== '') {
+				params.reason = reason.trim();
 			}
 
 			const response = await axiosServer.get('/admin/matching/failure-logs', {

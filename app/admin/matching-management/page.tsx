@@ -284,7 +284,11 @@ export default function MatchingManagement() {
       }
     } catch (error: any) {
       console.error('매칭 내역 조회 중 오류:', error);
-      setAnalyticsError(error.message || '매칭 내역을 불러오는 중 오류가 발생했습니다.');
+      const requestUrl = error.config ? `${error.config.baseURL || ''}${error.config.url || ''}` : '알 수 없음';
+      const statusCode = error.response?.status || '응답 없음';
+      const errorDetail = error.response?.data?.message || error.message || '매칭 내역을 불러오는 중 오류가 발생했습니다.';
+      console.error(`[디버그] URL: ${requestUrl}, Status: ${statusCode}, Params:`, error.config?.params);
+      setAnalyticsError(`${errorDetail} (상태: ${statusCode}, URL: ${requestUrl})`);
     } finally {
       setLoading(false);
     }
