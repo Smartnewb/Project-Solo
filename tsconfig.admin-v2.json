@@ -1,0 +1,27 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  },
+  "include": [
+    "features/admin/**/*.ts",
+    "features/admin/**/*.tsx",
+    "shared/auth/**/*.ts",
+    "shared/auth/**/*.tsx",
+    "shared/lib/http/**/*.ts",
+    "shared/lib/http/**/*.tsx",
+    "shared/ui/admin/**/*.ts",
+    "shared/ui/admin/**/*.tsx",
+    "app/api/admin/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx"
+  ]
+}
