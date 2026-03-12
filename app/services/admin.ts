@@ -4440,7 +4440,7 @@ const forceMatching = {
 const kpiReport = {
 	getLatest: async () => {
 		try {
-			const response = await axiosServer.get('/admin/kpi-report/latest');
+			const response = await axiosServer.get('/admin/kpi-report/latest', { timeout: 60000 });
 			return response.data;
 		} catch (error: any) {
 			console.error('최신 KPI 리포트 조회 중 오류:', error);
@@ -4450,7 +4450,7 @@ const kpiReport = {
 
 	getByWeek: async (year: number, week: number) => {
 		try {
-			const response = await axiosServer.get(`/admin/kpi-report/${year}/${week}`);
+			const response = await axiosServer.get(`/admin/kpi-report/${year}/${week}`, { timeout: 60000 });
 			return response.data;
 		} catch (error: any) {
 			console.error('주간 KPI 리포트 조회 중 오류:', error);
@@ -4470,7 +4470,7 @@ const kpiReport = {
 
 	generate: async (year?: number, week?: number) => {
 		try {
-			const response = await axiosServer.post('/admin/kpi-report/generate', { year, week });
+			const response = await axiosServer.post('/admin/kpi-report/generate', { year, week }, { timeout: 60000 });
 			return response.data;
 		} catch (error: any) {
 			console.error('KPI 리포트 생성 중 오류:', error);
