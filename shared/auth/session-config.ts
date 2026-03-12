@@ -16,12 +16,18 @@ export interface AdminSessionData {
   meta: AdminSessionMeta;
 }
 
-if (process.env.NODE_ENV === 'production' && !process.env.ADMIN_SESSION_SECRET) {
-  throw new Error('ADMIN_SESSION_SECRET must be set in production');
+function getSessionPassword(): string {
+  const secret = process.env.ADMIN_SESSION_SECRET;
+  if (process.env.NODE_ENV === 'production' && !secret) {
+    throw new Error('ADMIN_SESSION_SECRET must be set in production');
+  }
+  return secret || 'DEVELOPMENT_SECRET_MUST_BE_32_CHARS_LONG!!';
 }
 
 export const sessionOptions: SessionOptions = {
-  password: process.env.ADMIN_SESSION_SECRET || 'DEVELOPMENT_SECRET_MUST_BE_32_CHARS_LONG!!',
+  get password() {
+    return getSessionPassword();
+  },
   cookieName: ADMIN_META_COOKIE,
   cookieOptions: {
     secure: process.env.NODE_ENV === 'production',
