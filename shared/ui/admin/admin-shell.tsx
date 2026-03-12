@@ -6,6 +6,13 @@ import { AdminSessionContext, type AdminSession } from '@/shared/contexts/admin-
 import { AdminQueryProvider } from '@/shared/providers/query-provider';
 import { AdminSidebar } from './sidebar';
 import { AdminCountrySelectorModal } from './admin-country-selector';
+import {
+  buildAdminSyncPayload,
+  buildAdminLogoutPayload,
+  getStoredAdminCountry,
+  getStoredAdminRefreshToken,
+  setStoredAdminRefreshToken,
+} from '@/shared/auth/admin-auth-contract';
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -37,7 +44,13 @@ export function AdminShell({ children }: { children: ReactNode }) {
           const syncRes = await fetch('/api/admin/auth/sync', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ accessToken: localToken }),
+            body: JSON.stringify(
+              buildAdminSyncPayload(
+                localToken,
+                getStoredAdminRefreshToken(),
+                getStoredAdminCountry(),
+              ),
+            ),
           });
 
           if (syncRes.ok) {
@@ -75,7 +88,14 @@ export function AdminShell({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    await fetch('/api/admin/auth/logout', { method: 'POST' });
+    const refreshToken = getStoredAdminRefreshToken();
+    const logoutPayload = buildAdminLogoutPayload(refreshToken);
+    await fetch('/api/admin/auth/logout', {
+      method: 'POST',
+      headers: logoutPayload ? { 'Content-Type': 'application/json' } : undefined,
+      body: logoutPayload ? JSON.stringify(logoutPayload) : undefined,
+    });
+    setStoredAdminRefreshToken(null);
     localStorage.removeItem('accessToken');
     localStorage.removeItem('user');
     localStorage.removeItem('isAdmin');

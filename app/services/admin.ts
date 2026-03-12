@@ -3520,25 +3520,13 @@ const cardNews = {
 			const formData = new FormData();
 			formData.append('image', imageFile);
 
-			const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-			const baseURL = process.env.NEXT_PUBLIC_NEXT_GEN_API_URL || 'http://localhost:8044/api';
-
-			const response = await fetch(`${baseURL}/admin/background-presets/upload`, {
-				method: 'POST',
-				headers: {
-					Authorization: `Bearer ${token}`,
-					'x-country': getCountryHeader(),
+			const data = await adminRequest<UploadImageResponse>(
+				'/admin/posts/card-news/section-images/upload',
+				{
+					method: 'POST',
+					body: formData,
 				},
-				body: formData,
-				credentials: 'include',
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
-				throw new Error(errorData.message || `HTTP ${response.status}`);
-			}
-
-			const data = await response.json();
+			);
 			console.log('섹션 이미지 업로드 응답:', data);
 			return data;
 		} catch (error: any) {

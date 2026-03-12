@@ -4,6 +4,11 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import axiosServer from '@/utils/axios';
+import {
+  buildAdminSyncPayload,
+  getStoredAdminCountry,
+  setStoredAdminRefreshToken,
+} from '@/shared/auth/admin-auth-contract';
 
 export type User = {
   id: string;
@@ -139,6 +144,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // 토큰 저장
       setAccessToken(data.accessToken);
+      setStoredAdminRefreshToken(data.refreshToken);
 
       // 사용자 정보 설정
       const userInfo = data.user || data;
@@ -167,10 +173,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           await fetch('/api/admin/auth/sync', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              accessToken: data.accessToken,
-              refreshToken: data.refreshToken,
-            }),
+            body: JSON.stringify(
+              buildAdminSyncPayload(
+                data.accessToken,
+                data.refreshToken,
+                getStoredAdminCountry(),
+              ),
+            ),
           });
         } catch {
           // Non-critical: BFF session established on next admin page load
@@ -197,6 +206,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       localStorage.clear();
       removeAccessToken();
+      setStoredAdminRefreshToken(null);
     } catch (error) {
       console.error('로그아웃 중 오류 발생:', error);
     }

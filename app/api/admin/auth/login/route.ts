@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { setAdminAccessToken, setAdminRefreshToken, setSessionMeta } from '@/shared/auth';
+import {
+  normalizeAdminCountry,
+  setAdminAccessToken,
+  setAdminRefreshToken,
+  setSessionMeta,
+} from '@/shared/auth';
 import type { AdminSessionMeta } from '@/shared/auth';
 import {
   buildAdminSessionUser,
@@ -13,12 +18,13 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/ap
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const selectedCountry = normalizeAdminCountry(body.selectedCountry);
 
     const backendRes = await fetch(`${BACKEND_URL}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-country': 'kr',
+        'x-country': selectedCountry,
       },
       body: JSON.stringify(body),
     });
@@ -39,13 +45,13 @@ export async function POST(request: NextRequest) {
       fetch(`${BACKEND_URL}/user`, {
         headers: {
           Authorization: `Bearer ${data.accessToken}`,
-          'x-country': 'kr',
+          'x-country': selectedCountry,
         },
       }),
       fetch(`${BACKEND_URL}/user/details`, {
         headers: {
           Authorization: `Bearer ${data.accessToken}`,
-          'x-country': 'kr',
+          'x-country': selectedCountry,
         },
       }),
     ]);
@@ -68,7 +74,7 @@ export async function POST(request: NextRequest) {
       email: sessionUser.email,
       roles: sessionUser.roles,
       issuedAt: Date.now(),
-      selectedCountry: 'kr',
+      selectedCountry,
     };
     await setSessionMeta(meta);
 

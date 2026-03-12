@@ -16,7 +16,7 @@ export async function GET() {
     const userRes = await fetch(`${BACKEND_URL}/user`, {
       headers: {
         Authorization: `Bearer ${token}`,
-        'x-country': 'kr',
+        'x-country': meta.selectedCountry,
       },
     });
 

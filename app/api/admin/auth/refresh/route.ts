@@ -25,7 +25,7 @@ export async function POST() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-country': 'kr',
+        'x-country': meta.selectedCountry,
       },
       body: JSON.stringify({ refreshToken: currentRefreshToken }),
     });
