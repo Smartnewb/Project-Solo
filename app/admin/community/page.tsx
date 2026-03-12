@@ -258,15 +258,6 @@ function ArticleList() {
 
 			// 게시글 ID를 이용해 댓글 정보 가져오기
 			const commentsResponse = await communityService.getComments(id);
-			let articleReports: any[] = [];
-
-			try {
-				const reportsResponse = await communityService.getReports('article', 'all', 1, 100);
-				articleReports =
-					reportsResponse?.items?.filter((report: any) => report.targetId === id || report.target_id === id) ?? [];
-			} catch (reportError) {
-				console.error('게시글 신고 내역 조회 중 오류:', reportError);
-			}
 
 			console.log('댓글 원본 데이터:', commentsResponse?.items);
 
