@@ -273,17 +273,29 @@ function ArticleList() {
 					};
 				}) ?? [];
 
+			// 게시글 ID를 이용해 신고 정보 가져오기
+			let articleReports: any[] = [];
+			try {
+				const reportsResponse = await communityService.getReports('article', 'all', 1, 100);
+				articleReports = (reportsResponse?.items ?? []).filter(
+					(r: any) => r.targetId === id || r.postId === id
+				);
+			} catch (err) {
+				console.error('신고 데이터 조회 실패:', err);
+			}
+
 			// 게시글 상세 정보 구성
 			const articleDetail = {
 				...selectedArticle,
-				commentCount: commentsResponse?.meta?.totalItems ?? selectedArticle.commentCount ?? commentsWithAuthor.length,
+				commentCount: commentsResponse?.meta?.totalItems ?? commentsWithAuthor.length ?? selectedArticle.commentCount ?? 0,
 				likeCount: selectedArticle.likeCount ?? 0,
+				reportCount: articleReports.length || selectedArticle.reportCount || 0,
 				author: {
 					id: selectedArticle.author?.id ?? selectedArticle.userId ?? '',
 					name: selectedArticle.author?.name ?? selectedArticle.nickname ?? '익명',
 				},
 				comments: commentsWithAuthor,
-				reports: [],
+				reports: articleReports,
 			};
 
 			console.log('게시글 상세 정보:', articleDetail);
