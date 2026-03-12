@@ -2869,7 +2869,7 @@ const matching = {
 				params.name = name.trim();
 			}
 
-			const response = await axiosServer.get('/admin/matching/matcher-history', { params });
+			const response = await axiosServer.get('/admin/matching/match-history', { params });
 
 			console.log('매칭 상대 이력 조회 응답:', response.data);
 			return response.data;
