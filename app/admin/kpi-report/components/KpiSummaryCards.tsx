@@ -18,6 +18,7 @@ interface KpiSummaryCardsProps {
 
 const REPRESENTATIVE_KPI: Record<KpiCategory, number> = {
 	acquisition: 0,
+	onboarding: 0,
 	engagement: 0,
 	activation: 0,
 	matching: 0,
