@@ -6,7 +6,6 @@ export type KpiCategory =
 	| 'acquisition'
 	| 'onboarding'
 	| 'engagement'
-	| 'activation'
 	| 'matching'
 	| 'monetization';
 
@@ -83,7 +82,6 @@ export const CATEGORY_CONFIG: Record<KpiCategory, { label: string; color: string
 	acquisition: { label: '가입/전환', color: '#3b82f6', bgColor: '#eff6ff', icon: '📥' },
 	onboarding: { label: '온보딩', color: '#14b8a6', bgColor: '#f0fdfa', icon: '🧭' },
 	engagement: { label: '프로필/활성', color: '#8b5cf6', bgColor: '#f5f3ff', icon: '✏️' },
-	activation: { label: '활성 유저', color: '#10b981', bgColor: '#ecfdf5', icon: '🔥' },
 	matching: { label: '매칭', color: '#f59e0b', bgColor: '#fffbeb', icon: '💕' },
 	monetization: { label: '수익화', color: '#ef4444', bgColor: '#fef2f2', icon: '💰' },
 };
@@ -101,7 +99,7 @@ export const TREND_CONFIG: Record<TrendDirection, { color: string; arrow: string
 	stable: { color: '#6b7280', arrow: '→', label: '보합' },
 };
 
-export const CATEGORIES: KpiCategory[] = ['acquisition', 'onboarding', 'engagement', 'activation', 'matching', 'monetization'];
+export const CATEGORIES: KpiCategory[] = ['acquisition', 'onboarding', 'engagement', 'matching', 'monetization'];
 
 // Utility Functions
 
