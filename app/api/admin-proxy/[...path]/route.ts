@@ -43,11 +43,19 @@ async function proxyRequest(request: NextRequest, { params }: { params: { path: 
   });
 
   const responseBody = await backendRes.arrayBuffer();
+
+  // Forward all backend response headers (Content-Disposition, Cache-Control, etc.)
+  const responseHeaders = new Headers();
+  backendRes.headers.forEach((value, key) => {
+    const lower = key.toLowerCase();
+    // Skip hop-by-hop headers that must not be forwarded
+    if (lower === 'transfer-encoding' || lower === 'connection') return;
+    responseHeaders.set(key, value);
+  });
+
   return new NextResponse(responseBody, {
     status: backendRes.status,
-    headers: {
-      'Content-Type': backendRes.headers.get('Content-Type') || 'application/json',
-    },
+    headers: responseHeaders,
   });
 }
 

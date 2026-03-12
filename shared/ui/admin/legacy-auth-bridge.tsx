@@ -2,32 +2,38 @@
 
 import { useEffect, type ReactNode } from 'react';
 import { useAdminSession } from '@/shared/contexts/admin-session-context';
+import { useAuth } from '@/contexts/AuthContext';
 
 /**
- * Syncs cookie-based session data to localStorage so legacy pages
- * that read from localStorage continue to work.
+ * Syncs cookie-based session data to localStorage AND AuthContext
+ * so legacy pages that read from either source continue to work.
  *
  * Consumes AdminSession context (set by AdminShell).
  * Does NOT make its own /api/admin/session call (review fix).
  */
 export function LegacyAuthBridgeProvider({ children }: { children: ReactNode }) {
   const { session } = useAdminSession();
+  const { syncExternalAuth } = useAuth();
 
   useEffect(() => {
     if (!session) return;
 
-    // Sync session data to localStorage for legacy page compatibility
-    // Legacy pages read: accessToken, user, isAdmin from localStorage
     const userData = {
       id: session.user.id,
       email: session.user.email,
       roles: session.user.roles,
     };
+
+    // Sync to localStorage for legacy page compatibility
     localStorage.setItem('user', JSON.stringify(userData));
     localStorage.setItem('isAdmin', 'true');
-    // Note: accessToken in localStorage is set during login or sync flow
-    // We don't set it here because we don't have the raw token (it's in httpOnly cookie)
-  }, [session]);
+
+    // Sync to AuthContext so useAuth() consumers see the session
+    syncExternalAuth(
+      { id: session.user.id, email: session.user.email, role: session.user.roles[0] || 'admin' },
+      true,
+    );
+  }, [session, syncExternalAuth]);
 
   return <>{children}</>;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 import {
   Box,
   Typography,
