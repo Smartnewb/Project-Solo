@@ -167,7 +167,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           await fetch('/api/admin/auth/sync', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ accessToken: data.accessToken }),
+            body: JSON.stringify({
+              accessToken: data.accessToken,
+              refreshToken: data.refreshToken,
+            }),
           });
         } catch {
           // Non-critical: BFF session established on next admin page load

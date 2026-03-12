@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAdminAccessToken, getSessionMeta, clearAdminCookies } from '@/shared/auth';
+import { extractRoles, isAdminRoleSet, type AdminIdentitySource } from '@/shared/auth/admin-session-user';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api';
 
@@ -12,14 +13,24 @@ export async function GET() {
   }
 
   try {
-    // Validate token against backend
-    const profileRes = await fetch(`${BACKEND_URL}/profile`, {
-      headers: { Authorization: `Bearer ${token}` },
+    const userRes = await fetch(`${BACKEND_URL}/user`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'x-country': 'kr',
+      },
     });
 
-    if (!profileRes.ok) {
+    if (!userRes.ok) {
       await clearAdminCookies();
       return NextResponse.json({ error: 'Session expired' }, { status: 401 });
+    }
+
+    const identity = (await userRes.json()) as AdminIdentitySource;
+    const roles = extractRoles(identity);
+
+    if (!isAdminRoleSet(roles)) {
+      await clearAdminCookies();
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
     // Return session DTO (meta from signed cookie, validated by backend)
@@ -27,7 +38,7 @@ export async function GET() {
       user: {
         id: meta.id,
         email: meta.email,
-        roles: meta.roles,
+        roles,
       },
       selectedCountry: meta.selectedCountry,
       issuedAt: meta.issuedAt,

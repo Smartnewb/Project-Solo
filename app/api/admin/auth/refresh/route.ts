@@ -1,13 +1,22 @@
 import { NextResponse } from 'next/server';
-import { getAdminAccessToken, setAdminAccessToken, getSessionMeta, setSessionMeta, clearAdminCookies } from '@/shared/auth';
+import {
+  getAdminAccessToken,
+  getAdminRefreshToken,
+  setAdminAccessToken,
+  setAdminRefreshToken,
+  getSessionMeta,
+  setSessionMeta,
+  clearAdminCookies,
+} from '@/shared/auth';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api';
 
 export async function POST() {
   const currentToken = await getAdminAccessToken();
+  const currentRefreshToken = await getAdminRefreshToken();
   const meta = await getSessionMeta();
 
-  if (!currentToken || !meta) {
+  if (!currentToken || !currentRefreshToken || !meta) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
@@ -17,8 +26,8 @@ export async function POST() {
       headers: {
         'Content-Type': 'application/json',
         'x-country': 'kr',
-        Authorization: `Bearer ${currentToken}`,
       },
+      body: JSON.stringify({ refreshToken: currentRefreshToken }),
     });
 
     if (!backendRes.ok) {
@@ -28,6 +37,7 @@ export async function POST() {
 
     const data = await backendRes.json();
     const newToken = data.accessToken;
+    const newRefreshToken = data.refreshToken;
 
     if (!newToken) {
       await clearAdminCookies();
@@ -35,6 +45,9 @@ export async function POST() {
     }
 
     await setAdminAccessToken(newToken);
+    if (typeof newRefreshToken === 'string' && newRefreshToken.length > 0) {
+      await setAdminRefreshToken(newRefreshToken);
+    }
     await setSessionMeta({ ...meta, issuedAt: Date.now() });
 
     return NextResponse.json({ accessToken: newToken });

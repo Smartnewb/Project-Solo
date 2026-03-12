@@ -43,6 +43,7 @@ import type {
 	ViewProfileResponse,
 } from '@/types/admin';
 import axiosServer, { axiosMultipart, axiosNextGen } from '@/utils/axios';
+import { adminRequest } from '@/shared/lib/http/admin-fetch';
 
 // 상단에 타입 정의 추가
 interface StatItem {
@@ -3417,33 +3418,10 @@ const backgroundPresets = {
 			const formData = new FormData();
 			formData.append('image', imageFile);
 
-			const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-			const baseURL = process.env.NEXT_PUBLIC_NEXT_GEN_API_URL || 'http://localhost:8044/api';
-			const url = `${baseURL}/admin/background-presets/upload`;
-
-			console.log('요청 URL:', url);
-			console.log('Authorization 토큰 존재:', !!token);
-
-			const response = await fetch(url, {
+			const data = await adminRequest<UploadImageResponse>('/admin/background-presets/upload', {
 				method: 'POST',
-				headers: {
-					Authorization: `Bearer ${token}`,
-					Accept: 'application/json',
-					'x-country': getCountryHeader(),
-				},
 				body: formData,
-				credentials: 'include',
 			});
-
-			console.log('응답 상태:', response.status, response.statusText);
-
-			if (!response.ok) {
-				const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
-				console.error('업로드 실패 응답:', errorData);
-				throw new Error(errorData.message || `HTTP ${response.status}`);
-			}
-
-			const data = await response.json();
 			console.log('배경 이미지 업로드 성공:', data);
 			console.log('=== 배경 이미지 업로드 종료 ===');
 			return data;
@@ -3475,25 +3453,10 @@ const backgroundPresets = {
 				formData.append('order', data.order.toString());
 			}
 
-			const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-			const baseURL = process.env.NEXT_PUBLIC_NEXT_GEN_API_URL || 'http://localhost:8044/api';
-
-			const response = await fetch(`${baseURL}/admin/background-presets/upload-and-create`, {
+			const responseData = await adminRequest<BackgroundPreset>('/admin/background-presets/upload-and-create', {
 				method: 'POST',
-				headers: {
-					Authorization: `Bearer ${token}`,
-					'x-country': getCountryHeader(),
-				},
 				body: formData,
-				credentials: 'include',
 			});
-
-			if (!response.ok) {
-				const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
-				throw new Error(errorData.message || `HTTP ${response.status}`);
-			}
-
-			const responseData = await response.json();
 			console.log('배경 프리셋 통합 생성 응답:', responseData);
 			return responseData;
 		} catch (error: any) {
@@ -3759,26 +3722,10 @@ const gems = {
 				message: formData.get('message'),
 			});
 
-			// fetch API로 직접 요청
-			const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-			const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045/api';
-
-			const response = await fetch(`${baseURL}/admin/gems/bulk-grant`, {
+			const responseData = await adminRequest<{ success: boolean; message?: string }>('/admin/gems/bulk-grant', {
 				method: 'POST',
-				headers: {
-					Authorization: `Bearer ${token}`,
-					'x-country': getCountryHeader(),
-				},
 				body: formData,
-				credentials: 'include',
 			});
-
-			if (!response.ok) {
-				const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
-				throw new Error(errorData.message || `HTTP ${response.status}`);
-			}
-
-			const responseData = await response.json();
 			console.log('구슬 일괄 지급 응답:', responseData);
 			return responseData;
 		} catch (error: any) {
@@ -3857,25 +3804,10 @@ const banners = {
 			if (data.startDate) formData.append('startDate', data.startDate);
 			if (data.endDate) formData.append('endDate', data.endDate);
 
-			const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-			const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045/api';
-
-			const response = await fetch(`${baseURL}/admin/banners`, {
+			return adminRequest<Banner>('/admin/banners', {
 				method: 'POST',
-				headers: {
-					Authorization: `Bearer ${token}`,
-					'x-country': getCountryHeader(),
-				},
 				body: formData,
-				credentials: 'include',
 			});
-
-			if (!response.ok) {
-				const errorData = await response.json().catch(() => ({ message: '배너 등록 실패' }));
-				throw new Error(errorData.message || `HTTP ${response.status}`);
-			}
-
-			return response.json();
 		} catch (error: any) {
 			console.error('배너 등록 중 오류:', error);
 			throw error;
@@ -4142,34 +4074,10 @@ const sometimeArticles = {
       const formData = new FormData();
       formData.append("image", imageFile);
 
-      const token =
-        typeof window !== "undefined"
-          ? localStorage.getItem("accessToken")
-          : null;
-      const baseURL =
-        process.env.NEXT_PUBLIC_NEXT_GEN_API_URL || "http://localhost:8044/api";
-
-      const response = await fetch(
-        `${baseURL}/admin/sometime-articles/upload`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "x-country": getCountryHeader(),
-          },
-          body: formData,
-          credentials: "include",
-        },
-      );
-
-      if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => ({ message: "Upload failed" }));
-        throw new Error(errorData.message || `HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
+      const data = await adminRequest<UploadImageResponse>('/admin/sometime-articles/upload', {
+        method: 'POST',
+        body: formData,
+      });
       console.log("썸타임 이야기 이미지 업로드 응답:", data);
       return data;
     } catch (error: any) {

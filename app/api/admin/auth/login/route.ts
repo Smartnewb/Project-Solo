@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { setAdminAccessToken, setSessionMeta } from '@/shared/auth';
+import { setAdminAccessToken, setAdminRefreshToken, setSessionMeta } from '@/shared/auth';
 import type { AdminSessionMeta } from '@/shared/auth';
 import {
   buildAdminSessionUser,
@@ -59,6 +59,9 @@ export async function POST(request: NextRequest) {
     const sessionUser = buildAdminSessionUser(identity, details, body.email);
 
     await setAdminAccessToken(data.accessToken);
+    if (typeof data.refreshToken === 'string' && data.refreshToken.length > 0) {
+      await setAdminRefreshToken(data.refreshToken);
+    }
 
     const meta: AdminSessionMeta = {
       id: sessionUser.id,

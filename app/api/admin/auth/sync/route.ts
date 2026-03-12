@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { setAdminAccessToken, setSessionMeta } from '@/shared/auth';
+import { setAdminAccessToken, setAdminRefreshToken, setSessionMeta } from '@/shared/auth';
 import type { AdminSessionMeta } from '@/shared/auth';
 import {
   buildAdminSessionUser,
@@ -12,7 +12,7 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/ap
 
 export async function POST(request: NextRequest) {
   try {
-    const { accessToken } = await request.json();
+    const { accessToken, refreshToken } = await request.json();
     if (!accessToken || typeof accessToken !== 'string') {
       return NextResponse.json({ error: 'Token required' }, { status: 400 });
     }
@@ -47,6 +47,9 @@ export async function POST(request: NextRequest) {
     const sessionUser = buildAdminSessionUser(identity, details);
 
     await setAdminAccessToken(accessToken);
+    if (typeof refreshToken === 'string' && refreshToken.length > 0) {
+      await setAdminRefreshToken(refreshToken);
+    }
 
     const meta: AdminSessionMeta = {
       id: sessionUser.id,

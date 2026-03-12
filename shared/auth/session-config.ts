@@ -1,6 +1,7 @@
 import type { SessionOptions } from 'iron-session';
 
 export const ADMIN_COOKIE_NAME = 'admin_access_token';
+export const ADMIN_REFRESH_COOKIE_NAME = 'admin_refresh_token';
 export const ADMIN_META_COOKIE = 'admin_session_meta';
 
 export interface AdminSessionMeta {

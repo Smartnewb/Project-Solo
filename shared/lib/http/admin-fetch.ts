@@ -48,6 +48,30 @@ async function request<T>(
   return res.json();
 }
 
+export function buildAdminProxyUrl(path: string): string {
+  if (path.startsWith(PROXY_BASE)) return path;
+  return `${PROXY_BASE}${path}`;
+}
+
+export async function adminRequest<T>(
+  path: string,
+  init: RequestInit = {},
+): Promise<T> {
+  const res = await fetch(buildAdminProxyUrl(path), init);
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new AdminApiError(
+      body?.message ?? `Request failed: ${res.status}`,
+      res.status,
+      body,
+    );
+  }
+
+  if (res.status === 204) return undefined as T;
+  return res.json();
+}
+
 export function adminGet<T>(
   path: string,
   params?: Record<string, string>,
