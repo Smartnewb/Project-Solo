@@ -126,7 +126,7 @@ export default function MainDashboard() {
 					</Alert>
 				)}
 
-				<ActionRequired actionItems={summary?.actionItems ?? null} loading={loading} />
+				<ActionRequired />
 
 				<Grid container spacing={3}>
 					<Grid item xs={12} md={7}>

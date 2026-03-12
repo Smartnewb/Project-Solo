@@ -9,14 +9,8 @@ import {
   SupportAgent as SupportIcon,
   School as SchoolIcon,
 } from "@mui/icons-material";
-import { ActionItem } from "../types";
 import supportChatService from "@/app/services/support-chat";
 import AdminService from "@/app/services/admin";
-
-interface ActionRequiredProps {
-  actionItems: ActionItem[] | null;
-  loading?: boolean;
-}
 
 interface ActionItemCardProps {
   title: string;
@@ -110,16 +104,47 @@ function ActionItemCard({
   );
 }
 
-export default function ActionRequired({
-  actionItems,
-  loading,
-}: ActionRequiredProps) {
+export default function ActionRequired() {
+  const [pendingReview, setPendingReview] = useState(0);
+  const [reviewLoading, setReviewLoading] = useState(true);
+  const [pendingReports, setPendingReports] = useState(0);
+  const [reportsLoading, setReportsLoading] = useState(true);
   const [pendingQA, setPendingQA] = useState(0);
   const [qaLoading, setQaLoading] = useState(true);
   const [pendingCertification, setPendingCertification] = useState(0);
   const [certificationLoading, setCertificationLoading] = useState(true);
 
   useEffect(() => {
+    const fetchReviewCount = async () => {
+      try {
+        setReviewLoading(true);
+        const response = await AdminService.userReview.getPendingUsers(1, 1);
+        setPendingReview(response.pagination?.total ?? 0);
+      } catch (error) {
+        console.error("회원 심사 대기 건수 조회 실패:", error);
+        setPendingReview(0);
+      } finally {
+        setReviewLoading(false);
+      }
+    };
+
+    const fetchReportsCount = async () => {
+      try {
+        setReportsLoading(true);
+        const params = new URLSearchParams();
+        params.append("page", "1");
+        params.append("limit", "1");
+        params.append("status", "pending");
+        const response = await AdminService.getProfileReports(params);
+        setPendingReports(response.meta?.totalItems ?? 0);
+      } catch (error) {
+        console.error("신고 대기 건수 조회 실패:", error);
+        setPendingReports(0);
+      } finally {
+        setReportsLoading(false);
+      }
+    };
+
     const fetchQACount = async () => {
       try {
         setQaLoading(true);
@@ -140,12 +165,10 @@ export default function ActionRequired({
       try {
         setCertificationLoading(true);
         const response =
-          await AdminService.userAppearance.getUniversityVerificationPendingUsers(
-            {
-              page: 1,
-              limit: 1,
-            },
-          );
+          await AdminService.userAppearance.getUniversityVerificationPending({
+            page: 1,
+            limit: 1,
+          });
         setPendingCertification(
           response.pagination?.total ?? response.total ?? 0,
         );
@@ -157,17 +180,14 @@ export default function ActionRequired({
       }
     };
 
+    fetchReviewCount();
+    fetchReportsCount();
     fetchQACount();
     fetchCertificationCount();
   }, []);
 
-  const pendingApprovals =
-    actionItems?.find((item) => item.type === "pending_approvals")?.count ?? 0;
-  const pendingProfileReports =
-    actionItems?.find((item) => item.type === "pending_reports")?.count ?? 0;
-
   const totalPending =
-    pendingApprovals + pendingProfileReports + pendingQA + pendingCertification;
+    pendingReview + pendingReports + pendingQA + pendingCertification;
 
   return (
     <Card sx={{ mb: 3 }}>
@@ -210,21 +230,21 @@ export default function ActionRequired({
         <Box className="flex gap-3 flex-wrap">
           <ActionItemCard
             title="회원 심사"
-            count={pendingApprovals}
+            count={pendingReview}
             icon={<ProfileReviewIcon fontSize="small" />}
             link="/admin/profile-review"
             color="#3b82f6"
             bgColor="#eff6ff"
-            loading={loading}
+            loading={reviewLoading}
           />
           <ActionItemCard
             title="신고 관리"
-            count={pendingProfileReports}
+            count={pendingReports}
             icon={<ReportIcon fontSize="small" />}
             link="/admin/reports"
             color="#ef4444"
             bgColor="#fef2f2"
-            loading={loading}
+            loading={reportsLoading}
           />
           <ActionItemCard
             title="Q&A 대기"
@@ -239,7 +259,7 @@ export default function ActionRequired({
             title="학생증 인증"
             count={pendingCertification}
             icon={<SchoolIcon fontSize="small" />}
-            link="/admin/users/appearance?tab=6"
+            link="/admin/users/appearance?tab=5"
             color="#f59e0b"
             bgColor="#fffbeb"
             loading={certificationLoading}
