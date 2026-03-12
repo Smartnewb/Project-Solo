@@ -1,0 +1,34 @@
+{
+  "extends": ["next/core-web-vitals"],
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
+  "rules": {
+    "no-console": "error",
+    "no-alert": "error",
+    "no-restricted-globals": [
+      "error",
+      {
+        "name": "localStorage",
+        "message": "Use session hooks from shared/auth instead of localStorage directly."
+      },
+      {
+        "name": "confirm",
+        "message": "Use MUI Dialog instead of window.confirm()."
+      },
+      {
+        "name": "alert",
+        "message": "Use toast/snackbar instead of window.alert()."
+      }
+    ],
+    "no-restricted-properties": [
+      "error",
+      {
+        "object": "window",
+        "property": "location",
+        "message": "Use Next.js router instead of window.location."
+      }
+    ],
+    "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/no-unused-vars": "error"
+  }
+}
