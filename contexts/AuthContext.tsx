@@ -80,7 +80,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // 프로필 조회
-  const fetchProfile = async () => {
+  const fetchProfile = async (): Promise<void> => {
     try {
       const token = getAccessToken();
       if (!token || !state.user) return;
