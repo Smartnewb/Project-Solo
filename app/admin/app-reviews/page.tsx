@@ -1,119 +1,14 @@
-'use client';
+import { getRouteMode, isAdminShellV2Enabled } from '@/shared/feature-flags';
+import AppReviewsPageLegacy from './app-reviews-legacy';
+import AppReviewsPageV2 from './app-reviews-v2';
 
-import { useState } from 'react';
-import { Box, Typography, Tabs, Tab, Chip } from '@mui/material';
-import RateReviewIcon from '@mui/icons-material/RateReview';
-import PublicIcon from '@mui/icons-material/Public';
-import ReviewDashboard from './components/ReviewDashboard';
-import ReviewList from './components/ReviewList';
-import PublicReviewManagement from './components/PublicReviewManagement';
-import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
+export default async function AppReviewsPage() {
+  const shellV2 = await isAdminShellV2Enabled();
+  const mode = await getRouteMode('app-reviews');
 
-function AppReviewsPageContent() {
-	const [activeTab, setActiveTab] = useState(0);
-	const [filterFromChart, setFilterFromChart] = useState<{
-		rating?: number;
-		store?: 'APP_STORE' | 'PLAY_STORE';
-	} | null>(null);
+  if (shellV2 && mode === 'v2') {
+    return <AppReviewsPageV2 />;
+  }
 
-	const handleChartClick = (filter: { rating?: number; store?: 'APP_STORE' | 'PLAY_STORE' }) => {
-		setFilterFromChart(filter);
-		setActiveTab(1);
-	};
-
-	const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
-		if (newValue === 0) {
-			setFilterFromChart(null);
-		}
-		setActiveTab(newValue);
-	};
-
-	return (
-		<Box className="min-h-screen bg-gray-50">
-			{/* 헤더 */}
-			<Box className="bg-white shadow-sm border-b border-gray-200">
-				<Box className="max-w-7xl mx-auto px-4 py-4">
-					<Box className="flex items-center justify-between">
-						<Box className="flex items-center gap-3">
-							<Box
-								sx={{
-									p: 1.5,
-									borderRadius: 2,
-									backgroundColor: '#f0f4ff',
-									color: '#3b82f6',
-								}}
-							>
-								<RateReviewIcon />
-							</Box>
-							<Box>
-								<Typography variant="h5" fontWeight="bold" color="textPrimary">
-									앱 리뷰 관리
-								</Typography>
-								<Typography variant="body2" color="textSecondary">
-									App Store, Play Store 리뷰를 한눈에 관리합니다
-								</Typography>
-							</Box>
-						</Box>
-					</Box>
-					<Tabs
-						value={activeTab}
-						onChange={handleTabChange}
-						sx={{ mt: 2 }}
-						aria-label="앱 리뷰 탭"
-					>
-						<Tab label="리뷰 대시보드" />
-						<Tab
-							label={
-								<Box className="flex items-center gap-1">
-									리뷰 목록
-									{filterFromChart && activeTab === 1 && (
-										<Chip
-											label="필터 적용됨"
-											size="small"
-											color="primary"
-											sx={{ ml: 0.5, height: 20, fontSize: '0.7rem' }}
-										/>
-									)}
-								</Box>
-							}
-						/>
-						<Tab
-							label={
-								<Box className="flex items-center gap-1">
-									<PublicIcon sx={{ fontSize: 16 }} />
-									외부 공개 관리
-								</Box>
-							}
-						/>
-					</Tabs>
-				</Box>
-			</Box>
-
-			{/* 탭 콘텐츠 */}
-			<Box className="max-w-7xl mx-auto px-4 py-6">
-				<Box role="tabpanel" hidden={activeTab !== 0}>
-					{activeTab === 0 && <ReviewDashboard onChartClick={handleChartClick} />}
-				</Box>
-				<Box role="tabpanel" hidden={activeTab !== 1}>
-					{activeTab === 1 && (
-						<ReviewList
-							initialFilter={filterFromChart}
-							onFilterClear={() => setFilterFromChart(null)}
-						/>
-					)}
-				</Box>
-				<Box role="tabpanel" hidden={activeTab !== 2}>
-					{activeTab === 2 && <PublicReviewManagement />}
-				</Box>
-			</Box>
-		</Box>
-	);
-}
-
-export default function AppReviewsPage() {
-  return (
-    <LegacyPageAdapter>
-      <AppReviewsPageContent />
-    </LegacyPageAdapter>
-  );
+  return <AppReviewsPageLegacy />;
 }
