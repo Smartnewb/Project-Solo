@@ -1,8 +1,12 @@
 import axios from "axios";
 
+// Client-side API calls route through Next.js rewrite proxy to avoid CORS
+// on Vercel Preview domains. Server-side code should use NEXT_PUBLIC_API_URL directly.
+const CLIENT_API_BASE = "/api-proxy";
+
 // JSON 요청용 axios 인스턴스
 const axiosServer = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8045/api",
+  baseURL: CLIENT_API_BASE,
   timeout: 15000, // 15초
   headers: {
     "Content-Type": "application/json",
@@ -16,7 +20,7 @@ const axiosServer = axios.create({
 
 // multipart/form-data 요청전용 axios 인스턴스
 export const axiosMultipart = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8045/api",
+  baseURL: CLIENT_API_BASE,
   timeout: 30000, // 30초 (파일 업로드는 더 오래 걸릴 수 있음)
   withCredentials: true,
   validateStatus: (status) => {
@@ -27,7 +31,7 @@ export const axiosMultipart = axios.create({
 
 // 본 서버(8045) 직접 연결용 axios 인스턴스
 export const axiosNextGen = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8045/api",
+  baseURL: CLIENT_API_BASE,
   timeout: 15000,
   headers: {
     "Content-Type": "application/json",
@@ -122,7 +126,7 @@ const createResponseInterceptor = (axiosInstance: any) => {
 
           // 토큰 새로고침 요청 (Auth API는 항상 kr 스키마 사용)
           const response = await axios.post(
-            `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
+            `${CLIENT_API_BASE}/auth/refresh`,
             {},
             {
               withCredentials: true,
