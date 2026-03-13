@@ -21,8 +21,9 @@ import {
 import { useRouter } from 'next/navigation';
 import AdminService from '@/app/services/admin';
 import type { ActionLogsResponse, ActionLogResponse } from '@/types/admin';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
-export default function DormantLikesLogsPage() {
+function DormantLikesLogsPageContent() {
   const router = useRouter();
   const [logs, setLogs] = useState<ActionLogResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -200,5 +201,13 @@ export default function DormantLikesLogsPage() {
         </>
       )}
     </Box>
+  );
+}
+
+export default function DormantLikesLogsPage() {
+  return (
+    <LegacyPageAdapter>
+      <DormantLikesLogsPageContent />
+    </LegacyPageAdapter>
   );
 }

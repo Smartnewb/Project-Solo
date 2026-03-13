@@ -42,6 +42,7 @@ import RegionFilter, {
 import IncludeDeletedFilter, {
   useIncludeDeletedFilter,
 } from "@/components/admin/common/IncludeDeletedFilter";
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
 interface SectionHeaderProps {
   icon: React.ReactNode;
@@ -87,7 +88,7 @@ function SectionHeader({
   );
 }
 
-export default function MemberStatsDashboard() {
+function MemberStatsDashboardContent() {
   const router = useRouter();
   const [authChecking, setAuthChecking] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -594,5 +595,13 @@ export default function MemberStatsDashboard() {
         </Box>
       </Box>
     </LocalizationProvider>
+  );
+}
+
+export default function MemberStatsDashboard() {
+  return (
+    <LegacyPageAdapter>
+      <MemberStatsDashboardContent />
+    </LegacyPageAdapter>
   );
 }

@@ -43,6 +43,7 @@ import type {
 	ViewProfileResponse,
 } from '@/types/admin';
 import axiosServer, { axiosMultipart, axiosNextGen } from '@/utils/axios';
+import { adminGet, adminPost, adminRequest } from '@/shared/lib/http/admin-fetch';
 
 // 상단에 타입 정의 추가
 interface StatItem {
@@ -88,13 +89,10 @@ const stats = {
 				params,
 			});
 			console.log('총 회원 수 API 응답:', response.data);
-
-			// 실제 사용자 수를 반환하도록 수정
-			// 임시 수정: 실제 사용자 수를 임의로 설정 (API가 완성되면 제거)
-			return { totalUsers: response.data.totalUsers }; // 임시 값으로 설정
+			return response.data;
 		} catch (error) {
 			console.error('총 회원 수 조회 중 오류:', error);
-			return { totalUsers: 120 }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 	getDailySignupCount: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
@@ -108,10 +106,10 @@ const stats = {
 				params,
 			});
 			console.log('오늘 가입한 회원 수 API 응답:', response.data);
-			return response.data || { dailySignups: 4 };
+			return response.data;
 		} catch (error) {
 			console.error('오늘 가입한 회원 수 조회 중 오류:', error);
-			return { dailySignups: 4 }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 	getWeeklySignupCount: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
@@ -125,10 +123,10 @@ const stats = {
 				params,
 			});
 			console.log('이번 주 가입한 회원 수 API 응답:', response.data);
-			return response.data || { weeklySignups: 12 };
+			return response.data;
 		} catch (error) {
 			console.error('이번 주 가입한 회원 수 조회 중 오류:', error);
-			return { weeklySignups: 12 }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 	getDailySignupTrend: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
@@ -282,30 +280,10 @@ const stats = {
 				params,
 			});
 			console.log('성별 통계 API 응답:', response.data);
-
-			// 임시 데이터 생성
-			const mockData = {
-				maleCount: 60,
-				femaleCount: 60,
-				totalCount: 120,
-				malePercentage: 50,
-				femalePercentage: 50,
-				genderRatio: '1:1',
-			};
-
-			return response.data || mockData;
+			return response.data;
 		} catch (error) {
 			console.error('성별 통계 조회 중 오류:', error);
-
-			// 오류 발생 시 기본값 반환
-			return {
-				maleCount: 60,
-				femaleCount: 60,
-				totalCount: 120,
-				malePercentage: 50,
-				femalePercentage: 50,
-				genderRatio: '1:1',
-			};
+			throw error;
 		}
 	},
 
@@ -355,10 +333,10 @@ const stats = {
 			const response = await axiosServer.get('/admin/stats/withdrawals/total', {
 				params,
 			});
-			return response.data || { totalWithdrawals: 0 };
+			return response.data;
 		} catch (error) {
 			console.error('총 탈퇴자 수 조회 중 오류:', error);
-			return { totalWithdrawals: 0 }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 
@@ -372,10 +350,10 @@ const stats = {
 			const response = await axiosServer.get('/admin/stats/withdrawals/daily', {
 				params,
 			});
-			return response.data || { dailyWithdrawals: 0 };
+			return response.data;
 		} catch (error) {
 			console.error('오늘 탈퇴한 회원 수 조회 중 오류:', error);
-			return { dailyWithdrawals: 0 }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 
@@ -387,10 +365,10 @@ const stats = {
 			if (useCluster !== undefined) params.useCluster = String(useCluster);
 
 			const response = await axiosServer.get('/admin/stats/withdrawals/weekly', { params });
-			return response.data || { weeklyWithdrawals: 0 };
+			return response.data;
 		} catch (error) {
 			console.error('이번 주 탈퇴한 회원 수 조회 중 오류:', error);
-			return { weeklyWithdrawals: 0 }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 
@@ -402,10 +380,10 @@ const stats = {
 			if (useCluster !== undefined) params.useCluster = String(useCluster);
 
 			const response = await axiosServer.get('/admin/stats/withdrawals/monthly', { params });
-			return response.data || { monthlyWithdrawals: 0 };
+			return response.data;
 		} catch (error) {
 			console.error('이번 달 탈퇴한 회원 수 조회 중 오류:', error);
-			return { monthlyWithdrawals: 0 }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 
@@ -417,10 +395,10 @@ const stats = {
 				startDate,
 				endDate,
 			});
-			return response.data || { customPeriodWithdrawals: 0 };
+			return response.data;
 		} catch (error) {
 			console.error('사용자 지정 기간 탈퇴자 수 조회 중 오류:', error);
-			return { customPeriodWithdrawals: 0 }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 
@@ -432,10 +410,10 @@ const stats = {
 			if (useCluster !== undefined) params.useCluster = String(useCluster);
 
 			const response = await axiosServer.get('/admin/stats/withdrawals/trend/daily', { params });
-			return response.data || { data: [] };
+			return response.data;
 		} catch (error) {
 			console.error('일별 탈퇴 추이 조회 중 오류:', error);
-			return { data: [] }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 
@@ -447,10 +425,10 @@ const stats = {
 			if (useCluster !== undefined) params.useCluster = String(useCluster);
 
 			const response = await axiosServer.get('/admin/stats/withdrawals/trend/weekly', { params });
-			return response.data || { data: [] };
+			return response.data;
 		} catch (error) {
 			console.error('주별 탈퇴 추이 조회 중 오류:', error);
-			return { data: [] }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 
@@ -462,10 +440,10 @@ const stats = {
 			if (useCluster !== undefined) params.useCluster = String(useCluster);
 
 			const response = await axiosServer.get('/admin/stats/withdrawals/trend/monthly', { params });
-			return response.data || { data: [] };
+			return response.data;
 		} catch (error) {
 			console.error('월별 탈퇴 추이 조회 중 오류:', error);
-			return { data: [] }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 
@@ -481,10 +459,10 @@ const stats = {
 			if (useCluster !== undefined) requestData.useCluster = useCluster;
 
 			const response = await axiosServer.post('/admin/stats/withdrawals/trend/custom-period', requestData);
-			return response.data || { data: [] };
+			return response.data;
 		} catch (error) {
 			console.error('사용자 지정 기간 탈퇴 추이 조회 중 오류:', error);
-			return { data: [] }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 
@@ -496,10 +474,10 @@ const stats = {
 			if (endDate) params.endDate = endDate;
 
 			const response = await axiosServer.get('/admin/stats/withdrawals/reasons', { params });
-			return response.data || { reasons: [] };
+			return response.data;
 		} catch (error) {
 			console.error('탈퇴 사유 통계 조회 중 오류:', error);
-			return { reasons: [] }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 
@@ -507,16 +485,10 @@ const stats = {
 	getChurnRate: async () => {
 		try {
 			const response = await axiosServer.get('/admin/stats/withdrawals/churn-rate');
-			return (
-				response.data || {
-					dailyChurnRate: 0,
-					weeklyChurnRate: 0,
-					monthlyChurnRate: 0,
-				}
-			);
+			return response.data;
 		} catch (error) {
 			console.error('이탈률 조회 중 오류:', error);
-			return { dailyChurnRate: 0, weeklyChurnRate: 0, monthlyChurnRate: 0 }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 };
@@ -641,6 +613,26 @@ const userAppearance = {
 			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
+	},
+
+	getUniversityVerificationPendingUsers: async (params: {
+		page?: number;
+		limit?: number;
+		name?: string;
+		university?: string;
+	}) => {
+		return adminGet<{
+			users: unknown[];
+			total: number;
+			page: number;
+			limit: number;
+			totalPages: number;
+		}>('/admin/university-verification/pending', {
+			page: String(params.page ?? 1),
+			limit: String(params.limit ?? 10),
+			name: params.name,
+			university: params.university,
+		});
 	},
 
 	// 유저 외모 등급 일괄 설정
@@ -3417,33 +3409,10 @@ const backgroundPresets = {
 			const formData = new FormData();
 			formData.append('image', imageFile);
 
-			const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-			const baseURL = process.env.NEXT_PUBLIC_NEXT_GEN_API_URL || 'http://localhost:8044/api';
-			const url = `${baseURL}/admin/background-presets/upload`;
-
-			console.log('요청 URL:', url);
-			console.log('Authorization 토큰 존재:', !!token);
-
-			const response = await fetch(url, {
+			const data = await adminRequest<UploadImageResponse>('/admin/background-presets/upload', {
 				method: 'POST',
-				headers: {
-					Authorization: `Bearer ${token}`,
-					Accept: 'application/json',
-					'x-country': getCountryHeader(),
-				},
 				body: formData,
-				credentials: 'include',
 			});
-
-			console.log('응답 상태:', response.status, response.statusText);
-
-			if (!response.ok) {
-				const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
-				console.error('업로드 실패 응답:', errorData);
-				throw new Error(errorData.message || `HTTP ${response.status}`);
-			}
-
-			const data = await response.json();
 			console.log('배경 이미지 업로드 성공:', data);
 			console.log('=== 배경 이미지 업로드 종료 ===');
 			return data;
@@ -3475,25 +3444,10 @@ const backgroundPresets = {
 				formData.append('order', data.order.toString());
 			}
 
-			const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-			const baseURL = process.env.NEXT_PUBLIC_NEXT_GEN_API_URL || 'http://localhost:8044/api';
-
-			const response = await fetch(`${baseURL}/admin/background-presets/upload-and-create`, {
+			const responseData = await adminRequest<BackgroundPreset>('/admin/background-presets/upload-and-create', {
 				method: 'POST',
-				headers: {
-					Authorization: `Bearer ${token}`,
-					'x-country': getCountryHeader(),
-				},
 				body: formData,
-				credentials: 'include',
 			});
-
-			if (!response.ok) {
-				const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
-				throw new Error(errorData.message || `HTTP ${response.status}`);
-			}
-
-			const responseData = await response.json();
 			console.log('배경 프리셋 통합 생성 응답:', responseData);
 			return responseData;
 		} catch (error: any) {
@@ -3557,25 +3511,13 @@ const cardNews = {
 			const formData = new FormData();
 			formData.append('image', imageFile);
 
-			const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-			const baseURL = process.env.NEXT_PUBLIC_NEXT_GEN_API_URL || 'http://localhost:8044/api';
-
-			const response = await fetch(`${baseURL}/admin/background-presets/upload`, {
-				method: 'POST',
-				headers: {
-					Authorization: `Bearer ${token}`,
-					'x-country': getCountryHeader(),
+			const data = await adminRequest<UploadImageResponse>(
+				'/admin/posts/card-news/section-images/upload',
+				{
+					method: 'POST',
+					body: formData,
 				},
-				body: formData,
-				credentials: 'include',
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
-				throw new Error(errorData.message || `HTTP ${response.status}`);
-			}
-
-			const data = await response.json();
+			);
 			console.log('섹션 이미지 업로드 응답:', data);
 			return data;
 		} catch (error: any) {
@@ -3759,26 +3701,10 @@ const gems = {
 				message: formData.get('message'),
 			});
 
-			// fetch API로 직접 요청
-			const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-			const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045/api';
-
-			const response = await fetch(`${baseURL}/admin/gems/bulk-grant`, {
+			const responseData = await adminRequest<{ success: boolean; message?: string }>('/admin/gems/bulk-grant', {
 				method: 'POST',
-				headers: {
-					Authorization: `Bearer ${token}`,
-					'x-country': getCountryHeader(),
-				},
 				body: formData,
-				credentials: 'include',
 			});
-
-			if (!response.ok) {
-				const errorData = await response.json().catch(() => ({ message: 'Upload failed' }));
-				throw new Error(errorData.message || `HTTP ${response.status}`);
-			}
-
-			const responseData = await response.json();
 			console.log('구슬 일괄 지급 응답:', responseData);
 			return responseData;
 		} catch (error: any) {
@@ -3857,25 +3783,10 @@ const banners = {
 			if (data.startDate) formData.append('startDate', data.startDate);
 			if (data.endDate) formData.append('endDate', data.endDate);
 
-			const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-			const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8045/api';
-
-			const response = await fetch(`${baseURL}/admin/banners`, {
+			return adminRequest<Banner>('/admin/banners', {
 				method: 'POST',
-				headers: {
-					Authorization: `Bearer ${token}`,
-					'x-country': getCountryHeader(),
-				},
 				body: formData,
-				credentials: 'include',
 			});
-
-			if (!response.ok) {
-				const errorData = await response.json().catch(() => ({ message: '배너 등록 실패' }));
-				throw new Error(errorData.message || `HTTP ${response.status}`);
-			}
-
-			return response.json();
 		} catch (error: any) {
 			console.error('배너 등록 중 오류:', error);
 			throw error;
@@ -4142,34 +4053,10 @@ const sometimeArticles = {
       const formData = new FormData();
       formData.append("image", imageFile);
 
-      const token =
-        typeof window !== "undefined"
-          ? localStorage.getItem("accessToken")
-          : null;
-      const baseURL =
-        process.env.NEXT_PUBLIC_NEXT_GEN_API_URL || "http://localhost:8044/api";
-
-      const response = await fetch(
-        `${baseURL}/admin/sometime-articles/upload`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "x-country": getCountryHeader(),
-          },
-          body: formData,
-          credentials: "include",
-        },
-      );
-
-      if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => ({ message: "Upload failed" }));
-        throw new Error(errorData.message || `HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
+      const data = await adminRequest<UploadImageResponse>('/admin/sometime-articles/upload', {
+        method: 'POST',
+        body: formData,
+      });
       console.log("썸타임 이야기 이미지 업로드 응답:", data);
       return data;
     } catch (error: any) {
@@ -4448,10 +4335,7 @@ const forceMatching = {
 const kpiReport = {
 	getLatest: async () => {
 		try {
-			const response = await axiosServer.get('/admin/kpi-report/latest', {
-				timeout: 60000,
-			});
-			return response.data;
+			return await adminGet('/admin/kpi-report/latest');
 		} catch (error: any) {
 			console.error('최신 KPI 리포트 조회 중 오류:', error);
 			throw error;
@@ -4460,10 +4344,7 @@ const kpiReport = {
 
 	getByWeek: async (year: number, week: number) => {
 		try {
-			const response = await axiosServer.get(`/admin/kpi-report/${year}/${week}`, {
-				timeout: 60000,
-			});
-			return response.data;
+			return await adminGet(`/admin/kpi-report/${year}/${week}`);
 		} catch (error: any) {
 			console.error('주간 KPI 리포트 조회 중 오류:', error);
 			throw error;
@@ -4472,8 +4353,7 @@ const kpiReport = {
 
 	getDefinitions: async () => {
 		try {
-			const response = await axiosServer.get('/admin/kpi-report/definitions');
-			return response.data;
+			return await adminGet('/admin/kpi-report/definitions');
 		} catch (error: any) {
 			console.error('KPI 정의 조회 중 오류:', error);
 			throw error;
@@ -4482,12 +4362,7 @@ const kpiReport = {
 
 	generate: async (year?: number, week?: number) => {
 		try {
-			const response = await axiosServer.post(
-				'/admin/kpi-report/generate',
-				{ year, week },
-				{ timeout: 60000 },
-			);
-			return response.data;
+			return await adminPost('/admin/kpi-report/generate', { year, week });
 		} catch (error: any) {
 			console.error('KPI 리포트 생성 중 오류:', error);
 			throw error;

@@ -32,6 +32,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import SearchIcon from '@mui/icons-material/Search';
 import AdminService from '@/app/services/admin';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
 // ─── Types ─────────────────────────────────────────────
 
@@ -264,7 +265,7 @@ function PricingRow({
 
 // ─── Main Page ─────────────────────────────────────────
 
-export default function GemPricingPage() {
+function GemPricingPageContent() {
 	const [data, setData] = useState<GemPricingResponse | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -503,4 +504,12 @@ export default function GemPricingPage() {
 			</TableContainer>
 		</Box>
 	);
+}
+
+export default function GemPricingPage() {
+  return (
+    <LegacyPageAdapter>
+      <GemPricingPageContent />
+    </LegacyPageAdapter>
+  );
 }

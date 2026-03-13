@@ -4,6 +4,11 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import axiosServer from '@/utils/axios';
+import {
+  buildAdminSyncPayload,
+  getStoredAdminCountry,
+  setStoredAdminRefreshToken,
+} from '@/shared/auth/admin-auth-contract';
 
 export type User = {
   id: string;
@@ -44,6 +49,7 @@ interface AuthContextType extends AuthState {
   signOut: () => Promise<void>;
   refreshAccessToken: () => Promise<boolean>;
   fetchProfile: () => Promise<void>;
+  syncExternalAuth: (user: User, isAdmin: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -79,7 +85,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // 프로필 조회
-  const fetchProfile = async () => {
+  const fetchProfile = async (): Promise<void> => {
     try {
       const token = getAccessToken();
       if (!token || !state.user) return;
@@ -138,6 +144,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // 토큰 저장
       setAccessToken(data.accessToken);
+      setStoredAdminRefreshToken(data.refreshToken);
 
       // 사용자 정보 설정
       const userInfo = data.user || data;
@@ -160,6 +167,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // 프로필 정보 조회
       await fetchProfile();
 
+      // 관리자인 경우 BFF 세션 쿠키 설정
+      if (isAdmin) {
+        try {
+          await fetch('/api/admin/auth/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(
+              buildAdminSyncPayload(
+                data.accessToken,
+                data.refreshToken,
+                getStoredAdminCountry(),
+              ),
+            ),
+          });
+        } catch {
+          // Non-critical: BFF session established on next admin page load
+        }
+      }
+
       // 리다이렉트
       router.push(isAdmin ? '/admin/dashboard' : '/home');
     } catch (error) {
@@ -180,6 +206,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       localStorage.clear();
       removeAccessToken();
+      setStoredAdminRefreshToken(null);
     } catch (error) {
       console.error('로그아웃 중 오류 발생:', error);
     }
@@ -223,6 +250,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // 외부 인증 상태 동기화 (LegacyAuthBridge에서 호출)
+  const syncExternalAuth = (user: User, isAdmin: boolean) => {
+    setState(prev => ({ ...prev, user, isAdmin, loading: false }));
+  };
+
   // 초기화
   useEffect(() => {
     initAuth();
@@ -233,7 +265,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     login,
     signOut,
     refreshAccessToken,
-    fetchProfile
+    fetchProfile,
+    syncExternalAuth,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

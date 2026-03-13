@@ -32,6 +32,7 @@ import type {
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
 const STATUS_OPTIONS: { value: SometimeArticleStatus; label: string }[] = [
   { value: 'draft', label: '초안' },
@@ -49,7 +50,7 @@ const CATEGORY_OPTIONS: { value: SometimeArticleCategory; label: string }[] = [
   { value: 'safety', label: '안전 가이드' },
 ];
 
-export default function EditSometimeArticlePage() {
+function EditSometimeArticlePageContent() {
   const router = useRouter();
   const params = useParams();
   const id = (params?.id || '') as string;
@@ -537,5 +538,13 @@ export default function EditSometimeArticlePage() {
         </Button>
       </Box>
     </Box>
+  );
+}
+
+export default function EditSometimeArticlePage() {
+  return (
+    <LegacyPageAdapter>
+      <EditSometimeArticlePageContent />
+    </LegacyPageAdapter>
   );
 }

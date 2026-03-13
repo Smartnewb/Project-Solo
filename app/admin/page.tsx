@@ -2,8 +2,9 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
-export default function AdminIndex() {
+function AdminIndexContent() {
   const router = useRouter();
 
   useEffect(() => {
@@ -18,5 +19,13 @@ export default function AdminIndex() {
         <p className="mt-4 text-gray-600">페이지 이동 중...</p>
       </div>
     </div>
+  );
+}
+
+export default function AdminIndex() {
+  return (
+    <LegacyPageAdapter>
+      <AdminIndexContent />
+    </LegacyPageAdapter>
   );
 }
