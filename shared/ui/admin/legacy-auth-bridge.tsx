@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable no-restricted-globals -- Legacy bridge: syncs cookie-based session to localStorage for legacy page compatibility. Will be removed in Phase 6. */
 
 import { useEffect, type ReactNode } from 'react';
 import { useAdminSession } from '@/shared/contexts/admin-session-context';

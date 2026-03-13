@@ -1120,7 +1120,7 @@ function ReportList() {
 
 	// 페이지당 행 수 변경
 	const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-		setRowsPerPage(parseInt(event.target.value, 10));
+		setRowsPerPage(Number.parseInt(event.target.value, 10));
 		setPage(0);
 	};
 

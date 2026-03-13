@@ -192,8 +192,9 @@ function FcmTokensPageContent() {
 			{/* Filter */}
 			<div className="bg-white rounded-lg shadow p-4 mb-6">
 				<div className="flex items-center gap-4">
-					<label className="text-sm font-medium text-gray-700">토큰 보유 여부</label>
+					<label htmlFor="hasTokenFilterV2" className="text-sm font-medium text-gray-700">토큰 보유 여부</label>
 					<select
+						id="hasTokenFilterV2"
 						value={hasTokenFilter}
 						onChange={(e) => {
 							setHasTokenFilter(e.target.value);

@@ -156,10 +156,11 @@ function IOSRefundPageContent() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="userSearch" className="block text-sm font-medium text-gray-700 mb-1">
                   사용자 검색
                 </label>
                 <input
+                  id="userSearch"
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}

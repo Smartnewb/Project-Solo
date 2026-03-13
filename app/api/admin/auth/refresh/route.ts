@@ -52,6 +52,7 @@ export async function POST() {
 
     return NextResponse.json({ accessToken: newToken });
   } catch (error) {
+    // eslint-disable-next-line no-console -- server-side route handler error logging
     console.error('Admin refresh error:', error);
     await clearAdminCookies();
     return NextResponse.json({ error: 'Refresh error' }, { status: 500 });

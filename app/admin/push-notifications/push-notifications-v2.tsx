@@ -410,6 +410,9 @@ function PushNotificationsV2Content() {
                           setUniversitySearch('');
                           setShowUniversityDropdown(false);
                         }}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleUniversity(university); setUniversitySearch(''); setShowUniversityDropdown(false); } }}
+                        role="button"
+                        tabIndex={0}
                         className={`px-3 py-2 cursor-pointer hover:bg-gray-100 ${
                           filters.universities.includes(university) ? 'bg-blue-50' : ''
                         }`}
@@ -544,6 +547,9 @@ function PushNotificationsV2Content() {
                               src={user.profileImageUrl}
                               alt={user.name}
                               onClick={() => handleViewProfile(user.id)}
+                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleViewProfile(user.id); } }}
+                              role="button"
+                              tabIndex={0}
                               className="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-blue-500"
                             />
                           ) : (
@@ -716,8 +722,9 @@ function PushNotificationsV2Content() {
           </div>
 
           <div>
-            <label className="block mb-2 font-medium">메시지</label>
+            <label htmlFor="pushMessage" className="block mb-2 font-medium">메시지</label>
             <textarea
+              id="pushMessage"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="푸시 알림 메시지"

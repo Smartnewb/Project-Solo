@@ -44,6 +44,7 @@ export async function GET() {
       issuedAt: meta.issuedAt,
     });
   } catch (error) {
+    // eslint-disable-next-line no-console -- server-side route handler error logging
     console.error('Session check error:', error);
     await clearAdminCookies();
     return NextResponse.json({ error: 'Session validation failed' }, { status: 401 });

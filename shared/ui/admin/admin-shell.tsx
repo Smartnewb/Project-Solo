@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable no-restricted-globals -- AdminShell bridge: reads/writes localStorage during session init, country change, and logout to maintain legacy compatibility. Will be removed in Phase 6. */
 
 import { useEffect, useState, useCallback, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';

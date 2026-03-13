@@ -36,6 +36,7 @@ export function AdminCountrySelectorModal({ open, onClose }: AdminCountrySelecto
     await changeCountry(code);
     onClose();
 
+    // eslint-disable-next-line no-restricted-properties -- Legacy bridge: full reload needed to re-initialize legacy CountryProvider from localStorage
     setTimeout(() => window.location.reload(), 300);
   };
 

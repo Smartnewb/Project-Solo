@@ -46,7 +46,6 @@ import {
 } from '@mui/material';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 import AdminService from '@/app/services/admin';
@@ -1753,7 +1752,6 @@ function ReportList() {
 }
 
 function AdminCommunityContent() {
-	const router = useRouter();
 	const [currentTab, setCurrentTab] = useState(0);
 
 	useEffect(() => {

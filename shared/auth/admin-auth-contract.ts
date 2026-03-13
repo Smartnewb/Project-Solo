@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-globals -- Bridge module: centralizes all legacy localStorage access for admin auth tokens/country. Will be removed in Phase 6 when localStorage dependency is eliminated. */
 export type AdminCountry = 'kr' | 'jp';
 export const ADMIN_REFRESH_STORAGE_KEY = 'admin_refresh_token';
 export const ADMIN_COUNTRY_STORAGE_KEY = 'admin_selected_country';

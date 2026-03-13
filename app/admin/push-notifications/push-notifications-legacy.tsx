@@ -50,7 +50,7 @@ function PushNotificationsPageContent() {
   });
 
   const formatPhoneNumber = (value: string) => {
-    const numbers = value.replace(/[^0-9]/g, '');
+    const numbers = value.replaceAll(/\D/g, '');
 
     if (numbers.length <= 3) {
       return numbers;
@@ -367,8 +367,9 @@ function PushNotificationsPageContent() {
 
           {/* 성별 */}
           <div>
-            <label className="block mb-2 font-medium">성별</label>
+            <label htmlFor="genderFilter" className="block mb-2 font-medium">성별</label>
             <select
+              id="genderFilter"
               value={filters.gender}
               onChange={(e) => setFilters({ ...filters, gender: e.target.value })}
               className="border rounded px-3 py-2 w-full"
@@ -429,6 +430,9 @@ function PushNotificationsPageContent() {
                           setUniversitySearch('');
                           setShowUniversityDropdown(false);
                         }}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleUniversity(university); setUniversitySearch(''); setShowUniversityDropdown(false); } }}
+                        role="button"
+                        tabIndex={0}
                         className={`px-3 py-2 cursor-pointer hover:bg-gray-100 ${
                           filters.universities.includes(university) ? 'bg-blue-50' : ''
                         }`}
@@ -757,7 +761,7 @@ function PushNotificationsPageContent() {
 
       {/* 프로필 상세 모달 */}
       {showProfileModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={closeProfileModal}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={closeProfileModal} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); closeProfileModal(); } }} role="button" tabIndex={0}>
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             {loadingProfile ? (
               <div className="text-center py-8">

@@ -514,7 +514,7 @@ function MatchingManagementV2Content() {
           page: unmatchedUsersPage,
           limit: unmatchedUsersLimit,
           name: unmatchedUsersSearchTerm || undefined,
-          gender: unmatchedUsersGenderFilter !== 'all' ? unmatchedUsersGenderFilter : undefined
+          gender: unmatchedUsersGenderFilter === 'all' ? undefined : unmatchedUsersGenderFilter
         }
       });
 
@@ -566,7 +566,7 @@ function MatchingManagementV2Content() {
 
   // 매칭 대기 사용자 페이지당 항목 수 변경 핸들러
   const handleUnmatchedUsersLimitChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setUnmatchedUsersLimit(parseInt(event.target.value, 10));
+    setUnmatchedUsersLimit(Number.parseInt(event.target.value, 10));
     setUnmatchedUsersPage(1); // 페이지 번호를 1로 설정
     fetchUnmatchedUsers();
   };
@@ -768,21 +768,19 @@ function MatchingManagementV2Content() {
                           <TableCell>{history.id}</TableCell>
                           <TableCell>{history.score || '-'}</TableCell>
                           <TableCell>
-                            <Chip
-                              label={
+                            {(() => {
+                              const typeLabel =
                                 history.type === 'scheduled' ? '무료 매칭' :
                                 history.type === 'admin' ? '관리자 매칭' :
                                 history.type === 'rematching' ? '유료 매칭' :
-                                history.type
-                              }
-                              color={
+                                history.type;
+                              const typeColor =
                                 history.type === 'scheduled' ? 'success' :
                                 history.type === 'admin' ? 'info' :
                                 history.type === 'rematching' ? 'warning' :
-                                'default'
-                              }
-                              size="small"
-                            />
+                                'default';
+                              return <Chip label={typeLabel} color={typeColor as any} size="small" />;
+                            })()}
                           </TableCell>
                           <TableCell>
                             {formatDateTimeWithoutTimezoneConversion(history.publishedAt)}

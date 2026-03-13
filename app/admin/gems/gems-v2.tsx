@@ -147,7 +147,7 @@ function GemsManagementPageContent() {
       .map(phone => phone.trim())
       .filter(phone => phone.length > 0);
 
-    const normalizedNewPhone = user.phoneNumber.replace(/[\s-]/g, '');
+    const normalizedNewPhone = user.phoneNumber.replaceAll(/[\s-]/g, '');
     const isDuplicate = currentPhones.some(
       phone => phone.replace(/[\s-]/g, '') === normalizedNewPhone
     );
@@ -506,7 +506,7 @@ function GemsManagementPageContent() {
               fullWidth
               type="number"
               value={gemAmount}
-              onChange={(e) => setGemAmount(parseInt(e.target.value) || 0)}
+              onChange={(e) => setGemAmount(Number.parseInt(e.target.value) || 0)}
               inputProps={{ min: 1 }}
               placeholder="10"
               required

@@ -234,13 +234,6 @@ function UsersV2Content() {
     // 검색어 변경 시 페이지 초기화는 디바운스된 useEffect에서 처리
   };
 
-  // 페이지 변경 핸들러
-  const handlePageChange = (newPage: number) => {
-    if (!loading && newPage > 0 && newPage <= Math.ceil(totalCount / pageSize)) {
-      setPage(newPage);
-    }
-  };
-
   // 페이지 버튼 렌더링
   const renderPagination = () => {
     const totalPages = Math.ceil(totalCount / pageSize);
@@ -331,7 +324,7 @@ function UsersV2Content() {
         <div className="py-8 text-center">
           <p className="text-red-500">데이터베이스 오류: {error}</p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => globalThis.window.location.reload()}
             className="mt-4 px-4 py-2 bg-primary-DEFAULT text-white rounded hover:bg-primary-dark"
           >
             다시 시도
@@ -719,6 +712,8 @@ function UsersV2Content() {
                     <div className="flex justify-center">
                       <div
                         className="h-48 w-48 rounded-lg bg-gray-200 flex items-center justify-center text-gray-600 text-4xl overflow-hidden"
+                        role="button"
+                        tabIndex={0}
                         onClick={() => {
                           console.log('현재 메인 이미지 상태:', selectedImage);
                           console.log('사용자 프로필 이미지:', selectedUser.profileImages);
@@ -727,6 +722,15 @@ function UsersV2Content() {
                           const mainImage = selectedUser.profileImages.find(img => img.isMain === true);
                           if (mainImage) {
                             console.log('메인 이미지 정보:', mainImage.id, mainImage.url);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            const mainImage = selectedUser.profileImages.find(img => img.isMain === true);
+                            if (mainImage) {
+                              console.log('메인 이미지 정보:', mainImage.id, mainImage.url);
+                            }
                           }
                         }}
                       >

@@ -227,7 +227,7 @@ function MatchingManagementPageContent() {
         currentPage + 1,
         historyRowsPerPage,
         historySearchName.trim() || undefined,
-        historySearchType !== 'all' ? historySearchType : undefined
+        historySearchType === 'all' ? undefined : historySearchType
       );
 
       // 각 매칭에 대해 매칭 횟수 조회
@@ -765,21 +765,19 @@ function MatchingManagementPageContent() {
                           <TableCell>{history.id}</TableCell>
                           <TableCell>{history.score || '-'}</TableCell>
                           <TableCell>
-                            <Chip
-                              label={
+                            {(() => {
+                              const typeLabel =
                                 history.type === 'scheduled' ? '무료 매칭' :
                                 history.type === 'admin' ? '관리자 매칭' :
                                 history.type === 'rematching' ? '유료 매칭' :
-                                history.type
-                              }
-                              color={
+                                history.type;
+                              const typeColor =
                                 history.type === 'scheduled' ? 'success' :
                                 history.type === 'admin' ? 'info' :
                                 history.type === 'rematching' ? 'warning' :
-                                'default'
-                              }
-                              size="small"
-                            />
+                                'default';
+                              return <Chip label={typeLabel} color={typeColor as any} size="small" />;
+                            })()}
                           </TableCell>
                           <TableCell>
                             {formatDateTimeWithoutTimezoneConversion(history.publishedAt)}
@@ -909,7 +907,7 @@ function MatchingManagementPageContent() {
                             ) : (
                               <Chip
                                 label={history.matchCount || 0}
-                                color={history.matchCount > 1 ? 'warning' : history.matchCount === 0 ? 'error' : 'default'}
+                                color={history.matchCount > 1 ? 'warning' : history.matchCount > 0 ? 'default' : 'error'}
                                 size="small"
                                 variant={history.matchCount > 1 ? 'filled' : 'outlined'}
                               />

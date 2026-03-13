@@ -89,6 +89,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
+    // eslint-disable-next-line no-console -- server-side route handler error logging
     console.error('Admin login error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

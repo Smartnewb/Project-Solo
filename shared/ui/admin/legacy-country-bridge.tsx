@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable no-restricted-globals -- Legacy bridge: syncs cookie-based country to localStorage for legacy CountryProvider. Will be removed in Phase 6. */
 
 import { useLayoutEffect, type ReactNode } from 'react';
 import { useAdminSession } from '@/shared/contexts/admin-session-context';

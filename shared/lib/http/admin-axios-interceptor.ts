@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-globals, no-restricted-properties -- Bridge interceptor: patches legacy axios to route through BFF. Requires localStorage for legacy token sync and window.location for auth failure redirect. Will be removed in Phase 6. */
 import axiosServer, { axiosMultipart, axiosNextGen } from '@/utils/axios';
 import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 
