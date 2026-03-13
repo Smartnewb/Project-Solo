@@ -14,10 +14,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Admin paths — allow through, AdminShell handles auth
-  // Phase 1: Permissive. AdminShell validates session (cookie-first, localStorage-fallback).
-  // Phase 6: Middleware will enforce cookie presence.
+  // Admin paths — require admin_session_meta cookie
+  // Signature verification happens in route handlers; middleware checks existence only.
   if (pathname.startsWith('/admin')) {
+    const adminCookie = request.cookies.get('admin_session_meta');
+    if (!adminCookie) {
+      return NextResponse.redirect(new URL('/', request.url));
+    }
     return NextResponse.next();
   }
 
