@@ -1,28 +1,14 @@
-'use client';
+import { getRouteMode, isAdminShellV2Enabled } from '@/shared/feature-flags';
+import ForceMatchingLegacy from './force-matching-legacy';
+import ForceMatchingV2 from './force-matching-v2';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
+export default async function ForceMatchingPage() {
+  const shellV2 = await isAdminShellV2Enabled();
+  const mode = await getRouteMode('force-matching');
 
-function ForceMatchingPageContent() {
-	const router = useRouter();
+  if (shellV2 && mode === 'v2') {
+    return <ForceMatchingV2 />;
+  }
 
-	useEffect(() => {
-		// 매칭 관리 페이지의 강제 매칭 탭(인덱스 9)으로 리다이렉트
-		router.replace('/admin/matching-management');
-	}, [router]);
-
-	return (
-		<div className="flex items-center justify-center min-h-[200px]">
-			<p className="text-gray-500">매칭 관리 페이지로 이동 중...</p>
-		</div>
-	);
-}
-
-export default function ForceMatchingPage() {
-  return (
-    <LegacyPageAdapter>
-      <ForceMatchingPageContent />
-    </LegacyPageAdapter>
-  );
+  return <ForceMatchingLegacy />;
 }

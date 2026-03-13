@@ -1,76 +1,14 @@
-'use client';
+import { getRouteMode, isAdminShellV2Enabled } from '@/shared/feature-flags';
+import ScheduledMatchingLegacy from './scheduled-matching-legacy';
+import ScheduledMatchingV2 from './scheduled-matching-v2';
 
-import React, { useState } from 'react';
-import { Box, Typography, Tabs, Tab } from '@mui/material';
-import CountryOverview from './components/CountryOverview';
-import ScheduleConfig from './components/ScheduleConfig';
-import BatchHistory from './components/BatchHistory';
-import ManualMatching from './components/ManualMatching';
-import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
+export default async function ScheduledMatchingPage() {
+  const shellV2 = await isAdminShellV2Enabled();
+  const mode = await getRouteMode('scheduled-matching');
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
+  if (shellV2 && mode === 'v2') {
+    return <ScheduledMatchingV2 />;
+  }
 
-function TabPanel({ children, value, index, ...other }: TabPanelProps) {
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`schedule-tabpanel-${index}`}
-      aria-labelledby={`schedule-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
-    </div>
-  );
-}
-
-function ScheduledMatchingPageContent() {
-  const [activeTab, setActiveTab] = useState(0);
-
-  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
-  };
-
-  return (
-    <Box sx={{ p: 3 }}>
-      <Typography variant="h5" gutterBottom>
-        스케줄 관리
-      </Typography>
-
-      <Tabs value={activeTab} onChange={handleTabChange} aria-label="스케줄 관리 탭">
-        <Tab label="국가별 현황" />
-        <Tab label="스케줄 설정" />
-        <Tab label="배치 히스토리" />
-        <Tab label="수동 매칭" />
-      </Tabs>
-
-      <TabPanel value={activeTab} index={0}>
-        <CountryOverview />
-      </TabPanel>
-
-      <TabPanel value={activeTab} index={1}>
-        <ScheduleConfig />
-      </TabPanel>
-
-      <TabPanel value={activeTab} index={2}>
-        <BatchHistory />
-      </TabPanel>
-
-      <TabPanel value={activeTab} index={3}>
-        <ManualMatching />
-      </TabPanel>
-    </Box>
-  );
-}
-
-export default function ScheduledMatchingPage() {
-  return (
-    <LegacyPageAdapter>
-      <ScheduledMatchingPageContent />
-    </LegacyPageAdapter>
-  );
+  return <ScheduledMatchingLegacy />;
 }
