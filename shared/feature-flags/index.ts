@@ -28,10 +28,11 @@ export async function getFlag<T>(key: string, defaultValue: T): Promise<T> {
 
 /**
  * Check if the new admin shell is enabled.
- * Default: true (Phase 1 ships with v2 enabled)
+ * Default: false — opt-in only via Edge Config.
+ * Without EDGE_CONFIG env var (e.g. Preview deploys), legacy layout is used.
  */
 export async function isAdminShellV2Enabled(): Promise<boolean> {
-  return getFlag(FLAGS.ADMIN_SHELL_V2, true);
+  return getFlag(FLAGS.ADMIN_SHELL_V2, false);
 }
 
 /**
