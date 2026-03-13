@@ -102,9 +102,10 @@ export async function GET() {
     if (typeof newRefreshToken === 'string' && newRefreshToken.length > 0) {
       await setAdminRefreshToken(newRefreshToken);
     }
-    await setSessionMeta({ ...meta, issuedAt: Date.now() });
+    const updatedMeta = { ...meta, issuedAt: Date.now() };
+    await setSessionMeta(updatedMeta);
 
-    const sessionDTO = await fetchUserAndBuildSessionDTO(newAccessToken, meta);
+    const sessionDTO = await fetchUserAndBuildSessionDTO(newAccessToken, updatedMeta);
 
     if (!sessionDTO) {
       await clearAdminCookies();
