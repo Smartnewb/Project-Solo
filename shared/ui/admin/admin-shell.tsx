@@ -151,7 +151,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
               />
             )}
 
-            <div className="relative z-0 flex min-w-0 flex-1 flex-col overflow-auto">
+            <div className="flex min-w-0 flex-1 flex-col overflow-auto">
               <div className="md:hidden flex items-center justify-between p-4 bg-white shadow-sm">
                 <h1 className="text-lg font-semibold">관리자 대시보드</h1>
                 <button
