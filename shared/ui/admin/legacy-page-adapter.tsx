@@ -1,6 +1,7 @@
 'use client';
 
 import { useContext, useEffect, type ReactNode } from 'react';
+import { CountryProvider } from '@/contexts/CountryContext';
 import { AdminSessionContext } from '@/shared/contexts/admin-session-context';
 import { LegacyAuthBridgeProvider } from './legacy-auth-bridge';
 import { LegacyCountryBridgeProvider } from './legacy-country-bridge';
@@ -16,8 +17,9 @@ import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
  *          └─ Axios interceptor (routes API calls through BFF)
  *          └─ LegacyAuthBridgeProvider (syncs session → localStorage)
  *               └─ LegacyCountryBridgeProvider (syncs country → localStorage)
- *                    └─ ErrorBoundary
- *                         └─ Legacy page component
+ *                    └─ CountryProvider
+ *                         └─ ErrorBoundary
+ *                              └─ Legacy page component
  *
  * **Legacy mode (LegacyAdminLayout active, no AdminSessionContext):**
  *   LegacyAdminLayout (auth via useAuth + CountryProvider)
@@ -43,9 +45,11 @@ export function LegacyPageAdapter({ children }: { children: ReactNode }) {
     return (
       <LegacyAuthBridgeProvider>
         <LegacyCountryBridgeProvider>
-          <ErrorBoundary fallback={<div className="p-4 text-red-500">페이지 로딩 오류</div>}>
-            {children}
-          </ErrorBoundary>
+          <CountryProvider>
+            <ErrorBoundary fallback={<div className="p-4 text-red-500">페이지 로딩 오류</div>}>
+              {children}
+            </ErrorBoundary>
+          </CountryProvider>
         </LegacyCountryBridgeProvider>
       </LegacyAuthBridgeProvider>
     );
