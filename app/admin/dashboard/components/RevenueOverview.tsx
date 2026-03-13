@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
+  Alert,
   Box,
   Card,
   CardContent,
@@ -119,15 +120,18 @@ export default function RevenueOverview({
   const [extendedRevenue, setExtendedRevenue] =
     useState<ExtendedRevenueResponse | null>(null);
   const [extendedLoading, setExtendedLoading] = useState(true);
+  const [extendedError, setExtendedError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchExtendedRevenue = async () => {
       try {
         setExtendedLoading(true);
+        setExtendedError(null);
         const data = await dashboardService.getExtendedRevenue();
         setExtendedRevenue(data);
       } catch (error) {
         console.error("확장 매출 현황 조회 실패:", error);
+        setExtendedError("매출 현황 데이터를 불러오는데 실패했습니다.");
       } finally {
         setExtendedLoading(false);
       }
@@ -156,6 +160,12 @@ export default function RevenueOverview({
             </Button>
           </Link>
         </Box>
+
+        {extendedError && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            {extendedError}
+          </Alert>
+        )}
 
         {isLoading ? (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>

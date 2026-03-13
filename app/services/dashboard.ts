@@ -136,8 +136,8 @@ export const dashboardService = {
   ): Promise<GemSystemFunnelResponse> {
     try {
       return await adminGet<GemSystemFunnelResponse>(DASHBOARD_ENDPOINT.GEM_SYSTEM_FUNNEL, {
-        startDate: startDate ?? "",
-        endDate: endDate ?? "",
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
         debug: debug ? "true" : undefined,
       });
     } catch (error) {

@@ -89,13 +89,10 @@ const stats = {
 				params,
 			});
 			console.log('총 회원 수 API 응답:', response.data);
-
-			// 실제 사용자 수를 반환하도록 수정
-			// 임시 수정: 실제 사용자 수를 임의로 설정 (API가 완성되면 제거)
-			return { totalUsers: response.data.totalUsers }; // 임시 값으로 설정
+			return response.data;
 		} catch (error) {
 			console.error('총 회원 수 조회 중 오류:', error);
-			return { totalUsers: 120 }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 	getDailySignupCount: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
@@ -109,10 +106,10 @@ const stats = {
 				params,
 			});
 			console.log('오늘 가입한 회원 수 API 응답:', response.data);
-			return response.data || { dailySignups: 4 };
+			return response.data;
 		} catch (error) {
 			console.error('오늘 가입한 회원 수 조회 중 오류:', error);
-			return { dailySignups: 4 }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 	getWeeklySignupCount: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
@@ -126,10 +123,10 @@ const stats = {
 				params,
 			});
 			console.log('이번 주 가입한 회원 수 API 응답:', response.data);
-			return response.data || { weeklySignups: 12 };
+			return response.data;
 		} catch (error) {
 			console.error('이번 주 가입한 회원 수 조회 중 오류:', error);
-			return { weeklySignups: 12 }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 	getDailySignupTrend: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
@@ -283,30 +280,10 @@ const stats = {
 				params,
 			});
 			console.log('성별 통계 API 응답:', response.data);
-
-			// 임시 데이터 생성
-			const mockData = {
-				maleCount: 60,
-				femaleCount: 60,
-				totalCount: 120,
-				malePercentage: 50,
-				femalePercentage: 50,
-				genderRatio: '1:1',
-			};
-
-			return response.data || mockData;
+			return response.data;
 		} catch (error) {
 			console.error('성별 통계 조회 중 오류:', error);
-
-			// 오류 발생 시 기본값 반환
-			return {
-				maleCount: 60,
-				femaleCount: 60,
-				totalCount: 120,
-				malePercentage: 50,
-				femalePercentage: 50,
-				genderRatio: '1:1',
-			};
+			throw error;
 		}
 	},
 
@@ -356,10 +333,10 @@ const stats = {
 			const response = await axiosServer.get('/admin/stats/withdrawals/total', {
 				params,
 			});
-			return response.data || { totalWithdrawals: 0 };
+			return response.data;
 		} catch (error) {
 			console.error('총 탈퇴자 수 조회 중 오류:', error);
-			return { totalWithdrawals: 0 }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 
@@ -373,10 +350,10 @@ const stats = {
 			const response = await axiosServer.get('/admin/stats/withdrawals/daily', {
 				params,
 			});
-			return response.data || { dailyWithdrawals: 0 };
+			return response.data;
 		} catch (error) {
 			console.error('오늘 탈퇴한 회원 수 조회 중 오류:', error);
-			return { dailyWithdrawals: 0 }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 
@@ -388,10 +365,10 @@ const stats = {
 			if (useCluster !== undefined) params.useCluster = String(useCluster);
 
 			const response = await axiosServer.get('/admin/stats/withdrawals/weekly', { params });
-			return response.data || { weeklyWithdrawals: 0 };
+			return response.data;
 		} catch (error) {
 			console.error('이번 주 탈퇴한 회원 수 조회 중 오류:', error);
-			return { weeklyWithdrawals: 0 }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 
@@ -403,10 +380,10 @@ const stats = {
 			if (useCluster !== undefined) params.useCluster = String(useCluster);
 
 			const response = await axiosServer.get('/admin/stats/withdrawals/monthly', { params });
-			return response.data || { monthlyWithdrawals: 0 };
+			return response.data;
 		} catch (error) {
 			console.error('이번 달 탈퇴한 회원 수 조회 중 오류:', error);
-			return { monthlyWithdrawals: 0 }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 
@@ -418,10 +395,10 @@ const stats = {
 				startDate,
 				endDate,
 			});
-			return response.data || { customPeriodWithdrawals: 0 };
+			return response.data;
 		} catch (error) {
 			console.error('사용자 지정 기간 탈퇴자 수 조회 중 오류:', error);
-			return { customPeriodWithdrawals: 0 }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 
@@ -433,10 +410,10 @@ const stats = {
 			if (useCluster !== undefined) params.useCluster = String(useCluster);
 
 			const response = await axiosServer.get('/admin/stats/withdrawals/trend/daily', { params });
-			return response.data || { data: [] };
+			return response.data;
 		} catch (error) {
 			console.error('일별 탈퇴 추이 조회 중 오류:', error);
-			return { data: [] }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 
@@ -448,10 +425,10 @@ const stats = {
 			if (useCluster !== undefined) params.useCluster = String(useCluster);
 
 			const response = await axiosServer.get('/admin/stats/withdrawals/trend/weekly', { params });
-			return response.data || { data: [] };
+			return response.data;
 		} catch (error) {
 			console.error('주별 탈퇴 추이 조회 중 오류:', error);
-			return { data: [] }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 
@@ -463,10 +440,10 @@ const stats = {
 			if (useCluster !== undefined) params.useCluster = String(useCluster);
 
 			const response = await axiosServer.get('/admin/stats/withdrawals/trend/monthly', { params });
-			return response.data || { data: [] };
+			return response.data;
 		} catch (error) {
 			console.error('월별 탈퇴 추이 조회 중 오류:', error);
-			return { data: [] }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 
@@ -482,10 +459,10 @@ const stats = {
 			if (useCluster !== undefined) requestData.useCluster = useCluster;
 
 			const response = await axiosServer.post('/admin/stats/withdrawals/trend/custom-period', requestData);
-			return response.data || { data: [] };
+			return response.data;
 		} catch (error) {
 			console.error('사용자 지정 기간 탈퇴 추이 조회 중 오류:', error);
-			return { data: [] }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 
@@ -497,10 +474,10 @@ const stats = {
 			if (endDate) params.endDate = endDate;
 
 			const response = await axiosServer.get('/admin/stats/withdrawals/reasons', { params });
-			return response.data || { reasons: [] };
+			return response.data;
 		} catch (error) {
 			console.error('탈퇴 사유 통계 조회 중 오류:', error);
-			return { reasons: [] }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 
@@ -508,16 +485,10 @@ const stats = {
 	getChurnRate: async () => {
 		try {
 			const response = await axiosServer.get('/admin/stats/withdrawals/churn-rate');
-			return (
-				response.data || {
-					dailyChurnRate: 0,
-					weeklyChurnRate: 0,
-					monthlyChurnRate: 0,
-				}
-			);
+			return response.data;
 		} catch (error) {
 			console.error('이탈률 조회 중 오류:', error);
-			return { dailyChurnRate: 0, weeklyChurnRate: 0, monthlyChurnRate: 0 }; // 오류 발생 시 기본값 반환
+			throw error;
 		}
 	},
 };

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
+  Alert,
   Box,
   Card,
   CardContent,
@@ -40,6 +41,7 @@ interface WeeklyTrendProps {
 
 export default function WeeklyTrend({ compact = false }: WeeklyTrendProps) {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [metric, setMetric] = useState<MetricType>("signups");
   const [signupData, setSignupData] = useState<TrendData[]>([]);
   const [salesData, setSalesData] = useState<TrendData[]>([]);
@@ -109,6 +111,7 @@ export default function WeeklyTrend({ compact = false }: WeeklyTrendProps) {
       setSalesData(processedSales);
     } catch (error) {
       console.error("주간 트렌드 데이터 조회 실패:", error);
+      setError("주간 트렌드 데이터를 불러오는데 실패했습니다.");
     } finally {
       setLoading(false);
     }
@@ -180,6 +183,12 @@ export default function WeeklyTrend({ compact = false }: WeeklyTrendProps) {
             </Link>
           </Box>
         </Box>
+
+        {error && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
 
         {loading ? (
           <Skeleton
