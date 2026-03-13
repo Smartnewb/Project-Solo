@@ -1,15 +1,16 @@
 'use client';
 
-import { useEffect, type ReactNode } from 'react';
+import { useContext, useEffect, type ReactNode } from 'react';
+import { AdminSessionContext } from '@/shared/contexts/admin-session-context';
 import { LegacyAuthBridgeProvider } from './legacy-auth-bridge';
 import { LegacyCountryBridgeProvider } from './legacy-country-bridge';
 import { ErrorBoundary } from '@/shared/ui/error-boundary';
 import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 
 /**
- * Wraps legacy admin pages to run inside the new AdminShell.
+ * Wraps legacy admin pages so they work in both layout modes:
  *
- * Structure:
+ * **V2 mode (AdminShell active):**
  *   AdminShell (session context)
  *     └─ LegacyPageAdapter
  *          └─ Axios interceptor (routes API calls through BFF)
@@ -18,24 +19,41 @@ import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
  *                    └─ ErrorBoundary
  *                         └─ Legacy page component
  *
- * The axios interceptor is critical: it rewrites all admin API calls
- * from direct backend access to /api/admin-proxy, making cookie-based
- * auth actually work for legacy pages.
+ * **Legacy mode (LegacyAdminLayout active, no AdminSessionContext):**
+ *   LegacyAdminLayout (auth via useAuth + CountryProvider)
+ *     └─ LegacyPageAdapter
+ *          └─ ErrorBoundary
+ *               └─ Legacy page component
+ *
+ * In legacy mode, bridges and BFF patches are skipped because
+ * auth/country are already managed by the legacy layout, and API
+ * calls use Bearer tokens from localStorage via the /api-proxy rewrite.
  */
 export function LegacyPageAdapter({ children }: { children: ReactNode }) {
+  const adminCtx = useContext(AdminSessionContext);
+  const isInsideAdminShell = adminCtx !== null;
+
   useEffect(() => {
-    // Patch axios to route through BFF proxy
+    if (!isInsideAdminShell) return;
     const unpatch = patchAdminAxios();
     return () => unpatch();
-  }, []);
+  }, [isInsideAdminShell]);
+
+  if (isInsideAdminShell) {
+    return (
+      <LegacyAuthBridgeProvider>
+        <LegacyCountryBridgeProvider>
+          <ErrorBoundary fallback={<div className="p-4 text-red-500">페이지 로딩 오류</div>}>
+            {children}
+          </ErrorBoundary>
+        </LegacyCountryBridgeProvider>
+      </LegacyAuthBridgeProvider>
+    );
+  }
 
   return (
-    <LegacyAuthBridgeProvider>
-      <LegacyCountryBridgeProvider>
-        <ErrorBoundary fallback={<div className="p-4 text-red-500">페이지 로딩 오류</div>}>
-          {children}
-        </ErrorBoundary>
-      </LegacyCountryBridgeProvider>
-    </LegacyAuthBridgeProvider>
+    <ErrorBoundary fallback={<div className="p-4 text-red-500">페이지 로딩 오류</div>}>
+      {children}
+    </ErrorBoundary>
   );
 }
