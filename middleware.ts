@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-export async function middleware(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Public paths — always allow
@@ -16,9 +16,9 @@ export async function middleware(request: NextRequest) {
 
   // Admin paths — require admin_session_meta cookie
   // Signature verification happens in route handlers; middleware checks existence only.
-  if (pathname.startsWith('/admin')) {
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
     const adminCookie = request.cookies.get('admin_session_meta');
-    if (!adminCookie) {
+    if (!adminCookie?.value) {
       return NextResponse.redirect(new URL('/', request.url));
     }
     return NextResponse.next();
