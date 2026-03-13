@@ -1,5 +1,5 @@
 'use client';
-/* eslint-disable no-restricted-globals -- AdminShell bridge: reads/writes localStorage during session init, country change, and logout to maintain legacy compatibility. Will be removed in Phase 6. */
+/* eslint-disable no-restricted-globals -- AdminShell: reads/writes localStorage during country change and logout for legacy compatibility. */
 
 import { useEffect, useState, useCallback, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
@@ -8,7 +8,6 @@ import { AdminQueryProvider } from '@/shared/providers/query-provider';
 import { AdminSidebar } from './sidebar';
 import { AdminCountrySelectorModal } from './admin-country-selector';
 import {
-  buildAdminSyncPayload,
   buildAdminLogoutPayload,
   getStoredAdminCountry,
   getStoredAdminRefreshToken,
@@ -26,51 +25,21 @@ export function AdminShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     async function initSession() {
       setIsLoading(true);
-
       try {
         const res = await fetch('/api/admin/session');
         if (res.ok) {
           const data = await res.json();
           setSession(data);
-          setIsLoading(false);
-          return;
+        } else {
+          setError('Authentication required');
+          router.push('/');
         }
       } catch {
-        // Cookie session failed, try fallback
+        setError('Authentication required');
+        router.push('/');
+      } finally {
+        setIsLoading(false);
       }
-
-      const localToken = localStorage.getItem('accessToken');
-      if (localToken) {
-        try {
-          const syncRes = await fetch('/api/admin/auth/sync', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(
-              buildAdminSyncPayload(
-                localToken,
-                getStoredAdminRefreshToken(),
-                getStoredAdminCountry(),
-              ),
-            ),
-          });
-
-          if (syncRes.ok) {
-            const sessionRes = await fetch('/api/admin/session');
-            if (sessionRes.ok) {
-              const data = await sessionRes.json();
-              setSession(data);
-              setIsLoading(false);
-              return;
-            }
-          }
-        } catch {
-          // Sync failed
-        }
-      }
-
-      setError('Authentication required');
-      setIsLoading(false);
-      router.push('/');
     }
 
     initSession();
