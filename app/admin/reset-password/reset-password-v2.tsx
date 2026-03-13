@@ -217,15 +217,13 @@ function ResetPasswordPageContent() {
                     <TableCell>{user.name || '-'}</TableCell>
                     <TableCell>{user.phoneNumber || '-'}</TableCell>
                     <TableCell>
-                      {user.deletedAt
-                        ? `탈퇴 (${formatDate(user.deletedAt)})`
-                        : user.status === 'approved'
-                          ? '활성'
-                          : user.status === 'pending'
-                            ? '대기'
-                            : user.status === 'rejected'
-                              ? '거절'
-                              : user.status || '-'}
+                      {(() => {
+                        if (user.deletedAt) return `탈퇴 (${formatDate(user.deletedAt)})`;
+                        if (user.status === 'approved') return '활성';
+                        if (user.status === 'pending') return '대기';
+                        if (user.status === 'rejected') return '거절';
+                        return user.status || '-';
+                      })()}
                     </TableCell>
                     <TableCell>{formatDate(user.createdAt)}</TableCell>
                     <TableCell align="center">
