@@ -111,8 +111,8 @@ export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
                   onClick={onNavigate}
                   className={`block px-4 py-2 transition-colors ${
                     pathname === item.href
-                      ? 'bg-primary-DEFAULT text-white'
-                      : 'text-gray-600 hover:bg-primary-DEFAULT hover:text-white'
+                      ? 'bg-primary text-white'
+                      : 'text-gray-600 hover:bg-primary hover:text-white'
                   }`}
                 >
                   {item.label}
