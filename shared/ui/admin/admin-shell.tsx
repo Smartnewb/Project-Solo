@@ -53,7 +53,6 @@ export function AdminShell({ children }: { children: ReactNode }) {
     });
     if (res.ok) {
       setSession((prev) => prev ? { ...prev, selectedCountry: country } : null);
-      localStorage.setItem('admin_selected_country', country);
     }
   }, []);
 
@@ -66,10 +65,6 @@ export function AdminShell({ children }: { children: ReactNode }) {
       body: logoutPayload ? JSON.stringify(logoutPayload) : undefined,
     });
     setStoredAdminRefreshToken(null);
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('user');
-    localStorage.removeItem('isAdmin');
-    localStorage.removeItem('admin_selected_country');
     setSession(null);
     router.push('/');
   }, [router]);
