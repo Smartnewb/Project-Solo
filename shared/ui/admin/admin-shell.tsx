@@ -116,8 +116,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
   return (
     <AdminSessionContext.Provider value={{ session, isLoading, error, changeCountry, logout }}>
       <AdminQueryProvider>
-          <div className="flex h-screen bg-gray-100">
-            <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform md:relative md:translate-x-0 ${
+          <div className="flex min-h-screen bg-gray-100">
+            <div className={`fixed inset-y-0 left-0 z-50 h-screen w-64 overflow-y-auto bg-white shadow-lg transform transition-transform md:static md:inset-auto md:h-auto md:min-h-screen md:translate-x-0 md:shrink-0 ${
               sidebarOpen ? 'translate-x-0' : '-translate-x-full'
             }`}>
               <div className="p-4 border-b">
@@ -151,7 +151,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
               />
             )}
 
-            <div className="flex-1 flex flex-col overflow-auto">
+            <div className="flex min-w-0 flex-1 flex-col overflow-auto">
               <div className="md:hidden flex items-center justify-between p-4 bg-white shadow-sm">
                 <h1 className="text-lg font-semibold">관리자 대시보드</h1>
                 <button
