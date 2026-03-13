@@ -42,7 +42,6 @@ import RegionFilter, {
 import IncludeDeletedFilter, {
   useIncludeDeletedFilter,
 } from "@/components/admin/common/IncludeDeletedFilter";
-import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
 
 interface SectionHeaderProps {
   icon: React.ReactNode;
@@ -600,8 +599,6 @@ function MemberStatsDashboardContent() {
 
 export default function MemberStatsDashboard() {
   return (
-    <LegacyPageAdapter>
-      <MemberStatsDashboardContent />
-    </LegacyPageAdapter>
+    <MemberStatsDashboardContent />
   );
 }

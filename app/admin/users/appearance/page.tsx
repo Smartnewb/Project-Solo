@@ -24,7 +24,7 @@ import DuplicatePhoneUsersPanel from "@/components/admin/appearance/DuplicatePho
 import VerifiedUsersPanel from "@/components/admin/appearance/VerifiedUsersPanel";
 import BlacklistUsersPanel from "@/components/admin/appearance/BlacklistUsersPanel";
 import UniversityVerificationPendingPanel from "@/components/admin/appearance/UniversityVerificationPendingPanel";
-import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
+import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 
 // 전역 이벤트 버스 생성 (등급 변경 이벤트 처리용)
 export const appearanceGradeEventBus = {
@@ -40,6 +40,11 @@ export const appearanceGradeEventBus = {
 
 function AppearanceGradePageContent() {
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const unpatch = patchAdminAxios();
+    return () => unpatch();
+  }, []);
   const initialTab = parseInt(searchParams.get("tab") || "0", 10);
 
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -251,8 +256,6 @@ function AppearanceGradePageContent() {
 
 export default function AppearanceGradePage() {
   return (
-    <LegacyPageAdapter>
-      <AppearanceGradePageContent />
-    </LegacyPageAdapter>
+    <AppearanceGradePageContent />
   );
 }
