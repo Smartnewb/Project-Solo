@@ -156,7 +156,7 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
         selectedUser.name
       );
 
-      console.log('매칭 이력 조회 응답:', data);
+      ;
       setMatchHistory(data);
     } catch (err: any) {
       console.error('매칭 이력 조회 중 오류:', err);
@@ -233,7 +233,7 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
         matchingResult.partner.id
       );
 
-      console.log('중복 매칭 확인 응답:', data);
+      ;
 
       // 매칭 이력을 날짜 기준으로 오름차순 정렬 (가장 오래된 매칭이 첫 번째)
       if (data && data.matches && data.matches.length > 0) {
@@ -287,7 +287,7 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
         }
       });
 
-      console.log('타겟 사용자 검색 응답:', response.data);
+      ;
 
       let results = [];
       if (response.data && response.data.items && Array.isArray(response.data.items)) {
@@ -320,7 +320,7 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
         matchType
       );
 
-      console.log('직접 매칭 생성 응답:', response);
+      ;
       setDirectMatchResult(response);
 
       // 성공 시 다이얼로그 닫기

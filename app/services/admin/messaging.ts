@@ -80,7 +80,7 @@ export const aiChat = {
 			});
 
 			const response = await axiosServer.get(`/admin/ai-chat/sessions?${queryParams.toString()}`);
-			console.log('AI 채팅 세션 목록 조회 응답:', response.data);
+			;
 			return response.data;
 		} catch (error) {
 			console.error('AI 채팅 세션 목록 조회 중 오류:', error);
@@ -92,7 +92,7 @@ export const aiChat = {
 	getMessages: async (sessionId: string) => {
 		try {
 			const response = await axiosServer.get(`/admin/ai-chat/messages?sessionId=${sessionId}`);
-			console.log('AI 채팅 메시지 상세 조회 응답:', response.data);
+			;
 			return response.data;
 		} catch (error) {
 			console.error('AI 채팅 메시지 상세 조회 중 오류:', error);
@@ -104,12 +104,12 @@ export const aiChat = {
 export const momentQuestions = {
 	generate: async (data: GenerateQuestionsRequest): Promise<GenerateQuestionsResponse> => {
 		try {
-			console.log('질문 생성 요청:', data);
+			;
 			const response = await axiosServer.post<GenerateQuestionsResponse>(
 				'/admin/questions/generate',
 				data,
 			);
-			console.log('질문 생성 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('질문 생성 중 오류:', error);
@@ -120,12 +120,12 @@ export const momentQuestions = {
 
 	bulkCreate: async (data: BulkCreateQuestionsRequest): Promise<BulkCreateQuestionsResponse> => {
 		try {
-			console.log('질문 대량 저장 요청:', data);
+			;
 			const response = await axiosServer.post<BulkCreateQuestionsResponse>(
 				'/admin/questions/bulk-create',
 				data,
 			);
-			console.log('질문 대량 저장 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('질문 대량 저장 중 오류:', error);
@@ -136,7 +136,7 @@ export const momentQuestions = {
 
 	getList: async (params: GetQuestionsParams = {}): Promise<QuestionListResponse> => {
 		try {
-			console.log('질문 목록 조회 요청:', params);
+			;
 			const queryParams: Record<string, string | number | boolean> = {};
 
 			if (params.dimension) queryParams.dimension = params.dimension;
@@ -150,7 +150,7 @@ export const momentQuestions = {
 			const response = await axiosServer.get<QuestionListResponse>('/admin/questions', {
 				params: queryParams,
 			});
-			console.log('질문 목록 조회 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('질문 목록 조회 중 오류:', error);
@@ -161,9 +161,9 @@ export const momentQuestions = {
 
 	getDetail: async (id: string): Promise<QuestionDetail> => {
 		try {
-			console.log('질문 상세 조회 요청:', id);
+			;
 			const response = await axiosServer.get<QuestionDetail>(`/admin/questions/${id}`);
-			console.log('질문 상세 조회 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('질문 상세 조회 중 오류:', error);
@@ -174,9 +174,9 @@ export const momentQuestions = {
 
 	update: async (id: string, data: UpdateQuestionRequest): Promise<QuestionDetail> => {
 		try {
-			console.log('질문 수정 요청:', { id, data });
+			;
 			const response = await axiosServer.put<QuestionDetail>(`/admin/questions/${id}`, data);
-			console.log('질문 수정 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('질문 수정 중 오류:', error);
@@ -187,9 +187,9 @@ export const momentQuestions = {
 
 	delete: async (id: string): Promise<void> => {
 		try {
-			console.log('질문 삭제 요청:', id);
+			;
 			await axiosServer.delete(`/admin/questions/${id}`);
-			console.log('질문 삭제 완료');
+			;
 		} catch (error: any) {
 			console.error('질문 삭제 중 오류:', error);
 			console.error('오류 상세 정보:', error.response?.data || error.message);
@@ -199,12 +199,12 @@ export const momentQuestions = {
 
 	translate: async (data: TranslateQuestionsRequest): Promise<TranslateQuestionsResponse> => {
 		try {
-			console.log('질문 번역 요청:', data);
+			;
 			const response = await axiosServer.post<TranslateQuestionsResponse>(
 				'/admin/questions/translate',
 				data,
 			);
-			console.log('질문 번역 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('질문 번역 중 오류:', error);

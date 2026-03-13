@@ -77,7 +77,7 @@ const GemsManagement: React.FC<GemsManagementProps> = ({
 
     try {
       const response = await AdminService.userAppearance.getUserGems(userId);
-      console.log('구슬 정보 조회 응답:', response);
+      ;
       setGemsInfo(response);
     } catch (err: any) {
       console.error('구슬 정보 조회 오류:', err);
@@ -101,7 +101,7 @@ const GemsManagement: React.FC<GemsManagementProps> = ({
 
     try {
       const response = await AdminService.userAppearance.addUserGems(selectedUser.id, gemsCount);
-      console.log('구슬 추가 응답:', response);
+      ;
 
       setActionResult(`성공적으로 ${gemsCount}개의 구슬을 추가했습니다.`);
 
@@ -130,7 +130,7 @@ const GemsManagement: React.FC<GemsManagementProps> = ({
 
     try {
       const response = await AdminService.userAppearance.removeUserGems(selectedUser.id, gemsCount);
-      console.log('구슬 제거 응답:', response);
+      ;
 
       setActionResult(`성공적으로 ${gemsCount}개의 구슬을 제거했습니다.`);
 

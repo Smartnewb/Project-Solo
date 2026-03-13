@@ -25,19 +25,19 @@ export const userAppearance = {
 		userStatus?: 'pending' | 'approved' | 'rejected';
 	}) => {
 		try {
-			console.log('유저 목록 조회 요청 파라미터:', JSON.stringify(params, null, 2));
+			;
 
 			const queryParams = new URLSearchParams();
 
 			if (params.page) queryParams.append('page', params.page.toString());
 			if (params.limit) queryParams.append('limit', params.limit.toString());
 			if (params.gender) {
-				console.log('성별 파라미터 전송 전:', params.gender);
+				;
 				queryParams.append('gender', params.gender);
 			}
 
 			if (params.appearanceGrade) {
-				console.log('외모 등급 파라미터 전송 전:', params.appearanceGrade);
+				;
 				queryParams.append('appearanceGrade', params.appearanceGrade);
 			}
 
@@ -57,13 +57,13 @@ export const userAppearance = {
 			if (params.userStatus) queryParams.append('userStatus', params.userStatus);
 
 			const url = `/admin/users/appearance?${queryParams.toString()}`;
-			console.log('최종 API 요청 URL:', url);
-			console.log('최종 쿼리 파라미터:', queryParams.toString());
+			;
+			;
 
 			try {
 				const response = await axiosServer.get(url);
-				console.log('API 응답 상태:', response.status);
-				console.log('API 응답 헤더:', response.headers);
+				;
+				;
 				return response.data;
 			} catch (error: any) {
 				console.error('API 요청 실패:', error.message);
@@ -92,7 +92,7 @@ export const userAppearance = {
 				`/admin/users/appearance/unclassified?${params.toString()}`,
 			);
 
-			console.log('미분류 사용자 데이터 샘플:', response.data?.items?.slice(0, 2));
+			;
 
 			return response.data;
 		} catch (error) {
@@ -102,7 +102,7 @@ export const userAppearance = {
 	},
 
 	setUserAppearanceGrade: async (userId: string, grade: 'S' | 'A' | 'B' | 'C' | 'UNKNOWN') => {
-		console.log('등급 설정 요청:', { userId, grade });
+		;
 
 		if (!userId) {
 			throw new Error('유저 ID가 없습니다.');
@@ -114,7 +114,7 @@ export const userAppearance = {
 
 		try {
 			const response = await axiosServer.patch(`/admin/users/appearance/${userId}`, { grade });
-			console.log('등급 설정 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('유저 외모 등급 설정 중 오류:', error);
@@ -147,7 +147,7 @@ export const userAppearance = {
 		userIds: string[],
 		grade: 'S' | 'A' | 'B' | 'C' | 'UNKNOWN',
 	) => {
-		console.log('일괄 등급 설정 요청:', { userIds: userIds.length, grade });
+		;
 
 		try {
 			const response = await axiosServer.patch('/admin/users/appearance/bulk', {
@@ -163,13 +163,13 @@ export const userAppearance = {
 
 	getUserDetails: async (userId: string) => {
 		try {
-			console.log('유저 상세 정보 조회 시작:', userId);
+			;
 
 			const endpoint = `/admin/user-review/${userId}`;
-			console.log(`API 엔드포인트: ${endpoint}`);
+			;
 
 			const response = await axiosServer.get(endpoint);
-			console.log('유저 상세 정보 응답:', response.data);
+			;
 
 			const data = response.data;
 
@@ -197,12 +197,12 @@ export const userAppearance = {
 
 	getUserTickets: async (userId: string) => {
 		try {
-			console.log('재매칭 티켓 조회 시작:', userId);
+			;
 			const endpoint = `/admin/tickets/user/${userId}`;
-			console.log(`API 엔드포인트: ${endpoint}`);
+			;
 
 			const response = await axiosServer.get(endpoint);
-			console.log('재매칭 티켓 조회 응답:', response.data);
+			;
 
 			return response.data;
 		} catch (error: any) {
@@ -214,15 +214,15 @@ export const userAppearance = {
 
 	createUserTickets: async (userId: string, count: number) => {
 		try {
-			console.log('재매칭 티켓 생성 시작:', { userId, count });
+			;
 			const endpoint = `/admin/tickets`;
-			console.log(`API 엔드포인트: ${endpoint}`);
+			;
 
 			const response = await axiosServer.post(endpoint, {
 				userId,
 				count,
 			});
-			console.log('재매칭 티켓 생성 응답:', response.data);
+			;
 
 			return response.data;
 		} catch (error: any) {
@@ -234,9 +234,9 @@ export const userAppearance = {
 
 	deleteUserTickets: async (userId: string, count: number) => {
 		try {
-			console.log('재매칭 티켓 제거 시작:', { userId, count });
+			;
 			const endpoint = `/admin/tickets`;
-			console.log(`API 엔드포인트: ${endpoint}`);
+			;
 
 			const response = await axiosServer.delete(endpoint, {
 				data: {
@@ -244,7 +244,7 @@ export const userAppearance = {
 					count,
 				},
 			});
-			console.log('재매칭 티켓 제거 응답:', response.data);
+			;
 
 			return response.data;
 		} catch (error: any) {
@@ -256,11 +256,11 @@ export const userAppearance = {
 
 	getUserGems: async (userId: string) => {
 		try {
-			console.log('사용자 구슬 조회 시작:', userId);
+			;
 			const endpoint = `/admin/gems/users/${userId}/balance`;
 
 			const response = await axiosServer.get(endpoint);
-			console.log('사용자 구슬 조회 응답:', response.data);
+			;
 
 			return response.data;
 		} catch (error: any) {
@@ -272,12 +272,12 @@ export const userAppearance = {
 
 	addUserGems: async (userId: string, amount: number) => {
 		try {
-			console.log('사용자 구슬 추가 시작:', { userId, amount });
+			;
 			const endpoint = `/admin/gems/users/${userId}/add`;
 
 			const response = await axiosServer.post(endpoint, { amount });
 
-			console.log('사용자 구슬 추가 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('사용자 구슬 추가 중 오류:', error);
@@ -288,12 +288,12 @@ export const userAppearance = {
 
 	removeUserGems: async (userId: string, amount: number) => {
 		try {
-			console.log('사용자 구슬 제거 시작:', { userId, amount });
+			;
 			const endpoint = `/admin/gems/users/${userId}/deduct`;
 
 			const response = await axiosServer.post(endpoint, { amount });
 
-			console.log('사용자 구슬 제거 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('사용자 구슬 제거 중 오류:', error);
@@ -304,11 +304,11 @@ export const userAppearance = {
 
 	updateUserProfile: async (userId: string, profileData: any) => {
 		try {
-			console.log('유저 프로필 수정 시작:', userId);
-			console.log('프로필 수정 데이터:', profileData);
+			;
+			;
 
 			const endpoint = `/admin/users/detail/profile`;
-			console.log(`API 엔드포인트: ${endpoint}`);
+			;
 
 			const requestData = {
 				userId: userId,
@@ -319,10 +319,10 @@ export const userAppearance = {
 				mbti: profileData.mbti,
 			};
 
-			console.log('API 요청 데이터:', requestData);
+			;
 
 			const response = await axiosServer.post(endpoint, requestData);
-			console.log('유저 프로필 수정 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('유저 프로필 수정 중 오류:', error);
@@ -337,7 +337,7 @@ export const userAppearance = {
 		reason?: string,
 	) => {
 		try {
-			console.log('계정 상태 변경 요청:', { userId, status, reason });
+			;
 
 			const response = await axiosServer.post('/admin/users/detail/status', {
 				userId,
@@ -345,7 +345,7 @@ export const userAppearance = {
 				reason,
 			});
 
-			console.log('계정 상태 변경 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('계정 상태 변경 중 오류:', error);
@@ -356,14 +356,14 @@ export const userAppearance = {
 
 	sendWarningMessage: async (userId: string, message: string) => {
 		try {
-			console.log('경고 메시지 발송 요청:', { userId, message });
+			;
 
 			const response = await axiosServer.post('/admin/users/detail/warning', {
 				userId,
 				message,
 			});
 
-			console.log('경고 메시지 발송 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('경고 메시지 발송 중 오류:', error);
@@ -374,7 +374,7 @@ export const userAppearance = {
 
 	sendEmailNotification: async (userId: string, subject: string, message: string) => {
 		try {
-			console.log('이메일 발송 요청:', { userId, subject, message });
+			;
 
 			const response = await axiosServer.post('/admin/notification/email', {
 				userId,
@@ -382,7 +382,7 @@ export const userAppearance = {
 				message,
 			});
 
-			console.log('이메일 발송 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('이메일 발송 중 오류:', error);
@@ -393,14 +393,14 @@ export const userAppearance = {
 
 	sendSmsNotification: async (userId: string, message: string) => {
 		try {
-			console.log('SMS 발송 요청:', { userId, message });
+			;
 
 			const response = await axiosServer.post('/admin/notification/sms', {
 				userId,
 				message,
 			});
 
-			console.log('SMS 발송 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('SMS 발송 중 오류:', error);
@@ -411,13 +411,13 @@ export const userAppearance = {
 
 	forceLogout: async (userId: string) => {
 		try {
-			console.log('강제 로그아웃 요청:', { userId });
+			;
 
 			const response = await axiosServer.post('/admin/users/detail/logout', {
 				userId,
 			});
 
-			console.log('강제 로그아웃 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('강제 로그아웃 중 오류:', error);
@@ -428,14 +428,14 @@ export const userAppearance = {
 
 	sendProfileUpdateRequest: async (userId: string, message: string) => {
 		try {
-			console.log('프로필 수정 요청 발송:', { userId, message });
+			;
 
 			const response = await axiosServer.post('/admin/users/detail/profile-update-request', {
 				userId,
 				message,
 			});
 
-			console.log('프로필 수정 요청 발송 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('프로필 수정 요청 발송 중 오류:', error);
@@ -446,13 +446,13 @@ export const userAppearance = {
 
 	setInstagramError: async (userId: string) => {
 		try {
-			console.log('인스타그램 오류 상태 설정 요청:', { userId });
+			;
 
 			const response = await axiosServer.post('/admin/users/detail/instagram-error', {
 				userId,
 			});
 
-			console.log('인스타그램 오류 상태 설정 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('인스타그램 오류 상태 설정 중 오류:', error);
@@ -463,13 +463,13 @@ export const userAppearance = {
 
 	resetInstagramError: async (userId: string) => {
 		try {
-			console.log('인스타그램 오류 상태 해제 요청:', { userId });
+			;
 
 			const response = await axiosServer.post('/admin/users/detail/instagram-reset', {
 				userId,
 			});
 
-			console.log('인스타그램 오류 상태 해제 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('인스타그램 오류 상태 해제 중 오류:', error);
@@ -480,13 +480,13 @@ export const userAppearance = {
 
 	getAppearanceGradeStats: async (region?: string, useCluster?: boolean) => {
 		try {
-			console.log('외모 등급 통계 API 호출 시작');
+			;
 
 			const endpoint = '/admin/users/appearance/stats';
-			console.log(`API 엔드포인트: ${endpoint}`);
+			;
 
 			const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-			console.log('토큰 존재 여부:', !!token);
+			;
 
 			const timestamp = new Date().getTime();
 
@@ -496,11 +496,8 @@ export const userAppearance = {
 			if (useCluster !== undefined) params.append('useCluster', useCluster.toString());
 
 			const finalUrl = `${endpoint}?${params.toString()}`;
-			console.log('API 요청 URL:', finalUrl);
-			console.log('API 요청 헤더:', {
-				'Content-Type': 'application/json',
-				...(token ? { Authorization: `Bearer ${token}` } : {}),
-			});
+			;
+			;
 
 			const testData = {
 				all: {
@@ -533,23 +530,23 @@ export const userAppearance = {
 
 			try {
 				const response = await axiosServer.get(finalUrl);
-				console.log('Axios API 응답 상태 코드:', response.status);
-				console.log('Axios API 응답 데이터 전체:', response.data);
-				console.log('Axios API 응답 데이터 (JSON):', JSON.stringify(response.data, null, 2));
+				;
+				;
+				;
 
 				if (!response.data || Object.keys(response.data).length === 0) {
-					console.log('API 응답이 비어있어 테스트 데이터를 사용합니다.');
+					;
 					responseData = testData;
 				} else {
 					responseData = response.data;
 				}
 			} catch (error) {
 				console.error('API 호출 오류:', error);
-				console.log('API 호출 오류로 테스트 데이터를 사용합니다.');
+				;
 				responseData = testData;
 			}
 
-			console.log('처리할 응답 데이터:', responseData);
+			;
 
 			const formattedData: FormattedData = {
 				total: 0,
@@ -558,11 +555,11 @@ export const userAppearance = {
 			};
 
 			if (typeof responseData === 'object' && responseData !== null) {
-				console.log('응답 데이터 처리 시작');
-				console.log('응답 데이터 구조:', Object.keys(responseData));
+				;
+				;
 
 				if (responseData.all && responseData.male && responseData.female) {
-					console.log('새로운 API 응답 구조 감지');
+					;
 
 					const allStats = responseData.all;
 					formattedData.total = allStats.total || 0;
@@ -610,17 +607,17 @@ export const userAppearance = {
 						},
 					];
 
-					console.log('처리된 전체 통계:', formattedData.stats);
-					console.log('처리된 성별 통계:', formattedData.genderStats);
+					;
+					;
 				} else {
-					console.log('기존 API 응답 구조 처리 시도');
+					;
 
 					if ('total' in responseData) {
 						formattedData.total = responseData.total || 0;
 					} else if ('data' in responseData && 'total' in responseData.data) {
 						formattedData.total = responseData.data.total || 0;
 					}
-					console.log('총 사용자 수 (처리 후):', formattedData.total);
+					;
 
 					let statsData = [];
 					if (Array.isArray(responseData.stats)) {
@@ -629,7 +626,7 @@ export const userAppearance = {
 						statsData = responseData.data.stats;
 					}
 
-					console.log('등급별 통계 데이터:', statsData);
+					;
 
 					formattedData.stats = statsData.map(
 						(stat: { count: number; percentage: number; grade: string }) => {
@@ -648,7 +645,7 @@ export const userAppearance = {
 						},
 					);
 
-					console.log('처리된 등급별 통계:', formattedData.stats);
+					;
 
 					let genderStatsData = [];
 					if (Array.isArray(responseData.genderStats)) {
@@ -657,7 +654,7 @@ export const userAppearance = {
 						genderStatsData = responseData.data.genderStats;
 					}
 
-					console.log('성별 통계 데이터:', genderStatsData);
+					;
 
 					formattedData.genderStats = genderStatsData.map(
 						(genderStat: { stats: any[]; gender: string }) => {
@@ -691,7 +688,7 @@ export const userAppearance = {
 						},
 					);
 
-					console.log('처리된 성별 통계:', formattedData.genderStats);
+					;
 				}
 			} else {
 				console.error('응답 데이터가 객체가 아닙니다:', responseData);
@@ -721,7 +718,7 @@ export const userAppearance = {
 				});
 			});
 
-			console.log('변환된 데이터:', formattedData);
+			;
 			return formattedData;
 		} catch (error: any) {
 			console.error('외모 등급 통계 조회 중 오류:', error);
@@ -755,7 +752,7 @@ export const userAppearance = {
 				},
 			};
 
-			console.log('오류 발생으로 테스트 데이터 반환');
+			;
 
 			const formattedData = {
 				total: testData.all.total,
@@ -874,11 +871,11 @@ export const userAppearance = {
 
 	getDuplicatePhoneUsers: async () => {
 		try {
-			console.log('중복 휴대폰 번호 사용자 조회 요청');
+			;
 
 			const response = await axiosServer.get('/admin/users/duplicate-phone');
 
-			console.log('중복 휴대폰 번호 사용자 조회 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('중복 휴대폰 번호 사용자 조회 중 오류:', error);
@@ -894,7 +891,7 @@ export const userAppearance = {
 		university?: string;
 	}) => {
 		try {
-			console.log('대학교 인증 사용자 조회 요청:', params);
+			;
 
 			const queryParams = new URLSearchParams();
 			if (params.page) queryParams.append('page', params.page.toString());
@@ -904,7 +901,7 @@ export const userAppearance = {
 
 			const response = await axiosServer.get(`/admin/users/verified?${queryParams.toString()}`);
 
-			console.log('대학교 인증 사용자 조회 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('대학교 인증 사용자 조회 중 오류:', error);
@@ -920,7 +917,7 @@ export const userAppearance = {
 		university?: string;
 	}) => {
 		try {
-			console.log('대학교 인증 신청 사용자 조회 요청:', params);
+			;
 
 			const queryParams = new URLSearchParams();
 			if (params.page) queryParams.append('page', params.page.toString());
@@ -932,7 +929,7 @@ export const userAppearance = {
 				`/admin/university-verification/pending?${queryParams.toString()}`,
 			);
 
-			console.log('대학교 인증 신청 사용자 조회 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('대학교 인증 신청 사용자 조회 중 오류:', error);
@@ -943,13 +940,13 @@ export const userAppearance = {
 
 	approveUniversityVerification: async (userId: string) => {
 		try {
-			console.log('대학교 인증 승인 요청:', userId);
+			;
 
 			const response = await axiosServer.post('/admin/university-verification/approve', {
 				userId,
 			});
 
-			console.log('대학교 인증 승인 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('대학교 인증 승인 중 오류:', error);
@@ -960,13 +957,13 @@ export const userAppearance = {
 
 	rejectUniversityVerification: async (userId: string) => {
 		try {
-			console.log('대학교 인증 거절 요청:', userId);
+			;
 
 			const response = await axiosServer.post('/admin/university-verification/reject', {
 				userId,
 			});
 
-			console.log('대학교 인증 거절 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('대학교 인증 거절 중 오류:', error);
@@ -977,14 +974,14 @@ export const userAppearance = {
 
 	getBlacklistUsers: async (region?: string) => {
 		try {
-			console.log('블랙리스트 사용자 목록 조회 요청');
+			;
 
 			const params = new URLSearchParams();
 			if (region) params.append('region', region);
 
 			const response = await axiosServer.get(`/admin/users/blacklist?${params.toString()}`);
 
-			console.log('블랙리스트 사용자 목록 조회 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('블랙리스트 사용자 목록 조회 중 오류:', error);
@@ -995,11 +992,11 @@ export const userAppearance = {
 
 	releaseFromBlacklist: async (userId: string) => {
 		try {
-			console.log('블랙리스트 해제 요청:', { userId });
+			;
 
 			const response = await axiosServer.patch(`/admin/users/${userId}/blacklist/release`);
 
-			console.log('블랙리스트 해제 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('블랙리스트 해제 중 오류:', error);
@@ -1032,11 +1029,11 @@ export const userAppearance = {
 
 	resetPassword: async (userId: string) => {
 		try {
-			console.log('비밀번호 초기화 요청:', { userId });
+			;
 
 			const response = await axiosServer.patch(`/admin/users/${userId}/reset-password`);
 
-			console.log('비밀번호 초기화 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('비밀번호 초기화 중 오류:', error);
@@ -1047,12 +1044,7 @@ export const userAppearance = {
 
 	getReapplyUsers: async (page: number = 1, limit: number = 10, region?: string, name?: string) => {
 		try {
-			console.log('재심사 요청 사용자 조회 요청:', {
-				page,
-				limit,
-				region,
-				name,
-			});
+			;
 
 			const params: any = { page, limit };
 			if (region) params.region = region;
@@ -1062,7 +1054,7 @@ export const userAppearance = {
 				params,
 			});
 
-			console.log('재심사 요청 사용자 조회 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('재심사 요청 사용자 조회 중 오류:', error);
@@ -1073,7 +1065,7 @@ export const userAppearance = {
 
 	getPendingUsers: async (page: number = 1, limit: number = 10, region?: string, name?: string) => {
 		try {
-			console.log('승인 대기 사용자 조회 요청:', { page, limit, region, name });
+			;
 
 			const params: any = { page, limit };
 			if (region) params.region = region;
@@ -1083,7 +1075,7 @@ export const userAppearance = {
 				params,
 			});
 
-			console.log('승인 대기 사용자 조회 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('승인 대기 사용자 조회 중 오류:', error);
@@ -1099,7 +1091,7 @@ export const userAppearance = {
 		name?: string,
 	) => {
 		try {
-			console.log('승인 거부 사용자 조회 요청:', { page, limit, region, name });
+			;
 
 			const params: any = { page, limit };
 			if (region) params.region = region;
@@ -1109,7 +1101,7 @@ export const userAppearance = {
 				params,
 			});
 
-			console.log('승인 거부 사용자 조회 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('승인 거부 사용자 조회 중 오류:', error);
@@ -1120,13 +1112,13 @@ export const userAppearance = {
 
 	revokeUserApproval: async (userId: string, revokeReason: string) => {
 		try {
-			console.log('사용자 승인 취소 요청:', { userId, revokeReason });
+			;
 
 			const response = await axiosServer.patch(`/admin/users/approval/${userId}/revoke-approval`, {
 				revokeReason,
 			});
 
-			console.log('사용자 승인 취소 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('사용자 승인 취소 중 오류:', error);

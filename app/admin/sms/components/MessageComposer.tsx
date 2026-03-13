@@ -46,7 +46,7 @@ export function MessageComposer({ recipients, templateId, templateTitle, templat
             setHasUnsavedChanges(false);
             alert('임시 저장이 완료되었습니다.');
         } catch (error) {
-            console.log('임시 저장 실패:', error);
+            ;
             alert('임시 저장에 실패했습니다.');
         }
     };
@@ -128,7 +128,7 @@ export function MessageComposer({ recipients, templateId, templateTitle, templat
                 }
             }
         } catch (error) {
-            console.log('임시 저장 불러오기 실패:', error);
+            ;
         }
     }, []);
 
@@ -189,10 +189,10 @@ export function MessageComposer({ recipients, templateId, templateTitle, templat
 
     // === sms 발송 ===
     const handleSend = async () => {
-        console.log('=== 일반 발송 버튼 클릭 ===');
-        console.log('현재 시간:', new Date());
-        console.log('현재 시간 문자열:', new Date().toString());
-        console.log('scheduledAt 상태:', scheduledAt);
+        ;
+        ;
+        ;
+        ;
         
         if (!message.trim()) {
             alert('메세지를 입력해주세요.');
@@ -221,14 +221,14 @@ export function MessageComposer({ recipients, templateId, templateTitle, templat
 
             };
             
-            console.log('=== 발송 요청 데이터 ===');
-            console.log('request:', request);
+            ;
+            ;
 
             const response = await smsService.sendBulkSms(request);
 
             if (response.success) {
-                console.log('=== 발송 성공 응답 ===');
-                console.log('response:', response);
+                ;
+                ;
                 
                 const messageText = scheduledAt
                     ? `${recipients.length}명에게 예약 발송이 등록되었습니다.`
@@ -262,9 +262,9 @@ export function MessageComposer({ recipients, templateId, templateTitle, templat
     
     // === sms 예약 발송 ===
     const handleScheduleSubmit = async (datetime: string) => {
-        console.log('=== 예약 발송 함수 시작 ===');
-        console.log('전달받은 datetime:', datetime);
-        console.log('현재 시간:', new Date());
+        ;
+        ;
+        ;
         
         if (!datetime) {
             alert('예약 시간을 선택해주세요.');
@@ -274,8 +274,8 @@ export function MessageComposer({ recipients, templateId, templateTitle, templat
         const selectedTime = new Date(datetime);
         const now = new Date();
         
-        console.log('선택된 시간 객체:', selectedTime);
-        console.log('시간 비교 결과:', selectedTime <= now);
+        ;
+        ;
 
         if (selectedTime <= now) {
             alert('현재 시각보다 이후로 시간을 선택해주세요.');
@@ -307,13 +307,13 @@ export function MessageComposer({ recipients, templateId, templateTitle, templat
             scheduledAt: datetime.replace('T',' ')
         };
         
-        console.log('=== 예약 발송 요청 데이터 ===');
-        console.log('request:', request);
+        ;
+        ;
 
         const response = await smsService.sendBulkSms(request);
         
-        console.log('=== 예약 발송 응답 ===');
-        console.log('response:', response);
+        ;
+        ;
 
         if (response.success) {
             const scheduledTime = new Date(datetime);
@@ -324,7 +324,7 @@ export function MessageComposer({ recipients, templateId, templateTitle, templat
             localStorage.removeItem('sms_draft');
             onSendComplete?.();
         } else {
-            console.log('예약 발송 실패 응답:', response);
+            ;
             throw new Error(response.message || '예약 발송 실패');
         }
     } catch (error) {
@@ -452,16 +452,16 @@ export function MessageComposer({ recipients, templateId, templateTitle, templat
                         <button
                             onClick={() => {
                                 const now = new Date();
-                                console.log('=== 예약 발송 버튼 클릭 ===');
-                                console.log('현재 시간:', now);
-                                console.log('현재 시간 문자열:', now.toString());
+                                ;
+                                ;
+                                ;
                                 const year = now.getFullYear();
                                 const month = String(now.getMonth() + 1).padStart(2, '0');
                                 const day = String(now.getDate()).padStart(2, '0');
                                 const hours = String(now.getHours()).padStart(2, '0');
                                 const minutes = String(now.getMinutes()).padStart(2, '0');
                                 const formattedTime = `${year}-${month}-${day} ${hours}:${minutes}`;
-                                console.log('포맷된 시간:', formattedTime);
+                                ;
                                 setScheduledAt(formattedTime);
                                 setScheduledAtOpen(true);
                             }}
@@ -505,9 +505,9 @@ export function MessageComposer({ recipients, templateId, templateTitle, templat
                     value={scheduledAt}
                     className='w-full border rounded px-3 py-2 mb-4'
                     onChange={(e) => {
-                        console.log('=== input onChange ===');
-                        console.log('이전 값:', scheduledAt);
-                        console.log('새로운 값:', e.target.value);
+                        ;
+                        ;
+                        ;
                         setScheduledAt(e.target.value);
                     }}
                 />

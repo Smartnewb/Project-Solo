@@ -151,8 +151,8 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
 
     const startDateString = formateDateToString(start);
     const endDateString = formateDateToString(end);
-    console.log("대학 순위 startDate:", startDateString);
-    console.log("대학 순위 endDate:", endDateString);
+    ;
+    ;
 
     try {
       const response = await salesService.getUniversityRank({
@@ -165,7 +165,7 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
       if (response) {
         setTotalData(response);
       } else {
-        console.log("대학 랭킹 데이터 없음");
+        ;
         setTotalData(null);
       }
     } catch (error) {

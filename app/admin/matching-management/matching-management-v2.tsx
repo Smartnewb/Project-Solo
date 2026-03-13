@@ -389,7 +389,7 @@ function MatchingManagementV2Content() {
         }
       });
 
-      console.log('사용자 검색 응답:', response.data);
+      ;
 
       let results = [];
 
@@ -446,7 +446,7 @@ function MatchingManagementV2Content() {
         userId: selectedUser.id
       });
 
-      console.log('매칭 처리 응답:', response.data);
+      ;
       setMatchingResult(response.data);
     } catch (err: any) {
       console.error('매칭 처리 오류:', err);
@@ -481,7 +481,7 @@ function MatchingManagementV2Content() {
         limit: matchLimit
       });
 
-      console.log('매칭 시뮬레이션 응답:', response.data);
+      ;
       setSimulationResult(response.data);
     } catch (err: any) {
       console.error('매칭 시뮬레이션 오류:', err);
@@ -518,7 +518,7 @@ function MatchingManagementV2Content() {
         }
       });
 
-      console.log('매칭 대기 사용자 조회 응답:', response.data);
+      ;
 
       // 새로운 응답 형식에 맞게 처리
       if (response.data.items && Array.isArray(response.data.items)) {
@@ -582,9 +582,9 @@ function MatchingManagementV2Content() {
       setUserDetailError(null);
       setUserDetail(null);
 
-      console.log('유저 상세 정보 조회 요청:', user.id);
+      ;
       const data = await AdminService.userAppearance.getUserDetails(user.id);
-      console.log('유저 상세 정보 응답:', data);
+      ;
 
       setUserDetail(data);
     } catch (error: any) {
@@ -615,7 +615,7 @@ function MatchingManagementV2Content() {
         userId: selectedUnmatchedUser.id
       });
 
-      console.log('매칭 대기 사용자 매칭 처리 응답:', response.data);
+      ;
 
       // 매칭 성공 후 목록 새로고침
       fetchUnmatchedUsers();

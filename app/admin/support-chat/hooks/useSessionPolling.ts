@@ -102,7 +102,7 @@ export function useSessionPolling(): UseSessionPollingReturn {
     }
 
     if (totalPages > MAX_RESOLVED_PAGES) {
-      console.warn(`resolved 세션 조회가 최대 페이지(${MAX_RESOLVED_PAGES})를 초과했습니다.`);
+      ;
     }
 
     const uniqueSessions = Array.from(

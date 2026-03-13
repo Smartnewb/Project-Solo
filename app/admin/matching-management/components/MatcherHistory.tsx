@@ -89,7 +89,7 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
         requesterNameFilter.trim() || undefined
       );
 
-      console.log('매칭 상대 이력 조회 응답:', data);
+      ;
       setMatcherHistory(data);
     } catch (err: any) {
       console.error('매칭 상대 이력 조회 중 오류:', err);

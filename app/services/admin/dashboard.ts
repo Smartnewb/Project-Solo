@@ -13,7 +13,7 @@ export const stats = {
 			const response = await axiosServer.get('/admin/stats/users/total', {
 				params,
 			});
-			console.log('총 회원 수 API 응답:', response.data);
+			;
 			return response.data;
 		} catch (error) {
 			console.error('총 회원 수 조회 중 오류:', error);
@@ -30,7 +30,7 @@ export const stats = {
 			const response = await axiosServer.get('/admin/stats/users/daily', {
 				params,
 			});
-			console.log('오늘 가입한 회원 수 API 응답:', response.data);
+			;
 			return response.data;
 		} catch (error) {
 			console.error('오늘 가입한 회원 수 조회 중 오류:', error);
@@ -47,7 +47,7 @@ export const stats = {
 			const response = await axiosServer.get('/admin/stats/users/weekly', {
 				params,
 			});
-			console.log('이번 주 가입한 회원 수 API 응답:', response.data);
+			;
 			return response.data;
 		} catch (error) {
 			console.error('이번 주 가입한 회원 수 조회 중 오류:', error);
@@ -111,7 +111,7 @@ export const stats = {
 		useCluster?: boolean,
 	) => {
 		try {
-			console.log('사용자 지정 기간 조회:', startDate, endDate, region, includeDeleted, useCluster);
+			;
 			const requestData: any = {
 				startDate,
 				endDate,
@@ -131,8 +131,8 @@ export const stats = {
 
 			const response = await axiosServer.post('/admin/stats/users/custom-period', requestData);
 
-			console.log('원본 API 응답:', response);
-			console.log('응답 데이터:', response.data);
+			;
+			;
 
 			return response.data;
 		} catch (error) {
@@ -149,14 +149,7 @@ export const stats = {
 		useCluster?: boolean,
 	) => {
 		try {
-			console.log(
-				'사용자 지정 기간 추이 조회:',
-				startDate,
-				endDate,
-				region,
-				includeDeleted,
-				useCluster,
-			);
+			;
 			const requestData: any = {
 				startDate,
 				endDate,
@@ -179,8 +172,8 @@ export const stats = {
 				requestData,
 			);
 
-			console.log('추이 원본 API 응답:', response);
-			console.log('추이 응답 데이터:', response.data);
+			;
+			;
 
 			return response.data;
 		} catch (error) {
@@ -199,7 +192,7 @@ export const stats = {
 			const response = await axiosServer.get('/admin/stats/users/gender', {
 				params,
 			});
-			console.log('성별 통계 API 응답:', response.data);
+			;
 			return response.data;
 		} catch (error) {
 			console.error('성별 통계 조회 중 오류:', error);
@@ -215,21 +208,21 @@ export const stats = {
 			if (useCluster !== undefined) params.useCluster = String(useCluster);
 
 			const response = await axiosServer.get('/admin/stats/users/universities', { params });
-			console.log('서비스에서 받은 대학별 통계 데이터:', response.data);
-			console.log('서비스에서 받은 데이터 구조:', JSON.stringify(response.data, null, 2));
+			;
+			;
 
 			if (response.data && response.data.universities && response.data.universities.length > 0) {
-				console.log('첫 번째 대학 데이터:', response.data.universities[0]);
-				console.log('대학 데이터 키:', Object.keys(response.data.universities[0]));
+				;
+				;
 
 				const firstUni = response.data.universities[0];
-				console.log('첫 번째 대학 상세 데이터:');
-				console.log('- 대학명:', firstUni.universityName);
-				console.log('- 전체 회원수:', firstUni.totalCount);
-				console.log('- 남성 회원수:', firstUni.maleCount);
-				console.log('- 여성 회원수:', firstUni.femaleCount);
-				console.log('- 사용자 비율:', firstUni.percentage);
-				console.log('- 성비:', firstUni.genderRatio);
+				;
+				;
+				;
+				;
+				;
+				;
+				;
 			}
 
 			return response.data;
@@ -301,7 +294,7 @@ export const stats = {
 
 	getCustomPeriodWithdrawalCount: async (startDate: string, endDate: string) => {
 		try {
-			console.log('사용자 지정 기간 탈퇴자 수 조회:', startDate, endDate);
+			;
 			const response = await axiosServer.post('/admin/stats/withdrawals/custom-period', {
 				startDate,
 				endDate,
@@ -357,7 +350,7 @@ export const stats = {
 
 	getCustomPeriodWithdrawalTrend: async (startDate: string, endDate: string, region?: string, useCluster?: boolean) => {
 		try {
-			console.log('사용자 지정 기간 탈퇴 추이 조회:', startDate, endDate);
+			;
 			const requestData: any = {
 				startDate,
 				endDate,

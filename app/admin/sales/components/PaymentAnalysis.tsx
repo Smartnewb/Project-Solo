@@ -77,7 +77,7 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
             const startDateString = formatDateToString(effectiveStart);
             const endDateString = formatDateToString(effectiveEnd);
             
-            console.log('API 요청 날짜:', { startDateString, endDateString });
+            ;
 
             const response = await salesService.getPaymentAnalysis({
                 startDate: startDateString,

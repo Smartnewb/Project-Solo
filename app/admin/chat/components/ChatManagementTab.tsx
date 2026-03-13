@@ -201,9 +201,9 @@ export default function ChatManagementTab() {
       setUserDetailError(null);
       setUserDetail(null);
 
-      console.log('유저 상세 정보 조회 요청:', userId);
+      ;
       const data = await AdminService.userAppearance.getUserDetails(userId);
-      console.log('유저 상세 정보 응답:', data);
+      ;
 
       setUserDetail(data);
     } catch (error: any) {

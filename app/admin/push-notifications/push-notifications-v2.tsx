@@ -115,7 +115,7 @@ function PushNotificationsV2Content() {
   const loadUniversities = async () => {
     try {
       const universities = await AdminService.universities.getUniversities();
-      console.log('대학교 목록 조회 성공:', universities);
+      ;
       setAllUniversities(universities);
     } catch (error) {
       console.error('대학교 목록 조회 실패:', error);
@@ -208,9 +208,9 @@ function PushNotificationsV2Content() {
         message,
       };
 
-      console.log('📤 푸시 알림 발송 요청:', data);
+      ;
       const result = await AdminService.pushNotifications.sendBulkNotification(data);
-      console.log('✅ 푸시 알림 발송 성공:', result);
+      ;
 
       alert(`푸시 알림 발송 완료\n성공: ${result.successCount}건\n실패: ${result.failureCount}건\n총 대상: ${result.totalCount}건`);
 

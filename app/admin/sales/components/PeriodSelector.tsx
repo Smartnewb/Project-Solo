@@ -56,15 +56,12 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
         })
         setSelectedPeriod('all'); // 초기값을 'all'로 설정
     }, []);
-    console.log('초기 selectedPeriod:', selectedPeriod);
+    ;
 
     // MARK: - 날짜 변경 감지 및 부모 컴포넌트에게 알림
     useEffect(()=>{
         if (dateRange.from && dateRange.to && handleValidationDate()) {
-            console.log('PeriodSelector 날짜 전달:', {
-                from: formatDateToString(dateRange.from),
-                to: formatDateToString(dateRange.to)
-            });
+            ;
             
             onDateRangeChange?.({
                 startDate: dateRange.from,
@@ -72,7 +69,7 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
             });
         }
     }, [dateRange.from, dateRange.to]);
-    console.log('현재 selectedPeriod:',selectedPeriod);
+    ;
 
     /// === handlers === 
     
@@ -100,7 +97,7 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
     // MARK: - 날짜 범위 초기화
     const handleClearDates = () => {
         setSelectedPeriod('all');
-        console.log('handleClearDates - selectedPeriod:', 'all');
+        ;
         setDateRange({
             from: undefined,
             to: undefined,

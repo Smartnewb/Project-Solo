@@ -103,15 +103,8 @@ function ArticleList() {
 			);
 			setArticles(response.items ?? []);
 			setTotalCount(response.meta?.totalItems ?? 0);
-			console.log('페이지네이션 정보:', response.meta);
-			console.log(
-				'게시글 목록 데이터:',
-				response.items?.map((item) => ({
-					id: item.id,
-					isBlinded: item.isBlinded,
-					blindedAt: (item as any).blindedAt,
-				})),
-			);
+			;
+			;
 		} catch (error) {
 			console.error('게시글 목록 조회 중 오류:', error);
 			setError('게시글 목록을 불러오는 중 오류가 발생했습니다.');
@@ -267,11 +260,11 @@ function ArticleList() {
 				console.error('게시글 신고 내역 조회 중 오류:', reportError);
 			}
 
-			console.log('댓글 원본 데이터:', commentsResponse?.items);
+			;
 
 			const commentsWithAuthor =
 				commentsResponse?.items?.map((comment: any) => {
-					console.log('댓글 정보:', comment);
+					;
 					return {
 						...comment,
 						author: {
@@ -294,7 +287,7 @@ function ArticleList() {
 				reports: articleReports,
 			};
 
-			console.log('게시글 상세 정보:', articleDetail);
+			;
 
 			setSelectedArticleDetail(articleDetail);
 			setDetailDialogOpen(true);
@@ -1099,7 +1092,7 @@ function ReportList() {
 			);
 			setReports(response.items ?? []);
 			setTotalCount(response.meta?.totalItems ?? 0);
-			console.log('신고 목록 데이터:', response.items);
+			;
 		} catch (error) {
 			console.error('신고 목록 조회 중 오류:', error);
 			setError('신고 목록을 불러오는 중 오류가 발생했습니다.');
@@ -1156,9 +1149,9 @@ function ReportList() {
 			setUserDetailError(null);
 			setUserDetail(null);
 
-			console.log('유저 상세 정보 조회 요청:', userId);
+			;
 			const data = await AdminService.userAppearance.getUserDetails(userId);
-			console.log('유저 상세 정보 응답:', data);
+			;
 
 			setUserDetail(data);
 		} catch (error: any) {

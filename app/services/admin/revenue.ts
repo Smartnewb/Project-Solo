@@ -32,7 +32,7 @@ export const gems = {
 		message: string;
 	}) => {
 		try {
-			console.log('구슬 일괄 지급 요청:', data);
+			;
 
 			const formData = new FormData();
 
@@ -41,12 +41,7 @@ export const gems = {
 			}
 
 			if (data.csvFile) {
-				console.log('CSV File 정보:', {
-					name: data.csvFile.name,
-					type: data.csvFile.type,
-					size: data.csvFile.size,
-					lastModified: data.csvFile.lastModified,
-				});
+				;
 
 				formData.append('csvFile', data.csvFile);
 			}
@@ -54,18 +49,13 @@ export const gems = {
 			formData.append('gemAmount', data.gemAmount.toString());
 			formData.append('message', data.message);
 
-			console.log('FormData 내용 확인:', {
-				csvFile: formData.get('csvFile'),
-				phoneNumbers: formData.get('phoneNumbers'),
-				gemAmount: formData.get('gemAmount'),
-				message: formData.get('message'),
-			});
+			;
 
 			const responseData = await adminRequest<{ success: boolean; message?: string }>('/admin/gems/bulk-grant', {
 				method: 'POST',
 				body: formData,
 			});
-			console.log('구슬 일괄 지급 응답:', responseData);
+			;
 			return responseData;
 		} catch (error: any) {
 			console.error('구슬 일괄 지급 중 오류:', error);
@@ -86,11 +76,11 @@ export const femaleRetention = {
 	// 3일 이상 미접속 여성 유저 리스트 조회
 	getInactiveUsers: async (limit: number = 20, offset: number = 0) => {
 		try {
-			console.log('미접속 여성 유저 목록 조회 요청:', { limit, offset });
+			;
 			const response = await axiosServer.get('/admin/female-retention', {
 				params: { limit, offset },
 			});
-			console.log('미접속 여성 유저 목록 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('미접속 여성 유저 목록 조회 중 오류:', error);
@@ -102,9 +92,9 @@ export const femaleRetention = {
 	// 개별 유저에 대해 1회성 패스워드 발급
 	issueTemporaryPassword: async (userId: string) => {
 		try {
-			console.log('임시 패스워드 발급 요청:', userId);
+			;
 			const response = await axiosServer.post(`/admin/female-retention/${userId}`);
-			console.log('임시 패스워드 발급 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('임시 패스워드 발급 중 오류:', error);

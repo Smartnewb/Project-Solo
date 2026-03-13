@@ -27,11 +27,11 @@ import type {
 export const backgroundPresets = {
 	getActive: async (): Promise<BackgroundPresetsResponse> => {
 		try {
-			console.log('활성 배경 프리셋 목록 조회 요청');
+			;
 			const response = await axiosNextGen.get<BackgroundPresetsResponse>(
 				'/admin/background-presets/active',
 			);
-			console.log('활성 배경 프리셋 목록 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('활성 배경 프리셋 목록 조회 중 오류:', error);
@@ -42,13 +42,8 @@ export const backgroundPresets = {
 
 	upload: async (imageFile: File): Promise<UploadImageResponse> => {
 		try {
-			console.log('=== 배경 이미지 업로드 시작 ===');
-			console.log('File 정보:', {
-				name: imageFile.name,
-				type: imageFile.type,
-				size: imageFile.size,
-				lastModified: imageFile.lastModified,
-			});
+			;
+			;
 
 			const formData = new FormData();
 			formData.append('image', imageFile);
@@ -57,8 +52,8 @@ export const backgroundPresets = {
 				method: 'POST',
 				body: formData,
 			});
-			console.log('배경 이미지 업로드 성공:', data);
-			console.log('=== 배경 이미지 업로드 종료 ===');
+			;
+			;
 			return data;
 		} catch (error: any) {
 			console.error('배경 이미지 업로드 중 오류:', error);
@@ -72,13 +67,8 @@ export const backgroundPresets = {
 		data: UploadAndCreatePresetRequest,
 	): Promise<BackgroundPreset> => {
 		try {
-			console.log('배경 프리셋 통합 생성 요청:', data);
-			console.log('File 정보:', {
-				name: imageFile.name,
-				type: imageFile.type,
-				size: imageFile.size,
-				lastModified: imageFile.lastModified,
-			});
+			;
+			;
 
 			const formData = new FormData();
 			formData.append('image', imageFile);
@@ -92,7 +82,7 @@ export const backgroundPresets = {
 				method: 'POST',
 				body: formData,
 			});
-			console.log('배경 프리셋 통합 생성 응답:', responseData);
+			;
 			return responseData;
 		} catch (error: any) {
 			console.error('배경 프리셋 통합 생성 중 오류:', error);
@@ -103,9 +93,9 @@ export const backgroundPresets = {
 
 	create: async (data: CreatePresetRequest): Promise<BackgroundPreset> => {
 		try {
-			console.log('배경 프리셋 생성 요청:', data);
+			;
 			const response = await axiosNextGen.post('/admin/background-presets', data);
-			console.log('배경 프리셋 생성 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('배경 프리셋 생성 중 오류:', error);
@@ -116,9 +106,9 @@ export const backgroundPresets = {
 
 	update: async (id: string, data: Partial<CreatePresetRequest>): Promise<BackgroundPreset> => {
 		try {
-			console.log('배경 프리셋 수정 요청:', { id, data });
+			;
 			const response = await axiosNextGen.put(`/admin/background-presets/${id}`, data);
-			console.log('배경 프리셋 수정 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('배경 프리셋 수정 중 오류:', error);
@@ -129,9 +119,9 @@ export const backgroundPresets = {
 
 	delete: async (id: string): Promise<void> => {
 		try {
-			console.log('배경 프리셋 삭제 요청:', id);
+			;
 			await axiosNextGen.delete(`/admin/background-presets/${id}`);
-			console.log('배경 프리셋 삭제 완료');
+			;
 		} catch (error: any) {
 			console.error('배경 프리셋 삭제 중 오류:', error);
 			console.error('오류 상세 정보:', error.response?.data || error.message);
@@ -144,13 +134,8 @@ export const backgroundPresets = {
 export const cardNews = {
 	uploadSectionImage: async (imageFile: File): Promise<UploadImageResponse> => {
 		try {
-			console.log('섹션 이미지 업로드 요청');
-			console.log('File 정보:', {
-				name: imageFile.name,
-				type: imageFile.type,
-				size: imageFile.size,
-				lastModified: imageFile.lastModified,
-			});
+			;
+			;
 
 			const formData = new FormData();
 			formData.append('image', imageFile);
@@ -162,7 +147,7 @@ export const cardNews = {
 					body: formData,
 				},
 			);
-			console.log('섹션 이미지 업로드 응답:', data);
+			;
 			return data;
 		} catch (error: any) {
 			console.error('섹션 이미지 업로드 중 오류:', error);
@@ -173,9 +158,9 @@ export const cardNews = {
 
 	create: async (data: CreateCardNewsRequest): Promise<AdminCardNewsItem> => {
 		try {
-			console.log('카드뉴스 생성 요청:', data);
+			;
 			const response = await axiosNextGen.post<AdminCardNewsItem>('/admin/posts/card-news', data);
-			console.log('카드뉴스 생성 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('카드뉴스 생성 중 오류:', error);
@@ -186,9 +171,9 @@ export const cardNews = {
 
 	get: async (id: string): Promise<AdminCardNewsItem> => {
 		try {
-			console.log('카드뉴스 조회 요청:', id);
+			;
 			const response = await axiosNextGen.get<AdminCardNewsItem>(`/admin/posts/card-news/${id}`);
-			console.log('카드뉴스 조회 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('카드뉴스 조회 중 오류:', error);
@@ -199,14 +184,14 @@ export const cardNews = {
 
 	getList: async (page: number = 1, limit: number = 20): Promise<AdminCardNewsListResponse> => {
 		try {
-			console.log('카드뉴스 목록 조회 요청:', { page, limit });
+			;
 			const response = await axiosNextGen.get<AdminCardNewsListResponse>('/admin/posts/card-news', {
 				params: {
 					page,
 					limit,
 				},
 			});
-			console.log('카드뉴스 목록 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('카드뉴스 목록 조회 중 오류:', error);
@@ -217,12 +202,12 @@ export const cardNews = {
 
 	update: async (id: string, data: UpdateCardNewsRequest): Promise<AdminCardNewsItem> => {
 		try {
-			console.log('카드뉴스 수정 요청:', { id, data });
+			;
 			const response = await axiosNextGen.put<AdminCardNewsItem>(
 				`/admin/posts/card-news/${id}`,
 				data,
 			);
-			console.log('카드뉴스 수정 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('카드뉴스 수정 중 오류:', error);
@@ -233,9 +218,9 @@ export const cardNews = {
 
 	delete: async (id: string): Promise<void> => {
 		try {
-			console.log('카드뉴스 삭제 요청:', id);
+			;
 			await axiosNextGen.delete(`/admin/posts/card-news/${id}`);
-			console.log('카드뉴스 삭제 완료');
+			;
 		} catch (error: any) {
 			console.error('카드뉴스 삭제 중 오류:', error);
 			console.error('오류 상세 정보:', error.response?.data || error.message);
@@ -245,12 +230,12 @@ export const cardNews = {
 
 	publish: async (id: string, data?: PublishCardNewsRequest): Promise<PublishCardNewsResponse> => {
 		try {
-			console.log('카드뉴스 발행 요청:', id, data);
+			;
 			const response = await axiosNextGen.post<PublishCardNewsResponse>(
 				`/admin/posts/card-news/${id}/publish`,
 				data || {},
 			);
-			console.log('카드뉴스 발행 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('카드뉴스 발행 중 오류:', error);
@@ -261,9 +246,9 @@ export const cardNews = {
 
 	getCategories: async () => {
 		try {
-			console.log('카테고리 목록 조회 요청');
+			;
 			const response = await axiosNextGen.get('/articles/category/list');
-			console.log('카테고리 목록 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('카테고리 목록 조회 중 오류:', error);
@@ -339,12 +324,8 @@ export const banners = {
 export const sometimeArticles = {
 	uploadImage: async (imageFile: File): Promise<UploadImageResponse> => {
 		try {
-			console.log("썸타임 이야기 이미지 업로드 요청");
-			console.log("File 정보:", {
-				name: imageFile.name,
-				type: imageFile.type,
-				size: imageFile.size,
-			});
+			;
+			;
 
 			const formData = new FormData();
 			formData.append("image", imageFile);
@@ -353,7 +334,7 @@ export const sometimeArticles = {
 				method: 'POST',
 				body: formData,
 			});
-			console.log("썸타임 이야기 이미지 업로드 응답:", data);
+			;
 			return data;
 		} catch (error: any) {
 			console.error("썸타임 이야기 이미지 업로드 중 오류:", error);
@@ -368,13 +349,13 @@ export const sometimeArticles = {
 		limit?: number;
 	}): Promise<AdminSometimeArticleListResponse> => {
 		try {
-			console.log("썸타임 이야기 목록 조회 요청:", params);
+			;
 			const response =
 				await axiosNextGen.get<AdminSometimeArticleListResponse>(
 					"/admin/sometime-articles",
 					{ params },
 				);
-			console.log("썸타임 이야기 목록 응답:", response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error("썸타임 이야기 목록 조회 중 오류:", error);
@@ -385,11 +366,11 @@ export const sometimeArticles = {
 
 	get: async (id: string): Promise<AdminSometimeArticleDetail> => {
 		try {
-			console.log("썸타임 이야기 조회 요청:", id);
+			;
 			const response = await axiosNextGen.get<AdminSometimeArticleDetail>(
 				`/admin/sometime-articles/${id}`,
 			);
-			console.log("썸타임 이야기 조회 응답:", response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error("썸타임 이야기 조회 중 오류:", error);
@@ -402,12 +383,12 @@ export const sometimeArticles = {
 		data: CreateSometimeArticleRequest,
 	): Promise<AdminSometimeArticleDetail> => {
 		try {
-			console.log("썸타임 이야기 생성 요청:", data);
+			;
 			const response = await axiosNextGen.post<AdminSometimeArticleDetail>(
 				"/admin/sometime-articles",
 				data,
 			);
-			console.log("썸타임 이야기 생성 응답:", response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error("썸타임 이야기 생성 중 오류:", error);
@@ -421,12 +402,12 @@ export const sometimeArticles = {
 		data: UpdateSometimeArticleRequest,
 	): Promise<AdminSometimeArticleDetail> => {
 		try {
-			console.log("썸타임 이야기 수정 요청:", { id, data });
+			;
 			const response = await axiosNextGen.patch<AdminSometimeArticleDetail>(
 				`/admin/sometime-articles/${id}`,
 				data,
 			);
-			console.log("썸타임 이야기 수정 응답:", response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error("썸타임 이야기 수정 중 오류:", error);
@@ -437,9 +418,9 @@ export const sometimeArticles = {
 
 	delete: async (id: string): Promise<void> => {
 		try {
-			console.log("썸타임 이야기 삭제 요청:", id);
+			;
 			await axiosNextGen.delete(`/admin/sometime-articles/${id}`);
-			console.log("썸타임 이야기 삭제 완료");
+			;
 		} catch (error: any) {
 			console.error("썸타임 이야기 삭제 중 오류:", error);
 			console.error("오류 상세 정보:", error.response?.data || error.message);

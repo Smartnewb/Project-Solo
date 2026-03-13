@@ -69,7 +69,7 @@ export default function TicketManagement({
 
     try {
       const response = await axiosServer.get(`/admin/tickets/user/${userId}`);
-      console.log('티켓 상태 조회 응답:', response.data);
+      ;
       setTicketStatus(response.data);
     } catch (err: any) {
       console.error('티켓 상태 조회 오류:', err);
@@ -106,7 +106,7 @@ export default function TicketManagement({
         count: ticketCount
       });
 
-      console.log('티켓 생성 응답:', response.data);
+      ;
       const result = response.data as TicketActionResponse;
 
       setActionResult(`성공적으로 ${result.createdCount}개의 티켓을 생성했습니다.`);
@@ -154,7 +154,7 @@ export default function TicketManagement({
         }
       });
 
-      console.log('티켓 회수 응답:', response.data);
+      ;
       const result = response.data as TicketActionResponse;
 
       setActionResult(`성공적으로 ${result.deletedCount}개의 티켓을 회수했습니다.`);

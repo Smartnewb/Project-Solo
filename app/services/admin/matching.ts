@@ -12,14 +12,7 @@ export const matching = {
 		type?: string,
 	) => {
 		try {
-			console.log('매칭 내역 조회 요청:', {
-				startDate,
-				endDate,
-				page,
-				limit,
-				name,
-				type,
-			});
+			;
 
 			// 파라미터 객체 생성
 			const params: any = { startDate, endDate, page, limit };
@@ -38,7 +31,7 @@ export const matching = {
 				params,
 			});
 
-			console.log('매칭 내역 조회 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('매칭 내역 조회 중 오류:', error);
@@ -53,13 +46,13 @@ export const matching = {
 	// 중복 매칭 여부 확인
 	getMatchCount: async (myId: string, matcherId: string) => {
 		try {
-			console.log('중복 매칭 여부 확인 요청:', { myId, matcherId });
+			;
 
 			const response = await axiosServer.get('/admin/matching/match-count', {
 				params: { myId, matcherId },
 			});
 
-			console.log('중복 매칭 여부 확인 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('중복 매칭 여부 확인 중 오류:', error);
@@ -76,12 +69,7 @@ export const matching = {
 		endDate?: string,
 	) => {
 		try {
-			console.log('사용자 매칭 횟수 조회 요청:', {
-				myId,
-				matcherId,
-				startDate,
-				endDate,
-			});
+			;
 
 			const params: any = { myId, matcherId };
 			if (startDate) params.startDate = startDate;
@@ -91,7 +79,7 @@ export const matching = {
 				params,
 			});
 
-			console.log('사용자 매칭 횟수 조회 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('사용자 매칭 횟수 조회 중 오류:', error);
@@ -110,14 +98,7 @@ export const matching = {
 		name?: string,
 	) => {
 		try {
-			console.log('매칭 상대 이력 조회 요청:', {
-				matcherId,
-				startDate,
-				endDate,
-				page,
-				limit,
-				name,
-			});
+			;
 
 			// 파라미터 객체 생성
 			const params: any = { matcherId, startDate, endDate, page, limit };
@@ -129,7 +110,7 @@ export const matching = {
 
 			const response = await axiosServer.get('/admin/matching/match-history', { params });
 
-			console.log('매칭 상대 이력 조회 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('매칭 상대 이력 조회 중 오류:', error);
@@ -145,7 +126,7 @@ export const matching = {
 		type: 'rematching' | 'scheduled',
 	) => {
 		try {
-			console.log('직접 매칭 생성 요청:', { requesterId, targetId, type });
+			;
 
 			const response = await axiosServer.post('/admin/matching/direct-match', {
 				requesterId,
@@ -153,7 +134,7 @@ export const matching = {
 				type,
 			});
 
-			console.log('직접 매칭 생성 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('직접 매칭 생성 중 오류:', error);
@@ -165,7 +146,7 @@ export const matching = {
 	// 매칭 실패 내역 조회
 	getFailureLogs: async (date: string, page: number = 1, limit: number = 10, reason?: string) => {
 		try {
-			console.log('매칭 실패 내역 조회 요청:', { date, page, limit, reason });
+			;
 
 			// 백엔드 DTO: { startDate, endDate, page, limit, reason }
 			const params: any = {
@@ -184,7 +165,7 @@ export const matching = {
 				params,
 			});
 
-			console.log('매칭 실패 내역 조회 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('매칭 실패 내역 조회 중 오류:', error);
@@ -196,7 +177,7 @@ export const matching = {
 	// 특정 사용자의 매칭 결과만 조회
 	findMatches: async (userId: string, options?: any) => {
 		try {
-			console.log('사용자 매칭 결과 조회 요청:', { userId, options });
+			;
 
 			const requestData = {
 				userId,
@@ -204,7 +185,7 @@ export const matching = {
 			};
 
 			const response = await axiosServer.post('/admin/matching/user/read', requestData);
-			console.log('사용자 매칭 결과 응답:', response.data);
+			;
 
 			return response.data;
 		} catch (error: any) {
@@ -222,12 +203,7 @@ export const matching = {
 		gender?: string,
 	) => {
 		try {
-			console.log('매칭되지 않은 사용자 조회 요청:', {
-				page,
-				limit,
-				name,
-				gender,
-			});
+			;
 
 			const params: any = { page, limit };
 			if (name) params.name = name;
@@ -236,7 +212,7 @@ export const matching = {
 			const response = await axiosServer.get('/admin/matching/unmatched-users', {
 				params,
 			});
-			console.log('매칭되지 않은 사용자 응답:', response.data);
+			;
 
 			return response.data;
 		} catch (error: any) {
@@ -249,10 +225,10 @@ export const matching = {
 	// 배치 매칭 처리
 	processBatchMatching: async () => {
 		try {
-			console.log('배치 매칭 처리 요청');
+			;
 
 			const response = await axiosServer.post('/admin/matching/batch');
-			console.log('배치 매칭 처리 응답:', response.data);
+			;
 
 			return response.data;
 		} catch (error: any) {
@@ -265,14 +241,14 @@ export const matching = {
 	// 단일 사용자 매칭 처리
 	processSingleMatching: async (userId: string) => {
 		try {
-			console.log('단일 사용자 매칭 처리 요청:', userId);
+			;
 
 			const requestData = {
 				userId,
 			};
 
 			const response = await axiosServer.post('/admin/matching/user', requestData);
-			console.log('단일 사용자 매칭 처리 응답:', response.data);
+			;
 
 			return response.data;
 		} catch (error: any) {
@@ -291,13 +267,7 @@ export const matching = {
 		name?: string,
 	) => {
 		try {
-			console.log('좋아요 이력 조회 요청:', {
-				startDate,
-				endDate,
-				page,
-				limit,
-				name,
-			});
+			;
 
 			// 파라미터 객체 생성
 			const params: any = { startDate, endDate, page, limit };
@@ -311,7 +281,7 @@ export const matching = {
 				params,
 			});
 
-			console.log('좋아요 이력 조회 응답:', response.data);
+			;
 			return response.data;
 		} catch (error: any) {
 			console.error('좋아요 이력 조회 중 오류:', error);
@@ -326,7 +296,7 @@ export const matching = {
 		university?: string,
 	) => {
 		try {
-			console.log('매칭 통계 조회 요청:', { period, university });
+			;
 
 			// 실제 API가 구현되면 아래 코드로 대체
 			// const response = await axiosServer.get('/admin/matching/stats', {
