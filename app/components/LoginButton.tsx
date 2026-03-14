@@ -10,17 +10,12 @@ export default function LoginButton({ provider }: LoginButtonProps) {
   const router = useRouter();
 
   const handleLogin = async () => {
-    console.log('로그인 시도 중...', provider);
-
     try {
-      // 테스트용 임시 로그인 (이메일/비밀번호 방식)
-      const testEmail = 'test@example.com';
-      const testPassword = 'password123';
-
-      console.log('테스트 계정으로 로그인 시도:', testEmail);
-
-      // 실제 로그인 대신 임시로 홈 페이지로 이동
-      console.log('로그인 과정 생략, 홈으로 리다이렉트');
+      if (process.env.NODE_ENV === 'development') {
+        router.push('/home');
+        return;
+      }
+      // TODO: implement provider-based OAuth login
       router.push('/home');
     } catch (error) {
       console.error('로그인 오류:', error);

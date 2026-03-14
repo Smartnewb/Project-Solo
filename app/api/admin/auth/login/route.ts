@@ -31,8 +31,8 @@ export async function POST(request: NextRequest) {
     });
 
     if (!backendRes.ok) {
-      const error = await backendRes.json().catch(() => ({ message: 'Login failed' }));
-      return NextResponse.json(error, { status: backendRes.status });
+      const status = backendRes.status === 401 ? 401 : 400;
+      return NextResponse.json({ error: 'Invalid credentials' }, { status });
     }
 
     const data = await backendRes.json();

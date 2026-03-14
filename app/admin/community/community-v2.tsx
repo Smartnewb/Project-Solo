@@ -688,7 +688,7 @@ function ArticleList() {
 							multiline
 							rows={3}
 							value={blindReason}
-							onChange={(e) => setBlindReason(e.target.value)}
+							onChange={(e) => blindForm.setValue('blindReason', e.target.value)}
 							placeholder="블라인드 사유를 입력하세요 (선택사항)"
 						/>
 					)}

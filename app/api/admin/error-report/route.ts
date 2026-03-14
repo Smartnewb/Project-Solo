@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminLog } from '@/shared/lib/admin-logger';
+import { getSessionMeta } from '@/shared/auth';
 
 const SLACK_WEBHOOK_URL = process.env.SLACK_WEBHOOK_URL;
 
 export async function POST(request: NextRequest) {
+  const session = await getSessionMeta();
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const { message, stack, componentStack, url, timestamp } = body;
