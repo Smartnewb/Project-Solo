@@ -236,7 +236,7 @@ export default function PageAnalytics({ startDate, endDate, topPages, overview, 
                           <TableCell align="right">{pageViewsPercent}%</TableCell>
                           {topPagesDetailed && 'averageSessionDuration' in page && (
                             <TableCell align="right">
-                              {Math.floor(page.averageSessionDuration / 60)}분 {Math.floor(page.averageSessionDuration % 60)}초
+                              {Math.floor((page.averageSessionDuration as number) / 60)}분 {Math.floor((page.averageSessionDuration as number) % 60)}초
                             </TableCell>
                           )}
                         </TableRow>
