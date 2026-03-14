@@ -47,11 +47,14 @@ import {
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useEffect, useState } from 'react';
+import { Controller } from 'react-hook-form';
 import AdminService from '@/app/services/admin';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
 import communityService, { Category } from '@/app/services/community';
 import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
+import { useAdminForm } from '@/app/admin/hooks/forms';
+import { articleBlindSchema, ArticleBlindFormValues } from '@/app/admin/hooks/forms/schemas/community.schema';
 
 // 게시글 목록 컴포넌트
 function ArticleList() {
@@ -67,8 +70,13 @@ function ArticleList() {
 	const [selectedArticles, setSelectedArticles] = useState<string[]>([]);
 	const [openBlindDialog, setOpenBlindDialog] = useState(false);
 	const [blindAction, setBlindAction] = useState<'blind' | 'unblind'>('blind');
-	const [blindReason, setBlindReason] = useState('');
 	const [actionLoading, setActionLoading] = useState(false);
+
+	const blindForm = useAdminForm<ArticleBlindFormValues>({
+		schema: articleBlindSchema,
+		defaultValues: { blindReason: '' },
+	});
+	const blindReason = blindForm.watch('blindReason');
 
 	// 게시글 삭제 관련 상태
 	const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
@@ -176,7 +184,7 @@ function ArticleList() {
 	// 블라인드 다이얼로그 열기
 	const handleOpenBlindDialog = (action: 'blind' | 'unblind') => {
 		setBlindAction(action);
-		setBlindReason('');
+		blindForm.reset({ blindReason: '' });
 		setOpenBlindDialog(true);
 	};
 

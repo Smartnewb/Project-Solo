@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import AdminService from '@/app/services/admin';
 import { AppleRefundItem, AppleRefundStatus, AppleRefundListParams } from '@/types/admin';
 import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
+import { useAdminForm } from '@/app/admin/hooks/forms';
+import { iosRefundFilterSchema, IosRefundFilterFormValues } from '@/app/admin/hooks/forms/schemas/ios-refund.schema';
 
 type FilterStatus = 'ALL' | AppleRefundStatus;
 
@@ -14,10 +16,21 @@ function IOSRefundPageContent() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [filterStatus, setFilterStatus] = useState<FilterStatus>('ALL');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+
+  const filterForm = useAdminForm<IosRefundFilterFormValues>({
+    schema: iosRefundFilterSchema,
+    defaultValues: {
+      filterStatus: 'ALL',
+      searchTerm: '',
+      startDate: '',
+      endDate: '',
+    },
+  });
+
+  const filterStatus = filterForm.watch('filterStatus') as FilterStatus;
+  const searchTerm = filterForm.watch('searchTerm');
+  const startDate = filterForm.watch('startDate');
+  const endDate = filterForm.watch('endDate');
 
   useEffect(() => {
     const unpatch = patchAdminAxios();
@@ -67,10 +80,12 @@ function IOSRefundPageContent() {
   };
 
   const handleReset = () => {
-    setFilterStatus('ALL');
-    setSearchTerm('');
-    setStartDate('');
-    setEndDate('');
+    filterForm.reset({
+      filterStatus: 'ALL',
+      searchTerm: '',
+      startDate: '',
+      endDate: '',
+    });
     setPage(1);
   };
 
@@ -148,8 +163,7 @@ function IOSRefundPageContent() {
                   환불 상태
                 </label>
                 <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
+                  {...filterForm.register('filterStatus')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
                   <option value="ALL">전체</option>
@@ -163,8 +177,7 @@ function IOSRefundPageContent() {
                 </label>
                 <input
                   type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  {...filterForm.register('searchTerm')}
                   placeholder="사용자 이름 또는 ID"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
@@ -175,8 +188,7 @@ function IOSRefundPageContent() {
                 </label>
                 <input
                   type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
+                  {...filterForm.register('startDate')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
@@ -186,8 +198,7 @@ function IOSRefundPageContent() {
                 </label>
                 <input
                   type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
+                  {...filterForm.register('endDate')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>

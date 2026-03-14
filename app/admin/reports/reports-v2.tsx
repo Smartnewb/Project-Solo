@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { Controller } from "react-hook-form";
 import { useToast } from "@/shared/ui/admin/toast/toast-context";
+import { useAdminForm } from "@/app/admin/hooks/forms";
+import { reportStatusSchema, ReportStatusFormValues } from "@/app/admin/hooks/forms/schemas/report.schema";
 import {
   Box,
   Typography,
@@ -145,7 +148,11 @@ function ReportsManagementContent() {
   const [profileImages, setProfileImages] = useState<string[]>([]);
   const [profileImagesLoading, setProfileImagesLoading] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
-  const [newStatus, setNewStatus] = useState<ReportStatus>("pending");
+
+  const statusForm = useAdminForm<ReportStatusFormValues>({
+    schema: reportStatusSchema,
+    defaultValues: { status: "pending" },
+  });
 
   const [userDetailModalOpen, setUserDetailModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -238,10 +245,10 @@ function ReportsManagementContent() {
         ...detailResponse,
       };
       setSelectedReport(reportDetail);
-      setNewStatus(reportDetail.status);
+      statusForm.setValue("status", reportDetail.status);
     } catch (err: unknown) {
       setSelectedReport(report);
-      setNewStatus(report.status);
+      statusForm.setValue("status", report.status);
     } finally {
       setDetailLoading(false);
     }
@@ -287,24 +294,22 @@ function ReportsManagementContent() {
     }
   }, [selectedReport?.reported?.id]);
 
-  const handleStatusChange = async () => {
+  const handleStatusChange = statusForm.handleFormSubmit(async (data) => {
     if (!selectedReport) return;
 
     setStatusUpdating(true);
     try {
       await AdminService.reports.updateReportStatus(
         selectedReport.id,
-        newStatus,
+        data.status,
       );
       toast.success("상태가 변경되었습니다.");
-      setSelectedReport({ ...selectedReport, status: newStatus });
+      setSelectedReport({ ...selectedReport, status: data.status });
       fetchReports();
-    } catch (err: unknown) {
-      toast.error("상태 변경에 실패했습니다.");
     } finally {
       setStatusUpdating(false);
     }
-  };
+  });
 
   const handleOpenUserDetailModal = async (userId: string) => {
     try {
@@ -611,28 +616,28 @@ function ReportsManagementContent() {
             >
               <Typography variant="h6">신고 정보</Typography>
               <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                <FormControl size="small" sx={{ minWidth: 140 }}>
-                  <InputLabel>상태 변경</InputLabel>
-                  <Select
-                    value={newStatus}
-                    onChange={(e) =>
-                      setNewStatus(e.target.value as ReportStatus)
-                    }
-                    label="상태 변경"
-                  >
-                    {STATUS_OPTIONS.map((option) => (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <Controller
+                  name="status"
+                  control={statusForm.control}
+                  render={({ field }) => (
+                    <FormControl size="small" sx={{ minWidth: 140 }}>
+                      <InputLabel>상태 변경</InputLabel>
+                      <Select {...field} label="상태 변경">
+                        {STATUS_OPTIONS.map((option) => (
+                          <MenuItem key={option.value} value={option.value}>
+                            {option.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  )}
+                />
                 <Button
                   variant="contained"
                   size="small"
                   onClick={handleStatusChange}
                   disabled={
-                    statusUpdating || newStatus === selectedReport.status
+                    statusUpdating || statusForm.watch("status") === selectedReport.status
                   }
                 >
                   {statusUpdating ? <CircularProgress size={20} /> : "변경"}

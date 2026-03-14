@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Controller } from 'react-hook-form';
 import {
   Box,
   Typography,
@@ -27,9 +28,13 @@ import SearchIcon from '@mui/icons-material/Search';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import AdminService from '@/app/services/admin';
 import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
+import { useAdminForm } from '@/app/admin/hooks/forms';
+import {
+  resetPasswordSearchSchema,
+  type ResetPasswordSearchValues,
+} from '@/app/admin/hooks/forms/schemas/reset-password.schema';
 
 function ResetPasswordPageContent() {
-  const [searchQuery, setSearchQuery] = useState('');
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -47,20 +52,27 @@ function ResetPasswordPageContent() {
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [temporaryPassword, setTemporaryPassword] = useState('');
 
+  const { control, handleFormSubmit, getValues } = useAdminForm<ResetPasswordSearchValues>({
+    schema: resetPasswordSearchSchema,
+    defaultValues: {
+      searchQuery: '',
+    },
+  });
+
   useEffect(() => {
     const unpatch = patchAdminAxios();
     return () => unpatch();
   }, []);
 
   const searchUsers = async (pageNum: number = 1) => {
-    if (!searchQuery.trim()) return;
+    const query = getValues('searchQuery').trim();
+    if (!query) return;
 
     try {
       setLoading(true);
       setError('');
       setSearched(true);
 
-      const query = searchQuery.trim();
       const isPhoneNumber = /^[\d\-]+$/.test(query);
 
       const data = await AdminService.userAppearance.searchUsersForReset({
@@ -83,15 +95,9 @@ function ResetPasswordPageContent() {
     }
   };
 
-  const handleSearch = () => {
-    searchUsers(1);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
-  };
+  const onSearchSubmit = handleFormSubmit(async () => {
+    await searchUsers(1);
+  });
 
   const handlePageChange = (_: any, value: number) => {
     searchUsers(value);
@@ -154,19 +160,26 @@ function ResetPasswordPageContent() {
 
       {/* 검색 영역 */}
       <Box sx={{ mb: 3, display: 'flex', gap: 1, alignItems: 'center' }}>
-        <TextField
-          size="small"
-          placeholder="이름 또는 전화번호로 검색"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          onKeyDown={handleKeyPress}
-          sx={{ width: 400 }}
+        <Controller
+          name="searchQuery"
+          control={control}
+          render={({ field }) => (
+            <TextField
+              {...field}
+              size="small"
+              placeholder="이름 또는 전화번호로 검색"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') onSearchSubmit();
+              }}
+              sx={{ width: 400 }}
+            />
+          )}
         />
         <Button
           variant="contained"
           startIcon={<SearchIcon />}
-          onClick={handleSearch}
-          disabled={loading || !searchQuery.trim()}
+          onClick={onSearchSubmit}
+          disabled={loading}
         >
           검색
         </Button>

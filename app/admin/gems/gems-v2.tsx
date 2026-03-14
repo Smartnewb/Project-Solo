@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Controller } from 'react-hook-form';
 import { useToast } from '@/shared/ui/admin/toast';
 import { useBulkGrantGems } from '@/app/admin/hooks';
 import {
@@ -32,7 +33,6 @@ import {
   Card,
   CardContent,
   Grid,
-  IconButton,
   Tooltip
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -50,6 +50,8 @@ import {
   Avatar
 } from '@mui/material';
 import axiosServer from '@/utils/axios';
+import { useAdminForm } from '@/app/admin/hooks/forms';
+import { gemsFormSchema, type GemsFormData } from '@/app/admin/hooks/forms/schemas/gems.schema';
 
 interface UserSearchResult {
   id: string;
@@ -83,13 +85,23 @@ function GemsManagementPageContent() {
   const toast = useToast();
   const bulkGrantGems = useBulkGrantGems();
 
+  const { control, watch, reset, handleFormSubmit } = useAdminForm<GemsFormData>({
+    schema: gemsFormSchema,
+    defaultValues: {
+      gemAmount: 10,
+      message: '',
+    },
+  });
+
+  const watchedMessage = watch('message') ?? '';
+
+  // Non-form state (file upload related)
   const [inputMethod, setInputMethod] = useState<'phoneNumbers' | 'csvFile'>('phoneNumbers');
   const [phoneNumbersText, setPhoneNumbersText] = useState<string>('');
   const [csvFile, setCsvFile] = useState<File | null>(null);
-  const [gemAmount, setGemAmount] = useState<number>(10);
-  const [message, setMessage] = useState<string>('');
   const [result, setResult] = useState<BulkGrantResponse | null>(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [pendingData, setPendingData] = useState<GemsFormData | null>(null);
 
   const [userSearchTerm, setUserSearchTerm] = useState<string>('');
   const [userSearchResults, setUserSearchResults] = useState<UserSearchResult[]>([]);
@@ -207,22 +219,7 @@ function GemsManagementPageContent() {
     document.body.removeChild(link);
   };
 
-  const handleSubmitClick = () => {
-    if (!gemAmount || gemAmount < 1) {
-      toast.error('구슬 개수는 1개 이상이어야 합니다.');
-      return;
-    }
-
-    if (!message.trim()) {
-      toast.error('지급 사유 메시지를 입력해주세요.');
-      return;
-    }
-
-    if (message.length > 200) {
-      toast.error('메시지는 200자 이하로 입력해주세요.');
-      return;
-    }
-
+  const handleSubmitClick = handleFormSubmit(async (data) => {
     if (inputMethod === 'phoneNumbers' && !phoneNumbersText.trim()) {
       toast.error('전화번호를 입력해주세요.');
       return;
@@ -233,7 +230,6 @@ function GemsManagementPageContent() {
       return;
     }
 
-    // 전화번호 형식 검증
     if (inputMethod === 'phoneNumbers') {
       const phoneNumberArray = phoneNumbersText
         .split(/[,\n]/)
@@ -248,10 +244,12 @@ function GemsManagementPageContent() {
       }
     }
 
+    setPendingData(data);
     setConfirmDialogOpen(true);
-  };
+  });
 
   const handleConfirmSubmit = () => {
+    if (!pendingData) return;
     setConfirmDialogOpen(false);
     setResult(null);
 
@@ -267,8 +265,8 @@ function GemsManagementPageContent() {
       {
         phoneNumbers,
         csvFile: inputMethod === 'csvFile' ? csvFile || undefined : undefined,
-        gemAmount,
-        message,
+        gemAmount: pendingData.gemAmount,
+        message: pendingData.message,
       },
       {
         onSuccess: (response) => {
@@ -284,13 +282,14 @@ function GemsManagementPageContent() {
         },
       }
     );
+
+    setPendingData(null);
   };
 
   const handleReset = () => {
     setPhoneNumbersText('');
     setCsvFile(null);
-    setGemAmount(10);
-    setMessage('');
+    reset({ gemAmount: 10, message: '' });
     setResult(null);
   };
 
@@ -489,14 +488,22 @@ function GemsManagementPageContent() {
             <Typography variant="subtitle2" sx={{ mb: 1 }}>
               지급할 구슬 개수
             </Typography>
-            <TextField
-              fullWidth
-              type="number"
-              value={gemAmount}
-              onChange={(e) => setGemAmount(Number.parseInt(e.target.value) || 0)}
-              inputProps={{ min: 1 }}
-              placeholder="10"
-              required
+            <Controller
+              name="gemAmount"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  onChange={(e) => field.onChange(Number.parseInt(e.target.value) || 0)}
+                  fullWidth
+                  type="number"
+                  inputProps={{ min: 1 }}
+                  placeholder="10"
+                  required
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message}
+                />
+              )}
             />
           </Grid>
         </Grid>
@@ -505,16 +512,22 @@ function GemsManagementPageContent() {
           <Typography variant="subtitle2" sx={{ mb: 1 }}>
             지급 사유 메시지 (푸시 알림으로 발송됨)
           </Typography>
-          <TextField
-            fullWidth
-            multiline
-            rows={3}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="이벤트 참여 보상"
-            inputProps={{ maxLength: 200 }}
-            helperText={`${message.length}/200자 | 이 메시지는 사용자에게 푸시 알림으로 전송됩니다.`}
-            required
+          <Controller
+            name="message"
+            control={control}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                fullWidth
+                multiline
+                rows={3}
+                placeholder="이벤트 참여 보상"
+                inputProps={{ maxLength: 200 }}
+                helperText={fieldState.error?.message ?? `${watchedMessage.length}/200자 | 이 메시지는 사용자에게 푸시 알림으로 전송됩니다.`}
+                required
+                error={!!fieldState.error}
+              />
+            )}
           />
         </Box>
 
@@ -660,10 +673,10 @@ function GemsManagementPageContent() {
                 • 대상: {inputMethod === 'phoneNumbers' ? `${getUserCount()}개 전화번호` : 'CSV 파일'}
               </Typography>
               <Typography variant="body2">
-                • 지급 구슬: {gemAmount}개
+                • 지급 구슬: {pendingData?.gemAmount ?? 0}개
               </Typography>
               <Typography variant="body2" sx={{ mt: 1 }}>
-                • 푸시 메시지: "{message}"
+                • 푸시 메시지: "{pendingData?.message ?? ''}"
               </Typography>
             </Box>
           </DialogContentText>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Controller } from 'react-hook-form';
 import {
   Dialog,
   DialogTitle,
@@ -12,8 +12,11 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  FormHelperText,
   Divider
 } from '@mui/material';
+import { useAdminForm } from '@/app/admin/hooks/forms';
+import { rejectReasonSchema, RejectReasonFormValues } from '@/app/admin/hooks/forms/schemas/profile-review.schema';
 
 interface RejectReasonModalProps {
   open: boolean;
@@ -59,68 +62,48 @@ const PRESET_REASONS: Record<string, string[]> = {
   'OTHER': []
 };
 
+const commonTemplates = [
+  { category: 'INAPPROPRIATE_PROFILE_IMAGE', reason: '얼굴 식별 불가', label: '얼굴 식별 불가' },
+  { category: 'INAPPROPRIATE_PROFILE_IMAGE', reason: '화질 불량', label: '화질 불량' },
+  { category: 'INAPPROPRIATE_PROFILE_IMAGE', reason: '동물 사진', label: '동물 사진' },
+  { category: 'INAPPROPRIATE_PROFILE_IMAGE', reason: '동일 사진', label: '동일 사진' },
+  { category: 'FAKE_PROFILE', reason: '타인 사진 도용', label: '사진 도용' },
+  { category: 'INCOMPLETE_PROFILE', reason: '필수 정보 미입력', label: '정보 미입력' },
+];
+
 export default function RejectReasonModal({ open, onClose, onConfirm }: RejectReasonModalProps) {
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [selectedReason, setSelectedReason] = useState<string | null>(null);
-  const [customReason, setCustomReason] = useState('');
+  const { control, handleFormSubmit, watch, setValue, reset } = useAdminForm<RejectReasonFormValues>({
+    schema: rejectReasonSchema,
+    defaultValues: { category: '', reason: '' },
+  });
+
+  const selectedCategory = watch('category');
+  const selectedReason = watch('reason');
+  const currentPresetReasons = selectedCategory ? PRESET_REASONS[selectedCategory] || [] : [];
 
   const handleCategoryChange = (category: string) => {
-    setSelectedCategory(category);
-    setSelectedReason(null);
-    setCustomReason('');
+    setValue('category', category);
+    setValue('reason', '');
   };
 
   const handleReasonSelect = (reason: string) => {
-    setSelectedReason(reason);
-    setCustomReason('');
+    setValue('reason', reason);
   };
 
   const handleTemplateSelect = (category: string, reason: string) => {
-    setSelectedCategory(category);
-    setSelectedReason(reason);
-    setCustomReason('');
-  };
-
-  const handleConfirm = () => {
-    if (!selectedCategory) {
-      alert('거절 카테고리를 선택해주세요.');
-      return;
-    }
-
-    let finalReason = '';
-
-    if (selectedCategory === 'OTHER' || PRESET_REASONS[selectedCategory].length === 0) {
-      finalReason = customReason;
-    } else {
-      finalReason = selectedReason || customReason;
-    }
-
-    if (!finalReason || finalReason.trim() === '') {
-      alert('거절 사유를 선택하거나 입력해주세요.');
-      return;
-    }
-
-    onConfirm(selectedCategory, finalReason);
-    handleClose();
+    setValue('category', category);
+    setValue('reason', reason);
   };
 
   const handleClose = () => {
-    setSelectedCategory('');
-    setSelectedReason(null);
-    setCustomReason('');
+    reset({ category: '', reason: '' });
     onClose();
   };
 
-  const currentPresetReasons = selectedCategory ? PRESET_REASONS[selectedCategory] || [] : [];
-
-  const commonTemplates = [
-    { category: 'INAPPROPRIATE_PROFILE_IMAGE', reason: '얼굴 식별 불가', label: '얼굴 식별 불가' },
-    { category: 'INAPPROPRIATE_PROFILE_IMAGE', reason: '화질 불량', label: '화질 불량' },
-    { category: 'INAPPROPRIATE_PROFILE_IMAGE', reason: '동물 사진', label: '동물 사진' },
-    { category: 'INAPPROPRIATE_PROFILE_IMAGE', reason: '동일 사진', label: '동일 사진' },
-    { category: 'FAKE_PROFILE', reason: '타인 사진 도용', label: '사진 도용' },
-    { category: 'INCOMPLETE_PROFILE', reason: '필수 정보 미입력', label: '정보 미입력' },
-  ];
+  const onSubmit = handleFormSubmit(async (data) => {
+    onConfirm(data.category, data.reason);
+    reset({ category: '', reason: '' });
+  });
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
@@ -166,20 +149,29 @@ export default function RejectReasonModal({ open, onClose, onConfirm }: RejectRe
         </Divider>
 
         {/* 카테고리 선택 */}
-        <FormControl fullWidth sx={{ mb: 3 }}>
-          <InputLabel>반려 카테고리</InputLabel>
-          <Select
-            value={selectedCategory}
-            label="반려 카테고리"
-            onChange={(e) => handleCategoryChange(e.target.value)}
-          >
-            {REJECTION_CATEGORIES.map((cat) => (
-              <MenuItem key={cat.value} value={cat.value}>
-                {cat.label}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <Controller
+          name="category"
+          control={control}
+          render={({ field, fieldState }) => (
+            <FormControl fullWidth sx={{ mb: 3 }} error={!!fieldState.error}>
+              <InputLabel>반려 카테고리</InputLabel>
+              <Select
+                {...field}
+                label="반려 카테고리"
+                onChange={(e) => handleCategoryChange(e.target.value)}
+              >
+                {REJECTION_CATEGORIES.map((cat) => (
+                  <MenuItem key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </MenuItem>
+                ))}
+              </Select>
+              {fieldState.error && (
+                <FormHelperText>{fieldState.error.message}</FormHelperText>
+              )}
+            </FormControl>
+          )}
+        />
 
         {/* 프리셋 사유 선택 */}
         {selectedCategory && currentPresetReasons.length > 0 && (
@@ -214,31 +206,42 @@ export default function RejectReasonModal({ open, onClose, onConfirm }: RejectRe
 
         {/* 직접 입력 */}
         {selectedCategory && (
-          <Box>
-            <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
-              {currentPresetReasons.length > 0 ? '또는 직접 입력' : '반려 사유 입력'}
-            </Typography>
-            <Box
-              component="textarea"
-              value={customReason}
-              onChange={(e: any) => setCustomReason(e.target.value)}
-              placeholder="반려 사유를 자세히 입력해주세요..."
-              sx={{
-                width: '100%',
-                minHeight: 100,
-                p: 1.5,
-                borderRadius: 1,
-                border: '1px solid #ddd',
-                fontSize: '0.875rem',
-                fontFamily: 'inherit',
-                resize: 'vertical',
-                '&:focus': {
-                  outline: 'none',
-                  borderColor: '#1976d2'
-                }
-              }}
-            />
-          </Box>
+          <Controller
+            name="reason"
+            control={control}
+            render={({ field, fieldState }) => (
+              <Box>
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                  {currentPresetReasons.length > 0 ? '또는 직접 입력' : '반려 사유 입력'}
+                </Typography>
+                <Box
+                  component="textarea"
+                  value={field.value}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => field.onChange(e.target.value)}
+                  placeholder="반려 사유를 자세히 입력해주세요..."
+                  sx={{
+                    width: '100%',
+                    minHeight: 100,
+                    p: 1.5,
+                    borderRadius: 1,
+                    border: fieldState.error ? '1px solid #d32f2f' : '1px solid #ddd',
+                    fontSize: '0.875rem',
+                    fontFamily: 'inherit',
+                    resize: 'vertical',
+                    '&:focus': {
+                      outline: 'none',
+                      borderColor: fieldState.error ? '#d32f2f' : '#1976d2'
+                    }
+                  }}
+                />
+                {fieldState.error && (
+                  <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
+                    {fieldState.error.message}
+                  </Typography>
+                )}
+              </Box>
+            )}
+          />
         )}
       </DialogContent>
 
@@ -246,7 +249,7 @@ export default function RejectReasonModal({ open, onClose, onConfirm }: RejectRe
         <Button onClick={handleClose} color="inherit">
           취소
         </Button>
-        <Button onClick={handleConfirm} variant="contained" color="error">
+        <Button onClick={onSubmit} variant="contained" color="error">
           반려하기
         </Button>
       </DialogActions>

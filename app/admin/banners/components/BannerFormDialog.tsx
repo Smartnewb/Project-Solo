@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { Controller } from 'react-hook-form';
 import {
   Dialog,
   DialogTitle,
@@ -20,6 +21,8 @@ import {
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import type { Banner, BannerPosition, CreateBannerRequest } from '@/types/admin';
+import { useAdminForm } from '@/app/admin/hooks/forms';
+import { bannerSchema, type BannerFormValues } from '@/app/admin/hooks/forms/schemas/banner.schema';
 
 interface BannerFormDialogProps {
   open: boolean;
@@ -42,27 +45,38 @@ export default function BannerFormDialog({
   onSubmit,
   editBanner,
 }: BannerFormDialogProps) {
+  // File upload state kept separate (not in react-hook-form)
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>('');
-  const [position, setPosition] = useState<BannerPosition>('home');
-  const [actionUrl, setActionUrl] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [isUnlimited, setIsUnlimited] = useState(true);
-  const [error, setError] = useState('');
+  const [fileError, setFileError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
 
   const isEditMode = !!editBanner;
 
+  const { control, handleFormSubmit, reset, watch } = useAdminForm<BannerFormValues>({
+    schema: bannerSchema,
+    defaultValues: {
+      position: 'home',
+      actionUrl: '',
+      isUnlimited: true,
+      startDate: '',
+      endDate: '',
+    },
+  });
+
+  const isUnlimited = watch('isUnlimited');
+
   useEffect(() => {
     if (editBanner) {
       setPreviewUrl(editBanner.imageUrl);
-      setPosition(editBanner.position);
-      setActionUrl(editBanner.actionUrl || '');
-      setStartDate(toLocalDateTimeString(editBanner.startDate));
-      setEndDate(toLocalDateTimeString(editBanner.endDate));
-      setIsUnlimited(!editBanner.startDate && !editBanner.endDate);
+      reset({
+        position: editBanner.position,
+        actionUrl: editBanner.actionUrl || '',
+        isUnlimited: !editBanner.startDate && !editBanner.endDate,
+        startDate: toLocalDateTimeString(editBanner.startDate),
+        endDate: toLocalDateTimeString(editBanner.endDate),
+      });
     } else {
       resetForm();
     }
@@ -71,12 +85,14 @@ export default function BannerFormDialog({
   const resetForm = () => {
     setImageFile(null);
     setPreviewUrl('');
-    setPosition('home');
-    setActionUrl('');
-    setStartDate('');
-    setEndDate('');
-    setIsUnlimited(true);
-    setError('');
+    setFileError('');
+    reset({
+      position: 'home',
+      actionUrl: '',
+      isUnlimited: true,
+      startDate: '',
+      endDate: '',
+    });
   };
 
   const handleClose = () => {
@@ -87,11 +103,11 @@ export default function BannerFormDialog({
   const validateFile = (file: File): boolean => {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
-      setError('JPG, PNG, WebP 파일만 업로드 가능합니다.');
+      setFileError('JPG, PNG, WebP 파일만 업로드 가능합니다.');
       return false;
     }
     if (file.size > 5 * 1024 * 1024) {
-      setError('파일 크기는 5MB 이하여야 합니다.');
+      setFileError('파일 크기는 5MB 이하여야 합니다.');
       return false;
     }
     return true;
@@ -101,7 +117,7 @@ export default function BannerFormDialog({
     if (!validateFile(file)) return;
     setImageFile(file);
     setPreviewUrl(URL.createObjectURL(file));
-    setError('');
+    setFileError('');
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,39 +142,35 @@ export default function BannerFormDialog({
     if (file) handleFileChange(file);
   }, []);
 
-  const handleSubmit = async () => {
+  const onFormSubmit = handleFormSubmit(async (data: BannerFormValues) => {
     if (!isEditMode && !imageFile) {
-      setError('이미지를 선택해주세요.');
+      setFileError('이미지를 선택해주세요.');
       return;
     }
 
     setLoading(true);
-    setError('');
-
     try {
-      const data: CreateBannerRequest = {
-        position,
-        actionUrl: actionUrl || undefined,
-        startDate: isUnlimited ? undefined : startDate ? new Date(startDate).toISOString() : undefined,
-        endDate: isUnlimited ? undefined : endDate ? new Date(endDate).toISOString() : undefined,
+      const requestData: CreateBannerRequest = {
+        position: data.position as BannerPosition,
+        actionUrl: data.actionUrl || undefined,
+        startDate: data.isUnlimited ? undefined : data.startDate ? new Date(data.startDate).toISOString() : undefined,
+        endDate: data.isUnlimited ? undefined : data.endDate ? new Date(data.endDate).toISOString() : undefined,
       };
 
-      await onSubmit(imageFile, data);
+      await onSubmit(imageFile, requestData);
       handleClose();
-    } catch (err: any) {
-      setError(err.message || '저장에 실패했습니다.');
     } finally {
       setLoading(false);
     }
-  };
+  });
 
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle>{isEditMode ? '배너 수정' : '배너 등록'}</DialogTitle>
       <DialogContent>
-        {error && (
+        {fileError && (
           <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
+            {fileError}
           </Alert>
         )}
 
@@ -212,57 +224,88 @@ export default function BannerFormDialog({
           )}
         </Box>
 
-        <FormControl fullWidth sx={{ mb: 2 }}>
-          <InputLabel>위치</InputLabel>
-          <Select
-            value={position}
-            label="위치"
-            onChange={(e) => setPosition(e.target.value as BannerPosition)}
-            disabled={isEditMode}
-          >
-            <MenuItem value="home">홈</MenuItem>
-            <MenuItem value="moment">모먼트</MenuItem>
-          </Select>
-        </FormControl>
-
-        <TextField
-          fullWidth
-          label="액션 URL (선택)"
-          value={actionUrl}
-          onChange={(e) => setActionUrl(e.target.value)}
-          placeholder="/matching 또는 https://example.com"
-          helperText="/ 로 시작하면 앱 내 이동, http로 시작하면 외부 링크"
-          sx={{ mb: 2 }}
+        <Controller
+          name="position"
+          control={control}
+          render={({ field }) => (
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel>위치</InputLabel>
+              <Select
+                {...field}
+                label="위치"
+                disabled={isEditMode}
+              >
+                <MenuItem value="home">홈</MenuItem>
+                <MenuItem value="moment">모먼트</MenuItem>
+              </Select>
+            </FormControl>
+          )}
         />
 
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={isUnlimited}
-              onChange={(e) => setIsUnlimited(e.target.checked)}
+        <Controller
+          name="actionUrl"
+          control={control}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              fullWidth
+              label="액션 URL (선택)"
+              placeholder="/matching 또는 https://example.com"
+              helperText={fieldState.error?.message || '/ 로 시작하면 앱 내 이동, http로 시작하면 외부 링크'}
+              error={!!fieldState.error}
+              sx={{ mb: 2 }}
             />
-          }
-          label="상시 게시 (기간 제한 없음)"
-          sx={{ mb: 2 }}
+          )}
+        />
+
+        <Controller
+          name="isUnlimited"
+          control={control}
+          render={({ field }) => (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={field.value}
+                  onChange={(e) => field.onChange(e.target.checked)}
+                />
+              }
+              label="상시 게시 (기간 제한 없음)"
+              sx={{ mb: 2 }}
+            />
+          )}
         />
 
         {!isUnlimited && (
           <Box sx={{ display: 'flex', gap: 2 }}>
-            <TextField
-              fullWidth
-              type="datetime-local"
-              label="시작일"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              InputLabelProps={{ shrink: true }}
+            <Controller
+              name="startDate"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  fullWidth
+                  type="datetime-local"
+                  label="시작일"
+                  InputLabelProps={{ shrink: true }}
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message}
+                />
+              )}
             />
-            <TextField
-              fullWidth
-              type="datetime-local"
-              label="종료일"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              InputLabelProps={{ shrink: true }}
+            <Controller
+              name="endDate"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  fullWidth
+                  type="datetime-local"
+                  label="종료일"
+                  InputLabelProps={{ shrink: true }}
+                  error={!!fieldState.error}
+                  helperText={fieldState.error?.message}
+                />
+              )}
             />
           </Box>
         )}
@@ -274,7 +317,7 @@ export default function BannerFormDialog({
         </Button>
         <Button
           variant="contained"
-          onClick={handleSubmit}
+          onClick={onFormSubmit}
           disabled={loading || (!isEditMode && !imageFile)}
         >
           {loading ? '저장 중...' : isEditMode ? '수정' : '등록'}
