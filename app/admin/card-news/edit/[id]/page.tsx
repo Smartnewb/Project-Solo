@@ -29,7 +29,7 @@ import type { BackgroundPreset } from '@/types/admin';
 import AddIcon from '@mui/icons-material/Add';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
+import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 
 interface CardSection {
   order: number;
@@ -47,6 +47,11 @@ interface Category {
 
 function EditCardNewsPageContent() {
   const router = useRouter();
+
+  useEffect(() => {
+    const unpatch = patchAdminAxios();
+    return () => unpatch();
+  }, []);
   const params = useParams();
   const id = (params?.id || '') as string;
 
@@ -561,8 +566,6 @@ function EditCardNewsPageContent() {
 
 export default function EditCardNewsPage() {
   return (
-    <LegacyPageAdapter>
-      <EditCardNewsPageContent />
-    </LegacyPageAdapter>
+    <EditCardNewsPageContent />
   );
 }

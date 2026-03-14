@@ -47,7 +47,7 @@ export function MonthlyPaymentGraph() {
                 byRegion: false,
             });
             
-            console.log('전체 응답 데이터:', response.data);
+            ;
             
             // 전체 배열을 차트 데이터로 변환
             const transformedData: MonthlyPaymentData[] = response.data.map(item => ({

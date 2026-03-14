@@ -21,10 +21,15 @@ import {
 import { useRouter } from 'next/navigation';
 import AdminService from '@/app/services/admin';
 import type { ActionLogsResponse, ActionLogResponse } from '@/types/admin';
-import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
+import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 
 function DormantLikesLogsPageContent() {
   const router = useRouter();
+
+  useEffect(() => {
+    const unpatch = patchAdminAxios();
+    return () => unpatch();
+  }, []);
   const [logs, setLogs] = useState<ActionLogResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -205,9 +210,5 @@ function DormantLikesLogsPageContent() {
 }
 
 export default function DormantLikesLogsPage() {
-  return (
-    <LegacyPageAdapter>
-      <DormantLikesLogsPageContent />
-    </LegacyPageAdapter>
-  );
+  return <DormantLikesLogsPageContent />;
 }

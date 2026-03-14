@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import axiosServer from '@/utils/axios';
 import {
-  buildAdminSyncPayload,
-  getStoredAdminCountry,
   setStoredAdminRefreshToken,
 } from '@/shared/auth/admin-auth-contract';
 
@@ -167,23 +165,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // 프로필 정보 조회
       await fetchProfile();
 
-      // 관리자인 경우 BFF 세션 쿠키 설정
+      // 어드민 쿠키 세션 설정 (AdminShell이 쿠키 기반 인증 사용)
       if (isAdmin) {
-        try {
-          await fetch('/api/admin/auth/sync', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(
-              buildAdminSyncPayload(
-                data.accessToken,
-                data.refreshToken,
-                getStoredAdminCountry(),
-              ),
-            ),
-          });
-        } catch {
-          // Non-critical: BFF session established on next admin page load
-        }
+        await fetch('/api/admin/auth/establish-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            accessToken: data.accessToken,
+            refreshToken: data.refreshToken,
+            selectedCountry: 'kr',
+          }),
+        });
       }
 
       // 리다이렉트

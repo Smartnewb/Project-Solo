@@ -81,12 +81,12 @@ export function useSupportChatSocket({
     });
 
     socket.on('connect', () => {
-      console.log('[SupportChat] WebSocket 연결됨');
+      ;
       setState((prev) => ({ ...prev, connected: true, error: null }));
 
       socket.emit('join_session', { sessionId }, (response: { success: boolean; error?: string }) => {
         if (response.success) {
-          console.log('[SupportChat] 세션 참여 성공:', sessionId);
+          ;
           setState((prev) => ({ ...prev, sessionJoined: true }));
         } else {
           console.error('[SupportChat] 세션 참여 실패:', response.error);
@@ -101,17 +101,17 @@ export function useSupportChatSocket({
     });
 
     socket.on('disconnect', (reason) => {
-      console.log('[SupportChat] 연결 해제:', reason);
+      ;
       setState((prev) => ({ ...prev, connected: false, sessionJoined: false }));
     });
 
     socket.on('new_message', (message: SupportMessage) => {
-      console.log('[SupportChat] 새 메시지:', message);
+      ;
       onNewMessage?.(message);
     });
 
     socket.on('session_status_changed', (event: SessionStatusChangedEvent) => {
-      console.log('[SupportChat] 세션 상태 변경:', event);
+      ;
       onStatusChanged?.(event);
     });
 
@@ -143,7 +143,7 @@ export function useSupportChatSocket({
         { sessionId, content },
         (response: { success: boolean; error?: string }) => {
           if (response.success) {
-            console.log('[SupportChat] 메시지 전송 성공');
+            ;
             resolve(true);
           } else {
             console.error('[SupportChat] 메시지 전송 실패:', response.error);

@@ -24,7 +24,7 @@ import DuplicatePhoneUsersPanel from "@/components/admin/appearance/DuplicatePho
 import VerifiedUsersPanel from "@/components/admin/appearance/VerifiedUsersPanel";
 import BlacklistUsersPanel from "@/components/admin/appearance/BlacklistUsersPanel";
 import UniversityVerificationPendingPanel from "@/components/admin/appearance/UniversityVerificationPendingPanel";
-import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
+import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 
 // 전역 이벤트 버스 생성 (등급 변경 이벤트 처리용)
 export const appearanceGradeEventBus = {
@@ -40,6 +40,11 @@ export const appearanceGradeEventBus = {
 
 function AppearanceGradePageContent() {
   const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const unpatch = patchAdminAxios();
+    return () => unpatch();
+  }, []);
   const initialTab = parseInt(searchParams.get("tab") || "0", 10);
 
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -67,26 +72,15 @@ function AppearanceGradePageContent() {
   // 통계 데이터 로드 함수
   const fetchStats = async () => {
     try {
-      console.log(
-        "외모 등급 통계 조회 시작 - 타임스탬프:",
-        new Date().toISOString(),
-      );
+      ;
       setLoading(true);
       setError(null);
 
       // API 호출
-      console.log("AdminService.userAppearance.getAppearanceGradeStats 호출");
+      ;
       const response =
         await AdminService.userAppearance.getAppearanceGradeStats();
-      console.log("외모 등급 통계 응답 (요약):", {
-        total: response.total,
-        statsCount: Array.isArray(response.stats)
-          ? response.stats.length
-          : "stats가 배열이 아님",
-        genderStatsCount: Array.isArray(response.genderStats)
-          ? response.genderStats.length
-          : "genderStats가 배열이 아님",
-      });
+      ;
 
       // 응답 데이터 유효성 검사
       if (!response) {
@@ -95,12 +89,12 @@ function AppearanceGradePageContent() {
 
       // 이전 통계와 비교
       if (stats && response) {
-        console.log("이전 통계 total:", stats.total);
-        console.log("새 통계 total:", response.total);
+        ;
+        ;
 
         // 등급별 변화 로깅
         if (Array.isArray(stats.stats) && Array.isArray(response.stats)) {
-          console.log("등급별 변화:");
+          ;
 
           // 모든 등급에 대한 맵 생성
           const oldStatsMap = new Map();
@@ -115,9 +109,7 @@ function AppearanceGradePageContent() {
             if (newStat && newStat.grade) {
               const oldCount = oldStatsMap.get(newStat.grade) || 0;
               const newCount = newStat.count || 0;
-              console.log(
-                `${newStat.grade}: ${oldCount} -> ${newCount} (변화: ${newCount - oldCount})`,
-              );
+              ;
             }
           });
         }
@@ -147,7 +139,7 @@ function AppearanceGradePageContent() {
 
     // 등급 변경 이벤트 핸들러 (디바운스 적용)
     const handleGradeChange = () => {
-      console.log("등급 변경 이벤트 감지");
+      ;
 
       // 이미 예약된 타이머가 있으면 취소
       if (debounceTimer) {
@@ -156,7 +148,7 @@ function AppearanceGradePageContent() {
 
       // 1초 후에 통계 데이터 새로고침 (여러 번 호출 방지)
       debounceTimer = setTimeout(() => {
-        console.log("통계 데이터 새로고침 실행 (1초 지연)");
+        ;
         setRefreshTrigger((prev) => prev + 1); // 강제 새로고침 트리거
       }, 1000);
     };
@@ -251,8 +243,6 @@ function AppearanceGradePageContent() {
 
 export default function AppearanceGradePage() {
   return (
-    <LegacyPageAdapter>
-      <AppearanceGradePageContent />
-    </LegacyPageAdapter>
+    <AppearanceGradePageContent />
   );
 }

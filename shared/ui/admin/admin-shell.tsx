@@ -1,5 +1,5 @@
 'use client';
-/* eslint-disable no-restricted-globals -- AdminShell bridge: reads/writes localStorage during session init, country change, and logout to maintain legacy compatibility. Will be removed in Phase 6. */
+/* eslint-disable no-restricted-globals -- AdminShell: reads/writes localStorage during country change and logout for legacy compatibility. */
 
 import { useEffect, useState, useCallback, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
@@ -8,12 +8,13 @@ import { AdminQueryProvider } from '@/shared/providers/query-provider';
 import { AdminSidebar } from './sidebar';
 import { AdminCountrySelectorModal } from './admin-country-selector';
 import {
-  buildAdminSyncPayload,
   buildAdminLogoutPayload,
   getStoredAdminCountry,
   getStoredAdminRefreshToken,
   setStoredAdminRefreshToken,
 } from '@/shared/auth/admin-auth-contract';
+import { CountryProvider } from '@/contexts/CountryContext';
+import { AdminErrorBoundary } from './admin-error-boundary';
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -26,51 +27,21 @@ export function AdminShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     async function initSession() {
       setIsLoading(true);
-
       try {
         const res = await fetch('/api/admin/session');
         if (res.ok) {
           const data = await res.json();
           setSession(data);
-          setIsLoading(false);
-          return;
+        } else {
+          setError('Authentication required');
+          router.push('/');
         }
       } catch {
-        // Cookie session failed, try fallback
+        setError('Authentication required');
+        router.push('/');
+      } finally {
+        setIsLoading(false);
       }
-
-      const localToken = localStorage.getItem('accessToken');
-      if (localToken) {
-        try {
-          const syncRes = await fetch('/api/admin/auth/sync', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(
-              buildAdminSyncPayload(
-                localToken,
-                getStoredAdminRefreshToken(),
-                getStoredAdminCountry(),
-              ),
-            ),
-          });
-
-          if (syncRes.ok) {
-            const sessionRes = await fetch('/api/admin/session');
-            if (sessionRes.ok) {
-              const data = await sessionRes.json();
-              setSession(data);
-              setIsLoading(false);
-              return;
-            }
-          }
-        } catch {
-          // Sync failed
-        }
-      }
-
-      setError('Authentication required');
-      setIsLoading(false);
-      router.push('/');
     }
 
     initSession();
@@ -84,7 +55,6 @@ export function AdminShell({ children }: { children: ReactNode }) {
     });
     if (res.ok) {
       setSession((prev) => prev ? { ...prev, selectedCountry: country } : null);
-      localStorage.setItem('admin_selected_country', country);
     }
   }, []);
 
@@ -97,10 +67,6 @@ export function AdminShell({ children }: { children: ReactNode }) {
       body: logoutPayload ? JSON.stringify(logoutPayload) : undefined,
     });
     setStoredAdminRefreshToken(null);
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('user');
-    localStorage.removeItem('isAdmin');
-    localStorage.removeItem('admin_selected_country');
     setSession(null);
     router.push('/');
   }, [router]);
@@ -115,17 +81,20 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
   return (
     <AdminSessionContext.Provider value={{ session, isLoading, error, changeCountry, logout }}>
+      <CountryProvider>
       <AdminQueryProvider>
           <div className="flex min-h-screen bg-gray-100">
             <div className={`fixed inset-y-0 left-0 z-50 h-screen w-64 overflow-y-auto bg-white shadow-lg transform transition-transform md:sticky md:top-0 md:h-screen md:translate-x-0 md:shrink-0 ${
               sidebarOpen ? 'translate-x-0' : '-translate-x-full'
             }`}>
-              <div className="p-4 border-b">
+              <div className="p-4 border-b shrink-0">
                 <h2 className="text-lg font-semibold">관리자 대시보드</h2>
                 <p className="text-sm text-gray-500">{session.user.email}</p>
               </div>
-              <AdminSidebar onNavigate={() => setSidebarOpen(false)} />
-              <div className="px-4 pt-4 mt-3 border-t space-y-1">
+              <div className="flex-1 overflow-y-auto">
+                <AdminSidebar onNavigate={() => setSidebarOpen(false)} />
+              </div>
+              <div className="px-4 pt-4 mt-3 border-t space-y-1 shrink-0">
                 <button
                   onClick={() => setCountryModalOpen(true)}
                   className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-colors flex items-center gap-2"
@@ -163,7 +132,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
                   </svg>
                 </button>
               </div>
-              <main className="p-6">{children}</main>
+              <main className="flex-1 overflow-y-auto p-6">
+                <AdminErrorBoundary>{children}</AdminErrorBoundary>
+              </main>
             </div>
 
             <AdminCountrySelectorModal
@@ -172,6 +143,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             />
           </div>
       </AdminQueryProvider>
+      </CountryProvider>
     </AdminSessionContext.Provider>
   );
 }

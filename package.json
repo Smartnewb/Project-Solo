@@ -12,9 +12,11 @@
     "lint": "next lint",
     "matching": "ts-node scripts/matching-cron.ts",
     "test": "jest",
+    "test:e2e": "playwright test",
     "typecheck:admin-v2": "tsc --project tsconfig.admin-v2.json",
     "lint:admin-v2": "ESLINT_USE_FLAT_CONFIG=false eslint --config .eslintrc.admin-v2.json --ext .ts,.tsx features/admin/ shared/auth/ shared/lib/http/ shared/ui/admin/ app/api/admin/ --no-error-on-unmatched-pattern",
-    "quality:admin-v2": "pnpm typecheck:admin-v2 && pnpm lint:admin-v2"
+    "test:admin": "jest --testPathPattern='__tests__/app/api/admin|__tests__/shared/auth'",
+    "quality:admin-v2": "pnpm typecheck:admin-v2 && pnpm lint:admin-v2 && pnpm test:admin"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -70,6 +72,7 @@
     "zod": "^3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/forms": "^0.5.10",
     "@testing-library/jest-dom": "^6",
     "@testing-library/react": "^14",

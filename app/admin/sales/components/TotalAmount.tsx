@@ -97,14 +97,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
       const startDateString = formatDateToString(start);
       const endDateString = formatDateToString(end);
 
-      console.log("총 매출액 API 요청:", {
-        startDate: startDateString,
-        endDate: endDateString,
-        paymentType:
-          selectedPaymentType !== "all" ? selectedPaymentType : "all",
-        byRegion: true,
-        isFullPeriod: !startDate && !endDate, // 전체 기간 여부 표시
-      });
+      ;
 
       const response = await salesService.getSalesCustom({
         startDate: startDateString,
@@ -114,13 +107,13 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
         byRegion: true,
       });
 
-      console.log("총 매출액 API 응답:", response);
-      console.log("필터 상태:", { selectedRegions, selectedPaymentType });
+      ;
+      ;
 
       if (response) {
         setTotalData(response);
       } else {
-        console.warn("API 응답이 비어있습니다.");
+        ;
         setError("매출 데이터를 불러올 수 없습니다.");
         setTotalData(null);
       }
@@ -136,7 +129,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
   const fetchIapStats = async () => {
     try {
       const response = await salesService.getIapStats();
-      console.log("IAP 통계 API 응답:", response);
+      ;
       setIapStats(response);
     } catch (error) {
       console.error("IAP 통계 조회 실패:", error);
@@ -187,10 +180,10 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
 
   // 지역별 필터링된 총합 계산 함수
   const getFilteredTotals = () => {
-    console.log("getFilteredTotals 호출:", { totalData, selectedRegions });
+    ;
 
     if (!totalData) {
-      console.log("totalData가 없음");
+      ;
       return { totalSales: 0, totalCount: 0, totalPaidUsers: 0 };
     }
 
@@ -201,7 +194,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
         totalCount: totalData.totalCount || 0,
         totalPaidUsers: totalData.totalPaidUsers || 0,
       };
-      console.log("전체 지역 선택 결과:", result);
+      ;
       return result;
     }
 
@@ -210,7 +203,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
       const filteredRegionData = totalData.regionalData.filter((item) =>
         selectedRegions.includes(item.region),
       );
-      console.log("선택된 지역들 데이터:", filteredRegionData);
+      ;
 
       if (filteredRegionData.length > 0) {
         const result = filteredRegionData.reduce(
@@ -222,13 +215,13 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
           }),
           { totalSales: 0, totalCount: 0, totalPaidUsers: 0 },
         );
-        console.log("다중 지역 선택 결과:", result);
+        ;
         return result;
       }
     }
 
     // 선택된 지역 데이터가 없는 경우
-    console.log("선택된 지역 데이터 없음");
+    ;
     return { totalSales: 0, totalCount: 0, totalPaidUsers: 0 };
   };
 

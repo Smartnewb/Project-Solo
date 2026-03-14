@@ -72,7 +72,7 @@ const LikeHistory: React.FC = () => {
         nameFilter.trim() || undefined
       );
 
-      console.log('좋아요 이력 조회 응답:', data);
+      ;
       setLikeHistory(data);
     } catch (err: any) {
       console.error('좋아요 이력 조회 중 오류:', err);

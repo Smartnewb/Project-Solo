@@ -163,11 +163,11 @@ export function RecipientSelector({ onRecipientsChange }: RecipientSelectorProps
                 
             });
 
-            console.log('=== API 응답 ===');
-            console.log('전체 응답:', response);
-            console.log('사용자 배열:', response.users);
-            console.log('사용자 수:', response.users.length);
-            console.log('전체 카운트:', response.meta.totalCount);
+            ;
+            ;
+            ;
+            ;
+            ;
 
             // users 배열에서 필터링
             const filteredResults = response.users.filter(
@@ -437,7 +437,7 @@ export function RecipientSelector({ onRecipientsChange }: RecipientSelectorProps
                                         id='selectActive'
                                         checked={includeWithdrawn}
                                         onChange={(e) => {
-                                            console.log('활성 사용자 조회:',e.target.checked) // 디버깅 용
+                                             // 디버깅 용
                                             setIncludeWithdrawn(e.target.checked)}}
                                         className='w-4 h-4 text-[#885AEB] border-gray-300 rounded focus:ring-[#885AEB] cursor-pointer'
                                     />
@@ -450,7 +450,7 @@ export function RecipientSelector({ onRecipientsChange }: RecipientSelectorProps
                                         id='selectReject'
                                         checked={includedRejected}
                                         onChange={(e) => {
-                                            console.log('미승인 사용자 조회:',e.target.checked)
+                                            
                                             setIncludedRejected(e.target.checked)}}
                                         className='w-4 h-4 text-[#885AEB] border-gray-300 rounded focus:ring-[#885AEB] cursor-pointer'
                                     />

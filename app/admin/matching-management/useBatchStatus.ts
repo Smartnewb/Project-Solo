@@ -7,8 +7,8 @@ export function useBatchStatus() {
   const [error, setError] = useState<string | null>(null);
 
   console.group('batch-status-test')
-  console.log('status: ', status)
-  console.log(`typeof status: ${typeof status}`)
+  
+  
   console.groupEnd()
 
   const fetchStatus = useCallback(async () => {

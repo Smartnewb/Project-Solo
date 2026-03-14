@@ -140,20 +140,20 @@ function UsersV2Content() {
 
 
   const handleUserSelect = async (user: User) => {
-    console.log('사용자 상세 정보 모달 열림:', user);
-    console.log('사용자 ID:', user.id);
-    console.log('사용자 이름:', user.name);
-    console.log('사용자 프로필 이미지 배열:', user.profileImages);
+    ;
+    ;
+    ;
+    ;
 
     if (user.profileImages) {
-      console.log('프로필 이미지 개수:', user.profileImages.length);
+      ;
       user.profileImages.forEach((img, index) => {
-        console.log(`이미지 ${index + 1}:`, img.id, img.url, img.isMain ? '(메인)' : '');
+        ;
       });
 
       // 메인 이미지 찾기
       const mainImage = user.profileImages.find(img => img.isMain === true);
-      console.log('메인 이미지:', mainImage);
+      ;
     }
 
     setSelectedUser(user);
@@ -167,21 +167,21 @@ function UsersV2Content() {
       const imageToUse = mainImage || user.profileImages[0];
       const imageUrl = imageToUse.url;
 
-      console.log('기본 선택 이미지 설정:', imageUrl);
+      ;
       setSelectedImage(imageUrl);
 
       // 상태 업데이트 후 확인을 위한 setTimeout
       setTimeout(() => {
-        console.log('상태 업데이트 후 selectedImage:', selectedImage);
+        ;
       }, 100);
     } else {
       setSelectedImage(null);
-      console.log('프로필 이미지 없음');
+      ;
     }
   };
 
   const handleCloseDetails = () => {
-    console.log('사용자 상세 정보 모달 닫힘');
+    ;
     setSelectedUser(null);
     setSelectedImage(null);
   };
@@ -198,8 +198,8 @@ function UsersV2Content() {
     try {
       setLoading(true);
 
-      console.log('등급 변경 시작 - 사용자 ID:', userId);
-      console.log('새 등급:', classification);
+      ;
+      ;
 
       if (error) {
         console.error('등급 변경 중 오류:', error);
@@ -715,13 +715,13 @@ function UsersV2Content() {
                         role="button"
                         tabIndex={0}
                         onClick={() => {
-                          console.log('현재 메인 이미지 상태:', selectedImage);
-                          console.log('사용자 프로필 이미지:', selectedUser.profileImages);
+                          ;
+                          ;
 
                           // 메인 이미지 찾기
                           const mainImage = selectedUser.profileImages.find(img => img.isMain === true);
                           if (mainImage) {
-                            console.log('메인 이미지 정보:', mainImage.id, mainImage.url);
+                            ;
                           }
                         }}
                         onKeyDown={(e) => {
@@ -729,7 +729,7 @@ function UsersV2Content() {
                             e.preventDefault();
                             const mainImage = selectedUser.profileImages.find(img => img.isMain === true);
                             if (mainImage) {
-                              console.log('메인 이미지 정보:', mainImage.id, mainImage.url);
+                              ;
                             }
                           }
                         }}
@@ -762,10 +762,10 @@ function UsersV2Content() {
                               (selectedImage === image.url) ? 'border-blue-500' : 'border-transparent'
                             }`}
                             onClick={() => {
-                              console.log('썸네일 이미지 클릭:', image.id, image.url, image.isMain ? '(메인)' : '');
+                              ;
                               // 직접 상태 업데이트
                               setSelectedImage(image.url);
-                              console.log('선택된 이미지 변경됨:', image.url);
+                              ;
                             }}
                           >
                             <img

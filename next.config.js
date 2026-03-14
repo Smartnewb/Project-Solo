@@ -38,7 +38,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  reactStrictMode: false,
+  reactStrictMode: true,
   experimental: {
     serverComponentsExternalPackages: ['react-dom'],
     serverActions: {

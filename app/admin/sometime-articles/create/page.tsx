@@ -30,7 +30,7 @@ import type {
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { LegacyPageAdapter } from '@/shared/ui/admin/legacy-page-adapter';
+import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 
 const STATUS_OPTIONS: { value: SometimeArticleStatus; label: string }[] = [
   { value: 'draft', label: '초안' },
@@ -58,6 +58,11 @@ const generateSlug = (title: string): string => {
 
 function CreateSometimeArticlePageContent() {
   const router = useRouter();
+
+  useEffect(() => {
+    const unpatch = patchAdminAxios();
+    return () => unpatch();
+  }, []);
 
   // Basic Info
   const [title, setTitle] = useState('');
@@ -469,8 +474,6 @@ function CreateSometimeArticlePageContent() {
 
 export default function CreateSometimeArticlePage() {
   return (
-    <LegacyPageAdapter>
-      <CreateSometimeArticlePageContent />
-    </LegacyPageAdapter>
+    <CreateSometimeArticlePageContent />
   );
 }

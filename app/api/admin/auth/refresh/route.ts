@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { adminLog } from '@/shared/lib/admin-logger';
 import {
   getAdminAccessToken,
   getAdminRefreshToken,
@@ -52,8 +53,7 @@ export async function POST() {
 
     return NextResponse.json({ accessToken: newToken });
   } catch (error) {
-    // eslint-disable-next-line no-console -- server-side route handler error logging
-    console.error('Admin refresh error:', error);
+    adminLog.error('/api/admin/auth/refresh', 'refresh_failed', error);
     await clearAdminCookies();
     return NextResponse.json({ error: 'Refresh error' }, { status: 500 });
   }

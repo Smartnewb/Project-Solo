@@ -274,15 +274,7 @@ function ProfileReviewV2Content() {
       const searchQuery = search !== undefined ? search : searchTerm;
       const appliedFilters = currentFilters !== undefined ? currentFilters : filters;
       const excludeUserIds = currentSkippedUsers !== undefined ? currentSkippedUsers : getSkippedUsers();
-      console.log(
-        "심사 대기 유저 목록 조회 시작... (page:",
-        page,
-        ", search:",
-        searchQuery,
-        ", filters:",
-        appliedFilters,
-        ")",
-      );
+      ;
       const response: PendingUsersResponse =
         await AdminService.userReview.getPendingUsers(
           page,
@@ -292,7 +284,7 @@ function ProfileReviewV2Content() {
           excludeUserIds.length > 0 ? excludeUserIds : undefined,
         );
 
-      console.log("API 응답 데이터:", response);
+      ;
 
       if (!response || !response.users) {
         throw new Error(
@@ -321,7 +313,7 @@ function ProfileReviewV2Content() {
         };
       });
 
-      console.log("정규화된 사용자 데이터:", normalizedUsers);
+      ;
 
       setUsers(normalizedUsers);
       setPagination(response.pagination);

@@ -1,7 +1,6 @@
 export { sessionOptions, ADMIN_COOKIE_NAME, ADMIN_REFRESH_COOKIE_NAME, ADMIN_META_COOKIE } from './session-config';
 export {
   normalizeAdminCountry,
-  buildAdminSyncPayload,
   buildAdminLogoutPayload,
   getStoredAdminRefreshToken,
   setStoredAdminRefreshToken,

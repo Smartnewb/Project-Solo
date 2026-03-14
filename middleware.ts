@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-export async function middleware(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Public paths — always allow
@@ -14,10 +14,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Admin paths — allow through, AdminShell handles auth
-  // Phase 1: Permissive. AdminShell validates session (cookie-first, localStorage-fallback).
-  // Phase 6: Middleware will enforce cookie presence.
-  if (pathname.startsWith('/admin')) {
+  // Admin paths — require admin_session_meta cookie
+  // Signature verification happens in route handlers; middleware checks existence only.
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+    const adminCookie = request.cookies.get('admin_session_meta');
+    if (!adminCookie?.value) {
+      return NextResponse.redirect(new URL('/', request.url));
+    }
     return NextResponse.next();
   }
 
