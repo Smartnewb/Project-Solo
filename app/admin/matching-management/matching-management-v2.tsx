@@ -23,7 +23,6 @@ import {
 } from '@mui/material';
 import axiosServer from '@/utils/axios';
 import { useBatchStatus } from './useBatchStatus';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 
 // 컴포넌트 임포트
 import UserSearch from './components/UserSearch';
@@ -118,13 +117,6 @@ const batchAllMatchableUsers = () =>
   });
 
 function MatchingManagementV2Content() {
-  // Patch axios instances so sub-components that self-fetch
-  // route through BFF proxy
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return unpatch;
-  }, []);
-
   const [activeTab, setActiveTab] = useState<number>(0);
   const {
     status: batchStatus,

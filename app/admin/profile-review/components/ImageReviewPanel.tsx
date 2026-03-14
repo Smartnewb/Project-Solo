@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useToast } from "@/shared/ui/admin/toast";
+import { useConfirm } from "@/shared/ui/admin/confirm-dialog";
 import {
   Paper,
   Typography,
@@ -92,6 +94,9 @@ export default function ImageReviewPanel({
   processing,
   setProcessing,
 }: ImageReviewPanelProps) {
+  const toast = useToast();
+  const confirmAction = useConfirm();
+
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
   const [rejectImageModalOpen, setRejectImageModalOpen] = useState(false);
@@ -120,7 +125,7 @@ export default function ImageReviewPanel({
     } catch (error: any) {
       console.error("Rank 업데이트 실패:", error);
       setCurrentRank(previousRank);
-      alert(error.response?.data?.message || "Rank 업데이트에 실패했습니다.");
+      toast.error(error.response?.data?.message || "Rank 업데이트에 실패했습니다.");
     } finally {
       setIsUpdatingRank(false);
     }
@@ -162,11 +167,12 @@ export default function ImageReviewPanel({
       const isMainProfile = targetImage?.slotIndex === 0;
 
       if (isMainProfile) {
-        const confirmed = window.confirm(
-          "대표 프로필을 승인하시겠습니까?\n\n" +
-            '대표 프로필 승인 시 회원 상태가 "승인됨"으로 자동 변경되며,\n' +
-            "회원이 서비스를 정상적으로 이용할 수 있게 됩니다.",
-        );
+        const confirmed = await confirmAction({
+          message:
+            '대표 프로필을 승인하시겠습니까?\n대표 프로필 승인 시 회원 상태가 "승인됨"으로 자동 변경되며, 회원이 서비스를 정상적으로 이용할 수 있게 됩니다.',
+          confirmText: "승인",
+          severity: "info",
+        });
         if (!confirmed) return;
       }
 
@@ -175,13 +181,11 @@ export default function ImageReviewPanel({
       onImageApproved(imageId);
 
       if (isMainProfile) {
-        alert(
-          '대표 프로필이 승인되었습니다.\n회원 상태가 "승인됨"으로 변경되었습니다.',
-        );
+        toast.success('대표 프로필이 승인되었습니다. 회원 상태가 "승인됨"으로 변경되었습니다.');
       }
     } catch (error: any) {
       console.error("개별 이미지 승인 중 오류:", error);
-      alert(
+      toast.error(
         error.response?.data?.message || "이미지 승인 중 오류가 발생했습니다.",
       );
     } finally {
@@ -198,7 +202,7 @@ export default function ImageReviewPanel({
     if (!selectedImageId) return;
 
     if (!imageRejectionReason.trim()) {
-      alert("거절 사유를 입력해주세요.");
+      toast.error("거절 사유를 입력해주세요.");
       return;
     }
 
@@ -208,12 +212,12 @@ export default function ImageReviewPanel({
     const isMainProfile = targetImage?.slotIndex === 0;
 
     if (isMainProfile) {
-      const confirmed = window.confirm(
-        "⚠️ 대표 프로필을 거절하시겠습니까?\n\n" +
-          '대표 프로필 거절 시 회원 상태가 "거절됨"으로 변경되며,\n' +
-          "회원이 서비스를 이용할 수 없게 됩니다.\n\n" +
-          `거절 사유: ${imageRejectionReason}`,
-      );
+      const confirmed = await confirmAction({
+        message:
+          `⚠️ 대표 프로필을 거절하시겠습니까?\n대표 프로필 거절 시 회원 상태가 "거절됨"으로 변경되며, 회원이 서비스를 이용할 수 없게 됩니다.\n거절 사유: ${imageRejectionReason}`,
+        confirmText: "거절",
+        severity: "error",
+      });
       if (!confirmed) return;
     }
 
@@ -230,13 +234,11 @@ export default function ImageReviewPanel({
       onImageRejected(rejectedImageId);
 
       if (isMainProfile) {
-        alert(
-          '대표 프로필이 거절되었습니다.\n회원 상태가 "거절됨"으로 변경되었습니다.',
-        );
+        toast.success('대표 프로필이 거절되었습니다. 회원 상태가 "거절됨"으로 변경되었습니다.');
       }
     } catch (error: any) {
       console.error("개별 이미지 거절 중 오류:", error);
-      alert(
+      toast.error(
         error.response?.data?.message || "이미지 거절 중 오류가 발생했습니다.",
       );
     } finally {

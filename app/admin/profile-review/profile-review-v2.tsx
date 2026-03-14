@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 import {
   Box,
   Typography,
@@ -202,11 +201,6 @@ function TabPanel({ children, value, index, ...other }: TabPanelProps) {
 }
 
 function ProfileReviewV2Content() {
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return unpatch;
-  }, []);
-
   const { individualOptions } = useClusterOptions();
   const REGION_OPTIONS = useMemo(
     () => individualOptions.filter(opt => opt.value !== 'ALL'),
