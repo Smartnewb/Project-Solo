@@ -95,9 +95,7 @@ export default function UniversityFormDialog({
     try {
       const data = await AdminService.universities.meta.getFoundations();
       setFoundations(data);
-    } catch (err) {
-      console.error('설립 유형 로드 실패:', err);
-    }
+    } catch { }
   };
 
   const handleChange = (field: keyof FormData, value: any) => {

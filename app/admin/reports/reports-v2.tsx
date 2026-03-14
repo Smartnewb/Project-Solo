@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { patchAdminAxios } from "@/shared/lib/http/admin-axios-interceptor";
+import { useToast } from "@/shared/ui/admin/toast/toast-context";
 import {
   Box,
   Typography,
@@ -120,10 +120,7 @@ const REASONS_REQUIRING_CHAT = ["부적절한 언어 사용", "스팸/광고"];
 const REASONS_REQUIRING_PROFILE_IMAGES = ["허위 프로필", "부적절한 사진"];
 
 function ReportsManagementContent() {
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
+  const toast = useToast();
 
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(false);
@@ -185,7 +182,6 @@ function ReportsManagementContent() {
         setTotalCount(0);
       }
     } catch (err: unknown) {
-      console.error("신고 목록 조회 오류:", err);
       setError("신고 목록을 불러오는데 실패했습니다.");
     } finally {
       setLoading(false);
@@ -244,7 +240,6 @@ function ReportsManagementContent() {
       setSelectedReport(reportDetail);
       setNewStatus(reportDetail.status);
     } catch (err: unknown) {
-      console.error("신고 상세 조회 오류:", err);
       setSelectedReport(report);
       setNewStatus(report.status);
     } finally {
@@ -270,8 +265,7 @@ function ReportsManagementContent() {
       );
       setChatHistory(response);
     } catch (err: unknown) {
-      console.error("채팅 내역 조회 오류:", err);
-      alert("채팅 내역을 불러오는데 실패했습니다.");
+      toast.error("채팅 내역을 불러오는데 실패했습니다.");
     } finally {
       setChatLoading(false);
     }
@@ -287,8 +281,7 @@ function ReportsManagementContent() {
       );
       setProfileImages(images);
     } catch (err: unknown) {
-      console.error("프로필 이미지 조회 오류:", err);
-      alert("프로필 이미지를 불러오는데 실패했습니다.");
+      toast.error("프로필 이미지를 불러오는데 실패했습니다.");
     } finally {
       setProfileImagesLoading(false);
     }
@@ -303,12 +296,11 @@ function ReportsManagementContent() {
         selectedReport.id,
         newStatus,
       );
-      alert("상태가 변경되었습니다.");
+      toast.success("상태가 변경되었습니다.");
       setSelectedReport({ ...selectedReport, status: newStatus });
       fetchReports();
     } catch (err: unknown) {
-      console.error("상태 변경 오류:", err);
-      alert("상태 변경에 실패했습니다.");
+      toast.error("상태 변경에 실패했습니다.");
     } finally {
       setStatusUpdating(false);
     }
@@ -325,7 +317,6 @@ function ReportsManagementContent() {
       const data = await AdminService.userAppearance.getUserDetails(userId);
       setUserDetail(data);
     } catch (err: any) {
-      console.error("사용자 상세 정보 조회 오류:", err);
       setUserDetailError(
         err.message || "사용자 정보를 불러오는데 실패했습니다.",
       );

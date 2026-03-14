@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Box,
   Typography,
@@ -14,13 +14,7 @@ import {
   TableRow,
   Chip,
   IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
   CircularProgress,
-  Alert,
   FormControl,
   InputLabel,
   Select,
@@ -28,16 +22,20 @@ import {
   TablePagination,
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
-import AdminService from '@/app/services/admin';
 import type {
-  AdminSometimeArticleItem,
   SometimeArticleStatus,
   SometimeArticleCategory,
 } from '@/types/admin';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PublishIcon from '@mui/icons-material/Publish';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
+import {
+  useSometimeArticleList,
+  useDeleteSometimeArticle,
+  useUpdateSometimeArticle,
+} from '@/app/admin/hooks';
+import { useToast } from '@/shared/ui/admin/toast/toast-context';
+import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
 
 const STATUS_LABELS: Record<SometimeArticleStatus, string> = {
   draft: '초안',
@@ -64,50 +62,26 @@ const CATEGORY_LABELS: Record<SometimeArticleCategory, string> = {
 
 function SometimeArticlesPageContent() {
   const router = useRouter();
-  const [articles, setArticles] = useState<AdminSometimeArticleItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [processing, setProcessing] = useState(false);
+  const toast = useToast();
+  const confirmAction = useConfirm();
 
-  // Filters
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
-
-  // Pagination
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [totalItems, setTotalItems] = useState(0);
 
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
+  const { data, isLoading } = useSometimeArticleList({
+    page: page + 1,
+    limit: rowsPerPage,
+    ...(categoryFilter && { category: categoryFilter }),
+    ...(statusFilter && { status: statusFilter }),
+  });
 
-  useEffect(() => {
-    fetchArticles();
-  }, [page, rowsPerPage, categoryFilter, statusFilter]);
+  const articles = data?.items || [];
+  const totalItems = data?.meta?.totalItems || 0;
 
-  const fetchArticles = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await AdminService.sometimeArticles.getList({
-        page: page + 1,
-        limit: rowsPerPage,
-        ...(categoryFilter && { category: categoryFilter }),
-        ...(statusFilter && { status: statusFilter }),
-      });
-      setArticles(response.items || []);
-      setTotalItems(response.meta?.totalItems || 0);
-    } catch (err: any) {
-      console.error('썸타임 이야기 목록 조회 실패:', err);
-      setError(err.response?.data?.message || '목록을 불러오는데 실패했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const deleteArticle = useDeleteSometimeArticle();
+  const updateArticle = useUpdateSometimeArticle();
 
   const handleCreate = () => {
     router.push('/admin/sometime-articles/create');
@@ -117,44 +91,39 @@ function SometimeArticlesPageContent() {
     router.push(`/admin/sometime-articles/edit/${id}`);
   };
 
-  const handleDeleteClick = (id: string) => {
-    setSelectedId(id);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!selectedId) return;
+  const handleDeleteClick = async (id: string) => {
+    const ok = await confirmAction({
+      title: '아티클 삭제',
+      message: '이 아티클을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
+    });
+    if (!ok) return;
 
     try {
-      setProcessing(true);
-      await AdminService.sometimeArticles.delete(selectedId);
-      setDeleteDialogOpen(false);
-      setSelectedId(null);
-      await fetchArticles();
+      await deleteArticle.mutateAsync(id);
+      toast.success('아티클이 삭제되었습니다.');
     } catch (err: any) {
-      console.error('썸타임 이야기 삭제 실패:', err);
-      alert(err.response?.data?.message || '삭제에 실패했습니다.');
-    } finally {
-      setProcessing(false);
+      toast.error(err.response?.data?.message || '삭제에 실패했습니다.');
     }
   };
 
   const handlePublish = async (id: string) => {
-    if (!confirm('이 아티클을 발행하시겠습니까?')) return;
+    const ok = await confirmAction({
+      title: '아티클 발행',
+      message: '이 아티클을 발행하시겠습니까?',
+    });
+    if (!ok) return;
 
     try {
-      setProcessing(true);
-      await AdminService.sometimeArticles.update(id, {
-        status: 'published',
-        publishedAt: new Date().toISOString(),
+      await updateArticle.mutateAsync({
+        id,
+        data: {
+          status: 'published',
+          publishedAt: new Date().toISOString(),
+        },
       });
-      await fetchArticles();
-      alert('아티클이 발행되었습니다.');
+      toast.success('아티클이 발행되었습니다.');
     } catch (err: any) {
-      console.error('아티클 발행 실패:', err);
-      alert(err.response?.data?.message || '발행에 실패했습니다.');
-    } finally {
-      setProcessing(false);
+      toast.error(err.response?.data?.message || '발행에 실패했습니다.');
     }
   };
 
@@ -178,7 +147,7 @@ function SometimeArticlesPageContent() {
     });
   };
 
-  if (loading && articles.length === 0) {
+  if (isLoading && articles.length === 0) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
         <CircularProgress />
@@ -197,12 +166,6 @@ function SometimeArticlesPageContent() {
           새 아티클 작성
         </Button>
       </Box>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
 
       {/* Filters */}
       <Paper sx={{ p: 2, mb: 3 }}>
@@ -314,7 +277,7 @@ function SometimeArticlesPageContent() {
                           color="success"
                           onClick={() => handlePublish(item.id)}
                           title="발행"
-                          disabled={processing}
+                          disabled={updateArticle.isPending}
                         >
                           <PublishIcon fontSize="small" />
                         </IconButton>
@@ -345,24 +308,6 @@ function SometimeArticlesPageContent() {
           labelRowsPerPage="페이지당 행 수"
         />
       </TableContainer>
-
-      {/* 삭제 확인 다이얼로그 */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>아티클 삭제</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            이 아티클을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)} disabled={processing}>
-            취소
-          </Button>
-          <Button onClick={handleDeleteConfirm} color="error" disabled={processing}>
-            {processing ? '삭제 중...' : '삭제'}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 }

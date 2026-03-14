@@ -174,7 +174,6 @@ export default function GemSystemFunnel() {
       const response = await dashboardService.getGemSystemFunnel(undefined, undefined, debug);
       setData(response);
     } catch (err) {
-      console.error('구슬 시스템 퍼널 조회 실패:', err);
       setError('매칭 퍼널 데이터를 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
@@ -199,9 +198,7 @@ export default function GemSystemFunnel() {
       await navigator.clipboard.writeText(query);
       setCopied(queryName);
       setTimeout(() => setCopied(null), 2000);
-    } catch (err) {
-      console.error('복사 실패:', err);
-    }
+    } catch { }
   };
 
   if (loading) {

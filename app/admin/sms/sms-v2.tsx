@@ -1,20 +1,14 @@
 // TITLE: - sms 관리 페이지
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { RecipientSelector } from './components/RecipientSelector';
 import { TemplateManager } from './components/TemplateManager';
 import { MessageComposer } from './components/MessageComposer';
 import { SmsHistoryTable } from './components/SmsHistoryTable';
 import { User, SmsTemplate } from './types';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 
 function SmspageContent() {
-    useEffect(() => {
-        const unpatch = patchAdminAxios();
-        return () => unpatch();
-    }, []);
-
     // === 상태관리 ===
     const [selectedRecipients, setSelectedRecipients] = useState<User[]>([]);
     const [selectedTemplate, setSelectedTemplate] = useState<SmsTemplate | null>(null);

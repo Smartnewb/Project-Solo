@@ -127,7 +127,6 @@ export function useSessionPolling(): UseSessionPollingReturn {
     try {
       await Promise.all([fetchActive(), fetchResolved()]);
     } catch (err) {
-      console.error('세션 폴링 실패:', err);
       setError(err instanceof Error ? err.message : '세션 목록을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);

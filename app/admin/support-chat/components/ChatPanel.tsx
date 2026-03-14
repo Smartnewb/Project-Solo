@@ -102,7 +102,6 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
       const detail = await supportChatService.getSessionDetail(sessionId);
       setSession(detail);
     } catch (err) {
-      console.error('세션 상세 조회 실패:', err);
       setError(err instanceof Error ? err.message : '세션 정보를 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
@@ -131,7 +130,6 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
       await fetchSessionDetail();
       onSessionUpdated();
     } catch (err) {
-      console.error('세션 인수 실패:', err);
       setSnackbar({
         open: true,
         message: err instanceof Error ? err.message : '세션 인수에 실패했습니다.',
@@ -153,7 +151,6 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
       await fetchSessionDetail();
       onSessionUpdated();
     } catch (err) {
-      console.error('세션 해결 실패:', err);
       setSnackbar({
         open: true,
         message: err instanceof Error ? err.message : '세션 해결 처리에 실패했습니다.',
@@ -183,7 +180,6 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
         setSnackbar({ open: true, message: '메시지 전송에 실패했습니다.', severity: 'error' });
       }
     } catch (err) {
-      console.error('메시지 전송 실패:', err);
       setSnackbar({
         open: true,
         message: err instanceof Error ? err.message : '메시지 전송에 실패했습니다.',

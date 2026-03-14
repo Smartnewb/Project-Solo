@@ -2,14 +2,8 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 
 function ForceMatchingPageContent() {
-	useEffect(() => {
-		const unpatch = patchAdminAxios();
-		return () => unpatch();
-	}, []);
-
 	const router = useRouter();
 
 	useEffect(() => {

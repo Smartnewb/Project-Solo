@@ -34,8 +34,6 @@ export const backgroundPresets = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('활성 배경 프리셋 목록 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -56,8 +54,6 @@ export const backgroundPresets = {
 			;
 			return data;
 		} catch (error: any) {
-			console.error('배경 이미지 업로드 중 오류:', error);
-			console.error('오류 상세 정보:', error.message);
 			throw error;
 		}
 	},
@@ -85,8 +81,6 @@ export const backgroundPresets = {
 			;
 			return responseData;
 		} catch (error: any) {
-			console.error('배경 프리셋 통합 생성 중 오류:', error);
-			console.error('오류 상세 정보:', error.message);
 			throw error;
 		}
 	},
@@ -98,8 +92,6 @@ export const backgroundPresets = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('배경 프리셋 생성 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -111,8 +103,6 @@ export const backgroundPresets = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('배경 프리셋 수정 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -123,8 +113,6 @@ export const backgroundPresets = {
 			await axiosNextGen.delete(`/admin/background-presets/${id}`);
 			;
 		} catch (error: any) {
-			console.error('배경 프리셋 삭제 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -150,8 +138,6 @@ export const cardNews = {
 			;
 			return data;
 		} catch (error: any) {
-			console.error('섹션 이미지 업로드 중 오류:', error);
-			console.error('오류 상세 정보:', error.message);
 			throw error;
 		}
 	},
@@ -163,8 +149,6 @@ export const cardNews = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('카드뉴스 생성 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -176,8 +160,6 @@ export const cardNews = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('카드뉴스 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -194,8 +176,6 @@ export const cardNews = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('카드뉴스 목록 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -210,8 +190,6 @@ export const cardNews = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('카드뉴스 수정 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -222,8 +200,6 @@ export const cardNews = {
 			await axiosNextGen.delete(`/admin/posts/card-news/${id}`);
 			;
 		} catch (error: any) {
-			console.error('카드뉴스 삭제 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -238,8 +214,6 @@ export const cardNews = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('카드뉴스 발행 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -251,8 +225,6 @@ export const cardNews = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('카테고리 목록 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -267,7 +239,6 @@ export const banners = {
 			});
 			return response.data;
 		} catch (error: any) {
-			console.error('배너 목록 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -286,7 +257,6 @@ export const banners = {
 				body: formData,
 			});
 		} catch (error: any) {
-			console.error('배너 등록 중 오류:', error);
 			throw error;
 		}
 	},
@@ -296,7 +266,6 @@ export const banners = {
 			const response = await axiosServer.patch<Banner>(`/admin/banners/${id}`, data);
 			return response.data;
 		} catch (error: any) {
-			console.error('배너 수정 중 오류:', error);
 			throw error;
 		}
 	},
@@ -305,7 +274,6 @@ export const banners = {
 		try {
 			await axiosServer.delete(`/admin/banners/${id}`);
 		} catch (error: any) {
-			console.error('배너 삭제 중 오류:', error);
 			throw error;
 		}
 	},
@@ -315,7 +283,6 @@ export const banners = {
 			const response = await axiosServer.patch<Banner[]>('/admin/banners/order/bulk', data);
 			return response.data;
 		} catch (error: any) {
-			console.error('배너 순서 변경 중 오류:', error);
 			throw error;
 		}
 	},
@@ -337,7 +304,6 @@ export const sometimeArticles = {
 			;
 			return data;
 		} catch (error: any) {
-			console.error("썸타임 이야기 이미지 업로드 중 오류:", error);
 			throw error;
 		}
 	},
@@ -358,8 +324,6 @@ export const sometimeArticles = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error("썸타임 이야기 목록 조회 중 오류:", error);
-			console.error("오류 상세 정보:", error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -373,8 +337,6 @@ export const sometimeArticles = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error("썸타임 이야기 조회 중 오류:", error);
-			console.error("오류 상세 정보:", error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -391,8 +353,6 @@ export const sometimeArticles = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error("썸타임 이야기 생성 중 오류:", error);
-			console.error("오류 상세 정보:", error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -410,8 +370,6 @@ export const sometimeArticles = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error("썸타임 이야기 수정 중 오류:", error);
-			console.error("오류 상세 정보:", error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -422,8 +380,6 @@ export const sometimeArticles = {
 			await axiosNextGen.delete(`/admin/sometime-articles/${id}`);
 			;
 		} catch (error: any) {
-			console.error("썸타임 이야기 삭제 중 오류:", error);
-			console.error("오류 상세 정보:", error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -496,7 +452,6 @@ export const appReviews = {
 			const response = await axiosServer.get('/admin/app-reviews', { params });
 			return response.data;
 		} catch (error: any) {
-			console.error('앱 리뷰 목록 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -506,7 +461,6 @@ export const appReviews = {
 			const response = await axiosServer.get('/admin/app-reviews/stats');
 			return response.data;
 		} catch (error: any) {
-			console.error('앱 리뷰 통계 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -518,7 +472,6 @@ export const appReviews = {
 			);
 			return response.data;
 		} catch (error: any) {
-			console.error('앱 리뷰 외부 공개 토글 중 오류:', error);
 			throw error;
 		}
 	},
@@ -534,7 +487,6 @@ export const communityReviewArticles = {
 			});
 			return response.data;
 		} catch (error: any) {
-			console.error('커뮤니티 리뷰 게시글 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -548,7 +500,6 @@ export const communityReviewArticles = {
 			);
 			return response.data;
 		} catch (error: any) {
-			console.error('커뮤니티 리뷰 외부 공개 토글 중 오류:', error);
 			throw error;
 		}
 	},
@@ -586,7 +537,6 @@ export const publicReviews = {
 			const response = await axiosServer.get('/public-reviews', { params });
 			return response.data;
 		} catch (error: any) {
-			console.error('통합 리뷰 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -598,7 +548,6 @@ export const publicReviews = {
 			const response = await axiosServer.get('/app-reviews/featured', { params });
 			return response.data;
 		} catch (error: any) {
-			console.error('Featured 앱 리뷰 조회 중 오류:', error);
 			throw error;
 		}
 	},

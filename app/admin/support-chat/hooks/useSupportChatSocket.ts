@@ -89,14 +89,12 @@ export function useSupportChatSocket({
           ;
           setState((prev) => ({ ...prev, sessionJoined: true }));
         } else {
-          console.error('[SupportChat] 세션 참여 실패:', response.error);
           setState((prev) => ({ ...prev, error: response.error || '세션 참여에 실패했습니다.' }));
         }
       });
     });
 
     socket.on('connect_error', (error) => {
-      console.error('[SupportChat] 연결 에러:', error.message);
       setState((prev) => ({ ...prev, connected: false, error: `연결 실패: ${error.message}` }));
     });
 
@@ -133,7 +131,6 @@ export function useSupportChatSocket({
   const sendMessage = useCallback(async (content: string): Promise<boolean> => {
     return new Promise((resolve) => {
       if (!socketRef.current?.connected || !state.sessionJoined) {
-        console.error('[SupportChat] 메시지 전송 실패: 연결되지 않음');
         resolve(false);
         return;
       }
@@ -146,7 +143,6 @@ export function useSupportChatSocket({
             ;
             resolve(true);
           } else {
-            console.error('[SupportChat] 메시지 전송 실패:', response.error);
             resolve(false);
           }
         }

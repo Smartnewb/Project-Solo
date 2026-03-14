@@ -39,9 +39,7 @@ function IOSRefundPageContent() {
       setItems(response.items);
       setTotalPages(response.meta.totalPages);
       setTotalCount(response.meta.totalCount);
-    } catch (error) {
-      console.error('iOS 환불 내역 조회 실패:', error);
-    } finally {
+    } catch { } finally {
       setLoading(false);
     }
   }, [page, filterStatus, searchTerm, startDate, endDate]);
@@ -57,7 +55,6 @@ function IOSRefundPageContent() {
       await fetchData();
       alert('환불 상태 동기화가 완료되었습니다.');
     } catch (error) {
-      console.error('동기화 실패:', error);
       alert('동기화에 실패했습니다.');
     } finally {
       setSyncing(false);

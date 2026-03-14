@@ -77,7 +77,6 @@ export default function SessionListTab({ statusFilter }: SessionListTabProps) {
       setSessions(filteredSessions);
       setTotalCount(response.pagination.total);
     } catch (err) {
-      console.error('세션 목록 조회 실패:', err);
       setError(err instanceof Error ? err.message : '세션 목록을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);

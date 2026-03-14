@@ -64,7 +64,6 @@ export default function BatchHistory() {
         setBatches(data);
       }
     } catch (err) {
-      console.error('Failed to fetch batches:', err);
       setError('배치 히스토리를 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);

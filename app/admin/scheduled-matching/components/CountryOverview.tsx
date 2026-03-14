@@ -272,7 +272,6 @@ export default function CountryOverview() {
       });
       setLastBatches(newLastBatches);
     } catch (err) {
-      console.error('Failed to fetch data:', err);
       setError('데이터를 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
@@ -296,7 +295,6 @@ export default function CountryOverview() {
       const stats = await scheduledMatchingService.getMatchingPoolStats(country, startDate, endDate);
       setMapStats(stats);
     } catch (err) {
-      console.error('Failed to fetch map stats:', err);
       setMapError('지도 데이터를 불러오는데 실패했습니다.');
       setMapStats(null);
     } finally {
@@ -332,7 +330,6 @@ export default function CountryOverview() {
       await scheduledMatchingService.triggerManualExecution(country);
       fetchData();
     } catch (err) {
-      console.error('Manual trigger failed:', err);
       setError('수동 실행에 실패했습니다.');
     } finally {
       setTriggering(null);
@@ -345,7 +342,6 @@ export default function CountryOverview() {
       await scheduledMatchingService.cancelBatch(batchId);
       fetchData();
     } catch (err) {
-      console.error('Cancel batch failed:', err);
       setError('배치 취소에 실패했습니다.');
     } finally {
       setCancelling(null);
@@ -370,7 +366,6 @@ export default function CountryOverview() {
       setScheduleResult(result);
       fetchData();
     } catch (err: unknown) {
-      console.error('Schedule matching failed:', err);
       const errorMessage = err instanceof Error ? err.message : '스케줄 매칭 실행에 실패했습니다.';
       setScheduleError(errorMessage);
     } finally {

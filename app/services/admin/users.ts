@@ -66,17 +66,9 @@ export const userAppearance = {
 				;
 				return response.data;
 			} catch (error: any) {
-				console.error('API 요청 실패:', error.message);
-				console.error('에러 응답:', error.response?.data);
-				console.error('에러 상태 코드:', error.response?.status);
-				console.error('에러 헤더:', error.response?.headers);
 				throw error;
 			}
 		} catch (error: any) {
-			console.error('외모 등급 정보를 포함한 유저 목록 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
-			console.error('오류 상태 코드:', error.response?.status);
-			console.error('요청 파라미터:', params);
 			throw error;
 		}
 	},
@@ -96,7 +88,6 @@ export const userAppearance = {
 
 			return response.data;
 		} catch (error) {
-			console.error('미분류 유저 목록 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -117,8 +108,6 @@ export const userAppearance = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('유저 외모 등급 설정 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -156,7 +145,6 @@ export const userAppearance = {
 			});
 			return response.data;
 		} catch (error) {
-			console.error('유저 외모 등급 일괄 설정 중 오류:', error);
 			throw error;
 		}
 	},
@@ -189,8 +177,6 @@ export const userAppearance = {
 
 			return data;
 		} catch (error: any) {
-			console.error('유저 상세 정보 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -206,8 +192,6 @@ export const userAppearance = {
 
 			return response.data;
 		} catch (error: any) {
-			console.error('재매칭 티켓 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -226,8 +210,6 @@ export const userAppearance = {
 
 			return response.data;
 		} catch (error: any) {
-			console.error('재매칭 티켓 생성 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -248,8 +230,6 @@ export const userAppearance = {
 
 			return response.data;
 		} catch (error: any) {
-			console.error('재매칭 티켓 제거 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -264,8 +244,6 @@ export const userAppearance = {
 
 			return response.data;
 		} catch (error: any) {
-			console.error('사용자 구슬 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -280,8 +258,6 @@ export const userAppearance = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('사용자 구슬 추가 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -296,8 +272,6 @@ export const userAppearance = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('사용자 구슬 제거 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -325,8 +299,6 @@ export const userAppearance = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('유저 프로필 수정 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -348,8 +320,6 @@ export const userAppearance = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('계정 상태 변경 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -366,8 +336,6 @@ export const userAppearance = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('경고 메시지 발송 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -385,8 +353,6 @@ export const userAppearance = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('이메일 발송 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -403,8 +369,6 @@ export const userAppearance = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('SMS 발송 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -420,8 +384,6 @@ export const userAppearance = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('강제 로그아웃 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -438,8 +400,6 @@ export const userAppearance = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('프로필 수정 요청 발송 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -455,8 +415,6 @@ export const userAppearance = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('인스타그램 오류 상태 설정 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -472,8 +430,6 @@ export const userAppearance = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('인스타그램 오류 상태 해제 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -542,7 +498,6 @@ export const userAppearance = {
 					responseData = response.data;
 				}
 			} catch (error) {
-				console.error('API 호출 오류:', error);
 				;
 				responseData = testData;
 			}
@@ -692,7 +647,6 @@ export const userAppearance = {
 					;
 				}
 			} else {
-				console.error('응답 데이터가 객체가 아닙니다:', responseData);
 			}
 
 			const allGrades = ['S', 'A', 'B', 'C', 'UNKNOWN'];
@@ -722,9 +676,6 @@ export const userAppearance = {
 			;
 			return formattedData;
 		} catch (error: any) {
-			console.error('외모 등급 통계 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
-			console.error('오류 상태 코드:', error.response?.status);
 
 			const testData = {
 				all: {
@@ -879,8 +830,6 @@ export const userAppearance = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('중복 휴대폰 번호 사용자 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -905,8 +854,6 @@ export const userAppearance = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('대학교 인증 사용자 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -933,8 +880,6 @@ export const userAppearance = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('대학교 인증 신청 사용자 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -950,8 +895,6 @@ export const userAppearance = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('대학교 인증 승인 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -967,8 +910,6 @@ export const userAppearance = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('대학교 인증 거절 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -985,8 +926,6 @@ export const userAppearance = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('블랙리스트 사용자 목록 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -1000,8 +939,6 @@ export const userAppearance = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('블랙리스트 해제 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -1023,7 +960,6 @@ export const userAppearance = {
 			});
 			return response.data;
 		} catch (error: any) {
-			console.error('유저 검색 중 오류:', error);
 			throw error;
 		}
 	},
@@ -1037,8 +973,6 @@ export const userAppearance = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('비밀번호 초기화 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -1058,8 +992,6 @@ export const userAppearance = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('재심사 요청 사용자 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -1079,8 +1011,6 @@ export const userAppearance = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('승인 대기 사용자 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -1105,8 +1035,6 @@ export const userAppearance = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('승인 거부 사용자 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -1122,8 +1050,6 @@ export const userAppearance = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('사용자 승인 취소 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -1137,7 +1063,6 @@ export const deletedFemales = {
 			});
 			return response.data;
 		} catch (error: any) {
-			console.error('탈퇴 여성 회원 목록 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -1149,7 +1074,6 @@ export const deletedFemales = {
 			);
 			return response.data;
 		} catch (error: any) {
-			console.error('회원 복구 중 오류:', error);
 			throw error;
 		}
 	},
@@ -1161,7 +1085,6 @@ export const deletedFemales = {
 			);
 			return response.data;
 		} catch (error: any) {
-			console.error('회원 재탈퇴 처리 중 오류:', error);
 			throw error;
 		}
 	},
@@ -1180,7 +1103,6 @@ export const userEngagement = {
 			});
 			return response.data;
 		} catch (error: any) {
-			console.error('유저 참여 통계 조회 중 오류:', error);
 			throw error;
 		}
 	},

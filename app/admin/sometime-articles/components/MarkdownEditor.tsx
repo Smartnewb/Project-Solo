@@ -122,7 +122,6 @@ export default function MarkdownEditor({
       const imageMarkdown = `\n![이미지](${response.url})\n`;
       insertAtCursor(imageMarkdown);
     } catch (err: any) {
-      console.error('이미지 업로드 실패:', err);
       alert(err.message || '이미지 업로드에 실패했습니다.');
     } finally {
       setUploading(false);

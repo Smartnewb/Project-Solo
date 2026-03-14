@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import {
   Box,
   Typography,
@@ -12,7 +12,6 @@ import {
   TableRow,
   Paper,
   CircularProgress,
-  Alert,
   Chip,
   Pagination,
   FormControl,
@@ -33,9 +32,8 @@ import { ko } from 'date-fns/locale';
 import MailOutlineIcon from '@mui/icons-material/MailOutline';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SearchIcon from '@mui/icons-material/Search';
-import AdminService from '@/app/services/admin';
 import type { LikeDetail, AdminLikesParams, LikeStatus } from '@/types/admin';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
+import { useLikesList } from '@/app/admin/hooks';
 
 type FilterStatus = LikeStatus | 'ALL';
 type FilterBoolean = 'ALL' | 'true' | 'false';
@@ -52,100 +50,70 @@ interface Filters {
   sortOrder: SortOrder;
 }
 
+const defaultFilters: Filters = {
+  status: 'ALL',
+  hasLetter: 'ALL',
+  isMutualLike: 'ALL',
+  startDate: null,
+  endDate: null,
+  sortBy: 'createdAt',
+  sortOrder: 'desc',
+};
+
 function LikesManagementPageContent() {
-  const [likes, setLikes] = useState<LikeDetail[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
-
   const [searchName, setSearchName] = useState('');
-  const [appliedSearchName, setAppliedSearchName] = useState('');
-  const [filters, setFilters] = useState<Filters>({
-    status: 'ALL',
-    hasLetter: 'ALL',
-    isMutualLike: 'ALL',
-    startDate: null,
-    endDate: null,
+  const [filters, setFilters] = useState<Filters>(defaultFilters);
+
+  // Applied params - only updated on explicit search action
+  const [appliedParams, setAppliedParams] = useState<AdminLikesParams>({
+    page: 1,
+    limit: 20,
     sortBy: 'createdAt',
     sortOrder: 'desc',
   });
 
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
+  const { data, isLoading } = useLikesList(appliedParams);
+  const likes = data?.items || [];
+  const totalItems = data?.meta?.totalItems || 0;
+  const itemsPerPage = data?.meta?.itemsPerPage || 20;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-  const fetchLikes = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const params: AdminLikesParams = {
-        page,
-        limit: 20,
-        sortBy: filters.sortBy,
-        sortOrder: filters.sortOrder,
-      };
-
-      if (appliedSearchName) {
-        params.searchName = appliedSearchName;
-      }
-      if (filters.status !== 'ALL') {
-        params.status = filters.status;
-      }
-      if (filters.hasLetter !== 'ALL') {
-        params.hasLetter = filters.hasLetter === 'true';
-      }
-      if (filters.isMutualLike !== 'ALL') {
-        params.isMutualLike = filters.isMutualLike === 'true';
-      }
-      if (filters.startDate) {
-        params.startDate = filters.startDate.toISOString().split('T')[0];
-      }
-      if (filters.endDate) {
-        params.endDate = filters.endDate.toISOString().split('T')[0];
-      }
-
-      const data = await AdminService.likes.getList(params);
-      setLikes(data.items);
-      setTotalPages(Math.ceil(data.meta.totalItems / data.meta.itemsPerPage));
-      setTotalItems(data.meta.totalItems);
-    } catch (err: any) {
-      setError(err.response?.data?.message || '좋아요 목록을 불러오는데 실패했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  }, [page, filters, appliedSearchName]);
-
-  useEffect(() => {
-    fetchLikes();
-  }, [fetchLikes]);
+  const buildParams = (currentPage: number): AdminLikesParams => {
+    const params: AdminLikesParams = {
+      page: currentPage,
+      limit: 20,
+      sortBy: filters.sortBy,
+      sortOrder: filters.sortOrder,
+    };
+    if (searchName.trim()) params.searchName = searchName.trim();
+    if (filters.status !== 'ALL') params.status = filters.status;
+    if (filters.hasLetter !== 'ALL') params.hasLetter = filters.hasLetter === 'true';
+    if (filters.isMutualLike !== 'ALL') params.isMutualLike = filters.isMutualLike === 'true';
+    if (filters.startDate) params.startDate = filters.startDate.toISOString().split('T')[0];
+    if (filters.endDate) params.endDate = filters.endDate.toISOString().split('T')[0];
+    return params;
+  };
 
   const handleFilterChange = <K extends keyof Filters>(field: K, value: Filters[K]) => {
     setFilters((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSearch = () => {
-    setAppliedSearchName(searchName.trim());
     setPage(1);
+    setAppliedParams(buildParams(1));
   };
 
   const handleReset = () => {
     setSearchName('');
-    setAppliedSearchName('');
-    setFilters({
-      status: 'ALL',
-      hasLetter: 'ALL',
-      isMutualLike: 'ALL',
-      startDate: null,
-      endDate: null,
-      sortBy: 'createdAt',
-      sortOrder: 'desc',
-    });
+    setFilters(defaultFilters);
     setPage(1);
+    setAppliedParams({ page: 1, limit: 20, sortBy: 'createdAt', sortOrder: 'desc' });
+  };
+
+  const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
+    setPage(value);
+    setAppliedParams(buildParams(value));
   };
 
   const formatDate = (dateString: string) => {
@@ -206,12 +174,6 @@ function LikesManagementPageContent() {
             전체 {totalItems.toLocaleString()}건
           </Typography>
         </Box>
-
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-            {error}
-          </Alert>
-        )}
 
         {/* 필터 영역 */}
         <Paper sx={{ p: 2, mb: 3 }}>
@@ -327,7 +289,7 @@ function LikesManagementPageContent() {
         </Paper>
 
         {/* 테이블 */}
-        {loading ? (
+        {isLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
             <CircularProgress />
           </Box>
@@ -416,7 +378,7 @@ function LikesManagementPageContent() {
               <Pagination
                 count={totalPages}
                 page={page}
-                onChange={(_, value) => setPage(value)}
+                onChange={handlePageChange}
                 color="primary"
               />
             </Box>

@@ -153,45 +153,35 @@ export function ProductAnalysisTab({
     try {
       const salesRes = await salesService.getProductSales(periodParams);
       setProductSales(salesRes);
-    } catch (e) {
-      console.error("상품별 판매 현황 조회 실패:", e);
-    } finally {
+    } catch { } finally {
       setLoadingProductSales(false);
     }
 
     try {
       const rankingRes = await salesService.getProductRanking(periodParams);
       setProductRanking(rankingRes);
-    } catch (e) {
-      console.error("상품 랭킹 조회 실패:", e);
-    } finally {
+    } catch { } finally {
       setLoadingRanking(false);
     }
 
     try {
       const periodRes = await salesService.getPeriodAnalysis();
       setPeriodAnalysis(periodRes);
-    } catch (e) {
-      console.error("기간별 분석 조회 실패:", e);
-    } finally {
+    } catch { } finally {
       setLoadingPeriod(false);
     }
 
     try {
       const gemRes = await salesService.getGemConsumption(params);
       setGemConsumption(gemRes);
-    } catch (e) {
-      console.error("구슬 소비 분석 조회 실패:", e);
-    } finally {
+    } catch { } finally {
       setLoadingGem(false);
     }
 
     try {
       const systemRes = await salesService.getSystemComparison();
       setSystemComparison(systemRes);
-    } catch (e) {
-      console.error("시스템 비교 조회 실패:", e);
-    } finally {
+    } catch { } finally {
       setLoadingSystem(false);
     }
   };

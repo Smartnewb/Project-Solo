@@ -151,7 +151,6 @@ export function DailySalesTrendGraph({ className, hideHeader = false }: DailySal
                 setChartData([]);
             }
         } catch (err) {
-            console.error('일별 매출 추이 조회 실패:', err);
             setError('매출 데이터를 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.');
             setChartData([]);
         } finally {

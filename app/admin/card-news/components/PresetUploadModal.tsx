@@ -84,7 +84,6 @@ export default function PresetUploadModal({ open, onClose, onSuccess }: PresetUp
       handleClose();
       onSuccess();
     } catch (err: any) {
-      console.error('프리셋 업로드 실패:', err);
       setError(err.message || '프리셋 업로드에 실패했습니다.');
     } finally {
       setUploading(false);

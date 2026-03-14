@@ -1,13 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Box, Typography, Tabs, Tab } from '@mui/material';
 import CountryOverview from './components/CountryOverview';
 import ScheduleConfig from './components/ScheduleConfig';
 import BatchHistory from './components/BatchHistory';
 import ManualMatching from './components/ManualMatching';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
-
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
@@ -29,11 +27,6 @@ function TabPanel({ children, value, index, ...other }: TabPanelProps) {
 }
 
 function ScheduledMatchingPageContent() {
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
-
   const [activeTab, setActiveTab] = useState(0);
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {

@@ -75,7 +75,6 @@ const LikeHistory: React.FC = () => {
       ;
       setLikeHistory(data);
     } catch (err: any) {
-      console.error('좋아요 이력 조회 중 오류:', err);
       setError(err.response?.data?.message || err.message || '좋아요 이력을 불러오는 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
@@ -100,7 +99,6 @@ const LikeHistory: React.FC = () => {
       const response = await AdminService.userAppearance.getUserDetails(userId);
       setUserDetail(response);
     } catch (error: any) {
-      console.error('사용자 상세 정보 조회 중 오류:', error);
       setUserDetailError(error.response?.data?.message || error.message || '사용자 정보를 불러오는 중 오류가 발생했습니다.');
     } finally {
       setLoadingUserDetail(false);

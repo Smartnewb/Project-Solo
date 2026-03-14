@@ -222,7 +222,6 @@ export const universities = {
 			});
 			return response.data;
 		} catch (error: any) {
-			console.error('학과 목록 조회 중 오류:', error);
 
 			const departmentsByUniversity: { [key: string]: string[] } = {
 				'건양대학교(메디컬캠퍼스)': [

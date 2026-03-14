@@ -313,16 +313,9 @@ function ProfileReviewV2Content() {
       setPagination(response.pagination);
       return normalizedUsers;
     } catch (err: any) {
-      console.error("심사 대기 목록 조회 중 오류:", err);
-      console.error("오류 메시지:", err.message);
-      console.error("오류 스택:", err.stack);
-      console.error("HTTP 응답:", err.response);
-      console.error("HTTP 상태:", err.response?.status);
-      console.error("응답 데이터:", err.response?.data);
 
       // 401 에러 처리 (인증 실패)
       if (err.response?.status === 401) {
-        console.error("인증 오류 발생 - 로그인이 필요합니다.");
         setError("인증이 만료되었습니다. 다시 로그인해주세요.");
         // axios interceptor가 자동으로 refresh를 시도하고 실패하면 로그인 페이지로 리다이렉트됩니다.
         return [];
@@ -421,7 +414,6 @@ function ProfileReviewV2Content() {
 
       await fetchPendingUsers(pagination.page, searchTerm, filters);
     } catch (err: any) {
-      console.error("유저 승인 중 오류:", err);
       setError(
         err.response?.data?.message || "유저 승인 중 오류가 발생했습니다.",
       );
@@ -566,7 +558,6 @@ function ProfileReviewV2Content() {
 
       await fetchPendingUsers(pagination.page, searchTerm, filters);
     } catch (err: any) {
-      console.error("일괄 반려 중 오류:", err);
       setError(
         err.response?.data?.message ||
           "일괄 반려 중 오류가 발생했습니다.",
@@ -601,7 +592,6 @@ function ProfileReviewV2Content() {
 
       await fetchPendingUsers(pagination.page, searchTerm, filters);
     } catch (err: any) {
-      console.error("유저 반려 중 오류:", err);
       setError(
         err.response?.data?.message || "유저 반려 중 오류가 발생했습니다.",
       );

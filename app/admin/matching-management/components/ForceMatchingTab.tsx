@@ -71,7 +71,6 @@ function UserSearchSection({ gender, selectedUser, onSelectUser }: UserSearchSec
 			});
 			setSearchResults(response.users || []);
 		} catch (error) {
-			console.error('유저 검색 중 오류:', error);
 			setSearchResults([]);
 		} finally {
 			setIsLoading(false);
@@ -282,7 +281,6 @@ export default function ForceMatchingTab() {
 			});
 			setResult(response);
 		} catch (err: any) {
-			console.error('강제 매칭 생성 중 오류:', err);
 			const errorMessage =
 				err.response?.data?.message || err.message || '강제 매칭 생성 중 오류가 발생했습니다';
 			setError(errorMessage);

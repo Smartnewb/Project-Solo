@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Box,
   Typography,
@@ -13,7 +13,6 @@ import {
   Paper,
   Button,
   CircularProgress,
-  Alert,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -24,54 +23,35 @@ import {
   IconButton,
 } from '@mui/material';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import AdminService from '@/app/services/admin';
 import type { DeletedFemale, RestoreFemaleResponse } from '@/types/admin';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
+import {
+  useDeletedFemalesList,
+  useRestoreDeletedFemale,
+  useSleepDeletedFemale,
+} from '@/app/admin/hooks';
+import { useToast } from '@/shared/ui/admin/toast/toast-context';
+import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
 
 function DeletedFemalesPageContent() {
-  const [females, setFemales] = useState<DeletedFemale[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const toast = useToast();
+  const confirmAction = useConfirm();
+
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
 
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
   const [restoreUserId, setRestoreUserId] = useState<string | null>(null);
   const [restoreUserName, setRestoreUserName] = useState('');
-  const [restoreLoading, setRestoreLoading] = useState(false);
 
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [restoreResult, setRestoreResult] = useState<RestoreFemaleResponse | null>(null);
 
-  const [sleepDialogOpen, setSleepDialogOpen] = useState(false);
-  const [sleepUserId, setSleepUserId] = useState<string | null>(null);
-  const [sleepUserName, setSleepUserName] = useState('');
-  const [sleepLoading, setSleepLoading] = useState(false);
+  const { data, isLoading, error } = useDeletedFemalesList(page, 20);
+  const females = data?.items || [];
+  const totalPages = data?.meta?.totalPages || 1;
+  const totalCount = data?.meta?.totalCount || 0;
 
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
-
-  const fetchFemales = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const data = await AdminService.deletedFemales.getList(page, 20);
-      setFemales(data.items);
-      setTotalPages(data.meta.totalPages);
-      setTotalCount(data.meta.totalCount);
-    } catch (err: any) {
-      setError(err.message || '목록을 불러오는데 실패했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchFemales();
-  }, [page]);
+  const restoreMutation = useRestoreDeletedFemale();
+  const sleepMutation = useSleepDeletedFemale();
 
   const handleRestoreClick = (user: DeletedFemale) => {
     setRestoreUserId(user.id);
@@ -83,23 +63,19 @@ function DeletedFemalesPageContent() {
     if (!restoreUserId) return;
 
     try {
-      setRestoreLoading(true);
-      const result = await AdminService.deletedFemales.restore(restoreUserId);
+      const result = await restoreMutation.mutateAsync(restoreUserId);
       setRestoreResult(result);
       setRestoreDialogOpen(false);
       setPasswordDialogOpen(true);
-      fetchFemales();
     } catch (err: any) {
-      alert(err.response?.data?.message || '복구에 실패했습니다.');
-    } finally {
-      setRestoreLoading(false);
+      toast.error(err.response?.data?.message || '복구에 실패했습니다.');
     }
   };
 
   const handleCopyPassword = () => {
     if (restoreResult?.temporaryPassword) {
       navigator.clipboard.writeText(restoreResult.temporaryPassword);
-      alert('임시 비밀번호가 복사되었습니다.');
+      toast.success('임시 비밀번호가 복사되었습니다.');
     }
   };
 
@@ -110,27 +86,18 @@ function DeletedFemalesPageContent() {
     setRestoreUserName('');
   };
 
-  const handleSleepClick = (user: DeletedFemale) => {
-    setSleepUserId(user.id);
-    setSleepUserName(user.name);
-    setSleepDialogOpen(true);
-  };
-
-  const confirmSleep = async () => {
-    if (!sleepUserId) return;
+  const handleSleepClick = async (user: DeletedFemale) => {
+    const ok = await confirmAction({
+      title: '재탈퇴 처리',
+      message: `${user.name}님을 다시 탈퇴 처리하시겠습니까?`,
+    });
+    if (!ok) return;
 
     try {
-      setSleepLoading(true);
-      await AdminService.deletedFemales.sleep(sleepUserId);
-      setSleepDialogOpen(false);
-      setSleepUserId(null);
-      setSleepUserName('');
-      alert('재탈퇴 처리되었습니다.');
-      fetchFemales();
+      await sleepMutation.mutateAsync(user.id);
+      toast.success('재탈퇴 처리되었습니다.');
     } catch (err: any) {
-      alert(err.response?.data?.message || '재탈퇴 처리에 실패했습니다.');
-    } finally {
-      setSleepLoading(false);
+      toast.error(err.response?.data?.message || '재탈퇴 처리에 실패했습니다.');
     }
   };
 
@@ -157,9 +124,9 @@ function DeletedFemalesPageContent() {
       </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
+        <Typography color="error" sx={{ mb: 2 }}>
+          {(error as any).message || '목록을 불러오는데 실패했습니다.'}
+        </Typography>
       )}
 
       <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -168,7 +135,7 @@ function DeletedFemalesPageContent() {
         </Typography>
       </Box>
 
-      {loading ? (
+      {isLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
           <CircularProgress />
         </Box>
@@ -197,14 +164,26 @@ function DeletedFemalesPageContent() {
                     <TableCell>{female.phoneNumber}</TableCell>
                     <TableCell>{formatDate(female.deletedAt)}</TableCell>
                     <TableCell align="center">
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        size="small"
-                        onClick={() => handleRestoreClick(female)}
-                      >
-                        복구
-                      </Button>
+                      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          size="small"
+                          onClick={() => handleRestoreClick(female)}
+                          disabled={restoreMutation.isPending}
+                        >
+                          복구
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          size="small"
+                          onClick={() => handleSleepClick(female)}
+                          disabled={sleepMutation.isPending}
+                        >
+                          재탈퇴
+                        </Button>
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -239,16 +218,16 @@ function DeletedFemalesPageContent() {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setRestoreDialogOpen(false)} disabled={restoreLoading}>
+          <Button onClick={() => setRestoreDialogOpen(false)} disabled={restoreMutation.isPending}>
             취소
           </Button>
           <Button
             onClick={confirmRestore}
             color="primary"
             variant="contained"
-            disabled={restoreLoading}
+            disabled={restoreMutation.isPending}
           >
-            {restoreLoading ? <CircularProgress size={20} /> : '복구'}
+            {restoreMutation.isPending ? <CircularProgress size={20} /> : '복구'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -283,28 +262,6 @@ function DeletedFemalesPageContent() {
         <DialogActions>
           <Button onClick={handlePasswordDialogClose} variant="contained">
             확인
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog open={sleepDialogOpen} onClose={() => setSleepDialogOpen(false)}>
-        <DialogTitle>재탈퇴 처리</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            <strong>{sleepUserName}</strong>님을 다시 탈퇴 처리하시겠습니까?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setSleepDialogOpen(false)} disabled={sleepLoading}>
-            취소
-          </Button>
-          <Button
-            onClick={confirmSleep}
-            color="error"
-            variant="contained"
-            disabled={sleepLoading}
-          >
-            {sleepLoading ? <CircularProgress size={20} /> : '재탈퇴'}
           </Button>
         </DialogActions>
       </Dialog>

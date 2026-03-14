@@ -130,7 +130,6 @@ function UsersV2Content() {
       setTotalCount(meta.totalItems);
 
     } catch (err: any) {
-      console.error('사용자 목록 불러오기 오류:', err);
       setError(err.message || '사용자 목록을 불러오는 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
@@ -202,11 +201,9 @@ function UsersV2Content() {
       ;
 
       if (error) {
-        console.error('등급 변경 중 오류:', error);
         throw error;
       }
     } catch (err: any) {
-      console.error('등급 변경 중 오류 발생:', err);
       alert(`등급 변경 중 오류가 발생했습니다: ${err.message}`);
     } finally {
       setLoading(false);

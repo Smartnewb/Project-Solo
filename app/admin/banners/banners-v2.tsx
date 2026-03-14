@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Box,
   Typography,
@@ -8,12 +8,6 @@ import {
   Tab,
   Button,
   CircularProgress,
-  Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  DialogActions,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import {
@@ -22,46 +16,40 @@ import {
   Draggable,
   DropResult,
 } from '@hello-pangea/dnd';
-import AdminService from '@/app/services/admin';
 import BannerCard from './components/BannerCard';
 import BannerFormDialog from './components/BannerFormDialog';
 import type { Banner, BannerPosition, CreateBannerRequest, UpdateBannerRequest } from '@/types/admin';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
+import {
+  useBannerList,
+  useCreateBanner,
+  useUpdateBanner,
+  useDeleteBanner,
+  useUpdateBannerOrder,
+} from '@/app/admin/hooks';
+import { useToast } from '@/shared/ui/admin/toast/toast-context';
+import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
+import { useQueryClient } from '@tanstack/react-query';
+import { contentKeys } from '@/app/admin/hooks/use-content';
 
 type TabValue = 'all' | BannerPosition;
 
 function BannersPageContent() {
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
+  const toast = useToast();
+  const confirmAction = useConfirm();
+  const queryClient = useQueryClient();
 
-  const [banners, setBanners] = useState<Banner[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [tabValue, setTabValue] = useState<TabValue>('all');
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [editBanner, setEditBanner] = useState<Banner | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [deleteBannerId, setDeleteBannerId] = useState<string | null>(null);
 
-  const fetchBanners = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const position = tabValue === 'all' ? undefined : tabValue;
-      const data = await AdminService.banners.getList(position);
-      setBanners(data.sort((a, b) => a.order - b.order));
-    } catch (err: any) {
-      setError(err.message || '배너 목록을 불러오는데 실패했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const position = tabValue === 'all' ? undefined : tabValue;
+  const { data: bannersRaw = [], isLoading, error } = useBannerList(position);
+  const banners = [...bannersRaw].sort((a, b) => a.order - b.order);
 
-  useEffect(() => {
-    fetchBanners();
-  }, [tabValue]);
+  const createBanner = useCreateBanner();
+  const updateBanner = useUpdateBanner();
+  const deleteBanner = useDeleteBanner();
+  const updateBannerOrder = useUpdateBannerOrder();
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: TabValue) => {
     setTabValue(newValue);
@@ -80,31 +68,27 @@ function BannersPageContent() {
       order: index,
     }));
 
-    setBanners(updatedItems);
+    // Optimistically update the cache
+    queryClient.setQueryData(contentKeys.bannerList(position), updatedItems);
 
     try {
-      await AdminService.banners.updateOrder({
+      await updateBannerOrder.mutateAsync({
         banners: updatedItems.map((item) => ({
           id: item.id,
           order: item.order,
         })),
       });
-    } catch (err) {
-      console.error('순서 변경 실패:', err);
-      fetchBanners();
-      alert('순서 변경에 실패했습니다.');
+    } catch {
+      queryClient.invalidateQueries({ queryKey: contentKeys.bannerList(position) });
+      toast.error('순서 변경에 실패했습니다.');
     }
   };
 
   const handleToggleActive = async (id: string, isActive: boolean) => {
     try {
-      await AdminService.banners.update(id, { isActive });
-      setBanners((prev) =>
-        prev.map((b) => (b.id === id ? { ...b, isActive } : b))
-      );
-    } catch (err) {
-      console.error('활성화 상태 변경 실패:', err);
-      alert('상태 변경에 실패했습니다.');
+      await updateBanner.mutateAsync({ id, data: { isActive } });
+    } catch {
+      toast.error('상태 변경에 실패했습니다.');
     }
   };
 
@@ -113,22 +97,17 @@ function BannersPageContent() {
     setFormDialogOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    setDeleteBannerId(id);
-    setDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = async () => {
-    if (!deleteBannerId) return;
+  const handleDelete = async (id: string) => {
+    const ok = await confirmAction({
+      title: '배너 삭제',
+      message: '이 배너를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
+    });
+    if (!ok) return;
 
     try {
-      await AdminService.banners.delete(deleteBannerId);
-      setBanners((prev) => prev.filter((b) => b.id !== deleteBannerId));
-      setDeleteDialogOpen(false);
-      setDeleteBannerId(null);
-    } catch (err) {
-      console.error('삭제 실패:', err);
-      alert('삭제에 실패했습니다.');
+      await deleteBanner.mutateAsync(id);
+    } catch {
+      toast.error('삭제에 실패했습니다.');
     }
   };
 
@@ -142,12 +121,11 @@ function BannersPageContent() {
         startDate: data.startDate || null,
         endDate: data.endDate || null,
       };
-      await AdminService.banners.update(editBanner.id, updateData);
+      await updateBanner.mutateAsync({ id: editBanner.id, data: updateData });
     } else {
       if (!imageFile) throw new Error('이미지가 필요합니다.');
-      await AdminService.banners.create(imageFile, data);
+      await createBanner.mutateAsync({ imageFile, data });
     }
-    fetchBanners();
   };
 
   const handleFormClose = () => {
@@ -189,12 +167,12 @@ function BannersPageContent() {
       </Tabs>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
+        <Typography color="error" sx={{ mb: 2 }}>
+          {(error as any).message || '배너 목록을 불러오는데 실패했습니다.'}
+        </Typography>
       )}
 
-      {loading ? (
+      {isLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
           <CircularProgress />
         </Box>
@@ -243,21 +221,6 @@ function BannersPageContent() {
         onSubmit={handleFormSubmit}
         editBanner={editBanner}
       />
-
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>배너 삭제</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            이 배너를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>취소</Button>
-          <Button onClick={confirmDelete} color="error" variant="contained">
-            삭제
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 }

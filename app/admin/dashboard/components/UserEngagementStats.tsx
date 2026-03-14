@@ -251,7 +251,6 @@ export default function UserEngagementStats() {
 			);
 			setData(response);
 		} catch (err) {
-			console.error('유저 참여 통계 조회 실패:', err);
 			setError('유저 참여 통계를 불러오는데 실패했습니다.');
 		} finally {
 			setLoading(false);

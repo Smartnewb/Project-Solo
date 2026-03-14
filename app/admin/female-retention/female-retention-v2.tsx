@@ -86,7 +86,6 @@ function FemaleRetentionPageContent() {
         offset: response.offset || 0
       });
     } catch (err: any) {
-      console.error('미접속 여성 유저 목록 조회 실패:', err);
       setError(err.response?.data?.message || '유저 목록을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
@@ -123,7 +122,6 @@ function FemaleRetentionPageContent() {
         alert(`임시 패스워드가 발급되었습니다.\n\n이메일: ${response.email}\n패스워드: ${response.password}`);
       }
     } catch (err: any) {
-      console.error('임시 패스워드 발급 실패:', err);
       alert(err.response?.data?.message || '임시 패스워드 발급에 실패했습니다.');
     } finally {
       setProcessing(null);

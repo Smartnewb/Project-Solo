@@ -124,7 +124,6 @@ export default function ChatManagementTab() {
         end: response.appliedEndDate
       });
     } catch (error: any) {
-      console.error('채팅방 목록 조회 실패:', error);
       setError(error.message || '채팅방 목록을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
@@ -143,7 +142,6 @@ export default function ChatManagementTab() {
 
       setChatMessages(response.messages);
     } catch (error: any) {
-      console.error('채팅 메시지 조회 실패:', error);
       setError(error.message || '채팅 메시지를 불러오는데 실패했습니다.');
     } finally {
       setMessagesLoading(false);
@@ -179,7 +177,6 @@ export default function ChatManagementTab() {
 
       await chatService.exportChatsToCsv(params);
     } catch (error: any) {
-      console.error('CSV 내보내기 실패:', error);
       setError(error.message || 'CSV 내보내기에 실패했습니다.');
     } finally {
       setCsvExporting(false);
@@ -207,7 +204,6 @@ export default function ChatManagementTab() {
 
       setUserDetail(data);
     } catch (error: any) {
-      console.error('유저 상세 정보 조회 중 오류:', error);
       setUserDetailError(error.message || '유저 상세 정보를 불러오는 중 오류가 발생했습니다.');
     } finally {
       setLoadingUserDetail(false);

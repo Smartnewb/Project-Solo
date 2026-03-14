@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Box,
   Typography,
@@ -15,11 +15,6 @@ import {
   Button,
   Chip,
   IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Alert,
   CircularProgress,
   Avatar,
   FormControl,
@@ -36,37 +31,21 @@ import {
   Refresh as RefreshIcon,
   Close as CloseIcon,
   Message as MessageIcon,
-  AccessTime as AccessTimeIcon,
   CheckCircle as CheckCircleIcon,
   Psychology as AnalyzeIcon
 } from '@mui/icons-material';
-import AdminService from '@/app/services/admin';
 import {
   AIChatSession,
-  AIChatMessage,
-  AIChatSessionsParams,
-  AIChatSessionsResponse,
-  AIChatMessagesResponse,
   AIChatCategory,
   AIChatSessionStatus
 } from './types';
 import AIChatMessageDetail from './components/AIChatMessageDetail';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
+import { useAiChatSessions, useAiChatMessages } from '@/app/admin/hooks';
 
 function AIChatManagementPageContent() {
-  const [loading, setLoading] = useState(false);
-  const [messagesLoading, setMessagesLoading] = useState(false);
-  const [sessions, setSessions] = useState<AIChatSession[]>([]);
-  const [selectedSession, setSelectedSession] = useState<AIChatSession | null>(null);
-  const [messages, setMessages] = useState<AIChatMessage[]>([]);
-  const [error, setError] = useState<string>('');
-
-  // 페이지네이션
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
-  const [totalCount, setTotalCount] = useState(0);
 
-  // 필터 상태
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [category, setCategory] = useState<AIChatCategory | ''>('');
@@ -74,72 +53,69 @@ function AIChatManagementPageContent() {
   const [isActive, setIsActive] = useState<boolean | ''>('');
   const [userId, setUserId] = useState<string>('');
 
-  // 모달 상태
+  // Applied filter state (only sent on explicit search)
+  const [appliedParams, setAppliedParams] = useState<{
+    startDate?: string;
+    endDate?: string;
+    category?: string;
+    status?: string;
+    isActive?: boolean;
+    userId?: string;
+    page?: number;
+    limit?: number;
+  }>({ page: 1, limit: 20 });
+
   const [messagesDialogOpen, setMessagesDialogOpen] = useState(false);
+  const [selectedSessionId, setSelectedSessionId] = useState<string>('');
 
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
+  const { data: sessionsData, isLoading, refetch } = useAiChatSessions(appliedParams);
+  const sessions = sessionsData?.sessions || [];
+  const totalCount = sessionsData?.total || 0;
 
-  // AI 채팅 세션 목록 조회
-  const fetchSessions = async () => {
-    setLoading(true);
-    setError('');
+  const { data: messagesData, isLoading: messagesLoading } = useAiChatMessages(selectedSessionId);
 
-    try {
-      const params: AIChatSessionsParams = {
-        page: page + 1,
-        limit: rowsPerPage
-      };
-
-      if (startDate) {
-        params.startDate = startDate.toISOString().split('T')[0];
-      }
-      if (endDate) {
-        params.endDate = endDate.toISOString().split('T')[0];
-      }
-      if (category) {
-        params.category = category;
-      }
-      if (status) {
-        params.status = status;
-      }
-      if (isActive !== '') {
-        params.isActive = isActive;
-      }
-      if (userId) {
-        params.userId = userId;
-      }
-
-      const response: AIChatSessionsResponse = await AdminService.aiChat.getSessions(params);
-      setSessions(response.sessions);
-      setTotalCount(response.total);
-    } catch (error: any) {
-      console.error('AI 채팅 세션 목록 조회 실패:', error);
-      setError(error.message || 'AI 채팅 세션 목록을 불러오는데 실패했습니다.');
-    } finally {
-      setLoading(false);
-    }
+  const handleSearch = () => {
+    const params: typeof appliedParams = {
+      page: page + 1,
+      limit: rowsPerPage,
+    };
+    if (startDate) params.startDate = startDate.toISOString().split('T')[0];
+    if (endDate) params.endDate = endDate.toISOString().split('T')[0];
+    if (category) params.category = category;
+    if (status) params.status = status;
+    if (isActive !== '') params.isActive = isActive as boolean;
+    if (userId) params.userId = userId;
+    setAppliedParams(params);
   };
 
-  // 메시지 상세 조회
-  const fetchMessages = async (sessionId: string) => {
-    setMessagesLoading(true);
-    try {
-      const response: AIChatMessagesResponse = await AdminService.aiChat.getMessages(sessionId);
-      setMessages(response.messages);
-      setSelectedSession(response.session);
-      setMessagesDialogOpen(true);
-    } catch (error: any) {
-      console.error('AI 채팅 메시지 조회 실패:', error);
-      setError(error.message || '메시지를 불러오는데 실패했습니다.');
-    } finally {
-      setMessagesLoading(false);
-    }
+  const resetFilters = () => {
+    setStartDate(null);
+    setEndDate(null);
+    setCategory('');
+    setStatus('');
+    setIsActive('');
+    setUserId('');
+    setPage(0);
+    setAppliedParams({ page: 1, limit: rowsPerPage });
   };
 
-  // 날짜 포맷
+  const handleViewMessages = (sessionId: string) => {
+    setSelectedSessionId(sessionId);
+    setMessagesDialogOpen(true);
+  };
+
+  const handleChangePage = (_: unknown, newPage: number) => {
+    setPage(newPage);
+    setAppliedParams((prev) => ({ ...prev, page: newPage + 1 }));
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newLimit = parseInt(event.target.value, 10);
+    setRowsPerPage(newLimit);
+    setPage(0);
+    setAppliedParams((prev) => ({ ...prev, limit: newLimit, page: 1 }));
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('ko-KR', {
       year: 'numeric',
@@ -150,7 +126,6 @@ function AIChatManagementPageContent() {
     });
   };
 
-  // 상태 색상 및 아이콘
   const getStatusInfo = (status: AIChatSessionStatus) => {
     switch (status) {
       case 'active':
@@ -168,51 +143,18 @@ function AIChatManagementPageContent() {
     }
   };
 
-  // 카테고리 색상
   const getCategoryColor = (category: AIChatCategory) => {
     switch (category) {
-      case '일상':
-        return 'primary';
-      case '인간관계':
-        return 'secondary';
-      case '진로/학교':
-        return 'info';
-      case '연애':
-        return 'error';
-      default:
-        return 'default';
+      case '일상': return 'primary';
+      case '인간관계': return 'secondary';
+      case '진로/학교': return 'info';
+      case '연애': return 'error';
+      default: return 'default';
     }
   };
 
-  // 페이지네이션 핸들러
-  const handleChangePage = (event: unknown, newPage: number) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  // 필터 초기화
-  const resetFilters = () => {
-    setStartDate(null);
-    setEndDate(null);
-    setCategory('');
-    setStatus('');
-    setIsActive('');
-    setUserId('');
-    setPage(0);
-  };
-
-  // 데이터 새로고침
-  const handleRefresh = () => {
-    fetchSessions();
-  };
-
-  useEffect(() => {
-    fetchSessions();
-  }, [page, rowsPerPage]);
+  const selectedSession = messagesData?.session ?? null;
+  const messages = messagesData?.messages ?? [];
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
@@ -220,12 +162,6 @@ function AIChatManagementPageContent() {
         <Typography variant="h4" gutterBottom>
           AI 채팅 관리
         </Typography>
-
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
 
         {/* 필터 영역 */}
         <Paper sx={{ p: 2, mb: 3 }}>
@@ -302,11 +238,11 @@ function AIChatManagementPageContent() {
 
             <Button
               variant="contained"
-              onClick={fetchSessions}
-              disabled={loading}
+              onClick={handleSearch}
+              disabled={isLoading}
               startIcon={<RefreshIcon />}
             >
-              {loading ? '조회 중...' : '조회'}
+              {isLoading ? '조회 중...' : '조회'}
             </Button>
 
             <Button
@@ -336,7 +272,7 @@ function AIChatManagementPageContent() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {loading ? (
+                {isLoading ? (
                   <TableRow>
                     <TableCell colSpan={8} align="center">
                       <CircularProgress />
@@ -349,7 +285,7 @@ function AIChatManagementPageContent() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  sessions.map((session) => {
+                  sessions.map((session: AIChatSession) => {
                     const statusInfo = getStatusInfo(session.status);
                     return (
                       <TableRow key={session.id}>
@@ -398,8 +334,7 @@ function AIChatManagementPageContent() {
                         <TableCell>{formatDate(session.updatedAt)}</TableCell>
                         <TableCell>
                           <IconButton
-                            onClick={() => fetchMessages(session.id)}
-                            disabled={messagesLoading}
+                            onClick={() => handleViewMessages(session.id)}
                             size="small"
                           >
                             <MessageIcon />
@@ -431,7 +366,10 @@ function AIChatManagementPageContent() {
         {/* 메시지 상세 조회 다이얼로그 */}
         <AIChatMessageDetail
           open={messagesDialogOpen}
-          onClose={() => setMessagesDialogOpen(false)}
+          onClose={() => {
+            setMessagesDialogOpen(false);
+            setSelectedSessionId('');
+          }}
           session={selectedSession}
           messages={messages}
           loading={messagesLoading}

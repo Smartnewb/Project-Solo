@@ -85,7 +85,6 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
             });
             setPaymentData(response);
         } catch (error) {
-            console.error('결제수단별 분석 조회 실패:', error);
             setError('결제수단별 분석 데이터를 불러오는데 실패했습니다.');
             setPaymentData(null);
         } finally {

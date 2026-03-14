@@ -36,9 +36,7 @@ function FcmTokensPageContent() {
 			setCurrentPage(data.meta.currentPage);
 			setTotalItems(data.meta.totalItems);
 			setTotalPages(Math.ceil(data.meta.totalItems / data.meta.itemsPerPage));
-		} catch (error) {
-			console.error('FCM 토큰 데이터 조회 실패:', error);
-		} finally {
+		} catch { } finally {
 			setLoading(false);
 		}
 	}, []);

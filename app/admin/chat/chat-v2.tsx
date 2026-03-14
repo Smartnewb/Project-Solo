@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Box,
   Typography,
@@ -15,8 +15,6 @@ import {
 import ChatManagementTab from './components/ChatManagementTab';
 import ChatRefundTab from './components/ChatRefundTab';
 import ChatStatsTab from './components/ChatStatsTab';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
-
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
@@ -40,11 +38,6 @@ const TabPanel = (props: TabPanelProps) => {
 };
 
 function ChatPageContent() {
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
-
   const [tabValue, setTabValue] = useState(0);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {

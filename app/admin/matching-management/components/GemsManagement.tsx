@@ -80,7 +80,6 @@ const GemsManagement: React.FC<GemsManagementProps> = ({
       ;
       setGemsInfo(response);
     } catch (err: any) {
-      console.error('구슬 정보 조회 오류:', err);
       const errorMessage = err.response?.data?.message ||
                           err.response?.data?.error ||
                           err.message ||
@@ -109,7 +108,6 @@ const GemsManagement: React.FC<GemsManagementProps> = ({
       await fetchGemsInfo(selectedUser.id);
       setGemsCount(1);
     } catch (err: any) {
-      console.error('구슬 추가 오류:', err);
       const errorMessage = err.response?.data?.message ||
                           err.response?.data?.error ||
                           err.message ||
@@ -138,7 +136,6 @@ const GemsManagement: React.FC<GemsManagementProps> = ({
       await fetchGemsInfo(selectedUser.id);
       setGemsCount(1);
     } catch (err: any) {
-      console.error('구슬 제거 오류:', err);
       const errorMessage = err.response?.data?.message ||
                           err.response?.data?.error ||
                           err.message ||

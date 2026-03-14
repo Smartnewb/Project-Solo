@@ -55,7 +55,6 @@ export default function ImageUploader({
       const response = await AdminService.sometimeArticles.uploadImage(file);
       onChange(response.url);
     } catch (err: any) {
-      console.error('이미지 업로드 실패:', err);
       setError(err.message || '이미지 업로드에 실패했습니다.');
     } finally {
       setUploading(false);
