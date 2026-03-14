@@ -14,6 +14,7 @@ import {
   setStoredAdminRefreshToken,
 } from '@/shared/auth/admin-auth-contract';
 import { CountryProvider } from '@/contexts/CountryContext';
+import { AdminErrorBoundary } from './admin-error-boundary';
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -131,7 +132,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
                   </svg>
                 </button>
               </div>
-              <main className="flex-1 overflow-y-auto p-6">{children}</main>
+              <main className="flex-1 overflow-y-auto p-6">
+                <AdminErrorBoundary>{children}</AdminErrorBoundary>
+              </main>
             </div>
 
             <AdminCountrySelectorModal
