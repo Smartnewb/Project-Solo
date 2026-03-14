@@ -41,7 +41,7 @@ export default function Header() {
     if (href === '/home') {
       return pathname === '/home';
     }
-    return pathname.startsWith(href);
+    return pathname?.startsWith(href) ?? false;
   };
 
   return (
