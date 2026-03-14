@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { adminLog } from '@/shared/lib/admin-logger';
 import {
   normalizeAdminCountry,
   setAdminAccessToken,
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (error) {
-    console.error('Establish session error:', error);
+    adminLog.error('/api/admin/auth/establish-session', 'establish_failed', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { adminLog } from '@/shared/lib/admin-logger';
 import {
   getAdminAccessToken,
   getAdminRefreshToken,
@@ -119,8 +120,7 @@ export async function GET() {
 
     return NextResponse.json(sessionDTO);
   } catch (error) {
-    // eslint-disable-next-line no-console -- server-side route handler error logging
-    console.error('Session check error:', error);
+    adminLog.error('/api/admin/session', 'session_check_failed', error);
     await clearAdminCookies();
     return NextResponse.json({ error: 'Session validation failed' }, { status: 401 });
   }

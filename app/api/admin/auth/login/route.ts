@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { adminLog } from '@/shared/lib/admin-logger';
 import {
   normalizeAdminCountry,
   setAdminAccessToken,
@@ -89,8 +90,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    // eslint-disable-next-line no-console -- server-side route handler error logging
-    console.error('Admin login error:', error);
+    adminLog.error('/api/admin/auth/login', 'login_failed', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
