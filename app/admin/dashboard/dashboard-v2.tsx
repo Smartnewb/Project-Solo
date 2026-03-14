@@ -1,8 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
 import { Alert, Box, Grid, Typography } from '@mui/material';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 import { useDashboardSummary } from './hooks';
 import ActionableInsights from './components/ActionableInsights';
 import ActionRequired from './components/ActionRequired';
@@ -14,12 +12,6 @@ import UserEngagementStats from './components/UserEngagementStats';
 import WeeklyTrend from './components/WeeklyTrend';
 
 export default function DashboardV2() {
-  // Patch axios instances so sub-components that self-fetch
-  // (WeeklyTrend, GemSystemFunnel, etc.) route through BFF proxy
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return unpatch;
-  }, []);
 
   const { data: summary, isLoading, error } = useDashboardSummary();
 
