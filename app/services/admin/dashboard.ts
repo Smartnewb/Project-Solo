@@ -392,18 +392,18 @@ export const stats = {
 };
 
 export const kpiReport = {
-	getLatest: async () => {
+	getLatest: async (): Promise<import('@/app/admin/kpi-report/types').KpiReport> => {
 		try {
-			return await adminGet('/admin/kpi-report/latest');
+			return await adminGet<import('@/app/admin/kpi-report/types').KpiReport>('/admin/kpi-report/latest');
 		} catch (error: any) {
 			console.error('최신 KPI 리포트 조회 중 오류:', error);
 			throw error;
 		}
 	},
 
-	getByWeek: async (year: number, week: number) => {
+	getByWeek: async (year: number, week: number): Promise<import('@/app/admin/kpi-report/types').KpiReport> => {
 		try {
-			return await adminGet(`/admin/kpi-report/${year}/${week}`);
+			return await adminGet<import('@/app/admin/kpi-report/types').KpiReport>(`/admin/kpi-report/${year}/${week}`);
 		} catch (error: any) {
 			console.error('주간 KPI 리포트 조회 중 오류:', error);
 			throw error;
@@ -419,9 +419,9 @@ export const kpiReport = {
 		}
 	},
 
-	generate: async (year?: number, week?: number) => {
+	generate: async (year?: number, week?: number): Promise<import('@/app/admin/kpi-report/types').KpiReport> => {
 		try {
-			return await adminPost('/admin/kpi-report/generate', { year, week });
+			return await adminPost<import('@/app/admin/kpi-report/types').KpiReport>('/admin/kpi-report/generate', { year, week });
 		} catch (error: any) {
 			console.error('KPI 리포트 생성 중 오류:', error);
 			throw error;

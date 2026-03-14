@@ -45,7 +45,7 @@ export default function DashboardV2() {
           </Alert>
         )}
 
-        <ActionRequired actionItems={summary?.actionItems ?? null} loading={isLoading} />
+        <ActionRequired />
 
         <Grid container spacing={3}>
           <Grid item xs={12} md={7}>

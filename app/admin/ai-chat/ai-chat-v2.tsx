@@ -287,8 +287,8 @@ function AIChatManagementPageContent() {
                 onChange={(e) => setIsActive(e.target.value as boolean | '')}
               >
                 <MenuItem value="">전체</MenuItem>
-                <MenuItem value={true}>활성</MenuItem>
-                <MenuItem value={false}>비활성</MenuItem>
+                <MenuItem value={String(true)}>활성</MenuItem>
+                <MenuItem value={String(false)}>비활성</MenuItem>
               </Select>
             </FormControl>
 

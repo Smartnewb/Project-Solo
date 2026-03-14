@@ -560,7 +560,7 @@ export default function ReviewHistoryTab() {
                                   해당 이미지의 Vision 검증 데이터가 없습니다.
                                 </Alert>
                               ) : visionDataCache[item.imageId] ? (
-                                <VisionDataCard data={visionDataCache[item.imageId]} />
+                                <VisionDataCard data={visionDataCache[item.imageId]!} />
                               ) : null}
                             </Collapse>
                           </TableCell>

@@ -8,14 +8,8 @@ import SessionQueue from './components/SessionQueue';
 import ChatPanel from './components/ChatPanel';
 import { useSessionPolling } from './hooks/useSessionPolling';
 import type { SupportDomain } from '@/app/types/support-chat';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 
 function SupportChatPageContent() {
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
-
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const router = useRouter();

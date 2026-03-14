@@ -102,7 +102,7 @@ function AppearanceGradePageContent() {
             <CircularProgress />
           </Box>
         ) : stats ? (
-          <AppearanceGradeStatsCard stats={stats} />
+          <AppearanceGradeStatsCard stats={stats as any} />
         ) : null}
       </Box>
 

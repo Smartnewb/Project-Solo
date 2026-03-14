@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
+import { useState } from 'react';
+import { useToast } from '@/shared/ui/admin/toast';
+import { useBulkGrantGems } from '@/app/admin/hooks';
 import {
   Box,
   Typography,
@@ -34,7 +35,6 @@ import {
   IconButton,
   Tooltip
 } from '@mui/material';
-import AdminService from '@/app/services/admin';
 import DownloadIcon from '@mui/icons-material/Download';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import DiamondIcon from '@mui/icons-material/Diamond';
@@ -64,10 +64,12 @@ interface UserSearchResult {
 }
 
 interface BulkGrantResponse {
-  totalProcessed: number;
-  successCount: number;
-  failedCount: number;
-  errors: Array<{
+  success?: boolean;
+  message?: string;
+  totalProcessed?: number;
+  successCount?: number;
+  failedCount?: number;
+  errors?: Array<{
     identifier: string;
     reason: string;
   }>;
@@ -78,19 +80,15 @@ interface BulkGrantResponse {
 }
 
 function GemsManagementPageContent() {
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
+  const toast = useToast();
+  const bulkGrantGems = useBulkGrantGems();
 
   const [inputMethod, setInputMethod] = useState<'phoneNumbers' | 'csvFile'>('phoneNumbers');
   const [phoneNumbersText, setPhoneNumbersText] = useState<string>('');
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [gemAmount, setGemAmount] = useState<number>(10);
   const [message, setMessage] = useState<string>('');
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<BulkGrantResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
 
   const [userSearchTerm, setUserSearchTerm] = useState<string>('');
@@ -138,7 +136,7 @@ function GemsManagementPageContent() {
 
   const handleAddUserPhone = (user: UserSearchResult) => {
     if (!user.phoneNumber) {
-      alert('해당 사용자의 전화번호 정보가 없습니다.');
+      toast.warning('해당 사용자의 전화번호 정보가 없습니다.');
       return;
     }
 
@@ -153,7 +151,7 @@ function GemsManagementPageContent() {
     );
 
     if (isDuplicate) {
-      alert('이미 추가된 전화번호입니다.');
+      toast.warning('이미 추가된 전화번호입니다.');
       return;
     }
 
@@ -186,11 +184,11 @@ function GemsManagementPageContent() {
     const file = event.target.files?.[0];
     if (file) {
       if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
-        alert('CSV 파일만 업로드할 수 있습니다.');
+        toast.error('CSV 파일만 업로드할 수 있습니다.');
         return;
       }
       if (file.size > 10 * 1024 * 1024) {
-        alert('파일 크기는 10MB 이하만 가능합니다.');
+        toast.error('파일 크기는 10MB 이하만 가능합니다.');
         return;
       }
       setCsvFile(file);
@@ -212,27 +210,27 @@ function GemsManagementPageContent() {
 
   const handleSubmitClick = () => {
     if (!gemAmount || gemAmount < 1) {
-      alert('구슬 개수는 1개 이상이어야 합니다.');
+      toast.error('구슬 개수는 1개 이상이어야 합니다.');
       return;
     }
 
     if (!message.trim()) {
-      alert('지급 사유 메시지를 입력해주세요.');
+      toast.error('지급 사유 메시지를 입력해주세요.');
       return;
     }
 
     if (message.length > 200) {
-      alert('메시지는 200자 이하로 입력해주세요.');
+      toast.error('메시지는 200자 이하로 입력해주세요.');
       return;
     }
 
     if (inputMethod === 'phoneNumbers' && !phoneNumbersText.trim()) {
-      alert('전화번호를 입력해주세요.');
+      toast.error('전화번호를 입력해주세요.');
       return;
     }
 
     if (inputMethod === 'csvFile' && !csvFile) {
-      alert('CSV 파일을 업로드해주세요.');
+      toast.error('CSV 파일을 업로드해주세요.');
       return;
     }
 
@@ -246,7 +244,7 @@ function GemsManagementPageContent() {
       const invalidPhones = phoneNumberArray.filter(phone => !validatePhoneNumber(phone));
 
       if (invalidPhones.length > 0) {
-        alert(`유효하지 않은 전화번호가 있습니다:\n${invalidPhones.join('\n')}`);
+        toast.error(`유효하지 않은 전화번호가 있습니다: ${invalidPhones.join(', ')}`);
         return;
       }
     }
@@ -254,42 +252,40 @@ function GemsManagementPageContent() {
     setConfirmDialogOpen(true);
   };
 
-  const handleConfirmSubmit = async () => {
+  const handleConfirmSubmit = () => {
     setConfirmDialogOpen(false);
-    setLoading(true);
-    setError(null);
     setResult(null);
 
-    try {
-      let phoneNumbers: string[] | undefined;
+    let phoneNumbers: string[] | undefined;
+    if (inputMethod === 'phoneNumbers') {
+      phoneNumbers = phoneNumbersText
+        .split(/[,\n]/)
+        .map(phone => phone.trim())
+        .filter(phone => phone.length > 0);
+    }
 
-      if (inputMethod === 'phoneNumbers') {
-        phoneNumbers = phoneNumbersText
-          .split(/[,\n]/)
-          .map(phone => phone.trim())
-          .filter(phone => phone.length > 0);
-      }
-
-      const response = await AdminService.gems.bulkGrant({
+    bulkGrantGems.mutate(
+      {
         phoneNumbers,
         csvFile: inputMethod === 'csvFile' ? csvFile || undefined : undefined,
         gemAmount,
-        message
-      });
-
-      setResult(response);
-
-      if (response.failedCount === 0) {
-        alert('구슬 지급이 성공적으로 완료되었습니다!');
-      } else {
-        alert(`구슬 지급이 완료되었습니다.\n성공: ${response.successCount}명, 실패: ${response.failedCount}개`);
+        message,
+      },
+      {
+        onSuccess: (response) => {
+          setResult(response);
+          if ((response.failedCount ?? 0) === 0) {
+            toast.success('구슬 지급이 성공적으로 완료되었습니다!');
+          } else {
+            toast.warning(`구슬 지급이 완료되었습니다. 성공: ${response.successCount ?? 0}명, 실패: ${response.failedCount ?? 0}개`);
+          }
+        },
+        onError: (err: any) => {
+          console.error('구슬 지급 실패:', err);
+          toast.error(err.response?.data?.message || '구슬 지급 중 오류가 발생했습니다.');
+        },
       }
-    } catch (err: any) {
-      console.error('구슬 지급 실패:', err);
-      setError(err.response?.data?.message || '구슬 지급 중 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
-    }
+    );
   };
 
   const handleReset = () => {
@@ -298,7 +294,6 @@ function GemsManagementPageContent() {
     setGemAmount(10);
     setMessage('');
     setResult(null);
-    setError(null);
   };
 
   const getUserCount = () => {
@@ -325,12 +320,6 @@ function GemsManagementPageContent() {
           </Typography>
         </Box>
       </Box>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
 
       <Paper sx={{ p: 3, mb: 3 }}>
         <FormControl component="fieldset" sx={{ mb: 3 }}>
@@ -537,16 +526,16 @@ function GemsManagementPageContent() {
             color="primary"
             size="large"
             onClick={handleSubmitClick}
-            disabled={loading}
-            startIcon={loading ? <CircularProgress size={20} /> : <DiamondIcon />}
+            disabled={bulkGrantGems.isPending}
+            startIcon={bulkGrantGems.isPending ? <CircularProgress size={20} /> : <DiamondIcon />}
           >
-            {loading ? '처리 중...' : '구슬 지급 및 알림 발송'}
+            {bulkGrantGems.isPending ? '처리 중...' : '구슬 지급 및 알림 발송'}
           </Button>
           <Button
             variant="outlined"
             size="large"
             onClick={handleReset}
-            disabled={loading}
+            disabled={bulkGrantGems.isPending}
           >
             초기화
           </Button>
@@ -567,7 +556,7 @@ function GemsManagementPageContent() {
                     전체 처리
                   </Typography>
                   <Typography variant="h4" fontWeight="bold">
-                    {result.totalProcessed}개
+                    {result.totalProcessed ?? 0}개
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     전화번호
@@ -582,7 +571,7 @@ function GemsManagementPageContent() {
                     ✓ 성공
                   </Typography>
                   <Typography variant="h4" fontWeight="bold" color="success.main">
-                    {result.successCount}명
+                    {result.successCount ?? 0}명
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     구슬 지급 완료
@@ -597,7 +586,7 @@ function GemsManagementPageContent() {
                     ✗ 실패
                   </Typography>
                   <Typography variant="h4" fontWeight="bold" color="error.main">
-                    {result.failedCount}개
+                    {result.failedCount ?? 0}개
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
                     전화번호
@@ -624,7 +613,7 @@ function GemsManagementPageContent() {
             </Alert>
           )}
 
-          {result.errors.length > 0 && (
+          {(result.errors ?? []).length > 0 && (
             <Box>
               <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 2 }}>
                 실패 상세 내역
@@ -638,7 +627,7 @@ function GemsManagementPageContent() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {result.errors.map((error, index) => (
+                    {(result.errors ?? []).map((error, index) => (
                       <TableRow key={index}>
                         <TableCell>{formatPhoneNumberForDisplay(error.identifier)}</TableCell>
                         <TableCell>

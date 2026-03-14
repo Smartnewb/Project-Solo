@@ -96,7 +96,7 @@ export default function CustomPeriodSignupStats() {
             count = countResponse.data.count;
           } else if (Array.isArray(countResponse.data) && countResponse.data.length > 0) {
             // 배열인 경우 개수 합산
-            count = countResponse.data.reduce((sum, item) => sum + (item.count || 0), 0);
+            count = countResponse.data.reduce((sum: number, item: { count?: number }) => sum + (item.count || 0), 0);
           }
         }
       }

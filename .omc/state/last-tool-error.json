@@ -1,0 +1,7 @@
+{
+  "tool_name": "Read",
+  "tool_input_preview": "{\"file_path\":\"/Users/smartnewbie/Desktop/Project-Solo/.worktrees/admin-modernization/features/toss-payment/hooks/use-toss-payments.ts\"}",
+  "error": "File does not exist. Note: your current working directory is /Users/smartnewbie/Desktop/Project-Solo/.worktrees/admin-modernization. Did you mean use-toss-payments.tsx?",
+  "timestamp": "2026-03-14T06:49:50.962Z",
+  "retry_count": 1
+}

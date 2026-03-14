@@ -47,6 +47,7 @@ export function PeriodSalesSummary({
     try {
       const baseParams = {
         paymentType: "all" as const, // IAP 포함 전체 매출
+        byRegion: false as const,
       };
 
       const params =

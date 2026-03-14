@@ -11,7 +11,7 @@ import {
   LinearProgress
 } from '@mui/material';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { UserAppearanceGradeStatsResponse } from '@/app/admin/users/appearance/types';
+import { UserAppearanceGradeStatsResponse, AppearanceGrade } from '@/app/admin/users/appearance/types';
 import { getRegionLabel } from '@/components/admin/common/RegionFilter';
 
 // 등급별 색상 정의

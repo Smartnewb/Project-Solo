@@ -8,6 +8,7 @@ export interface UserSearchResult {
   age: number;
   gender: 'MALE' | 'FEMALE';
   appearanceGrade?: 'S' | 'A' | 'B' | 'C' | 'UNKNOWN';
+  deletedAt?: string | null;
   university?: string | {
     id: string;
     name: string;
@@ -132,6 +133,7 @@ export interface MatcherHistoryItem {
     age: number;
     gender: string;
     profileImageUrl?: string;
+    deletedAt?: string | null;
     universityDetails?: {
       name: string;
       department: string;

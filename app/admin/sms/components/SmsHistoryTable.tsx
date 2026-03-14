@@ -153,7 +153,7 @@ export function SmsHistoryTable({ histories, limit = 50 }: SmsHistoryTableProps)
                                             text-xs font-medium
                                             ${getStatusStyle(history.status)}`}>
                                             {/* 🔴 매우 주의: COMPLETE도 완료로 표시 */}
-                                            {(history.status === 'success' || history.status === 'COMPLETED') ? '완료' : '실패'}
+                                            {(history.status === 'COMPLETE') ? '완료' : '실패'}
                                         </span>
                                     </div>
 

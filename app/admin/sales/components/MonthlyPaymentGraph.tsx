@@ -53,12 +53,12 @@ export function MonthlyPaymentGraph() {
             const transformedData: MonthlyPaymentData[] = response.data.map(item => ({
                 month: item.label,
                 totalAmount: item.amount,
-                pgAmount: item.excludeIapAmount,
-                iapAmount: item.iapOnlyAmount,
+                pgAmount: item.excludeIapAmount ?? 0,
+                iapAmount: item.iapOnlyAmount ?? 0,
                 totalCount: item.count,
-                pgCount: item.excludeIapCount,
-                iapCount: item.iapOnlyCount,
-                totalPaidUsers: item.paidUserCount,
+                pgCount: item.excludeIapCount ?? 0,
+                iapCount: item.iapOnlyCount ?? 0,
+                totalPaidUsers: item.paidUserCount ?? 0,
                 pgPaidUsers: item.excludeIapPaidUserCount || 0,
                 iapPaidUsers: item.iapOnlyPaidUserCount || 0,
             }));

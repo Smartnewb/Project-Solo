@@ -138,7 +138,7 @@ export function DailySalesTrendGraph({ className, hideHeader = false }: DailySal
                     displayDate: formatDateLabel(item.label),
                     amount: item.amount,
                     count: item.count,
-                    paidUserCount: item.paidUserCount,
+                    paidUserCount: item.paidUserCount ?? 0,
                     pgAmount: item.excludeIapAmount || 0,
                     pgCount: item.excludeIapCount || 0,
                     iapAmount: item.iapOnlyAmount || 0,
