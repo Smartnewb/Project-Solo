@@ -100,7 +100,7 @@ export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
     <nav className="flex-1 overflow-y-auto py-4">
       {NAV_CATEGORIES.map((category) => (
         <div key={category.label}>
-          <div className="px-4 py-2 mt-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+          <div className="px-4 py-2 mt-3 text-sm font-semibold text-gray-400 uppercase tracking-wider">
             {category.icon} {category.label}
           </div>
           <ul>
@@ -109,7 +109,7 @@ export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
                 <Link
                   href={item.href}
                   onClick={onNavigate}
-                  className={`block px-4 py-2 transition-colors ${
+                  className={`block px-4 py-2.5 text-sm transition-colors ${
                     pathname === item.href
                       ? 'bg-primary text-white'
                       : 'text-gray-600 hover:bg-primary hover:text-white'

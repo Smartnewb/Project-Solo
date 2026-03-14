@@ -17,6 +17,7 @@ import { CountryProvider } from '@/contexts/CountryContext';
 import { AdminErrorBoundary } from './admin-error-boundary';
 import { ToastProvider, ToastContainer } from '@/shared/ui/admin/toast';
 import { ConfirmDialogProvider, ConfirmDialog } from '@/shared/ui/admin/confirm-dialog';
+import { CommandSearch } from './command-search';
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -96,7 +97,25 @@ export function AdminShell({ children }: { children: ReactNode }) {
               <div className="flex-1 overflow-y-auto">
                 <AdminSidebar onNavigate={() => setSidebarOpen(false)} />
               </div>
-              <div className="px-4 pt-4 mt-3 border-t space-y-1 shrink-0">
+              <div className="px-4 pt-3 border-t shrink-0">
+                <button
+                  onClick={() => {
+                    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
+                  }}
+                  className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-400 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors"
+                >
+                  <span className="flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    메뉴 검색
+                  </span>
+                  <kbd className="text-[10px] px-1.5 py-0.5 bg-white rounded border border-gray-200 font-medium">
+                    ⌘K
+                  </kbd>
+                </button>
+              </div>
+              <div className="px-4 pt-2 pb-3 space-y-1 shrink-0">
                 <button
                   onClick={() => setCountryModalOpen(true)}
                   className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-colors flex items-center gap-2"
@@ -145,6 +164,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
               </main>
             </div>
 
+            <CommandSearch />
             <AdminCountrySelectorModal
               open={countryModalOpen}
               onClose={() => setCountryModalOpen(false)}
