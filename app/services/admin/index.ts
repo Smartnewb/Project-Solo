@@ -24,6 +24,8 @@ export {
 	dormantLikes,
 } from './revenue';
 export { fcmTokens, universities } from './system';
+export { featureFlags } from './feature-flags';
+export type { FeatureFlag } from './feature-flags';
 
 // Re-export interfaces for backward compatibility with named type imports
 export type { FormattedData, StatItem, GenderStatItem } from './_shared';
@@ -81,6 +83,7 @@ import {
 	dormantLikes,
 } from './revenue';
 import { fcmTokens, universities } from './system';
+import { featureFlags } from './feature-flags';
 
 const AdminService = {
 	auth,
@@ -114,6 +117,7 @@ const AdminService = {
 	publicReviews,
 	fcmTokens,
 	getProfileReports: reports.getProfileReports,
+	featureFlags,
 };
 
 export default AdminService;

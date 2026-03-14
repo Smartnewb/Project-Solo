@@ -88,6 +88,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
     label: '설정',
     items: [
       { href: '/admin/version-management', label: '버전 관리' },
+      { href: '/admin/feature-flags', label: 'Feature Flags' },
       { href: '/admin/lab', label: '실험실' },
     ],
   },
