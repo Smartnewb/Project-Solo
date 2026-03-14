@@ -19,5 +19,9 @@ module.exports = {
   testPathIgnorePatterns: [
     '<rootDir>/node_modules/',
     '<rootDir>/.next/',
+    '<rootDir>/.claude/',
+    '<rootDir>/.codex-worktrees/',
+    '<rootDir>/.omc/',
+    '<rootDir>/tests/',
   ],
 };
