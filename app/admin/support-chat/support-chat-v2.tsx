@@ -15,7 +15,7 @@ function SupportChatPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const sessionFromUrl = searchParams.get('session');
+  const sessionFromUrl = searchParams?.get('session') ?? null;
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(sessionFromUrl);
   const [activeTab, setActiveTab] = useState<'active' | 'resolved'>('active');
   const [domainFilter, setDomainFilter] = useState<SupportDomain | 'all'>('all');
@@ -71,7 +71,7 @@ function SupportChatPageContent() {
   const handleSelectSession = useCallback((sessionId: string) => {
     setSelectedSessionId(sessionId);
     // Update URL with session ID
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() ?? '');
     params.set('session', sessionId);
     router.replace(`/admin/support-chat?${params.toString()}`, { scroll: false });
     // Clear unread for selected session

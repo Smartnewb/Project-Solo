@@ -43,7 +43,7 @@ import {
   UserStatus
 } from '@/app/admin/users/appearance/types';
 import { formatDateWithoutTimezoneConversion, formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
-import { appearanceGradeEventBus } from '@/app/admin/users/appearance/page';
+import { appearanceGradeEventBus } from '@/app/admin/users/appearance/event-bus';
 import UserDetailModal, { UserDetail } from './UserDetailModal';
 import BulkEmailNotificationModal from './modals/BulkEmailNotificationModal';
 

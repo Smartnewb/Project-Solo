@@ -20,22 +20,11 @@ import DuplicatePhoneUsersPanel from "@/components/admin/appearance/DuplicatePho
 import VerifiedUsersPanel from "@/components/admin/appearance/VerifiedUsersPanel";
 import BlacklistUsersPanel from "@/components/admin/appearance/BlacklistUsersPanel";
 import UniversityVerificationPendingPanel from "@/components/admin/appearance/UniversityVerificationPendingPanel";
-
-// 전역 이벤트 버스 생성 (등급 변경 이벤트 처리용)
-export const appearanceGradeEventBus = {
-  listeners: new Set<() => void>(),
-  subscribe(listener: () => void) {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
-  },
-  publish() {
-    this.listeners.forEach((listener) => listener());
-  },
-};
+import { appearanceGradeEventBus } from "./event-bus";
 
 function AppearanceGradePageContent() {
   const searchParams = useSearchParams();
-  const initialTab = parseInt(searchParams.get("tab") || "0", 10);
+  const initialTab = parseInt(searchParams?.get("tab") || "0", 10);
 
   const [activeTab, setActiveTab] = useState(initialTab);
 
@@ -47,7 +36,7 @@ function AppearanceGradePageContent() {
   const error = statsError ? (statsError as any)?.message || "외모 등급 통계를 불러오는 중 오류가 발생했습니다." : null;
 
   useEffect(() => {
-    const tabParam = searchParams.get("tab");
+    const tabParam = searchParams?.get("tab");
     if (tabParam) {
       const tabIndex = parseInt(tabParam, 10);
       if (!isNaN(tabIndex) && tabIndex >= 0 && tabIndex <= 5) {
