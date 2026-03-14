@@ -29,8 +29,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
     icon: '👥',
     label: '회원 관리',
     items: [
-      { href: '/admin/users', label: '사용자 관리' },
-      { href: '/admin/users/appearance', label: '외모 관리' },
+      { href: '/admin/users/appearance', label: '사용자 관리' },
       { href: '/admin/profile-review', label: '프로필 심사' },
       { href: '/admin/reports', label: '신고 관리' },
       { href: '/admin/community', label: '커뮤니티' },
