@@ -285,7 +285,7 @@ export default function GenderStatsCard({
               sx={{ backgroundColor: MALE_COLOR }}
             />
             <Typography className="font-semibold text-slate-700">
-              {stats.genderRatio.split(":")[0]}
+              {(stats.genderRatio || '0:0').split(":")[0]}
             </Typography>
           </Box>
           <Typography className="text-slate-300 font-light text-lg">
@@ -293,7 +293,7 @@ export default function GenderStatsCard({
           </Typography>
           <Box className="flex items-center gap-1.5">
             <Typography className="font-semibold text-slate-700">
-              {stats.genderRatio.split(":")[1]}
+              {(stats.genderRatio || '0:0').split(":")[1]}
             </Typography>
             <Box
               className="w-3 h-3 rounded-full"
