@@ -13,6 +13,7 @@ import {
   getStoredAdminRefreshToken,
   setStoredAdminRefreshToken,
 } from '@/shared/auth/admin-auth-contract';
+import { CountryProvider } from '@/contexts/CountryContext';
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -79,6 +80,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
   return (
     <AdminSessionContext.Provider value={{ session, isLoading, error, changeCountry, logout }}>
+      <CountryProvider>
       <AdminQueryProvider>
           <div className="flex h-screen bg-gray-100">
             <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform md:relative md:translate-x-0 ${
@@ -136,6 +138,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             />
           </div>
       </AdminQueryProvider>
+      </CountryProvider>
     </AdminSessionContext.Provider>
   );
 }
