@@ -29,8 +29,12 @@ const nextConfig = {
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api';
 
     return [
-      // Specific proxies for client-side user auth and profile calls.
-      // The old catch-all /api-proxy/:path* was removed (security: it bypassed all auth).
+      // Scoped proxies for client-side calls (replaces old catch-all /api-proxy/:path*).
+      // Admin API calls from dashboard and other pages
+      { source: '/api-proxy/admin/:path*', destination: `${backendUrl}/admin/:path*` },
+      // Support chat admin calls
+      { source: '/api-proxy/support-chat/:path*', destination: `${backendUrl}/support-chat/:path*` },
+      // User auth and profile calls
       { source: '/api-proxy/auth/login', destination: `${backendUrl}/auth/login` },
       { source: '/api-proxy/auth/refresh', destination: `${backendUrl}/auth/refresh` },
       { source: '/api-proxy/profile', destination: `${backendUrl}/profile` },
