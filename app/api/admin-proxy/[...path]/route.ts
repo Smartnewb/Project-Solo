@@ -53,7 +53,10 @@ async function proxyRequest(request: NextRequest, { params }: { params: { path: 
     responseHeaders.set(key, value);
   });
 
-  return new NextResponse(responseBody, {
+  // 204 No Content must not include a body
+  const resBody = backendRes.status === 204 ? null : responseBody;
+
+  return new NextResponse(resBody, {
     status: backendRes.status,
     headers: responseHeaders,
   });
