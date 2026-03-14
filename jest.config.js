@@ -6,7 +6,7 @@ module.exports = {
   },
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {
-      tsconfig: 'tsconfig.json',
+      tsconfig: 'tsconfig.jest.json',
     }],
   },
   testMatch: [
@@ -22,6 +22,13 @@ module.exports = {
     '<rootDir>/.claude/',
     '<rootDir>/.codex-worktrees/',
     '<rootDir>/.omc/',
+    '<rootDir>/.omx/',
     '<rootDir>/tests/',
+  ],
+  modulePathIgnorePatterns: [
+    '<rootDir>/.next/',
+    '<rootDir>/.claude/',
+    '<rootDir>/.codex-worktrees/',
+    '<rootDir>/.omx/',
   ],
 };
