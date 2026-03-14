@@ -165,6 +165,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // 프로필 정보 조회
       await fetchProfile();
 
+      // 어드민 쿠키 세션 설정 (AdminShell이 쿠키 기반 인증 사용)
+      if (isAdmin) {
+        await fetch('/api/admin/auth/establish-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            accessToken: data.accessToken,
+            refreshToken: data.refreshToken,
+            selectedCountry: 'kr',
+          }),
+        });
+      }
+
       // 리다이렉트
       router.push(isAdmin ? '/admin/dashboard' : '/home');
     } catch (error) {
