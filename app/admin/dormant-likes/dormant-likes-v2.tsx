@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Box,
   Typography,
@@ -13,7 +13,6 @@ import {
   Paper,
   Button,
   CircularProgress,
-  Alert,
   Chip,
   Card,
   CardContent,
@@ -22,43 +21,19 @@ import {
   Checkbox,
   Tooltip,
 } from '@mui/material';
-import AdminService from '@/app/services/admin';
-import type { DormantLikesDashboardResponse, DormantUserResponse } from '@/types/admin';
+import type { DormantUserResponse } from '@/types/admin';
 import PendingLikesModal from './components/PendingLikesModal';
 import BulkProcessModal from './components/BulkProcessModal';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
+import { useDormantLikesDashboard } from '@/app/admin/hooks';
 
 function DormantLikesPageContent() {
-  const [dashboardData, setDashboardData] = useState<DormantLikesDashboardResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [page, setPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState<DormantUserResponse | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [bulkProcessModalOpen, setBulkProcessModalOpen] = useState(false);
 
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
-
-  const fetchDashboard = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const data = await AdminService.dormantLikes.getDashboard(page, 20);
-      setDashboardData(data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || '대시보드를 불러오는데 실패했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchDashboard();
-  }, [page]);
+  const { data: dashboardData, isLoading, error, refetch } = useDormantLikesDashboard(page, 20);
 
   const handleUserClick = (user: DormantUserResponse) => {
     setSelectedUser(user);
@@ -68,7 +43,7 @@ function DormantLikesPageContent() {
   const handleModalClose = () => {
     setModalOpen(false);
     setSelectedUser(null);
-    fetchDashboard();
+    refetch();
   };
 
   const processableUsers = dashboardData?.users.filter((u) => u.canProcess) || [];
@@ -92,7 +67,7 @@ function DormantLikesPageContent() {
 
   const handleBulkProcessComplete = () => {
     setSelectedUserIds([]);
-    fetchDashboard();
+    refetch();
   };
 
   const selectedUsers = dashboardData?.users.filter((u) =>
@@ -123,9 +98,9 @@ function DormantLikesPageContent() {
       </Box>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
-          {error}
-        </Alert>
+        <Typography color="error" sx={{ mb: 2 }}>
+          {(error as any).response?.data?.message || '대시보드를 불러오는데 실패했습니다.'}
+        </Typography>
       )}
 
       {/* 통계 카드 */}
@@ -209,7 +184,7 @@ function DormantLikesPageContent() {
         )}
       </Box>
 
-      {loading ? (
+      {isLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
           <CircularProgress />
         </Box>

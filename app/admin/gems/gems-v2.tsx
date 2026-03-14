@@ -126,7 +126,6 @@ function GemsManagementPageContent() {
         setUserSearchError(`"${userSearchTerm}" 검색 결과가 없습니다.`);
       }
     } catch (err: any) {
-      console.error('사용자 검색 오류:', err);
       setUserSearchError(err.response?.data?.message || '사용자 검색 중 오류가 발생했습니다.');
       setUserSearchResults([]);
     } finally {
@@ -281,7 +280,6 @@ function GemsManagementPageContent() {
           }
         },
         onError: (err: any) => {
-          console.error('구슬 지급 실패:', err);
           toast.error(err.response?.data?.message || '구슬 지급 중 오류가 발생했습니다.');
         },
       }

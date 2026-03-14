@@ -205,7 +205,6 @@ export default function ReviewHistoryTab() {
         setPagination(response.pagination);
         setExpandedImageId(null);
       } catch (err: any) {
-        console.error("심사 이력 조회 오류:", err);
         setError(
           err.response?.data?.message ||
             "심사 이력을 불러오는 중 오류가 발생했습니다.",
@@ -239,7 +238,6 @@ export default function ReviewHistoryTab() {
       if (err.response?.status === 404) {
         setVisionDataCache((prev) => ({ ...prev, [imageId]: null }));
       } else {
-        console.error("Vision 데이터 조회 오류:", err);
         setVisionDataCache((prev) => ({ ...prev, [imageId]: null }));
       }
     } finally {

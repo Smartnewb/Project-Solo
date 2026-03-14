@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import AdminService from '@/app/services/admin';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
+import { useToast } from '@/shared/ui/admin/toast/toast-context';
+import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
 
 interface FilterState {
   isDormant: boolean;
@@ -39,10 +40,8 @@ interface UserProfile {
 }
 
 function PushNotificationsV2Content() {
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return unpatch;
-  }, []);
+  const toast = useToast();
+  const confirmAction = useConfirm();
 
   const [filters, setFilters] = useState<FilterState>({
     isDormant: false,
@@ -115,10 +114,9 @@ function PushNotificationsV2Content() {
   const loadUniversities = async () => {
     try {
       const universities = await AdminService.universities.getUniversities();
-      ;
       setAllUniversities(universities);
     } catch (error) {
-      console.error('대학교 목록 조회 실패:', error);
+      // silently fail - universities list is non-critical
     }
   };
 
@@ -153,8 +151,7 @@ function PushNotificationsV2Content() {
       setTotalPages(data.totalPages);
       setCurrentPage(page);
     } catch (error) {
-      console.error('사용자 필터링 실패:', error);
-      alert('사용자 필터링에 실패했습니다.');
+      toast.error('사용자 필터링에 실패했습니다.');
     } finally {
       setLoading(false);
     }
@@ -172,8 +169,7 @@ function PushNotificationsV2Content() {
       const profile = await AdminService.userAppearance.getUserDetails(userId);
       setSelectedUser(profile);
     } catch (error) {
-      console.error('프로필 조회 실패:', error);
-      alert('프로필 정보를 불러오는데 실패했습니다.');
+      toast.error('프로필 정보를 불러오는데 실패했습니다.');
       setShowProfileModal(false);
     } finally {
       setLoadingProfile(false);
@@ -187,18 +183,20 @@ function PushNotificationsV2Content() {
 
   const handleSendPushNotification = async () => {
     if (!title || !message) {
-      alert('제목과 메시지를 입력해주세요.');
+      toast.error('제목과 메시지를 입력해주세요.');
       return;
     }
 
     if (targetUsers.length === 0) {
-      alert('발송 대상 사용자가 없습니다. 먼저 사용자를 검색하고 발송 대상자 리스트에 추가해주세요.');
+      toast.error('발송 대상 사용자가 없습니다. 먼저 사용자를 검색하고 발송 대상자 리스트에 추가해주세요.');
       return;
     }
 
-    if (!confirm(`총 ${targetUsers.length}명에게 푸시 알림을 발송하시겠습니까?`)) {
-      return;
-    }
+    const ok = await confirmAction({
+      title: '푸시 알림 발송',
+      message: `총 ${targetUsers.length}명에게 푸시 알림을 발송하시겠습니까?`,
+    });
+    if (!ok) return;
 
     setLoading(true);
     try {
@@ -208,24 +206,20 @@ function PushNotificationsV2Content() {
         message,
       };
 
-      ;
       const result = await AdminService.pushNotifications.sendBulkNotification(data);
-      ;
 
-      alert(`푸시 알림 발송 완료\n성공: ${result.successCount}건\n실패: ${result.failureCount}건\n총 대상: ${result.totalCount}건`);
+      toast.success(`푸시 알림 발송 완료 - 성공: ${result.successCount}건, 실패: ${result.failureCount}건, 총 대상: ${result.totalCount}건`);
 
       setTitle('');
       setMessage('');
       setTargetUsers([]);
     } catch (error: any) {
-      console.error('❌ 푸시 알림 발송 실패:', error);
-
       if (error?.response?.status === 401) {
-        alert('인증이 만료되었습니다. 다시 로그인해주세요.');
+        toast.error('인증이 만료되었습니다. 다시 로그인해주세요.');
         window.location.href = '/';
       } else {
         const errorMessage = error?.response?.data?.message || error?.response?.data?.error || '푸시 알림 발송에 실패했습니다.';
-        alert(errorMessage);
+        toast.error(errorMessage);
       }
     } finally {
       setLoading(false);
@@ -264,13 +258,15 @@ function PushNotificationsV2Content() {
 
   const addToTargetUsers = async () => {
     if (totalCount === 0) {
-      alert('추가할 사용자가 없습니다.');
+      toast.error('추가할 사용자가 없습니다.');
       return;
     }
 
-    if (!confirm(`총 ${totalCount}명의 사용자를 발송 대상자 리스트에 추가하시겠습니까?`)) {
-      return;
-    }
+    const ok = await confirmAction({
+      title: '발송 대상자 추가',
+      message: `총 ${totalCount}명의 사용자를 발송 대상자 리스트에 추가하시겠습니까?`,
+    });
+    if (!ok) return;
 
     setLoading(true);
     try {
@@ -305,10 +301,9 @@ function PushNotificationsV2Content() {
       });
 
       setTargetUsers(newTargetUsers);
-      alert(`${addedCount}명이 발송 대상자 리스트에 추가되었습니다.\n(중복 ${allUsers.length - addedCount}명 제외)`);
+      toast.success(`${addedCount}명이 발송 대상자 리스트에 추가되었습니다. (중복 ${allUsers.length - addedCount}명 제외)`);
     } catch (error) {
-      console.error('사용자 추가 실패:', error);
-      alert('사용자 추가에 실패했습니다.');
+      toast.error('사용자 추가에 실패했습니다.');
     } finally {
       setLoading(false);
     }
@@ -318,10 +313,12 @@ function PushNotificationsV2Content() {
     setTargetUsers(prev => prev.filter(u => u.id !== userId));
   };
 
-  const clearTargetUsers = () => {
-    if (!confirm('발송 대상자 리스트를 전체 초기화하시겠습니까?')) {
-      return;
-    }
+  const clearTargetUsers = async () => {
+    const ok = await confirmAction({
+      title: '목록 초기화',
+      message: '발송 대상자 리스트를 전체 초기화하시겠습니까?',
+    });
+    if (!ok) return;
     setTargetUsers([]);
   };
 

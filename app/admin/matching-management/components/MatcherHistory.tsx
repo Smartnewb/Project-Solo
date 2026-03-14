@@ -92,7 +92,6 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
       ;
       setMatcherHistory(data);
     } catch (err: any) {
-      console.error('매칭 상대 이력 조회 중 오류:', err);
       setHistoryError(err.response?.data?.message || err.message || '매칭 상대 이력을 불러오는 중 오류가 발생했습니다.');
     } finally {
       setHistoryLoading(false);

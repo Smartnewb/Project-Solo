@@ -130,7 +130,6 @@ export default function RevenueOverview({
         const data = await dashboardService.getExtendedRevenue();
         setExtendedRevenue(data);
       } catch (error) {
-        console.error("확장 매출 현황 조회 실패:", error);
         setExtendedError("매출 현황 데이터를 불러오는데 실패했습니다.");
       } finally {
         setExtendedLoading(false);

@@ -29,9 +29,7 @@ export function TemplateManager({ onTemplateSelect }: TemplateManagerProps) {
         try {
             const data = await smsService.getTemplates();
             setTemplates(data);
-        } catch (error) {
-            console.error('템플릿 불러오기 실패:', error);
-        } finally {
+        } catch { } finally {
             setIsLoading(false);
         }
     };
@@ -90,7 +88,6 @@ export function TemplateManager({ onTemplateSelect }: TemplateManagerProps) {
             setEditingTemplate(null);
             setModalMode('create');
         } catch (error) {
-            console.error('템플릿 저장 실패:', error);
             alert(modalMode === 'edit' ? '템플릿 수정에 실패했습니다.' : '템플릿 저장에 실패했습니다.');
         } finally {
             setIsLoading(false);
@@ -130,7 +127,6 @@ export function TemplateManager({ onTemplateSelect }: TemplateManagerProps) {
             setActiveMenuId(null);
             alert('템플릿이 삭제되었습니다.');
         } catch (error) {
-            console.error('템플릿 삭제 실패:', error)
             alert('템플릿 삭제에 실패했습니다.');
         } finally {
             setIsLoading(false);

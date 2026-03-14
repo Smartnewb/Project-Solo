@@ -50,9 +50,7 @@ export default function UniversityDetailDialog({
       setLoading(true);
       const data = await AdminService.universities.getById(university.id);
       setDetail(data);
-    } catch (err) {
-      console.error('상세 정보 로드 실패:', err);
-    } finally {
+    } catch { } finally {
       setLoading(false);
     }
   };

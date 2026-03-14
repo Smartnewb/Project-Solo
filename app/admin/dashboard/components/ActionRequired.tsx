@@ -121,7 +121,6 @@ export default function ActionRequired() {
         const response = await AdminService.userReview.getPendingUsers(1, 1);
         setPendingReview(response.pagination?.total ?? 0);
       } catch (error) {
-        console.error("회원 심사 대기 건수 조회 실패:", error);
         setPendingReview(0);
       } finally {
         setReviewLoading(false);
@@ -138,7 +137,6 @@ export default function ActionRequired() {
         const response = await AdminService.getProfileReports(params);
         setPendingReports(response.meta?.totalItems ?? 0);
       } catch (error) {
-        console.error("신고 대기 건수 조회 실패:", error);
         setPendingReports(0);
       } finally {
         setReportsLoading(false);
@@ -154,7 +152,6 @@ export default function ActionRequired() {
         });
         setPendingQA(response.pagination?.total ?? 0);
       } catch (error) {
-        console.error("Q&A 대기 건수 조회 실패:", error);
         setPendingQA(0);
       } finally {
         setQaLoading(false);
@@ -173,7 +170,6 @@ export default function ActionRequired() {
           response.pagination?.total ?? response.total ?? 0,
         );
       } catch (error) {
-        console.error("학생증 인증 대기 건수 조회 실패:", error);
         setPendingCertification(0);
       } finally {
         setCertificationLoading(false);

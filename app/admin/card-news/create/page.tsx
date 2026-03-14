@@ -112,7 +112,6 @@ function CreateCardNewsPageContent() {
         setCategoryCode(data[0].code);
       }
     } catch (err: any) {
-      console.error('카테고리 목록 조회 실패:', err);
       setError('카테고리 목록을 불러오는데 실패했습니다.');
     } finally {
       setCategoriesLoading(false);
@@ -129,7 +128,6 @@ function CreateCardNewsPageContent() {
         setSelectedPresetId(presets[0].id);
       }
     } catch (err: any) {
-      console.error('배경 프리셋 목록 조회 실패:', err);
     } finally {
       setPresetsLoading(false);
     }
@@ -151,7 +149,6 @@ function CreateCardNewsPageContent() {
       setCustomBackgroundUrl(response.url);
       setBackgroundType('CUSTOM');
     } catch (err: any) {
-      console.error('배경 이미지 업로드 실패:', err);
       alert(err.response?.data?.message || '이미지 업로드에 실패했습니다.');
     } finally {
       setUploadingBackground(false);
@@ -175,7 +172,6 @@ function CreateCardNewsPageContent() {
       }
       await fetchBackgroundPresets();
     } catch (err: any) {
-      console.error('프리셋 삭제 실패:', err);
       alert(err.response?.data?.message || '프리셋 삭제에 실패했습니다.');
     }
   };
@@ -325,7 +321,6 @@ function CreateCardNewsPageContent() {
       alert('카드뉴스가 성공적으로 생성되었습니다.');
       router.push('/admin/card-news');
     } catch (err: any) {
-      console.error('카드뉴스 생성 실패:', err);
       setError(err.response?.data?.message || '카드뉴스 생성에 실패했습니다.');
     } finally {
       setLoading(false);

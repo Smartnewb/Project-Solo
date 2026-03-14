@@ -118,7 +118,6 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
         setTotalData(null);
       }
     } catch (error) {
-      console.error("총 매출액 조회 실패:", error);
       setError("총 매출액 데이터를 불러오는데 실패했습니다.");
       setTotalData(null);
     } finally {
@@ -131,9 +130,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
       const response = await salesService.getIapStats();
       ;
       setIapStats(response);
-    } catch (error) {
-      console.error("IAP 통계 조회 실패:", error);
-    }
+    } catch { }
   };
 
   const handleRefresh = () => {

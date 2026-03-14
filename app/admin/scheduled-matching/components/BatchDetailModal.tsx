@@ -59,7 +59,6 @@ export default function BatchDetailModal({ batchId, open, onClose }: BatchDetail
       const result = await scheduledMatchingService.getBatchDetails(batchId, 100, 0);
       setData(result);
     } catch (err) {
-      console.error('Failed to fetch batch details:', err);
       setError('배치 상세 정보를 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);

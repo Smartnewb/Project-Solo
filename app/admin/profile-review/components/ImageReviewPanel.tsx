@@ -123,7 +123,6 @@ export default function ImageReviewPanel({
         newRank as any,
       );
     } catch (error: any) {
-      console.error("Rank 업데이트 실패:", error);
       setCurrentRank(previousRank);
       toast.error(error.response?.data?.message || "Rank 업데이트에 실패했습니다.");
     } finally {
@@ -184,7 +183,6 @@ export default function ImageReviewPanel({
         toast.success('대표 프로필이 승인되었습니다. 회원 상태가 "승인됨"으로 변경되었습니다.');
       }
     } catch (error: any) {
-      console.error("개별 이미지 승인 중 오류:", error);
       toast.error(
         error.response?.data?.message || "이미지 승인 중 오류가 발생했습니다.",
       );
@@ -237,7 +235,6 @@ export default function ImageReviewPanel({
         toast.success('대표 프로필이 거절되었습니다. 회원 상태가 "거절됨"으로 변경되었습니다.');
       }
     } catch (error: any) {
-      console.error("개별 이미지 거절 중 오류:", error);
       toast.error(
         error.response?.data?.message || "이미지 거절 중 오류가 발생했습니다.",
       );

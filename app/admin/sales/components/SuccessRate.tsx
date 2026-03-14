@@ -17,7 +17,6 @@ export function SuccessRate() {
             const response = await salesService.getSuccessRate();
             setData(response);
         } catch (err) {
-            console.error('결제 성공률 조회 실패:', err);
             setError('결제 성공률 데이터를 불러오는데 실패했습니다.');
             setData(null);
         } finally {

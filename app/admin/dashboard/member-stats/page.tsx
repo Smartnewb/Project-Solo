@@ -123,7 +123,6 @@ function MemberStatsDashboardContent() {
 
         setAuthError(null);
       } catch (error) {
-        console.error("인증 확인 오류:", error);
         setAuthError("인증 확인 중 오류가 발생했습니다.");
       } finally {
         setAuthChecking(false);

@@ -190,7 +190,6 @@ function CreateSometimeArticlePageContent() {
       alert('아티클이 성공적으로 생성되었습니다.');
       router.push('/admin/sometime-articles');
     } catch (err: any) {
-      console.error('아티클 생성 실패:', err);
       setError(err.response?.data?.message || '아티클 생성에 실패했습니다.');
     } finally {
       setLoading(false);

@@ -94,7 +94,6 @@ export default function CardEditor({
       const response = await AdminService.cardNews.uploadSectionImage(file);
       onUpdate({ ...section, imageUrl: response.url });
     } catch (error: any) {
-      console.error('섹션 이미지 업로드 실패:', error);
       alert(error.message || '이미지 업로드에 실패했습니다.');
     } finally {
       setUploadingImage(false);

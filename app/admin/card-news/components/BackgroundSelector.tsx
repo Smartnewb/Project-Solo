@@ -266,7 +266,6 @@ export default function BackgroundSelector({
                           src={imageUrl}
                           alt={preset.displayName}
                           onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
-                            console.error('이미지 로드 실패:', imageUrl);
                             e.currentTarget.style.display = 'none';
                             const parent = e.currentTarget.parentElement;
                             if (parent) {

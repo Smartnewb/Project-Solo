@@ -100,7 +100,6 @@ function EditCardNewsPageContent() {
       const presets = Array.isArray(response) ? response : (response?.data || []);
       setBackgroundPresets(presets);
     } catch (err: any) {
-      console.error('배경 프리셋 목록 조회 실패:', err);
     } finally {
       setPresetsLoading(false);
     }
@@ -142,7 +141,6 @@ function EditCardNewsPageContent() {
         }
       }
     } catch (err: any) {
-      console.error('데이터 로드 실패:', err);
       setError(err.response?.data?.message || '데이터를 불러오는데 실패했습니다.');
     } finally {
       setInitialLoading(false);
@@ -165,7 +163,6 @@ function EditCardNewsPageContent() {
       setCustomBackgroundUrl(response.url);
       setBackgroundType('CUSTOM');
     } catch (err: any) {
-      console.error('배경 이미지 업로드 실패:', err);
       alert(err.response?.data?.message || '이미지 업로드에 실패했습니다.');
     } finally {
       setUploadingBackground(false);
@@ -189,7 +186,6 @@ function EditCardNewsPageContent() {
       }
       await fetchBackgroundPresets();
     } catch (err: any) {
-      console.error('프리셋 삭제 실패:', err);
       alert(err.response?.data?.message || '프리셋 삭제에 실패했습니다.');
     }
   };
@@ -322,7 +318,6 @@ function EditCardNewsPageContent() {
       alert('카드뉴스가 성공적으로 수정되었습니다.');
       router.push('/admin/card-news');
     } catch (err: any) {
-      console.error('카드뉴스 수정 실패:', err);
       const errorMessage = err.response?.data?.message || '카드뉴스 수정에 실패했습니다.';
 
       if (errorMessage.includes('섹션은 수정할 수 없습니다')) {

@@ -53,7 +53,6 @@ export default function PresetSelectModal({
       const presets = Array.isArray(response) ? response : (response?.data || []);
       setPresets(presets);
     } catch (err: any) {
-      console.error('프리셋 목록 조회 실패:', err);
       setError('프리셋 목록을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);

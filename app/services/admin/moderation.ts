@@ -131,7 +131,6 @@ export const reports = {
 				meta: response.data.meta,
 			};
 		} catch (error: any) {
-			console.error('프로필 신고 목록 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -143,7 +142,6 @@ export const reports = {
 			);
 			return response.data;
 		} catch (error: any) {
-			console.error('프로필 신고 상세 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -160,7 +158,6 @@ export const reports = {
 			);
 			return response.data;
 		} catch (error: any) {
-			console.error('신고 상태 변경 중 오류:', error);
 			throw error;
 		}
 	},
@@ -172,7 +169,6 @@ export const reports = {
 			});
 			return response.data;
 		} catch (error: any) {
-			console.error('채팅 내역 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -182,7 +178,6 @@ export const reports = {
 			const response = await axiosServer.get(`/admin/community/users/${userId}/profile-images`);
 			return response.data.images || [];
 		} catch (error: any) {
-			console.error('프로필 이미지 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -217,8 +212,6 @@ export const userReview = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('심사 대기 유저 목록 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -232,8 +225,6 @@ export const userReview = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('유저 상세 정보 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -247,8 +238,6 @@ export const userReview = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('유저 승인 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -265,8 +254,6 @@ export const userReview = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('유저 반려 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -286,7 +273,6 @@ export const userReview = {
 				results.push({ userId, success: true });
 				onProgress?.(i + 1, userIds.length);
 			} catch (error: any) {
-				console.error(`유저 ${userId} 반려 실패:`, error);
 				results.push({
 					userId,
 					success: false,
@@ -316,8 +302,6 @@ export const userReview = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('유저 Rank 업데이트 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -347,7 +331,6 @@ export const userReview = {
 
 			return response.data;
 		} catch (error: any) {
-			console.error('심사 이력 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -363,8 +346,6 @@ export const profileImages = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('심사 대기 중인 프로필 이미지 목록 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -378,8 +359,6 @@ export const profileImages = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('프로필 이미지 승인 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -395,8 +374,6 @@ export const profileImages = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('프로필 이미지 거절 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -410,8 +387,6 @@ export const profileImages = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('개별 프로필 이미지 승인 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -427,8 +402,6 @@ export const profileImages = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('개별 프로필 이미지 거절 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -444,8 +417,6 @@ export const profileImages = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('대표 사진 변경 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},

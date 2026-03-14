@@ -135,7 +135,6 @@ function EditSometimeArticlePageContent() {
       setShareCount(data.shareCount);
       setIsPublished(data.status === 'published');
     } catch (err: any) {
-      console.error('아티클 조회 실패:', err);
       setError(err.response?.data?.message || '아티클을 불러오는데 실패했습니다.');
     } finally {
       setInitialLoading(false);
@@ -219,7 +218,6 @@ function EditSometimeArticlePageContent() {
       alert('아티클이 성공적으로 수정되었습니다.');
       router.push('/admin/sometime-articles');
     } catch (err: any) {
-      console.error('아티클 수정 실패:', err);
       setError(err.response?.data?.message || '아티클 수정에 실패했습니다.');
     } finally {
       setLoading(false);

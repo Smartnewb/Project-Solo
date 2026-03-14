@@ -378,7 +378,6 @@ export default function VisionPhotoTestTab() {
       const response = await axiosMultipart.post('/admin/photo-validation/test', formData);
       setResult(response.data);
     } catch (err: any) {
-      console.error('Photo validation error:', err);
       setError(
         err.response?.data?.message ||
           err.message ||

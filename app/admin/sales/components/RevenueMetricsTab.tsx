@@ -264,18 +264,14 @@ export function RevenueMetricsTab({
     try {
       const metricsRes = await salesService.getRevenueMetrics(params);
       setRevenueMetrics(metricsRes);
-    } catch (e) {
-      console.error("수익 지표 조회 실패:", e);
-    } finally {
+    } catch { } finally {
       setLoadingMetrics(false);
     }
 
     try {
       const aovRes = await salesService.getAverageOrderValue(params);
       setAovData(aovRes);
-    } catch (e) {
-      console.error("평균 주문 금액 조회 실패:", e);
-    } finally {
+    } catch { } finally {
       setLoadingAov(false);
     }
   };
@@ -293,27 +289,21 @@ export function RevenueMetricsTab({
     try {
       const repurchaseRes = await salesService.getRepurchaseAnalysis();
       setRepurchaseData(repurchaseRes);
-    } catch (e) {
-      console.error("재구매 분석 조회 실패:", e);
-    } finally {
+    } catch { } finally {
       setLoadingRepurchase(false);
     }
 
     try {
       const conversionRes = await salesService.getConversionRate(params);
       setConversionData(conversionRes);
-    } catch (e) {
-      console.error("결제 전환율 조회 실패:", e);
-    } finally {
+    } catch { } finally {
       setLoadingConversion(false);
     }
 
     try {
       const ltvRes = await salesService.getLtvAnalysis();
       setLtvData(ltvRes);
-    } catch (e) {
-      console.error("LTV 분석 조회 실패:", e);
-    } finally {
+    } catch { } finally {
       setLoadingLtv(false);
     }
 
@@ -321,9 +311,7 @@ export function RevenueMetricsTab({
     try {
       const successRateRes = await salesService.getSuccessRate();
       setSuccessRateData(successRateRes);
-    } catch (e) {
-      console.error("결제 성공률 조회 실패:", e);
-    } finally {
+    } catch { } finally {
       setLoadingSuccessRate(false);
     }
 
@@ -340,9 +328,7 @@ export function RevenueMetricsTab({
         includeDeleted,
       });
       setTrendData(trendRes);
-    } catch (e) {
-      console.error("수익 지표 추이 조회 실패:", e);
-    } finally {
+    } catch { } finally {
       setLoadingTrend(false);
     }
   };

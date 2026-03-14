@@ -66,8 +66,6 @@ export const gems = {
 			;
 			return responseData;
 		} catch (error: any) {
-			console.error('구슬 일괄 지급 중 오류:', error);
-			console.error('오류 상세 정보:', error.message);
 			throw error;
 		}
 	},
@@ -91,8 +89,6 @@ export const femaleRetention = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('미접속 여성 유저 목록 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -105,8 +101,6 @@ export const femaleRetention = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('임시 패스워드 발급 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -125,7 +119,6 @@ export const chatRefund = {
 			);
 			return response.data;
 		} catch (error: any) {
-			console.error('사용자 검색 중 오류:', error);
 			throw error;
 		}
 	},
@@ -141,7 +134,6 @@ export const chatRefund = {
 			);
 			return response.data;
 		} catch (error: any) {
-			console.error('환불 가능 채팅방 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -158,7 +150,6 @@ export const chatRefund = {
 			);
 			return response.data;
 		} catch (error: any) {
-			console.error('환불 미리보기 중 오류:', error);
 			throw error;
 		}
 	},
@@ -175,7 +166,6 @@ export const chatRefund = {
 			);
 			return response.data;
 		} catch (error: any) {
-			console.error('환불 처리 중 오류:', error);
 			throw error;
 		}
 	},
@@ -196,7 +186,6 @@ export const appleRefund = {
 			});
 			return response.data;
 		} catch (error: any) {
-			console.error('iOS 환불 내역 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -206,7 +195,6 @@ export const appleRefund = {
 			const response = await axiosServer.get(`/admin/apple-refund/${id}`);
 			return response.data;
 		} catch (error: any) {
-			console.error('iOS 환불 상세 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -216,7 +204,6 @@ export const appleRefund = {
 			const response = await axiosServer.post('/admin/apple-refund/sync');
 			return response.data;
 		} catch (error: any) {
-			console.error('iOS 환불 상태 동기화 중 오류:', error);
 			throw error;
 		}
 	},
@@ -240,7 +227,6 @@ export const dormantLikes = {
 			);
 			return response.data;
 		} catch (error: any) {
-			console.error('파묘 계정 대시보드 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -252,7 +238,6 @@ export const dormantLikes = {
 			);
 			return response.data;
 		} catch (error: any) {
-			console.error('미확인 좋아요 목록 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -264,7 +249,6 @@ export const dormantLikes = {
 			);
 			return response.data;
 		} catch (error: any) {
-			console.error('쿨다운 상태 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -277,7 +261,6 @@ export const dormantLikes = {
 			);
 			return response.data;
 		} catch (error: any) {
-			console.error('좋아요 처리 중 오류:', error);
 			throw error;
 		}
 	},
@@ -297,7 +280,6 @@ export const dormantLikes = {
 			});
 			return response.data;
 		} catch (error: any) {
-			console.error('처리 이력 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -310,7 +292,6 @@ export const dormantLikes = {
 			);
 			return response.data;
 		} catch (error: any) {
-			console.error('프로필 조회 트리거 중 오류:', error);
 			throw error;
 		}
 	},

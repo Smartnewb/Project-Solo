@@ -162,7 +162,6 @@ export function MessageComposer({ recipients, templateId, templateTitle, templat
             
             alert(`임시저장을 불러왔습니다.\n저장 시간: ${new Date(parsed.savedAt).toLocaleString()}`);
         } catch (error) {
-            console.error('임시저장 불러오기 실패:', error);
             alert('임시저장 불러오기에 실패했습니다.');
         }
     };
@@ -250,7 +249,6 @@ export function MessageComposer({ recipients, templateId, templateTitle, templat
 
 
         } catch (error) {
-            console.error('SMS 발송 실패:', error);
             alert('메세지 발송에 실패했습니다. 다시 시도해주세요.');
         } finally {
             setLoading(false);
@@ -328,7 +326,6 @@ export function MessageComposer({ recipients, templateId, templateTitle, templat
             throw new Error(response.message || '예약 발송 실패');
         }
     } catch (error) {
-        console.error('예약 발송 에러:', error);
         alert('예약 발송에 실패했습니다. 다시 시도해주세요.');
     } finally {
         setLoading(false);

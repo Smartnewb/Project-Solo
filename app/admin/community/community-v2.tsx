@@ -47,13 +47,16 @@ import {
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useEffect, useState } from 'react';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 import AdminService from '@/app/services/admin';
+import { useToast } from '@/shared/ui/admin/toast/toast-context';
+import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
 import communityService, { Category } from '@/app/services/community';
 import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
 
 // 게시글 목록 컴포넌트
 function ArticleList() {
+	const toast = useToast();
+
 	const [articles, setArticles] = useState<any[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -106,7 +109,6 @@ function ArticleList() {
 			;
 			;
 		} catch (error) {
-			console.error('게시글 목록 조회 중 오류:', error);
 			setError('게시글 목록을 불러오는 중 오류가 발생했습니다.');
 		} finally {
 			setLoading(false);
@@ -195,7 +197,6 @@ function ArticleList() {
 			fetchArticles();
 			handleCloseBlindDialog();
 		} catch (error) {
-			console.error('게시글 블라인드 처리 중 오류:', error);
 			setError('게시글 블라인드 처리 중 오류가 발생했습니다.');
 		} finally {
 			setActionLoading(false);
@@ -212,7 +213,6 @@ function ArticleList() {
 			setOpenDeleteDialog(false);
 			setDeleteTargetId('');
 		} catch (error) {
-			console.error('게시글 삭제 중 오류:', error);
 			setError('게시글 삭제 중 오류가 발생했습니다.');
 		} finally {
 			setActionLoading(false);
@@ -230,7 +230,6 @@ function ArticleList() {
 			setCategoryTargetId('');
 			setSelectedCategoryId('');
 		} catch (error) {
-			console.error('게시글 카테고리 이전 중 오류:', error);
 			setError('게시글 카테고리 이전 중 오류가 발생했습니다.');
 		} finally {
 			setActionLoading(false);
@@ -256,9 +255,7 @@ function ArticleList() {
 				const reportsResponse = await communityService.getReports('article', 'all', 1, 100);
 				articleReports =
 					reportsResponse?.items?.filter((report: any) => report.targetId === id || report.target_id === id) ?? [];
-			} catch (reportError) {
-				console.error('게시글 신고 내역 조회 중 오류:', reportError);
-			}
+			} catch { }
 
 			;
 
@@ -292,7 +289,6 @@ function ArticleList() {
 			setSelectedArticleDetail(articleDetail);
 			setDetailDialogOpen(true);
 		} catch (error) {
-			console.error('게시글 상세 정보 조회 중 오류:', error);
 			setError('게시글 상세 정보를 불러오는 중 오류가 발생했습니다.');
 		} finally {
 			setActionLoading(false);
@@ -325,9 +321,7 @@ function ArticleList() {
 		try {
 			const response = await communityService.getCategories();
 			setCategories(response.categories ?? []);
-		} catch (error) {
-			console.error('카테고리 목록 조회 중 오류:', error);
-		}
+		} catch { }
 	};
 
 	useEffect(() => {
@@ -1094,7 +1088,6 @@ function ReportList() {
 			setTotalCount(response.meta?.totalItems ?? 0);
 			;
 		} catch (error) {
-			console.error('신고 목록 조회 중 오류:', error);
 			setError('신고 목록을 불러오는 중 오류가 발생했습니다.');
 		} finally {
 			setLoading(false);
@@ -1155,7 +1148,6 @@ function ReportList() {
 
 			setUserDetail(data);
 		} catch (error: any) {
-			console.error('유저 상세 정보 조회 중 오류:', error);
 			setUserDetailError(error.message || '유저 상세 정보를 불러오는 중 오류가 발생했습니다.');
 		} finally {
 			setLoadingUserDetail(false);
@@ -1188,7 +1180,6 @@ function ReportList() {
 			setOpenBlindDialog(false);
 			fetchReports(); // 목록 새로고침
 		} catch (error) {
-			console.error('게시글 블라인드 처리 중 오류:', error);
 			setError('게시글 블라인드 처리 중 오류가 발생했습니다.');
 		} finally {
 			setActionLoading(false);
@@ -1207,7 +1198,6 @@ function ReportList() {
 			setSuccessMessage('게시글이 삭제되었습니다.');
 			fetchReports(); // 목록 새로고침
 		} catch (error) {
-			console.error('게시글 삭제 중 오류:', error);
 			setError('게시글 삭제 중 오류가 발생했습니다.');
 		} finally {
 			setActionLoading(false);
@@ -1747,10 +1737,6 @@ function ReportList() {
 function AdminCommunityContent() {
 	const [currentTab, setCurrentTab] = useState(0);
 
-	useEffect(() => {
-		const unpatch = patchAdminAxios();
-		return () => unpatch();
-	}, []);
 
 	// 탭 변경 핸들러
 	const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {

@@ -142,7 +142,6 @@ export default function ManualMatching() {
       setMatchings(response.data);
       setTotal(response.pagination.total);
     } catch (err) {
-      console.error('Failed to fetch manual matchings:', err);
       setError('수동 매칭 목록을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
@@ -175,7 +174,6 @@ export default function ManualMatching() {
         setError(result.blockedReasons.join(', '));
       }
     } catch (err) {
-      console.error('Validation failed:', err);
       setError('유저 검증에 실패했습니다.');
     } finally {
       setValidating(false);
@@ -225,7 +223,6 @@ export default function ManualMatching() {
       // Refresh list
       fetchMatchings();
     } catch (err: unknown) {
-      console.error('Failed to create manual matching:', err);
       const errorMessage = err instanceof Error ? err.message : '수동 매칭 생성에 실패했습니다.';
       setError(errorMessage);
     } finally {
@@ -244,7 +241,6 @@ export default function ManualMatching() {
       setCancelReason('');
       fetchMatchings();
     } catch (err) {
-      console.error('Failed to cancel matching:', err);
       setError('매칭 취소에 실패했습니다.');
     }
   };
@@ -258,7 +254,6 @@ export default function ManualMatching() {
       setSuccess('매칭이 실행되었습니다.');
       fetchMatchings();
     } catch (err) {
-      console.error('Failed to execute matching:', err);
       setError('매칭 실행에 실패했습니다.');
     }
   };

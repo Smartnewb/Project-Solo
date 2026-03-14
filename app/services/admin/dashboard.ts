@@ -16,7 +16,6 @@ export const stats = {
 			;
 			return response.data;
 		} catch (error) {
-			console.error('총 회원 수 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -33,7 +32,6 @@ export const stats = {
 			;
 			return response.data;
 		} catch (error) {
-			console.error('오늘 가입한 회원 수 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -50,7 +48,6 @@ export const stats = {
 			;
 			return response.data;
 		} catch (error) {
-			console.error('이번 주 가입한 회원 수 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -66,7 +63,6 @@ export const stats = {
 			});
 			return response.data;
 		} catch (error) {
-			console.error('일별 회원가입 추이 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -80,7 +76,6 @@ export const stats = {
 			const response = await axiosServer.get('/admin/stats/users/trend/weekly', { params });
 			return response.data;
 		} catch (error) {
-			console.error('주별 회원가입 추이 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -98,7 +93,6 @@ export const stats = {
 			const response = await axiosServer.get('/admin/stats/users/trend/monthly', { params });
 			return response.data;
 		} catch (error) {
-			console.error('월별 회원가입 추이 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -136,7 +130,6 @@ export const stats = {
 
 			return response.data;
 		} catch (error) {
-			console.error('사용자 지정 기간 회원가입자 수 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -177,7 +170,6 @@ export const stats = {
 
 			return response.data;
 		} catch (error) {
-			console.error('사용자 지정 기간 회원가입 추이 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -195,7 +187,6 @@ export const stats = {
 			;
 			return response.data;
 		} catch (error) {
-			console.error('성별 통계 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -227,7 +218,6 @@ export const stats = {
 
 			return response.data;
 		} catch (error) {
-			console.error('대학별 통계 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -243,7 +233,6 @@ export const stats = {
 			});
 			return response.data;
 		} catch (error) {
-			console.error('총 탈퇴자 수 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -259,7 +248,6 @@ export const stats = {
 			});
 			return response.data;
 		} catch (error) {
-			console.error('오늘 탈퇴한 회원 수 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -273,7 +261,6 @@ export const stats = {
 			const response = await axiosServer.get('/admin/stats/withdrawals/weekly', { params });
 			return response.data;
 		} catch (error) {
-			console.error('이번 주 탈퇴한 회원 수 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -287,7 +274,6 @@ export const stats = {
 			const response = await axiosServer.get('/admin/stats/withdrawals/monthly', { params });
 			return response.data;
 		} catch (error) {
-			console.error('이번 달 탈퇴한 회원 수 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -301,7 +287,6 @@ export const stats = {
 			});
 			return response.data;
 		} catch (error) {
-			console.error('사용자 지정 기간 탈퇴자 수 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -315,7 +300,6 @@ export const stats = {
 			const response = await axiosServer.get('/admin/stats/withdrawals/trend/daily', { params });
 			return response.data;
 		} catch (error) {
-			console.error('일별 탈퇴 추이 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -329,7 +313,6 @@ export const stats = {
 			const response = await axiosServer.get('/admin/stats/withdrawals/trend/weekly', { params });
 			return response.data;
 		} catch (error) {
-			console.error('주별 탈퇴 추이 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -343,7 +326,6 @@ export const stats = {
 			const response = await axiosServer.get('/admin/stats/withdrawals/trend/monthly', { params });
 			return response.data;
 		} catch (error) {
-			console.error('월별 탈퇴 추이 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -361,7 +343,6 @@ export const stats = {
 			const response = await axiosServer.post('/admin/stats/withdrawals/trend/custom-period', requestData);
 			return response.data;
 		} catch (error) {
-			console.error('사용자 지정 기간 탈퇴 추이 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -375,7 +356,6 @@ export const stats = {
 			const response = await axiosServer.get('/admin/stats/withdrawals/reasons', { params });
 			return response.data;
 		} catch (error) {
-			console.error('탈퇴 사유 통계 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -385,7 +365,6 @@ export const stats = {
 			const response = await axiosServer.get('/admin/stats/withdrawals/churn-rate');
 			return response.data;
 		} catch (error) {
-			console.error('이탈률 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -396,7 +375,6 @@ export const kpiReport = {
 		try {
 			return await adminGet<import('@/app/admin/kpi-report/types').KpiReport>('/admin/kpi-report/latest');
 		} catch (error: any) {
-			console.error('최신 KPI 리포트 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -405,7 +383,6 @@ export const kpiReport = {
 		try {
 			return await adminGet<import('@/app/admin/kpi-report/types').KpiReport>(`/admin/kpi-report/${year}/${week}`);
 		} catch (error: any) {
-			console.error('주간 KPI 리포트 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -414,7 +391,6 @@ export const kpiReport = {
 		try {
 			return await adminGet('/admin/kpi-report/definitions');
 		} catch (error: any) {
-			console.error('KPI 정의 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -423,7 +399,6 @@ export const kpiReport = {
 		try {
 			return await adminPost<import('@/app/admin/kpi-report/types').KpiReport>('/admin/kpi-report/generate', { year, week });
 		} catch (error: any) {
-			console.error('KPI 리포트 생성 중 오류:', error);
 			throw error;
 		}
 	},

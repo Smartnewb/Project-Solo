@@ -130,42 +130,36 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
     if (results[0].status === "fulfilled") {
       setGemTrigger(results[0].value);
     } else {
-      console.error("구슬 잔액 트리거 조회 실패:", results[0].reason);
     }
     setLoadingGemTrigger(false);
 
     if (results[1].status === "fulfilled") {
       setFeatureFunnel(results[1].value);
     } else {
-      console.error("기능→결제 퍼널 조회 실패:", results[1].reason);
     }
     setLoadingFeatureFunnel(false);
 
     if (results[2].status === "fulfilled") {
       setFirstPurchase(results[2].value);
     } else {
-      console.error("첫 결제 트리거 조회 실패:", results[2].reason);
     }
     setLoadingFirstPurchase(false);
 
     if (results[3].status === "fulfilled") {
       setWhaleUsers(results[3].value);
     } else {
-      console.error("고래 유저 분석 조회 실패:", results[3].reason);
     }
     setLoadingWhaleUsers(false);
 
     if (results[4].status === "fulfilled") {
       setGemEconomy(results[4].value);
     } else {
-      console.error("구슬 경제 밸런스 조회 실패:", results[4].reason);
     }
     setLoadingGemEconomy(false);
 
     if (results[5].status === "fulfilled") {
       setMatchingFunnel(results[5].value);
     } else {
-      console.error("매칭→수익화 퍼널 조회 실패:", results[5].reason);
     }
     setLoadingMatchingFunnel(false);
   };

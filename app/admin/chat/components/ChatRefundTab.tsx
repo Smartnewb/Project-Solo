@@ -102,7 +102,6 @@ export default function ChatRefundTab() {
         setError('검색 결과가 없습니다.');
       }
     } catch (error: any) {
-      console.error('사용자 검색 실패:', error);
       setError(error.response?.data?.message || '사용자 검색에 실패했습니다.');
     } finally {
       setSearchLoading(false);
@@ -123,7 +122,6 @@ export default function ChatRefundTab() {
         setError('환불 가능한 채팅방이 없습니다.');
       }
     } catch (error: any) {
-      console.error('환불 가능 채팅방 조회 실패:', error);
       setError(error.response?.data?.message || '채팅방 목록을 불러오는데 실패했습니다.');
     } finally {
       setRoomsLoading(false);
@@ -153,7 +151,6 @@ export default function ChatRefundTab() {
       setSmsContent(preview.smsContent);
       setPreviewModalOpen(true);
     } catch (error: any) {
-      console.error('환불 미리보기 실패:', error);
       setError(error.response?.data?.message || '환불 미리보기에 실패했습니다.');
     }
   };
@@ -188,7 +185,6 @@ export default function ChatRefundTab() {
       setSelectedRoom(null);
       setPreviewData(null);
     } catch (error: any) {
-      console.error('환불 처리 실패:', error);
       const errorMessage = error.response?.data?.message || '환불 처리에 실패했습니다.';
       setError(errorMessage);
 

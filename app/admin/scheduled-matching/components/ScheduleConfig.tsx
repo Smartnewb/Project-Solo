@@ -68,7 +68,6 @@ export default function ScheduleConfig() {
         });
       }
     } catch (err) {
-      console.error('Failed to fetch configs:', err);
       setError('설정을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
@@ -138,7 +137,6 @@ export default function ScheduleConfig() {
 
       fetchConfigs();
     } catch (err) {
-      console.error('Failed to save config:', err);
       setError('설정 저장에 실패했습니다.');
     } finally {
       setSaving(false);

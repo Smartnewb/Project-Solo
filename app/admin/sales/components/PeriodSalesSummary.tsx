@@ -67,7 +67,6 @@ export function PeriodSalesSummary({
       setWeeklyData(weeklyRes);
       setMonthlyData(monthlyRes);
     } catch (err) {
-      console.error("주간/월간 매출 조회 실패:", err);
       setError("주간/월간 매출 데이터를 불러오는데 실패했습니다.");
     } finally {
       setIsLoading(false);

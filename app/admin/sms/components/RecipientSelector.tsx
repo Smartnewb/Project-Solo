@@ -177,9 +177,7 @@ export function RecipientSelector({ onRecipientsChange }: RecipientSelectorProps
             setSearchResults(filteredResults);
             setTotalCount(response.meta.totalCount);  // totalCount 상태 업데이트
 
-        } catch (error) {
-            console.error('사용자 검색 실패:', error);
-        } finally {
+        } catch { } finally {
             setLoading(false);
         }
     };

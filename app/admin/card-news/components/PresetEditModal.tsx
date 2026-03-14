@@ -74,7 +74,6 @@ export default function PresetEditModal({
       onSuccess();
       handleClose();
     } catch (err: any) {
-      console.error('프리셋 수정 실패:', err);
       setError(err.response?.data?.message || '프리셋 수정에 실패했습니다.');
     } finally {
       setSaving(false);

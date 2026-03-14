@@ -76,7 +76,6 @@ function UniversitiesPageContent() {
       setRegions(regionsData);
       setTypes(typesData);
     } catch (err: any) {
-      console.error('메타데이터 로드 실패:', err);
     }
   };
 

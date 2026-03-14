@@ -159,7 +159,6 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
       ;
       setMatchHistory(data);
     } catch (err: any) {
-      console.error('매칭 이력 조회 중 오류:', err);
       setHistoryError(err.response?.data?.message || err.message || '매칭 이력을 불러오는 중 오류가 발생했습니다.');
     } finally {
       setHistoryLoading(false);
@@ -244,7 +243,6 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
 
       setMatchCount(data);
     } catch (err: any) {
-      console.error('중복 매칭 확인 중 오류:', err);
       setMatchCountError(err.response?.data?.message || err.message || '중복 매칭 확인 중 오류가 발생했습니다.');
     } finally {
       setMatchCountLoading(false);
@@ -298,7 +296,6 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
 
       setTargetUserSearchResults(results);
     } catch (error: any) {
-      console.error('타겟 사용자 검색 중 오류:', error);
       setTargetUserSearchResults([]);
     }
   };
@@ -329,7 +326,6 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
         resetDirectMatchForm();
       }, 2000);
     } catch (err: any) {
-      console.error('직접 매칭 생성 중 오류:', err);
       const errorMessage = err.response?.data?.message ||
                           err.response?.data?.error ||
                           err.message ||

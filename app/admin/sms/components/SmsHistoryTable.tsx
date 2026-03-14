@@ -38,7 +38,6 @@ export function SmsHistoryTable({ histories, limit = 50 }: SmsHistoryTableProps)
                 });
                 setData(response || []); 
             } catch (error) {
-                console.error('발송 내역 조회 실패:', error);
                 setData([]);
             } finally {
                 setLoading(false);

@@ -72,7 +72,6 @@ export default function TicketManagement({
       ;
       setTicketStatus(response.data);
     } catch (err: any) {
-      console.error('티켓 상태 조회 오류:', err);
       const errorMessage = err.response?.data?.message ||
                           err.response?.data?.error ||
                           err.message ||
@@ -114,7 +113,6 @@ export default function TicketManagement({
       // 티켓 상태 새로고침
       await fetchTicketStatus(selectedUser.id);
     } catch (err: any) {
-      console.error('티켓 생성 오류:', err);
       const errorMessage = err.response?.data?.message ||
                           err.response?.data?.error ||
                           err.message ||
@@ -162,7 +160,6 @@ export default function TicketManagement({
       // 티켓 상태 새로고침
       await fetchTicketStatus(selectedUser.id);
     } catch (err: any) {
-      console.error('티켓 회수 오류:', err);
       const errorMessage = err.response?.data?.message ||
                           err.response?.data?.error ||
                           err.message ||

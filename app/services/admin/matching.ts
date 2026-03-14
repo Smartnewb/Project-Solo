@@ -34,11 +34,6 @@ export const matching = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('매칭 내역 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
-			console.error('[디버그] 요청 전체 URL:', `${error.config?.baseURL || ''}${error.config?.url || ''}`);
-			console.error('[디버그] 요청 파라미터:', JSON.stringify(error.config?.params));
-			console.error('[디버그] 응답 상태 코드:', error.response?.status);
 			throw error;
 		}
 	},
@@ -55,8 +50,6 @@ export const matching = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('중복 매칭 여부 확인 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -82,8 +75,6 @@ export const matching = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('사용자 매칭 횟수 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -113,8 +104,6 @@ export const matching = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('매칭 상대 이력 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -137,8 +126,6 @@ export const matching = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('직접 매칭 생성 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -168,8 +155,6 @@ export const matching = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('매칭 실패 내역 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -189,8 +174,6 @@ export const matching = {
 
 			return response.data;
 		} catch (error: any) {
-			console.error('사용자 매칭 결과 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -216,8 +199,6 @@ export const matching = {
 
 			return response.data;
 		} catch (error: any) {
-			console.error('매칭되지 않은 사용자 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -232,8 +213,6 @@ export const matching = {
 
 			return response.data;
 		} catch (error: any) {
-			console.error('배치 매칭 처리 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -252,8 +231,6 @@ export const matching = {
 
 			return response.data;
 		} catch (error: any) {
-			console.error('단일 사용자 매칭 처리 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -284,8 +261,6 @@ export const matching = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('좋아요 이력 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -403,8 +378,6 @@ export const matching = {
 
 			return result;
 		} catch (error: any) {
-			console.error('매칭 통계 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -438,7 +411,6 @@ export const forceMatching = {
 			});
 			return response.data;
 		} catch (error: any) {
-			console.error('유저 검색 중 오류:', error);
 			throw error;
 		}
 	},
@@ -452,7 +424,6 @@ export const forceMatching = {
 			});
 			return response.data;
 		} catch (error: any) {
-			console.error('강제 채팅방 생성 중 오류:', error);
 			throw error;
 		}
 	},

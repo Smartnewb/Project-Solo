@@ -34,7 +34,6 @@ export const pushNotifications = {
 			});
 			return response.data;
 		} catch (error) {
-			console.error('사용자 필터링 중 오류:', error);
 			throw error;
 		}
 	},
@@ -52,7 +51,6 @@ export const pushNotifications = {
 			const response = await axiosServer.post('/admin/notifications/bulk', data);
 			return response.data;
 		} catch (error) {
-			console.error('대량 푸시 알림 발송 중 오류:', error);
 			throw error;
 		}
 	},
@@ -83,7 +81,6 @@ export const aiChat = {
 			;
 			return response.data;
 		} catch (error) {
-			console.error('AI 채팅 세션 목록 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -95,7 +92,6 @@ export const aiChat = {
 			;
 			return response.data;
 		} catch (error) {
-			console.error('AI 채팅 메시지 상세 조회 중 오류:', error);
 			throw error;
 		}
 	},
@@ -112,8 +108,6 @@ export const momentQuestions = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('질문 생성 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -128,8 +122,6 @@ export const momentQuestions = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('질문 대량 저장 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -153,8 +145,6 @@ export const momentQuestions = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('질문 목록 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -166,8 +156,6 @@ export const momentQuestions = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('질문 상세 조회 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -179,8 +167,6 @@ export const momentQuestions = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('질문 수정 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -191,8 +177,6 @@ export const momentQuestions = {
 			await axiosServer.delete(`/admin/questions/${id}`);
 			;
 		} catch (error: any) {
-			console.error('질문 삭제 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},
@@ -207,8 +191,6 @@ export const momentQuestions = {
 			;
 			return response.data;
 		} catch (error: any) {
-			console.error('질문 번역 중 오류:', error);
-			console.error('오류 상세 정보:', error.response?.data || error.message);
 			throw error;
 		}
 	},

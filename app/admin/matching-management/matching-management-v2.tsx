@@ -159,18 +159,14 @@ function MatchingManagementV2Content() {
     try {
       const response = await matchRestMembers();
       setRestMembers(response);
-    } catch (error) {
-      console.error('매칭 대기 사용자 조회 오류:', error);
-    }
+    } catch { }
   }
 
   const doBatchUpdateVectorAllMatchableUsers = async () => {
     try {
       const response = await batchAllMatchableUsers();
       setVectorResult(response);
-    } catch (error) {
-      console.error('매칭 조건에 포함되는 전체 사용자의 벡터 갱신 오류:', error);
-    }
+    } catch { }
   }
 
   // 사용자 상세 정보 모달 상태
@@ -262,7 +258,6 @@ function MatchingManagementV2Content() {
                 adminMatchCount: matchCountResponse.adminMatchCount || 0
               };
             } catch (error) {
-              console.error('매칭 횟수 조회 중 오류:', error);
               return {
                 ...history,
                 matchCount: 1, // 오류 시 기본값
@@ -283,7 +278,6 @@ function MatchingManagementV2Content() {
         setMatchingHistory(response);
       }
     } catch (error: any) {
-      console.error('매칭 내역 조회 중 오류:', error);
       setAnalyticsError(error.message || '매칭 내역을 불러오는 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
@@ -331,7 +325,6 @@ function MatchingManagementV2Content() {
       );
       setMatchingFailures(response);
     } catch (error: any) {
-      console.error('매칭 실패 내역 조회 중 오류:', error);
       setAnalyticsError(error.message || '매칭 실패 내역을 불러오는 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
@@ -401,7 +394,6 @@ function MatchingManagementV2Content() {
         setError(null); // 검색 결과가 있으면 에러 메시지 초기화
       }
     } catch (err: any) {
-      console.error('사용자 검색 오류:', err);
 
       // 서버에서 받은 에러 메시지 표시
       const errorMessage = err.response?.data?.message ||
@@ -441,7 +433,6 @@ function MatchingManagementV2Content() {
       ;
       setMatchingResult(response.data);
     } catch (err: any) {
-      console.error('매칭 처리 오류:', err);
 
       // 서버에서 받은 에러 메시지 표시
       const errorMessage = err.response?.data?.message ||
@@ -476,7 +467,6 @@ function MatchingManagementV2Content() {
       ;
       setSimulationResult(response.data);
     } catch (err: any) {
-      console.error('매칭 시뮬레이션 오류:', err);
 
       // 서버에서 받은 에러 메시지 표시
       const errorMessage = err.response?.data?.message ||
@@ -529,7 +519,6 @@ function MatchingManagementV2Content() {
         setUnmatchedUsersTotalCount(response.data.totalCount || 0);
       }
     } catch (err: any) {
-      console.error('매칭 대기 사용자 조회 오류:', err);
 
       // 서버에서 받은 에러 메시지 표시
       const errorMessage = err.response?.data?.message ||
@@ -580,7 +569,6 @@ function MatchingManagementV2Content() {
 
       setUserDetail(data);
     } catch (error: any) {
-      console.error('유저 상세 정보 조회 중 오류:', error);
       setUserDetailError(error.message || '유저 상세 정보를 불러오는 중 오류가 발생했습니다.');
     } finally {
       setLoadingUserDetail(false);
@@ -613,7 +601,6 @@ function MatchingManagementV2Content() {
       fetchUnmatchedUsers();
       setSelectedUnmatchedUser(null);
     } catch (err: any) {
-      console.error('매칭 처리 오류:', err);
 
       // 서버에서 받은 에러 메시지 표시
       const errorMessage = err.response?.data?.message ||

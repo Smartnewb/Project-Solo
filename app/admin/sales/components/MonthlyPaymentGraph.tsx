@@ -66,7 +66,6 @@ export function MonthlyPaymentGraph() {
             setChartData(transformedData);
             
         } catch(error) {
-            console.error('API 호출 실패:', error);
             setChartData([]);
         } finally {
             setIsLoading(false);
