@@ -82,16 +82,18 @@ export function AdminShell({ children }: { children: ReactNode }) {
     <AdminSessionContext.Provider value={{ session, isLoading, error, changeCountry, logout }}>
       <CountryProvider>
       <AdminQueryProvider>
-          <div className="flex h-screen bg-gray-100">
-            <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform md:relative md:translate-x-0 ${
+          <div className="flex h-screen overflow-hidden bg-gray-100">
+            <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform md:relative md:translate-x-0 flex flex-col h-full ${
               sidebarOpen ? 'translate-x-0' : '-translate-x-full'
             }`}>
-              <div className="p-4 border-b">
+              <div className="p-4 border-b shrink-0">
                 <h2 className="text-lg font-semibold">관리자 대시보드</h2>
                 <p className="text-sm text-gray-500">{session.user.email}</p>
               </div>
-              <AdminSidebar onNavigate={() => setSidebarOpen(false)} />
-              <div className="px-4 pt-4 mt-3 border-t space-y-1">
+              <div className="flex-1 overflow-y-auto">
+                <AdminSidebar onNavigate={() => setSidebarOpen(false)} />
+              </div>
+              <div className="px-4 pt-4 mt-3 border-t space-y-1 shrink-0">
                 <button
                   onClick={() => setCountryModalOpen(true)}
                   className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-colors flex items-center gap-2"
@@ -117,8 +119,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
               />
             )}
 
-            <div className="flex-1 flex flex-col overflow-auto">
-              <div className="md:hidden flex items-center justify-between p-4 bg-white shadow-sm">
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div className="md:hidden flex items-center justify-between p-4 bg-white shadow-sm shrink-0">
                 <h1 className="text-lg font-semibold">관리자 대시보드</h1>
                 <button
                   onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -129,7 +131,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                   </svg>
                 </button>
               </div>
-              <main className="p-6">{children}</main>
+              <main className="flex-1 overflow-y-auto p-6">{children}</main>
             </div>
 
             <AdminCountrySelectorModal
