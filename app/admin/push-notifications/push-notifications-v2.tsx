@@ -169,7 +169,7 @@ function PushNotificationsV2Content() {
     setLoadingProfile(true);
     setShowProfileModal(true);
     try {
-      const profile = await AdminService.users.getUserDetails(userId);
+      const profile = await AdminService.userAppearance.getUserDetails(userId);
       setSelectedUser(profile);
     } catch (error) {
       console.error('프로필 조회 실패:', error);
@@ -590,7 +590,7 @@ function PushNotificationsV2Content() {
 
                   <div className="flex gap-1">
                     {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNum;
+                      let pageNum: number;
                       if (totalPages <= 5) {
                         pageNum = i + 1;
                       } else if (currentPage <= 3) {

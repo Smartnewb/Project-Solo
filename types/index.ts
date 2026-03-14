@@ -1,7 +1,10 @@
 export interface Profile {
   id: string;
   role?: string;
+  name?: string;
   nickname: string;
+  email?: string;
+  avatar_url?: string;
   bio?: string;
   university: string;
   department?: string;

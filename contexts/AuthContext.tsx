@@ -18,6 +18,10 @@ export type Profile = {
   id: string;
   user_id: string;
   name: string;
+  email?: string;
+  avatar_url?: string;
+  gender?: 'male' | 'female' | string;
+  interests?: string[];
   university?: string;
   department?: string;
   student_id?: string;

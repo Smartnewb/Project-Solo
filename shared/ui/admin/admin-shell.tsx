@@ -15,6 +15,8 @@ import {
 } from '@/shared/auth/admin-auth-contract';
 import { CountryProvider } from '@/contexts/CountryContext';
 import { AdminErrorBoundary } from './admin-error-boundary';
+import { ToastProvider, ToastContainer } from '@/shared/ui/admin/toast';
+import { ConfirmDialogProvider, ConfirmDialog } from '@/shared/ui/admin/confirm-dialog';
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -133,7 +135,13 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 </button>
               </div>
               <main className="flex-1 overflow-y-auto p-6">
-                <AdminErrorBoundary>{children}</AdminErrorBoundary>
+                <ToastProvider>
+                  <ConfirmDialogProvider>
+                    <ToastContainer />
+                    <ConfirmDialog />
+                    <AdminErrorBoundary>{children}</AdminErrorBoundary>
+                  </ConfirmDialogProvider>
+                </ToastProvider>
               </main>
             </div>
 

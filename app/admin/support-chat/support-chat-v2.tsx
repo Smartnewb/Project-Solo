@@ -8,20 +8,14 @@ import SessionQueue from './components/SessionQueue';
 import ChatPanel from './components/ChatPanel';
 import { useSessionPolling } from './hooks/useSessionPolling';
 import type { SupportDomain } from '@/app/types/support-chat';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 
 function SupportChatPageContent() {
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
-
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const sessionFromUrl = searchParams.get('session');
+  const sessionFromUrl = searchParams?.get('session') ?? null;
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(sessionFromUrl);
   const [activeTab, setActiveTab] = useState<'active' | 'resolved'>('active');
   const [domainFilter, setDomainFilter] = useState<SupportDomain | 'all'>('all');
@@ -77,7 +71,7 @@ function SupportChatPageContent() {
   const handleSelectSession = useCallback((sessionId: string) => {
     setSelectedSessionId(sessionId);
     // Update URL with session ID
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString() ?? '');
     params.set('session', sessionId);
     router.replace(`/admin/support-chat?${params.toString()}`, { scroll: false });
     // Clear unread for selected session

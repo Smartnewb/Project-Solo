@@ -99,7 +99,7 @@ function CreateCardNewsPageContent() {
       setCategories(data);
 
       // 공지사항 카테고리를 기본값으로 설정
-      const noticeCategory = data.find(cat =>
+      const noticeCategory = data.find((cat: { displayName: string; code: string }) =>
         cat.displayName === '공지사항' ||
         cat.code === 'NOTICE' ||
         cat.code === 'notice' ||

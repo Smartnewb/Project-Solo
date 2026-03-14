@@ -32,18 +32,18 @@ export default function FailPage() {
       <p className="text-sm text-gray-500 mt-2 mb-4">
         {searchParams?.get('message') || '결제 처리 중 문제가 발생했습니다.'}
       </p>
-      <Button 
-        onClick={back} 
-        variant="white" 
-        size="xl" 
+      <Button
+        onClick={back}
+        variant="outline"
+        size="lg"
         className="w-full mb-2"
       >
         다시 시도하기
       </Button>
-      <Button 
-        onClick={() => router.push('/')} 
-        variant="default" 
-        size="xl" 
+      <Button
+        onClick={() => router.push('/')}
+        variant="default"
+        size="lg"
         className="w-full"
       >
         홈으로 돌아가기

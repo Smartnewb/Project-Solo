@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 import { PeriodSelector } from "./components/PeriodSelector";
 import { TotalAmount } from "./components/TotalAmount";
@@ -15,7 +15,6 @@ import { PeriodSalesSummary } from "./components/PeriodSalesSummary";
 import { RevenueMetricsTab } from "./components/RevenueMetricsTab";
 import { ProductAnalysisTab } from "./components/ProductAnalysisTab";
 import { InsightsTab } from "./components/InsightsTab";
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 
 type MainTab = "sales" | "metrics" | "products" | "insights";
 
@@ -27,11 +26,6 @@ interface DateRange {
 type SalesTrendTab = "monthly" | "daily";
 
 function SalesPageContent() {
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
-
   const [mainTab, setMainTab] = useState<MainTab>("sales");
   const [dateRange, setDateRange] = useState<DateRange>({
     startDate: undefined,

@@ -1,12 +1,13 @@
 // TITLE: - sms API 서비스 로직
 import axiosServer from "@/utils/axios";
-import { 
+import {
     SmsTemplate,
     User,
     SendSmsRequest,
     SendSmsResponse,
     SmsHistory,
-    GetHistoryDetailResponse
+    GetHistoryDetailResponse,
+    UserSearchResponse,
 } from "../admin/sms/types";
 
 

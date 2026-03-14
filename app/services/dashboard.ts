@@ -135,11 +135,11 @@ export const dashboardService = {
     debug?: boolean,
   ): Promise<GemSystemFunnelResponse> {
     try {
-      return await adminGet<GemSystemFunnelResponse>(DASHBOARD_ENDPOINT.GEM_SYSTEM_FUNNEL, {
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
-        debug: debug ? "true" : undefined,
-      });
+      const params: Record<string, string> = {};
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
+      if (debug) params.debug = "true";
+      return await adminGet<GemSystemFunnelResponse>(DASHBOARD_ENDPOINT.GEM_SYSTEM_FUNNEL, params);
     } catch (error) {
       console.error("구슬 시스템 퍼널 조회 실패:", error);
       throw error instanceof AdminApiError

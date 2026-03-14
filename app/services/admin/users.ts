@@ -138,8 +138,8 @@ export const userAppearance = {
 		}>('/admin/university-verification/pending', {
 			page: String(params.page ?? 1),
 			limit: String(params.limit ?? 10),
-			name: params.name,
-			university: params.university,
+			name: params.name ?? '',
+			university: params.university ?? '',
 		});
 	},
 
@@ -526,7 +526,8 @@ export const userAppearance = {
 				},
 			};
 
-			let responseData;
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			let responseData: any;
 
 			try {
 				const response = await axiosServer.get(finalUrl);

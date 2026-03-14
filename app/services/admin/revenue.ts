@@ -51,7 +51,15 @@ export const gems = {
 
 			;
 
-			const responseData = await adminRequest<{ success: boolean; message?: string }>('/admin/gems/bulk-grant', {
+			const responseData = await adminRequest<{
+				success: boolean;
+				message?: string;
+				totalProcessed?: number;
+				successCount?: number;
+				failedCount?: number;
+				errors?: Array<{ identifier: string; reason: string }>;
+				pushNotificationResult?: { pushSuccessCount: number; pushFailureCount: number };
+			}>('/admin/gems/bulk-grant', {
 				method: 'POST',
 				body: formData,
 			});

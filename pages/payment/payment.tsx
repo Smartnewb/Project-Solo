@@ -97,10 +97,10 @@ export default function PaymentPage() {
       </section>
 
       <div className="flex flex-col w-full gap-y-2">
-        <Button onClick={purchase} variant="default" size="xl" className="w-full">
+        <Button onClick={purchase} variant="default" size="lg" className="w-full">
           결제하기
         </Button>
-        <Button variant="white" size="xl" className="w-full" onClick={back}>
+        <Button variant="outline" size="lg" className="w-full" onClick={back}>
           이전으로
         </Button>
       </div>

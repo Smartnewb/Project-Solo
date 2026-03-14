@@ -5,17 +5,13 @@ import { useSearchParams } from "next/navigation";
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
-  Grid,
   CircularProgress,
   Alert,
   Tabs,
   Tab,
   Divider,
 } from "@mui/material";
-import AdminService from "@/app/services/admin";
-import { UserAppearanceGradeStatsResponse } from "./types";
+import { useAppearanceGradeStats } from "@/app/admin/hooks";
 import AppearanceGradeStatsCard from "@/components/admin/appearance/AppearanceGradeStatsCard";
 import UserAppearanceTable from "@/components/admin/appearance/UserAppearanceTable";
 import AppearanceFilterPanel from "@/components/admin/appearance/AppearanceFilterPanel";
@@ -24,43 +20,23 @@ import DuplicatePhoneUsersPanel from "@/components/admin/appearance/DuplicatePho
 import VerifiedUsersPanel from "@/components/admin/appearance/VerifiedUsersPanel";
 import BlacklistUsersPanel from "@/components/admin/appearance/BlacklistUsersPanel";
 import UniversityVerificationPendingPanel from "@/components/admin/appearance/UniversityVerificationPendingPanel";
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
-
-// 전역 이벤트 버스 생성 (등급 변경 이벤트 처리용)
-export const appearanceGradeEventBus = {
-  listeners: new Set<() => void>(),
-  subscribe(listener: () => void) {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
-  },
-  publish() {
-    this.listeners.forEach((listener) => listener());
-  },
-};
+import { appearanceGradeEventBus } from "./event-bus";
 
 function AppearanceGradePageContent() {
   const searchParams = useSearchParams();
-
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
-  const initialTab = parseInt(searchParams.get("tab") || "0", 10);
+  const initialTab = parseInt(searchParams?.get("tab") || "0", 10);
 
   const [activeTab, setActiveTab] = useState(initialTab);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState<UserAppearanceGradeStatsResponse | null>(
-    null,
-  );
-  const [refreshTrigger, setRefreshTrigger] = useState(0); // 강제 새로고침을 위한 상태
 
   const tableRef = useRef<{
     handleApplyFilter: (filters: any) => void;
   } | null>(null);
 
+  const { data: stats, isLoading: loading, error: statsError, refetch: refetchStats } = useAppearanceGradeStats();
+  const error = statsError ? (statsError as any)?.message || "외모 등급 통계를 불러오는 중 오류가 발생했습니다." : null;
+
   useEffect(() => {
-    const tabParam = searchParams.get("tab");
+    const tabParam = searchParams?.get("tab");
     if (tabParam) {
       const tabIndex = parseInt(tabParam, 10);
       if (!isNaN(tabIndex) && tabIndex >= 0 && tabIndex <= 5) {
@@ -69,104 +45,28 @@ function AppearanceGradePageContent() {
     }
   }, [searchParams]);
 
-  // 통계 데이터 로드 함수
-  const fetchStats = async () => {
-    try {
-      ;
-      setLoading(true);
-      setError(null);
-
-      // API 호출
-      ;
-      const response =
-        await AdminService.userAppearance.getAppearanceGradeStats();
-      ;
-
-      // 응답 데이터 유효성 검사
-      if (!response) {
-        throw new Error("API 응답이 없습니다.");
-      }
-
-      // 이전 통계와 비교
-      if (stats && response) {
-        ;
-        ;
-
-        // 등급별 변화 로깅
-        if (Array.isArray(stats.stats) && Array.isArray(response.stats)) {
-          ;
-
-          // 모든 등급에 대한 맵 생성
-          const oldStatsMap = new Map();
-          stats.stats.forEach((stat) => {
-            if (stat && stat.grade) {
-              oldStatsMap.set(stat.grade, stat.count || 0);
-            }
-          });
-
-          // 새 통계와 비교
-          response.stats.forEach((newStat) => {
-            if (newStat && newStat.grade) {
-              const oldCount = oldStatsMap.get(newStat.grade) || 0;
-              const newCount = newStat.count || 0;
-              ;
-            }
-          });
-        }
-      }
-
-      setStats(response);
-    } catch (err: any) {
-      console.error("외모 등급 통계 조회 중 오류:", err);
-      console.error("오류 상세 정보:", err.response?.data || err.message);
-      setError(
-        err.message || "외모 등급 통계를 불러오는 중 오류가 발생했습니다.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 초기 데이터 로드
-  useEffect(() => {
-    fetchStats();
-  }, [refreshTrigger]); // refreshTrigger가 변경되면 데이터 다시 로드
-
   // 등급 변경 이벤트 구독
   useEffect(() => {
-    // 디바운스 타이머 참조
     let debounceTimer: NodeJS.Timeout | null = null;
 
-    // 등급 변경 이벤트 핸들러 (디바운스 적용)
     const handleGradeChange = () => {
-      ;
-
-      // 이미 예약된 타이머가 있으면 취소
       if (debounceTimer) {
         clearTimeout(debounceTimer);
       }
-
-      // 1초 후에 통계 데이터 새로고침 (여러 번 호출 방지)
       debounceTimer = setTimeout(() => {
-        ;
-        setRefreshTrigger((prev) => prev + 1); // 강제 새로고침 트리거
+        refetchStats();
       }, 1000);
     };
 
-    // 이벤트 구독
     const unsubscribe = appearanceGradeEventBus.subscribe(handleGradeChange);
 
-    // 컴포넌트 언마운트 시 정리
     return () => {
-      // 이벤트 구독 해제
       unsubscribe();
-
-      // 타이머 정리
       if (debounceTimer) {
         clearTimeout(debounceTimer);
       }
     };
-  }, []);
+  }, [refetchStats]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
@@ -191,7 +91,7 @@ function AppearanceGradePageContent() {
             <CircularProgress />
           </Box>
         ) : stats ? (
-          <AppearanceGradeStatsCard stats={stats} />
+          <AppearanceGradeStatsCard stats={stats as any} />
         ) : null}
       </Box>
 

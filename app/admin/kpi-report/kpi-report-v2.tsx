@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { Alert, Box, Typography } from '@mui/material';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 import {
   useKpiReportLatest,
   useKpiReportByWeek,
@@ -22,10 +21,6 @@ import {
 } from './types';
 
 export default function KpiReportV2() {
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return unpatch;
-  }, []);
 
   const [year, setYear] = useState(() => getCurrentWeekInfo().year);
   const [week, setWeek] = useState(() => getCurrentWeekInfo().week);

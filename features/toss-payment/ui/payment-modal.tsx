@@ -16,7 +16,7 @@ export function PaymentModal({ amount, onSuccess, onError, onClose }: PaymentMod
 
   const handlePayment = async () => {
     try {
-      await requestPayment();
+      await requestPayment('재매칭');
       onSuccess?.();
       onClose();
     } catch (error) {
