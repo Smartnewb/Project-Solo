@@ -17,6 +17,7 @@ import {
   FormControlLabel,
   Checkbox
 } from '@mui/material';
+import { Controller, useFieldArray } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
 import AdminService from '@/app/services/admin';
 import CardEditor from '../components/CardEditor';
@@ -30,13 +31,8 @@ import AddIcon from '@mui/icons-material/Add';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
-
-interface CardSection {
-  order: number;
-  title: string;
-  content: string;
-  imageUrl?: string;
-}
+import { useAdminForm } from '@/app/admin/hooks/forms';
+import { cardNewsFormSchema, type CardNewsFormData } from '@/app/admin/hooks/forms/schemas/card-news.schema';
 
 interface Category {
   id: string;
@@ -52,30 +48,43 @@ function CreateCardNewsPageContent() {
     const unpatch = patchAdminAxios();
     return () => unpatch();
   }, []);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [categoryCode, setCategoryCode] = useState('');
+
+  const { control, watch, handleFormSubmit, formState: { isSubmitting } } = useAdminForm<CardNewsFormData>({
+    schema: cardNewsFormSchema,
+    defaultValues: {
+      title: '',
+      description: '',
+      categoryCode: '',
+      hasReward: false,
+      pushTitle: '',
+      pushMessage: '',
+      sections: [{ order: 0, title: '', content: '', imageUrl: undefined }],
+    },
+  });
+
+  const { fields, append, remove, update } = useFieldArray({ control, name: 'sections' });
+
+  const watchedTitle = watch('title');
+  const watchedDescription = watch('description');
+  const watchedHasReward = watch('hasReward');
+  const watchedPushTitle = watch('pushTitle') ?? '';
+  const watchedPushMessage = watch('pushMessage') ?? '';
+  const watchedSections = watch('sections');
+
+  // Non-form state (file upload related)
   const [categories, setCategories] = useState<Category[]>([]);
-  const [pushTitle, setPushTitle] = useState('');
-  const [pushMessage, setPushMessage] = useState('');
-  const [hasReward, setHasReward] = useState(false);
   const [backgroundType, setBackgroundType] = useState<'PRESET' | 'CUSTOM'>('PRESET');
   const [selectedPresetId, setSelectedPresetId] = useState('');
   const [customBackgroundUrl, setCustomBackgroundUrl] = useState('');
   const [backgroundPresets, setBackgroundPresets] = useState<BackgroundPreset[]>([]);
-  const [sections, setSections] = useState<CardSection[]>([
-    { order: 0, title: '', content: '', imageUrl: undefined }
-  ]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [uploadingBackground, setUploadingBackground] = useState(false);
   const [presetUploadModalOpen, setPresetUploadModalOpen] = useState(false);
   const [presetEditModalOpen, setPresetEditModalOpen] = useState(false);
   const [editingPreset, setEditingPreset] = useState<BackgroundPreset | null>(null);
   const [presetsLoading, setPresetsLoading] = useState(true);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // 미리보기용 배경 이미지 URL 계산
   const previewBackgroundUrl = useMemo(() => {
     if (backgroundType === 'CUSTOM' && customBackgroundUrl) {
       return customBackgroundUrl;
@@ -97,22 +106,8 @@ function CreateCardNewsPageContent() {
       setCategoriesLoading(true);
       const data = await AdminService.cardNews.getCategories();
       setCategories(data);
-
-      // 공지사항 카테고리를 기본값으로 설정
-      const noticeCategory = data.find((cat: { displayName: string; code: string }) =>
-        cat.displayName === '공지사항' ||
-        cat.code === 'NOTICE' ||
-        cat.code === 'notice' ||
-        cat.code === 'ANNOUNCEMENT'
-      );
-      if (noticeCategory) {
-        setCategoryCode(noticeCategory.code);
-      } else if (data.length > 0) {
-        // 공지사항을 못 찾으면 첫 번째 카테고리 사용
-        setCategoryCode(data[0].code);
-      }
-    } catch (err: any) {
-      setError('카테고리 목록을 불러오는데 실패했습니다.');
+    } catch {
+      setSubmitError('카테고리 목록을 불러오는데 실패했습니다.');
     } finally {
       setCategoriesLoading(false);
     }
@@ -127,7 +122,8 @@ function CreateCardNewsPageContent() {
       if (presets.length > 0 && !selectedPresetId) {
         setSelectedPresetId(presets[0].id);
       }
-    } catch (err: any) {
+    } catch {
+      // non-critical
     } finally {
       setPresetsLoading(false);
     }
@@ -177,154 +173,19 @@ function CreateCardNewsPageContent() {
   };
 
   const handleAddCard = () => {
-    if (sections.length >= 7) {
+    if (fields.length >= 7) {
       alert('최대 7개의 카드까지만 추가할 수 있습니다.');
       return;
     }
-
-    setSections([
-      ...sections,
-      {
-        order: sections.length,
-        title: '',
-        content: '',
-        imageUrl: undefined
-      }
-    ]);
-  };
-
-  const handleUpdateSection = (index: number, updatedSection: CardSection) => {
-    const newSections = [...sections];
-    newSections[index] = updatedSection;
-    setSections(newSections);
+    append({ order: fields.length, title: '', content: '', imageUrl: undefined });
   };
 
   const handleDeleteSection = (index: number) => {
-    if (sections.length <= 1) {
+    if (fields.length <= 1) {
       alert('최소 1개의 카드가 필요합니다.');
       return;
     }
-
-    const newSections = sections.filter((_, i) => i !== index);
-    // 순서 재정렬
-    newSections.forEach((section, i) => {
-      section.order = i;
-    });
-    setSections(newSections);
-  };
-
-  const validateForm = () => {
-    if (!title.trim()) {
-      setError('제목을 입력해주세요.');
-      return false;
-    }
-
-    if (title.length > 50) {
-      setError('제목은 최대 50자까지 입력 가능합니다.');
-      return false;
-    }
-
-    if (!description.trim()) {
-      setError('설명을 입력해주세요.');
-      return false;
-    }
-
-    if (description.length > 100) {
-      setError('설명은 최대 100자까지 입력 가능합니다.');
-      return false;
-    }
-
-    if (!categoryCode) {
-      setError('카테고리를 선택해주세요.');
-      return false;
-    }
-
-    if (backgroundType === 'PRESET' && !selectedPresetId) {
-      setError('배경 프리셋을 선택해주세요.');
-      return false;
-    }
-
-    if (backgroundType === 'CUSTOM' && !customBackgroundUrl) {
-      setError('배경 이미지를 업로드해주세요.');
-      return false;
-    }
-
-    if (sections.length < 1) {
-      setError('최소 1개의 카드가 필요합니다.');
-      return false;
-    }
-
-    for (let i = 0; i < sections.length; i++) {
-      if (!sections[i].title.trim()) {
-        setError(`카드 ${i + 1}의 제목을 입력해주세요.`);
-        return false;
-      }
-
-      if (sections[i].title.length > 50) {
-        setError(`카드 ${i + 1}의 제목은 최대 50자까지 입력 가능합니다.`);
-        return false;
-      }
-
-      if (!sections[i].content.trim() || sections[i].content === '<p><br></p>') {
-        setError(`카드 ${i + 1}의 본문을 입력해주세요.`);
-        return false;
-      }
-
-      if (sections[i].content.length > 500) {
-        setError(`카드 ${i + 1}의 본문은 최대 500자까지 입력 가능합니다.`);
-        return false;
-      }
-    }
-
-    if (pushTitle && pushTitle.length > 50) {
-      setError('푸시 알림 제목은 최대 50자까지 입력 가능합니다.');
-      return false;
-    }
-
-    if (pushMessage && pushMessage.length > 100) {
-      setError('푸시 알림 메시지는 최대 100자까지 입력 가능합니다.');
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleSave = async () => {
-    setError(null);
-
-    if (!validateForm()) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      const data = {
-        title: title.trim(),
-        description: description.trim(),
-        categoryCode,
-        backgroundImage: backgroundType === 'PRESET'
-          ? { type: 'PRESET' as const, presetId: selectedPresetId }
-          : { type: 'CUSTOM' as const, customUrl: customBackgroundUrl },
-        hasReward,
-        sections: sections.map(section => ({
-          order: section.order,
-          title: section.title.trim(),
-          content: section.content,
-          ...(section.imageUrl && { imageUrl: section.imageUrl })
-        })),
-        ...(pushTitle.trim() && { pushNotificationTitle: pushTitle.trim() }),
-        ...(pushMessage.trim() && { pushNotificationMessage: pushMessage.trim() })
-      };
-
-      await AdminService.cardNews.create(data);
-      alert('카드뉴스가 성공적으로 생성되었습니다.');
-      router.push('/admin/card-news');
-    } catch (err: any) {
-      setError(err.response?.data?.message || '카드뉴스 생성에 실패했습니다.');
-    } finally {
-      setLoading(false);
-    }
+    remove(index);
   };
 
   const handleCancel = () => {
@@ -332,6 +193,40 @@ function CreateCardNewsPageContent() {
       router.push('/admin/card-news');
     }
   };
+
+  const onSubmit = handleFormSubmit(async (data) => {
+    if (backgroundType === 'PRESET' && !selectedPresetId) {
+      setSubmitError('배경 프리셋을 선택해주세요.');
+      return;
+    }
+    if (backgroundType === 'CUSTOM' && !customBackgroundUrl) {
+      setSubmitError('배경 이미지를 업로드해주세요.');
+      return;
+    }
+    setSubmitError(null);
+
+    const payload = {
+      title: data.title.trim(),
+      description: data.description.trim(),
+      categoryCode: data.categoryCode,
+      backgroundImage: backgroundType === 'PRESET'
+        ? { type: 'PRESET' as const, presetId: selectedPresetId }
+        : { type: 'CUSTOM' as const, customUrl: customBackgroundUrl },
+      hasReward: data.hasReward,
+      sections: data.sections.map((section, i) => ({
+        order: i,
+        title: section.title.trim(),
+        content: section.content,
+        ...(section.imageUrl && { imageUrl: section.imageUrl })
+      })),
+      ...(data.pushTitle?.trim() && { pushNotificationTitle: data.pushTitle.trim() }),
+      ...(data.pushMessage?.trim() && { pushNotificationMessage: data.pushMessage.trim() })
+    };
+
+    await AdminService.cardNews.create(payload);
+    alert('카드뉴스가 성공적으로 생성되었습니다.');
+    router.push('/admin/card-news');
+  });
 
   if (categoriesLoading) {
     return (
@@ -357,18 +252,18 @@ function CreateCardNewsPageContent() {
         </Typography>
       </Box>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
-          {error}
+      {submitError && (
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setSubmitError(null)}>
+          {submitError}
         </Alert>
       )}
 
       {/* 미리보기 */}
       <CardNewsPreview
-        title={title}
-        description={description}
+        title={watchedTitle}
+        description={watchedDescription}
         backgroundImageUrl={previewBackgroundUrl}
-        hasReward={hasReward}
+        hasReward={watchedHasReward}
       />
 
       <Paper sx={{ p: 3, mb: 3 }}>
@@ -376,44 +271,63 @@ function CreateCardNewsPageContent() {
           기본 정보
         </Typography>
 
-        <TextField
-          fullWidth
-          label="카드뉴스 제목"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="카드뉴스 제목을 입력하세요 (최대 50자)"
-          inputProps={{ maxLength: 50 }}
-          helperText={`${title.length}/50자`}
-          sx={{ mb: 2 }}
-          required
+        <Controller
+          name="title"
+          control={control}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              fullWidth
+              label="카드뉴스 제목"
+              placeholder="카드뉴스 제목을 입력하세요 (최대 50자)"
+              inputProps={{ maxLength: 50 }}
+              helperText={fieldState.error?.message ?? `${field.value.length}/50자`}
+              error={!!fieldState.error}
+              sx={{ mb: 2 }}
+              required
+            />
+          )}
         />
 
-        <TextField
-          fullWidth
-          label="카드뉴스 설명"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="카드뉴스 설명을 입력하세요 (최대 100자)"
-          inputProps={{ maxLength: 100 }}
-          helperText={`${description.length}/100자`}
-          sx={{ mb: 2 }}
-          required
+        <Controller
+          name="description"
+          control={control}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              fullWidth
+              label="카드뉴스 설명"
+              placeholder="카드뉴스 설명을 입력하세요 (최대 100자)"
+              inputProps={{ maxLength: 100 }}
+              helperText={fieldState.error?.message ?? `${field.value.length}/100자`}
+              error={!!fieldState.error}
+              sx={{ mb: 2 }}
+              required
+            />
+          )}
         />
 
-        <FormControl fullWidth sx={{ mb: 2 }} required>
-          <InputLabel>카테고리</InputLabel>
-          <Select
-            value={categoryCode}
-            onChange={(e) => setCategoryCode(e.target.value)}
-            label="카테고리"
-          >
-            {categories.map((category) => (
-              <MenuItem key={category.code} value={category.code}>
-                {category.displayName}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <Controller
+          name="categoryCode"
+          control={control}
+          render={({ field, fieldState }) => (
+            <FormControl fullWidth sx={{ mb: 2 }} required error={!!fieldState.error}>
+              <InputLabel>카테고리</InputLabel>
+              <Select {...field} label="카테고리">
+                {categories.map((category) => (
+                  <MenuItem key={category.code} value={category.code}>
+                    {category.displayName}
+                  </MenuItem>
+                ))}
+              </Select>
+              {fieldState.error && (
+                <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.75 }}>
+                  {fieldState.error.message}
+                </Typography>
+              )}
+            </FormControl>
+          )}
+        />
 
         <Divider sx={{ my: 3 }} />
 
@@ -434,14 +348,20 @@ function CreateCardNewsPageContent() {
 
         <Divider sx={{ my: 3 }} />
 
-        <FormControlLabel
-          control={
-            <Checkbox
-              checked={hasReward}
-              onChange={(e) => setHasReward(e.target.checked)}
+        <Controller
+          name="hasReward"
+          control={control}
+          render={({ field }) => (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={field.value}
+                  onChange={field.onChange}
+                />
+              }
+              label="구슬 보상 제공 (마지막 카드 도달 시 구슬 1개 지급)"
             />
-          }
-          label="구슬 보상 제공 (마지막 카드 도달 시 구슬 1개 지급)"
+          )}
         />
 
         <Divider sx={{ my: 3 }} />
@@ -450,52 +370,66 @@ function CreateCardNewsPageContent() {
           푸시 알림 설정
         </Typography>
 
-        <TextField
-          fullWidth
-          label="푸시 알림 제목 (선택 사항)"
-          value={pushTitle}
-          onChange={(e) => setPushTitle(e.target.value)}
-          placeholder="예: 썸타임 새소식 🎉"
-          inputProps={{ maxLength: 50 }}
-          helperText={`${pushTitle.length}/50자 | 비워두면 카드뉴스 제목이 사용됩니다.`}
-          sx={{ mb: 2 }}
+        <Controller
+          name="pushTitle"
+          control={control}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              value={field.value ?? ''}
+              fullWidth
+              label="푸시 알림 제목 (선택 사항)"
+              placeholder="예: 썸타임 새소식 🎉"
+              inputProps={{ maxLength: 50 }}
+              helperText={fieldState.error?.message ?? `${(field.value ?? '').length}/50자 | 비워두면 카드뉴스 제목이 사용됩니다.`}
+              error={!!fieldState.error}
+              sx={{ mb: 2 }}
+            />
+          )}
         />
 
-        <TextField
-          fullWidth
-          label="푸시 알림 메시지 (선택 사항)"
-          value={pushMessage}
-          onChange={(e) => setPushMessage(e.target.value)}
-          placeholder="푸시 알림 메시지를 입력하세요 (최대 100자)"
-          inputProps={{ maxLength: 100 }}
-          helperText={`${pushMessage.length}/100자 | 발행 시 모든 활성 사용자에게 전송됩니다. 설정하지 않으면 발행할 수 없습니다.`}
-          multiline
-          rows={2}
+        <Controller
+          name="pushMessage"
+          control={control}
+          render={({ field, fieldState }) => (
+            <TextField
+              {...field}
+              value={field.value ?? ''}
+              fullWidth
+              label="푸시 알림 메시지 (선택 사항)"
+              placeholder="푸시 알림 메시지를 입력하세요 (최대 100자)"
+              inputProps={{ maxLength: 100 }}
+              helperText={fieldState.error?.message ?? `${(field.value ?? '').length}/100자 | 발행 시 모든 활성 사용자에게 전송됩니다. 설정하지 않으면 발행할 수 없습니다.`}
+              error={!!fieldState.error}
+              multiline
+              rows={2}
+            />
+          )}
         />
       </Paper>
 
       <Box sx={{ mb: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h6">
-            카드 섹션 ({sections.length}/7)
+            카드 섹션 ({fields.length}/7)
           </Typography>
           <Button
             variant="outlined"
             startIcon={<AddIcon />}
             onClick={handleAddCard}
-            disabled={sections.length >= 7}
+            disabled={fields.length >= 7}
           >
             카드 추가
           </Button>
         </Box>
 
-        {sections.map((section, index) => (
+        {fields.map((field, index) => (
           <CardEditor
-            key={index}
-            section={section}
-            onUpdate={(updatedSection) => handleUpdateSection(index, updatedSection)}
+            key={field.id}
+            section={watchedSections[index] ?? field}
+            onUpdate={(updatedSection) => update(index, { ...updatedSection, order: index })}
             onDelete={() => handleDeleteSection(index)}
-            canDelete={sections.length > 1}
+            canDelete={fields.length > 1}
           />
         ))}
       </Box>
@@ -506,22 +440,22 @@ function CreateCardNewsPageContent() {
         <Button
           variant="outlined"
           onClick={handleCancel}
-          disabled={loading}
+          disabled={isSubmitting}
         >
           취소
         </Button>
         <Button
           variant="contained"
-          startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
-          onClick={handleSave}
-          disabled={loading}
+          startIcon={isSubmitting ? <CircularProgress size={20} /> : <SaveIcon />}
+          onClick={onSubmit}
+          disabled={isSubmitting}
         >
-          {loading ? '저장 중...' : '저장'}
+          {isSubmitting ? '저장 중...' : '저장'}
         </Button>
       </Box>
 
       {/* 카드뉴스 상세 미리보기 */}
-      <CardNewsDetailPreview sections={sections} />
+      <CardNewsDetailPreview sections={watchedSections} />
 
       <PresetUploadModal
         open={presetUploadModalOpen}

@@ -2,6 +2,7 @@
 
 import { Box, Typography } from '@mui/material';
 import { useRef, useState, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 
 interface CardSection {
   order: number;
@@ -243,9 +244,11 @@ export default function CardNewsDetailPreview({ sections }: CardNewsDetailPrevie
                     opacity: section.content && section.content !== '<p><br></p>' ? 1 : 0.6
                   }}
                   dangerouslySetInnerHTML={{
-                    __html: section.content && section.content !== '<p><br></p>'
-                      ? section.content
-                      : '<p>카드 본문을 입력하세요</p>'
+                    __html: DOMPurify.sanitize(
+                      section.content && section.content !== '<p><br></p>'
+                        ? section.content
+                        : '<p>카드 본문을 입력하세요</p>'
+                    )
                   }}
                 />
               </Box>

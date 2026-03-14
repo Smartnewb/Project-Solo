@@ -3,6 +3,21 @@ import { getAdminAccessToken, getSessionMeta } from '@/shared/auth';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api';
 
+// Allowlist of permitted path prefixes (SSRF prevention)
+const ALLOWED_PATH_PREFIXES = [
+  'admin/',
+  'auth/',
+  'user',
+  'universities/',
+  'articles/',
+  'public-reviews',
+  'app-reviews/',
+];
+
+function isPathAllowed(targetPath: string): boolean {
+  return ALLOWED_PATH_PREFIXES.some((prefix) => targetPath === prefix.replace(/\/$/, '') || targetPath.startsWith(prefix));
+}
+
 async function proxyRequest(request: NextRequest, { params }: { params: { path: string[] } }) {
   const token = await getAdminAccessToken();
   const meta = await getSessionMeta();
@@ -12,6 +27,10 @@ async function proxyRequest(request: NextRequest, { params }: { params: { path: 
   }
 
   const targetPath = params.path.join('/');
+
+  if (!isPathAllowed(targetPath)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
   const url = new URL(`${BACKEND_URL}/${targetPath}`);
 
   request.nextUrl.searchParams.forEach((value, key) => {

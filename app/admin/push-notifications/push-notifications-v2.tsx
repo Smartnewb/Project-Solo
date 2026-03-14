@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Controller } from 'react-hook-form';
 import AdminService from '@/app/services/admin';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
+import { useAdminForm } from '@/app/admin/hooks/forms';
+import { pushNotificationFormSchema, type PushNotificationFormData } from '@/app/admin/hooks/forms/schemas/push-notification.schema';
 
 interface FilterState {
   isDormant: boolean;
@@ -43,6 +46,11 @@ function PushNotificationsV2Content() {
   const toast = useToast();
   const confirmAction = useConfirm();
 
+  const { control, reset, handleFormSubmit, formState: { isSubmitting } } = useAdminForm<PushNotificationFormData>({
+    schema: pushNotificationFormSchema,
+    defaultValues: { title: '', message: '' },
+  });
+
   const [filters, setFilters] = useState<FilterState>({
     isDormant: false,
     gender: '',
@@ -73,9 +81,6 @@ function PushNotificationsV2Content() {
   const [itemsPerPage] = useState(20);
   const [loading, setLoading] = useState(false);
   const [targetUsers, setTargetUsers] = useState<FilteredUser[]>([]);
-
-  const [title, setTitle] = useState('');
-  const [message, setMessage] = useState('');
 
   const [universitySearch, setUniversitySearch] = useState('');
   const [showUniversityDropdown, setShowUniversityDropdown] = useState(false);
@@ -115,7 +120,7 @@ function PushNotificationsV2Content() {
     try {
       const universities = await AdminService.universities.getUniversities();
       setAllUniversities(universities);
-    } catch (error) {
+    } catch {
       // silently fail - universities list is non-critical
     }
   };
@@ -150,7 +155,7 @@ function PushNotificationsV2Content() {
       setTotalCount(data.totalCount);
       setTotalPages(data.totalPages);
       setCurrentPage(page);
-    } catch (error) {
+    } catch {
       toast.error('사용자 필터링에 실패했습니다.');
     } finally {
       setLoading(false);
@@ -168,7 +173,7 @@ function PushNotificationsV2Content() {
     try {
       const profile = await AdminService.userAppearance.getUserDetails(userId);
       setSelectedUser(profile);
-    } catch (error) {
+    } catch {
       toast.error('프로필 정보를 불러오는데 실패했습니다.');
       setShowProfileModal(false);
     } finally {
@@ -181,12 +186,7 @@ function PushNotificationsV2Content() {
     setSelectedUser(null);
   };
 
-  const handleSendPushNotification = async () => {
-    if (!title || !message) {
-      toast.error('제목과 메시지를 입력해주세요.');
-      return;
-    }
-
+  const handleSendPushNotification = handleFormSubmit(async (data) => {
     if (targetUsers.length === 0) {
       toast.error('발송 대상 사용자가 없습니다. 먼저 사용자를 검색하고 발송 대상자 리스트에 추가해주세요.');
       return;
@@ -200,18 +200,17 @@ function PushNotificationsV2Content() {
 
     setLoading(true);
     try {
-      const data = {
+      const payload = {
         userIds: targetUsers.map(u => u.id),
-        title,
-        message,
+        title: data.title,
+        message: data.message,
       };
 
-      const result = await AdminService.pushNotifications.sendBulkNotification(data);
+      const result = await AdminService.pushNotifications.sendBulkNotification(payload);
 
       toast.success(`푸시 알림 발송 완료 - 성공: ${result.successCount}건, 실패: ${result.failureCount}건, 총 대상: ${result.totalCount}건`);
 
-      setTitle('');
-      setMessage('');
+      reset({ title: '', message: '' });
       setTargetUsers([]);
     } catch (error: any) {
       if (error?.response?.status === 401) {
@@ -224,7 +223,7 @@ function PushNotificationsV2Content() {
     } finally {
       setLoading(false);
     }
-  };
+  });
 
   const toggleUniversity = (university: string) => {
     setFilters(prev => ({
@@ -280,7 +279,6 @@ function PushNotificationsV2Content() {
       if (filters.phoneNumber) cleanFilters.phoneNumber = filters.phoneNumber;
       if (filters.hasPreferences !== undefined) cleanFilters.hasPreferences = filters.hasPreferences;
 
-      // 모든 페이지의 사용자를 가져오기
       const allUsers: FilteredUser[] = [];
       const totalPagesToFetch = Math.ceil(totalCount / itemsPerPage);
 
@@ -289,7 +287,6 @@ function PushNotificationsV2Content() {
         allUsers.push(...data.users);
       }
 
-      // 중복 제거하며 추가
       const newTargetUsers = [...targetUsers];
       let addedCount = 0;
 
@@ -302,7 +299,7 @@ function PushNotificationsV2Content() {
 
       setTargetUsers(newTargetUsers);
       toast.success(`${addedCount}명이 발송 대상자 리스트에 추가되었습니다. (중복 ${allUsers.length - addedCount}명 제외)`);
-    } catch (error) {
+    } catch {
       toast.error('사용자 추가에 실패했습니다.');
     } finally {
       setLoading(false);
@@ -329,7 +326,7 @@ function PushNotificationsV2Content() {
       {/* 필터링 섹션 */}
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-semibold mb-4">사용자 필터링</h2>
-        
+
         <div className="space-y-4">
           {/* 휴면 유저 */}
           <div className="flex items-center">
@@ -361,7 +358,6 @@ function PushNotificationsV2Content() {
           <div>
             <label className="block mb-2 font-medium">대학교</label>
 
-            {/* 선택된 대학교 표시 */}
             {filters.universities.length > 0 && (
               <div className="mb-2 flex flex-wrap gap-2">
                 {filters.universities.map(university => (
@@ -381,7 +377,6 @@ function PushNotificationsV2Content() {
               </div>
             )}
 
-            {/* 검색 입력 */}
             <div className="relative university-search-container">
               <input
                 type="text"
@@ -395,7 +390,6 @@ function PushNotificationsV2Content() {
                 className="border rounded px-3 py-2 w-full"
               />
 
-              {/* 드롭다운 */}
               {showUniversityDropdown && (
                 <div className="absolute z-10 w-full mt-1 bg-white border rounded shadow-lg max-h-60 overflow-y-auto">
                   {filteredUniversities.length > 0 ? (
@@ -485,9 +479,9 @@ function PushNotificationsV2Content() {
             <label className="block mb-2 font-medium">프로필 정보 입력 유무</label>
             <select
               value={filters.hasPreferences === undefined ? '' : filters.hasPreferences.toString()}
-              onChange={(e) => setFilters({ 
-                ...filters, 
-                hasPreferences: e.target.value === '' ? undefined : e.target.value === 'true' 
+              onChange={(e) => setFilters({
+                ...filters,
+                hasPreferences: e.target.value === '' ? undefined : e.target.value === 'true'
               })}
               className="border rounded px-3 py-2 w-full"
             >
@@ -524,7 +518,6 @@ function PushNotificationsV2Content() {
                 <p className="text-sm text-gray-600">현재 페이지: {filteredUsers.length}명</p>
               </div>
 
-              {/* 사용자 목록 */}
               <div className="border rounded-lg overflow-hidden">
                 <table className="w-full">
                   <thead className="bg-gray-50">
@@ -567,7 +560,6 @@ function PushNotificationsV2Content() {
                 </table>
               </div>
 
-              {/* 페이지네이션 */}
               {totalPages > 1 && (
                 <div className="mt-4 flex items-center justify-center gap-2">
                   <button
@@ -705,37 +697,57 @@ function PushNotificationsV2Content() {
       {/* 푸시 알림 발송 섹션 */}
       <div className="bg-white p-6 rounded-lg shadow">
         <h2 className="text-xl font-semibold mb-4">푸시 알림 발송</h2>
-        
+
         <div className="space-y-4">
           <div>
             <label className="block mb-2 font-medium">제목</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="푸시 알림 제목"
-              className="border rounded px-3 py-2 w-full"
+            <Controller
+              name="title"
+              control={control}
+              render={({ field, fieldState }) => (
+                <>
+                  <input
+                    {...field}
+                    type="text"
+                    placeholder="푸시 알림 제목"
+                    className={`border rounded px-3 py-2 w-full ${fieldState.error ? 'border-red-500' : ''}`}
+                  />
+                  {fieldState.error && (
+                    <p className="text-red-500 text-sm mt-1">{fieldState.error.message}</p>
+                  )}
+                </>
+              )}
             />
           </div>
 
           <div>
             <label htmlFor="pushMessage" className="block mb-2 font-medium">메시지</label>
-            <textarea
-              id="pushMessage"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="푸시 알림 메시지"
-              rows={4}
-              className="border rounded px-3 py-2 w-full"
+            <Controller
+              name="message"
+              control={control}
+              render={({ field, fieldState }) => (
+                <>
+                  <textarea
+                    {...field}
+                    id="pushMessage"
+                    placeholder="푸시 알림 메시지"
+                    rows={4}
+                    className={`border rounded px-3 py-2 w-full ${fieldState.error ? 'border-red-500' : ''}`}
+                  />
+                  {fieldState.error && (
+                    <p className="text-red-500 text-sm mt-1">{fieldState.error.message}</p>
+                  )}
+                </>
+              )}
             />
           </div>
 
           <button
             onClick={handleSendPushNotification}
-            disabled={loading || targetUsers.length === 0}
+            disabled={isSubmitting || loading || targetUsers.length === 0}
             className="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 disabled:bg-gray-400"
           >
-            {loading ? '발송 중...' : `푸시 알림 발송 (총 ${targetUsers.length}명)`}
+            {isSubmitting || loading ? '발송 중...' : `푸시 알림 발송 (총 ${targetUsers.length}명)`}
           </button>
         </div>
       </div>
@@ -757,7 +769,6 @@ function PushNotificationsV2Content() {
                   </button>
                 </div>
 
-                {/* 프로필 이미지 */}
                 {selectedUser.profileImages && selectedUser.profileImages.length > 0 && (
                   <div className="mb-6">
                     <h3 className="font-semibold mb-2">프로필 이미지</h3>
@@ -774,7 +785,6 @@ function PushNotificationsV2Content() {
                   </div>
                 )}
 
-                {/* 기본 정보 */}
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -861,4 +871,3 @@ function PushNotificationsV2Content() {
 export default function PushNotificationsV2() {
   return <PushNotificationsV2Content />;
 }
-

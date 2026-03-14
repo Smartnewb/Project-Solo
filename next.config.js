@@ -1,12 +1,39 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://sometimes-resources.s3.ap-northeast-2.amazonaws.com; connect-src 'self'; font-src 'self' data:; frame-src 'none';",
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
+        ],
+      },
+    ];
+  },
   async rewrites() {
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api';
 
     return [
-      // Catch-all proxy: routes client-side API calls through Next.js to avoid CORS
-      // on Vercel Preview domains not whitelisted by the backend.
-      { source: '/api-proxy/:path*', destination: `${backendUrl}/:path*` },
+      // Specific proxies for client-side user auth and profile calls.
+      // The old catch-all /api-proxy/:path* was removed (security: it bypassed all auth).
+      { source: '/api-proxy/auth/login', destination: `${backendUrl}/auth/login` },
+      { source: '/api-proxy/auth/refresh', destination: `${backendUrl}/auth/refresh` },
+      { source: '/api-proxy/profile', destination: `${backendUrl}/profile` },
       { source: '/api/admin/rematch-request', destination: `${backendUrl}/admin/matching/rematch-request` },
       { source: '/api/notifications/:path*', destination: `${backendUrl}/notifications/:path*` },
       { source: '/api/notifications', destination: `${backendUrl}/notifications` },

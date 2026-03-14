@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
+import DOMPurify from 'dompurify';
 import {
   Box,
   Typography,
@@ -309,7 +310,7 @@ export default function MarkdownEditor({
             }}
           >
             {value ? (
-              <div dangerouslySetInnerHTML={{ __html: renderMarkdown(value) }} />
+              <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderMarkdown(value)) }} />
             ) : (
               <Typography color="text.secondary">미리보기가 여기에 표시됩니다...</Typography>
             )}

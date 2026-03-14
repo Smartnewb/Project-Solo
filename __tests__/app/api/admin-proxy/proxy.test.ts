@@ -279,8 +279,8 @@ describe('admin-proxy route handlers', () => {
         makeBackendResponse({}, 200, { 'content-disposition': 'attachment; filename="report.csv"' }),
       );
 
-      const req = createRequest('reports/export');
-      const res = await GET(req, makeParams(['reports', 'export']));
+      const req = createRequest('admin/reports/export');
+      const res = await GET(req, makeParams(['admin', 'reports', 'export']));
 
       expect(res.headers.get('content-disposition')).toBe('attachment; filename="report.csv"');
     });

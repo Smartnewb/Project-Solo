@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import versionService, { VersionUpdate, CreateVersionUpdateRequest } from '@/app/services/version';
+import { Controller, useFieldArray } from 'react-hook-form';
+import versionService, { VersionUpdate } from '@/app/services/version';
 import {
   Box,
   Typography,
@@ -33,9 +34,10 @@ import {
   Add as AddIcon,
   Edit as EditIcon,
   Visibility as ViewIcon,
-  Update as UpdateIcon
 } from '@mui/icons-material';
 import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
+import { useAdminForm } from '@/app/admin/hooks/forms';
+import { versionFormSchema, type VersionFormData } from '@/app/admin/hooks/forms/schemas/version.schema';
 
 function VersionManagementContent() {
   const [versions, setVersions] = useState<VersionUpdate[]>([]);
@@ -43,23 +45,35 @@ function VersionManagementContent() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // 다이얼로그 상태
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedVersion, setSelectedVersion] = useState<VersionUpdate | null>(null);
 
-  // 폼 상태
-  const [formData, setFormData] = useState({
-    version: '',
-    description: [''],
-    shouldUpdate: false
-  });
-
   useEffect(() => {
     const unpatch = patchAdminAxios();
     return () => unpatch();
   }, []);
+
+  const { control: createControl, reset: resetCreate, handleFormSubmit: handleCreateSubmit } = useAdminForm<VersionFormData>({
+    schema: versionFormSchema,
+    defaultValues: { version: '', description: [{ value: '' }], shouldUpdate: false },
+  });
+
+  const { fields: createFields, append: createAppend, remove: createRemove } = useFieldArray({
+    control: createControl,
+    name: 'description',
+  });
+
+  const { control: editControl, reset: resetEdit, handleFormSubmit: handleEditSubmit } = useAdminForm<VersionFormData>({
+    schema: versionFormSchema,
+    defaultValues: { version: '', description: [{ value: '' }], shouldUpdate: false },
+  });
+
+  const { fields: editFields, append: editAppend, remove: editRemove } = useFieldArray({
+    control: editControl,
+    name: 'description',
+  });
 
   useEffect(() => {
     fetchVersions();
@@ -78,61 +92,47 @@ function VersionManagementContent() {
     }
   };
 
-  const handleCreateVersion = async () => {
+  const handleCreateVersion = handleCreateSubmit(async (data) => {
     try {
       setError(null);
-      const createData: CreateVersionUpdateRequest = {
-        version: formData.version,
+      await versionService.createVersionUpdate({
+        version: data.version,
         metadata: {
-          description: formData.description.filter(desc => desc.trim() !== '')
+          description: data.description.map(d => d.value).filter(v => v.trim() !== '')
         },
-        shouldUpdate: formData.shouldUpdate
-      };
-
-      await versionService.createVersionUpdate(createData);
+        shouldUpdate: data.shouldUpdate
+      });
       setSuccess('버전 업데이트가 성공적으로 생성되었습니다.');
       setCreateDialogOpen(false);
-      resetForm();
+      resetCreate({ version: '', description: [{ value: '' }], shouldUpdate: false });
       fetchVersions();
     } catch (err: any) {
       setError(err.message);
     }
-  };
+  });
 
-  const handleUpdateVersion = async () => {
+  const handleUpdateVersion = handleEditSubmit(async (data) => {
     if (!selectedVersion) return;
-
     try {
       setError(null);
-      const updateData = {
-        version: formData.version,
+      await versionService.updateVersionUpdate(selectedVersion.id, {
+        version: data.version,
         metadata: {
-          description: formData.description.filter(desc => desc.trim() !== '')
+          description: data.description.map(d => d.value).filter(v => v.trim() !== '')
         },
-        shouldUpdate: formData.shouldUpdate
-      };
-
-      await versionService.updateVersionUpdate(selectedVersion.id, updateData);
+        shouldUpdate: data.shouldUpdate
+      });
       setSuccess('버전 업데이트가 성공적으로 수정되었습니다.');
       setEditDialogOpen(false);
-      resetForm();
+      setSelectedVersion(null);
       fetchVersions();
     } catch (err: any) {
       setError(err.message);
     }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      version: '',
-      description: [''],
-      shouldUpdate: false
-    });
-    setSelectedVersion(null);
-  };
+  });
 
   const openCreateDialog = () => {
-    resetForm();
+    resetCreate({ version: '', description: [{ value: '' }], shouldUpdate: false });
     setCreateDialogOpen(true);
   };
 
@@ -143,33 +143,12 @@ function VersionManagementContent() {
 
   const openEditDialog = (version: VersionUpdate) => {
     setSelectedVersion(version);
-    setFormData({
+    resetEdit({
       version: version.version,
-      description: version.metadata.description,
+      description: version.metadata.description.map(v => ({ value: v })),
       shouldUpdate: version.shouldUpdate
     });
     setEditDialogOpen(true);
-  };
-
-  const addDescriptionField = () => {
-    setFormData(prev => ({
-      ...prev,
-      description: [...prev.description, '']
-    }));
-  };
-
-  const updateDescriptionField = (index: number, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      description: prev.description.map((desc, i) => i === index ? value : desc)
-    }));
-  };
-
-  const removeDescriptionField = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      description: prev.description.filter((_, i) => i !== index)
-    }));
   };
 
   return (
@@ -256,32 +235,46 @@ function VersionManagementContent() {
       <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>새 버전 업데이트 생성</DialogTitle>
         <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="버전"
-            fullWidth
-            variant="outlined"
-            value={formData.version}
-            onChange={(e) => setFormData(prev => ({ ...prev, version: e.target.value }))}
-            sx={{ mb: 2 }}
+          <Controller
+            name="version"
+            control={createControl}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                autoFocus
+                margin="dense"
+                label="버전"
+                fullWidth
+                variant="outlined"
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                sx={{ mb: 2 }}
+              />
+            )}
           />
 
           <Typography variant="subtitle1" sx={{ mb: 1 }}>설명</Typography>
-          {formData.description.map((desc, index) => (
-            <Box key={index} sx={{ display: 'flex', gap: 1, mb: 1 }}>
-              <TextField
-                fullWidth
-                variant="outlined"
-                value={desc}
-                onChange={(e) => updateDescriptionField(index, e.target.value)}
-                placeholder={`설명 ${index + 1}`}
+          {createFields.map((field, index) => (
+            <Box key={field.id} sx={{ display: 'flex', gap: 1, mb: 1 }}>
+              <Controller
+                name={`description.${index}.value`}
+                control={createControl}
+                render={({ field: inputField, fieldState }) => (
+                  <TextField
+                    {...inputField}
+                    fullWidth
+                    variant="outlined"
+                    placeholder={`설명 ${index + 1}`}
+                    error={!!fieldState.error}
+                    helperText={fieldState.error?.message}
+                  />
+                )}
               />
-              {formData.description.length > 1 && (
+              {createFields.length > 1 && (
                 <Button
                   variant="outlined"
                   color="error"
-                  onClick={() => removeDescriptionField(index)}
+                  onClick={() => createRemove(index)}
                 >
                   삭제
                 </Button>
@@ -290,20 +283,26 @@ function VersionManagementContent() {
           ))}
           <Button
             variant="outlined"
-            onClick={addDescriptionField}
+            onClick={() => createAppend({ value: '' })}
             sx={{ mb: 2 }}
           >
             설명 추가
           </Button>
 
-          <FormControlLabel
-            control={
-              <Switch
-                checked={formData.shouldUpdate}
-                onChange={(e) => setFormData(prev => ({ ...prev, shouldUpdate: e.target.checked }))}
+          <Controller
+            name="shouldUpdate"
+            control={createControl}
+            render={({ field }) => (
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={field.value}
+                    onChange={field.onChange}
+                  />
+                }
+                label="업데이트 필요"
               />
-            }
-            label="업데이트 필요"
+            )}
           />
         </DialogContent>
         <DialogActions>
@@ -352,32 +351,46 @@ function VersionManagementContent() {
       <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>버전 업데이트 수정</DialogTitle>
         <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="버전"
-            fullWidth
-            variant="outlined"
-            value={formData.version}
-            onChange={(e) => setFormData(prev => ({ ...prev, version: e.target.value }))}
-            sx={{ mb: 2 }}
+          <Controller
+            name="version"
+            control={editControl}
+            render={({ field, fieldState }) => (
+              <TextField
+                {...field}
+                autoFocus
+                margin="dense"
+                label="버전"
+                fullWidth
+                variant="outlined"
+                error={!!fieldState.error}
+                helperText={fieldState.error?.message}
+                sx={{ mb: 2 }}
+              />
+            )}
           />
 
           <Typography variant="subtitle1" sx={{ mb: 1 }}>설명</Typography>
-          {formData.description.map((desc, index) => (
-            <Box key={index} sx={{ display: 'flex', gap: 1, mb: 1 }}>
-              <TextField
-                fullWidth
-                variant="outlined"
-                value={desc}
-                onChange={(e) => updateDescriptionField(index, e.target.value)}
-                placeholder={`설명 ${index + 1}`}
+          {editFields.map((field, index) => (
+            <Box key={field.id} sx={{ display: 'flex', gap: 1, mb: 1 }}>
+              <Controller
+                name={`description.${index}.value`}
+                control={editControl}
+                render={({ field: inputField, fieldState }) => (
+                  <TextField
+                    {...inputField}
+                    fullWidth
+                    variant="outlined"
+                    placeholder={`설명 ${index + 1}`}
+                    error={!!fieldState.error}
+                    helperText={fieldState.error?.message}
+                  />
+                )}
               />
-              {formData.description.length > 1 && (
+              {editFields.length > 1 && (
                 <Button
                   variant="outlined"
                   color="error"
-                  onClick={() => removeDescriptionField(index)}
+                  onClick={() => editRemove(index)}
                 >
                   삭제
                 </Button>
@@ -386,20 +399,26 @@ function VersionManagementContent() {
           ))}
           <Button
             variant="outlined"
-            onClick={addDescriptionField}
+            onClick={() => editAppend({ value: '' })}
             sx={{ mb: 2 }}
           >
             설명 추가
           </Button>
 
-          <FormControlLabel
-            control={
-              <Switch
-                checked={formData.shouldUpdate}
-                onChange={(e) => setFormData(prev => ({ ...prev, shouldUpdate: e.target.checked }))}
+          <Controller
+            name="shouldUpdate"
+            control={editControl}
+            render={({ field }) => (
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={field.value}
+                    onChange={field.onChange}
+                  />
+                }
+                label="업데이트 필요"
               />
-            }
-            label="업데이트 필요"
+            )}
           />
         </DialogContent>
         <DialogActions>

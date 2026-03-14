@@ -234,10 +234,10 @@ describe('POST /api/admin/auth/login', () => {
       const body = await res.json();
 
       expect(res.status).toBe(401);
-      expect(body.message).toBe('Invalid credentials');
+      expect(body.error).toBe('Invalid credentials');
     });
 
-    it('forwards the exact status code from the backend on failure', async () => {
+    it('returns 400 for non-401 backend errors to avoid leaking backend status codes', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 422,
@@ -247,7 +247,7 @@ describe('POST /api/admin/auth/login', () => {
       const req = createRequest({ email: 'bad-email', password: '' });
       const res = await POST(req);
 
-      expect(res.status).toBe(422);
+      expect(res.status).toBe(400);
     });
 
     it('returns 500 on unexpected internal error', async () => {
