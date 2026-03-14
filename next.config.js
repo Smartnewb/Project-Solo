@@ -29,9 +29,11 @@ const nextConfig = {
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api';
 
     return [
-      // Catch-all proxy: routes client-side API calls through Next.js to avoid CORS
-      // on Vercel Preview domains not whitelisted by the backend.
-      { source: '/api-proxy/:path*', destination: `${backendUrl}/:path*` },
+      // Specific proxies for client-side user auth and profile calls.
+      // The old catch-all /api-proxy/:path* was removed (security: it bypassed all auth).
+      { source: '/api-proxy/auth/login', destination: `${backendUrl}/auth/login` },
+      { source: '/api-proxy/auth/refresh', destination: `${backendUrl}/auth/refresh` },
+      { source: '/api-proxy/profile', destination: `${backendUrl}/profile` },
       { source: '/api/admin/rematch-request', destination: `${backendUrl}/admin/matching/rematch-request` },
       { source: '/api/notifications/:path*', destination: `${backendUrl}/notifications/:path*` },
       { source: '/api/notifications', destination: `${backendUrl}/notifications` },
