@@ -26,6 +26,7 @@ export {
 export { fcmTokens, universities } from './system';
 export { featureFlags } from './feature-flags';
 export type { FeatureFlag } from './feature-flags';
+export { matchingMonitor } from './matching-monitor';
 
 // Re-export interfaces for backward compatibility with named type imports
 export type { FormattedData, StatItem, GenderStatItem } from './_shared';
@@ -84,6 +85,7 @@ import {
 } from './revenue';
 import { fcmTokens, universities } from './system';
 import { featureFlags } from './feature-flags';
+import { matchingMonitor } from './matching-monitor';
 
 const AdminService = {
 	auth,
@@ -118,6 +120,7 @@ const AdminService = {
 	fcmTokens,
 	getProfileReports: reports.getProfileReports,
 	featureFlags,
+	matchingMonitor,
 };
 
 export default AdminService;

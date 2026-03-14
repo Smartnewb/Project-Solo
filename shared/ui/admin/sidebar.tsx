@@ -44,6 +44,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
     label: '매칭/채팅',
     items: [
       { href: '/admin/matching-management', label: '매칭 관리' },
+      { href: '/admin/matching-monitor', label: '매칭 모니터' },
       { href: '/admin/likes', label: '좋아요 관리' },
       { href: '/admin/scheduled-matching', label: '정기 매칭' },
       { href: '/admin/chat', label: '채팅 관리' },
