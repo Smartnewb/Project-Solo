@@ -29,6 +29,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
     icon: '👥',
     label: '회원 관리',
     items: [
+      { href: '/admin/users', label: '사용자 관리' },
       { href: '/admin/users/appearance', label: '외모 관리' },
       { href: '/admin/profile-review', label: '프로필 심사' },
       { href: '/admin/reports', label: '신고 관리' },
@@ -111,8 +112,8 @@ export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
                   onClick={onNavigate}
                   className={`block px-4 py-2 transition-colors ${
                     pathname === item.href
-                      ? 'bg-primary-DEFAULT text-white'
-                      : 'text-gray-600 hover:bg-primary-DEFAULT hover:text-white'
+                      ? 'bg-primary text-white'
+                      : 'text-gray-600 hover:bg-primary hover:text-white'
                   }`}
                 >
                   {item.label}
