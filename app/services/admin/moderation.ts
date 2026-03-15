@@ -330,8 +330,25 @@ export const userReview = {
 				params,
 			});
 
-			const data = response.data.data;
+			const rawItems = response.data.data;
 			const meta = response.data.meta;
+			const data = (rawItems || []).map((item: any) => ({
+				imageId: item.imageId,
+				imageUrl: item.url,
+				slotIndex: item.slotIndex ?? 0,
+				isMain: item.isMain ?? false,
+				reviewStatus: item.reviewStatus,
+				reviewType: item.reviewType ?? null,
+				reviewedBy: item.reviewerName ?? item.reviewedBy ?? null,
+				reviewedAt: item.reviewedAt,
+				rejectionReason: item.reason,
+				user: {
+					userId: item.userId,
+					name: item.userName,
+					gender: item.gender,
+					age: item.age,
+				},
+			}));
 			return {
 				items: data,
 				pagination: {

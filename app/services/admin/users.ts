@@ -44,7 +44,7 @@ export const userAppearance = {
 			if (params.universityName) queryParams.append('universityName', params.universityName);
 			if (params.minAge) queryParams.append('minAge', params.minAge.toString());
 			if (params.maxAge) queryParams.append('maxAge', params.maxAge.toString());
-			if (params.searchTerm) queryParams.append('searchTerm', params.searchTerm);
+			if (params.searchTerm) queryParams.append('search', params.searchTerm);
 			if (params.region) queryParams.append('region', params.region);
 			if (params.useCluster !== undefined)
 				queryParams.append('useCluster', params.useCluster.toString());
