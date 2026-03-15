@@ -75,11 +75,37 @@ export interface PendingUsersFilter {
 	region?: string;
 }
 
+const adaptV2ReportItem = (item: any) => ({
+	id: item.id,
+	reporter: {
+		id: item.reporterId,
+		name: item.reporterName || '알 수 없음',
+		email: '',
+		phoneNumber: '',
+		age: 0,
+		gender: 'MALE' as 'MALE' | 'FEMALE',
+		profileImageUrl: '',
+	},
+	reported: {
+		id: item.targetId,
+		name: item.targetName || '알 수 없음',
+		email: '',
+		phoneNumber: '',
+		age: 0,
+		gender: 'MALE' as 'MALE' | 'FEMALE',
+		profileImageUrl: '',
+	},
+	reason: item.reason || '',
+	description: null,
+	evidenceImages: [],
+	status: item.status || 'pending',
+	createdAt: item.createdAt,
+	updatedAt: null,
+});
+
 export const reports = {
 	getProfileReports: async (params: URLSearchParams) => {
 		try {
-			;
-
 			const page = params.get('page') || '1';
 			const limit = params.get('limit') || '10';
 			const status = params.get('status');
@@ -92,39 +118,9 @@ export const reports = {
 				queryParams.append('status', status === 'pending' ? 'pending' : 'processed');
 			}
 
-			const endpoint = `/admin/community/reports?${queryParams.toString()}`;
-			;
+			const response = await axiosServer.get(`/admin/v2/reports?${queryParams.toString()}`);
 
-			const response = await axiosServer.get(endpoint);
-			;
-
-			const transformedItems = (response.data.items || []).map((item: any) => ({
-				id: item.id,
-				reporter: {
-					id: item.reporter?.id || item.reporterId,
-					name: item.reporter?.name || item.reporterName || '알 수 없음',
-					email: item.reporter?.email || '',
-					phoneNumber: item.reporter?.phoneNumber || '',
-					age: item.reporter?.age || item.reporterAge || 0,
-					gender: (item.reporter?.gender || item.reporterGender || 'MALE') as 'MALE' | 'FEMALE',
-					profileImageUrl: item.reporter?.profileImageUrl || '',
-				},
-				reported: {
-					id: item.reported?.id || item.reportedId,
-					name: item.reported?.name || item.reportedName || '알 수 없음',
-					email: item.reported?.email || '',
-					phoneNumber: item.reported?.phoneNumber || '',
-					age: item.reported?.age || item.reportedAge || 0,
-					gender: (item.reported?.gender || item.reportedGender || 'MALE') as 'MALE' | 'FEMALE',
-					profileImageUrl: item.reported?.profileImageUrl || '',
-				},
-				reason: item.reason || '',
-				description: item.description || null,
-				evidenceImages: item.evidenceImages || [],
-				status: item.status || 'pending',
-				createdAt: item.createdAt,
-				updatedAt: null,
-			}));
+			const transformedItems = (response.data.data || []).map(adaptV2ReportItem);
 
 			return {
 				items: transformedItems,
@@ -137,10 +133,8 @@ export const reports = {
 
 	getProfileReportDetail: async (reportId: string) => {
 		try {
-			const response = await axiosServer.get(
-				`/admin/community/reports/profiles/${reportId}/detail`,
-			);
-			return response.data;
+			const response = await axiosServer.get(`/admin/v2/reports/${reportId}`);
+			return adaptV2ReportItem(response.data.data);
 		} catch (error: any) {
 			throw error;
 		}
@@ -152,11 +146,11 @@ export const reports = {
 		adminMemo?: string,
 	) => {
 		try {
-			const response = await axiosServer.patch(
-				`/admin/community/reports/profiles/${reportId}/status`,
-				{ status, adminMemo },
-			);
-			return response.data;
+			const response = await axiosServer.patch(`/admin/v2/reports/${reportId}/status`, {
+				status,
+				reason: adminMemo,
+			});
+			return adaptV2ReportItem(response.data.data);
 		} catch (error: any) {
 			throw error;
 		}
