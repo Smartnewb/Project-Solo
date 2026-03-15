@@ -56,15 +56,12 @@ export const userAppearance = {
 				queryParams.append('includeDeleted', params.includeDeleted.toString());
 			if (params.userStatus) queryParams.append('userStatus', params.userStatus);
 
-			const url = `/admin/users/appearance?${queryParams.toString()}`;
-			;
-			;
+			// V2 ADAPTER: list → GET /admin/v2/users
+			const url = `/admin/v2/users?${queryParams.toString()}`;
 
 			try {
 				const response = await axiosServer.get(url);
-				;
-				;
-				return response.data;
+				return response.data?.data ?? response.data;
 			} catch (error: any) {
 				throw error;
 			}
@@ -103,9 +100,9 @@ export const userAppearance = {
 			throw new Error('등급이 없습니다.');
 		}
 
+		// V2 ADAPTER: individual rank → PATCH /admin/v2/users/:userId/appearance
 		try {
-			const response = await axiosServer.patch(`/admin/users/appearance/${userId}`, { grade });
-			;
+			const response = await axiosServer.patch(`/admin/v2/users/${userId}/appearance`, { rank: grade });
 			return response.data;
 		} catch (error: any) {
 			throw error;
@@ -138,10 +135,11 @@ export const userAppearance = {
 	) => {
 		;
 
+		// V2 ADAPTER: bulk rank → PATCH /admin/v2/users/appearance/bulk
 		try {
-			const response = await axiosServer.patch('/admin/users/appearance/bulk', {
+			const response = await axiosServer.patch('/admin/v2/users/appearance/bulk', {
 				userIds,
-				grade,
+				rank: grade,
 			});
 			return response.data;
 		} catch (error) {
@@ -150,32 +148,27 @@ export const userAppearance = {
 	},
 
 	getUserDetails: async (userId: string) => {
+		// V2 ADAPTER: detail → GET /admin/v2/users/:userId
 		try {
-			;
+			const response = await axiosServer.get(`/admin/v2/users/${userId}`);
+			const raw = response.data?.data ?? response.data;
 
-			const endpoint = `/admin/user-review/${userId}`;
-			;
+			const images: { id: string; url: string; order: number; isMain: boolean }[] =
+				Array.isArray(raw.images)
+					? raw.images.map((url: string, index: number) => ({
+							id: `${userId}-${index}`,
+							url,
+							order: index,
+							isMain: index === 0,
+					  }))
+					: [];
 
-			const response = await axiosServer.get(endpoint);
-			;
-
-			const data = response.data;
-
-			if (
-				data.profileImageUrls &&
-				Array.isArray(data.profileImageUrls) &&
-				data.profileImageUrls.length > 0
-			) {
-				data.profileImages = data.profileImageUrls.map((url: string, index: number) => ({
-					id: `${userId}-${index}`,
-					url: url,
-					order: index,
-					isMain: index === 0,
-				}));
-				data.profileImageUrl = data.profileImageUrls[0];
-			}
-
-			return data;
+			return {
+				...raw,
+				profileImages: images,
+				profileImageUrl: images[0]?.url ?? null,
+				profileImageUrls: images.map((img) => img.url),
+			};
 		} catch (error: any) {
 			throw error;
 		}
@@ -276,6 +269,7 @@ export const userAppearance = {
 		}
 	},
 
+	// V1 KEPT
 	updateUserProfile: async (userId: string, profileData: any) => {
 		try {
 			;

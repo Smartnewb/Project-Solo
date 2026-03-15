@@ -77,9 +77,18 @@ export const aiChat = {
 				}
 			});
 
-			const response = await axiosServer.get(`/admin/ai-chat/sessions?${queryParams.toString()}`);
-			;
-			return response.data;
+			const response = await axiosServer.get(`/admin/v2/ai-chat/sessions?${queryParams.toString()}`);
+			// V2 ADAPTER: v2 returns { data: AiChatSessionItem[] }, adapt to v1 shape { items, pagination }
+			const items = response.data.data ?? [];
+			return {
+				items,
+				pagination: {
+					page: params.page ?? 1,
+					limit: params.limit ?? 20,
+					total: items.length,
+					hasMore: false,
+				},
+			};
 		} catch (error) {
 			throw error;
 		}
@@ -88,9 +97,14 @@ export const aiChat = {
 	// AI 채팅 메시지 상세 조회
 	getMessages: async (sessionId: string) => {
 		try {
-			const response = await axiosServer.get(`/admin/ai-chat/messages?sessionId=${sessionId}`);
-			;
-			return response.data;
+			const response = await axiosServer.get(`/admin/v2/ai-chat/sessions/${sessionId}/messages`);
+			// V2 ADAPTER: v2 returns { data: AiChatMessageItem[] }, adapt to v1 shape { messages, sessionId, userId }
+			const messages = response.data.data ?? [];
+			return {
+				messages,
+				sessionId,
+				userId: messages[0]?.userId ?? null,
+			};
 		} catch (error) {
 			throw error;
 		}

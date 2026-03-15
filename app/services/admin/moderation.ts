@@ -75,11 +75,37 @@ export interface PendingUsersFilter {
 	region?: string;
 }
 
+const adaptV2ReportItem = (item: any) => ({
+	id: item.id,
+	reporter: {
+		id: item.reporterId,
+		name: item.reporterName || '알 수 없음',
+		email: '',
+		phoneNumber: '',
+		age: 0,
+		gender: 'MALE' as 'MALE' | 'FEMALE',
+		profileImageUrl: '',
+	},
+	reported: {
+		id: item.targetId,
+		name: item.targetName || '알 수 없음',
+		email: '',
+		phoneNumber: '',
+		age: 0,
+		gender: 'MALE' as 'MALE' | 'FEMALE',
+		profileImageUrl: '',
+	},
+	reason: item.reason || '',
+	description: null,
+	evidenceImages: [],
+	status: item.status || 'pending',
+	createdAt: item.createdAt,
+	updatedAt: null,
+});
+
 export const reports = {
 	getProfileReports: async (params: URLSearchParams) => {
 		try {
-			;
-
 			const page = params.get('page') || '1';
 			const limit = params.get('limit') || '10';
 			const status = params.get('status');
@@ -92,39 +118,9 @@ export const reports = {
 				queryParams.append('status', status === 'pending' ? 'pending' : 'processed');
 			}
 
-			const endpoint = `/admin/community/reports?${queryParams.toString()}`;
-			;
+			const response = await axiosServer.get(`/admin/v2/reports?${queryParams.toString()}`);
 
-			const response = await axiosServer.get(endpoint);
-			;
-
-			const transformedItems = (response.data.items || []).map((item: any) => ({
-				id: item.id,
-				reporter: {
-					id: item.reporter?.id || item.reporterId,
-					name: item.reporter?.name || item.reporterName || '알 수 없음',
-					email: item.reporter?.email || '',
-					phoneNumber: item.reporter?.phoneNumber || '',
-					age: item.reporter?.age || item.reporterAge || 0,
-					gender: (item.reporter?.gender || item.reporterGender || 'MALE') as 'MALE' | 'FEMALE',
-					profileImageUrl: item.reporter?.profileImageUrl || '',
-				},
-				reported: {
-					id: item.reported?.id || item.reportedId,
-					name: item.reported?.name || item.reportedName || '알 수 없음',
-					email: item.reported?.email || '',
-					phoneNumber: item.reported?.phoneNumber || '',
-					age: item.reported?.age || item.reportedAge || 0,
-					gender: (item.reported?.gender || item.reportedGender || 'MALE') as 'MALE' | 'FEMALE',
-					profileImageUrl: item.reported?.profileImageUrl || '',
-				},
-				reason: item.reason || '',
-				description: item.description || null,
-				evidenceImages: item.evidenceImages || [],
-				status: item.status || 'pending',
-				createdAt: item.createdAt,
-				updatedAt: null,
-			}));
+			const transformedItems = (response.data.data || []).map(adaptV2ReportItem);
 
 			return {
 				items: transformedItems,
@@ -137,10 +133,8 @@ export const reports = {
 
 	getProfileReportDetail: async (reportId: string) => {
 		try {
-			const response = await axiosServer.get(
-				`/admin/community/reports/profiles/${reportId}/detail`,
-			);
-			return response.data;
+			const response = await axiosServer.get(`/admin/v2/reports/${reportId}`);
+			return adaptV2ReportItem(response.data.data);
 		} catch (error: any) {
 			throw error;
 		}
@@ -152,11 +146,11 @@ export const reports = {
 		adminMemo?: string,
 	) => {
 		try {
-			const response = await axiosServer.patch(
-				`/admin/community/reports/profiles/${reportId}/status`,
-				{ status, adminMemo },
-			);
-			return response.data;
+			const response = await axiosServer.patch(`/admin/v2/reports/${reportId}/status`, {
+				status,
+				reason: adminMemo,
+			});
+			return adaptV2ReportItem(response.data.data);
 		} catch (error: any) {
 			throw error;
 		}
@@ -205,12 +199,12 @@ export const userReview = {
 				params.excludeUserIds = excludeUserIds.join(',');
 			}
 
-			const response = await axiosServer.get('/admin/profile-images/pending', {
+			// V2 ADAPTER
+			const response = await axiosServer.get('/admin/v2/profile-review/pending', {
 				params,
 			});
 
-			;
-			return response.data;
+			return response.data.data ?? response.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -220,10 +214,10 @@ export const userReview = {
 		try {
 			;
 
-			const response = await axiosServer.get(`/admin/user-review/${userId}`);
+			// V2 ADAPTER
+			const response = await axiosServer.get(`/admin/v2/profile-review/users/${userId}`);
 
-			;
-			return response.data;
+			return response.data.data ?? response.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -233,9 +227,11 @@ export const userReview = {
 		try {
 			;
 
-			const response = await axiosServer.post(`/admin/profile-images/users/${userId}/approve`);
+			// V2 ADAPTER
+			const response = await axiosServer.post(
+				`/admin/v2/profile-review/users/${userId}/approve-profile`,
+			);
 
-			;
 			return response.data;
 		} catch (error: any) {
 			throw error;
@@ -246,12 +242,12 @@ export const userReview = {
 		try {
 			;
 
-			const response = await axiosServer.post(`/admin/user-review/${userId}/reject`, {
-				category,
-				reason,
-			});
+			// V2 ADAPTER
+			const response = await axiosServer.post(
+				`/admin/v2/profile-review/users/${userId}/reject-profile`,
+				{ category, reason },
+			);
 
-			;
 			return response.data;
 		} catch (error: any) {
 			throw error;
@@ -293,13 +289,13 @@ export const userReview = {
 		try {
 			;
 
+			// V2 ADAPTER
 			const response = await axiosServer.patch(
-				`/admin/profiles/${userId}/rank`,
+				`/admin/v2/profile-review/users/${userId}/rank`,
 				{ rank },
 				{ params: { emitEvent } },
 			);
 
-			;
 			return response.data;
 		} catch (error: any) {
 			throw error;
@@ -325,7 +321,8 @@ export const userReview = {
 			if (filters.universityId) params.universityId = filters.universityId;
 			if (filters.reviewedBy) params.reviewedBy = filters.reviewedBy;
 
-			const response = await axiosServer.get('/admin/profile-images/review-history', {
+			// V2 ADAPTER
+			const response = await axiosServer.get('/admin/v2/profile-review/history', {
 				params,
 			});
 

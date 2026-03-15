@@ -111,80 +111,101 @@ export interface ChatCsvExportParams {
 }
 
 class ChatService {
-  async getChatRooms(params: ChatRoomsParams): Promise<ChatRoomsResponse> {
-    try {
-      const response = await axiosServer.get<ChatRoomsResponse>('/admin/chat/rooms', {
-        params: {
-          startDate: params.startDate,
-          endDate: params.endDate,
-          preset: params.preset,
-          searchName: params.searchName,
-          page: params.page || 1,
-          limit: params.limit || 20
-        }
-      });
-      return response.data;
-    } catch (error: any) {
-      console.error('채팅방 목록 조회 실패:', error);
-      throw new Error(error.response?.data?.message || '채팅방 목록을 불러오는데 실패했습니다.');
-    }
-  }
+	async getChatRooms(params: ChatRoomsParams): Promise<ChatRoomsResponse> {
+		// V2 ADAPTER
+		try {
+			const page = params.page || 1;
+			const limit = params.limit || 20;
+			const response = await axiosServer.get<{ data: ChatRoom[] }>('/admin/v2/chat/rooms', {
+				params: {
+					startDate: params.startDate,
+					endDate: params.endDate,
+					preset: params.preset,
+					searchName: params.searchName,
+					page,
+					limit,
+				},
+			});
+			const items = response.data.data;
+			return {
+				chatRooms: items,
+				total: items.length,
+				page,
+				limit,
+				totalPages: Math.ceil(items.length / limit) || 1,
+				appliedStartDate: params.startDate ?? null,
+				appliedEndDate: params.endDate ?? null,
+			};
+		} catch (error: any) {
+			console.error('채팅방 목록 조회 실패:', error);
+			throw new Error(error.response?.data?.message || '채팅방 목록을 불러오는데 실패했습니다.');
+		}
+	}
 
-  async getChatMessages(params: ChatMessagesParams): Promise<ChatMessagesResponse> {
-    try {
-      const response = await axiosServer.get<ChatMessagesResponse>('/admin/chat/messages', {
-        params: {
-          chatRoomId: params.chatRoomId,
-        }
-      });
-      return response.data;
-    } catch (error: any) {
-      console.error('채팅 메시지 조회 실패:', error);
-      throw new Error(error.response?.data?.message || '채팅 메시지를 불러오는데 실패했습니다.');
-    }
-  }
+	async getChatMessages(params: ChatMessagesParams): Promise<ChatMessagesResponse> {
+		// V2 ADAPTER
+		try {
+			const response = await axiosServer.get<{
+				data: { messages: ChatMessage[]; total: number; nextCursor: string | null; hasMore: boolean };
+			}>(`/admin/v2/chat/rooms/${params.chatRoomId}/messages`);
+			const { messages, total } = response.data.data;
+			return { messages, total };
+		} catch (error: any) {
+			console.error('채팅 메시지 조회 실패:', error);
+			throw new Error(error.response?.data?.message || '채팅 메시지를 불러오는데 실패했습니다.');
+		}
+	}
 
-  async getChatStats(params: ChatStatsParams = {}): Promise<ChatStatsResponse> {
-    try {
-      const response = await axiosServer.get<ChatStatsResponse>('/admin/chat/stats', {
-        params: {
-          startDate: params.startDate,
-          endDate: params.endDate,
-          preset: params.preset,
-        }
-      });
-      return response.data;
-    } catch (error: any) {
-      console.error('채팅 통계 조회 실패:', error);
-      throw new Error(error.response?.data?.message || '채팅 통계를 불러오는데 실패했습니다.');
-    }
-  }
+	async getChatStats(params: ChatStatsParams = {}): Promise<ChatStatsResponse> {
+		// V2 ADAPTER
+		try {
+			const response = await axiosServer.get<{ data: ChatStatsSummary }>('/admin/v2/chat/stats', {
+				params: {
+					startDate: params.startDate,
+					endDate: params.endDate,
+					preset: params.preset,
+				},
+			});
+			return {
+				summary: response.data.data,
+				hourlyDistribution: [],
+				dailyTrend: [],
+				messageLengthDistribution: [],
+				startDate: params.startDate ?? '',
+				endDate: params.endDate ?? '',
+			};
+		} catch (error: any) {
+			console.error('채팅 통계 조회 실패:', error);
+			throw new Error(error.response?.data?.message || '채팅 통계를 불러오는데 실패했습니다.');
+		}
+	}
 
-  async exportChatsToCsv(params: ChatCsvExportParams = {}): Promise<void> {
-    try {
-      const response = await axiosServer.get('/admin/chat/export/csv', {
-        params: {
-          startDate: params.startDate,
-          endDate: params.endDate,
-          preset: params.preset,
-        },
-        responseType: 'blob'
-      });
+	async exportChatsToCsv(params: ChatCsvExportParams = {}): Promise<void> {
+		// V2 ADAPTER
+		try {
+			const response = await axiosServer.get('/admin/v2/chat/export', {
+				params: {
+					startDate: params.startDate,
+					endDate: params.endDate,
+					preset: params.preset,
+				},
+				responseType: 'blob',
+			});
 
-      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `chat_export_${new Date().toISOString().split('T')[0]}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (error: any) {
-      console.error('채팅 CSV 내보내기 실패:', error);
-      throw new Error(error.response?.data?.message || 'CSV 내보내기에 실패했습니다.');
-    }
-  }
+			const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8' });
+			const url = window.URL.createObjectURL(blob);
+			const link = document.createElement('a');
+			link.href = url;
+			link.setAttribute('download', `chat_export_${new Date().toISOString().split('T')[0]}.csv`);
+			document.body.appendChild(link);
+			link.click();
+			link.remove();
+			window.URL.revokeObjectURL(url);
+		} catch (error: any) {
+			console.error('채팅 CSV 내보내기 실패:', error);
+			throw new Error(error.response?.data?.message || 'CSV 내보내기에 실패했습니다.');
+		}
+	}
 }
 
 const chatService = new ChatService();
