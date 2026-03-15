@@ -67,9 +67,11 @@ export const stats = {
 
 			const response = await axiosServer.get('/admin/v2/stats/users/trend', { params });
 			const raw = response.data.data;
+			const trendItems = Array.isArray(raw?.data) ? raw.data : [];
 			return {
 				...raw,
-				data: (raw.data || []).map((item: { date: string; count: number }) => {
+				data: trendItems.map((item: { date: string; count: number }) => {
+					if (!item?.date) return { weekStart: '', weekEnd: '', count: item?.count ?? 0, label: '' };
 					const parts = item.date.split('-');
 					const year = parseInt(parts[0], 10);
 					const week = parseInt(parts[1], 10);
@@ -99,12 +101,13 @@ export const stats = {
 
 			const response = await axiosServer.get('/admin/v2/stats/users/trend', { params });
 			const raw = response.data.data;
+			const trendItems = Array.isArray(raw?.data) ? raw.data : [];
 			return {
 				...raw,
-				data: (raw.data || []).map((item: { date: string; count: number }) => ({
-					month: item.date,
-					count: item.count,
-					label: item.date,
+				data: trendItems.map((item: { date: string; count: number }) => ({
+					month: item?.date ?? '',
+					count: item?.count ?? 0,
+					label: item?.date ?? '',
 				})),
 			};
 		} catch (error) {
@@ -287,7 +290,7 @@ export const stats = {
 
 			const response = await axiosServer.get('/admin/v2/stats/withdrawals', { params });
 			const raw = response.data.data;
-			const trend = raw.trend || raw.data || [];
+			const trend = Array.isArray(raw?.trend) ? raw.trend : Array.isArray(raw?.data) ? raw.data : [];
 			return {
 				...raw,
 				data: trend.map((item: { date: string; count: number }) => ({
@@ -307,10 +310,11 @@ export const stats = {
 
 			const response = await axiosServer.get('/admin/v2/stats/withdrawals', { params });
 			const raw = response.data.data;
-			const trend = raw.trend || raw.data || [];
+			const trend = Array.isArray(raw?.trend) ? raw.trend : Array.isArray(raw?.data) ? raw.data : [];
 			return {
 				...raw,
 				data: trend.map((item: { date: string; count: number }) => {
+					if (!item?.date) return { ...item, label: '' };
 					const parts = item.date.split('-');
 					const year = parseInt(parts[0], 10);
 					const week = parseInt(parts[1], 10);
@@ -338,7 +342,7 @@ export const stats = {
 
 			const response = await axiosServer.get('/admin/v2/stats/withdrawals', { params });
 			const raw = response.data.data;
-			const trend = raw.trend || raw.data || [];
+			const trend = Array.isArray(raw?.trend) ? raw.trend : Array.isArray(raw?.data) ? raw.data : [];
 			return {
 				...raw,
 				data: trend.map((item: { date: string; count: number }) => ({
@@ -361,7 +365,7 @@ export const stats = {
 
 			const response = await axiosServer.get('/admin/v2/stats/withdrawals', { params });
 			const raw = response.data.data;
-			const trend = raw.trend || raw.data || [];
+			const trend = Array.isArray(raw?.trend) ? raw.trend : Array.isArray(raw?.data) ? raw.data : [];
 			return {
 				...raw,
 				data: trend.map((item: { date: string; count: number }) => ({
