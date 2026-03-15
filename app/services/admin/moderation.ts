@@ -92,13 +92,13 @@ export const reports = {
 				queryParams.append('status', status === 'pending' ? 'pending' : 'processed');
 			}
 
-			const endpoint = `/admin/community/reports?${queryParams.toString()}`;
+			const endpoint = `/admin/v2/reports?${queryParams.toString()}`;
 			;
 
 			const response = await axiosServer.get(endpoint);
 			;
 
-			const transformedItems = (response.data.items || []).map((item: any) => ({
+			const transformedItems = (response.data.data || []).map((item: any) => ({
 				id: item.id,
 				reporter: {
 					id: item.reporter?.id || item.reporterId,
@@ -128,7 +128,7 @@ export const reports = {
 
 			return {
 				items: transformedItems,
-				meta: response.data.meta,
+				meta: response.data.meta,  // v2: meta lives at response.data.meta
 			};
 		} catch (error: any) {
 			throw error;
@@ -138,9 +138,9 @@ export const reports = {
 	getProfileReportDetail: async (reportId: string) => {
 		try {
 			const response = await axiosServer.get(
-				`/admin/community/reports/profiles/${reportId}/detail`,
+				`/admin/v2/reports/${reportId}`,
 			);
-			return response.data;
+			return response.data.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -153,10 +153,10 @@ export const reports = {
 	) => {
 		try {
 			const response = await axiosServer.patch(
-				`/admin/community/reports/profiles/${reportId}/status`,
+				`/admin/v2/reports/${reportId}/status`,
 				{ status, adminMemo },
 			);
-			return response.data;
+			return response.data.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -205,12 +205,12 @@ export const userReview = {
 				params.excludeUserIds = excludeUserIds.join(',');
 			}
 
-			const response = await axiosServer.get('/admin/profile-images/pending', {
+			const response = await axiosServer.get('/admin/v2/profile-review/pending', {
 				params,
 			});
 
 			;
-			return response.data;
+			return response.data.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -220,10 +220,10 @@ export const userReview = {
 		try {
 			;
 
-			const response = await axiosServer.get(`/admin/user-review/${userId}`);
+			const response = await axiosServer.get(`/admin/v2/profile-review/users/${userId}`);
 
 			;
-			return response.data;
+			return response.data.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -233,10 +233,10 @@ export const userReview = {
 		try {
 			;
 
-			const response = await axiosServer.post(`/admin/profile-images/users/${userId}/approve`);
+			const response = await axiosServer.post(`/admin/v2/profile-review/users/${userId}/approve-profile`);
 
 			;
-			return response.data;
+			return response.data.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -246,13 +246,13 @@ export const userReview = {
 		try {
 			;
 
-			const response = await axiosServer.post(`/admin/user-review/${userId}/reject`, {
+			const response = await axiosServer.post(`/admin/v2/profile-review/users/${userId}/reject-profile`, {
 				category,
 				reason,
 			});
 
 			;
-			return response.data;
+			return response.data.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -294,13 +294,13 @@ export const userReview = {
 			;
 
 			const response = await axiosServer.patch(
-				`/admin/profiles/${userId}/rank`,
+				`/admin/v2/profile-review/users/${userId}/rank`,
 				{ rank },
 				{ params: { emitEvent } },
 			);
 
 			;
-			return response.data;
+			return response.data.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -325,11 +325,21 @@ export const userReview = {
 			if (filters.universityId) params.universityId = filters.universityId;
 			if (filters.reviewedBy) params.reviewedBy = filters.reviewedBy;
 
-			const response = await axiosServer.get('/admin/profile-images/review-history', {
+			const response = await axiosServer.get('/admin/v2/profile-review/history', {
 				params,
 			});
 
-			return response.data;
+			const data = response.data.data;
+			const meta = response.data.meta;
+			return {
+				items: data,
+				pagination: {
+					page: meta.page,
+					limit: meta.limit,
+					total: meta.total,
+					hasMore: meta.page < meta.totalPages,
+				},
+			};
 		} catch (error: any) {
 			throw error;
 		}
@@ -341,10 +351,10 @@ export const profileImages = {
 		try {
 			;
 
-			const response = await axiosServer.get('/admin/profile-images/pending');
+			const response = await axiosServer.get('/admin/v2/profile-review/pending');
 
 			;
-			return response.data;
+			return response.data.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -354,10 +364,10 @@ export const profileImages = {
 		try {
 			;
 
-			const response = await axiosServer.post(`/admin/profile-images/users/${userId}/approve`);
+			const response = await axiosServer.post(`/admin/v2/profile-review/users/${userId}/approve-profile`);
 
 			;
-			return response.data;
+			return response.data.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -367,12 +377,12 @@ export const profileImages = {
 		try {
 			;
 
-			const response = await axiosServer.post(`/admin/profile-images/users/${userId}/reject`, {
+			const response = await axiosServer.post(`/admin/v2/profile-review/users/${userId}/reject-profile`, {
 				rejectionReason,
 			});
 
 			;
-			return response.data;
+			return response.data.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -382,10 +392,12 @@ export const profileImages = {
 		try {
 			;
 
-			const response = await axiosServer.post(`/admin/profile-images/${imageId}/approve`);
+			const response = await axiosServer.post(`/admin/v2/profile-review/images/${imageId}/action`, {
+				action: 'approve',
+			});
 
 			;
-			return response.data;
+			return response.data.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -395,12 +407,13 @@ export const profileImages = {
 		try {
 			;
 
-			const response = await axiosServer.post(`/admin/profile-images/${imageId}/reject`, {
-				rejectionReason,
+			const response = await axiosServer.post(`/admin/v2/profile-review/images/${imageId}/action`, {
+				action: 'reject',
+				reason: rejectionReason,
 			});
 
 			;
-			return response.data;
+			return response.data.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -411,11 +424,12 @@ export const profileImages = {
 			;
 
 			const response = await axiosServer.post(
-				`/admin/profile-images/users/${userId}/set-main/${imageId}`,
+				`/admin/v2/profile-review/images/${imageId}/action`,
+				{ action: 'setMain' },
 			);
 
 			;
-			return response.data;
+			return response.data.data;
 		} catch (error: any) {
 			throw error;
 		}

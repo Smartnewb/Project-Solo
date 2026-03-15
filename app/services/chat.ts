@@ -113,7 +113,7 @@ export interface ChatCsvExportParams {
 class ChatService {
   async getChatRooms(params: ChatRoomsParams): Promise<ChatRoomsResponse> {
     try {
-      const response = await axiosServer.get<ChatRoomsResponse>('/admin/chat/rooms', {
+      const response = await axiosServer.get<{ data: ChatRoomsResponse; meta: unknown }>('/admin/v2/chat/rooms', {
         params: {
           startDate: params.startDate,
           endDate: params.endDate,
@@ -123,7 +123,7 @@ class ChatService {
           limit: params.limit || 20
         }
       });
-      return response.data;
+      return response.data.data;
     } catch (error: any) {
       console.error('채팅방 목록 조회 실패:', error);
       throw new Error(error.response?.data?.message || '채팅방 목록을 불러오는데 실패했습니다.');
@@ -132,12 +132,15 @@ class ChatService {
 
   async getChatMessages(params: ChatMessagesParams): Promise<ChatMessagesResponse> {
     try {
-      const response = await axiosServer.get<ChatMessagesResponse>('/admin/chat/messages', {
-        params: {
-          chatRoomId: params.chatRoomId,
+      const response = await axiosServer.get<{ data: ChatMessagesResponse }>(
+        `/admin/v2/chat/rooms/${params.chatRoomId}/messages`,
+        {
+          params: {
+            limit: params.limit || 50,
+          }
         }
-      });
-      return response.data;
+      );
+      return response.data.data;
     } catch (error: any) {
       console.error('채팅 메시지 조회 실패:', error);
       throw new Error(error.response?.data?.message || '채팅 메시지를 불러오는데 실패했습니다.');
@@ -146,14 +149,14 @@ class ChatService {
 
   async getChatStats(params: ChatStatsParams = {}): Promise<ChatStatsResponse> {
     try {
-      const response = await axiosServer.get<ChatStatsResponse>('/admin/chat/stats', {
+      const response = await axiosServer.get<{ data: ChatStatsResponse }>('/admin/v2/chat/stats', {
         params: {
           startDate: params.startDate,
           endDate: params.endDate,
           preset: params.preset,
         }
       });
-      return response.data;
+      return response.data.data;
     } catch (error: any) {
       console.error('채팅 통계 조회 실패:', error);
       throw new Error(error.response?.data?.message || '채팅 통계를 불러오는데 실패했습니다.');
@@ -162,7 +165,7 @@ class ChatService {
 
   async exportChatsToCsv(params: ChatCsvExportParams = {}): Promise<void> {
     try {
-      const response = await axiosServer.get('/admin/chat/export/csv', {
+      const response = await axiosServer.get('/admin/v2/chat/export', {
         params: {
           startDate: params.startDate,
           endDate: params.endDate,
