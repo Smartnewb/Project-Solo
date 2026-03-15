@@ -174,7 +174,7 @@ export const stats = {
 			const response = await axiosServer.get('/admin/v2/stats/users', {
 				params,
 			});
-			const raw = response.data.data;
+			const raw = response.data?.data ?? {};
 			const gender = raw.gender ?? {};
 			const maleCount = gender.male ?? 0;
 			const femaleCount = gender.female ?? 0;
@@ -202,7 +202,7 @@ export const stats = {
 			if (region) params.region = region;
 
 			const response = await axiosServer.get('/admin/v2/stats/users', { params });
-			const raw = response.data.data;
+			const raw = response.data?.data ?? {};
 			const totalCount = raw.totalUsers ?? 0;
 			const universities = (raw.universities ?? []).map((u: any) => ({
 				universityName: u.name,

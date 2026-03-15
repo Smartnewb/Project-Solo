@@ -90,7 +90,7 @@ export const aiChat = {
 		try {
 			const response = await axiosServer.get(`/admin/v2/ai-chat/sessions/${sessionId}/messages`);
 			;
-			const raw = response.data.data;
+			const raw = response.data?.data ?? {};
 			return {
 				messages: raw.items || [],
 				totalCount: raw.totalCount || 0,
