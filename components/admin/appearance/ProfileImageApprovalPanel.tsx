@@ -100,7 +100,7 @@ const ProfileImageApprovalPanel: React.FC = () => {
       setError(null);
       
       const response = await AdminService.profileImages.getPendingProfileImages();
-      setPendingUsers(response || []);
+      setPendingUsers(response.data || []);
     } catch (error: any) {
       console.error('심사 대기 중인 프로필 이미지 목록 조회 오류:', error);
       setError(error.message || '데이터를 불러오는 중 오류가 발생했습니다.');

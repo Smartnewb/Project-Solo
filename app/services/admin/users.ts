@@ -66,7 +66,7 @@ export const userAppearance = {
 				const response = await axiosServer.get(url);
 				;
 				;
-				return response.data.data;
+				return { data: response.data.data, meta: response.data.meta };
 			} catch (error: any) {
 				throw error;
 			}
@@ -88,7 +88,7 @@ export const userAppearance = {
 
 			;
 
-			return response.data.data;
+			return { data: response.data.data, meta: response.data.meta };
 		} catch (error) {
 			throw error;
 		}
@@ -854,7 +854,7 @@ export const userAppearance = {
 			const response = await axiosServer.get(`/admin/v2/users?filter=verified&${queryParams.toString()}`);
 
 			;
-			return response.data.data;
+			return { data: response.data.data, meta: response.data.meta };
 		} catch (error: any) {
 			throw error;
 		}
@@ -926,7 +926,7 @@ export const userAppearance = {
 			const response = await axiosServer.get(`/admin/v2/users?filter=blacklisted&${params.toString()}`);
 
 			;
-			return response.data.data;
+			return { data: response.data.data, meta: response.data.meta };
 		} catch (error: any) {
 			throw error;
 		}
@@ -992,7 +992,7 @@ export const userAppearance = {
 			});
 
 			;
-			return response.data.data;
+			return { data: response.data.data, meta: response.data.meta };
 		} catch (error: any) {
 			throw error;
 		}
@@ -1011,7 +1011,7 @@ export const userAppearance = {
 			});
 
 			;
-			return response.data.data;
+			return { data: response.data.data, meta: response.data.meta };
 		} catch (error: any) {
 			throw error;
 		}
@@ -1035,7 +1035,7 @@ export const userAppearance = {
 			});
 
 			;
-			return response.data.data;
+			return { data: response.data.data, meta: response.data.meta };
 		} catch (error: any) {
 			throw error;
 		}

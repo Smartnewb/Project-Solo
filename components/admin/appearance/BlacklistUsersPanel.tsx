@@ -69,8 +69,8 @@ const BlacklistUsersPanel: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const response: BlacklistUsersResponse = await AdminService.userAppearance.getBlacklistUsers(getRegionParam());
-      setUsers(response.users || []);
+      const response = await AdminService.userAppearance.getBlacklistUsers(getRegionParam());
+      setUsers(response.data || []);
     } catch (err: any) {
       console.error('블랙리스트 사용자 목록 조회 중 오류:', err);
       setError(err.message ?? '블랙리스트 사용자 목록을 불러오는 중 오류가 발생했습니다.');

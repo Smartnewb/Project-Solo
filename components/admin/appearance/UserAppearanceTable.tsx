@@ -169,8 +169,8 @@ const UserAppearanceTable = forwardRef<
         ...(userStatus && { userStatus })
       });
 
-      setUsers(response.items);
-      setTotalItems(response.meta.totalItems);
+      setUsers(response.data);
+      setTotalItems(response.meta?.total ?? 0);
     } catch (err: any) {
       console.error('사용자 목록 조회 중 오류:', err);
       setError(err.message || '사용자 목록을 불러오는 중 오류가 발생했습니다.');

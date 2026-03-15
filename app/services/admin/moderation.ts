@@ -62,6 +62,7 @@ export interface ReviewHistoryResponse {
 		page: number;
 		limit: number;
 		total: number;
+		totalPages: number;
 		hasMore: boolean;
 	};
 }
@@ -210,7 +211,7 @@ export const userReview = {
 			});
 
 			;
-			return response.data.data;
+			return { data: response.data.data, meta: response.data.meta };
 		} catch (error: any) {
 			throw error;
 		}
@@ -337,6 +338,7 @@ export const userReview = {
 					page: meta.page,
 					limit: meta.limit,
 					total: meta.total,
+					totalPages: meta.totalPages,
 					hasMore: meta.page < meta.totalPages,
 				},
 			};
@@ -354,7 +356,7 @@ export const profileImages = {
 			const response = await axiosServer.get('/admin/v2/profile-review/pending');
 
 			;
-			return response.data.data;
+			return { data: response.data.data, meta: response.data.meta };
 		} catch (error: any) {
 			throw error;
 		}
