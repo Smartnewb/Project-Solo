@@ -66,7 +66,27 @@ export const stats = {
 			if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
 
 			const response = await axiosServer.get('/admin/v2/stats/users/trend', { params });
-			return response.data.data;
+			const raw = response.data.data;
+			return {
+				...raw,
+				data: (raw.data || []).map((item: { date: string; count: number }) => {
+					const parts = item.date.split('-');
+					const year = parseInt(parts[0], 10);
+					const week = parseInt(parts[1], 10);
+					const jan4 = new Date(year, 0, 4);
+					const dayOfWeek = jan4.getDay() || 7;
+					const weekStart = new Date(jan4);
+					weekStart.setDate(jan4.getDate() - dayOfWeek + 1 + (week - 1) * 7);
+					const weekEnd = new Date(weekStart);
+					weekEnd.setDate(weekStart.getDate() + 6);
+					return {
+						weekStart: weekStart.toISOString().split('T')[0],
+						weekEnd: weekEnd.toISOString().split('T')[0],
+						count: item.count,
+						label: `${weekStart.toISOString().split('T')[0]} ~ ${weekEnd.toISOString().split('T')[0]}`,
+					};
+				}),
+			};
 		} catch (error) {
 			throw error;
 		}
@@ -78,7 +98,15 @@ export const stats = {
 			if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
 
 			const response = await axiosServer.get('/admin/v2/stats/users/trend', { params });
-			return response.data.data;
+			const raw = response.data.data;
+			return {
+				...raw,
+				data: (raw.data || []).map((item: { date: string; count: number }) => ({
+					month: item.date,
+					count: item.count,
+					label: item.date,
+				})),
+			};
 		} catch (error) {
 			throw error;
 		}
@@ -143,7 +171,23 @@ export const stats = {
 			const response = await axiosServer.get('/admin/v2/stats/users', {
 				params,
 			});
-			return response.data.data;
+			const raw = response.data.data;
+			const gender = raw.gender ?? {};
+			const maleCount = gender.male ?? 0;
+			const femaleCount = gender.female ?? 0;
+			const totalCount = raw.totalUsers ?? 0;
+			const malePercentage = gender.maleRatio ?? 0;
+			const femalePercentage = gender.femaleRatio ?? 0;
+			const maleRatioInt = Math.round(malePercentage);
+			const femaleRatioInt = Math.round(femalePercentage);
+			return {
+				maleCount,
+				femaleCount,
+				totalCount,
+				malePercentage,
+				femalePercentage,
+				genderRatio: `${maleRatioInt}:${femaleRatioInt}`,
+			};
 		} catch (error) {
 			throw error;
 		}
@@ -155,8 +199,19 @@ export const stats = {
 			if (region) params.region = region;
 
 			const response = await axiosServer.get('/admin/v2/stats/users', { params });
-
-			return response.data.data;
+			const raw = response.data.data;
+			const totalCount = raw.totalUsers ?? 0;
+			const universities = (raw.universities ?? []).map((u: any) => ({
+				universityName: u.name,
+				totalCount: u.totalUsers ?? 0,
+				maleCount: u.maleUsers ?? 0,
+				femaleCount: u.femaleUsers ?? 0,
+				percentage: u.ratio ?? 0,
+				genderRatio: (u.maleUsers ?? 0) > 0 || (u.femaleUsers ?? 0) > 0
+					? `${u.maleUsers ?? 0}:${u.femaleUsers ?? 0}`
+					: '-',
+			}));
+			return { universities, totalCount };
 		} catch (error) {
 			throw error;
 		}
@@ -231,7 +286,15 @@ export const stats = {
 			if (region) params.region = region;
 
 			const response = await axiosServer.get('/admin/v2/stats/withdrawals', { params });
-			return response.data.data;
+			const raw = response.data.data;
+			const trend = raw.trend || raw.data || [];
+			return {
+				...raw,
+				data: trend.map((item: { date: string; count: number }) => ({
+					...item,
+					label: item.date,
+				})),
+			};
 		} catch (error) {
 			throw error;
 		}
@@ -243,7 +306,26 @@ export const stats = {
 			if (region) params.region = region;
 
 			const response = await axiosServer.get('/admin/v2/stats/withdrawals', { params });
-			return response.data.data;
+			const raw = response.data.data;
+			const trend = raw.trend || raw.data || [];
+			return {
+				...raw,
+				data: trend.map((item: { date: string; count: number }) => {
+					const parts = item.date.split('-');
+					const year = parseInt(parts[0], 10);
+					const week = parseInt(parts[1], 10);
+					const jan4 = new Date(year, 0, 4);
+					const dayOfWeek = jan4.getDay() || 7;
+					const weekStart = new Date(jan4);
+					weekStart.setDate(jan4.getDate() - dayOfWeek + 1 + (week - 1) * 7);
+					const weekEnd = new Date(weekStart);
+					weekEnd.setDate(weekStart.getDate() + 6);
+					return {
+						...item,
+						label: `${weekStart.toISOString().split('T')[0]} ~ ${weekEnd.toISOString().split('T')[0]}`,
+					};
+				}),
+			};
 		} catch (error) {
 			throw error;
 		}
@@ -255,7 +337,15 @@ export const stats = {
 			if (region) params.region = region;
 
 			const response = await axiosServer.get('/admin/v2/stats/withdrawals', { params });
-			return response.data.data;
+			const raw = response.data.data;
+			const trend = raw.trend || raw.data || [];
+			return {
+				...raw,
+				data: trend.map((item: { date: string; count: number }) => ({
+					...item,
+					label: item.date,
+				})),
+			};
 		} catch (error) {
 			throw error;
 		}
@@ -270,7 +360,15 @@ export const stats = {
 			if (region) params.region = region;
 
 			const response = await axiosServer.get('/admin/v2/stats/withdrawals', { params });
-			return response.data.data;
+			const raw = response.data.data;
+			const trend = raw.trend || raw.data || [];
+			return {
+				...raw,
+				data: trend.map((item: { date: string; count: number }) => ({
+					...item,
+					label: item.date,
+				})),
+			};
 		} catch (error) {
 			throw error;
 		}
@@ -292,7 +390,14 @@ export const stats = {
 	getChurnRate: async () => {
 		try {
 			const response = await axiosServer.get('/admin/v2/stats/withdrawals');
-			return response.data.data;
+			const raw = response.data.data;
+			const cr = raw.churnRate ?? {};
+			return {
+				...raw,
+				dailyChurnRate: cr.daily ?? 0,
+				weeklyChurnRate: cr.weekly ?? 0,
+				monthlyChurnRate: cr.monthly ?? 0,
+			};
 		} catch (error) {
 			throw error;
 		}
