@@ -7,6 +7,9 @@ export interface MatchingDashboardResponse {
 	pool: PoolOverview;
 	matchRate: MatchRate;
 	postMatchFunnel: PostMatchFunnel;
+	chatEngagement: ChatEngagement;
+	periodComparison: PeriodComparison;
+	matchDetails: MatchDetail[];
 	pipelineTransparency: PipelineTransparency;
 	regionStats: RegionStat[];
 	segmentStats: SegmentStat[];
@@ -20,8 +23,9 @@ export interface MatchingDashboardResponse {
 export interface PoolOverview {
 	totalEligible: number;
 	activeUsers30d: number;
-	male: { maleCount: number; genderRatio: string };
-	female: { femaleCount: number };
+	maleCount: number;
+	femaleCount: number;
+	genderRatio: string;
 	byRank: { S: number; A: number; B: number; C: number; UNKNOWN: number };
 	prefOptionZeroCount: number;
 }
@@ -96,6 +100,8 @@ export interface BatchPerformance {
 
 export interface AtRiskUser {
 	userId: string;
+	name: string;
+	gender: 'MALE' | 'FEMALE';
 	consecutiveFailureDays: number;
 	lastFailureReason: string;
 	lastFailedAt: string;
@@ -133,6 +139,53 @@ export interface HealthScore {
 	score: number;
 	grade: 'HEALTHY' | 'CAUTION' | 'CRITICAL';
 	alerts: HealthAlert[];
+}
+
+// --- Chat Engagement ---
+
+export interface ChatEngagement {
+	totalRooms: number;
+	roomsWithMessages: number;
+	mutualChatRooms: number;
+	avgMessagesPerRoom: number | null;
+	avgMinutesToFirstMessage: number | null;
+	totalMessages: number;
+	messageRate: number;
+	mutualChatRate: number;
+}
+
+// --- Period Comparison ---
+
+export interface PeriodComparisonMetric {
+	current: number;
+	previous: number;
+	deltaPercent: number | null;
+}
+
+export interface PeriodComparison {
+	previousPeriodFrom: string;
+	previousPeriodTo: string;
+	matchesCreated: PeriodComparisonMetric;
+	likesSent: PeriodComparisonMetric;
+	mutualAccepted: PeriodComparisonMetric;
+	chatRoomsOpened: PeriodComparisonMetric;
+}
+
+// --- Match Details ---
+
+export interface MatchDetail {
+	connectionId: string;
+	matchType: 'scheduled' | 'rematching' | 'profile_viewer' | 'admin';
+	publishedAt: string;
+	maleName: string;
+	femaleName: string;
+	likeStatus: 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'REJECTED' | null;
+	hasLetter: boolean;
+	hasChatRoom: boolean;
+	chatActive: boolean;
+	activity24hStatus: 'mutual' | 'one_sided' | 'inactive' | null;
+	messageCount: number;
+	lastMessageAt: string | null;
 }
 
 // --- User Diagnosis ---

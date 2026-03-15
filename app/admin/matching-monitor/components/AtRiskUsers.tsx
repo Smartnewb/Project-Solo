@@ -13,10 +13,11 @@ import {
 	TableHead,
 	TableRow,
 	Chip,
+	Tooltip as MuiTooltip,
 	ToggleButton,
 	ToggleButtonGroup,
 } from '@mui/material';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
 import type { AtRiskUsers as AtRiskUsersType } from '../types';
 
@@ -96,7 +97,8 @@ export default function AtRiskUsersSection({
 							<Table size="small" stickyHeader>
 								<TableHead>
 									<TableRow>
-										<TableCell>유저 ID</TableCell>
+										<TableCell>이름</TableCell>
+										<TableCell>성별</TableCell>
 										<TableCell align="right">연속 실패일</TableCell>
 										<TableCell>마지막 실패 사유</TableCell>
 										<TableCell>시각</TableCell>
@@ -105,7 +107,7 @@ export default function AtRiskUsersSection({
 								<TableBody>
 									{users.length === 0 ? (
 										<TableRow>
-											<TableCell colSpan={4} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+											<TableCell colSpan={5} align="center" sx={{ py: 4, color: 'text.secondary' }}>
 												위험 유저 없음
 											</TableCell>
 										</TableRow>
@@ -118,9 +120,22 @@ export default function AtRiskUsersSection({
 												onClick={() => onUserClick(user.userId)}
 											>
 												<TableCell>
-													<Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
-														{user.userId.slice(0, 8)}...
-													</Typography>
+													<MuiTooltip title={user.userId} arrow placement="top">
+														<Typography variant="body2" fontWeight={600}>
+															{user.name}
+														</Typography>
+													</MuiTooltip>
+												</TableCell>
+												<TableCell>
+													<Chip
+														label={user.gender === 'MALE' ? '남' : '여'}
+														size="small"
+														sx={{
+															bgcolor: user.gender === 'MALE' ? '#eff6ff' : '#fdf2f8',
+															color: user.gender === 'MALE' ? '#3b82f6' : '#ec4899',
+															fontWeight: 600,
+														}}
+													/>
 												</TableCell>
 												<TableCell align="right">
 													<Chip
@@ -159,7 +174,7 @@ export default function AtRiskUsersSection({
 									<CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
 									<XAxis type="number" tick={{ fontSize: 12 }} />
 									<YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={140} />
-									<Tooltip
+									<RechartsTooltip
 										formatter={(value: number) => [value.toLocaleString(), '건수']}
 										labelFormatter={(label: string, payload: any[]) =>
 											payload?.[0]?.payload?.fullName || label

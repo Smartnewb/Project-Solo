@@ -29,8 +29,7 @@ interface Props {
 }
 
 export default function PoolOverviewSection({ pool, segments }: Props) {
-	const maleCount = pool.male.maleCount;
-	const femaleCount = pool.female.femaleCount;
+	const { maleCount, femaleCount } = pool;
 	const total = maleCount + femaleCount;
 	const malePercent = total > 0 ? (maleCount / total) * 100 : 50;
 
@@ -56,7 +55,7 @@ export default function PoolOverviewSection({ pool, segments }: Props) {
 							<Box sx={{ width: `${100 - malePercent}%`, bgcolor: '#ec4899' }} />
 						</Box>
 						<Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-							성비 {pool.male.genderRatio}
+							성비 {pool.genderRatio}
 						</Typography>
 					</Box>
 

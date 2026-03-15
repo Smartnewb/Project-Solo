@@ -26,6 +26,9 @@ import FunnelChart from './components/FunnelChart';
 import PipelineAnalysis from './components/PipelineAnalysis';
 import RegionStats from './components/RegionStats';
 import GlobalMatchingSection from './components/GlobalMatching';
+import ChatEngagementSection from './components/ChatEngagement';
+import PeriodComparisonSection from './components/PeriodComparison';
+import MatchDetailsSection from './components/MatchDetails';
 import AtRiskUsersSection from './components/AtRiskUsers';
 import UserDiagnosis from './components/UserDiagnosis';
 
@@ -56,7 +59,7 @@ export default function MatchingMonitorV2() {
 		queryClient.invalidateQueries({ queryKey: monitorKeys.dashboard(period, country) });
 	}, [queryClient, period, country]);
 
-	const TAB_RISK_USERS = 3;
+	const TAB_RISK_USERS = 4;
 
 	const handleUserClick = useCallback((userId: string) => {
 		setDiagnosisUserId(userId);
@@ -147,7 +150,8 @@ export default function MatchingMonitorV2() {
 							sx={{ borderBottom: 1, borderColor: 'divider', mt: 3 }}
 						>
 							<Tab label="종합 현황" />
-							<Tab label="퍼널 & 파이프라인" />
+							<Tab label="퍼널 & 채팅" />
+							<Tab label="매칭 상세" />
 							<Tab label="지역 & 글로벌" />
 							<Tab label="위험 유저 관리" />
 						</Tabs>
@@ -158,21 +162,27 @@ export default function MatchingMonitorV2() {
 								matchRate={data.matchRate}
 								funnel={data.postMatchFunnel}
 							/>
+							<PeriodComparisonSection data={data.periodComparison} />
 							<PoolOverviewSection pool={data.pool} segments={data.segmentStats} />
 							<BatchPerformanceSection data={data.batchPerformance} />
 						</TabPanel>
 
 						<TabPanel value={activeTab} index={1}>
 							<FunnelChart data={data.postMatchFunnel} />
+							<ChatEngagementSection data={data.chatEngagement} />
 							<PipelineAnalysis data={data.pipelineTransparency} />
 						</TabPanel>
 
 						<TabPanel value={activeTab} index={2}>
+							<MatchDetailsSection data={data.matchDetails} />
+						</TabPanel>
+
+						<TabPanel value={activeTab} index={3}>
 							<RegionStats data={data.regionStats} />
 							<GlobalMatchingSection data={data.globalMatching} ttl={data.historyTtl} />
 						</TabPanel>
 
-						<TabPanel value={activeTab} index={3}>
+						<TabPanel value={activeTab} index={4}>
 							<AtRiskUsersSection data={data.atRiskUsers} onUserClick={handleUserClick} />
 							<UserDiagnosis initialUserId={diagnosisUserId} />
 						</TabPanel>
