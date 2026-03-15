@@ -22,6 +22,7 @@ import {
   Chip
 } from '@mui/material';
 import axiosServer from '@/utils/axios';
+import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 import { useBatchStatus } from './useBatchStatus';
 
 // 컴포넌트 임포트
@@ -117,6 +118,10 @@ const batchAllMatchableUsers = () =>
   });
 
 function MatchingManagementV2Content() {
+  useEffect(() => {
+    const unpatch = patchAdminAxios();
+    return unpatch;
+  }, []);
   const [activeTab, setActiveTab] = useState<number>(0);
   const {
     status: batchStatus,

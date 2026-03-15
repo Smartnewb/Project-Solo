@@ -53,14 +53,13 @@ interface User {
 }
 
 type ApiResponse = {
-  items: User[];
-  meta: {
-    currentPage: number;
-    itemsPerPage: number;
-    totalItems: number;
+  users: User[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
     totalPages: number;
-    hasNextPage: boolean;
-    hasPreviousPage: boolean;
+    hasMore: boolean;
   };
 };
 
@@ -124,10 +123,10 @@ function UsersV2Content() {
 
       // Nest.js API 호출
       const response = await axiosServer.get<ApiResponse>(`/admin/users?${params}`);
-      const { items, meta } = response.data;
+      const { users: userList, pagination } = response.data;
 
-      setUsers(items);
-      setTotalCount(meta.totalItems);
+      setUsers(userList);
+      setTotalCount(pagination.total);
 
     } catch (err: any) {
       setError(err.message || '사용자 목록을 불러오는 중 오류가 발생했습니다.');

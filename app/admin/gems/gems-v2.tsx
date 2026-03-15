@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Controller } from 'react-hook-form';
 import { useToast } from '@/shared/ui/admin/toast';
 import { useBulkGrantGems } from '@/app/admin/hooks';
@@ -50,6 +50,7 @@ import {
   Avatar
 } from '@mui/material';
 import axiosServer from '@/utils/axios';
+import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 import { useAdminForm } from '@/app/admin/hooks/forms';
 import { gemsFormSchema, type GemsFormData } from '@/app/admin/hooks/forms/schemas/gems.schema';
 
@@ -82,6 +83,10 @@ interface BulkGrantResponse {
 }
 
 function GemsManagementPageContent() {
+  useEffect(() => {
+    const unpatch = patchAdminAxios();
+    return unpatch;
+  }, []);
   const toast = useToast();
   const bulkGrantGems = useBulkGrantGems();
 
