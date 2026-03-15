@@ -370,6 +370,49 @@ export const stats = {
 	},
 };
 
+export const dashboardV2 = {
+	getSummary: async (startDate?: string, endDate?: string) => {
+		// V2 ADAPTER
+		const params: any = {};
+		if (startDate) params.startDate = startDate;
+		if (endDate) params.endDate = endDate;
+		const response = await axiosServer.get('/admin/v2/dashboard/summary', { params });
+		return response.data.data;
+	},
+
+	getRevenue: async () => {
+		// V2 ADAPTER
+		const response = await axiosServer.get('/admin/v2/dashboard/revenue');
+		return response.data.data;
+	},
+
+	getSignups: async (date?: string) => {
+		// V2 ADAPTER
+		const params: any = {};
+		if (date) params.date = date;
+		const response = await axiosServer.get('/admin/v2/dashboard/signups', { params });
+		return response.data.data;
+	},
+
+	getStatsOverview: async (startDate?: string, endDate?: string) => {
+		// V2 ADAPTER
+		const params: any = {};
+		if (startDate) params.startDate = startDate;
+		if (endDate) params.endDate = endDate;
+		const response = await axiosServer.get('/admin/v2/stats/overview', { params });
+		return response.data.data;
+	},
+
+	getRetention: async (startDate?: string, endDate?: string) => {
+		// V2 ADAPTER
+		const params: any = {};
+		if (startDate) params.startDate = startDate;
+		if (endDate) params.endDate = endDate;
+		const response = await axiosServer.get('/admin/v2/stats/retention', { params });
+		return response.data.data;
+	},
+};
+
 export const kpiReport = {
 	getLatest: async (): Promise<import('@/app/admin/kpi-report/types').KpiReport> => {
 		try {

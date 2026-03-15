@@ -199,12 +199,12 @@ export const userReview = {
 				params.excludeUserIds = excludeUserIds.join(',');
 			}
 
-			const response = await axiosServer.get('/admin/profile-images/pending', {
+			// V2 ADAPTER
+			const response = await axiosServer.get('/admin/v2/profile-review/pending', {
 				params,
 			});
 
-			;
-			return response.data;
+			return response.data.data ?? response.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -214,10 +214,10 @@ export const userReview = {
 		try {
 			;
 
-			const response = await axiosServer.get(`/admin/user-review/${userId}`);
+			// V2 ADAPTER
+			const response = await axiosServer.get(`/admin/v2/profile-review/users/${userId}`);
 
-			;
-			return response.data;
+			return response.data.data ?? response.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -227,9 +227,11 @@ export const userReview = {
 		try {
 			;
 
-			const response = await axiosServer.post(`/admin/profile-images/users/${userId}/approve`);
+			// V2 ADAPTER
+			const response = await axiosServer.post(
+				`/admin/v2/profile-review/users/${userId}/approve-profile`,
+			);
 
-			;
 			return response.data;
 		} catch (error: any) {
 			throw error;
@@ -240,12 +242,12 @@ export const userReview = {
 		try {
 			;
 
-			const response = await axiosServer.post(`/admin/user-review/${userId}/reject`, {
-				category,
-				reason,
-			});
+			// V2 ADAPTER
+			const response = await axiosServer.post(
+				`/admin/v2/profile-review/users/${userId}/reject-profile`,
+				{ category, reason },
+			);
 
-			;
 			return response.data;
 		} catch (error: any) {
 			throw error;
@@ -287,13 +289,13 @@ export const userReview = {
 		try {
 			;
 
+			// V2 ADAPTER
 			const response = await axiosServer.patch(
-				`/admin/profiles/${userId}/rank`,
+				`/admin/v2/profile-review/users/${userId}/rank`,
 				{ rank },
 				{ params: { emitEvent } },
 			);
 
-			;
 			return response.data;
 		} catch (error: any) {
 			throw error;
@@ -319,7 +321,8 @@ export const userReview = {
 			if (filters.universityId) params.universityId = filters.universityId;
 			if (filters.reviewedBy) params.reviewedBy = filters.reviewedBy;
 
-			const response = await axiosServer.get('/admin/profile-images/review-history', {
+			// V2 ADAPTER
+			const response = await axiosServer.get('/admin/v2/profile-review/history', {
 				params,
 			});
 

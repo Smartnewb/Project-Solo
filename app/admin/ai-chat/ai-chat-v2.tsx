@@ -69,8 +69,8 @@ function AIChatManagementPageContent() {
   const [selectedSessionId, setSelectedSessionId] = useState<string>('');
 
   const { data: sessionsData, isLoading, refetch } = useAiChatSessions(appliedParams);
-  const sessions = sessionsData?.sessions || [];
-  const totalCount = sessionsData?.total || 0;
+  const sessions = sessionsData?.items ?? sessionsData?.sessions ?? [];
+  const totalCount = sessionsData?.pagination?.total ?? sessionsData?.total ?? 0;
 
   const { data: messagesData, isLoading: messagesLoading } = useAiChatMessages(selectedSessionId);
 
@@ -153,7 +153,7 @@ function AIChatManagementPageContent() {
     }
   };
 
-  const selectedSession = messagesData?.session ?? null;
+  const selectedSession = sessions.find((s: any) => s.id === selectedSessionId) ?? messagesData?.session ?? null;
   const messages = messagesData?.messages ?? [];
 
   return (
