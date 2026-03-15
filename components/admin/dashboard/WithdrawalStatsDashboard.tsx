@@ -115,25 +115,40 @@ const generateEmptyMonthlyData = () => {
 // 데이터 포맷팅 함수들
 const formatData = (data: any[], type: 'daily' | 'weekly' | 'monthly') => {
   return data.map(item => {
-    let formattedDate: string;
+    const label = item.label || item.date || '';
+    let formattedDate: string = label;
 
-    switch (type) {
-      case 'daily':
-        const date = new Date(item.label);
-        formattedDate = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;
-        break;
-      case 'weekly':
-        // 주별 데이터는 "2025-05-18 ~ 2025-05-24" 형태로 오므로 시작일만 추출하여 포맷팅
-        const weekRange = item.label.split(' ~ ');
-        const startDate = new Date(weekRange[0]);
-        const month = startDate.getMonth() + 1;
-        const day = startDate.getDate();
-        formattedDate = `${month}/${day}주`;
-        break;
-      case 'monthly':
-        const monthDate = new Date(item.label);
-        formattedDate = `${monthDate.getFullYear()}년 ${monthDate.getMonth() + 1}월`;
-        break;
+    try {
+      switch (type) {
+        case 'daily': {
+          const date = new Date(label);
+          if (!isNaN(date.getTime())) {
+            formattedDate = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;
+          }
+          break;
+        }
+        case 'weekly': {
+          if (label.includes(' ~ ')) {
+            const weekRange = label.split(' ~ ');
+            const startDate = new Date(weekRange[0]);
+            if (!isNaN(startDate.getTime())) {
+              const month = startDate.getMonth() + 1;
+              const day = startDate.getDate();
+              formattedDate = `${month}/${day}주`;
+            }
+          }
+          break;
+        }
+        case 'monthly': {
+          const monthDate = new Date(label);
+          if (!isNaN(monthDate.getTime())) {
+            formattedDate = `${monthDate.getFullYear()}년 ${monthDate.getMonth() + 1}월`;
+          }
+          break;
+        }
+      }
+    } catch {
+      // 포맷팅 실패 시 원본 label 유지
     }
 
     return {

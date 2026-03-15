@@ -189,7 +189,7 @@ function ReportsManagementContent() {
 
       if (response?.items) {
         setReports(response.items);
-        setTotalCount(response.meta.totalItems);
+        setTotalCount(response.meta?.total ?? 0);
       } else {
         setReports([]);
         setTotalCount(0);

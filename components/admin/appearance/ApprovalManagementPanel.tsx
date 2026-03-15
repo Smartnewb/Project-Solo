@@ -246,33 +246,33 @@ const ApprovalManagementPanel: React.FC = () => {
         activeTab !== 2 ? AdminService.userAppearance.getReapplyUsers(1, 10, regionParam, nameSearch || undefined) : null
       ]);
 
-      const users = currentResponse.items || [];
+      const users = currentResponse.data || [];
       const currentMeta = currentResponse.meta || {};
 
       // 현재 탭 데이터 설정
       if (activeTab === 0) {
         setPendingUsers(users);
-        setPendingCount(currentMeta.totalItems || users.length);
+        setPendingCount(currentMeta.total || users.length);
       } else if (activeTab === 1) {
         setRejectedUsers(users);
-        setRejectedCount(currentMeta.totalItems || users.length);
+        setRejectedCount(currentMeta.total || users.length);
       } else {
         setReapplyUsers(users);
-        setReapplyCount(currentMeta.totalItems || users.length);
+        setReapplyCount(currentMeta.total || users.length);
       }
 
       // 다른 탭들의 카운트 설정
       if (pendingResponse && activeTab !== 0) {
-        setPendingCount(pendingResponse.meta?.totalItems || 0);
+        setPendingCount(pendingResponse.meta?.total || 0);
       }
       if (rejectedResponse && activeTab !== 1) {
-        setRejectedCount(rejectedResponse.meta?.totalItems || 0);
+        setRejectedCount(rejectedResponse.meta?.total || 0);
       }
       if (reapplyResponse && activeTab !== 2) {
-        setReapplyCount(reapplyResponse.meta?.totalItems || 0);
+        setReapplyCount(reapplyResponse.meta?.total || 0);
       }
 
-      setTotalPages(currentMeta.totalPages || Math.ceil((currentMeta.totalItems || users.length) / limit));
+      setTotalPages(currentMeta.totalPages || Math.ceil((currentMeta.total || users.length) / limit));
     } catch (err: any) {
       console.error('승인 대기 사용자 조회 오류:', err);
       setError('사용자 목록을 불러오는 중 오류가 발생했습니다.');

@@ -117,11 +117,11 @@ export default function ChatManagementTab() {
 
       const response = await chatService.getChatRooms(params);
 
-      setChatRooms(response.chatRooms);
-      setTotalCount(response.total);
+      setChatRooms(response?.chatRooms ?? []);
+      setTotalCount(response?.total ?? 0);
       setAppliedDateRange({
-        start: response.appliedStartDate,
-        end: response.appliedEndDate
+        start: response?.appliedStartDate ?? '',
+        end: response?.appliedEndDate ?? ''
       });
     } catch (error: any) {
       setError(error.message || '채팅방 목록을 불러오는데 실패했습니다.');
@@ -140,7 +140,7 @@ export default function ChatManagementTab() {
         limit: 50
       });
 
-      setChatMessages(response.messages);
+      setChatMessages(response?.messages ?? []);
     } catch (error: any) {
       setError(error.message || '채팅 메시지를 불러오는데 실패했습니다.');
     } finally {

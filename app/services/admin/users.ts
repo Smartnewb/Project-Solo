@@ -44,7 +44,7 @@ export const userAppearance = {
 			if (params.universityName) queryParams.append('universityName', params.universityName);
 			if (params.minAge) queryParams.append('minAge', params.minAge.toString());
 			if (params.maxAge) queryParams.append('maxAge', params.maxAge.toString());
-			if (params.searchTerm) queryParams.append('searchTerm', params.searchTerm);
+			if (params.searchTerm) queryParams.append('search', params.searchTerm);
 			if (params.region) queryParams.append('region', params.region);
 			if (params.useCluster !== undefined)
 				queryParams.append('useCluster', params.useCluster.toString());
@@ -56,7 +56,9 @@ export const userAppearance = {
 				queryParams.append('includeDeleted', params.includeDeleted.toString());
 			if (params.userStatus) queryParams.append('userStatus', params.userStatus);
 
-			const url = `/admin/users/appearance?${queryParams.toString()}`;
+			queryParams.append('filter', 'all');
+
+			const url = `/admin/v2/users?${queryParams.toString()}`;
 			;
 			;
 
@@ -64,7 +66,7 @@ export const userAppearance = {
 				const response = await axiosServer.get(url);
 				;
 				;
-				return response.data;
+				return { data: response.data.data, meta: response.data.meta };
 			} catch (error: any) {
 				throw error;
 			}
@@ -81,12 +83,12 @@ export const userAppearance = {
 			if (region) params.append('region', region);
 
 			const response = await axiosServer.get(
-				`/admin/users/appearance/unclassified?${params.toString()}`,
+				`/admin/v2/users?filter=ungraded&${params.toString()}`,
 			);
 
 			;
 
-			return response.data;
+			return { data: response.data.data, meta: response.data.meta };
 		} catch (error) {
 			throw error;
 		}
@@ -104,9 +106,9 @@ export const userAppearance = {
 		}
 
 		try {
-			const response = await axiosServer.patch(`/admin/users/appearance/${userId}`, { grade });
+			const response = await axiosServer.patch(`/admin/v2/users/${userId}/appearance`, { grade });
 			;
-			return response.data;
+			return response.data.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -139,11 +141,11 @@ export const userAppearance = {
 		;
 
 		try {
-			const response = await axiosServer.patch('/admin/users/appearance/bulk', {
+			const response = await axiosServer.patch('/admin/v2/users/appearance/bulk', {
 				userIds,
 				grade,
 			});
-			return response.data;
+			return response.data.data;
 		} catch (error) {
 			throw error;
 		}
@@ -153,13 +155,13 @@ export const userAppearance = {
 		try {
 			;
 
-			const endpoint = `/admin/user-review/${userId}`;
+			const endpoint = `/admin/v2/users/${userId}`;
 			;
 
 			const response = await axiosServer.get(endpoint);
 			;
 
-			const data = response.data;
+			const data = response.data.data;
 
 			if (
 				data.profileImageUrls &&
@@ -849,10 +851,10 @@ export const userAppearance = {
 			if (params.name) queryParams.append('name', params.name);
 			if (params.university) queryParams.append('university', params.university);
 
-			const response = await axiosServer.get(`/admin/users/verified?${queryParams.toString()}`);
+			const response = await axiosServer.get(`/admin/v2/users?filter=verified&${queryParams.toString()}`);
 
 			;
-			return response.data;
+			return { data: response.data.data, meta: response.data.meta };
 		} catch (error: any) {
 			throw error;
 		}
@@ -921,10 +923,10 @@ export const userAppearance = {
 			const params = new URLSearchParams();
 			if (region) params.append('region', region);
 
-			const response = await axiosServer.get(`/admin/users/blacklist?${params.toString()}`);
+			const response = await axiosServer.get(`/admin/v2/users?filter=blacklisted&${params.toString()}`);
 
 			;
-			return response.data;
+			return { data: response.data.data, meta: response.data.meta };
 		} catch (error: any) {
 			throw error;
 		}
@@ -985,12 +987,12 @@ export const userAppearance = {
 			if (region) params.region = region;
 			if (name) params.name = name;
 
-			const response = await axiosServer.get('/admin/users/approval/reapply', {
-				params,
+			const response = await axiosServer.get('/admin/v2/users', {
+				params: { filter: 'resubmission', ...params },
 			});
 
 			;
-			return response.data;
+			return { data: response.data.data, meta: response.data.meta };
 		} catch (error: any) {
 			throw error;
 		}
@@ -1004,12 +1006,12 @@ export const userAppearance = {
 			if (region) params.region = region;
 			if (name) params.name = name;
 
-			const response = await axiosServer.get('/admin/users/approval/pending', {
-				params,
+			const response = await axiosServer.get('/admin/v2/users', {
+				params: { filter: 'pending', ...params },
 			});
 
 			;
-			return response.data;
+			return { data: response.data.data, meta: response.data.meta };
 		} catch (error: any) {
 			throw error;
 		}
@@ -1028,12 +1030,12 @@ export const userAppearance = {
 			if (region) params.region = region;
 			if (name) params.name = name;
 
-			const response = await axiosServer.get('/admin/users/approval/rejected', {
-				params,
+			const response = await axiosServer.get('/admin/v2/users', {
+				params: { filter: 'rejected', ...params },
 			});
 
 			;
-			return response.data;
+			return { data: response.data.data, meta: response.data.meta };
 		} catch (error: any) {
 			throw error;
 		}

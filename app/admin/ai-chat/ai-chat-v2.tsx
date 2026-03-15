@@ -153,7 +153,9 @@ function AIChatManagementPageContent() {
     }
   };
 
-  const selectedSession = messagesData?.session ?? null;
+  const selectedSession = messagesData?.session
+    ?? sessions.find((s: AIChatSession) => s.id === selectedSessionId)
+    ?? null;
   const messages = messagesData?.messages ?? [];
 
   return (

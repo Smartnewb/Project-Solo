@@ -119,7 +119,7 @@ export default function ActionRequired() {
       try {
         setReviewLoading(true);
         const response = await AdminService.userReview.getPendingUsers(1, 1);
-        setPendingReview(response.pagination?.total ?? 0);
+        setPendingReview(response.meta?.total ?? 0);
       } catch (error) {
         setPendingReview(0);
       } finally {
@@ -135,7 +135,7 @@ export default function ActionRequired() {
         params.append("limit", "1");
         params.append("status", "pending");
         const response = await AdminService.getProfileReports(params);
-        setPendingReports(response.meta?.totalItems ?? 0);
+        setPendingReports(response.meta?.total ?? 0);
       } catch (error) {
         setPendingReports(0);
       } finally {

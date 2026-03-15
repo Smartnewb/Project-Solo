@@ -139,12 +139,12 @@ export interface PendingUser {
 }
 
 export interface PendingUsersResponse {
-  users: PendingUser[];
-  pagination: {
+  data: PendingUser[];
+  meta: {
     page: number;
     limit: number;
     total: number;
-    hasMore: boolean;
+    totalPages: number;
   };
 }
 
@@ -280,14 +280,14 @@ function ProfileReviewV2Content() {
 
       ;
 
-      if (!response || !response.users) {
+      if (!response || !response.data) {
         throw new Error(
-          "API 응답 형식이 올바르지 않습니다. users 배열이 없습니다.",
+          "API 응답 형식이 올바르지 않습니다. data 배열이 없습니다.",
         );
       }
 
       // 응답 데이터 정규화 (UI 호환성을 위한 추가 필드)
-      const normalizedUsers: PendingUser[] = response.users.map((user) => {
+      const normalizedUsers: PendingUser[] = response.data.map((user) => {
         // 전체 이미지 URL 목록 (승인된 이미지 + 대기 중인 이미지)
         const allImageUrls = [
           ...(user.approvedImageUrls || []),
@@ -310,7 +310,12 @@ function ProfileReviewV2Content() {
       ;
 
       setUsers(normalizedUsers);
-      setPagination(response.pagination);
+      setPagination(response.meta ? {
+        page: response.meta.page,
+        limit: response.meta.limit,
+        total: response.meta.total,
+        hasMore: response.meta.page < response.meta.totalPages,
+      } : { page: 1, limit: 20, total: 0, hasMore: false });
       return normalizedUsers;
     } catch (err: any) {
 

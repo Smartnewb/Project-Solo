@@ -115,8 +115,8 @@ export default function UnclassifiedUsersPanel() {
 
       const response = await AdminService.userAppearance.getUnclassifiedUsers(page, pageSize, getRegionParam());
 
-      setUsers(response.items);
-      setTotalPages(response.meta.totalPages);
+      setUsers(response.data);
+      setTotalPages(response.meta?.totalPages ?? 1);
     } catch (err: any) {
       console.error('미분류 사용자 목록 조회 중 오류:', err);
       setError(err.message ?? '미분류 사용자 목록을 불러오는 중 오류가 발생했습니다.');

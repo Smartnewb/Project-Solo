@@ -7,91 +7,109 @@ export const stats = {
 		try {
 			const params: any = {};
 			if (region) params.region = region;
-			if (includeDeleted !== undefined) params.includeDeleted = String(includeDeleted);
-			if (useCluster !== undefined) params.useCluster = String(useCluster);
+			if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
 
-			const response = await axiosServer.get('/admin/stats/users/total', {
+			const response = await axiosServer.get('/admin/v2/stats/users', {
 				params,
 			});
-			;
-			return response.data;
+			return response.data.data;
 		} catch (error) {
 			throw error;
 		}
 	},
 	getDailySignupCount: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
 		try {
-			const params: any = {};
+			const params: any = { period: 'daily' };
 			if (region) params.region = region;
-			if (includeDeleted !== undefined) params.includeDeleted = String(includeDeleted);
-			if (useCluster !== undefined) params.useCluster = String(useCluster);
+			if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
 
-			const response = await axiosServer.get('/admin/stats/users/daily', {
+			const response = await axiosServer.get('/admin/v2/stats/users', {
 				params,
 			});
-			;
-			return response.data;
+			return response.data.data;
 		} catch (error) {
 			throw error;
 		}
 	},
 	getWeeklySignupCount: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
 		try {
-			const params: any = {};
+			const params: any = { period: 'weekly' };
 			if (region) params.region = region;
-			if (includeDeleted !== undefined) params.includeDeleted = String(includeDeleted);
-			if (useCluster !== undefined) params.useCluster = String(useCluster);
+			if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
 
-			const response = await axiosServer.get('/admin/stats/users/weekly', {
+			const response = await axiosServer.get('/admin/v2/stats/users', {
 				params,
 			});
-			;
-			return response.data;
+			return response.data.data;
 		} catch (error) {
 			throw error;
 		}
 	},
 	getDailySignupTrend: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
 		try {
-			const params: any = {};
+			const params: any = { period: 'daily' };
 			if (region) params.region = region;
-			if (includeDeleted !== undefined) params.includeDeleted = String(includeDeleted);
-			if (useCluster !== undefined) params.useCluster = String(useCluster);
+			if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
 
-			const response = await axiosServer.get('/admin/stats/users/trend/daily', {
+			const response = await axiosServer.get('/admin/v2/stats/users/trend', {
 				params,
 			});
-			return response.data;
+			return response.data.data;
 		} catch (error) {
 			throw error;
 		}
 	},
 	getWeeklySignupTrend: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
 		try {
-			const params: any = {};
+			const params: any = { period: 'weekly' };
 			if (region) params.region = region;
-			if (includeDeleted !== undefined) params.includeDeleted = String(includeDeleted);
-			if (useCluster !== undefined) params.useCluster = String(useCluster);
+			if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
 
-			const response = await axiosServer.get('/admin/stats/users/trend/weekly', { params });
-			return response.data;
+			const response = await axiosServer.get('/admin/v2/stats/users/trend', { params });
+			const raw = response.data.data;
+			const trendItems = Array.isArray(raw?.data) ? raw.data : [];
+			return {
+				...raw,
+				data: trendItems.map((item: { date: string; count: number }) => {
+					if (!item?.date) return { weekStart: '', weekEnd: '', count: item?.count ?? 0, label: '' };
+					const parts = item.date.split('-');
+					const year = parseInt(parts[0], 10);
+					const week = parseInt(parts[1], 10);
+					const jan4 = new Date(year, 0, 4);
+					const dayOfWeek = jan4.getDay() || 7;
+					const weekStart = new Date(jan4);
+					weekStart.setDate(jan4.getDate() - dayOfWeek + 1 + (week - 1) * 7);
+					const weekEnd = new Date(weekStart);
+					weekEnd.setDate(weekStart.getDate() + 6);
+					return {
+						weekStart: weekStart.toISOString().split('T')[0],
+						weekEnd: weekEnd.toISOString().split('T')[0],
+						count: item.count,
+						label: `${weekStart.toISOString().split('T')[0]} ~ ${weekEnd.toISOString().split('T')[0]}`,
+					};
+				}),
+			};
 		} catch (error) {
 			throw error;
 		}
 	},
-	getMonthlySignupTrend: async (
-		region?: string,
-		includeDeleted?: boolean,
-		useCluster?: boolean,
-	) => {
+	getMonthlySignupTrend: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
 		try {
-			const params: any = {};
+			const params: any = { period: 'monthly' };
 			if (region) params.region = region;
-			if (includeDeleted !== undefined) params.includeDeleted = String(includeDeleted);
-			if (useCluster !== undefined) params.useCluster = String(useCluster);
+			if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
 
-			const response = await axiosServer.get('/admin/stats/users/trend/monthly', { params });
-			return response.data;
+			const response = await axiosServer.get('/admin/v2/stats/users/trend', { params });
+			const raw = response.data.data;
+			const trendItems = Array.isArray(raw?.data) ? raw.data : [];
+			return {
+				...raw,
+				data: trendItems.map((item: { date: string; count: number }) => ({
+					month: item?.date ?? '',
+					count: item?.count ?? 0,
+					label: item?.date ?? '',
+				})),
+			};
 		} catch (error) {
 			throw error;
 		}
@@ -105,30 +123,18 @@ export const stats = {
 		useCluster?: boolean,
 	) => {
 		try {
-			;
-			const requestData: any = {
-				startDate,
-				endDate,
+			const params: any = {
+				from: startDate,
+				to: endDate,
 			};
 
 			if (region) {
-				requestData.region = region;
+				params.region = region;
 			}
 
-			if (includeDeleted !== undefined) {
-				requestData.includeDeleted = includeDeleted;
-			}
+			const response = await axiosServer.get('/admin/v2/stats/users', { params });
 
-			if (useCluster !== undefined) {
-				requestData.useCluster = useCluster;
-			}
-
-			const response = await axiosServer.post('/admin/stats/users/custom-period', requestData);
-
-			;
-			;
-
-			return response.data;
+			return response.data.data;
 		} catch (error) {
 			throw error;
 		}
@@ -142,33 +148,19 @@ export const stats = {
 		useCluster?: boolean,
 	) => {
 		try {
-			;
-			const requestData: any = {
-				startDate,
-				endDate,
+			const params: any = {
+				period: 'daily',
+				from: startDate,
+				to: endDate,
 			};
 
 			if (region) {
-				requestData.region = region;
+				params.region = region;
 			}
 
-			if (includeDeleted !== undefined) {
-				requestData.includeDeleted = includeDeleted;
-			}
+			const response = await axiosServer.get('/admin/v2/stats/users/trend', { params });
 
-			if (useCluster !== undefined) {
-				requestData.useCluster = useCluster;
-			}
-
-			const response = await axiosServer.post(
-				'/admin/stats/users/trend/custom-period',
-				requestData,
-			);
-
-			;
-			;
-
-			return response.data;
+			return response.data.data;
 		} catch (error) {
 			throw error;
 		}
@@ -178,14 +170,27 @@ export const stats = {
 		try {
 			const params: any = {};
 			if (region) params.region = region;
-			if (includeDeleted !== undefined) params.includeDeleted = String(includeDeleted);
-			if (useCluster !== undefined) params.useCluster = String(useCluster);
 
-			const response = await axiosServer.get('/admin/stats/users/gender', {
+			const response = await axiosServer.get('/admin/v2/stats/users', {
 				params,
 			});
-			;
-			return response.data;
+			const raw = response.data?.data ?? {};
+			const gender = raw.gender ?? {};
+			const maleCount = gender.male ?? 0;
+			const femaleCount = gender.female ?? 0;
+			const totalCount = raw.totalUsers ?? 0;
+			const malePercentage = gender.maleRatio ?? 0;
+			const femalePercentage = gender.femaleRatio ?? 0;
+			const maleRatioInt = Math.round(malePercentage);
+			const femaleRatioInt = Math.round(femalePercentage);
+			return {
+				maleCount,
+				femaleCount,
+				totalCount,
+				malePercentage,
+				femalePercentage,
+				genderRatio: `${maleRatioInt}:${femaleRatioInt}`,
+			};
 		} catch (error) {
 			throw error;
 		}
@@ -195,28 +200,21 @@ export const stats = {
 		try {
 			const params: any = {};
 			if (region) params.region = region;
-			if (includeDeleted !== undefined) params.includeDeleted = String(includeDeleted);
-			if (useCluster !== undefined) params.useCluster = String(useCluster);
 
-			const response = await axiosServer.get('/admin/stats/users/universities', { params });
-			;
-			;
-
-			if (response.data && response.data.universities && response.data.universities.length > 0) {
-				;
-				;
-
-				const firstUni = response.data.universities[0];
-				;
-				;
-				;
-				;
-				;
-				;
-				;
-			}
-
-			return response.data;
+			const response = await axiosServer.get('/admin/v2/stats/users', { params });
+			const raw = response.data?.data ?? {};
+			const totalCount = raw.totalUsers ?? 0;
+			const universities = (raw.universities ?? []).map((u: any) => ({
+				universityName: u.name,
+				totalCount: u.totalUsers ?? 0,
+				maleCount: u.maleUsers ?? 0,
+				femaleCount: u.femaleUsers ?? 0,
+				percentage: u.ratio ?? 0,
+				genderRatio: (u.maleUsers ?? 0) > 0 || (u.femaleUsers ?? 0) > 0
+					? `${u.maleUsers ?? 0}:${u.femaleUsers ?? 0}`
+					: '-',
+			}));
+			return { universities, totalCount };
 		} catch (error) {
 			throw error;
 		}
@@ -226,12 +224,11 @@ export const stats = {
 		try {
 			const params: any = {};
 			if (region) params.region = region;
-			if (useCluster !== undefined) params.useCluster = String(useCluster);
 
-			const response = await axiosServer.get('/admin/stats/withdrawals/total', {
+			const response = await axiosServer.get('/admin/v2/stats/withdrawals', {
 				params,
 			});
-			return response.data;
+			return response.data.data;
 		} catch (error) {
 			throw error;
 		}
@@ -239,14 +236,13 @@ export const stats = {
 
 	getDailyWithdrawalCount: async (region?: string, useCluster?: boolean) => {
 		try {
-			const params: any = {};
+			const params: any = { period: 'daily' };
 			if (region) params.region = region;
-			if (useCluster !== undefined) params.useCluster = String(useCluster);
 
-			const response = await axiosServer.get('/admin/stats/withdrawals/daily', {
+			const response = await axiosServer.get('/admin/v2/stats/withdrawals', {
 				params,
 			});
-			return response.data;
+			return response.data.data;
 		} catch (error) {
 			throw error;
 		}
@@ -254,12 +250,11 @@ export const stats = {
 
 	getWeeklyWithdrawalCount: async (region?: string, useCluster?: boolean) => {
 		try {
-			const params: any = {};
+			const params: any = { period: 'weekly' };
 			if (region) params.region = region;
-			if (useCluster !== undefined) params.useCluster = String(useCluster);
 
-			const response = await axiosServer.get('/admin/stats/withdrawals/weekly', { params });
-			return response.data;
+			const response = await axiosServer.get('/admin/v2/stats/withdrawals', { params });
+			return response.data.data;
 		} catch (error) {
 			throw error;
 		}
@@ -267,12 +262,11 @@ export const stats = {
 
 	getMonthlyWithdrawalCount: async (region?: string, useCluster?: boolean) => {
 		try {
-			const params: any = {};
+			const params: any = { period: 'monthly' };
 			if (region) params.region = region;
-			if (useCluster !== undefined) params.useCluster = String(useCluster);
 
-			const response = await axiosServer.get('/admin/stats/withdrawals/monthly', { params });
-			return response.data;
+			const response = await axiosServer.get('/admin/v2/stats/withdrawals', { params });
+			return response.data.data;
 		} catch (error) {
 			throw error;
 		}
@@ -280,12 +274,10 @@ export const stats = {
 
 	getCustomPeriodWithdrawalCount: async (startDate: string, endDate: string) => {
 		try {
-			;
-			const response = await axiosServer.post('/admin/stats/withdrawals/custom-period', {
-				startDate,
-				endDate,
+			const response = await axiosServer.get('/admin/v2/stats/withdrawals', {
+				params: { from: startDate, to: endDate },
 			});
-			return response.data;
+			return response.data.data;
 		} catch (error) {
 			throw error;
 		}
@@ -293,12 +285,19 @@ export const stats = {
 
 	getDailyWithdrawalTrend: async (region?: string, useCluster?: boolean) => {
 		try {
-			const params: any = {};
+			const params: any = { period: 'daily' };
 			if (region) params.region = region;
-			if (useCluster !== undefined) params.useCluster = String(useCluster);
 
-			const response = await axiosServer.get('/admin/stats/withdrawals/trend/daily', { params });
-			return response.data;
+			const response = await axiosServer.get('/admin/v2/stats/withdrawals', { params });
+			const raw = response.data.data;
+			const trend = Array.isArray(raw?.trend) ? raw.trend : Array.isArray(raw?.data) ? raw.data : [];
+			return {
+				...raw,
+				data: trend.map((item: { date: string; count: number }) => ({
+					...item,
+					label: item.date,
+				})),
+			};
 		} catch (error) {
 			throw error;
 		}
@@ -306,12 +305,31 @@ export const stats = {
 
 	getWeeklyWithdrawalTrend: async (region?: string, useCluster?: boolean) => {
 		try {
-			const params: any = {};
+			const params: any = { period: 'weekly' };
 			if (region) params.region = region;
-			if (useCluster !== undefined) params.useCluster = String(useCluster);
 
-			const response = await axiosServer.get('/admin/stats/withdrawals/trend/weekly', { params });
-			return response.data;
+			const response = await axiosServer.get('/admin/v2/stats/withdrawals', { params });
+			const raw = response.data.data;
+			const trend = Array.isArray(raw?.trend) ? raw.trend : Array.isArray(raw?.data) ? raw.data : [];
+			return {
+				...raw,
+				data: trend.map((item: { date: string; count: number }) => {
+					if (!item?.date) return { ...item, label: '' };
+					const parts = item.date.split('-');
+					const year = parseInt(parts[0], 10);
+					const week = parseInt(parts[1], 10);
+					const jan4 = new Date(year, 0, 4);
+					const dayOfWeek = jan4.getDay() || 7;
+					const weekStart = new Date(jan4);
+					weekStart.setDate(jan4.getDate() - dayOfWeek + 1 + (week - 1) * 7);
+					const weekEnd = new Date(weekStart);
+					weekEnd.setDate(weekStart.getDate() + 6);
+					return {
+						...item,
+						label: `${weekStart.toISOString().split('T')[0]} ~ ${weekEnd.toISOString().split('T')[0]}`,
+					};
+				}),
+			};
 		} catch (error) {
 			throw error;
 		}
@@ -319,12 +337,19 @@ export const stats = {
 
 	getMonthlyWithdrawalTrend: async (region?: string, useCluster?: boolean) => {
 		try {
-			const params: any = {};
+			const params: any = { period: 'monthly' };
 			if (region) params.region = region;
-			if (useCluster !== undefined) params.useCluster = String(useCluster);
 
-			const response = await axiosServer.get('/admin/stats/withdrawals/trend/monthly', { params });
-			return response.data;
+			const response = await axiosServer.get('/admin/v2/stats/withdrawals', { params });
+			const raw = response.data.data;
+			const trend = Array.isArray(raw?.trend) ? raw.trend : Array.isArray(raw?.data) ? raw.data : [];
+			return {
+				...raw,
+				data: trend.map((item: { date: string; count: number }) => ({
+					...item,
+					label: item.date,
+				})),
+			};
 		} catch (error) {
 			throw error;
 		}
@@ -332,16 +357,22 @@ export const stats = {
 
 	getCustomPeriodWithdrawalTrend: async (startDate: string, endDate: string, region?: string, useCluster?: boolean) => {
 		try {
-			;
-			const requestData: any = {
-				startDate,
-				endDate,
+			const params: any = {
+				from: startDate,
+				to: endDate,
 			};
-			if (region) requestData.region = region;
-			if (useCluster !== undefined) requestData.useCluster = useCluster;
+			if (region) params.region = region;
 
-			const response = await axiosServer.post('/admin/stats/withdrawals/trend/custom-period', requestData);
-			return response.data;
+			const response = await axiosServer.get('/admin/v2/stats/withdrawals', { params });
+			const raw = response.data.data;
+			const trend = Array.isArray(raw?.trend) ? raw.trend : Array.isArray(raw?.data) ? raw.data : [];
+			return {
+				...raw,
+				data: trend.map((item: { date: string; count: number }) => ({
+					...item,
+					label: item.date,
+				})),
+			};
 		} catch (error) {
 			throw error;
 		}
@@ -350,11 +381,11 @@ export const stats = {
 	getWithdrawalReasonStats: async (startDate?: string, endDate?: string) => {
 		try {
 			const params: any = {};
-			if (startDate) params.startDate = startDate;
-			if (endDate) params.endDate = endDate;
+			if (startDate) params.from = startDate;
+			if (endDate) params.to = endDate;
 
-			const response = await axiosServer.get('/admin/stats/withdrawals/reasons', { params });
-			return response.data;
+			const response = await axiosServer.get('/admin/v2/stats/withdrawals', { params });
+			return response.data.data;
 		} catch (error) {
 			throw error;
 		}
@@ -362,8 +393,15 @@ export const stats = {
 
 	getChurnRate: async () => {
 		try {
-			const response = await axiosServer.get('/admin/stats/withdrawals/churn-rate');
-			return response.data;
+			const response = await axiosServer.get('/admin/v2/stats/withdrawals');
+			const raw = response.data.data;
+			const cr = raw.churnRate ?? {};
+			return {
+				...raw,
+				dailyChurnRate: cr.daily ?? 0,
+				weeklyChurnRate: cr.weekly ?? 0,
+				monthlyChurnRate: cr.monthly ?? 0,
+			};
 		} catch (error) {
 			throw error;
 		}
