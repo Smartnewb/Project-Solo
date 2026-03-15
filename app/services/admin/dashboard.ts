@@ -8,6 +8,7 @@ export const stats = {
 			const params: any = {};
 			if (region) params.region = region;
 			if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
+			if (useCluster !== undefined) params.useCluster = useCluster;
 
 			const response = await axiosServer.get('/admin/v2/stats/users', {
 				params,
@@ -22,6 +23,7 @@ export const stats = {
 			const params: any = { period: 'daily' };
 			if (region) params.region = region;
 			if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
+			if (useCluster !== undefined) params.useCluster = useCluster;
 
 			const response = await axiosServer.get('/admin/v2/stats/users', {
 				params,
@@ -36,6 +38,7 @@ export const stats = {
 			const params: any = { period: 'weekly' };
 			if (region) params.region = region;
 			if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
+			if (useCluster !== undefined) params.useCluster = useCluster;
 
 			const response = await axiosServer.get('/admin/v2/stats/users', {
 				params,
@@ -50,6 +53,7 @@ export const stats = {
 			const params: any = { period: 'daily' };
 			if (region) params.region = region;
 			if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
+			if (useCluster !== undefined) params.useCluster = useCluster;
 
 			const response = await axiosServer.get('/admin/v2/stats/users/trend', {
 				params,
@@ -64,6 +68,7 @@ export const stats = {
 			const params: any = { period: 'weekly' };
 			if (region) params.region = region;
 			if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
+			if (useCluster !== undefined) params.useCluster = useCluster;
 
 			const response = await axiosServer.get('/admin/v2/stats/users/trend', { params });
 			const raw = response.data.data;
@@ -98,6 +103,7 @@ export const stats = {
 			const params: any = { period: 'monthly' };
 			if (region) params.region = region;
 			if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
+			if (useCluster !== undefined) params.useCluster = useCluster;
 
 			const response = await axiosServer.get('/admin/v2/stats/users/trend', { params });
 			const raw = response.data.data;
@@ -128,9 +134,9 @@ export const stats = {
 				to: endDate,
 			};
 
-			if (region) {
-				params.region = region;
-			}
+			if (region) params.region = region;
+			if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
+			if (useCluster !== undefined) params.useCluster = useCluster;
 
 			const response = await axiosServer.get('/admin/v2/stats/users', { params });
 
@@ -154,9 +160,9 @@ export const stats = {
 				to: endDate,
 			};
 
-			if (region) {
-				params.region = region;
-			}
+			if (region) params.region = region;
+			if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
+			if (useCluster !== undefined) params.useCluster = useCluster;
 
 			const response = await axiosServer.get('/admin/v2/stats/users/trend', { params });
 
@@ -170,6 +176,8 @@ export const stats = {
 		try {
 			const params: any = {};
 			if (region) params.region = region;
+			if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
+			if (useCluster !== undefined) params.useCluster = useCluster;
 
 			const response = await axiosServer.get('/admin/v2/stats/users', {
 				params,
@@ -200,6 +208,8 @@ export const stats = {
 		try {
 			const params: any = {};
 			if (region) params.region = region;
+			if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
+			if (useCluster !== undefined) params.useCluster = useCluster;
 
 			const response = await axiosServer.get('/admin/v2/stats/users', { params });
 			const raw = response.data?.data ?? {};
