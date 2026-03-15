@@ -3,10 +3,11 @@ import { adminGet, adminPost } from '@/shared/lib/http/admin-fetch';
 import type { FormattedData } from './_shared';
 
 export const stats = {
-	getTotalUsersCount: async (region?: string) => {
+	getTotalUsersCount: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
 		try {
 			const params: any = {};
 			if (region) params.region = region;
+			if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
 
 			const response = await axiosServer.get('/admin/v2/stats/users', {
 				params,
@@ -16,10 +17,11 @@ export const stats = {
 			throw error;
 		}
 	},
-	getDailySignupCount: async (region?: string) => {
+	getDailySignupCount: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
 		try {
 			const params: any = { period: 'daily' };
 			if (region) params.region = region;
+			if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
 
 			const response = await axiosServer.get('/admin/v2/stats/users', {
 				params,
@@ -29,10 +31,11 @@ export const stats = {
 			throw error;
 		}
 	},
-	getWeeklySignupCount: async (region?: string) => {
+	getWeeklySignupCount: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
 		try {
 			const params: any = { period: 'weekly' };
 			if (region) params.region = region;
+			if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
 
 			const response = await axiosServer.get('/admin/v2/stats/users', {
 				params,
@@ -42,10 +45,11 @@ export const stats = {
 			throw error;
 		}
 	},
-	getDailySignupTrend: async (region?: string) => {
+	getDailySignupTrend: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
 		try {
 			const params: any = { period: 'daily' };
 			if (region) params.region = region;
+			if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
 
 			const response = await axiosServer.get('/admin/v2/stats/users/trend', {
 				params,
@@ -55,10 +59,11 @@ export const stats = {
 			throw error;
 		}
 	},
-	getWeeklySignupTrend: async (region?: string) => {
+	getWeeklySignupTrend: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
 		try {
 			const params: any = { period: 'weekly' };
 			if (region) params.region = region;
+			if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
 
 			const response = await axiosServer.get('/admin/v2/stats/users/trend', { params });
 			return response.data.data;
@@ -66,10 +71,11 @@ export const stats = {
 			throw error;
 		}
 	},
-	getMonthlySignupTrend: async (region?: string) => {
+	getMonthlySignupTrend: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
 		try {
 			const params: any = { period: 'monthly' };
 			if (region) params.region = region;
+			if (includeDeleted !== undefined) params.includeDeleted = includeDeleted;
 
 			const response = await axiosServer.get('/admin/v2/stats/users/trend', { params });
 			return response.data.data;
@@ -82,6 +88,8 @@ export const stats = {
 		startDate: string,
 		endDate: string,
 		region?: string,
+		includeDeleted?: boolean,
+		useCluster?: boolean,
 	) => {
 		try {
 			const params: any = {
@@ -105,6 +113,8 @@ export const stats = {
 		startDate: string,
 		endDate: string,
 		region?: string,
+		includeDeleted?: boolean,
+		useCluster?: boolean,
 	) => {
 		try {
 			const params: any = {
@@ -125,7 +135,7 @@ export const stats = {
 		}
 	},
 
-	getGenderStats: async (region?: string) => {
+	getGenderStats: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
 		try {
 			const params: any = {};
 			if (region) params.region = region;
@@ -139,7 +149,7 @@ export const stats = {
 		}
 	},
 
-	getUniversityStats: async (region?: string) => {
+	getUniversityStats: async (region?: string, includeDeleted?: boolean, useCluster?: boolean) => {
 		try {
 			const params: any = {};
 			if (region) params.region = region;
@@ -152,7 +162,7 @@ export const stats = {
 		}
 	},
 
-	getTotalWithdrawalsCount: async (region?: string) => {
+	getTotalWithdrawalsCount: async (region?: string, useCluster?: boolean) => {
 		try {
 			const params: any = {};
 			if (region) params.region = region;
@@ -166,7 +176,7 @@ export const stats = {
 		}
 	},
 
-	getDailyWithdrawalCount: async (region?: string) => {
+	getDailyWithdrawalCount: async (region?: string, useCluster?: boolean) => {
 		try {
 			const params: any = { period: 'daily' };
 			if (region) params.region = region;
@@ -180,7 +190,7 @@ export const stats = {
 		}
 	},
 
-	getWeeklyWithdrawalCount: async (region?: string) => {
+	getWeeklyWithdrawalCount: async (region?: string, useCluster?: boolean) => {
 		try {
 			const params: any = { period: 'weekly' };
 			if (region) params.region = region;
@@ -192,7 +202,7 @@ export const stats = {
 		}
 	},
 
-	getMonthlyWithdrawalCount: async (region?: string) => {
+	getMonthlyWithdrawalCount: async (region?: string, useCluster?: boolean) => {
 		try {
 			const params: any = { period: 'monthly' };
 			if (region) params.region = region;
@@ -215,7 +225,7 @@ export const stats = {
 		}
 	},
 
-	getDailyWithdrawalTrend: async (region?: string) => {
+	getDailyWithdrawalTrend: async (region?: string, useCluster?: boolean) => {
 		try {
 			const params: any = { period: 'daily' };
 			if (region) params.region = region;
@@ -227,7 +237,7 @@ export const stats = {
 		}
 	},
 
-	getWeeklyWithdrawalTrend: async (region?: string) => {
+	getWeeklyWithdrawalTrend: async (region?: string, useCluster?: boolean) => {
 		try {
 			const params: any = { period: 'weekly' };
 			if (region) params.region = region;
@@ -239,7 +249,7 @@ export const stats = {
 		}
 	},
 
-	getMonthlyWithdrawalTrend: async (region?: string) => {
+	getMonthlyWithdrawalTrend: async (region?: string, useCluster?: boolean) => {
 		try {
 			const params: any = { period: 'monthly' };
 			if (region) params.region = region;
@@ -251,7 +261,7 @@ export const stats = {
 		}
 	},
 
-	getCustomPeriodWithdrawalTrend: async (startDate: string, endDate: string, region?: string) => {
+	getCustomPeriodWithdrawalTrend: async (startDate: string, endDate: string, region?: string, useCluster?: boolean) => {
 		try {
 			const params: any = {
 				from: startDate,
