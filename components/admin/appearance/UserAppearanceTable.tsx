@@ -527,7 +527,7 @@ const UserAppearanceTable = forwardRef<
                           boxShadow: '0 0 0 2px #3f51b5'
                         }
                       }}
-                      onClick={() => handleOpenUserDetailModal(user.id)}
+                      onClick={() => handleOpenUserDetailModal(user.userId || user.id)}
                     >
                       {user.name?.charAt(0) || '?'}
                     </Avatar>
