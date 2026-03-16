@@ -113,7 +113,12 @@ export interface ChatCsvExportParams {
 class ChatService {
   async getChatRooms(params: ChatRoomsParams): Promise<ChatRoomsResponse> {
     try {
-      const response = await axiosServer.get<{ data: ChatRoomsResponse; meta: unknown }>('/admin/v2/chat/rooms', {
+      const response = await axiosServer.get<{
+        data: ChatRoom[];
+        meta: { total: number; page: number; limit: number; totalPages: number };
+        appliedStartDate: string | null;
+        appliedEndDate: string | null;
+      }>('/admin/v2/chat/rooms', {
         params: {
           startDate: params.startDate,
           endDate: params.endDate,
@@ -123,7 +128,16 @@ class ChatService {
           limit: params.limit || 20
         }
       });
-      return response.data.data;
+      const raw = response.data;
+      return {
+        chatRooms: raw.data,
+        total: raw.meta.total,
+        page: raw.meta.page,
+        limit: raw.meta.limit,
+        totalPages: raw.meta.totalPages,
+        appliedStartDate: raw.appliedStartDate,
+        appliedEndDate: raw.appliedEndDate,
+      };
     } catch (error: any) {
       console.error('채팅방 목록 조회 실패:', error);
       throw new Error(error.response?.data?.message || '채팅방 목록을 불러오는데 실패했습니다.');
