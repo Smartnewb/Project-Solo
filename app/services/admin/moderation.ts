@@ -1,5 +1,10 @@
 import axiosServer from '@/utils/axios';
 
+// ━━━ Profile Review API Version Flag ━━━
+// v1: 안정 (admin/profile-images + admin/user-review)
+// v2: WIP  (admin/v2/profile-review) — 현재 깨져있음
+const PROFILE_REVIEW_VERSION: 'v1' | 'v2' = 'v1';
+
 export interface ReviewHistoryFilter {
 	reviewType?: 'admin' | 'auto';
 	reviewStatus?: 'approved' | 'rejected';
@@ -206,6 +211,14 @@ export const userReview = {
 				params.excludeUserIds = excludeUserIds.join(',');
 			}
 
+			if (PROFILE_REVIEW_VERSION === 'v1') {
+				const response = await axiosServer.get('/admin/profile-images/pending', { params });
+				return {
+					data: response.data.users,
+					meta: response.data.pagination,
+				};
+			}
+
 			const response = await axiosServer.get('/admin/v2/profile-review/pending', {
 				params,
 			});
@@ -221,6 +234,11 @@ export const userReview = {
 		try {
 			;
 
+			if (PROFILE_REVIEW_VERSION === 'v1') {
+				const response = await axiosServer.get(`/admin/user-review/${userId}`);
+				return response.data;
+			}
+
 			const response = await axiosServer.get(`/admin/v2/profile-review/users/${userId}`);
 
 			;
@@ -234,6 +252,11 @@ export const userReview = {
 		try {
 			;
 
+			if (PROFILE_REVIEW_VERSION === 'v1') {
+				const response = await axiosServer.post(`/admin/user-review/${userId}/approve`);
+				return response.data;
+			}
+
 			const response = await axiosServer.post(`/admin/v2/profile-review/users/${userId}/approve-profile`);
 
 			;
@@ -246,6 +269,14 @@ export const userReview = {
 	rejectUser: async (userId: string, category: string, reason: string) => {
 		try {
 			;
+
+			if (PROFILE_REVIEW_VERSION === 'v1') {
+				const response = await axiosServer.post(`/admin/user-review/${userId}/reject`, {
+					category,
+					reason,
+				});
+				return response.data;
+			}
 
 			const response = await axiosServer.post(`/admin/v2/profile-review/users/${userId}/reject-profile`, {
 				category,
@@ -294,6 +325,7 @@ export const userReview = {
 		try {
 			;
 
+			// rank는 v2 전용 — v1에는 엔드포인트 없음
 			const response = await axiosServer.patch(
 				`/admin/v2/profile-review/users/${userId}/rank`,
 				{ rank },
@@ -325,6 +357,33 @@ export const userReview = {
 			if (filters.searchTerm) params.searchTerm = filters.searchTerm;
 			if (filters.universityId) params.universityId = filters.universityId;
 			if (filters.reviewedBy) params.reviewedBy = filters.reviewedBy;
+
+			if (PROFILE_REVIEW_VERSION === 'v1') {
+				const response = await axiosServer.get('/admin/profile-images/review-history', { params });
+				const items = response.data.items || [];
+				const pagination = response.data.pagination || {};
+				return {
+					items: items.map((item: any) => ({
+						imageId: item.imageId,
+						imageUrl: item.imageUrl,
+						slotIndex: item.slotIndex ?? 0,
+						isMain: item.isMain ?? false,
+						reviewStatus: item.reviewStatus,
+						reviewType: item.reviewType ?? null,
+						reviewedBy: item.reviewedBy ?? null,
+						reviewedAt: item.reviewedAt,
+						rejectionReason: item.rejectionReason,
+						user: item.user,
+					})),
+					pagination: {
+						page: pagination.page,
+						limit: pagination.limit,
+						total: pagination.total,
+						totalPages: Math.ceil((pagination.total || 0) / (pagination.limit || 20)),
+						hasMore: pagination.hasMore,
+					},
+				};
+			}
 
 			const response = await axiosServer.get('/admin/v2/profile-review/history', {
 				params,
@@ -370,6 +429,11 @@ export const profileImages = {
 		try {
 			;
 
+			if (PROFILE_REVIEW_VERSION === 'v1') {
+				const response = await axiosServer.get('/admin/profile-images/pending');
+				return { data: response.data.users, meta: response.data.pagination };
+			}
+
 			const response = await axiosServer.get('/admin/v2/profile-review/pending');
 
 			;
@@ -383,6 +447,11 @@ export const profileImages = {
 		try {
 			;
 
+			if (PROFILE_REVIEW_VERSION === 'v1') {
+				const response = await axiosServer.post(`/admin/profile-images/users/${userId}/approve`);
+				return response.data;
+			}
+
 			const response = await axiosServer.post(`/admin/v2/profile-review/users/${userId}/approve-profile`);
 
 			;
@@ -395,6 +464,13 @@ export const profileImages = {
 	rejectProfileImage: async (userId: string, rejectionReason: string) => {
 		try {
 			;
+
+			if (PROFILE_REVIEW_VERSION === 'v1') {
+				const response = await axiosServer.post(`/admin/profile-images/users/${userId}/reject`, {
+					rejectionReason,
+				});
+				return response.data;
+			}
 
 			const response = await axiosServer.post(`/admin/v2/profile-review/users/${userId}/reject-profile`, {
 				rejectionReason,
@@ -411,6 +487,11 @@ export const profileImages = {
 		try {
 			;
 
+			if (PROFILE_REVIEW_VERSION === 'v1') {
+				const response = await axiosServer.post(`/admin/profile-images/${imageId}/approve`);
+				return response.data;
+			}
+
 			const response = await axiosServer.post(`/admin/v2/profile-review/images/${imageId}/action`, {
 				action: 'approve',
 			});
@@ -425,6 +506,13 @@ export const profileImages = {
 	rejectIndividualImage: async (imageId: string, rejectionReason: string) => {
 		try {
 			;
+
+			if (PROFILE_REVIEW_VERSION === 'v1') {
+				const response = await axiosServer.post(`/admin/profile-images/${imageId}/reject`, {
+					rejectionReason,
+				});
+				return response.data;
+			}
 
 			const response = await axiosServer.post(`/admin/v2/profile-review/images/${imageId}/action`, {
 				action: 'reject',
@@ -442,6 +530,7 @@ export const profileImages = {
 		try {
 			;
 
+			// setMainImage는 v2 전용 — v1에는 엔드포인트 없음
 			const response = await axiosServer.post(
 				`/admin/v2/profile-review/images/${imageId}/action`,
 				{ action: 'setMain' },
