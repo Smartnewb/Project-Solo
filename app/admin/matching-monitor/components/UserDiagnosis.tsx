@@ -19,7 +19,7 @@ import {
 	CircularProgress,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import { format } from 'date-fns';
+import { safeFormat } from '@/app/utils/formatters';
 import { useUserDiagnosis } from '../hooks';
 import type { UserDiagnosisResponse } from '../types';
 
@@ -166,7 +166,7 @@ function DiagnosisResult({ data }: { data: UserDiagnosisResponse }) {
 									<TableRow key={i}>
 										<TableCell>
 											<Typography variant="caption">
-												{format(new Date(item.failedAt), 'MM/dd HH:mm')}
+												{safeFormat(item.failedAt, 'MM/dd HH:mm')}
 											</Typography>
 										</TableCell>
 										<TableCell>

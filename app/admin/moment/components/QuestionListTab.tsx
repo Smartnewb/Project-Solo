@@ -41,6 +41,7 @@ import type {
   QuestionListPagination,
   QuestionDetail,
 } from '@/types/moment';
+import { safeToLocaleDateString } from '@/app/utils/formatters';
 import QuestionDetailDialog from './QuestionDetailDialog';
 import QuestionEditDialog from './QuestionEditDialog';
 
@@ -190,7 +191,7 @@ export default function QuestionListTab() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ko-KR', {
+    return safeToLocaleDateString(dateString, 'ko-KR', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

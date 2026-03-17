@@ -41,6 +41,7 @@ import type {
   RefundReasonCode,
   RefundPreviewResponse,
 } from '@/types/admin';
+import { safeToLocaleString } from '@/app/utils/formatters';
 
 const REFUND_REASONS = [
   {
@@ -199,8 +200,7 @@ export default function ChatRefundTab() {
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('ko-KR');
+    return safeToLocaleString(dateString);
   };
 
   return (

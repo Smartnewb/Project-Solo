@@ -36,6 +36,7 @@ import type {
   TranslateExecuteResponse,
 } from '@/types/moment';
 import { isTranslatePreviewResponse, isTranslateExecuteResponse } from '@/types/moment';
+import { safeToLocaleDateString } from '@/app/utils/formatters';
 
 const DIMENSION_LABELS: Record<Big5Dimension, string> = {
   openness: '개방성',
@@ -166,7 +167,7 @@ export default function QuestionTranslationTab() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ko-KR');
+    return safeToLocaleDateString(dateString);
   };
 
   return (

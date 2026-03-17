@@ -19,6 +19,7 @@ import AdminService from '@/app/services/admin';
 import DepartmentManagement from './DepartmentManagement';
 import LogoUpload from './LogoUpload';
 import type { UniversityItem, UniversityDetail } from '@/types/admin';
+import { safeToLocaleString } from '@/app/utils/formatters';
 
 interface UniversityDetailDialogProps {
   open: boolean;
@@ -184,7 +185,7 @@ export default function UniversityDetailDialog({
                         생성일
                       </Typography>
                       <Typography variant="body2">
-                        {new Date(detail.createdAt).toLocaleString('ko-KR')}
+                        {safeToLocaleString(detail.createdAt)}
                       </Typography>
                     </Box>
 
@@ -193,7 +194,7 @@ export default function UniversityDetailDialog({
                         수정일
                       </Typography>
                       <Typography variant="body2">
-                        {new Date(detail.updatedAt).toLocaleString('ko-KR')}
+                        {safeToLocaleString(detail.updatedAt)}
                       </Typography>
                     </Box>
                   </Box>

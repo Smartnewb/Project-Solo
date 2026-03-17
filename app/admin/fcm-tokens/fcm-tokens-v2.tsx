@@ -7,6 +7,7 @@ import AdminService, {
 	FcmTokenUserItem,
 } from '@/app/services/admin';
 import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
+import { safeToLocaleString } from '@/app/utils/formatters';
 
 function FcmTokensPageContent() {
 	useEffect(() => {
@@ -122,7 +123,7 @@ function FcmTokensPageContent() {
 
 	const formatDate = (dateStr: string | null) => {
 		if (!dateStr) return '-';
-		return new Date(dateStr).toLocaleString('ko-KR', {
+		return safeToLocaleString(dateStr, 'ko-KR', {
 			year: 'numeric',
 			month: '2-digit',
 			day: '2-digit',

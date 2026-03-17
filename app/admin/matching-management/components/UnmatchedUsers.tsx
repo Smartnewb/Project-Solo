@@ -27,7 +27,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import SearchIcon from '@mui/icons-material/Search';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import FilterListIcon from '@mui/icons-material/FilterList';
-import { format } from 'date-fns';
+import { safeFormat } from '@/app/utils/formatters';
 import { UnmatchedUser } from '../types';
 
 interface UnmatchedUsersProps {
@@ -180,14 +180,14 @@ const UnmatchedUsers: React.FC<UnmatchedUsersProps> = ({
                       </TableCell>
                       <TableCell>{user.age}세 / {user.gender === 'MALE' ? '남성' : '여성'}</TableCell>
                       <TableCell>
-                        {user.joinedAt ? format(new Date(user.joinedAt), 'yyyy-MM-dd') :
-                         user.createdAt ? format(new Date(user.createdAt), 'yyyy-MM-dd') : '정보 없음'}
+                        {user.joinedAt ? safeFormat(user.joinedAt, 'yyyy-MM-dd') :
+                         user.createdAt ? safeFormat(user.createdAt, 'yyyy-MM-dd') : '정보 없음'}
                       </TableCell>
                       <TableCell>
                         {user.failureReason || '정보 없음'}
                       </TableCell>
                       <TableCell>
-                        {user.failureDate ? format(new Date(user.failureDate), 'yyyy-MM-dd HH:mm') : '없음'}
+                        {user.failureDate ? safeFormat(user.failureDate, 'yyyy-MM-dd HH:mm') : '없음'}
                       </TableCell>
                       <TableCell>
                         <Button

@@ -6,7 +6,7 @@ import { ko } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Users } from 'lucide-react';
 import { User, UserSearchResponse } from '../types';
 import { smsService } from '@/app/services/sms';
-import { format } from 'date-fns';
+import { safeFormat } from '@/app/utils/formatters';
 import { Search } from 'lucide-react';
 import { Calendar } from '@/shared/ui/calendar';
 import {
@@ -152,7 +152,7 @@ export function RecipientSelector({ onRecipientsChange }: RecipientSelectorProps
         try {
             // API 호출 - 응답 타입이 UserSearchResponse
             const response: UserSearchResponse = await smsService.searchUser({
-                startDate: criteriaDate ? format(criteriaDate, 'yyyy-MM-dd') : undefined, // NOTE: 캘린더 사용시 criteriaDate를 dateRange.from 으로 변경
+                startDate: criteriaDate ? safeFormat(criteriaDate, 'yyyy-MM-dd') : undefined, // NOTE: 캘린더 사용시 criteriaDate를 dateRange.from 으로 변경
                 // endDate: dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined, // NOTE: 미사용 - 날짜 범위 지정용
                 gender: gender !== 'ALL' && gender !== 'CUSTOM'
                     ? gender as 'MALE' | 'FEMALE'
@@ -339,7 +339,7 @@ export function RecipientSelector({ onRecipientsChange }: RecipientSelectorProps
                                         criteriaDate 
                                         ? ''
                                         : 'text-gray-400'}>
-                                        {criteriaDate ? format(criteriaDate, 'yyyy-MM-dd') : '기준일 선택'}
+                                        {criteriaDate ? safeFormat(criteriaDate, 'yyyy-MM-dd') : '기준일 선택'}
                                     </span>
                                 </button>
                             </PopoverTrigger>

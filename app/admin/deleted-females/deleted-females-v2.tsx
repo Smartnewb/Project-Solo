@@ -31,6 +31,7 @@ import {
 } from '@/app/admin/hooks';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
+import { safeToLocaleString } from '@/app/utils/formatters';
 
 function DeletedFemalesPageContent() {
   const toast = useToast();
@@ -102,8 +103,7 @@ function DeletedFemalesPageContent() {
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('ko-KR', {
+    return safeToLocaleString(dateString, 'ko-KR', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

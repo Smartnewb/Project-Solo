@@ -34,6 +34,7 @@ import AdminService, {
 	type AppReviewItem,
 	type AppReviewsParams,
 } from '@/app/services/admin';
+import { safeToLocaleDateString } from '@/app/utils/formatters';
 
 interface ReviewListProps {
 	initialFilter?: { rating?: number; store?: 'APP_STORE' | 'PLAY_STORE' } | null;
@@ -179,7 +180,7 @@ export default function ReviewList({ initialFilter, onFilterClear }: ReviewListP
 		(endDate ? 1 : 0);
 
 	const formatDate = (dateStr: string) => {
-		return new Date(dateStr).toLocaleDateString('ko-KR', {
+		return safeToLocaleDateString(dateStr, 'ko-KR', {
 			year: 'numeric',
 			month: 'short',
 			day: 'numeric',
@@ -514,7 +515,7 @@ function ReviewCard({
 						|
 					</Typography>
 					<Typography variant="caption" color="text.secondary">
-						{new Date(review.createdAt).toLocaleDateString('ko-KR', {
+						{safeToLocaleDateString(review.createdAt, 'ko-KR', {
 							year: 'numeric',
 							month: 'short',
 							day: 'numeric',

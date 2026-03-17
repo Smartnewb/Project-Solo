@@ -22,6 +22,7 @@ import {
   Tooltip,
 } from '@mui/material';
 import type { DormantUserResponse } from '@/types/admin';
+import { safeToLocaleString } from '@/app/utils/formatters';
 import PendingLikesModal from './components/PendingLikesModal';
 import BulkProcessModal from './components/BulkProcessModal';
 import { useDormantLikesDashboard } from '@/app/admin/hooks';
@@ -76,14 +77,13 @@ function DormantLikesPageContent() {
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '로그인 기록 없음';
-    const date = new Date(dateString);
-    return date.toLocaleString('ko-KR', {
+    return safeToLocaleString(dateString, 'ko-KR', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
-    });
+    }, '로그인 기록 없음');
   };
 
   return (

@@ -32,6 +32,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import SearchIcon from "@mui/icons-material/Search";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
+import { safeToLocaleString } from '@/app/utils/formatters';
 import AdminService, {
   ReviewHistoryFilter,
   ReviewHistoryItem,
@@ -308,8 +309,7 @@ export default function ReviewHistoryTab() {
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return "-";
-    const date = new Date(dateStr);
-    return date.toLocaleString("ko-KR", {
+    return safeToLocaleString(dateStr, "ko-KR", {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",

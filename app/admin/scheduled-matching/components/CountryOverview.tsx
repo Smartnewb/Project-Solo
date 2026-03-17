@@ -47,6 +47,7 @@ const getDefaultDateRange = () => {
     endDate: formatDate(endDate),
   };
 };
+import { safeToLocaleString, safeToLocaleDateString } from '@/app/utils/formatters';
 import { parseCronToHumanReadable, formatNextExecution, getTimeDiff } from '../utils';
 import RegionMapView from './RegionMapView';
 
@@ -129,7 +130,7 @@ function CountryCard({
           {lastBatch && (
             <Box sx={{ mb: 2 }}>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                최근 실행 ({new Date(lastBatch.startedAt).toLocaleDateString('ko-KR')})
+                최근 실행 ({safeToLocaleDateString(lastBatch.startedAt)})
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <LinearProgress
@@ -713,7 +714,7 @@ export default function CountryOverview() {
                 </Box>
               </Box>
               <Typography variant="caption" color="text.secondary">
-                업데이트: {mapStats && new Date(mapStats.cachedAt).toLocaleString('ko-KR')}
+                업데이트: {mapStats && safeToLocaleString(mapStats.cachedAt)}
               </Typography>
             </Box>
           </>

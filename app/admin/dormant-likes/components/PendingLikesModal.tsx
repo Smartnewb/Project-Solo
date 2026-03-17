@@ -24,6 +24,7 @@ import {
   Grid,
 } from '@mui/material';
 import AdminService from '@/app/services/admin';
+import { safeToLocaleString } from '@/app/utils/formatters';
 import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
 import type {
   DormantUserResponse,
@@ -153,8 +154,7 @@ export default function PendingLikesModal({ open, onClose, user }: PendingLikesM
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('ko-KR', {
+    return safeToLocaleString(dateString, 'ko-KR', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

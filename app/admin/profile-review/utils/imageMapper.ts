@@ -1,4 +1,5 @@
 import { CurrentProfileImage, PendingImage } from '../page';
+import { safeToLocaleDateString } from '@/app/utils/formatters';
 
 export interface SlotImagePair {
   current: CurrentProfileImage | null;
@@ -47,8 +48,7 @@ export function getSlotLabel(slotIndex: number): string {
 }
 
 export function formatApprovedDate(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('ko-KR', {
+  return safeToLocaleDateString(dateString, 'ko-KR', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

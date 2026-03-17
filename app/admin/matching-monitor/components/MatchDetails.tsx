@@ -13,7 +13,7 @@ import {
 	Chip,
 	Tooltip,
 } from '@mui/material';
-import { format } from 'date-fns';
+import { safeFormat } from '@/app/utils/formatters';
 import type { MatchDetail } from '../types';
 
 const LIKE_STATUS_CONFIG: Record<string, { label: string; color: 'default' | 'success' | 'warning' | 'error' }> = {
@@ -75,7 +75,7 @@ export default function MatchDetailsSection({ data }: { data: MatchDetail[] }) {
 											<TableCell>
 												<Tooltip title={item.connectionId} arrow>
 													<Typography variant="caption">
-														{format(new Date(item.publishedAt), 'MM/dd HH:mm')}
+														{safeFormat(item.publishedAt, 'MM/dd HH:mm')}
 													</Typography>
 												</Tooltip>
 											</TableCell>
@@ -128,7 +128,7 @@ export default function MatchDetailsSection({ data }: { data: MatchDetail[] }) {
 											</TableCell>
 											<TableCell align="right">
 												{item.messageCount > 0 ? (
-													<Tooltip title={item.lastMessageAt ? format(new Date(item.lastMessageAt), 'MM/dd HH:mm') : ''} arrow>
+													<Tooltip title={item.lastMessageAt ? safeFormat(item.lastMessageAt, 'MM/dd HH:mm') : ''} arrow>
 														<Typography variant="body2" fontWeight={600}>
 															{item.messageCount}
 														</Typography>

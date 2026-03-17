@@ -33,6 +33,7 @@ import MailOutlineIcon from '@mui/icons-material/MailOutline';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SearchIcon from '@mui/icons-material/Search';
 import type { LikeDetail, AdminLikesParams, LikeStatus } from '@/types/admin';
+import { safeToLocaleString } from '@/app/utils/formatters';
 import { useLikesList } from '@/app/admin/hooks';
 
 type FilterStatus = LikeStatus | 'ALL';
@@ -117,8 +118,7 @@ function LikesManagementPageContent() {
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('ko-KR', {
+    return safeToLocaleString(dateString, 'ko-KR', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

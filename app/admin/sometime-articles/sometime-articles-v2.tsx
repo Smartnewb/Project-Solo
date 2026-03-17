@@ -36,6 +36,7 @@ import {
 } from '@/app/admin/hooks';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
+import { safeToLocaleString } from '@/app/utils/formatters';
 
 const STATUS_LABELS: Record<SometimeArticleStatus, string> = {
   draft: '초안',
@@ -137,8 +138,7 @@ function SometimeArticlesPageContent() {
   };
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return '-';
-    return new Date(dateString).toLocaleString('ko-KR', {
+    return safeToLocaleString(dateString, 'ko-KR', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

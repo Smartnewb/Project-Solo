@@ -18,6 +18,7 @@ import {
   Legend,
 } from "recharts";
 import { formatCurrency } from "../utils";
+import { safeToLocaleDateString } from '@/app/utils/formatters';
 
 interface TotalAmountProps {
   startDate?: Date;
@@ -164,13 +165,13 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
 
   const getCurrentDateRangeText = () => {
     if (startDate && endDate) {
-      return `${startDate.toLocaleDateString("ko-KR")} ~ ${endDate.toLocaleDateString("ko-KR")}`;
+      return `${safeToLocaleDateString(startDate)} ~ ${safeToLocaleDateString(endDate)}`;
     }
     // 전체 기간일 때는 실제 데이터 범위 표시
     if (totalData && totalData.startDate && totalData.endDate) {
       const apiStartDate = new Date(totalData.startDate);
       const apiEndDate = new Date(totalData.endDate);
-      return `${apiStartDate.toLocaleDateString("ko-KR")} ~ ${apiEndDate.toLocaleDateString("ko-KR")} (전체 기간)`;
+      return `${safeToLocaleDateString(apiStartDate)} ~ ${safeToLocaleDateString(apiEndDate)} (전체 기간)`;
     }
     return "전체 기간 (서비스 시작일 ~ 오늘)";
   };

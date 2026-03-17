@@ -27,6 +27,7 @@ import {
 import AdminService from '@/app/services/admin';
 import type { FeatureFlag } from '@/app/services/admin';
 import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
+import { safeToLocaleDateString } from '@/app/utils/formatters';
 
 const AVAILABLE_ROLES = ['admin', 'tester', 'user'];
 
@@ -40,7 +41,7 @@ function formatRelativeTime(dateStr: string): string {
   if (hours < 24) return `${hours}시간 전`;
   const days = Math.floor(hours / 24);
   if (days < 30) return `${days}일 전`;
-  return new Date(dateStr).toLocaleDateString('ko-KR');
+  return safeToLocaleDateString(dateStr);
 }
 
 export default function FeatureFlagsV2() {

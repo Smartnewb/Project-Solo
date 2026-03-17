@@ -23,6 +23,7 @@ import { Button } from '@/shared/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { scheduledMatchingService } from '../service';
 import type { Country, ScheduledMatchingConfig, CreateScheduledMatchingConfigRequest, UpdateScheduledMatchingConfigRequest } from '../types';
+import { safeToLocaleString } from '@/app/utils/formatters';
 import { parseCronToHumanReadable, CRON_PRESETS, TIMEZONE_OPTIONS } from '../utils';
 
 export default function ScheduleConfig() {
@@ -372,7 +373,7 @@ export default function ScheduleConfig() {
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
             마지막 수정: {currentConfig.lastModifiedBy} (
             {currentConfig.updatedAt
-              ? new Date(currentConfig.updatedAt).toLocaleString('ko-KR')
+              ? safeToLocaleString(currentConfig.updatedAt)
               : '-'}
             )
           </Typography>

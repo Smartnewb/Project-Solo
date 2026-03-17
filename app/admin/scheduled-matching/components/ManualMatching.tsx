@@ -40,6 +40,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import { Button } from '@/shared/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { scheduledMatchingService } from '../service';
+import { safeToLocaleString } from '@/app/utils/formatters';
 import type {
   ManualMatchType,
   MatchPriority,
@@ -90,7 +91,7 @@ const getMatchTypeLabel = (type: ManualMatchType) => {
 };
 
 const formatDateTime = (dateString: string) => {
-  return new Date(dateString).toLocaleString('ko-KR');
+  return safeToLocaleString(dateString);
 };
 
 export default function ManualMatching() {

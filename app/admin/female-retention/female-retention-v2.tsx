@@ -29,6 +29,7 @@ import KeyIcon from '@mui/icons-material/Key';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
+import { safeToLocaleString } from '@/app/utils/formatters';
 
 interface InactiveUser {
   id: string;
@@ -153,12 +154,12 @@ function FemaleRetentionPageContent() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('ko-KR', {
+    return safeToLocaleString(dateString, 'ko-KR', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 

@@ -32,6 +32,7 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AdminService from "@/app/services/admin";
+import { safeToLocaleDateString, safeToLocaleString } from '@/app/utils/formatters';
 import {
   mapImagesBySlot,
   getSlotLabel,
@@ -740,10 +741,7 @@ export default function ImageReviewPanel({
                 variant="body2"
                 sx={{ fontWeight: 600, fontSize: "0.75rem" }}
               >
-                {new Date(user.reviewContext.userCreatedAt).toLocaleDateString(
-                  "ko-KR",
-                  { month: "short", day: "numeric" },
-                )}
+                {safeToLocaleDateString(user.reviewContext.userCreatedAt, "ko-KR", { month: "short", day: "numeric" })}
               </Typography>
             </Box>
             <Box sx={{ textAlign: "center" }}>
@@ -846,7 +844,7 @@ export default function ImageReviewPanel({
                 {history.reason}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                {new Date(history.createdAt).toLocaleString()}
+                {safeToLocaleString(history.createdAt)}
               </Typography>
             </Box>
           ))}
@@ -938,7 +936,7 @@ export default function ImageReviewPanel({
                     variant="caption"
                     sx={{ fontSize: "0.65rem", color: "text.secondary" }}
                   >
-                    {new Date(image.rejectedAt).toLocaleDateString("ko-KR", {
+                    {safeToLocaleDateString(image.rejectedAt, "ko-KR", {
                       month: "short",
                       day: "numeric",
                     })}

@@ -48,6 +48,7 @@ import {
   Description as DescriptionIcon,
 } from "@mui/icons-material";
 import AdminService from "@/app/services/admin";
+import { safeToLocaleDateString } from '@/app/utils/formatters';
 import UserDetailModal, {
   type UserDetail,
 } from "@/components/admin/appearance/UserDetailModal";
@@ -365,8 +366,7 @@ function ReportsManagementContent() {
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("ko-KR", {
+    return safeToLocaleDateString(dateString, "ko-KR", {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",

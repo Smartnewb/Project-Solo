@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import AdminService from '@/app/services/admin';
 import { AppleRefundItem, AppleRefundStatus, AppleRefundListParams } from '@/types/admin';
 import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
+import { safeToLocaleString } from '@/app/utils/formatters';
 import { useAdminForm } from '@/app/admin/hooks/forms';
 import { iosRefundFilterSchema, IosRefundFilterFormValues } from '@/app/admin/hooks/forms/schemas/ios-refund.schema';
 
@@ -109,7 +110,7 @@ function IOSRefundPageContent() {
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return '-';
-    return new Date(dateString).toLocaleString('ko-KR', {
+    return safeToLocaleString(dateString, 'ko-KR', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

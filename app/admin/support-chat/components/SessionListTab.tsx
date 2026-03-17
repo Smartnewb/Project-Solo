@@ -39,6 +39,7 @@ import {
   DOMAIN_COLORS,
 } from '@/app/types/support-chat';
 import ChatDetailDialog from './ChatDetailDialog';
+import { safeToLocaleString } from '@/app/utils/formatters';
 
 interface SessionListTabProps {
   statusFilter?: SupportSessionStatus;
@@ -111,8 +112,7 @@ export default function SessionListTab({ statusFilter }: SessionListTabProps) {
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('ko-KR', {
+    return safeToLocaleString(dateString, 'ko-KR', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

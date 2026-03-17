@@ -1,5 +1,6 @@
-import { format, formatDistanceToNow, parseISO } from 'date-fns';
+import { formatDistanceToNow, parseISO } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { safeFormat } from '@/app/utils/formatters';
 
 const DAY_NAMES: Record<string, string> = {
   '0': '일',
@@ -28,12 +29,8 @@ export function parseCronToHumanReadable(cronExpression: string): string {
 }
 
 export function formatNextExecution(dateStr: string): string {
-  try {
-    const date = parseISO(dateStr);
-    return format(date, 'yyyy-MM-dd (EEE) HH:mm', { locale: ko });
-  } catch {
-    return dateStr;
-  }
+  const result = safeFormat(dateStr, 'yyyy-MM-dd (EEE) HH:mm', dateStr);
+  return result;
 }
 
 export function getTimeDiff(dateStr: string): string {
@@ -52,12 +49,8 @@ export function getTimeDiff(dateStr: string): string {
 }
 
 export function formatDateTime(dateStr: string): string {
-  try {
-    const date = parseISO(dateStr);
-    return format(date, 'yyyy-MM-dd HH:mm:ss', { locale: ko });
-  } catch {
-    return dateStr;
-  }
+  const result = safeFormat(dateStr, 'yyyy-MM-dd HH:mm:ss', dateStr);
+  return result;
 }
 
 export function formatDuration(startStr: string, endStr: string | null): string {

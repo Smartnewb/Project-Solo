@@ -7,6 +7,7 @@ import { salesService } from '@/app/services/sales';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import { getPaymentTypeLabel } from '../constants/paymentTypes';
 import Image from 'next/image';
+import { safeToLocaleDateString } from '@/app/utils/formatters';
 
 interface PaymentAnalysisProps {
     startDate?: Date;
@@ -123,7 +124,7 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
 
     const getCurrentDateRangeText = () => {
         const { start, end } = getEffectiveDates();
-        return `${start.toLocaleDateString('ko-KR')} ~ ${end.toLocaleDateString('ko-KR')}`;
+        return `${safeToLocaleDateString(start)} ~ ${safeToLocaleDateString(end)}`;
     };
 
     const getAnalysisData = () => {

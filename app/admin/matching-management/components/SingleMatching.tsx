@@ -34,14 +34,13 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { ko } from 'date-fns/locale';
-import { format } from 'date-fns';
+import { safeFormat, formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
 import PersonIcon from '@mui/icons-material/Person';
 import HistoryIcon from '@mui/icons-material/History';
 import WarningIcon from '@mui/icons-material/Warning';
 import AddIcon from '@mui/icons-material/Add';
 import { UserSearchResult, MatchingResult } from '../types';
 import AdminService from '@/app/services/admin';
-import { formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
 import axiosServer from '@/utils/axios';
 
 // 매칭 이력 아이템 인터페이스
@@ -144,8 +143,8 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
 
     try {
       // 날짜 형식 변환 (YYYY-MM-DD)
-      const formattedStartDate = format(startDate, 'yyyy-MM-dd');
-      const formattedEndDate = format(endDate, 'yyyy-MM-dd');
+      const formattedStartDate = safeFormat(startDate, 'yyyy-MM-dd');
+      const formattedEndDate = safeFormat(endDate, 'yyyy-MM-dd');
 
       // AdminService를 사용하여 API 호출
       const data = await AdminService.matching.getMatchHistory(

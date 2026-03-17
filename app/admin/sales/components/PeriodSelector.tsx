@@ -4,8 +4,8 @@
 
 import { useEffect, useState } from 'react';
 import { ko } from 'date-fns/locale';
-import { format } from 'date-fns';
 import { salesService } from '@/app/services/sales';
+import { safeFormat } from '@/app/utils/formatters';
 import { Calendar as CalendarIcon,} from 'lucide-react';
 import { Calendar } from '@/shared/ui/calendar';
 import {
@@ -227,7 +227,7 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
                                                 : 'border-[#D1D5DB]'
                                                 }`}>
                                         <span className={ dateRange.from ? '' : 'text-gray-400'}>
-                                            {dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : '시작일 지정'}
+                                            {dateRange.from ? safeFormat(dateRange.from, 'yyyy-MM-dd') : '시작일 지정'}
                                         </span>
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="16" viewBox="0 0 14 16" fill="none">
                                             <path d="M3 1V2H1.5C0.671875 2 0 2.67188 0 3.5V5H14V3.5C14 2.67188 13.3281 2 12.5 2H11V1C11 0.446875 10.5531 0 10 0C9.44687 0 9 0.446875 9 1V2H5V1C5 0.446875 4.55312 0 4 0C3.44688 0 3 0.446875 3 1ZM14 6H0V14.5C0 15.3281 0.671875 16 1.5 16H12.5C13.3281 16 14 15.3281 14 14.5V6Z" fill="#9CA3AF"/>
@@ -285,7 +285,7 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
                                                 : 'border-[#D1D5DB]'
                                                 }`}>
                                         <span className={ dateRange.to ? '' : 'text-gray-400'}>
-                                            {dateRange.to ? format(dateRange.to,'yyyy-MM-dd'):'종료일 지정'}
+                                            {dateRange.to ? safeFormat(dateRange.to,'yyyy-MM-dd'):'종료일 지정'}
                                         </span>
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="16" viewBox="0 0 14 16" fill="none">
                                             <path d="M3 1V2H1.5C0.671875 2 0 2.67188 0 3.5V5H14V3.5C14 2.67188 13.3281 2 12.5 2H11V1C11 0.446875 10.5531 0 10 0C9.44687 0 9 0.446875 9 1V2H5V1C5 0.446875 4.55312 0 4 0C3.44688 0 3 0.446875 3 1ZM14 6H0V14.5C0 15.3281 0.671875 16 1.5 16H12.5C13.3281 16 14 15.3281 14 14.5V6Z" fill="#9CA3AF"/>
@@ -344,11 +344,11 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
                             <div className='text-sm text-[#7D4EE4]'>
                                 <span className='font-medium'>선택된 기간: </span>
                                 {dateRange.from && dateRange.to ? (
-                                    `${format(dateRange.from, 'yyyy-MM-dd')} ~ ${format(dateRange.to, 'yyyy-MM-dd')}`
+                                    `${safeFormat(dateRange.from, 'yyyy-MM-dd')} ~ ${safeFormat(dateRange.to, 'yyyy-MM-dd')}`
                                 ) : dateRange.from ? (
-                                    `${format(dateRange.from, 'yyyy-MM-dd')} ~ (종료일 미선택)`
+                                    `${safeFormat(dateRange.from, 'yyyy-MM-dd')} ~ (종료일 미선택)`
                                 ) : (
-                                    `(시작일 미선택) ~ ${dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : ''}`
+                                    `(시작일 미선택) ~ ${dateRange.to ? safeFormat(dateRange.to, 'yyyy-MM-dd') : ''}`
                                 )}
                                 
                             </div>

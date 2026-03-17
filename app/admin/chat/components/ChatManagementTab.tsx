@@ -49,6 +49,7 @@ import chatService, {
 } from '@/app/services/chat';
 import AdminService from '@/app/services/admin';
 import { UserDetail } from '@/components/admin/appearance/UserDetailModal';
+import { safeToLocaleString } from '@/app/utils/formatters';
 
 const DATE_PRESETS: { label: string; value: DatePreset }[] = [
   { label: '오늘', value: 'today' },
@@ -216,8 +217,7 @@ export default function ChatManagementTab() {
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('ko-KR');
+    return safeToLocaleString(dateString);
   };
 
   useEffect(() => {

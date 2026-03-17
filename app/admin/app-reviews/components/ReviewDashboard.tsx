@@ -30,6 +30,7 @@ import {
 	Legend,
 } from 'recharts';
 import AdminService, { type AppReviewStatsResponse } from '@/app/services/admin';
+import { safeToLocaleString } from '@/app/utils/formatters';
 
 interface ReviewDashboardProps {
 	onChartClick: (filter: { rating?: number; store?: 'APP_STORE' | 'PLAY_STORE' }) => void;
@@ -307,7 +308,7 @@ export default function ReviewDashboard({ onChartClick }: ReviewDashboardProps) 
 			{/* 마지막 수집 시각 */}
 			{stats?.lastCollectedAt && (
 				<Typography variant="caption" color="text.secondary" className="text-right block">
-					마지막 수집: {new Date(stats.lastCollectedAt).toLocaleString('ko-KR')}
+					마지막 수집: {safeToLocaleString(stats.lastCollectedAt)}
 				</Typography>
 			)}
 		</Box>

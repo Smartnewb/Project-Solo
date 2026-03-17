@@ -41,6 +41,7 @@ import {
 } from './types';
 import AIChatMessageDetail from './components/AIChatMessageDetail';
 import { useAiChatSessions, useAiChatMessages } from '@/app/admin/hooks';
+import { safeToLocaleString } from '@/app/utils/formatters';
 
 function AIChatManagementPageContent() {
   const [page, setPage] = useState(0);
@@ -117,7 +118,7 @@ function AIChatManagementPageContent() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('ko-KR', {
+    return safeToLocaleString(dateString, 'ko-KR', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

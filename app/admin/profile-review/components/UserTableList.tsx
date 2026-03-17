@@ -234,7 +234,9 @@ export default function UserTableList({
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" sx={{ fontSize: "0.75rem" }}>
-                      {format(new Date(user.createdAt), "MM-dd HH:mm")}
+                      {user.createdAt && !isNaN(new Date(user.createdAt).getTime())
+                        ? format(new Date(user.createdAt), "MM-dd HH:mm")
+                        : "-"}
                     </Typography>
                   </TableCell>
                   {onSkipUser && (

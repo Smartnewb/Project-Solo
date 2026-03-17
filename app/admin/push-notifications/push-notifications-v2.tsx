@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Controller } from 'react-hook-form';
+import { safeToLocaleDateString } from '@/app/utils/formatters';
 import AdminService from '@/app/services/admin';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
@@ -838,7 +839,7 @@ function PushNotificationsV2Content() {
 
                   <div>
                     <p className="text-sm text-gray-600">가입일</p>
-                    <p className="font-semibold">{new Date(selectedUser.createdAt).toLocaleDateString('ko-KR')}</p>
+                    <p className="font-semibold">{safeToLocaleDateString(selectedUser.createdAt)}</p>
                   </div>
 
                   <div>

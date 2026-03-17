@@ -1,3 +1,30 @@
+import { format as dateFnsFormat } from 'date-fns';
+import { ko } from 'date-fns/locale';
+
+function toSafeDate(value: unknown): Date | null {
+  if (value == null || value === '') return null;
+  const date = value instanceof Date ? value : new Date(value as string | number);
+  return isNaN(date.getTime()) ? null : date;
+}
+
+export function safeFormat(value: unknown, pattern: string, fallback = '-'): string {
+  const date = toSafeDate(value);
+  if (!date) return fallback;
+  return dateFnsFormat(date, pattern, { locale: ko });
+}
+
+export function safeToLocaleString(value: unknown, locales: string = 'ko-KR', options?: Intl.DateTimeFormatOptions, fallback = '-'): string {
+  const date = toSafeDate(value);
+  if (!date) return fallback;
+  return date.toLocaleString(locales, options);
+}
+
+export function safeToLocaleDateString(value: unknown, locales: string = 'ko-KR', options?: Intl.DateTimeFormatOptions, fallback = '-'): string {
+  const date = toSafeDate(value);
+  if (!date) return fallback;
+  return date.toLocaleDateString(locales, options);
+}
+
 /**
  * 날짜를 yyyy년 MM월 dd일 형식으로 포맷팅합니다.
  */

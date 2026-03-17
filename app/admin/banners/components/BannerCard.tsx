@@ -15,6 +15,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import type { Banner } from '@/types/admin';
+import { safeToLocaleDateString } from '@/app/utils/formatters';
 
 type BannerStatus = 'active' | 'scheduled' | 'expired' | 'inactive';
 
@@ -46,8 +47,7 @@ function getStatusColor(status: BannerStatus): 'success' | 'info' | 'default' | 
 
 function formatDate(dateString: string | null): string {
   if (!dateString) return '무제한';
-  const date = new Date(dateString);
-  return date.toLocaleDateString('ko-KR', {
+  return safeToLocaleDateString(dateString, 'ko-KR', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',

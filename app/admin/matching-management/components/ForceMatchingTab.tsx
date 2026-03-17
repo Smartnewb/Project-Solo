@@ -10,6 +10,7 @@ import {
 	Avatar,
 } from '@mui/material';
 import { Button } from '@/shared/ui';
+import { safeToLocaleString } from '@/app/utils/formatters';
 import AdminService from '@/app/services/admin';
 
 interface AdminUserListItem {
@@ -472,7 +473,7 @@ export default function ForceMatchingTab() {
 										생성 시간
 									</Typography>
 									<Typography variant="body2">
-										{new Date(result.data.createdAt).toLocaleString('ko-KR')}
+										{safeToLocaleString(result.data.createdAt)}
 									</Typography>
 								</Box>
 							</Box>

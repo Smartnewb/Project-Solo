@@ -44,9 +44,8 @@ import AdminService from '@/app/services/admin';
 import { Button } from '@/shared/ui';
 
 // 매칭분석 관련 임포트
-import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
+import { formatDateTimeWithoutTimezoneConversion, safeFormat } from '@/app/utils/formatters';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -215,8 +214,8 @@ function MatchingManagementV2Content() {
       setLoading(true);
       setAnalyticsError(null);
 
-      const formattedStartDate = format(startDate, 'yyyy-MM-dd');
-      const formattedEndDate = format(endDate, 'yyyy-MM-dd');
+      const formattedStartDate = safeFormat(startDate, 'yyyy-MM-dd');
+      const formattedEndDate = safeFormat(endDate, 'yyyy-MM-dd');
 
       // 페이지 번호가 전달되면 해당 페이지를, 아니면 현재 페이지 사용
       const currentPage = pageNumber !== undefined ? pageNumber : historyPage;
@@ -317,7 +316,7 @@ function MatchingManagementV2Content() {
       setLoading(true);
       setAnalyticsError(null);
 
-      const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+      const formattedDate = safeFormat(selectedDate, 'yyyy-MM-dd');
 
       // 페이지 번호가 전달되면 해당 페이지를, 아니면 현재 페이지 사용
       const currentPage = pageNumber !== undefined ? pageNumber : failurePage;

@@ -28,6 +28,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import AdminService from '@/app/services/admin';
 import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
+import { safeToLocaleString } from '@/app/utils/formatters';
 import { useAdminForm } from '@/app/admin/hooks/forms';
 import {
   resetPasswordSearchSchema,
@@ -139,8 +140,7 @@ function ResetPasswordPageContent() {
 
   const formatDate = (dateString: string) => {
     if (!dateString) return '-';
-    const date = new Date(dateString);
-    return date.toLocaleString('ko-KR', {
+    return safeToLocaleString(dateString, 'ko-KR', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

@@ -26,8 +26,8 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { safeFormat } from '@/app/utils/formatters';
 import AdminService from '@/app/services/admin';
 import { MatcherHistoryResponse, UserSearchResult } from '../types';
 import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
@@ -76,8 +76,8 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
 
     try {
       // 날짜 형식 변환 (YYYY-MM-DD)
-      const formattedStartDate = format(startDate, 'yyyy-MM-dd');
-      const formattedEndDate = format(endDate, 'yyyy-MM-dd');
+      const formattedStartDate = safeFormat(startDate, 'yyyy-MM-dd');
+      const formattedEndDate = safeFormat(endDate, 'yyyy-MM-dd');
 
       // AdminService를 사용하여 API 호출
       const data = await AdminService.matching.getMatcherHistory(
@@ -386,7 +386,7 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
                                 />
                               </TableCell>
                               <TableCell>
-                                {format(new Date(item.publishedAt), 'yyyy-MM-dd HH:mm', { locale: ko })}
+                                {safeFormat(item.publishedAt, 'yyyy-MM-dd HH:mm')}
                               </TableCell>
                               <TableCell>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

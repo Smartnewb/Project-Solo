@@ -38,6 +38,7 @@ import {
 import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 import { useAdminForm } from '@/app/admin/hooks/forms';
 import { versionFormSchema, type VersionFormData } from '@/app/admin/hooks/forms/schemas/version.schema';
+import { safeToLocaleString, safeToLocaleDateString } from '@/app/utils/formatters';
 
 function VersionManagementContent() {
   const [versions, setVersions] = useState<VersionUpdate[]>([]);
@@ -214,7 +215,7 @@ function VersionManagementContent() {
                     />
                   </TableCell>
                   <TableCell>
-                    {new Date(version.createdAt).toLocaleDateString('ko-KR')}
+                    {safeToLocaleDateString(version.createdAt)}
                   </TableCell>
                   <TableCell>
                     <IconButton onClick={() => openViewDialog(version)} size="small">
@@ -337,7 +338,7 @@ function VersionManagementContent() {
               </Typography>
 
               <Typography variant="body2" color="text.secondary">
-                생성일: {new Date(selectedVersion.createdAt).toLocaleString('ko-KR')}
+                생성일: {safeToLocaleString(selectedVersion.createdAt)}
               </Typography>
             </Box>
           )}

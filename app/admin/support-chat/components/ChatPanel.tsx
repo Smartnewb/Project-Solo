@@ -31,6 +31,7 @@ import {
 import supportChatService from '@/app/services/support-chat';
 import { useSupportChatSocket } from '../hooks/useSupportChatSocket';
 import type { SupportSessionDetail, SupportMessage, SupportSenderType } from '@/app/types/support-chat';
+import { safeToLocaleString } from '@/app/utils/formatters';
 import {
   SESSION_STATUS_LABELS,
   SESSION_STATUS_COLORS,
@@ -198,8 +199,7 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('ko-KR', {
+    return safeToLocaleString(dateString, 'ko-KR', {
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',

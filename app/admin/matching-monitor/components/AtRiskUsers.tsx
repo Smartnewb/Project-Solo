@@ -18,7 +18,7 @@ import {
 	ToggleButtonGroup,
 } from '@mui/material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-import { format } from 'date-fns';
+import { safeFormat } from '@/app/utils/formatters';
 import type { AtRiskUsers as AtRiskUsersType } from '../types';
 
 export default function AtRiskUsersSection({
@@ -151,7 +151,7 @@ export default function AtRiskUsersSection({
 												</TableCell>
 												<TableCell>
 													<Typography variant="caption">
-														{format(new Date(user.lastFailedAt), 'MM/dd HH:mm')}
+														{safeFormat(user.lastFailedAt, 'MM/dd HH:mm')}
 													</Typography>
 												</TableCell>
 											</TableRow>

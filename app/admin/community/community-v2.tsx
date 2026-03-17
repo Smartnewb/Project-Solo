@@ -55,6 +55,7 @@ import communityService, { Category } from '@/app/services/community';
 import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
 import { useAdminForm } from '@/app/admin/hooks/forms';
 import { articleBlindSchema, ArticleBlindFormValues } from '@/app/admin/hooks/forms/schemas/community.schema';
+import { safeToLocaleString, safeToLocaleDateString } from '@/app/utils/formatters';
 
 // 게시글 목록 컴포넌트
 function ArticleList() {
@@ -591,7 +592,7 @@ function ArticleList() {
 											<Chip label="정상" color="success" size="small" />
 										)}
 									</TableCell>
-									<TableCell>{new Date(article.createdAt).toLocaleDateString()}</TableCell>
+									<TableCell>{safeToLocaleDateString(article.createdAt)}</TableCell>
 									<TableCell>
 										<Tooltip title="상세 보기">
 											<IconButton
@@ -743,7 +744,7 @@ function ArticleList() {
 								ID: {selectedArticleDetail.author?.id ?? selectedArticleDetail.userId}
 							</Typography>
 							<Typography variant="caption" display="block" sx={{ mb: 2 }}>
-								작성일: {new Date(selectedArticleDetail.createdAt).toLocaleString()}
+								작성일: {safeToLocaleString(selectedArticleDetail.createdAt)}
 								{selectedArticleDetail.isEdited && ' (수정됨)'}
 							</Typography>
 
@@ -829,7 +830,7 @@ function ArticleList() {
 													</Typography>
 												</Box>
 												<Typography variant="caption">
-													{new Date(comment.createdAt).toLocaleString()}
+													{safeToLocaleString(comment.createdAt)}
 												</Typography>
 											</Box>
 											<Typography
@@ -885,7 +886,7 @@ function ArticleList() {
 														신고자: {report.reporterNickname}
 													</Typography>
 													<Typography variant="caption">
-														{new Date(report.createdAt).toLocaleString()}
+														{safeToLocaleString(report.createdAt)}
 													</Typography>
 												</Box>
 												<Typography variant="body2" sx={{ mt: 0.5 }}>
@@ -1433,7 +1434,7 @@ function ReportList() {
 									</TableCell>
 									<TableCell>
 										<Typography variant="body2">
-											{new Date(report.createdAt).toLocaleDateString('ko-KR', {
+											{safeToLocaleDateString(report.createdAt, 'ko-KR', {
 												year: 'numeric',
 												month: '2-digit',
 												day: '2-digit',
@@ -1544,7 +1545,7 @@ function ReportList() {
 									<Box component="span" fontWeight="bold">
 										신고일:
 									</Box>{' '}
-									{new Date(selectedReport.createdAt).toLocaleString('ko-KR')}
+									{safeToLocaleString(selectedReport.createdAt)}
 								</Typography>
 							</Box>
 
@@ -1672,9 +1673,7 @@ function ReportList() {
 									<Box component="span" fontWeight="bold">
 										작성일:
 									</Box>{' '}
-									{selectedReport.article?.createdAt
-										? new Date(selectedReport.article.createdAt).toLocaleString('ko-KR')
-										: '-'}
+									{safeToLocaleString(selectedReport.article?.createdAt)}
 								</Typography>
 								<Typography>
 									<Box component="span" fontWeight="bold">

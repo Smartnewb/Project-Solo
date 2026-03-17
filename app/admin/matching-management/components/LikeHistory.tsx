@@ -24,8 +24,8 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { safeFormat, safeToLocaleDateString } from '@/app/utils/formatters';
 import AdminService from '@/app/services/admin';
 import { LikeHistoryResponse } from '../types';
 import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
@@ -60,8 +60,8 @@ const LikeHistory: React.FC = () => {
 
     try {
       // 날짜 형식 변환 (YYYY-MM-DD)
-      const formattedStartDate = format(startDate, 'yyyy-MM-dd');
-      const formattedEndDate = format(endDate, 'yyyy-MM-dd');
+      const formattedStartDate = safeFormat(startDate, 'yyyy-MM-dd');
+      const formattedEndDate = safeFormat(endDate, 'yyyy-MM-dd');
 
       // AdminService를 사용하여 API 호출
       const data = await AdminService.matching.getLikeHistory(
@@ -152,8 +152,7 @@ const LikeHistory: React.FC = () => {
 
   // 날짜 포맷팅
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ko-KR', {
+    return safeToLocaleDateString(dateString, 'ko-KR', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

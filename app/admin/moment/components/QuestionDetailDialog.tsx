@@ -15,6 +15,7 @@ import {
   ListItemText,
 } from '@mui/material';
 import type { QuestionDetail, Big5Dimension } from '@/types/moment';
+import { safeToLocaleString } from '@/app/utils/formatters';
 
 const DIMENSION_LABELS: Record<Big5Dimension, string> = {
   openness: '개방성 (Openness)',
@@ -38,7 +39,7 @@ export default function QuestionDetailDialog({
   if (!question) return null;
 
   const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('ko-KR', {
+    return safeToLocaleString(dateString, 'ko-KR', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

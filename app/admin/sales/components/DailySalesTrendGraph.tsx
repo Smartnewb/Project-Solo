@@ -15,8 +15,9 @@ import {
     Legend
 } from 'recharts';
 import { formatCurrency, formateDateToString } from "../utils";
-import { format, differenceInDays } from 'date-fns';
+import { differenceInDays } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { safeFormat } from '@/app/utils/formatters';
 import { Calendar } from '@/shared/ui/calendar';
 import {
     Popover,
@@ -290,7 +291,7 @@ export function DailySalesTrendGraph({ className, hideHeader = false }: DailySal
                                     ${startDateOpen ? 'border-purple-500' : 'border-gray-300'}`}
                                 >
                                     <span className={startDate ? 'text-gray-900' : 'text-gray-400'}>
-                                        {startDate ? format(startDate, 'yyyy-MM-dd') : '시작일 선택'}
+                                        {startDate ? safeFormat(startDate, 'yyyy-MM-dd') : '시작일 선택'}
                                     </span>
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="16" viewBox="0 0 14 16" fill="none">
                                         <path d="M3 1V2H1.5C0.671875 2 0 2.67188 0 3.5V5H14V3.5C14 2.67188 13.3281 2 12.5 2H11V1C11 0.446875 10.5531 0 10 0C9.44687 0 9 0.446875 9 1V2H5V1C5 0.446875 4.55312 0 4 0C3.44688 0 3 0.446875 3 1ZM14 6H0V14.5C0 15.3281 0.671875 16 1.5 16H12.5C13.3281 16 14 15.3281 14 14.5V6Z" fill="#9CA3AF"/>
@@ -323,7 +324,7 @@ export function DailySalesTrendGraph({ className, hideHeader = false }: DailySal
                                     ${endDateOpen ? 'border-purple-500' : 'border-gray-300'}`}
                                 >
                                     <span className={endDate ? 'text-gray-900' : 'text-gray-400'}>
-                                        {endDate ? format(endDate, 'yyyy-MM-dd') : '종료일 선택'}
+                                        {endDate ? safeFormat(endDate, 'yyyy-MM-dd') : '종료일 선택'}
                                     </span>
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="16" viewBox="0 0 14 16" fill="none">
                                         <path d="M3 1V2H1.5C0.671875 2 0 2.67188 0 3.5V5H14V3.5C14 2.67188 13.3281 2 12.5 2H11V1C11 0.446875 10.5531 0 10 0C9.44687 0 9 0.446875 9 1V2H5V1C5 0.446875 4.55312 0 4 0C3.44688 0 3 0.446875 3 1ZM14 6H0V14.5C0 15.3281 0.671875 16 1.5 16H12.5C13.3281 16 14 15.3281 14 14.5V6Z" fill="#9CA3AF"/>
@@ -630,7 +631,7 @@ export function DailySalesTrendGraph({ className, hideHeader = false }: DailySal
                         {/* 조회 기간 표시 */}
                         {startDate && endDate && (
                             <div className="text-sm text-gray-500">
-                                조회 기간: {format(startDate, 'yyyy-MM-dd')} ~ {format(endDate, 'yyyy-MM-dd')}
+                                조회 기간: {safeFormat(startDate, 'yyyy-MM-dd')} ~ {safeFormat(endDate, 'yyyy-MM-dd')}
                             </div>
                         )}
                     </div>
