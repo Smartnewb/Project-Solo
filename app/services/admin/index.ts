@@ -27,6 +27,16 @@ export { fcmTokens, universities } from './system';
 export { featureFlags } from './feature-flags';
 export type { FeatureFlag } from './feature-flags';
 export { matchingMonitor } from './matching-monitor';
+export { styleReference } from './style-reference';
+export type {
+	StyleReferenceItem,
+	StyleReferenceListResponse,
+	StyleReferenceStats,
+	StyleReferenceStatsItem,
+	CreateStyleReferenceRequest,
+	BulkCreateResult,
+	StyleReferenceListParams,
+} from './style-reference';
 
 // Re-export interfaces for backward compatibility with named type imports
 export type { FormattedData, StatItem, GenderStatItem } from './_shared';
@@ -86,6 +96,7 @@ import {
 import { fcmTokens, universities } from './system';
 import { featureFlags } from './feature-flags';
 import { matchingMonitor } from './matching-monitor';
+import { styleReference } from './style-reference';
 
 const AdminService = {
 	auth,
@@ -121,6 +132,7 @@ const AdminService = {
 	getProfileReports: reports.getProfileReports,
 	featureFlags,
 	matchingMonitor,
+	styleReference,
 };
 
 export default AdminService;
