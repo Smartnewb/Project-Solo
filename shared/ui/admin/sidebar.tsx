@@ -49,6 +49,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
       { href: '/admin/scheduled-matching', label: '정기 매칭' },
       { href: '/admin/chat', label: '채팅 관리' },
       { href: '/admin/ai-chat', label: 'AI 채팅' },
+      { href: '/admin/style-reference', label: 'V4 스타일 관리' },
       { href: '/admin/moment', label: '모먼트' },
     ],
   },
