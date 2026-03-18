@@ -66,13 +66,20 @@ export const userAppearance = {
 				const response = await axiosServer.get(url);
 				;
 				;
-				const rawData: any[] = response.data.data ?? [];
-				const mapped = rawData.map((user: any) => ({
+				const rawData = response.data.data ?? [];
+				const normalizedData = rawData.map((user: any) => ({
 					...user,
 					id: user.id ?? user.userId,
 					appearanceGrade: user.appearanceGrade ?? user.rank ?? 'UNKNOWN',
+					profileImageUrl: user.profileImageUrl ?? user.images?.[0]?.url ?? null,
+					profileImages: user.profileImages ?? user.images?.map((img: any, idx: number) => ({
+						id: img.imageId ?? `${user.userId}-${idx}`,
+						url: img.url,
+						order: img.slotIndex ?? idx,
+						isMain: img.isMain ?? idx === 0,
+					})) ?? [],
 				}));
-				return { data: mapped, meta: response.data.meta };
+				return { data: normalizedData, meta: response.data.meta };
 			} catch (error: any) {
 				throw error;
 			}
@@ -112,7 +119,7 @@ export const userAppearance = {
 		}
 
 		try {
-			const response = await axiosServer.patch(`/admin/v2/users/${userId}/appearance`, { grade });
+			const response = await axiosServer.patch(`/admin/v2/users/${userId}/appearance`, { rank: grade });
 			;
 			return response.data.data;
 		} catch (error: any) {
@@ -149,7 +156,7 @@ export const userAppearance = {
 		try {
 			const response = await axiosServer.patch('/admin/v2/users/appearance/bulk', {
 				userIds,
-				grade,
+				rank: grade,
 			});
 			return response.data.data;
 		} catch (error) {
@@ -169,7 +176,26 @@ export const userAppearance = {
 
 			const data = response.data.data;
 
-			if (
+			// id 필드 정규화
+			if (!data.id && data.userId) {
+				data.id = data.userId;
+			}
+
+			// appearanceGrade 정규화 (API는 rank 필드 사용)
+			if (!data.appearanceGrade && data.rank) {
+				data.appearanceGrade = data.rank;
+			}
+
+			// 프로필 이미지 정규화: images, profileImageUrls, profileImages 모두 지원
+			if (data.images && Array.isArray(data.images) && data.images.length > 0) {
+				data.profileImages = data.images.map((img: any, index: number) => ({
+					id: img.imageId ?? `${userId}-${index}`,
+					url: img.url,
+					order: img.slotIndex ?? index,
+					isMain: img.isMain ?? index === 0,
+				}));
+				data.profileImageUrl = data.images.find((img: any) => img.isMain)?.url ?? data.images[0].url;
+			} else if (
 				data.profileImageUrls &&
 				Array.isArray(data.profileImageUrls) &&
 				data.profileImageUrls.length > 0

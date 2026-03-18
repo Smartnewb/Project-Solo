@@ -95,8 +95,18 @@ export const reports = {
 			queryParams.append('page', page);
 			queryParams.append('limit', limit);
 			if (status) {
-				queryParams.append('status', status === 'pending' ? 'pending' : 'processed');
+				const statusMap: Record<string, string> = {
+					pending: 'PENDING',
+					reviewing: 'REVIEWING',
+					resolved: 'RESOLVED',
+					rejected: 'DISMISSED',
+				};
+				queryParams.append('status', statusMap[status] || status);
 			}
+			const reporterName = params.get('reporterName');
+			const reportedName = params.get('reportedName');
+			if (reporterName) queryParams.append('reporterName', reporterName);
+			if (reportedName) queryParams.append('reportedName', reportedName);
 
 			const endpoint = `/admin/v2/reports?${queryParams.toString()}`;
 			;
@@ -158,9 +168,10 @@ export const reports = {
 		adminMemo?: string,
 	) => {
 		try {
+			const backendStatus = status === 'rejected' ? 'dismissed' : status;
 			const response = await axiosServer.patch(
 				`/admin/v2/reports/${reportId}/status`,
-				{ status, adminMemo },
+				{ status: backendStatus, reason: adminMemo },
 			);
 			return response.data.data;
 		} catch (error: any) {
@@ -179,10 +190,11 @@ export const reports = {
 		}
 	},
 
-	getUserProfileImages: async (userId: string) => {
+	getUserProfileImages: async (userId: string): Promise<string[]> => {
 		try {
 			const response = await axiosServer.get(`/admin/community/users/${userId}/profile-images`);
-			return response.data.images || [];
+			const images = response.data.images || response.data.data?.images || [];
+			return images.map((img: any) => (typeof img === 'string' ? img : img.url));
 		} catch (error: any) {
 			throw error;
 		}
@@ -349,14 +361,15 @@ export const userReview = {
 			const params: Record<string, any> = {};
 			if (filters.page) params.page = filters.page;
 			if (filters.limit) params.limit = filters.limit;
-			if (filters.reviewType) params.reviewType = filters.reviewType;
-			if (filters.reviewStatus) params.reviewStatus = filters.reviewStatus;
+			// Backend reviewType = approval/rejection (result type), not admin/auto
+			if (filters.reviewStatus) {
+				const reviewTypeMap: Record<string, string> = { approved: 'approval', rejected: 'rejection' };
+				params.reviewType = reviewTypeMap[filters.reviewStatus] || filters.reviewStatus;
+			}
 			if (filters.gender) params.gender = filters.gender;
 			if (filters.from) params.from = filters.from;
 			if (filters.to) params.to = filters.to;
-			if (filters.searchTerm) params.searchTerm = filters.searchTerm;
-			if (filters.universityId) params.universityId = filters.universityId;
-			if (filters.reviewedBy) params.reviewedBy = filters.reviewedBy;
+			if (filters.reviewedBy) params.reviewer = filters.reviewedBy;
 
 			if (PROFILE_REVIEW_VERSION === 'v1') {
 				const response = await axiosServer.get('/admin/profile-images/review-history', { params });
@@ -473,7 +486,8 @@ export const profileImages = {
 			}
 
 			const response = await axiosServer.post(`/admin/v2/profile-review/users/${userId}/reject-profile`, {
-				rejectionReason,
+				category: 'image',
+				reason: rejectionReason,
 			});
 
 			;

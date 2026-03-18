@@ -322,13 +322,22 @@ const communityService = {
 			const response = await axiosServer.get(`/admin/community/comments?articleId=${articleId}`);
 			console.log('댓글 목록 조회 응답:', response.data);
 
-			// API 응답 구조에 맞게 데이터 반환
+			// API 응답 구조에 맞게 데이터 반환 (백엔드는 comments/pagination 구조 사용)
+			const comments = response.data.comments ?? response.data.items ?? [];
+			const pagination = response.data.pagination ?? response.data.meta;
 			return {
-				items: response.data.items ?? [],
-				meta: response.data.meta ?? {
+				items: comments,
+				meta: pagination ? {
+					currentPage: pagination.page ?? page,
+					itemsPerPage: pagination.limit ?? limit,
+					totalItems: pagination.total ?? comments.length,
+					totalPages: pagination.totalPages ?? 1,
+					hasNextPage: pagination.hasMore ?? false,
+					hasPreviousPage: (pagination.page ?? page) > 1,
+				} : {
 					currentPage: page,
 					itemsPerPage: limit,
-					totalItems: response.data.items?.length ?? 0,
+					totalItems: comments.length,
 					totalPages: 1,
 					hasNextPage: false,
 					hasPreviousPage: page > 1,
