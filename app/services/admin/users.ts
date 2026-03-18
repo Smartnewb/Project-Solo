@@ -119,7 +119,7 @@ export const userAppearance = {
 		}
 
 		try {
-			const response = await axiosServer.patch(`/admin/v2/users/${userId}/appearance`, { grade });
+			const response = await axiosServer.patch(`/admin/v2/users/${userId}/appearance`, { rank: grade });
 			;
 			return response.data.data;
 		} catch (error: any) {
@@ -156,7 +156,7 @@ export const userAppearance = {
 		try {
 			const response = await axiosServer.patch('/admin/v2/users/appearance/bulk', {
 				userIds,
-				grade,
+				rank: grade,
 			});
 			return response.data.data;
 		} catch (error) {

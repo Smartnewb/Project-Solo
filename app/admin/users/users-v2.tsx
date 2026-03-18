@@ -715,7 +715,7 @@ function UsersV2Content() {
                           ;
 
                           // 메인 이미지 찾기
-                          const mainImage = selectedUser.profileImages.find(img => img.isMain === true);
+                          const mainImage = selectedUser.profileImages?.find(img => img.isMain === true);
                           if (mainImage) {
                             ;
                           }
@@ -723,7 +723,7 @@ function UsersV2Content() {
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
-                            const mainImage = selectedUser.profileImages.find(img => img.isMain === true);
+                            const mainImage = selectedUser.profileImages?.find(img => img.isMain === true);
                             if (mainImage) {
                               ;
                             }
