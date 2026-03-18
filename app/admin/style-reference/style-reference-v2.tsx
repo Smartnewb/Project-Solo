@@ -30,7 +30,7 @@ const DEFAULT_FILTERS: Filters = {
   status: 'ALL',
 };
 
-function StyleReferencePageContent() {
+export default function StyleReferenceV2() {
   const toast = useToast();
   const confirmAction = useConfirm();
 
@@ -187,6 +187,3 @@ function StyleReferencePageContent() {
   );
 }
 
-export default function StyleReferenceV2() {
-  return <StyleReferencePageContent />;
-}

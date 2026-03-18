@@ -22,16 +22,20 @@ export const STYLE_KEYWORDS = [
 
 export type StyleKeywordCode = (typeof STYLE_KEYWORDS)[number]['code'];
 
-export const CATEGORY_LABELS: Record<'VIBE' | 'FASHION' | 'COLOR_TONE', string> = {
+export const CATEGORY_LABELS = {
   VIBE: '분위기',
   FASHION: '패션',
   COLOR_TONE: '컬러톤',
-};
+} as const;
 
-export const GENDER_LABELS: Record<'MALE' | 'FEMALE', string> = {
+export type StyleCategory = keyof typeof CATEGORY_LABELS;
+
+export const GENDER_LABELS = {
   MALE: '남성',
   FEMALE: '여성',
-};
+} as const;
+
+export type StyleGender = keyof typeof GENDER_LABELS;
 
 export function getKeywordMeta(code: string) {
   return STYLE_KEYWORDS.find((k) => k.code === code);

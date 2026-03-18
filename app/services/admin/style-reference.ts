@@ -1,13 +1,14 @@
 // app/services/admin/style-reference.ts
 import axiosServer from '@/utils/axios';
+import type { StyleCategory, StyleGender } from '@/app/admin/style-reference/constants';
 
 export interface StyleReferenceItem {
   id: string;
   imageUrl: string;
   thumbnailUrl: string | null;
   tags: string[];
-  category: 'VIBE' | 'FASHION' | 'COLOR_TONE';
-  gender: 'MALE' | 'FEMALE';
+  category: StyleCategory;
+  gender: StyleGender;
   sortOrder: number;
   isActive: boolean;
   createdAt: string;
@@ -36,8 +37,8 @@ export interface CreateStyleReferenceRequest {
   imageUrl: string;
   thumbnailUrl?: string;
   tags?: string[];
-  category: 'VIBE' | 'FASHION' | 'COLOR_TONE';
-  gender: 'MALE' | 'FEMALE';
+  category: StyleCategory;
+  gender: StyleGender;
   sortOrder?: number;
 }
 
