@@ -66,7 +66,13 @@ export const userAppearance = {
 				const response = await axiosServer.get(url);
 				;
 				;
-				return { data: response.data.data, meta: response.data.meta };
+				const rawData: any[] = response.data.data ?? [];
+				const mapped = rawData.map((user: any) => ({
+					...user,
+					id: user.id ?? user.userId,
+					appearanceGrade: user.appearanceGrade ?? user.rank ?? 'UNKNOWN',
+				}));
+				return { data: mapped, meta: response.data.meta };
 			} catch (error: any) {
 				throw error;
 			}

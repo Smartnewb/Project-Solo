@@ -346,65 +346,39 @@ function ProfileReviewV2Content() {
   const handleImageApproved = async (imageId: string) => {
     if (!selectedUser) return;
 
-    // 선택된 사용자의 pendingImages에서 해당 이미지 제거
     const updatedPendingImages = (selectedUser.pendingImages || []).filter(
       (img) => img.id !== imageId,
     );
-    const updatedUser = {
-      ...selectedUser,
-      pendingImages: updatedPendingImages,
-    };
 
-    // pendingImages가 비어있으면 서버에서 새 목록 가져오기
     if (updatedPendingImages.length === 0) {
       setSelectedUser(null);
-      await fetchPendingUsers(pagination.page, searchTerm, filters);
     } else {
-      // 사용자 목록에서도 업데이트
-      setUsers(
-        (prevUsers) =>
-          prevUsers
-            .map((u) => {
-              if (u.userId === selectedUser.userId || u.id === selectedUser.id) {
-                return updatedUser;
-              }
-              return u;
-            }) as PendingUser[],
-      );
+      // 낙관적 업데이트 (refetch 전까지 즉시 반영)
+      const updatedUser = { ...selectedUser, pendingImages: updatedPendingImages };
       setSelectedUser(updatedUser);
     }
+
+    // 항상 서버에서 최신 목록 갱신
+    await fetchPendingUsers(pagination.page, searchTerm, filters);
   };
 
   const handleImageRejected = async (imageId: string) => {
     if (!selectedUser) return;
 
-    // 선택된 사용자의 pendingImages에서 해당 이미지 제거
     const updatedPendingImages = (selectedUser.pendingImages || []).filter(
       (img) => img.id !== imageId,
     );
-    const updatedUser = {
-      ...selectedUser,
-      pendingImages: updatedPendingImages,
-    };
 
-    // pendingImages가 비어있으면 서버에서 새 목록 가져오기
     if (updatedPendingImages.length === 0) {
       setSelectedUser(null);
-      await fetchPendingUsers(pagination.page, searchTerm, filters);
     } else {
-      // 사용자 목록에서도 업데이트
-      setUsers(
-        (prevUsers) =>
-          prevUsers
-            .map((u) => {
-              if (u.userId === selectedUser.userId || u.id === selectedUser.id) {
-                return updatedUser;
-              }
-              return u;
-            }) as PendingUser[],
-      );
+      // 낙관적 업데이트 (refetch 전까지 즉시 반영)
+      const updatedUser = { ...selectedUser, pendingImages: updatedPendingImages };
       setSelectedUser(updatedUser);
     }
+
+    // 항상 서버에서 최신 목록 갱신
+    await fetchPendingUsers(pagination.page, searchTerm, filters);
   };
 
   const handleApproveUser = async (userId: string) => {
