@@ -50,6 +50,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
       { href: '/admin/chat', label: '채팅 관리' },
       { href: '/admin/ai-chat', label: 'AI 채팅' },
       { href: '/admin/style-reference', label: 'V4 스타일 관리' },
+      { href: '/admin/keywords', label: '키워드 관리' },
       { href: '/admin/moment', label: '모먼트' },
     ],
   },
@@ -83,6 +84,8 @@ export const NAV_CATEGORIES: NavCategory[] = [
       { href: '/admin/deleted-females', label: '탈퇴 회원 복구' },
       { href: '/admin/dormant-likes', label: '파묘 좋아요' },
       { href: '/admin/dormant-likes/logs', label: '처리 이력' },
+      { href: '/admin/care', label: '유저 케어' },
+      { href: '/admin/care/logs', label: '케어 이력' },
     ],
   },
   {

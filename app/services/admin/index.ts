@@ -28,6 +28,19 @@ export { featureFlags } from './feature-flags';
 export type { FeatureFlag } from './feature-flags';
 export { matchingMonitor } from './matching-monitor';
 export { styleReference } from './style-reference';
+export { care } from './care';
+export { keywords } from './keywords';
+export { KEYWORD_CATEGORIES } from './keywords';
+export type { KeywordCategory, KeywordItem, KeywordsResponse } from './keywords';
+export type {
+	CareTarget,
+	CareTargetsResponse,
+	CarePartner,
+	CareExecuteRequest,
+	CareExecuteResponse,
+	CareLog,
+	CareLogsResponse,
+} from './care';
 export type {
 	StyleReferenceItem,
 	StyleReferenceListResponse,
@@ -97,6 +110,8 @@ import { fcmTokens, universities } from './system';
 import { featureFlags } from './feature-flags';
 import { matchingMonitor } from './matching-monitor';
 import { styleReference } from './style-reference';
+import { care } from './care';
+import { keywords } from './keywords';
 
 const AdminService = {
 	auth,
@@ -133,6 +148,8 @@ const AdminService = {
 	featureFlags,
 	matchingMonitor,
 	styleReference,
+	care,
+	keywords,
 };
 
 export default AdminService;
