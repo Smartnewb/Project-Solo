@@ -18,7 +18,11 @@ import {
   TableRow,
   Avatar,
   Chip,
-
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
   Divider
 } from '@mui/material';
 import {
@@ -29,6 +33,8 @@ import {
 } from '@mui/icons-material';
 import { UserSearchResult } from '../types';
 import AdminService from '@/app/services/admin';
+
+const MAX_GEM_GRANT = 100;
 
 interface GemsManagementProps {
   searchTerm: string;
@@ -68,6 +74,8 @@ const GemsManagement: React.FC<GemsManagementProps> = ({
   
   // 구슬 액션 관련 상태
   const [gemsCount, setGemsCount] = useState(1);
+  const [overLimitDialogOpen, setOverLimitDialogOpen] = useState(false);
+  const [overLimitReason, setOverLimitReason] = useState('');
 
   // 구슬 정보 조회
   const fetchGemsInfo = async (userId: string) => {
@@ -94,6 +102,18 @@ const GemsManagement: React.FC<GemsManagementProps> = ({
   const addGems = async () => {
     if (!selectedUser) return;
 
+    if (gemsCount > MAX_GEM_GRANT) {
+      setOverLimitReason('');
+      setOverLimitDialogOpen(true);
+      return;
+    }
+
+    await executeAddGems();
+  };
+
+  const executeAddGems = async () => {
+    if (!selectedUser) return;
+
     setActionLoading(true);
     setGemsError(null);
     setActionResult(null);
@@ -104,7 +124,6 @@ const GemsManagement: React.FC<GemsManagementProps> = ({
 
       setActionResult(`성공적으로 ${gemsCount}개의 구슬을 추가했습니다.`);
 
-      // 구슬 정보 새로고침
       await fetchGemsInfo(selectedUser.id);
       setGemsCount(1);
     } catch (err: any) {
@@ -116,6 +135,11 @@ const GemsManagement: React.FC<GemsManagementProps> = ({
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const handleOverLimitConfirm = async () => {
+    setOverLimitDialogOpen(false);
+    await executeAddGems();
   };
 
   // 구슬 제거
@@ -361,7 +385,34 @@ const GemsManagement: React.FC<GemsManagementProps> = ({
         </Paper>
       )}
 
-
+      <Dialog open={overLimitDialogOpen} onClose={() => setOverLimitDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>구슬 지급 확인</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            100개 이상의 구슬을 지급하려고 합니다. 사유를 입력해주세요.
+          </DialogContentText>
+          <TextField
+            fullWidth
+            label="지급 사유"
+            value={overLimitReason}
+            onChange={(e) => setOverLimitReason(e.target.value)}
+            multiline
+            rows={3}
+            autoFocus
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOverLimitDialogOpen(false)}>취소</Button>
+          <Button
+            onClick={handleOverLimitConfirm}
+            variant="contained"
+            color="primary"
+            disabled={!overLimitReason.trim()}
+          >
+            확인
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
