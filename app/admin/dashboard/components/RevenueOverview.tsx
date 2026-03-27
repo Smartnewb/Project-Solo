@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   Alert,
@@ -21,6 +21,7 @@ import {
 } from "@mui/icons-material";
 import { KPI, ExtendedRevenueResponse } from "../types";
 import { dashboardService } from "@/app/services/dashboard";
+import { useRevenueSummary } from "@/app/admin/hooks/use-revenue-v2";
 
 interface RevenueOverviewProps {
   kpi: KPI | null;
@@ -138,6 +139,24 @@ export default function RevenueOverview({
 
     fetchExtendedRevenue();
   }, []);
+
+  // V2: current-month date range for parallel display
+  const { startDate: v2StartDate, endDate: v2EndDate } = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
+    return {
+      startDate: `${y}-${m}-01`,
+      endDate: `${y}-${m}-${d}`,
+    };
+  }, []);
+
+  const {
+    data: v2Summary,
+    isLoading: v2Loading,
+    isError: v2Error,
+  } = useRevenueSummary(v2StartDate, v2EndDate);
 
   const revenue = extendedRevenue?.revenue;
   const isLoading = loading || extendedLoading;
@@ -259,6 +278,53 @@ export default function RevenueOverview({
                   </Typography>
                 </Grid>
               </Grid>
+            </Box>
+
+            {/* V2 API 병렬 표시 (전환 검증용) */}
+            <Divider />
+            <Box sx={{ p: 1.5, borderRadius: 1, backgroundColor: "#f0fdf4", border: "1px dashed #86efac" }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                fontWeight={600}
+                sx={{ display: "block", mb: 0.5 }}
+              >
+                V2 API (검증 중)
+              </Typography>
+              {v2Loading ? (
+                <Skeleton variant="rectangular" height={40} sx={{ borderRadius: 1 }} />
+              ) : v2Error ? (
+                <Typography variant="caption" color="error">
+                  V2 데이터 로드 실패
+                </Typography>
+              ) : v2Summary ? (
+                <Grid container spacing={1}>
+                  <Grid item xs={4}>
+                    <Typography variant="caption" color="text.secondary">
+                      총 매출
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600}>
+                      ₩{formatCurrency(v2Summary.totalRevenue)}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={4}>
+                    <Typography variant="caption" color="text.secondary">
+                      PG
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600}>
+                      ₩{formatCurrency(v2Summary.pgRevenue)}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={4}>
+                    <Typography variant="caption" color="text.secondary">
+                      IAP
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600}>
+                      ₩{formatCurrency(v2Summary.iapRevenue)}
+                    </Typography>
+                  </Grid>
+                </Grid>
+              ) : null}
             </Box>
           </Box>
         )}

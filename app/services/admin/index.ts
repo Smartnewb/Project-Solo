@@ -23,6 +23,8 @@ export {
 	likes,
 	dormantLikes,
 } from './revenue';
+export { revenueV2 } from './revenue-v2';
+export type { RevenueSummary, RevenueBreakdown, DailyRevenueTrend } from './revenue-v2';
 export { fcmTokens, universities } from './system';
 export { featureFlags } from './feature-flags';
 export type { FeatureFlag } from './feature-flags';
@@ -106,6 +108,7 @@ import {
 	likes,
 	dormantLikes,
 } from './revenue';
+import { revenueV2 } from './revenue-v2';
 import { fcmTokens, universities } from './system';
 import { featureFlags } from './feature-flags';
 import { matchingMonitor } from './matching-monitor';
@@ -150,6 +153,7 @@ const AdminService = {
 	styleReference,
 	care,
 	keywords,
+	revenueV2,
 };
 
 export default AdminService;
