@@ -273,7 +273,13 @@ function GemsManagementPageContent() {
   const handleOverLimitConfirm = () => {
     if (!pendingData) return;
     setOverLimitDialogOpen(false);
-    executeBulkGrant(pendingData);
+    const grantData = {
+      ...pendingData,
+      message: pendingData.message
+        ? `${pendingData.message} [상한 초과 사유: ${overLimitReason}]`
+        : `[상한 초과 사유: ${overLimitReason}]`,
+    };
+    executeBulkGrant(grantData);
   };
 
   const executeBulkGrant = (data: GemsFormData) => {

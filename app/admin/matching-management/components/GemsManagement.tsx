@@ -111,7 +111,7 @@ const GemsManagement: React.FC<GemsManagementProps> = ({
     await executeAddGems();
   };
 
-  const executeAddGems = async () => {
+  const executeAddGems = async (reason?: string) => {
     if (!selectedUser) return;
 
     setActionLoading(true);
@@ -122,7 +122,11 @@ const GemsManagement: React.FC<GemsManagementProps> = ({
       const response = await AdminService.userAppearance.addUserGems(selectedUser.id, gemsCount);
       ;
 
-      setActionResult(`성공적으로 ${gemsCount}개의 구슬을 추가했습니다.`);
+      setActionResult(
+        reason
+          ? `성공적으로 ${gemsCount}개의 구슬을 추가했습니다. [상한 초과 사유: ${reason}]`
+          : `성공적으로 ${gemsCount}개의 구슬을 추가했습니다.`
+      );
 
       await fetchGemsInfo(selectedUser.id);
       setGemsCount(1);
@@ -139,7 +143,7 @@ const GemsManagement: React.FC<GemsManagementProps> = ({
 
   const handleOverLimitConfirm = async () => {
     setOverLimitDialogOpen(false);
-    await executeAddGems();
+    await executeAddGems(overLimitReason);
   };
 
   // 구슬 제거
