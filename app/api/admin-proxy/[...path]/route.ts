@@ -5,13 +5,21 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/ap
 
 // Allowlist of permitted path prefixes (SSRF prevention)
 const ALLOWED_PATH_PREFIXES = [
-  'admin/',
-  'auth/',
-  'user',
-  'universities/',
-  'articles/',
-  'public-reviews',
-  'app-reviews/',
+	'admin/',
+	'auth/',
+	'users/',
+	'user-gems/',
+	'user-reports/',
+	'user-appearance/',
+	'universities/',
+	'articles/',
+	'public-reviews/',
+	'app-reviews/',
+	'stats/',
+	'reports/',
+	'dashboard/',
+	'revenue/',
+	'matching/',
 ];
 
 function isPathAllowed(targetPath: string): boolean {

@@ -1,5 +1,4 @@
-import axiosServer, { axiosNextGen } from '@/utils/axios';
-import { adminRequest } from '@/shared/lib/http/admin-fetch';
+import { adminRequest, adminGet, adminPost, adminPut, adminPatch, adminDelete } from '@/shared/lib/http/admin-fetch';
 import type {
 	AdminCardNewsItem,
 	AdminCardNewsListResponse,
@@ -27,12 +26,7 @@ import type {
 export const backgroundPresets = {
 	getActive: async (): Promise<BackgroundPresetsResponse> => {
 		try {
-			;
-			const response = await axiosNextGen.get<BackgroundPresetsResponse>(
-				'/admin/background-presets/active',
-			);
-			;
-			return response.data;
+			return await adminGet<BackgroundPresetsResponse>('/admin/background-presets/active');
 		} catch (error: any) {
 			throw error;
 		}
@@ -40,8 +34,6 @@ export const backgroundPresets = {
 
 	upload: async (imageFile: File): Promise<UploadImageResponse> => {
 		try {
-			;
-			;
 
 			const formData = new FormData();
 			formData.append('image', imageFile);
@@ -50,8 +42,6 @@ export const backgroundPresets = {
 				method: 'POST',
 				body: formData,
 			});
-			;
-			;
 			return data;
 		} catch (error: any) {
 			throw error;
@@ -63,8 +53,6 @@ export const backgroundPresets = {
 		data: UploadAndCreatePresetRequest,
 	): Promise<BackgroundPreset> => {
 		try {
-			;
-			;
 
 			const formData = new FormData();
 			formData.append('image', imageFile);
@@ -78,7 +66,6 @@ export const backgroundPresets = {
 				method: 'POST',
 				body: formData,
 			});
-			;
 			return responseData;
 		} catch (error: any) {
 			throw error;
@@ -87,10 +74,7 @@ export const backgroundPresets = {
 
 	create: async (data: CreatePresetRequest): Promise<BackgroundPreset> => {
 		try {
-			;
-			const response = await axiosNextGen.post('/admin/background-presets', data);
-			;
-			return response.data;
+			return await adminPost<BackgroundPreset>('/admin/background-presets', data);
 		} catch (error: any) {
 			throw error;
 		}
@@ -98,10 +82,7 @@ export const backgroundPresets = {
 
 	update: async (id: string, data: Partial<CreatePresetRequest>): Promise<BackgroundPreset> => {
 		try {
-			;
-			const response = await axiosNextGen.put(`/admin/background-presets/${id}`, data);
-			;
-			return response.data;
+			return await adminPut<BackgroundPreset>(`/admin/background-presets/${id}`, data);
 		} catch (error: any) {
 			throw error;
 		}
@@ -109,21 +90,24 @@ export const backgroundPresets = {
 
 	delete: async (id: string): Promise<void> => {
 		try {
-			;
-			await axiosNextGen.delete(`/admin/background-presets/${id}`);
-			;
+			await adminDelete(`/admin/background-presets/${id}`);
 		} catch (error: any) {
 			throw error;
 		}
 	},
 };
 
+export interface CardNewsCategory {
+	id: string;
+	displayName: string;
+	code: string;
+	emojiUrl: string;
+}
+
 // 카드뉴스 관련 API
 export const cardNews = {
 	uploadSectionImage: async (imageFile: File): Promise<UploadImageResponse> => {
 		try {
-			;
-			;
 
 			const formData = new FormData();
 			formData.append('image', imageFile);
@@ -135,7 +119,6 @@ export const cardNews = {
 					body: formData,
 				},
 			);
-			;
 			return data;
 		} catch (error: any) {
 			throw error;
@@ -144,10 +127,7 @@ export const cardNews = {
 
 	create: async (data: CreateCardNewsRequest): Promise<AdminCardNewsItem> => {
 		try {
-			;
-			const response = await axiosNextGen.post<AdminCardNewsItem>('/admin/posts/card-news', data);
-			;
-			return response.data;
+			return await adminPost<AdminCardNewsItem>('/admin/posts/card-news', data);
 		} catch (error: any) {
 			throw error;
 		}
@@ -155,10 +135,7 @@ export const cardNews = {
 
 	get: async (id: string): Promise<AdminCardNewsItem> => {
 		try {
-			;
-			const response = await axiosNextGen.get<AdminCardNewsItem>(`/admin/posts/card-news/${id}`);
-			;
-			return response.data;
+			return await adminGet<AdminCardNewsItem>(`/admin/posts/card-news/${id}`);
 		} catch (error: any) {
 			throw error;
 		}
@@ -166,15 +143,10 @@ export const cardNews = {
 
 	getList: async (page: number = 1, limit: number = 20): Promise<AdminCardNewsListResponse> => {
 		try {
-			;
-			const response = await axiosNextGen.get<AdminCardNewsListResponse>('/admin/posts/card-news', {
-				params: {
-					page,
-					limit,
-				},
+			return await adminGet<AdminCardNewsListResponse>('/admin/posts/card-news', {
+				page: String(page),
+				limit: String(limit),
 			});
-			;
-			return response.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -182,13 +154,7 @@ export const cardNews = {
 
 	update: async (id: string, data: UpdateCardNewsRequest): Promise<AdminCardNewsItem> => {
 		try {
-			;
-			const response = await axiosNextGen.put<AdminCardNewsItem>(
-				`/admin/posts/card-news/${id}`,
-				data,
-			);
-			;
-			return response.data;
+			return await adminPut<AdminCardNewsItem>(`/admin/posts/card-news/${id}`, data);
 		} catch (error: any) {
 			throw error;
 		}
@@ -196,9 +162,7 @@ export const cardNews = {
 
 	delete: async (id: string): Promise<void> => {
 		try {
-			;
-			await axiosNextGen.delete(`/admin/posts/card-news/${id}`);
-			;
+			await adminDelete(`/admin/posts/card-news/${id}`);
 		} catch (error: any) {
 			throw error;
 		}
@@ -206,24 +170,18 @@ export const cardNews = {
 
 	publish: async (id: string, data?: PublishCardNewsRequest): Promise<PublishCardNewsResponse> => {
 		try {
-			;
-			const response = await axiosNextGen.post<PublishCardNewsResponse>(
+			return await adminPost<PublishCardNewsResponse>(
 				`/admin/posts/card-news/${id}/publish`,
 				data || {},
 			);
-			;
-			return response.data;
 		} catch (error: any) {
 			throw error;
 		}
 	},
 
-	getCategories: async () => {
+	getCategories: async (): Promise<CardNewsCategory[]> => {
 		try {
-			;
-			const response = await axiosNextGen.get('/articles/category/list');
-			;
-			return response.data;
+			return await adminGet<CardNewsCategory[]>('/articles/category/list');
 		} catch (error: any) {
 			throw error;
 		}
@@ -233,11 +191,8 @@ export const cardNews = {
 export const banners = {
 	getList: async (position?: BannerPosition): Promise<Banner[]> => {
 		try {
-			const params = position ? { position } : {};
-			const response = await axiosServer.get<Banner[]>('/admin/banners', {
-				params,
-			});
-			return response.data;
+			const params = position ? { position } : undefined;
+			return await adminGet<Banner[]>('/admin/banners', params);
 		} catch (error: any) {
 			throw error;
 		}
@@ -263,8 +218,7 @@ export const banners = {
 
 	update: async (id: string, data: UpdateBannerRequest): Promise<Banner> => {
 		try {
-			const response = await axiosServer.patch<Banner>(`/admin/banners/${id}`, data);
-			return response.data;
+			return await adminPatch<Banner>(`/admin/banners/${id}`, data);
 		} catch (error: any) {
 			throw error;
 		}
@@ -272,7 +226,7 @@ export const banners = {
 
 	delete: async (id: string): Promise<void> => {
 		try {
-			await axiosServer.delete(`/admin/banners/${id}`);
+			await adminDelete(`/admin/banners/${id}`);
 		} catch (error: any) {
 			throw error;
 		}
@@ -280,8 +234,7 @@ export const banners = {
 
 	updateOrder: async (data: UpdateBannerOrderRequest): Promise<Banner[]> => {
 		try {
-			const response = await axiosServer.patch<Banner[]>('/admin/banners/order/bulk', data);
-			return response.data;
+			return await adminPatch<Banner[]>('/admin/banners/order/bulk', data);
 		} catch (error: any) {
 			throw error;
 		}
@@ -291,8 +244,6 @@ export const banners = {
 export const sometimeArticles = {
 	uploadImage: async (imageFile: File): Promise<UploadImageResponse> => {
 		try {
-			;
-			;
 
 			const formData = new FormData();
 			formData.append("image", imageFile);
@@ -301,7 +252,6 @@ export const sometimeArticles = {
 				method: 'POST',
 				body: formData,
 			});
-			;
 			return data;
 		} catch (error: any) {
 			throw error;
@@ -315,14 +265,15 @@ export const sometimeArticles = {
 		limit?: number;
 	}): Promise<AdminSometimeArticleListResponse> => {
 		try {
-			;
-			const response =
-				await axiosNextGen.get<AdminSometimeArticleListResponse>(
-					"/admin/sometime-articles",
-					{ params },
-				);
-			;
-			return response.data;
+			const query: Record<string, string> = {};
+			if (params?.category) query.category = params.category;
+			if (params?.status) query.status = params.status;
+			if (params?.page !== undefined) query.page = String(params.page);
+			if (params?.limit !== undefined) query.limit = String(params.limit);
+			return await adminGet<AdminSometimeArticleListResponse>(
+				"/admin/sometime-articles",
+				Object.keys(query).length > 0 ? query : undefined,
+			);
 		} catch (error: any) {
 			throw error;
 		}
@@ -330,12 +281,7 @@ export const sometimeArticles = {
 
 	get: async (id: string): Promise<AdminSometimeArticleDetail> => {
 		try {
-			;
-			const response = await axiosNextGen.get<AdminSometimeArticleDetail>(
-				`/admin/sometime-articles/${id}`,
-			);
-			;
-			return response.data;
+			return await adminGet<AdminSometimeArticleDetail>(`/admin/sometime-articles/${id}`);
 		} catch (error: any) {
 			throw error;
 		}
@@ -345,13 +291,7 @@ export const sometimeArticles = {
 		data: CreateSometimeArticleRequest,
 	): Promise<AdminSometimeArticleDetail> => {
 		try {
-			;
-			const response = await axiosNextGen.post<AdminSometimeArticleDetail>(
-				"/admin/sometime-articles",
-				data,
-			);
-			;
-			return response.data;
+			return await adminPost<AdminSometimeArticleDetail>("/admin/sometime-articles", data);
 		} catch (error: any) {
 			throw error;
 		}
@@ -362,13 +302,7 @@ export const sometimeArticles = {
 		data: UpdateSometimeArticleRequest,
 	): Promise<AdminSometimeArticleDetail> => {
 		try {
-			;
-			const response = await axiosNextGen.patch<AdminSometimeArticleDetail>(
-				`/admin/sometime-articles/${id}`,
-				data,
-			);
-			;
-			return response.data;
+			return await adminPatch<AdminSometimeArticleDetail>(`/admin/sometime-articles/${id}`, data);
 		} catch (error: any) {
 			throw error;
 		}
@@ -376,9 +310,7 @@ export const sometimeArticles = {
 
 	delete: async (id: string): Promise<void> => {
 		try {
-			;
-			await axiosNextGen.delete(`/admin/sometime-articles/${id}`);
-			;
+			await adminDelete(`/admin/sometime-articles/${id}`);
 		} catch (error: any) {
 			throw error;
 		}
@@ -449,8 +381,17 @@ export interface AppReviewsParams {
 export const appReviews = {
 	getList: async (params: AppReviewsParams = {}): Promise<AppReviewsResponse> => {
 		try {
-			const response = await axiosServer.get('/admin/app-reviews', { params });
-			return response.data;
+			const query: Record<string, string> = {};
+			if (params.store) query.store = params.store;
+			if (params.rating !== undefined) query.rating = String(params.rating);
+			if (params.startDate) query.startDate = params.startDate;
+			if (params.endDate) query.endDate = params.endDate;
+			if (params.limit !== undefined) query.limit = String(params.limit);
+			if (params.cursor) query.cursor = params.cursor;
+			return await adminGet<AppReviewsResponse>(
+				'/admin/app-reviews',
+				Object.keys(query).length > 0 ? query : undefined,
+			);
 		} catch (error: any) {
 			throw error;
 		}
@@ -458,8 +399,7 @@ export const appReviews = {
 
 	getStats: async (): Promise<AppReviewStatsResponse> => {
 		try {
-			const response = await axiosServer.get('/admin/app-reviews/stats');
-			return response.data;
+			return await adminGet<AppReviewStatsResponse>('/admin/app-reviews/stats');
 		} catch (error: any) {
 			throw error;
 		}
@@ -467,10 +407,9 @@ export const appReviews = {
 
 	toggleFeatured: async (pk: string): Promise<{ pk: string; isFeatured: boolean }> => {
 		try {
-			const response = await axiosServer.patch(
+			return await adminPatch<{ pk: string; isFeatured: boolean }>(
 				`/admin/app-reviews/${encodeURIComponent(pk)}/featured`,
 			);
-			return response.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -482,10 +421,10 @@ export const communityReviewArticles = {
 		params: { limit?: number; cursor?: string } = {},
 	): Promise<CommunityReviewArticlesResponse> => {
 		try {
-			const response = await axiosServer.get('/admin/community/articles', {
-				params: { ...params, category: 'review' },
-			});
-			return response.data;
+			const query: Record<string, string> = { category: 'review' };
+			if (params.limit !== undefined) query.limit = String(params.limit);
+			if (params.cursor) query.cursor = params.cursor;
+			return await adminGet<CommunityReviewArticlesResponse>('/admin/community/articles', query);
 		} catch (error: any) {
 			throw error;
 		}
@@ -495,10 +434,9 @@ export const communityReviewArticles = {
 		articleId: string,
 	): Promise<{ id: string; isFeatured: boolean; featuredAt: string | null }> => {
 		try {
-			const response = await axiosServer.patch(
+			return await adminPatch<{ id: string; isFeatured: boolean; featuredAt: string | null }>(
 				`/admin/community/articles/${articleId}/featured`,
 			);
-			return response.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -534,8 +472,13 @@ export interface FeaturedAppReviewsResponse {
 export const publicReviews = {
 	getList: async (params: { type?: 'app' | 'community' | 'inapp' | 'hot' | 'review'; limit?: number } = {}): Promise<PublicReviewsResponse> => {
 		try {
-			const response = await axiosServer.get('/public-reviews', { params });
-			return response.data;
+			const query: Record<string, string> = {};
+			if (params.type) query.type = params.type;
+			if (params.limit !== undefined) query.limit = String(params.limit);
+			return await adminGet<PublicReviewsResponse>(
+				'/public-reviews',
+				Object.keys(query).length > 0 ? query : undefined,
+			);
 		} catch (error: any) {
 			throw error;
 		}
@@ -545,8 +488,14 @@ export const publicReviews = {
 		params: { store?: 'APP_STORE' | 'PLAY_STORE'; limit?: number; cursor?: string } = {},
 	): Promise<FeaturedAppReviewsResponse> => {
 		try {
-			const response = await axiosServer.get('/app-reviews/featured', { params });
-			return response.data;
+			const query: Record<string, string> = {};
+			if (params.store) query.store = params.store;
+			if (params.limit !== undefined) query.limit = String(params.limit);
+			if (params.cursor) query.cursor = params.cursor;
+			return await adminGet<FeaturedAppReviewsResponse>(
+				'/app-reviews/featured',
+				Object.keys(query).length > 0 ? query : undefined,
+			);
 		} catch (error: any) {
 			throw error;
 		}

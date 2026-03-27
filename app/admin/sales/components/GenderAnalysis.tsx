@@ -84,12 +84,6 @@ export function GenderAnalysisTable({
     fetchGenderData();
   }, [startDate, endDate]);
 
-  // MARK: - 자동 새로고침
-  // TODO: - 추후 구현
-
-  // === utils ===
-  // TODO: - utils로 분리
-
   const getGender = (gender: string): string => {
     const typeMap: Record<string, string> = {
       MALE: "남성",

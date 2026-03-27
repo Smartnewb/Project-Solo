@@ -1,5 +1,4 @@
 // Domain module imports
-export { auth } from './auth';
 export { stats, kpiReport } from './dashboard';
 export { userAppearance, deletedFemales, userEngagement } from './users';
 export { matching, forceMatching } from './matching';
@@ -84,7 +83,6 @@ export type {
 } from './system';
 
 // Import all consts to assemble AdminService
-import { auth } from './auth';
 import { stats, kpiReport } from './dashboard';
 import { userAppearance, deletedFemales, userEngagement } from './users';
 import { matching, forceMatching } from './matching';
@@ -117,7 +115,6 @@ import { care } from './care';
 import { keywords } from './keywords';
 
 const AdminService = {
-	auth,
 	stats,
 	userAppearance,
 	universities,

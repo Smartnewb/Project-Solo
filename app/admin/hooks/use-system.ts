@@ -127,7 +127,7 @@ export function useUniversityClusters() {
 
 export function useUniversityDepartments(university: string) {
   return useQuery({
-    queryKey: [...systemKeys.universities(), 'legacyDepartments', { university }],
+    queryKey: [...systemKeys.universities(), 'departments', { university }],
     queryFn: () => AdminService.universities.getDepartments(university),
     enabled: !!university,
   });

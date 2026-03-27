@@ -53,8 +53,7 @@ import axiosServer from '@/utils/axios';
 import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 import { useAdminForm } from '@/app/admin/hooks/forms';
 import { gemsFormSchema, type GemsFormData } from '@/app/admin/hooks/forms/schemas/gems.schema';
-
-const MAX_GEM_GRANT = 100;
+import { MAX_GEM_GRANT } from '@/app/admin/constants/gem-limits';
 
 interface UserSearchResult {
   id: string;

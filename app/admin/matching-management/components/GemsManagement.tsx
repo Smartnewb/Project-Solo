@@ -33,8 +33,7 @@ import {
 } from '@mui/icons-material';
 import { UserSearchResult } from '../types';
 import AdminService from '@/app/services/admin';
-
-const MAX_GEM_GRANT = 100;
+import { MAX_GEM_GRANT } from '@/app/admin/constants/gem-limits';
 
 interface GemsManagementProps {
   searchTerm: string;
