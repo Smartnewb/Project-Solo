@@ -53,6 +53,7 @@ import axiosServer from '@/utils/axios';
 import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 import { useAdminForm } from '@/app/admin/hooks/forms';
 import { gemsFormSchema, type GemsFormData } from '@/app/admin/hooks/forms/schemas/gems.schema';
+import { MAX_GEM_GRANT } from '@/app/admin/constants/gem-limits';
 
 interface UserSearchResult {
   id: string;
@@ -107,6 +108,8 @@ function GemsManagementPageContent() {
   const [result, setResult] = useState<BulkGrantResponse | null>(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [pendingData, setPendingData] = useState<GemsFormData | null>(null);
+  const [overLimitDialogOpen, setOverLimitDialogOpen] = useState(false);
+  const [overLimitReason, setOverLimitReason] = useState('');
 
   const [userSearchTerm, setUserSearchTerm] = useState<string>('');
   const [userSearchResults, setUserSearchResults] = useState<UserSearchResult[]>([]);
@@ -256,6 +259,29 @@ function GemsManagementPageContent() {
   const handleConfirmSubmit = () => {
     if (!pendingData) return;
     setConfirmDialogOpen(false);
+
+    if (pendingData.gemAmount > MAX_GEM_GRANT) {
+      setOverLimitReason('');
+      setOverLimitDialogOpen(true);
+      return;
+    }
+
+    executeBulkGrant(pendingData);
+  };
+
+  const handleOverLimitConfirm = () => {
+    if (!pendingData) return;
+    setOverLimitDialogOpen(false);
+    const grantData = {
+      ...pendingData,
+      message: pendingData.message
+        ? `${pendingData.message} [상한 초과 사유: ${overLimitReason}]`
+        : `[상한 초과 사유: ${overLimitReason}]`,
+    };
+    executeBulkGrant(grantData);
+  };
+
+  const executeBulkGrant = (data: GemsFormData) => {
     setResult(null);
 
     let phoneNumbers: string[] | undefined;
@@ -270,8 +296,8 @@ function GemsManagementPageContent() {
       {
         phoneNumbers,
         csvFile: inputMethod === 'csvFile' ? csvFile || undefined : undefined,
-        gemAmount: pendingData.gemAmount,
-        message: pendingData.message,
+        gemAmount: data.gemAmount,
+        message: data.message,
       },
       {
         onSuccess: (response) => {
@@ -691,6 +717,35 @@ function GemsManagementPageContent() {
             취소
           </Button>
           <Button onClick={handleConfirmSubmit} variant="contained" color="primary">
+            확인
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={overLimitDialogOpen} onClose={() => setOverLimitDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>구슬 지급 확인</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            100개 이상의 구슬을 지급하려고 합니다. 사유를 입력해주세요.
+          </DialogContentText>
+          <TextField
+            fullWidth
+            label="지급 사유"
+            value={overLimitReason}
+            onChange={(e) => setOverLimitReason(e.target.value)}
+            multiline
+            rows={3}
+            autoFocus
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOverLimitDialogOpen(false)}>취소</Button>
+          <Button
+            onClick={handleOverLimitConfirm}
+            variant="contained"
+            color="primary"
+            disabled={!overLimitReason.trim()}
+          >
             확인
           </Button>
         </DialogActions>

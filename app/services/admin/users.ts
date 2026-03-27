@@ -489,33 +489,6 @@ export const userAppearance = {
 			;
 			;
 
-			const testData = {
-				all: {
-					S: 623,
-					A: 622,
-					B: 619,
-					C: 619,
-					UNKNOWN: 619,
-					total: 3102,
-				},
-				male: {
-					S: 289,
-					A: 308,
-					B: 310,
-					C: 311,
-					UNKNOWN: 326,
-					total: 1544,
-				},
-				female: {
-					S: 334,
-					A: 314,
-					B: 309,
-					C: 308,
-					UNKNOWN: 293,
-					total: 1558,
-				},
-			};
-
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			let responseData: any;
 
@@ -527,13 +500,12 @@ export const userAppearance = {
 
 				if (!response.data || Object.keys(response.data).length === 0) {
 					;
-					responseData = testData;
+					return null;
 				} else {
 					responseData = response.data;
 				}
 			} catch (error) {
-				;
-				responseData = testData;
+				throw error;
 			}
 
 			;
@@ -710,130 +682,7 @@ export const userAppearance = {
 			;
 			return formattedData;
 		} catch (error: any) {
-
-			const testData = {
-				all: {
-					S: 623,
-					A: 622,
-					B: 619,
-					C: 619,
-					UNKNOWN: 619,
-					total: 3102,
-				},
-				male: {
-					S: 289,
-					A: 308,
-					B: 310,
-					C: 311,
-					UNKNOWN: 326,
-					total: 1544,
-				},
-				female: {
-					S: 334,
-					A: 314,
-					B: 309,
-					C: 308,
-					UNKNOWN: 293,
-					total: 1558,
-				},
-			};
-
-			;
-
-			const formattedData = {
-				total: testData.all.total,
-				stats: [
-					{
-						grade: 'S',
-						count: testData.all.S,
-						percentage: (testData.all.S / testData.all.total) * 100,
-					},
-					{
-						grade: 'A',
-						count: testData.all.A,
-						percentage: (testData.all.A / testData.all.total) * 100,
-					},
-					{
-						grade: 'B',
-						count: testData.all.B,
-						percentage: (testData.all.B / testData.all.total) * 100,
-					},
-					{
-						grade: 'C',
-						count: testData.all.C,
-						percentage: (testData.all.C / testData.all.total) * 100,
-					},
-					{
-						grade: 'UNKNOWN',
-						count: testData.all.UNKNOWN,
-						percentage: (testData.all.UNKNOWN / testData.all.total) * 100,
-					},
-				],
-				genderStats: [
-					{
-						gender: 'MALE',
-						stats: [
-							{
-								grade: 'S',
-								count: testData.male.S,
-								percentage: (testData.male.S / testData.male.total) * 100,
-							},
-							{
-								grade: 'A',
-								count: testData.male.A,
-								percentage: (testData.male.A / testData.male.total) * 100,
-							},
-							{
-								grade: 'B',
-								count: testData.male.B,
-								percentage: (testData.male.B / testData.male.total) * 100,
-							},
-							{
-								grade: 'C',
-								count: testData.male.C,
-								percentage: (testData.male.C / testData.male.total) * 100,
-							},
-							{
-								grade: 'UNKNOWN',
-								count: testData.male.UNKNOWN,
-								percentage: (testData.male.UNKNOWN / testData.male.total) * 100,
-							},
-						],
-					},
-					{
-						gender: 'FEMALE',
-						stats: [
-							{
-								grade: 'S',
-								count: testData.female.S,
-								percentage: (testData.female.S / testData.female.total) * 100,
-							},
-							{
-								grade: 'A',
-								count: testData.female.A,
-								percentage: (testData.female.A / testData.female.total) * 100,
-							},
-							{
-								grade: 'B',
-								count: testData.female.B,
-								percentage: (testData.female.B / testData.female.total) * 100,
-							},
-							{
-								grade: 'C',
-								count: testData.female.C,
-								percentage: (testData.female.C / testData.female.total) * 100,
-							},
-							{
-								grade: 'UNKNOWN',
-								count: testData.female.UNKNOWN,
-								percentage: (testData.female.UNKNOWN / testData.female.total) * 100,
-							},
-						],
-					},
-				],
-			};
-
-			return formattedData;
+			throw error;
 		}
 	},
 

@@ -1,5 +1,4 @@
 // Domain module imports
-export { auth } from './auth';
 export { stats, kpiReport } from './dashboard';
 export { userAppearance, deletedFemales, userEngagement } from './users';
 export { matching, forceMatching } from './matching';
@@ -23,6 +22,8 @@ export {
 	likes,
 	dormantLikes,
 } from './revenue';
+export { revenueV2 } from './revenue-v2';
+export type { RevenueSummary, RevenueBreakdown, DailyRevenueTrend } from './revenue-v2';
 export { fcmTokens, universities } from './system';
 export { featureFlags } from './feature-flags';
 export type { FeatureFlag } from './feature-flags';
@@ -82,7 +83,6 @@ export type {
 } from './system';
 
 // Import all consts to assemble AdminService
-import { auth } from './auth';
 import { stats, kpiReport } from './dashboard';
 import { userAppearance, deletedFemales, userEngagement } from './users';
 import { matching, forceMatching } from './matching';
@@ -106,6 +106,7 @@ import {
 	likes,
 	dormantLikes,
 } from './revenue';
+import { revenueV2 } from './revenue-v2';
 import { fcmTokens, universities } from './system';
 import { featureFlags } from './feature-flags';
 import { matchingMonitor } from './matching-monitor';
@@ -114,7 +115,6 @@ import { care } from './care';
 import { keywords } from './keywords';
 
 const AdminService = {
-	auth,
 	stats,
 	userAppearance,
 	universities,
@@ -150,6 +150,7 @@ const AdminService = {
 	styleReference,
 	care,
 	keywords,
+	revenueV2,
 };
 
 export default AdminService;

@@ -79,12 +79,6 @@ export function AgeAnalysisComponent({ startDate, endDate }: AgeAnalysisProps) {
     fetchAgeData();
   }, [startDate, endDate]);
 
-  // MARK: - 자동 새로고침
-  // TODO: - 추후 구현
-
-  // === utils ===
-  // TODO: - utils 분리
-
   // MARK: - 색상
   const AGE_COLOR_SYSTEM = [
     {

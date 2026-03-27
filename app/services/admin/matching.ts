@@ -265,119 +265,19 @@ export const matching = {
 		}
 	},
 
-	// 매칭 통계 조회 (임시 데이터)
 	getMatchingStats: async (
 		period: 'daily' | 'weekly' | 'monthly' = 'daily',
 		university?: string,
-	) => {
+	): Promise<Record<string, number> | null> => {
 		try {
-			;
-
-			// 실제 API가 구현되면 아래 코드로 대체
-			// const response = await axiosServer.get('/admin/matching/stats', {
-			//   params: { period, university }
-			// });
-			// return response.data;
-
-			// 임시 데이터 반환
-			const baseStats = {
-				totalMatchRate: 75.5,
-				maleMatchRate: 70.2,
-				femaleMatchRate: 80.8,
-				totalRematchRate: 45.3,
-				maleRematchRate: 48.6,
-				femaleRematchRate: 42.0,
-				maleSecondRematchRate: 25.4,
-				femaleSecondRematchRate: 22.8,
-				maleThirdRematchRate: 12.3,
-				femaleThirdRematchRate: 10.5,
-			};
-
-			// 대학별 통계 (임시 데이터)
-			const universityStats: Record<string, any> = {
-				충남대학교: {
-					totalMatchRate: 78.2,
-					maleMatchRate: 72.5,
-					femaleMatchRate: 83.9,
-					totalRematchRate: 42.1,
-					maleRematchRate: 45.3,
-					femaleRematchRate: 39.0,
-					maleSecondRematchRate: 23.1,
-					femaleSecondRematchRate: 20.5,
-					maleThirdRematchRate: 11.2,
-					femaleThirdRematchRate: 9.8,
-				},
-				KAIST: {
-					totalMatchRate: 72.8,
-					maleMatchRate: 68.4,
-					femaleMatchRate: 77.2,
-					totalRematchRate: 48.5,
-					maleRematchRate: 51.2,
-					femaleRematchRate: 45.8,
-					maleSecondRematchRate: 27.6,
-					femaleSecondRematchRate: 24.3,
-					maleThirdRematchRate: 13.5,
-					femaleThirdRematchRate: 11.2,
-				},
-				한밭대학교: {
-					totalMatchRate: 76.1,
-					maleMatchRate: 71.3,
-					femaleMatchRate: 81.0,
-					totalRematchRate: 44.7,
-					maleRematchRate: 47.8,
-					femaleRematchRate: 41.6,
-					maleSecondRematchRate: 24.9,
-					femaleSecondRematchRate: 21.7,
-					maleThirdRematchRate: 12.0,
-					femaleThirdRematchRate: 10.1,
-				},
-				한남대학교: {
-					totalMatchRate: 77.3,
-					maleMatchRate: 72.0,
-					femaleMatchRate: 82.6,
-					totalRematchRate: 43.5,
-					maleRematchRate: 46.7,
-					femaleRematchRate: 40.3,
-					maleSecondRematchRate: 24.0,
-					femaleSecondRematchRate: 21.0,
-					maleThirdRematchRate: 11.7,
-					femaleThirdRematchRate: 9.9,
-				},
-				배재대학교: {
-					totalMatchRate: 74.8,
-					maleMatchRate: 69.5,
-					femaleMatchRate: 80.1,
-					totalRematchRate: 46.0,
-					maleRematchRate: 49.2,
-					femaleRematchRate: 42.8,
-					maleSecondRematchRate: 25.8,
-					femaleSecondRematchRate: 22.5,
-					maleThirdRematchRate: 12.6,
-					femaleThirdRematchRate: 10.7,
-				},
-			};
-
-			// 기간별 변동 (임시 데이터)
-			const periodModifier = {
-				daily: 1,
-				weekly: 0.95,
-				monthly: 0.9,
-			};
-
-			// 대학이 지정된 경우 해당 대학 통계 반환, 없으면 기본 통계 반환
-			const stats =
-				university && universityStats[university] ? universityStats[university] : baseStats;
-
-			// 기간별 변동 적용
-			const modifier = periodModifier[period];
-			const result: Record<string, number> = {};
-
-			Object.entries(stats).forEach(([key, value]) => {
-				result[key] = parseFloat(((value as number) * modifier).toFixed(1));
+			const response = await axiosServer.get('/admin/matching/stats', {
+				params: { period, university },
 			});
-
-			return result;
+			return response.data;
 		} catch (error: any) {
+			if (error?.response?.status === 404) {
+				return null;
+			}
 			throw error;
 		}
 	},

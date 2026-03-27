@@ -238,15 +238,17 @@ export default function GemSystemFunnel() {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Tooltip title="디버그 모드 (SQL 쿼리 확인)">
-            <IconButton
-              size="small"
-              onClick={() => setDebugMode(!debugMode)}
-              color={debugMode ? 'primary' : 'default'}
-            >
-              <BugReportIcon />
-            </IconButton>
-          </Tooltip>
+          {process.env.NODE_ENV === 'development' && (
+            <Tooltip title="디버그 모드 (SQL 쿼리 확인)">
+              <IconButton
+                size="small"
+                onClick={() => setDebugMode(!debugMode)}
+                color={debugMode ? 'primary' : 'default'}
+              >
+                <BugReportIcon />
+              </IconButton>
+            </Tooltip>
+          )}
           <ToggleButtonGroup
             value={viewType}
             exclusive
@@ -271,7 +273,7 @@ export default function GemSystemFunnel() {
         ))
       )}
 
-      <Collapse in={debugMode && !!data.debug}>
+      <Collapse in={process.env.NODE_ENV === 'development' && debugMode && !!data.debug}>
         <Paper sx={{ p: 2, mt: 2, bgcolor: 'grey.100' }}>
           <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 2 }}>
             🔍 디버그 정보 (SQL 쿼리)
