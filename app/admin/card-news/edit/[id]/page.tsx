@@ -18,6 +18,7 @@ import {
   Checkbox
 } from '@mui/material';
 import { Controller, useFieldArray } from 'react-hook-form';
+import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd';
 import { useRouter, useParams } from 'next/navigation';
 import AdminService from '@/app/services/admin';
 import CardEditor from '../../components/CardEditor';
@@ -65,7 +66,7 @@ function EditCardNewsPageContent() {
     },
   });
 
-  const { fields, append, remove, update } = useFieldArray({ control, name: 'sections' });
+  const { fields, append, remove, update, move } = useFieldArray({ control, name: 'sections' });
 
   const watchedTitle = watch('title');
   const watchedDescription = watch('description');
@@ -88,9 +89,7 @@ function EditCardNewsPageContent() {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const previewBackgroundUrl = useMemo(() => {
-    if (backgroundType === 'CUSTOM' && customBackgroundUrl) {
-      return customBackgroundUrl;
-    }
+    if (backgroundType === 'CUSTOM' && customBackgroundUrl) return customBackgroundUrl;
     if (backgroundType === 'PRESET' && selectedPresetId) {
       const preset = backgroundPresets.find(p => p.id === selectedPresetId);
       return preset?.imageUrl || preset?.thumbnailUrl;
@@ -215,6 +214,24 @@ function EditCardNewsPageContent() {
     append({ order: fields.length, title: '', content: '', imageUrl: undefined });
   };
 
+  const handleDuplicateCard = (index: number) => {
+    if (isPublished) {
+      alert('발행된 카드뉴스의 섹션은 수정할 수 없습니다.');
+      return;
+    }
+    if (fields.length >= 7) {
+      alert('최대 7개의 카드까지만 추가할 수 있습니다.');
+      return;
+    }
+    const source = watchedSections[index];
+    append({
+      order: fields.length,
+      title: source.title,
+      content: source.content,
+      imageUrl: source.imageUrl,
+    });
+  };
+
   const handleDeleteSection = (index: number) => {
     if (isPublished) {
       alert('발행된 카드뉴스의 섹션은 수정할 수 없습니다.');
@@ -225,6 +242,13 @@ function EditCardNewsPageContent() {
       return;
     }
     remove(index);
+  };
+
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination || isPublished) return;
+    const from = result.source.index;
+    const to = result.destination.index;
+    if (from !== to) move(from, to);
   };
 
   const handleCancel = () => {
@@ -288,13 +312,9 @@ function EditCardNewsPageContent() {
   }
 
   return (
-    <Box sx={{ p: 3, maxWidth: 1200, mx: 'auto' }}>
+    <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={handleCancel}
-          sx={{ mr: 2 }}
-        >
+        <Button startIcon={<ArrowBackIcon />} onClick={handleCancel} sx={{ mr: 2 }}>
           목록으로
         </Button>
         <Typography variant="h5" fontWeight="bold">
@@ -308,210 +328,234 @@ function EditCardNewsPageContent() {
         </Alert>
       )}
 
-      {/* 미리보기 */}
-      <CardNewsPreview
-        title={watchedTitle}
-        description={watchedDescription}
-        backgroundImageUrl={previewBackgroundUrl}
-        hasReward={watchedHasReward}
-      />
-
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          기본 정보
-        </Typography>
-
-        {isPublished && (
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            발행된 카드뉴스입니다. 제목, 설명, 배경 이미지, 보상, 푸시 메시지만 수정 가능합니다. 섹션은 수정할 수 없습니다.
-          </Alert>
-        )}
-
-        <Controller
-          name="title"
-          control={control}
-          render={({ field, fieldState }) => (
-            <TextField
-              {...field}
-              fullWidth
-              label="카드뉴스 제목"
-              placeholder="카드뉴스 제목을 입력하세요 (최대 50자)"
-              inputProps={{ maxLength: 50 }}
-              helperText={fieldState.error?.message ?? `${field.value.length}/50자`}
-              error={!!fieldState.error}
-              sx={{ mb: 2 }}
-              required
-            />
-          )}
-        />
-
-        <Controller
-          name="description"
-          control={control}
-          render={({ field, fieldState }) => (
-            <TextField
-              {...field}
-              fullWidth
-              label="카드뉴스 설명"
-              placeholder="카드뉴스 설명을 입력하세요 (최대 100자)"
-              inputProps={{ maxLength: 100 }}
-              helperText={fieldState.error?.message ?? `${field.value.length}/100자`}
-              error={!!fieldState.error}
-              sx={{ mb: 2 }}
-              required
-            />
-          )}
-        />
-
-        <FormControl fullWidth sx={{ mb: 2 }} disabled>
-          <InputLabel>카테고리</InputLabel>
-          <Select
-            value={watch('categoryCode')}
-            label="카테고리"
-          >
-            {categories.map((category) => (
-              <MenuItem key={category.code} value={category.code}>
-                {category.displayName}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
-        <Divider sx={{ my: 3 }} />
-
-        <BackgroundSelector
-          presets={backgroundPresets}
-          selectedPresetId={selectedPresetId}
-          customBackgroundUrl={customBackgroundUrl}
-          backgroundType={backgroundType}
-          loading={presetsLoading}
-          uploadingBackground={uploadingBackground}
-          onPresetSelect={handlePresetSelect}
-          onPresetEdit={handlePresetEdit}
-          onCustomUpload={handleBackgroundUpload}
-          onCustomClear={handleCustomBackgroundClear}
-          onBackgroundTypeChange={setBackgroundType}
-          onAddPresetClick={() => setPresetUploadModalOpen(true)}
-        />
-
-        <Divider sx={{ my: 3 }} />
-
-        <Controller
-          name="hasReward"
-          control={control}
-          render={({ field }) => (
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={field.value}
-                  onChange={field.onChange}
-                />
-              }
-              label="구슬 보상 제공 (마지막 카드 도달 시 구슬 1개 지급)"
-            />
-          )}
-        />
-
-        <Divider sx={{ my: 3 }} />
-
-        <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 2 }}>
-          푸시 알림 설정
-        </Typography>
-
-        <Controller
-          name="pushTitle"
-          control={control}
-          render={({ field, fieldState }) => (
-            <TextField
-              {...field}
-              value={field.value ?? ''}
-              fullWidth
-              label="푸시 알림 제목 (선택 사항)"
-              placeholder="예: 썸타임 새소식 🎉"
-              inputProps={{ maxLength: 50 }}
-              helperText={fieldState.error?.message ?? `${(field.value ?? '').length}/50자 | 비워두면 카드뉴스 제목이 사용됩니다.`}
-              error={!!fieldState.error}
-              sx={{ mb: 2 }}
-            />
-          )}
-        />
-
-        <Controller
-          name="pushMessage"
-          control={control}
-          render={({ field, fieldState }) => (
-            <TextField
-              {...field}
-              value={field.value ?? ''}
-              fullWidth
-              label="푸시 알림 메시지 (선택 사항)"
-              placeholder="푸시 알림 메시지를 입력하세요 (최대 100자)"
-              inputProps={{ maxLength: 100 }}
-              helperText={fieldState.error?.message ?? `${(field.value ?? '').length}/100자 | 발행 시 모든 활성 사용자에게 전송됩니다. 설정하지 않으면 발행할 수 없습니다.`}
-              error={!!fieldState.error}
-              multiline
-              rows={2}
-            />
-          )}
-        />
-      </Paper>
-
-      {!isPublished && (
-        <Box sx={{ mb: 3 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6">
-              카드 섹션 ({fields.length}/7)
+      {/* Side-by-side layout */}
+      <Box sx={{ display: 'flex', gap: 3, alignItems: 'flex-start', flexDirection: { xs: 'column', lg: 'row' } }}>
+        {/* Left: Editor */}
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              기본 정보
             </Typography>
+
+            {isPublished && (
+              <Alert severity="warning" sx={{ mb: 2 }}>
+                발행된 카드뉴스입니다. 제목, 설명, 배경 이미지, 보상, 푸시 메시지만 수정 가능합니다. 섹션은 수정할 수 없습니다.
+              </Alert>
+            )}
+
+            <Controller
+              name="title"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  fullWidth
+                  label="카드뉴스 제목"
+                  placeholder="카드뉴스 제목을 입력하세요 (최대 50자)"
+                  inputProps={{ maxLength: 50 }}
+                  helperText={fieldState.error?.message ?? `${field.value.length}/50자`}
+                  error={!!fieldState.error}
+                  sx={{ mb: 2 }}
+                  required
+                />
+              )}
+            />
+
+            <Controller
+              name="description"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  fullWidth
+                  label="카드뉴스 설명"
+                  placeholder="카드뉴스 설명을 입력하세요 (최대 100자)"
+                  inputProps={{ maxLength: 100 }}
+                  helperText={fieldState.error?.message ?? `${field.value.length}/100자`}
+                  error={!!fieldState.error}
+                  sx={{ mb: 2 }}
+                  required
+                />
+              )}
+            />
+
+            <FormControl fullWidth sx={{ mb: 2 }} disabled>
+              <InputLabel>카테고리</InputLabel>
+              <Select value={watch('categoryCode')} label="카테고리">
+                {categories.map((category) => (
+                  <MenuItem key={category.code} value={category.code}>
+                    {category.displayName}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <Divider sx={{ my: 3 }} />
+
+            <BackgroundSelector
+              presets={backgroundPresets}
+              selectedPresetId={selectedPresetId}
+              customBackgroundUrl={customBackgroundUrl}
+              backgroundType={backgroundType}
+              loading={presetsLoading}
+              uploadingBackground={uploadingBackground}
+              onPresetSelect={handlePresetSelect}
+              onPresetEdit={handlePresetEdit}
+              onCustomUpload={handleBackgroundUpload}
+              onCustomClear={handleCustomBackgroundClear}
+              onBackgroundTypeChange={setBackgroundType}
+              onAddPresetClick={() => setPresetUploadModalOpen(true)}
+            />
+
+            <Divider sx={{ my: 3 }} />
+
+            <Controller
+              name="hasReward"
+              control={control}
+              render={({ field }) => (
+                <FormControlLabel
+                  control={<Checkbox checked={field.value} onChange={field.onChange} />}
+                  label="구슬 보상 제공 (마지막 카드 도달 시 구슬 1개 지급)"
+                />
+              )}
+            />
+
+            <Divider sx={{ my: 3 }} />
+
+            <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 2 }}>
+              푸시 알림 설정
+            </Typography>
+
+            <Controller
+              name="pushTitle"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  fullWidth
+                  label="푸시 알림 제목 (선택 사항)"
+                  placeholder="푸시 알림 제목을 입력하세요"
+                  inputProps={{ maxLength: 50 }}
+                  helperText={fieldState.error?.message ?? `${(field.value ?? '').length}/50자 | 비워두면 카드뉴스 제목이 사용됩니다.`}
+                  error={!!fieldState.error}
+                  sx={{ mb: 2 }}
+                />
+              )}
+            />
+
+            <Controller
+              name="pushMessage"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  fullWidth
+                  label="푸시 알림 메시지 (선택 사항)"
+                  placeholder="푸시 알림 메시지를 입력하세요 (최대 100자)"
+                  inputProps={{ maxLength: 100 }}
+                  helperText={fieldState.error?.message ?? `${(field.value ?? '').length}/100자 | 발행 시 모든 활성 사용자에게 전송됩니다.`}
+                  error={!!fieldState.error}
+                  multiline
+                  rows={2}
+                />
+              )}
+            />
+          </Paper>
+
+          {/* Card sections */}
+          {!isPublished && (
+            <Box sx={{ mb: 3 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6">
+                  카드 섹션 ({fields.length}/7)
+                </Typography>
+                <Button
+                  variant="outlined"
+                  startIcon={<AddIcon />}
+                  onClick={handleAddCard}
+                  disabled={fields.length >= 7}
+                >
+                  카드 추가
+                </Button>
+              </Box>
+
+              <DragDropContext onDragEnd={handleDragEnd}>
+                <Droppable droppableId="card-sections-edit">
+                  {(provided) => (
+                    <div ref={provided.innerRef} {...provided.droppableProps}>
+                      {fields.map((field, index) => (
+                        <Draggable key={field.id} draggableId={field.id} index={index}>
+                          {(draggableProvided) => (
+                            <div
+                              ref={draggableProvided.innerRef}
+                              {...draggableProvided.draggableProps}
+                            >
+                              <CardEditor
+                                index={index}
+                                control={control}
+                                onDelete={() => handleDeleteSection(index)}
+                                canDelete={fields.length > 1}
+                                onImageUploaded={(i, url) => update(i, { ...watchedSections[i], imageUrl: url, order: i })}
+                                onImageRemoved={(i) => update(i, { ...watchedSections[i], imageUrl: undefined, order: i })}
+                                onDuplicate={handleDuplicateCard}
+                                dragHandleProps={draggableProvided.dragHandleProps ?? undefined}
+                              />
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
+            </Box>
+          )}
+
+          {isPublished && (
+            <Alert severity="info" sx={{ mb: 3 }}>
+              발행된 카드뉴스는 섹션을 수정할 수 없습니다. 섹션 내용을 확인만 할 수 있습니다.
+            </Alert>
+          )}
+
+          <Divider sx={{ my: 3 }} />
+
+          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+            <Button variant="outlined" onClick={handleCancel} disabled={isSubmitting}>
+              취소
+            </Button>
             <Button
-              variant="outlined"
-              startIcon={<AddIcon />}
-              onClick={handleAddCard}
-              disabled={fields.length >= 7}
+              variant="contained"
+              startIcon={isSubmitting ? <CircularProgress size={20} /> : <SaveIcon />}
+              onClick={onSubmit}
+              disabled={isSubmitting}
             >
-              카드 추가
+              {isSubmitting ? '저장 중...' : '수정 완료'}
             </Button>
           </Box>
-
-          {fields.map((field, index) => (
-            <CardEditor
-              key={field.id}
-              section={watchedSections[index] ?? field}
-              onUpdate={(updatedSection) => update(index, { ...updatedSection, order: index })}
-              onDelete={() => handleDeleteSection(index)}
-              canDelete={fields.length > 1}
-            />
-          ))}
         </Box>
-      )}
 
-      {isPublished && (
-        <Alert severity="info" sx={{ mb: 3 }}>
-          발행된 카드뉴스는 섹션을 수정할 수 없습니다. 섹션 내용을 확인만 할 수 있습니다.
-        </Alert>
-      )}
-
-      <Divider sx={{ my: 3 }} />
-
-      <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-        <Button
-          variant="outlined"
-          onClick={handleCancel}
-          disabled={isSubmitting}
+        {/* Right: Sticky Preview */}
+        <Box
+          sx={{
+            width: { xs: '100%', lg: 460 },
+            flexShrink: 0,
+            position: { lg: 'sticky' },
+            top: { lg: 24 },
+            alignSelf: 'flex-start',
+          }}
         >
-          취소
-        </Button>
-        <Button
-          variant="contained"
-          startIcon={isSubmitting ? <CircularProgress size={20} /> : <SaveIcon />}
-          onClick={onSubmit}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? '저장 중...' : '수정 완료'}
-        </Button>
+          <CardNewsPreview
+            title={watchedTitle}
+            description={watchedDescription}
+            backgroundImageUrl={previewBackgroundUrl}
+            hasReward={watchedHasReward}
+          />
+          <CardNewsDetailPreview sections={watchedSections} />
+        </Box>
       </Box>
-
-      {/* 카드뉴스 상세 미리보기 */}
-      <CardNewsDetailPreview sections={watchedSections} />
 
       <PresetUploadModal
         open={presetUploadModalOpen}
@@ -534,7 +578,5 @@ function EditCardNewsPageContent() {
 }
 
 export default function EditCardNewsPage() {
-  return (
-    <EditCardNewsPageContent />
-  );
+  return <EditCardNewsPageContent />;
 }
