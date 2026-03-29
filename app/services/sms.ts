@@ -1,5 +1,5 @@
 // TITLE: - sms API 서비스 로직
-import axiosServer from "@/utils/axios";
+import { adminGet, adminPost, adminPut, adminDelete } from '@/shared/lib/http/admin-fetch';
 import {
     SmsTemplate,
     User,
@@ -23,35 +23,29 @@ const SMS_ENDPOINTS = {
 
 // MARK: - 로컬스토리지 헬퍼 함수
 class LocalStorageHelper {
-    // 데이터 조회
     static getItem<T>(key: string, defaultValue?: T): T | null {
-        // SSR 환경 체크(서버환경이면 defaultValue 리턴)
         if (typeof window === 'undefined') return defaultValue || null;
 
         try {
-            //  브라우저 저장소에서 데이터 가져오기
             const item = localStorage.getItem(key);
             return item ? JSON.parse(item) : (defaultValue || null);
 
         } catch (error) {
-            // 에러 출력
             console.error(`Error reading: ${key}:`, error);
             return defaultValue || null;
         }
-    }  
+    }
 
-    // 데이터 저장
     static setItem<T>(key: string, value: T): void {
         if (typeof window === 'undefined') return;
 
         try {
             localStorage.setItem(key, JSON.stringify(value));
         } catch(error) {
-            console.log(`Error saving ${key}`, error);
+            console.error(`Error saving ${key}`, error);
         }
     }
 
-    // 데이터 삭제
     static removeItem(key: string): void {
         if (typeof window === 'undefined') return;
 
@@ -62,126 +56,102 @@ class LocalStorageHelper {
 
 // MARK: - API 클라이언트
 export const smsService = {
-    // === 템플릿 ===
-    // 템플릿 생성
     async createTemplate(data: {
         title: string;
         content: string;
         variables?: string[];
     }): Promise<SmsTemplate> {
         try {
-            const response = await axiosServer.post(SMS_ENDPOINTS.TEMPLATE,data);
-            return response.data;
+            return await adminPost<SmsTemplate>(SMS_ENDPOINTS.TEMPLATE, data);
         } catch (error) {
             throw new SmsApiError('템플릿 생성 실패', error);
         }
-
     },
 
-    // 템플릿 목록 조회
     async getTemplates(): Promise<SmsTemplate[]>{
         try {
-            const response = await axiosServer.get(SMS_ENDPOINTS.TEMPLATE);
-            return response.data;
+            return await adminGet<SmsTemplate[]>(SMS_ENDPOINTS.TEMPLATE);
         } catch(error) {
             throw new SmsApiError('템플릿 조회 실패', error);
         }
     },
-    
 
-    // 특정 템플릿 조회
     async getTemplateById(id: string): Promise<SmsTemplate> {
         try {
-            const url = SMS_ENDPOINTS.TEMPLATE_BY_ID(id);
-            const response = await axiosServer.get(url);
-            return response.data;
+            return await adminGet<SmsTemplate>(SMS_ENDPOINTS.TEMPLATE_BY_ID(id));
         } catch (error) {
             throw new SmsApiError(`템플릿(${id}) 조회 실패`, error);
         }
     },
 
-    // 템플릿 수정
     async updateTemplate(id: string, data: Partial<SmsTemplate>
     ): Promise<SmsTemplate> {
         try {
-            const url = SMS_ENDPOINTS.TEMPLATE_BY_ID(id);
-            const response = await axiosServer.put(url, data);
-            return response.data;
+            return await adminPut<SmsTemplate>(SMS_ENDPOINTS.TEMPLATE_BY_ID(id), data);
         } catch(error) {
             throw new SmsApiError('템플릿 수정 실패', error);
         }
     },
 
-    // 템플릿 삭제
     async removeTemplate(id: string): Promise<void> {
         try {
-            const url = SMS_ENDPOINTS.TEMPLATE_BY_ID(id);
-            const response = await axiosServer.delete(url);
-            return response.data;
+            await adminDelete(SMS_ENDPOINTS.TEMPLATE_BY_ID(id));
         } catch(error) {
             throw new SmsApiError(`템플릿(${id}) 삭제 실패`, error);
         }
     },
-    // === 사용자 ===
-    // 사용자 검색
+
     async searchUser(params: {
         startDate?: string;
         endDate?: string;
-        gender?: 'MALE' | 'FEMALE'; 
+        gender?: 'MALE' | 'FEMALE';
         searchTerm?: string;
         includeWithdrawn?: boolean;
         includeRejected?: boolean;
-    }): Promise<UserSearchResponse> {  
+    }): Promise<UserSearchResponse> {
         try {
-            const response = await axiosServer.get(SMS_ENDPOINTS.USER_SEARCH, { params });
-            
-            console.log('API 응답:', response.data);
-            
-            // 전체 응답 객체 반환
-            return response.data || { users: [], meta: { totalCount: 0 } };
+            const stringParams: Record<string, string> = {};
+            if (params.startDate) stringParams.startDate = params.startDate;
+            if (params.endDate) stringParams.endDate = params.endDate;
+            if (params.gender) stringParams.gender = params.gender;
+            if (params.searchTerm) stringParams.searchTerm = params.searchTerm;
+            if (params.includeWithdrawn != null) stringParams.includeWithdrawn = String(params.includeWithdrawn);
+            if (params.includeRejected != null) stringParams.includeRejected = String(params.includeRejected);
+
+            const result = await adminGet<UserSearchResponse>(SMS_ENDPOINTS.USER_SEARCH, stringParams);
+            return result || { users: [], meta: { totalCount: 0 } };
         } catch (error) {
             throw new SmsApiError('사용자 검색 실패', error);
         }
     },
 
-    // === sms 발송 ===
-
-    // 단체 발송
     async sendBulkSms(data: SendSmsRequest): Promise<SendSmsResponse> {
         try {
-            const response = await axiosServer.post(SMS_ENDPOINTS.SEND_MESSAGE, data);
-            return response.data;
+            return await adminPost<SendSmsResponse>(SMS_ENDPOINTS.SEND_MESSAGE, data);
         } catch(error) {
             throw new SmsApiError('문자 메세지 발송 실패', error);
         }
     },
 
-    // === 발송 내역 조회 ===
-    // 발송 내역 조회
     async getHistory(params?: {
         limit?: number
     }): Promise<SmsHistory[]> {
         try {
-            const response = await axiosServer.get(SMS_ENDPOINTS.HISTORY, { params: params });
-            return response.data;
+            const stringParams: Record<string, string> = {};
+            if (params?.limit != null) stringParams.limit = String(params.limit);
+            return await adminGet<SmsHistory[]>(SMS_ENDPOINTS.HISTORY, stringParams);
         } catch(error) {
             throw new SmsApiError('sms 내역 조회 실패', error);
         }
     },
 
-    // 발송 내역 상세 NOTE: 필요한 기능인지 체크
     async getHistoryDetail(id: string): Promise<GetHistoryDetailResponse> {
         try {
-            const url = SMS_ENDPOINTS.HISTORY_BY_ID(id);
-            const response = await axiosServer.get(url);
-            return response.data;
+            return await adminGet<GetHistoryDetailResponse>(SMS_ENDPOINTS.HISTORY_BY_ID(id));
         } catch(error) {
             throw new SmsApiError(`발송 내역 상세 조회 실패 (${id})`, error);
         }
     }
-
-    // === utils ===
-
 };
 
 
