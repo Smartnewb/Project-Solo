@@ -1,4 +1,4 @@
-import axiosServer from '@/utils/axios';
+import { adminGet, adminPost, adminPut, adminDelete, adminRequest, buildAdminProxyUrl } from '@/shared/lib/http/admin-fetch';
 
 // ==================== FCM 토큰 현황 ====================
 export interface FcmTokenSummary {
@@ -50,10 +50,10 @@ export interface FcmTokensResponse {
 
 export const fcmTokens = {
 	getTokens: async (page: number = 1, limit: number = 20, hasToken?: boolean): Promise<FcmTokensResponse> => {
-		const params: any = { page, limit };
-		if (hasToken !== undefined) params.hasToken = hasToken;
-		const response = await axiosServer.get('/admin/fcm-tokens', { params });
-		return response.data;
+		const params: Record<string, string> = { page: String(page), limit: String(limit) };
+		if (hasToken !== undefined) params.hasToken = String(hasToken);
+		const result = await adminGet<{ data: FcmTokensResponse }>('/admin/v2/fcm-tokens', params);
+		return result.data;
 	},
 };
 
@@ -61,58 +61,65 @@ export const fcmTokens = {
 export const universities = {
 	meta: {
 		getRegions: async () => {
-			const response = await axiosServer.get('/admin/universities/meta/regions');
-			return response.data.regions;
+			const result = await adminGet<{ data: { regions: any[] } }>('/admin/v2/universities/meta/regions');
+			return result.data.regions;
 		},
 
 		getTypes: async () => {
-			const response = await axiosServer.get('/admin/universities/meta/types');
-			return response.data.types;
+			const result = await adminGet<{ data: { types: any[] } }>('/admin/v2/universities/meta/types');
+			return result.data.types;
 		},
 
 		getFoundations: async () => {
-			const response = await axiosServer.get('/admin/universities/meta/foundations');
-			return response.data.foundations;
+			const result = await adminGet<{ data: { foundations: any[] } }>('/admin/v2/universities/meta/foundations');
+			return result.data.foundations;
 		},
 	},
 
 	getList: async (params?: import('@/types/admin').UniversityListParams) => {
-		const response = await axiosServer.get('/admin/universities', { params });
-		return response.data;
+		const stringParams: Record<string, string> = {};
+		if (params) {
+			for (const [k, v] of Object.entries(params)) {
+				if (v != null) stringParams[k] = String(v);
+			}
+		}
+		const result = await adminGet<{ data: any }>('/admin/v2/universities', stringParams);
+		return result.data;
 	},
 
 	getById: async (id: string): Promise<import('@/types/admin').UniversityDetail> => {
-		const response = await axiosServer.get(`/admin/universities/${id}`);
-		return response.data;
+		const result = await adminGet<{ data: import('@/types/admin').UniversityDetail }>(`/admin/v2/universities/${id}`);
+		return result.data;
 	},
 
 	create: async (data: import('@/types/admin').CreateUniversityRequest) => {
-		const response = await axiosServer.post('/admin/universities', data);
-		return response.data;
+		const result = await adminPost<{ data: any }>('/admin/v2/universities', data);
+		return result.data;
 	},
 
 	update: async (id: string, data: import('@/types/admin').UpdateUniversityRequest) => {
-		const response = await axiosServer.put(`/admin/universities/${id}`, data);
-		return response.data;
+		const result = await adminPut<{ data: any }>(`/admin/v2/universities/${id}`, data);
+		return result.data;
 	},
 
 	delete: async (id: string) => {
-		const response = await axiosServer.delete(`/admin/universities/${id}`);
-		return response.data;
+		const result = await adminDelete<{ data: any }>(`/admin/v2/universities/${id}`);
+		return result.data;
 	},
 
 	uploadLogo: async (id: string, file: File) => {
 		const formData = new FormData();
 		formData.append('logo', file);
-		const response = await axiosServer.post(`/admin/universities/${id}/logo`, formData, {
-			headers: { 'Content-Type': 'multipart/form-data' },
-		});
-		return response.data;
+		const result = await adminRequest<{ data: any }>(
+			`/admin/v2/universities/${id}/logo`,
+			{ method: 'POST', body: formData },
+		);
+		return result.data;
 	},
 
 	deleteLogo: async (id: string) => {
-		const response = await axiosServer.delete(`/admin/universities/${id}/logo`);
-		return response.data;
+		const result = await adminDelete<{ data: any }>(`/admin/v2/universities/${id}/logo`);
+		return result.data;
 	},
 
 	departments: {
@@ -120,25 +127,29 @@ export const universities = {
 			universityId: string,
 			params?: import('@/types/admin').DepartmentListParams,
 		) => {
-			const response = await axiosServer.get(`/admin/universities/${universityId}/departments`, {
-				params,
-			});
-			return response.data;
+			const stringParams: Record<string, string> = {};
+			if (params) {
+				for (const [k, v] of Object.entries(params)) {
+					if (v != null) stringParams[k] = String(v);
+				}
+			}
+			const result = await adminGet<{ data: any }>(`/admin/v2/universities/${universityId}/departments`, stringParams);
+			return result.data;
 		},
 
 		getById: async (universityId: string, id: string) => {
-			const response = await axiosServer.get(
-				`/admin/universities/${universityId}/departments/${id}`,
+			const result = await adminGet<{ data: any }>(
+				`/admin/v2/universities/${universityId}/departments/${id}`,
 			);
-			return response.data;
+			return result.data;
 		},
 
 		create: async (universityId: string, data: import('@/types/admin').CreateDepartmentRequest) => {
-			const response = await axiosServer.post(
-				`/admin/universities/${universityId}/departments`,
+			const result = await adminPost<{ data: any }>(
+				`/admin/v2/universities/${universityId}/departments`,
 				data,
 			);
-			return response.data;
+			return result.data;
 		},
 
 		update: async (
@@ -146,39 +157,36 @@ export const universities = {
 			id: string,
 			data: import('@/types/admin').UpdateDepartmentRequest,
 		) => {
-			const response = await axiosServer.put(
-				`/admin/universities/${universityId}/departments/${id}`,
+			const result = await adminPut<{ data: any }>(
+				`/admin/v2/universities/${universityId}/departments/${id}`,
 				data,
 			);
-			return response.data;
+			return result.data;
 		},
 
 		delete: async (universityId: string, id: string) => {
-			const response = await axiosServer.delete(
-				`/admin/universities/${universityId}/departments/${id}`,
+			const result = await adminDelete<{ data: any }>(
+				`/admin/v2/universities/${universityId}/departments/${id}`,
 			);
-			return response.data;
+			return result.data;
 		},
 
 		bulkCreate: async (
 			universityId: string,
 			data: import('@/types/admin').BulkCreateDepartmentsRequest,
 		) => {
-			const response = await axiosServer.post(
-				`/admin/universities/${universityId}/departments/bulk`,
+			const result = await adminPost<{ data: any }>(
+				`/admin/v2/universities/${universityId}/departments/bulk`,
 				data,
 			);
-			return response.data;
+			return result.data;
 		},
 
 		downloadTemplate: async (universityId: string) => {
-			const response = await axiosServer.get(
-				`/admin/universities/${universityId}/departments/template`,
-				{
-					responseType: 'blob',
-				},
-			);
-			return response.data;
+			const url = buildAdminProxyUrl(`/admin/v2/universities/${universityId}/departments/template`);
+			const res = await fetch(url);
+			if (!res.ok) throw new Error(`Failed to download template: ${res.status}`);
+			return res.blob();
 		},
 
 		uploadCsv: async (
@@ -187,32 +195,27 @@ export const universities = {
 		): Promise<import('@/types/admin').UploadDepartmentsCsvResponse> => {
 			const formData = new FormData();
 			formData.append('file', file);
-			const response = await axiosServer.post(
-				`/admin/universities/${universityId}/departments/upload`,
-				formData,
-				{
-					headers: { 'Content-Type': 'multipart/form-data' },
-				},
+			const result = await adminRequest<{ data: import('@/types/admin').UploadDepartmentsCsvResponse }>(
+				`/admin/v2/universities/${universityId}/departments/upload`,
+				{ method: 'POST', body: formData },
 			);
-			return response.data;
+			return result.data;
 		},
 	},
 
 	getUniversities: async () => {
-		const response = await axiosServer.get('/admin/universities');
-		return response.data;
+		const result = await adminGet<{ data: any }>('/admin/v2/universities');
+		return result.data;
 	},
 
 	getClusters: async (): Promise<import('@/types/admin').AdminClusterItem[]> => {
-		const response = await axiosServer.get('/admin/universities/clusters');
-		return response.data.clusters;
+		const result = await adminGet<{ data: { clusters: any[] } }>('/admin/v2/universities/clusters');
+		return result.data.clusters;
 	},
 
 	getDepartments: async (university: string) => {
-		const response = await axiosServer.get('/universities/departments', {
-			params: { university },
-		});
-		return response.data;
+		const result = await adminGet<any>('/universities/departments', { university });
+		return result;
 	},
 
 };
