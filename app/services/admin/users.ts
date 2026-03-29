@@ -1,5 +1,4 @@
-import axiosServer from '@/utils/axios';
-import { adminGet } from '@/shared/lib/http/admin-fetch';
+import { adminGet, adminPost, adminPatch, adminRequest } from '@/shared/lib/http/admin-fetch';
 import type {
 	DeletedFemalesListResponse,
 	RestoreFemaleResponse,
@@ -63,10 +62,8 @@ export const userAppearance = {
 			;
 
 			try {
-				const response = await axiosServer.get(url);
-				;
-				;
-				const rawData = response.data.data ?? [];
+				const result = await adminGet<{ data: any[]; meta: any }>(url);
+				const rawData = result.data ?? [];
 				const normalizedData = rawData.map((user: any) => ({
 					...user,
 					id: user.id ?? user.userId,
@@ -79,7 +76,7 @@ export const userAppearance = {
 						isMain: img.isMain ?? idx === 0,
 					})) ?? [],
 				}));
-				return { data: normalizedData, meta: response.data.meta };
+				return { data: normalizedData, meta: result.meta };
 			} catch (error: any) {
 				throw error;
 			}
@@ -95,13 +92,11 @@ export const userAppearance = {
 			params.append('limit', limit.toString());
 			if (region) params.append('region', region);
 
-			const response = await axiosServer.get(
+			const result = await adminGet<{ data: any[]; meta: any }>(
 				`/admin/v2/users?filter=ungraded&${params.toString()}`,
 			);
 
-			;
-
-			return { data: response.data.data, meta: response.data.meta };
+			return { data: result.data, meta: result.meta };
 		} catch (error) {
 			throw error;
 		}
@@ -119,9 +114,8 @@ export const userAppearance = {
 		}
 
 		try {
-			const response = await axiosServer.patch(`/admin/v2/users/${userId}/appearance`, { rank: grade });
-			;
-			return response.data.data;
+			const result = await adminPatch<{ data: any }>(`/admin/v2/users/${userId}/appearance`, { rank: grade });
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -154,11 +148,11 @@ export const userAppearance = {
 		;
 
 		try {
-			const response = await axiosServer.patch('/admin/v2/users/appearance/bulk', {
+			const result = await adminPatch<{ data: any }>('/admin/v2/users/appearance/bulk', {
 				userIds,
 				rank: grade,
 			});
-			return response.data.data;
+			return result.data;
 		} catch (error) {
 			throw error;
 		}
@@ -171,10 +165,9 @@ export const userAppearance = {
 			const endpoint = `/admin/v2/users/${userId}`;
 			;
 
-			const response = await axiosServer.get(endpoint);
-			;
+			const result = await adminGet<{ data: any }>(endpoint);
 
-			const data = response.data.data;
+			const data = result.data;
 
 			// id 필드 정규화
 			if (!data.id && data.userId) {
@@ -217,14 +210,11 @@ export const userAppearance = {
 
 	getUserTickets: async (userId: string) => {
 		try {
-			;
 			const endpoint = `/admin/tickets/user/${userId}`;
-			;
 
-			const response = await axiosServer.get(endpoint);
-			;
+			const result = await adminGet<any>(endpoint);
 
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -232,17 +222,14 @@ export const userAppearance = {
 
 	createUserTickets: async (userId: string, count: number) => {
 		try {
-			;
 			const endpoint = `/admin/tickets`;
-			;
 
-			const response = await axiosServer.post(endpoint, {
+			const result = await adminPost<any>(endpoint, {
 				userId,
 				count,
 			});
-			;
 
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -250,19 +237,15 @@ export const userAppearance = {
 
 	deleteUserTickets: async (userId: string, count: number) => {
 		try {
-			;
 			const endpoint = `/admin/tickets`;
-			;
 
-			const response = await axiosServer.delete(endpoint, {
-				data: {
-					userId,
-					count,
-				},
+			const result = await adminRequest<any>(endpoint, {
+				method: 'DELETE',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ userId, count }),
 			});
-			;
 
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -270,13 +253,11 @@ export const userAppearance = {
 
 	getUserGems: async (userId: string) => {
 		try {
-			;
 			const endpoint = `/admin/gems/users/${userId}/balance`;
 
-			const response = await axiosServer.get(endpoint);
-			;
+			const result = await adminGet<any>(endpoint);
 
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -284,13 +265,11 @@ export const userAppearance = {
 
 	addUserGems: async (userId: string, amount: number) => {
 		try {
-			;
 			const endpoint = `/admin/gems/users/${userId}/add`;
 
-			const response = await axiosServer.post(endpoint, { amount });
+			const result = await adminPost<any>(endpoint, { amount });
 
-			;
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -298,13 +277,11 @@ export const userAppearance = {
 
 	removeUserGems: async (userId: string, amount: number) => {
 		try {
-			;
 			const endpoint = `/admin/gems/users/${userId}/deduct`;
 
-			const response = await axiosServer.post(endpoint, { amount });
+			const result = await adminPost<any>(endpoint, { amount });
 
-			;
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -329,9 +306,8 @@ export const userAppearance = {
 
 			;
 
-			const response = await axiosServer.post(endpoint, requestData);
-			;
-			return response.data;
+			const result = await adminPost<any>(endpoint, requestData);
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -345,14 +321,13 @@ export const userAppearance = {
 		try {
 			;
 
-			const response = await axiosServer.post('/admin/users/detail/status', {
+			const result = await adminPost<any>('/admin/users/detail/status', {
 				userId,
 				status,
 				reason,
 			});
 
-			;
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -362,13 +337,12 @@ export const userAppearance = {
 		try {
 			;
 
-			const response = await axiosServer.post('/admin/users/detail/warning', {
+			const result = await adminPost<any>('/admin/users/detail/warning', {
 				userId,
 				message,
 			});
 
-			;
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -378,14 +352,13 @@ export const userAppearance = {
 		try {
 			;
 
-			const response = await axiosServer.post('/admin/notification/email', {
+			const result = await adminPost<any>('/admin/notification/email', {
 				userId,
 				subject,
 				message,
 			});
 
-			;
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -395,13 +368,12 @@ export const userAppearance = {
 		try {
 			;
 
-			const response = await axiosServer.post('/admin/notification/sms', {
+			const result = await adminPost<any>('/admin/notification/sms', {
 				userId,
 				message,
 			});
 
-			;
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -411,12 +383,11 @@ export const userAppearance = {
 		try {
 			;
 
-			const response = await axiosServer.post('/admin/users/detail/logout', {
+			const result = await adminPost<any>('/admin/users/detail/logout', {
 				userId,
 			});
 
-			;
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -426,13 +397,12 @@ export const userAppearance = {
 		try {
 			;
 
-			const response = await axiosServer.post('/admin/users/detail/profile-update-request', {
+			const result = await adminPost<any>('/admin/users/detail/profile-update-request', {
 				userId,
 				message,
 			});
 
-			;
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -442,12 +412,11 @@ export const userAppearance = {
 		try {
 			;
 
-			const response = await axiosServer.post('/admin/users/detail/instagram-error', {
+			const result = await adminPost<any>('/admin/users/detail/instagram-error', {
 				userId,
 			});
 
-			;
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -457,12 +426,11 @@ export const userAppearance = {
 		try {
 			;
 
-			const response = await axiosServer.post('/admin/users/detail/instagram-reset', {
+			const result = await adminPost<any>('/admin/users/detail/instagram-reset', {
 				userId,
 			});
 
-			;
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -475,9 +443,6 @@ export const userAppearance = {
 			const endpoint = '/admin/users/appearance/stats';
 			;
 
-			const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-			;
-
 			const timestamp = new Date().getTime();
 
 			const params = new URLSearchParams();
@@ -486,23 +451,17 @@ export const userAppearance = {
 			if (useCluster !== undefined) params.append('useCluster', useCluster.toString());
 
 			const finalUrl = `${endpoint}?${params.toString()}`;
-			;
-			;
 
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			let responseData: any;
 
 			try {
-				const response = await axiosServer.get(finalUrl);
-				;
-				;
-				;
+				const result = await adminGet<any>(finalUrl);
 
-				if (!response.data || Object.keys(response.data).length === 0) {
-					;
+				if (!result || Object.keys(result).length === 0) {
 					return null;
 				} else {
-					responseData = response.data;
+					responseData = result;
 				}
 			} catch (error) {
 				throw error;
@@ -692,26 +651,22 @@ export const userAppearance = {
 		addToBlacklist: boolean = false,
 	) => {
 		try {
-			const response = await axiosServer.delete(`/admin/users/${userId}`, {
-				data: {
-					sendEmail,
-					addToBlacklist,
-				},
+			const result = await adminRequest<any>(`/admin/users/${userId}`, {
+				method: 'DELETE',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ sendEmail, addToBlacklist }),
 			});
-			return response.data;
+			return result;
 		} catch (error: any) {
-			throw error.response?.data || error;
+			throw error.response?.data ?? error.body ?? error;
 		}
 	},
 
 	getDuplicatePhoneUsers: async () => {
 		try {
-			;
+			const result = await adminGet<any>('/admin/users/duplicate-phone');
 
-			const response = await axiosServer.get('/admin/users/duplicate-phone');
-
-			;
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -732,10 +687,9 @@ export const userAppearance = {
 			if (params.name) queryParams.append('name', params.name);
 			if (params.university) queryParams.append('university', params.university);
 
-			const response = await axiosServer.get(`/admin/v2/users?filter=verified&${queryParams.toString()}`);
+			const result = await adminGet<{ data: any[]; meta: any }>(`/admin/v2/users?filter=verified&${queryParams.toString()}`);
 
-			;
-			return { data: response.data.data, meta: response.data.meta };
+			return { data: result.data, meta: result.meta };
 		} catch (error: any) {
 			throw error;
 		}
@@ -756,12 +710,11 @@ export const userAppearance = {
 			if (params.name) queryParams.append('name', params.name);
 			if (params.university) queryParams.append('university', params.university);
 
-			const response = await axiosServer.get(
+			const result = await adminGet<any>(
 				`/admin/university-verification/pending?${queryParams.toString()}`,
 			);
 
-			;
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -771,12 +724,11 @@ export const userAppearance = {
 		try {
 			;
 
-			const response = await axiosServer.post('/admin/university-verification/approve', {
+			const result = await adminPost<any>('/admin/university-verification/approve', {
 				userId,
 			});
 
-			;
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -786,12 +738,11 @@ export const userAppearance = {
 		try {
 			;
 
-			const response = await axiosServer.post('/admin/university-verification/reject', {
+			const result = await adminPost<any>('/admin/university-verification/reject', {
 				userId,
 			});
 
-			;
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -804,10 +755,9 @@ export const userAppearance = {
 			const params = new URLSearchParams();
 			if (region) params.append('region', region);
 
-			const response = await axiosServer.get(`/admin/v2/users?filter=blacklisted&${params.toString()}`);
+			const result = await adminGet<{ data: any[]; meta: any }>(`/admin/v2/users?filter=blacklisted&${params.toString()}`);
 
-			;
-			return { data: response.data.data, meta: response.data.meta };
+			return { data: result.data, meta: result.meta };
 		} catch (error: any) {
 			throw error;
 		}
@@ -817,10 +767,9 @@ export const userAppearance = {
 		try {
 			;
 
-			const response = await axiosServer.patch(`/admin/users/${userId}/blacklist/release`);
+			const result = await adminPatch<any>(`/admin/users/${userId}/blacklist/release`);
 
-			;
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -833,15 +782,15 @@ export const userAppearance = {
 		limit?: number;
 	}) => {
 		try {
-			const response = await axiosServer.get('/admin/users/search', {
-				params: {
-					name: params.name || undefined,
-					phoneNumber: params.phoneNumber || undefined,
-					page: params.page || 1,
-					limit: params.limit || 10,
-				},
-			});
-			return response.data;
+			const queryParams: Record<string, string> = {
+				page: String(params.page || 1),
+				limit: String(params.limit || 10),
+			};
+			if (params.name) queryParams.name = params.name;
+			if (params.phoneNumber) queryParams.phoneNumber = params.phoneNumber;
+
+			const result = await adminGet<any>('/admin/users/search', queryParams);
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -851,10 +800,9 @@ export const userAppearance = {
 		try {
 			;
 
-			const response = await axiosServer.patch(`/admin/users/${userId}/reset-password`);
+			const result = await adminPatch<any>(`/admin/users/${userId}/reset-password`);
 
-			;
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -862,18 +810,16 @@ export const userAppearance = {
 
 	getReapplyUsers: async (page: number = 1, limit: number = 10, region?: string, name?: string) => {
 		try {
-			;
+			const queryParams = new URLSearchParams();
+			queryParams.append('filter', 'resubmission');
+			queryParams.append('page', page.toString());
+			queryParams.append('limit', limit.toString());
+			if (region) queryParams.append('region', region);
+			if (name) queryParams.append('name', name);
 
-			const params: any = { page, limit };
-			if (region) params.region = region;
-			if (name) params.name = name;
+			const result = await adminGet<{ data: any[]; meta: any }>(`/admin/v2/users?${queryParams.toString()}`);
 
-			const response = await axiosServer.get('/admin/v2/users', {
-				params: { filter: 'resubmission', ...params },
-			});
-
-			;
-			return { data: response.data.data, meta: response.data.meta };
+			return { data: result.data, meta: result.meta };
 		} catch (error: any) {
 			throw error;
 		}
@@ -881,18 +827,16 @@ export const userAppearance = {
 
 	getPendingUsers: async (page: number = 1, limit: number = 10, region?: string, name?: string) => {
 		try {
-			;
+			const queryParams = new URLSearchParams();
+			queryParams.append('filter', 'pending');
+			queryParams.append('page', page.toString());
+			queryParams.append('limit', limit.toString());
+			if (region) queryParams.append('region', region);
+			if (name) queryParams.append('name', name);
 
-			const params: any = { page, limit };
-			if (region) params.region = region;
-			if (name) params.name = name;
+			const result = await adminGet<{ data: any[]; meta: any }>(`/admin/v2/users?${queryParams.toString()}`);
 
-			const response = await axiosServer.get('/admin/v2/users', {
-				params: { filter: 'pending', ...params },
-			});
-
-			;
-			return { data: response.data.data, meta: response.data.meta };
+			return { data: result.data, meta: result.meta };
 		} catch (error: any) {
 			throw error;
 		}
@@ -905,18 +849,16 @@ export const userAppearance = {
 		name?: string,
 	) => {
 		try {
-			;
+			const queryParams = new URLSearchParams();
+			queryParams.append('filter', 'rejected');
+			queryParams.append('page', page.toString());
+			queryParams.append('limit', limit.toString());
+			if (region) queryParams.append('region', region);
+			if (name) queryParams.append('name', name);
 
-			const params: any = { page, limit };
-			if (region) params.region = region;
-			if (name) params.name = name;
+			const result = await adminGet<{ data: any[]; meta: any }>(`/admin/v2/users?${queryParams.toString()}`);
 
-			const response = await axiosServer.get('/admin/v2/users', {
-				params: { filter: 'rejected', ...params },
-			});
-
-			;
-			return { data: response.data.data, meta: response.data.meta };
+			return { data: result.data, meta: result.meta };
 		} catch (error: any) {
 			throw error;
 		}
@@ -926,12 +868,11 @@ export const userAppearance = {
 		try {
 			;
 
-			const response = await axiosServer.patch(`/admin/users/approval/${userId}/revoke-approval`, {
+			const result = await adminPatch<any>(`/admin/users/approval/${userId}/revoke-approval`, {
 				revokeReason,
 			});
 
-			;
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -941,10 +882,11 @@ export const userAppearance = {
 export const deletedFemales = {
 	getList: async (page: number = 1, limit: number = 20) => {
 		try {
-			const response = await axiosServer.get<DeletedFemalesListResponse>('/admin/deleted-females', {
-				params: { page, limit },
+			const result = await adminGet<DeletedFemalesListResponse>('/admin/deleted-females', {
+				page: page.toString(),
+				limit: limit.toString(),
 			});
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -952,10 +894,10 @@ export const deletedFemales = {
 
 	restore: async (id: string) => {
 		try {
-			const response = await axiosServer.patch<RestoreFemaleResponse>(
+			const result = await adminPatch<RestoreFemaleResponse>(
 				`/admin/deleted-females/${id}/restore`,
 			);
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -963,10 +905,10 @@ export const deletedFemales = {
 
 	sleep: async (id: string) => {
 		try {
-			const response = await axiosServer.patch<SleepFemaleResponse>(
+			const result = await adminPatch<SleepFemaleResponse>(
 				`/admin/deleted-females/${id}/sleep`,
 			);
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -981,10 +923,8 @@ export const userEngagement = {
 			if (endDate) params.endDate = endDate;
 			if (includeDeleted !== undefined) params.includeDeleted = String(includeDeleted);
 
-			const response = await axiosServer.get('/admin/stats/user-engagement', {
-				params,
-			});
-			return response.data;
+			const result = await adminGet<any>('/admin/stats/user-engagement', params);
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
