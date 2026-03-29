@@ -7,7 +7,6 @@ import {
   Goal,
   GoalCreateRequest,
   GoalUpdateRequest,
-  ExtendedRevenueResponse,
   GemSystemFunnelResponse,
   ActionableInsightsResponse,
 } from "@/app/admin/dashboard/types";
@@ -17,7 +16,6 @@ const DASHBOARD_ENDPOINT = {
   MATCHING_FUNNEL: "/admin/dashboard/matching/funnel",
   HOURLY_SIGNUPS: "/admin/dashboard/stats/signups/hourly",
   GOALS: "/admin/goals",
-  EXTENDED_REVENUE: "/admin/dashboard/revenue/extended",
   GEM_SYSTEM_FUNNEL: "/admin/dashboard/matching/gem-system-funnel",
   ACTIONABLE_INSIGHTS: "/admin/dashboard/actionable-insights",
 } as const;
@@ -115,17 +113,6 @@ export const dashboardService = {
       throw error instanceof AdminApiError
         ? error
         : new AdminApiError("목표 삭제에 실패했습니다.", 500);
-    }
-  },
-
-  async getExtendedRevenue(): Promise<ExtendedRevenueResponse> {
-    try {
-      return await adminGet<ExtendedRevenueResponse>(DASHBOARD_ENDPOINT.EXTENDED_REVENUE);
-    } catch (error) {
-      console.error("확장 매출 현황 조회 실패:", error);
-      throw error instanceof AdminApiError
-        ? error
-        : new AdminApiError("확장 매출 현황 조회에 실패했습니다.", 500);
     }
   },
 
