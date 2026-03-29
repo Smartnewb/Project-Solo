@@ -1,13 +1,11 @@
-import axiosServer from '@/utils/axios';
+import { adminGet, adminPatch, adminDelete, adminRequest } from '@/shared/lib/http/admin-fetch';
 
-// 작성자 정보 타입 정의
 export interface Author {
 	id: string;
 	name: string;
 	email?: string;
 }
 
-// 게시글 타입 정의
 export interface Article {
 	id: string;
 	userId: string;
@@ -29,7 +27,6 @@ export interface Article {
 	author?: Author;
 }
 
-// 댓글 타입 정의
 export interface Comment {
 	id: string;
 	articleId: string;
@@ -49,7 +46,6 @@ export interface Comment {
 	updatedAt: Date;
 }
 
-// 신고 타입 정의
 export interface Report {
 	id: string;
 	targetType: 'article' | 'comment';
@@ -68,7 +64,6 @@ export interface Report {
 	targetContent?: string;
 }
 
-// 페이지네이션 메타 정보 타입
 export interface PaginationMeta {
 	currentPage: number;
 	itemsPerPage: number;
@@ -78,7 +73,6 @@ export interface PaginationMeta {
 	hasPreviousPage: boolean;
 }
 
-// 페이지네이션 응답 타입
 export interface PaginatedResponse<T> {
 	items: T[];
 	total?: number;
@@ -88,20 +82,17 @@ export interface PaginatedResponse<T> {
 	meta?: PaginationMeta;
 }
 
-// 게시글 상세 타입
 export interface ArticleDetail extends Article {
 	comments: Comment[];
 	reports: Report[];
 }
 
-// 카테고리 타입 정의
 export interface Category {
 	id: string;
 	code: string;
 	displayName: string;
 }
 
-// 백엔드 응답을 Article 인터페이스로 정규화
 const normalizeArticle = (a: any): Article => ({
 	...a,
 	content: a.contentPreview ?? a.content ?? '',
@@ -119,9 +110,7 @@ const normalizeArticle = (a: any): Article => ({
 		: a.author ?? undefined,
 });
 
-// 커뮤니티 관리 API 서비스
 const communityService = {
-	// 게시글 목록 조회
 	getArticles: async (
 		filter: 'all' | 'reported' | 'blinded' = 'all',
 		page = 1,
@@ -130,259 +119,146 @@ const communityService = {
 		endDate: Date | null = null,
 		categoryId: string | null = null,
 	): Promise<PaginatedResponse<Article>> => {
-		try {
-			console.log('게시글 목록 조회 요청:', {
-				filter,
-				page,
-				limit,
-				startDate,
-				endDate,
-				categoryId,
-			});
+		const params: Record<string, string> = {
+			page: String(page),
+			limit: String(limit),
+		};
 
-			// API 파라미터 구성
-			const params: any = {
-				page,
-				limit,
-			};
-
-			// 시작 날짜가 있으면 추가 (YYYY-MM-DD 형식)
-			if (startDate) {
-				params.startDate = startDate.toISOString().split('T')[0];
-			}
-
-			// 종료 날짜가 있으면 추가 (YYYY-MM-DD 형식)
-			if (endDate) {
-				params.endDate = endDate.toISOString().split('T')[0];
-			}
-
-			// 카테고리 ID가 있으면 추가
-			if (categoryId) {
-				params.categoryId = categoryId;
-			}
-
-			// 실제 API 호출
-			const response = await axiosServer.get(`/admin/community/articles`, {
-				params,
-			});
-			console.log('게시글 목록 조회 응답:', response.data);
-
-			// API 응답 구조에 맞게 데이터 반환 (백엔드는 articles/pagination 구조 사용)
-			const rawArticles = response.data.articles ?? [];
-			const articles = rawArticles.map(normalizeArticle);
-			const pagination = response.data.pagination;
-			return {
-				items: articles,
-				meta: {
-					currentPage: pagination?.page ?? page,
-					itemsPerPage: pagination?.limit ?? limit,
-					totalItems: pagination?.total ?? articles.length,
-					totalPages: pagination?.totalPages ?? 1,
-					hasNextPage: pagination?.hasMore ?? false,
-					hasPreviousPage: page > 1,
-				},
-			};
-		} catch (error) {
-			console.error('게시글 목록 조회 중 오류:', error);
-			throw error;
+		if (startDate) {
+			params.startDate = startDate.toISOString().split('T')[0];
 		}
+
+		if (endDate) {
+			params.endDate = endDate.toISOString().split('T')[0];
+		}
+
+		if (categoryId) {
+			params.categoryId = categoryId;
+		}
+
+		const response = await adminGet<any>('/admin/community/articles', params);
+
+		const rawArticles = response.articles ?? [];
+		const articles = rawArticles.map(normalizeArticle);
+		const pagination = response.pagination;
+		return {
+			items: articles,
+			meta: {
+				currentPage: pagination?.page ?? page,
+				itemsPerPage: pagination?.limit ?? limit,
+				totalItems: pagination?.total ?? articles.length,
+				totalPages: pagination?.totalPages ?? 1,
+				hasNextPage: pagination?.hasMore ?? false,
+				hasPreviousPage: page > 1,
+			},
+		};
 	},
 
-	// 게시글 상세 조회 (게시글 ID를 이용해 댓글을 가져오는 방식으로 구현)
 	getArticleDetail: async (id: string): Promise<ArticleDetail> => {
-		try {
-			console.log('게시글 상세 조회 요청:', id);
+		const endDate = new Date();
+		const startDate = new Date();
+		startDate.setDate(endDate.getDate() - 30);
 
-			// 게시글 정보 가져오기 (목록 API에서 가져온 후 클라이언트에서 필터링)
-			// 최근 30일 범위로 검색하여 게시글을 찾음
-			const endDate = new Date();
-			const startDate = new Date();
-			startDate.setDate(endDate.getDate() - 30);
+		const articlesResponse = await adminGet<any>('/admin/community/articles', {
+			startDate: startDate.toISOString().split('T')[0],
+			endDate: endDate.toISOString().split('T')[0],
+			page: '1',
+			limit: '1000',
+		});
 
-			const articlesResponse = await axiosServer.get(`/admin/community/articles`, {
-				params: {
-					startDate: startDate.toISOString().split('T')[0],
-					endDate: endDate.toISOString().split('T')[0],
-					page: 1,
-					limit: 1000, // 충분히 큰 값으로 설정하여 모든 게시글을 가져옴
-				},
-			});
-
-			// 게시글 정보 추출 (클라이언트에서 ID로 필터링)
-			const article = articlesResponse.data?.articles?.find((item: any) => item.id === id);
-			if (!article) {
-				throw new Error('게시글을 찾을 수 없습니다.');
-			}
-
-			// 댓글 정보 가져오기
-			const commentsResponse = await axiosServer.get(`/admin/community/comments`, {
-				params: {
-					articleId: id,
-					article_id: id,
-				},
-			});
-
-			// 게시글 상세 정보 구성
-			const normalized = normalizeArticle(article);
-			const articleDetail: ArticleDetail = {
-				...normalized,
-				comments: commentsResponse.data?.comments ?? [],
-				reports: [],
-			};
-
-			console.log('게시글 상세 조회 응답:', articleDetail);
-			return articleDetail;
-		} catch (error) {
-			console.error('게시글 상세 조회 중 오류:', error);
-			throw error;
+		const article = articlesResponse?.articles?.find((item: any) => item.id === id);
+		if (!article) {
+			throw new Error('게시글을 찾을 수 없습니다.');
 		}
+
+		const commentsResponse = await adminGet<any>('/admin/community/comments', {
+			articleId: id,
+			article_id: id,
+		});
+
+		const normalized = normalizeArticle(article);
+		const articleDetail: ArticleDetail = {
+			...normalized,
+			comments: commentsResponse?.comments ?? [],
+			reports: [],
+		};
+
+		return articleDetail;
 	},
 
-	// 게시글 블라인드 처리/해제
 	blindArticle: async (id: string, isBlinded: boolean): Promise<any> => {
-		try {
-			console.log('게시글 블라인드 처리 요청:', { id, isBlinded });
-
-			// 백엔드 API 호출
-			const response = await axiosServer.patch(`/admin/community/articles/blind`, {
-				id,
-				isBlinded,
-			});
-			console.log('게시글 블라인드 처리 응답:', response.data);
-			return response.data;
-		} catch (error) {
-			console.error('게시글 블라인드 처리 중 오류:', error);
-			throw error;
-		}
+		return adminPatch('/admin/community/articles/blind', {
+			id,
+			isBlinded,
+		});
 	},
 
-	// 게시글 삭제 (새로운 API 엔드포인트 사용)
 	deleteArticle: async (articleId: string): Promise<any> => {
-		try {
-			console.log('게시글 삭제 요청:', articleId);
-
-			// 새로운 API 엔드포인트 호출
-			const response = await axiosServer.delete(`/admin/community/articles`, {
-				data: { articleId },
-			});
-			console.log('게시글 삭제 응답:', response.data);
-			return response.data;
-		} catch (error) {
-			console.error('게시글 삭제 중 오류:', error);
-			throw error;
-		}
+		return adminRequest('/admin/community/articles', {
+			method: 'DELETE',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ articleId }),
+		});
 	},
 
-	// 게시글 카테고리 이전
 	moveArticleCategory: async (articleId: string, categoryId: string): Promise<any> => {
-		try {
-			console.log('게시글 카테고리 이전 요청:', { articleId, categoryId });
-
-			const response = await axiosServer.patch(`/admin/community/articles/category`, {
-				articleId,
-				categoryId,
-			});
-			console.log('게시글 카테고리 이전 응답:', response.data);
-			return response.data;
-		} catch (error) {
-			console.error('게시글 카테고리 이전 중 오류:', error);
-			throw error;
-		}
+		return adminPatch('/admin/community/articles/category', {
+			articleId,
+			categoryId,
+		});
 	},
 
-	// 게시글 카테고리 목록 조회
 	getCategories: async (): Promise<{ categories: Category[] }> => {
-		try {
-			console.log('게시글 카테고리 목록 조회 요청');
+		const response = await adminGet<any>('/admin/community/categories');
 
-			const response = await axiosServer.get(`/admin/community/categories`);
-			console.log('게시글 카테고리 목록 조회 응답:', response.data);
-
-			// 백엔드 응답 구조에 맞게 반환
-			return {
-				categories: response.data.categories ?? [],
-			};
-		} catch (error) {
-			console.error('게시글 카테고리 목록 조회 중 오류:', error);
-			throw error;
-		}
+		return {
+			categories: response.categories ?? [],
+		};
 	},
 
-	// 댓글 목록 조회
 	getComments: async (
 		articleId: string,
 		filter: 'all' | 'reported' | 'blinded' = 'all',
 		page = 1,
 		limit = 10,
 	): Promise<PaginatedResponse<Comment>> => {
-		try {
-			console.log('댓글 목록 조회 요청:', { articleId, filter, page, limit });
+		const response = await adminGet<any>(`/admin/community/comments`, {
+			articleId,
+		});
 
-			// 실제 API 호출
-			const response = await axiosServer.get(`/admin/community/comments?articleId=${articleId}`);
-			console.log('댓글 목록 조회 응답:', response.data);
-
-			// API 응답 구조에 맞게 데이터 반환 (백엔드는 comments/pagination 구조 사용)
-			const comments = response.data.comments ?? response.data.items ?? [];
-			const pagination = response.data.pagination ?? response.data.meta;
-			return {
-				items: comments,
-				meta: pagination ? {
-					currentPage: pagination.page ?? page,
-					itemsPerPage: pagination.limit ?? limit,
-					totalItems: pagination.total ?? comments.length,
-					totalPages: pagination.totalPages ?? 1,
-					hasNextPage: pagination.hasMore ?? false,
-					hasPreviousPage: (pagination.page ?? page) > 1,
-				} : {
-					currentPage: page,
-					itemsPerPage: limit,
-					totalItems: comments.length,
-					totalPages: 1,
-					hasNextPage: false,
-					hasPreviousPage: page > 1,
-				},
-			};
-		} catch (error) {
-			console.error('댓글 목록 조회 중 오류:', error);
-			throw error;
-		}
+		const comments = response.comments ?? response.items ?? [];
+		const pagination = response.pagination ?? response.meta;
+		return {
+			items: comments,
+			meta: pagination ? {
+				currentPage: pagination.page ?? page,
+				itemsPerPage: pagination.limit ?? limit,
+				totalItems: pagination.total ?? comments.length,
+				totalPages: pagination.totalPages ?? 1,
+				hasNextPage: pagination.hasMore ?? false,
+				hasPreviousPage: (pagination.page ?? page) > 1,
+			} : {
+				currentPage: page,
+				itemsPerPage: limit,
+				totalItems: comments.length,
+				totalPages: 1,
+				hasNextPage: false,
+				hasPreviousPage: page > 1,
+			},
+		};
 	},
 
-	// 댓글 블라인드 처리/해제
 	blindComment: async (id: string, isBlinded: boolean, reason?: string): Promise<any> => {
-		try {
-			console.log('댓글 블라인드 처리 요청:', { id, isBlinded, reason });
-
-			// 실제 API 호출
-			const response = await axiosServer.patch(`/admin/community/comments/${id}/blind`, {
-				isBlinded,
-				reason,
-			});
-			console.log('댓글 블라인드 처리 응답:', response.data);
-			return response.data;
-		} catch (error) {
-			console.error('댓글 블라인드 처리 중 오류:', error);
-			throw error;
-		}
+		return adminPatch(`/admin/community/comments/${id}/blind`, {
+			isBlinded,
+			reason,
+		});
 	},
 
-	// 댓글 삭제
 	deleteComment: async (id: string): Promise<any> => {
-		try {
-			console.log('댓글 삭제 요청:', id);
-
-			// 실제 API 호출
-			const response = await axiosServer.delete(`/admin/community/comments/${id}`);
-			console.log('댓글 삭제 응답:', response.data);
-			return response.data;
-		} catch (error) {
-			console.error('댓글 삭제 중 오류:', error);
-			throw error;
-		}
+		return adminDelete(`/admin/community/comments/${id}`);
 	},
 
-	// 커뮤니티 신고 목록 조회
 	getCommunityReports: async (
 		page = 1,
 		limit = 10,
@@ -390,187 +266,113 @@ const communityService = {
 		reporterName?: string,
 		reportedName?: string,
 	): Promise<PaginatedResponse<any>> => {
-		try {
-			console.log('커뮤니티 신고 목록 조회 요청:', {
-				page,
-				limit,
-				status,
-				reporterName,
-				reportedName,
-			});
+		const params: Record<string, string> = {
+			page: String(page),
+			limit: String(limit),
+			status,
+		};
+		if (reporterName) params.reporterName = reporterName;
+		if (reportedName) params.reportedName = reportedName;
 
-			const params: any = { page, limit, status };
-			if (reporterName) params.reporterName = reporterName;
-			if (reportedName) params.reportedName = reportedName;
+		const response = await adminGet<any>('/admin/community/reports', params);
 
-			const response = await axiosServer.get(`/admin/community/reports`, {
-				params,
-			});
-			console.log('커뮤니티 신고 목록 조회 응답:', response.data);
-
-			return {
-				items: response.data.items ?? [],
-				meta: response.data.meta ?? {
-					currentPage: page,
-					itemsPerPage: limit,
-					totalItems: response.data.items?.length ?? 0,
-					totalPages: 1,
-					hasNextPage: false,
-					hasPreviousPage: page > 1,
-				},
-			};
-		} catch (error) {
-			console.error('커뮤니티 신고 목록 조회 중 오류:', error);
-			throw error;
-		}
+		return {
+			items: response.items ?? [],
+			meta: response.meta ?? {
+				currentPage: page,
+				itemsPerPage: limit,
+				totalItems: response.items?.length ?? 0,
+				totalPages: 1,
+				hasNextPage: false,
+				hasPreviousPage: page > 1,
+			},
+		};
 	},
 
-	// 신고 목록 조회 (기존)
 	getReports: async (
 		type: 'article' | 'comment' | 'all' = 'all',
 		status: 'pending' | 'processed' | 'all' = 'all',
 		page = 1,
 		limit = 10,
 	): Promise<PaginatedResponse<Report>> => {
-		try {
-			console.log('신고 목록 조회 요청:', { type, status, page, limit });
+		const response = await adminGet<any>('/admin/community/reports', {
+			type,
+			status,
+			page: String(page),
+			limit: String(limit),
+		});
 
-			// 실제 API 호출
-			const response = await axiosServer.get(`/admin/community/reports`, {
-				params: { type, status, page, limit },
-			});
-			console.log('신고 목록 조회 응답:', response.data);
-
-			// API 응답 구조에 맞게 데이터 반환
-			return {
-				items: response.data.items ?? [],
-				meta: response.data.meta ?? {
-					currentPage: page,
-					itemsPerPage: limit,
-					totalItems: response.data.items?.length ?? 0,
-					totalPages: 1,
-					hasNextPage: false,
-					hasPreviousPage: page > 1,
-				},
-			};
-		} catch (error) {
-			console.error('신고 목록 조회 중 오류:', error);
-			throw error;
-		}
+		return {
+			items: response.items ?? [],
+			meta: response.meta ?? {
+				currentPage: page,
+				itemsPerPage: limit,
+				totalItems: response.items?.length ?? 0,
+				totalPages: 1,
+				hasNextPage: false,
+				hasPreviousPage: page > 1,
+			},
+		};
 	},
 
-	// 신고 처리
 	processReport: async (
 		id: string,
 		result: 'accepted' | 'rejected',
 		memo?: string,
 		blind?: boolean,
 	): Promise<any> => {
-		try {
-			console.log('신고 처리 요청:', { id, result, memo, blind });
-
-			// 실제 API 호출
-			const response = await axiosServer.patch(`/admin/community/reports/${id}/process`, {
-				result,
-				memo,
-				blind,
-			});
-			console.log('신고 처리 응답:', response.data);
-			return response.data;
-		} catch (error) {
-			console.error('신고 처리 중 오류:', error);
-			throw error;
-		}
+		return adminPatch(`/admin/community/reports/${id}/process`, {
+			result,
+			memo,
+			blind,
+		});
 	},
 
-	// 여러 게시글 일괄 블라인드 처리/해제
 	bulkBlindArticles: async (ids: string[], isBlinded: boolean): Promise<any> => {
-		try {
-			console.log('게시글 일괄 블라인드 처리 요청:', { ids, isBlinded });
-
-			// 단일 게시글 처리인 경우
-			if (ids.length === 1) {
-				// 백엔드 API 호출 (단일 게시글)
-				const response = await axiosServer.patch(`/admin/community/articles/blind`, {
-					id: ids[0],
-					isBlinded,
-				});
-				console.log('게시글 블라인드 처리 응답:', response.data);
-				return response.data;
-			} else {
-				// 여러 게시글 처리 (순차적으로 처리)
-				const results = [];
-				for (const id of ids) {
-					const response = await axiosServer.patch(`/admin/community/articles/blind`, {
-						id,
-						isBlinded,
-					});
-					results.push(response.data);
-				}
-				console.log('게시글 일괄 블라인드 처리 응답:', results);
-				return {
-					success: true,
-					message: `${ids.length}개의 게시글이 ${isBlinded ? '블라인드' : '블라인드 해제'} 처리되었습니다.`,
-					results,
-				};
-			}
-		} catch (error) {
-			console.error('게시글 일괄 블라인드 처리 중 오류:', error);
-			throw error;
-		}
-	},
-
-	// 여러 게시글 일괄 삭제
-	bulkDeleteArticles: async (ids: string[]): Promise<any> => {
-		try {
-			console.log('게시글 일괄 삭제 요청:', ids);
-
-			// 실제 API 호출
-			const response = await axiosServer.delete(`/admin/community/articles/bulk`, {
-				data: { ids },
-			});
-			console.log('게시글 일괄 삭제 응답:', response.data);
-			return response.data;
-		} catch (error) {
-			console.error('게시글 일괄 삭제 중 오류:', error);
-			throw error;
-		}
-	},
-
-	// 여러 댓글 일괄 블라인드 처리/해제
-	bulkBlindComments: async (ids: string[], isBlinded: boolean, reason?: string): Promise<any> => {
-		try {
-			console.log('댓글 일괄 블라인드 처리 요청:', { ids, isBlinded, reason });
-
-			// 실제 API 호출
-			const response = await axiosServer.patch(`/admin/community/comments/bulk/blind`, {
-				ids,
+		if (ids.length === 1) {
+			return adminPatch('/admin/community/articles/blind', {
+				id: ids[0],
 				isBlinded,
-				reason,
 			});
-			console.log('댓글 일괄 블라인드 처리 응답:', response.data);
-			return response.data;
-		} catch (error) {
-			console.error('댓글 일괄 블라인드 처리 중 오류:', error);
-			throw error;
 		}
+
+		const results = [];
+		for (const id of ids) {
+			const response = await adminPatch('/admin/community/articles/blind', {
+				id,
+				isBlinded,
+			});
+			results.push(response);
+		}
+		return {
+			success: true,
+			message: `${ids.length}개의 게시글이 ${isBlinded ? '블라인드' : '블라인드 해제'} 처리되었습니다.`,
+			results,
+		};
 	},
 
-	// 여러 댓글 일괄 삭제
-	bulkDeleteComments: async (ids: string[]): Promise<any> => {
-		try {
-			console.log('댓글 일괄 삭제 요청:', ids);
+	bulkDeleteArticles: async (ids: string[]): Promise<any> => {
+		return adminRequest('/admin/community/articles/bulk', {
+			method: 'DELETE',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ ids }),
+		});
+	},
 
-			// 실제 API 호출
-			const response = await axiosServer.delete(`/admin/community/comments/bulk`, {
-				data: { ids },
-			});
-			console.log('댓글 일괄 삭제 응답:', response.data);
-			return response.data;
-		} catch (error) {
-			console.error('댓글 일괄 삭제 중 오류:', error);
-			throw error;
-		}
+	bulkBlindComments: async (ids: string[], isBlinded: boolean, reason?: string): Promise<any> => {
+		return adminPatch('/admin/community/comments/bulk/blind', {
+			ids,
+			isBlinded,
+			reason,
+		});
+	},
+
+	bulkDeleteComments: async (ids: string[]): Promise<any> => {
+		return adminRequest('/admin/community/comments/bulk', {
+			method: 'DELETE',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ ids }),
+		});
 	},
 };
 
