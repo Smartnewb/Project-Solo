@@ -1,4 +1,4 @@
-import axiosServer from '@/utils/axios';
+import { adminGet, adminPost, adminPatch } from '@/shared/lib/http/admin-fetch';
 
 // ━━━ Profile Review API Version Flag ━━━
 // v1: 안정 (admin/profile-images + admin/user-review)
@@ -111,10 +111,9 @@ export const reports = {
 			const endpoint = `/admin/v2/reports?${queryParams.toString()}`;
 			;
 
-			const response = await axiosServer.get(endpoint);
-			;
+			const response = await adminGet<{ data: any[]; meta: any }>(endpoint);
 
-			const transformedItems = (response.data.data || []).map((item: any) => ({
+			const transformedItems = (response.data || []).map((item: any) => ({
 				id: item.id,
 				reporter: {
 					id: item.reporter?.id || item.reporterId,
@@ -144,7 +143,7 @@ export const reports = {
 
 			return {
 				items: transformedItems,
-				meta: response.data.meta,  // v2: meta lives at response.data.meta
+				meta: response.meta,
 			};
 		} catch (error: any) {
 			throw error;
@@ -153,10 +152,10 @@ export const reports = {
 
 	getProfileReportDetail: async (reportId: string) => {
 		try {
-			const response = await axiosServer.get(
+			const result = await adminGet<{ data: any }>(
 				`/admin/v2/reports/${reportId}`,
 			);
-			return response.data.data;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -169,11 +168,11 @@ export const reports = {
 	) => {
 		try {
 			const backendStatus = status === 'rejected' ? 'dismissed' : status;
-			const response = await axiosServer.patch(
+			const result = await adminPatch<{ data: any }>(
 				`/admin/v2/reports/${reportId}/status`,
 				{ status: backendStatus, reason: adminMemo },
 			);
-			return response.data.data;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -181,10 +180,11 @@ export const reports = {
 
 	getChatHistory: async (chatRoomId: string, page: number = 1, limit: number = 50) => {
 		try {
-			const response = await axiosServer.get(`/admin/community/chat/${chatRoomId}/messages`, {
-				params: { page, limit },
+			const result = await adminGet<any>(`/admin/community/chat/${chatRoomId}/messages`, {
+				page: String(page),
+				limit: String(limit),
 			});
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -192,8 +192,8 @@ export const reports = {
 
 	getUserProfileImages: async (userId: string): Promise<string[]> => {
 		try {
-			const response = await axiosServer.get(`/admin/community/users/${userId}/profile-images`);
-			const images = response.data.images || response.data.data?.images || [];
+			const result = await adminGet<any>(`/admin/community/users/${userId}/profile-images`);
+			const images = result.images || result.data?.images || [];
 			return images.map((img: any) => (typeof img === 'string' ? img : img.url));
 		} catch (error: any) {
 			throw error;
@@ -212,31 +212,32 @@ export const userReview = {
 		try {
 			;
 
-			const params: Record<string, any> = { page, limit };
-			if (search) params.search = search;
-			if (filters?.gender) params.gender = filters.gender;
-			if (filters?.minAge) params.minAge = filters.minAge;
-			if (filters?.maxAge) params.maxAge = filters.maxAge;
-			if (filters?.universityId) params.universityId = filters.universityId;
-			if (filters?.region) params.region = filters.region;
+			const stringParams: Record<string, string> = {
+				page: String(page),
+				limit: String(limit),
+			};
+			if (search) stringParams.search = search;
+			if (filters?.gender) stringParams.gender = filters.gender;
+			if (filters?.minAge) stringParams.minAge = String(filters.minAge);
+			if (filters?.maxAge) stringParams.maxAge = String(filters.maxAge);
+			if (filters?.universityId) stringParams.universityId = filters.universityId;
+			if (filters?.region) stringParams.region = filters.region;
 			if (excludeUserIds && excludeUserIds.length > 0) {
-				params.excludeUserIds = excludeUserIds.join(',');
+				stringParams.excludeUserIds = excludeUserIds.join(',');
 			}
 
 			if (PROFILE_REVIEW_VERSION === 'v1') {
-				const response = await axiosServer.get('/admin/profile-images/pending', { params });
+				const result = await adminGet<any>('/admin/profile-images/pending', stringParams);
 				return {
-					data: response.data.users,
-					meta: response.data.pagination,
+					data: result.users,
+					meta: result.pagination,
 				};
 			}
 
-			const response = await axiosServer.get('/admin/v2/profile-review/pending', {
-				params,
-			});
+			const result = await adminGet<{ data: any; meta: any }>('/admin/v2/profile-review/pending', stringParams);
 
 			;
-			return { data: response.data.data, meta: response.data.meta };
+			return { data: result.data, meta: result.meta };
 		} catch (error: any) {
 			throw error;
 		}
@@ -247,14 +248,14 @@ export const userReview = {
 			;
 
 			if (PROFILE_REVIEW_VERSION === 'v1') {
-				const response = await axiosServer.get(`/admin/user-review/${userId}`);
-				return response.data;
+				const result = await adminGet<any>(`/admin/user-review/${userId}`);
+				return result;
 			}
 
-			const response = await axiosServer.get(`/admin/v2/profile-review/users/${userId}`);
+			const result = await adminGet<{ data: any }>(`/admin/v2/profile-review/users/${userId}`);
 
 			;
-			return response.data.data;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -265,14 +266,14 @@ export const userReview = {
 			;
 
 			if (PROFILE_REVIEW_VERSION === 'v1') {
-				const response = await axiosServer.post(`/admin/user-review/${userId}/approve`);
-				return response.data;
+				const result = await adminPost<any>(`/admin/user-review/${userId}/approve`);
+				return result;
 			}
 
-			const response = await axiosServer.post(`/admin/v2/profile-review/users/${userId}/approve-profile`);
+			const result = await adminPost<{ data: any }>(`/admin/v2/profile-review/users/${userId}/approve-profile`);
 
 			;
-			return response.data.data;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -283,20 +284,20 @@ export const userReview = {
 			;
 
 			if (PROFILE_REVIEW_VERSION === 'v1') {
-				const response = await axiosServer.post(`/admin/user-review/${userId}/reject`, {
+				const result = await adminPost<any>(`/admin/user-review/${userId}/reject`, {
 					category,
 					reason,
 				});
-				return response.data;
+				return result;
 			}
 
-			const response = await axiosServer.post(`/admin/v2/profile-review/users/${userId}/reject-profile`, {
+			const result = await adminPost<{ data: any }>(`/admin/v2/profile-review/users/${userId}/reject-profile`, {
 				category,
 				reason,
 			});
 
 			;
-			return response.data.data;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -338,43 +339,40 @@ export const userReview = {
 			;
 
 			// rank는 v2 전용 — v1에는 엔드포인트 없음
-			const response = await axiosServer.patch(
-				`/admin/v2/profile-review/users/${userId}/rank`,
-				{ rank },
-				{ params: { emitEvent } },
-			);
+			const url = `/admin/v2/profile-review/users/${userId}/rank${emitEvent ? '?emitEvent=true' : ''}`;
+			const result = await adminPatch<{ data: any }>(url, { rank });
 
 			;
-			return response.data.data;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
 	},
 
 	getImageValidation: async (imageId: string) => {
-		const response = await axiosServer.get(`/admin/profile-images/${imageId}/validation`);
-		return response.data;
+		const result = await adminGet<any>(`/admin/profile-images/${imageId}/validation`);
+		return result;
 	},
 
 	getReviewHistory: async (filters: ReviewHistoryFilter = {}): Promise<ReviewHistoryResponse> => {
 		try {
-			const params: Record<string, any> = {};
-			if (filters.page) params.page = filters.page;
-			if (filters.limit) params.limit = filters.limit;
+			const stringParams: Record<string, string> = {};
+			if (filters.page) stringParams.page = String(filters.page);
+			if (filters.limit) stringParams.limit = String(filters.limit);
 			// Backend reviewType = approval/rejection (result type), not admin/auto
 			if (filters.reviewStatus) {
 				const reviewTypeMap: Record<string, string> = { approved: 'approval', rejected: 'rejection' };
-				params.reviewType = reviewTypeMap[filters.reviewStatus] || filters.reviewStatus;
+				stringParams.reviewType = reviewTypeMap[filters.reviewStatus] || filters.reviewStatus;
 			}
-			if (filters.gender) params.gender = filters.gender;
-			if (filters.from) params.from = filters.from;
-			if (filters.to) params.to = filters.to;
-			if (filters.reviewedBy) params.reviewer = filters.reviewedBy;
+			if (filters.gender) stringParams.gender = filters.gender;
+			if (filters.from) stringParams.from = filters.from;
+			if (filters.to) stringParams.to = filters.to;
+			if (filters.reviewedBy) stringParams.reviewer = filters.reviewedBy;
 
 			if (PROFILE_REVIEW_VERSION === 'v1') {
-				const response = await axiosServer.get('/admin/profile-images/review-history', { params });
-				const items = response.data.items || [];
-				const pagination = response.data.pagination || {};
+				const result = await adminGet<any>('/admin/profile-images/review-history', stringParams);
+				const items = result.items || [];
+				const pagination = result.pagination || {};
 				return {
 					items: items.map((item: any) => ({
 						imageId: item.imageId,
@@ -398,12 +396,10 @@ export const userReview = {
 				};
 			}
 
-			const response = await axiosServer.get('/admin/v2/profile-review/history', {
-				params,
-			});
+			const response = await adminGet<{ data: any[]; meta: any }>('/admin/v2/profile-review/history', stringParams);
 
-			const rawItems = response.data.data;
-			const meta = response.data.meta;
+			const rawItems = response.data;
+			const meta = response.meta;
 			const data = (rawItems || []).map((item: any) => ({
 				imageId: item.imageId,
 				imageUrl: item.url,
@@ -443,14 +439,14 @@ export const profileImages = {
 			;
 
 			if (PROFILE_REVIEW_VERSION === 'v1') {
-				const response = await axiosServer.get('/admin/profile-images/pending');
-				return { data: response.data.users, meta: response.data.pagination };
+				const result = await adminGet<any>('/admin/profile-images/pending');
+				return { data: result.users, meta: result.pagination };
 			}
 
-			const response = await axiosServer.get('/admin/v2/profile-review/pending');
+			const result = await adminGet<{ data: any; meta: any }>('/admin/v2/profile-review/pending');
 
 			;
-			return { data: response.data.data, meta: response.data.meta };
+			return { data: result.data, meta: result.meta };
 		} catch (error: any) {
 			throw error;
 		}
@@ -461,14 +457,14 @@ export const profileImages = {
 			;
 
 			if (PROFILE_REVIEW_VERSION === 'v1') {
-				const response = await axiosServer.post(`/admin/profile-images/users/${userId}/approve`);
-				return response.data;
+				const result = await adminPost<any>(`/admin/profile-images/users/${userId}/approve`);
+				return result;
 			}
 
-			const response = await axiosServer.post(`/admin/v2/profile-review/users/${userId}/approve-profile`);
+			const result = await adminPost<{ data: any }>(`/admin/v2/profile-review/users/${userId}/approve-profile`);
 
 			;
-			return response.data.data;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -479,19 +475,19 @@ export const profileImages = {
 			;
 
 			if (PROFILE_REVIEW_VERSION === 'v1') {
-				const response = await axiosServer.post(`/admin/profile-images/users/${userId}/reject`, {
+				const result = await adminPost<any>(`/admin/profile-images/users/${userId}/reject`, {
 					rejectionReason,
 				});
-				return response.data;
+				return result;
 			}
 
-			const response = await axiosServer.post(`/admin/v2/profile-review/users/${userId}/reject-profile`, {
+			const result = await adminPost<{ data: any }>(`/admin/v2/profile-review/users/${userId}/reject-profile`, {
 				category: 'image',
 				reason: rejectionReason,
 			});
 
 			;
-			return response.data.data;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -502,16 +498,16 @@ export const profileImages = {
 			;
 
 			if (PROFILE_REVIEW_VERSION === 'v1') {
-				const response = await axiosServer.post(`/admin/profile-images/${imageId}/approve`);
-				return response.data;
+				const result = await adminPost<any>(`/admin/profile-images/${imageId}/approve`);
+				return result;
 			}
 
-			const response = await axiosServer.post(`/admin/v2/profile-review/images/${imageId}/action`, {
+			const result = await adminPost<{ data: any }>(`/admin/v2/profile-review/images/${imageId}/action`, {
 				action: 'approve',
 			});
 
 			;
-			return response.data.data;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -522,19 +518,19 @@ export const profileImages = {
 			;
 
 			if (PROFILE_REVIEW_VERSION === 'v1') {
-				const response = await axiosServer.post(`/admin/profile-images/${imageId}/reject`, {
+				const result = await adminPost<any>(`/admin/profile-images/${imageId}/reject`, {
 					rejectionReason,
 				});
-				return response.data;
+				return result;
 			}
 
-			const response = await axiosServer.post(`/admin/v2/profile-review/images/${imageId}/action`, {
+			const result = await adminPost<{ data: any }>(`/admin/v2/profile-review/images/${imageId}/action`, {
 				action: 'reject',
 				reason: rejectionReason,
 			});
 
 			;
-			return response.data.data;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -545,13 +541,13 @@ export const profileImages = {
 			;
 
 			// setMainImage는 v2 전용 — v1에는 엔드포인트 없음
-			const response = await axiosServer.post(
+			const result = await adminPost<{ data: any }>(
 				`/admin/v2/profile-review/images/${imageId}/action`,
 				{ action: 'setMain' },
 			);
 
 			;
-			return response.data.data;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
