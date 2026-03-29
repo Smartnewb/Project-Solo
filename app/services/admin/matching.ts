@@ -1,5 +1,4 @@
-import axiosServer from '@/utils/axios';
-import { getCountryHeader } from './_shared';
+import { adminGet, adminPost } from '@/shared/lib/http/admin-fetch';
 
 export const matching = {
 	// 매칭 내역 조회
@@ -11,47 +10,29 @@ export const matching = {
 		name?: string,
 		type?: string,
 	) => {
-		try {
-			;
+		const params: Record<string, string> = {
+			startDate,
+			endDate,
+			page: String(page),
+			limit: String(limit),
+		};
 
-			// 파라미터 객체 생성
-			const params: any = { startDate, endDate, page, limit };
-
-			// 이름 검색어가 있는 경우 추가
-			if (name && name.trim() !== '') {
-				params.name = name.trim();
-			}
-
-			// 매칭 타입이 있는 경우 추가
-			if (type && type !== 'all') {
-				params.type = type;
-			}
-
-			const response = await axiosServer.get('/admin/matching/match-history', {
-				params,
-			});
-
-			;
-			return response.data;
-		} catch (error: any) {
-			throw error;
+		if (name && name.trim() !== '') {
+			params.name = name.trim();
 		}
+
+		if (type && type !== 'all') {
+			params.type = type;
+		}
+
+		const result = await adminGet<any>('/admin/v2/matching', params);
+		return result;
 	},
 
 	// 중복 매칭 여부 확인
 	getMatchCount: async (myId: string, matcherId: string) => {
-		try {
-			;
-
-			const response = await axiosServer.get('/admin/matching/match-count', {
-				params: { myId, matcherId },
-			});
-
-			;
-			return response.data;
-		} catch (error: any) {
-			throw error;
-		}
+		const result = await adminGet<any>('/admin/matching/match-count', { myId, matcherId });
+		return result;
 	},
 
 	// 사용자 매칭 횟수 조회
@@ -61,22 +42,12 @@ export const matching = {
 		startDate?: string,
 		endDate?: string,
 	) => {
-		try {
-			;
+		const params: Record<string, string> = { myId, matcherId };
+		if (startDate) params.startDate = startDate;
+		if (endDate) params.endDate = endDate;
 
-			const params: any = { myId, matcherId };
-			if (startDate) params.startDate = startDate;
-			if (endDate) params.endDate = endDate;
-
-			const response = await axiosServer.get('/admin/matching/match-count', {
-				params,
-			});
-
-			;
-			return response.data;
-		} catch (error: any) {
-			throw error;
-		}
+		const result = await adminGet<any>('/admin/matching/match-count', params);
+		return result;
 	},
 
 	// 특정 사용자가 매칭 상대로 선택된 이력 조회
@@ -88,24 +59,20 @@ export const matching = {
 		limit: number = 10,
 		name?: string,
 	) => {
-		try {
-			;
+		const params: Record<string, string> = {
+			matcherId,
+			startDate,
+			endDate,
+			page: String(page),
+			limit: String(limit),
+		};
 
-			// 파라미터 객체 생성
-			const params: any = { matcherId, startDate, endDate, page, limit };
-
-			// 이름 검색어가 있는 경우 추가
-			if (name && name.trim() !== '') {
-				params.name = name.trim();
-			}
-
-			const response = await axiosServer.get('/admin/matching/match-history', { params });
-
-			;
-			return response.data;
-		} catch (error: any) {
-			throw error;
+		if (name && name.trim() !== '') {
+			params.name = name.trim();
 		}
+
+		const result = await adminGet<any>('/admin/v2/matching', params);
+		return result;
 	},
 
 	// 직접 매칭 생성
@@ -114,68 +81,40 @@ export const matching = {
 		targetId: string,
 		type: 'rematching' | 'scheduled',
 	) => {
-		try {
-			;
-
-			const response = await axiosServer.post('/admin/matching/direct-match', {
-				requesterId,
-				targetId,
-				type,
-			});
-
-			;
-			return response.data;
-		} catch (error: any) {
-			throw error;
-		}
+		const result = await adminPost<any>('/admin/matching/direct-match', {
+			requesterId,
+			targetId,
+			type,
+		});
+		return result;
 	},
 
 	// 매칭 실패 내역 조회
 	getFailureLogs: async (date: string, page: number = 1, limit: number = 10, reason?: string) => {
-		try {
-			;
+		const params: Record<string, string> = {
+			startDate: date,
+			endDate: date,
+			page: String(page),
+			limit: String(limit),
+		};
 
-			// 백엔드 DTO: { startDate, endDate, page, limit, reason }
-			const params: any = {
-				startDate: date,
-				endDate: date,
-				page,
-				limit,
-			};
-
-			// 사유 검색어가 있는 경우 추가
-			if (reason && reason.trim() !== '') {
-				params.reason = reason.trim();
-			}
-
-			const response = await axiosServer.get('/admin/matching/failure-logs', {
-				params,
-			});
-
-			;
-			return response.data;
-		} catch (error: any) {
-			throw error;
+		if (reason && reason.trim() !== '') {
+			params.reason = reason.trim();
 		}
+
+		const result = await adminGet<any>('/admin/matching/failure-logs', params);
+		return result;
 	},
 
 	// 특정 사용자의 매칭 결과만 조회
 	findMatches: async (userId: string, options?: any) => {
-		try {
-			;
+		const requestData = {
+			userId,
+			...options,
+		};
 
-			const requestData = {
-				userId,
-				...options,
-			};
-
-			const response = await axiosServer.post('/admin/matching/user/read', requestData);
-			;
-
-			return response.data;
-		} catch (error: any) {
-			throw error;
-		}
+		const result = await adminPost<any>('/admin/matching/user/read', requestData);
+		return result;
 	},
 
 	// 매칭되지 않은 사용자 조회
@@ -185,54 +124,27 @@ export const matching = {
 		name?: string,
 		gender?: string,
 	) => {
-		try {
-			;
+		const params: Record<string, string> = {
+			page: String(page),
+			limit: String(limit),
+		};
+		if (name) params.name = name;
+		if (gender && gender !== 'all') params.gender = gender;
 
-			const params: any = { page, limit };
-			if (name) params.name = name;
-			if (gender && gender !== 'all') params.gender = gender;
-
-			const response = await axiosServer.get('/admin/matching/unmatched-users', {
-				params,
-			});
-			;
-
-			return response.data;
-		} catch (error: any) {
-			throw error;
-		}
+		const result = await adminGet<any>('/admin/matching/unmatched-users', params);
+		return result;
 	},
 
 	// 배치 매칭 처리
 	processBatchMatching: async () => {
-		try {
-			;
-
-			const response = await axiosServer.post('/admin/matching/batch');
-			;
-
-			return response.data;
-		} catch (error: any) {
-			throw error;
-		}
+		const result = await adminPost<any>('/admin/matching/batch');
+		return result;
 	},
 
 	// 단일 사용자 매칭 처리
 	processSingleMatching: async (userId: string) => {
-		try {
-			;
-
-			const requestData = {
-				userId,
-			};
-
-			const response = await axiosServer.post('/admin/matching/user', requestData);
-			;
-
-			return response.data;
-		} catch (error: any) {
-			throw error;
-		}
+		const result = await adminPost<any>('/admin/matching/user', { userId });
+		return result;
 	},
 
 	// 좋아요 이력 조회
@@ -243,39 +155,33 @@ export const matching = {
 		limit: number = 10,
 		name?: string,
 	) => {
-		try {
-			;
+		const params: Record<string, string> = {
+			startDate,
+			endDate,
+			page: String(page),
+			limit: String(limit),
+		};
 
-			// 파라미터 객체 생성
-			const params: any = { startDate, endDate, page, limit };
-
-			// 이름 검색어가 있는 경우 추가
-			if (name && name.trim() !== '') {
-				params.name = name.trim();
-			}
-
-			const response = await axiosServer.get('/admin/matching/like-history', {
-				params,
-			});
-
-			;
-			return response.data;
-		} catch (error: any) {
-			throw error;
+		if (name && name.trim() !== '') {
+			params.name = name.trim();
 		}
+
+		const result = await adminGet<any>('/admin/matching/like-history', params);
+		return result;
 	},
 
 	getMatchingStats: async (
 		period: 'daily' | 'weekly' | 'monthly' = 'daily',
 		university?: string,
-	): Promise<Record<string, number> | null> => {
+	): Promise<any> => {
 		try {
-			const response = await axiosServer.get('/admin/matching/stats', {
-				params: { period, university },
-			});
-			return response.data;
+			const params: Record<string, string> = { period };
+			if (university) params.university = university;
+
+			const result = await adminGet<{ data: any; meta?: any }>('/admin/v2/matching/stats', params);
+			return result;
 		} catch (error: any) {
-			if (error?.response?.status === 404) {
+			if (error?.status === 404 || error?.response?.status === 404) {
 				return null;
 			}
 			throw error;
@@ -293,38 +199,25 @@ export const forceMatching = {
 		page?: number;
 		limit?: number;
 	}) => {
-		try {
-			const country = getCountryHeader();
-			// API 스펙: gender는 대문자(MALE, FEMALE), status는 소문자(approved)
-			const genderParam = params.gender ? params.gender.toUpperCase() : undefined;
-			const statusParam = (params.status || 'approved').toLowerCase();
+		// API 스펙: gender는 대문자(MALE, FEMALE), status는 소문자(approved)
+		const genderParam = params.gender ? params.gender.toUpperCase() : undefined;
+		const statusParam = (params.status || 'approved').toLowerCase();
 
-			const response = await axiosServer.get('/admin/users', {
-				params: {
-					search: params.search,
-					gender: genderParam,
-					status: statusParam,
-					page: params.page || 1,
-					limit: params.limit || 10,
-				},
-				headers: { 'X-Country': country },
-			});
-			return response.data;
-		} catch (error: any) {
-			throw error;
-		}
+		const queryParams: Record<string, string> = {
+			status: statusParam,
+			page: String(params.page || 1),
+			limit: String(params.limit || 10),
+		};
+		if (params.search) queryParams.search = params.search;
+		if (genderParam) queryParams.gender = genderParam;
+
+		const result = await adminGet<any>('/admin/users', queryParams);
+		return result;
 	},
 
 	// 강제 채팅방 생성
 	createForceChatRoom: async (data: { userIdA: string; userIdB: string; reason?: string }) => {
-		try {
-			const country = getCountryHeader();
-			const response = await axiosServer.post('/admin/force-chat-room', data, {
-				headers: { 'X-Country': country },
-			});
-			return response.data;
-		} catch (error: any) {
-			throw error;
-		}
+		const result = await adminPost<any>('/admin/v2/matching/force', data);
+		return result;
 	},
 };
