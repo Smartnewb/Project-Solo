@@ -11,10 +11,14 @@ import {
   ActionableInsightsResponse,
 } from "@/app/admin/dashboard/types";
 
+interface V2Response<T> {
+  data: T;
+}
+
 const DASHBOARD_ENDPOINT = {
-  SUMMARY: "/admin/dashboard/summary",
+  SUMMARY: "/admin/v2/dashboard/summary",
   MATCHING_FUNNEL: "/admin/dashboard/matching/funnel",
-  HOURLY_SIGNUPS: "/admin/dashboard/stats/signups/hourly",
+  HOURLY_SIGNUPS: "/admin/v2/dashboard/signups",
   GOALS: "/admin/goals",
   GEM_SYSTEM_FUNNEL: "/admin/dashboard/matching/gem-system-funnel",
   ACTIONABLE_INSIGHTS: "/admin/dashboard/actionable-insights",
@@ -24,7 +28,8 @@ export const dashboardService = {
   // 통합 요약 조회
   async getSummary(): Promise<DashboardSummaryResponse> {
     try {
-      return await adminGet<DashboardSummaryResponse>(DASHBOARD_ENDPOINT.SUMMARY);
+      const res = await adminGet<V2Response<DashboardSummaryResponse>>(DASHBOARD_ENDPOINT.SUMMARY);
+      return res.data;
     } catch (error) {
       console.error("대시보드 요약 조회 실패:", error);
       throw error instanceof AdminApiError
@@ -54,9 +59,10 @@ export const dashboardService = {
   // 시간별 가입자 추이 조회
   async getHourlySignups(date: string): Promise<HourlySignupsResponse> {
     try {
-      return await adminGet<HourlySignupsResponse>(DASHBOARD_ENDPOINT.HOURLY_SIGNUPS, {
+      const res = await adminGet<V2Response<HourlySignupsResponse>>(DASHBOARD_ENDPOINT.HOURLY_SIGNUPS, {
         date,
       });
+      return res.data;
     } catch (error) {
       console.error("시간별 가입자 추이 조회 실패:", error);
       throw error instanceof AdminApiError
