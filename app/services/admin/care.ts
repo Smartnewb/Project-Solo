@@ -1,5 +1,4 @@
-import axiosServer from '@/utils/axios';
-import { getCountryHeader } from './_shared';
+import { adminGet, adminPost } from '@/shared/lib/http/admin-fetch';
 
 export interface CareTarget {
 	id: string;
@@ -75,44 +74,23 @@ export interface CareLogsResponse {
 
 export const care = {
 	getTargets: async (params: { page?: number; limit?: number; search?: string }) => {
-		const country = getCountryHeader();
-		const response = await axiosServer.get<CareTargetsResponse>('/admin/care/targets', {
-			params,
-			headers: { 'X-Country': country },
-		});
-		return response.data;
+		const stringParams: Record<string, string> = {};
+		if (params.page != null) stringParams.page = String(params.page);
+		if (params.limit != null) stringParams.limit = String(params.limit);
+		if (params.search != null) stringParams.search = params.search;
+		return adminGet<CareTargetsResponse>('/admin/care/targets', stringParams);
 	},
 
 	getPartners: async (userId: string, limit: number = 10) => {
-		const country = getCountryHeader();
-		const response = await axiosServer.get<CarePartner[]>(
-			`/admin/care/targets/${userId}/partners`,
-			{
-				params: { limit },
-				headers: { 'X-Country': country },
-			},
-		);
-		return response.data;
+		return adminGet<CarePartner[]>(`/admin/care/targets/${userId}/partners`, { limit: String(limit) });
 	},
 
 	execute: async (body: CareExecuteRequest) => {
-		const country = getCountryHeader();
-		const response = await axiosServer.post<CareExecuteResponse>(
-			'/admin/care/execute',
-			body,
-			{ headers: { 'X-Country': country } },
-		);
-		return response.data;
+		return adminPost<CareExecuteResponse>('/admin/care/execute', body);
 	},
 
 	dismiss: async (targetId: string) => {
-		const country = getCountryHeader();
-		const response = await axiosServer.post<{ success: boolean }>(
-			`/admin/care/targets/${targetId}/dismiss`,
-			{},
-			{ headers: { 'X-Country': country } },
-		);
-		return response.data;
+		return adminPost<{ success: boolean }>(`/admin/care/targets/${targetId}/dismiss`);
 	},
 
 	getLogs: async (params: {
@@ -121,11 +99,11 @@ export const care = {
 		targetUserId?: string;
 		action?: string;
 	}) => {
-		const country = getCountryHeader();
-		const response = await axiosServer.get<CareLogsResponse>('/admin/care/logs', {
-			params,
-			headers: { 'X-Country': country },
-		});
-		return response.data;
+		const stringParams: Record<string, string> = {};
+		if (params.page != null) stringParams.page = String(params.page);
+		if (params.limit != null) stringParams.limit = String(params.limit);
+		if (params.targetUserId != null) stringParams.targetUserId = params.targetUserId;
+		if (params.action != null) stringParams.action = params.action;
+		return adminGet<CareLogsResponse>('/admin/care/logs', stringParams);
 	},
 };
