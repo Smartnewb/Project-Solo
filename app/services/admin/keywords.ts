@@ -1,5 +1,4 @@
-import axiosServer from '@/utils/axios';
-import { getCountryHeader } from './_shared';
+import { adminGet, adminPatch, adminDelete } from '@/shared/lib/http/admin-fetch';
 
 export const KEYWORD_CATEGORIES = {
 	HOBBY: '취미',
@@ -34,51 +33,38 @@ export interface KeywordsResponse {
 
 export const keywords = {
 	getAll: async (params: { page?: number; pageSize?: number; search?: string }) => {
-		const country = getCountryHeader();
-		const response = await axiosServer.get<KeywordsResponse>('/v4/admin/keywords', {
-			params,
-			headers: { 'X-Country': country },
-		});
-		return response.data;
+		const queryParams: Record<string, string> = {};
+		if (params.page != null) queryParams.page = String(params.page);
+		if (params.pageSize != null) queryParams.pageSize = String(params.pageSize);
+		if (params.search) queryParams.search = params.search;
+		return adminGet<KeywordsResponse>('/v4/admin/keywords', queryParams);
 	},
 
 	updateIcon: async (normalizedKeyword: string, iconUrl: string) => {
-		const country = getCountryHeader();
-		const response = await axiosServer.patch<{ success: boolean }>(
+		return adminPatch<{ success: boolean }>(
 			'/v4/admin/keywords/icon',
 			{ normalizedKeyword, iconUrl },
-			{ headers: { 'X-Country': country } },
 		);
-		return response.data;
 	},
 
 	updateName: async (oldKeyword: string, newKeyword: string) => {
-		const country = getCountryHeader();
-		const response = await axiosServer.patch<{ updatedCount: number }>(
+		return adminPatch<{ updatedCount: number }>(
 			'/v4/admin/keywords/name',
 			{ oldKeyword, newKeyword },
-			{ headers: { 'X-Country': country } },
 		);
-		return response.data;
 	},
 
 	updateCategory: async (normalizedKeyword: string, category: KeywordCategory) => {
-		const country = getCountryHeader();
-		const response = await axiosServer.patch<{ updatedCount: number }>(
+		return adminPatch<{ updatedCount: number }>(
 			'/v4/admin/keywords/category',
 			{ normalizedKeyword, category },
-			{ headers: { 'X-Country': country } },
 		);
-		return response.data;
 	},
 
 	delete: async (keyword: string) => {
-		const country = getCountryHeader();
 		const encoded = encodeURIComponent(keyword);
-		const response = await axiosServer.delete<{ deletedCount: number }>(
+		return adminDelete<{ deletedCount: number }>(
 			`/v4/admin/keywords/${encoded}`,
-			{ headers: { 'X-Country': country } },
 		);
-		return response.data;
 	},
 };
