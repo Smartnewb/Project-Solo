@@ -21,17 +21,28 @@ export interface DailyRevenueTrend {
   count: number;
 }
 
+// V2 API wraps responses in { data: T } via V2ResponseInterceptor
+interface V2Response<T> {
+  data: T;
+}
+
 export const revenueV2 = {
-  getSummary: (startDate: string, endDate: string) =>
-    adminRequest<RevenueSummary>(
+  getSummary: async (startDate: string, endDate: string) => {
+    const res = await adminRequest<V2Response<RevenueSummary>>(
       `/admin/v2/revenue/summary?startDate=${startDate}&endDate=${endDate}`,
-    ),
-  getBreakdown: (startDate: string, endDate: string) =>
-    adminRequest<RevenueBreakdown>(
+    );
+    return res.data;
+  },
+  getBreakdown: async (startDate: string, endDate: string) => {
+    const res = await adminRequest<V2Response<RevenueBreakdown>>(
       `/admin/v2/revenue/breakdown?startDate=${startDate}&endDate=${endDate}`,
-    ),
-  getDailyTrend: (startDate: string, endDate: string) =>
-    adminRequest<DailyRevenueTrend[]>(
+    );
+    return res.data;
+  },
+  getDailyTrend: async (startDate: string, endDate: string) => {
+    const res = await adminRequest<V2Response<DailyRevenueTrend[]>>(
       `/admin/v2/revenue/daily-trend?startDate=${startDate}&endDate=${endDate}`,
-    ),
+    );
+    return res.data;
+  },
 };
