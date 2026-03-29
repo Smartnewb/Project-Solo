@@ -21,6 +21,7 @@ const ALLOWED_PATH_PREFIXES = [
 	'revenue/',
 	'matching/',
 	'support-chat/',
+	'v4/admin/',
 ];
 
 function isPathAllowed(targetPath: string): boolean {
