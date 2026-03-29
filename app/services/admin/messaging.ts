@@ -1,4 +1,4 @@
-import axiosServer from '@/utils/axios';
+import { adminGet, adminPost, adminPut, adminDelete } from '@/shared/lib/http/admin-fetch';
 import type {
 	BulkCreateQuestionsRequest,
 	BulkCreateQuestionsResponse,
@@ -27,12 +27,12 @@ export const pushNotifications = {
 		limit: number = 20,
 	) => {
 		try {
-			const response = await axiosServer.post('/admin/push-notifications/filter-users', {
+			const result = await adminPost<any>('/admin/push-notifications/filter-users', {
 				...filters,
 				page,
 				limit,
 			});
-			return response.data;
+			return result;
 		} catch (error) {
 			throw error;
 		}
@@ -48,8 +48,12 @@ export const pushNotifications = {
 		totalCount: number;
 	}> => {
 		try {
-			const response = await axiosServer.post('/admin/notifications/bulk', data);
-			return response.data;
+			const result = await adminPost<{
+				successCount: number;
+				failureCount: number;
+				totalCount: number;
+			}>('/admin/notifications/bulk', data);
+			return result;
 		} catch (error) {
 			throw error;
 		}
@@ -70,16 +74,15 @@ export const aiChat = {
 		limit?: number;
 	}) => {
 		try {
-			const queryParams = new URLSearchParams();
+			const stringParams: Record<string, string> = {};
 			Object.entries(params).forEach(([key, value]) => {
 				if (value !== undefined && value !== null && value !== '') {
-					queryParams.append(key, String(value));
+					stringParams[key] = String(value);
 				}
 			});
 
-			const response = await axiosServer.get(`/admin/v2/ai-chat/sessions?${queryParams.toString()}`);
-			;
-			return response.data.data;
+			const result = await adminGet<{ data: any }>('/admin/v2/ai-chat/sessions', stringParams);
+			return result.data;
 		} catch (error) {
 			throw error;
 		}
@@ -88,9 +91,8 @@ export const aiChat = {
 	// AI 채팅 메시지 상세 조회
 	getMessages: async (sessionId: string) => {
 		try {
-			const response = await axiosServer.get(`/admin/v2/ai-chat/sessions/${sessionId}/messages`);
-			;
-			const raw = response.data?.data ?? {};
+			const result = await adminGet<{ data: any }>(`/admin/v2/ai-chat/sessions/${sessionId}/messages`);
+			const raw = result.data ?? {};
 			return {
 				messages: raw.items || [],
 				totalCount: raw.totalCount || 0,
@@ -105,13 +107,11 @@ export const aiChat = {
 export const momentQuestions = {
 	generate: async (data: GenerateQuestionsRequest): Promise<GenerateQuestionsResponse> => {
 		try {
-			;
-			const response = await axiosServer.post<GenerateQuestionsResponse>(
+			const result = await adminPost<GenerateQuestionsResponse>(
 				'/admin/questions/generate',
 				data,
 			);
-			;
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -119,13 +119,11 @@ export const momentQuestions = {
 
 	bulkCreate: async (data: BulkCreateQuestionsRequest): Promise<BulkCreateQuestionsResponse> => {
 		try {
-			;
-			const response = await axiosServer.post<BulkCreateQuestionsResponse>(
+			const result = await adminPost<BulkCreateQuestionsResponse>(
 				'/admin/questions/bulk-create',
 				data,
 			);
-			;
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -133,22 +131,18 @@ export const momentQuestions = {
 
 	getList: async (params: GetQuestionsParams = {}): Promise<QuestionListResponse> => {
 		try {
-			;
-			const queryParams: Record<string, string | number | boolean> = {};
+			const stringParams: Record<string, string> = {};
 
-			if (params.dimension) queryParams.dimension = params.dimension;
-			if (params.schema) queryParams.schema = params.schema;
-			if (params.isActive !== undefined) queryParams.isActive = params.isActive;
-			if (params.search) queryParams.search = params.search;
-			if (params.page) queryParams.page = params.page;
-			if (params.limit) queryParams.limit = params.limit;
-			if (params.translationStatus) queryParams.translationStatus = params.translationStatus;
+			if (params.dimension) stringParams.dimension = params.dimension;
+			if (params.schema) stringParams.schema = params.schema;
+			if (params.isActive !== undefined) stringParams.isActive = String(params.isActive);
+			if (params.search) stringParams.search = params.search;
+			if (params.page) stringParams.page = String(params.page);
+			if (params.limit) stringParams.limit = String(params.limit);
+			if (params.translationStatus) stringParams.translationStatus = params.translationStatus;
 
-			const response = await axiosServer.get<QuestionListResponse>('/admin/questions', {
-				params: queryParams,
-			});
-			;
-			return response.data;
+			const result = await adminGet<QuestionListResponse>('/admin/questions', stringParams);
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -156,10 +150,8 @@ export const momentQuestions = {
 
 	getDetail: async (id: string): Promise<QuestionDetail> => {
 		try {
-			;
-			const response = await axiosServer.get<QuestionDetail>(`/admin/questions/${id}`);
-			;
-			return response.data;
+			const result = await adminGet<QuestionDetail>(`/admin/questions/${id}`);
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -167,10 +159,8 @@ export const momentQuestions = {
 
 	update: async (id: string, data: UpdateQuestionRequest): Promise<QuestionDetail> => {
 		try {
-			;
-			const response = await axiosServer.put<QuestionDetail>(`/admin/questions/${id}`, data);
-			;
-			return response.data;
+			const result = await adminPut<QuestionDetail>(`/admin/questions/${id}`, data);
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
@@ -178,9 +168,7 @@ export const momentQuestions = {
 
 	delete: async (id: string): Promise<void> => {
 		try {
-			;
-			await axiosServer.delete(`/admin/questions/${id}`);
-			;
+			await adminDelete(`/admin/questions/${id}`);
 		} catch (error: any) {
 			throw error;
 		}
@@ -188,13 +176,11 @@ export const momentQuestions = {
 
 	translate: async (data: TranslateQuestionsRequest): Promise<TranslateQuestionsResponse> => {
 		try {
-			;
-			const response = await axiosServer.post<TranslateQuestionsResponse>(
+			const result = await adminPost<TranslateQuestionsResponse>(
 				'/admin/questions/translate',
 				data,
 			);
-			;
-			return response.data;
+			return result;
 		} catch (error: any) {
 			throw error;
 		}

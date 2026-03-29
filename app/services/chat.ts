@@ -1,4 +1,4 @@
-import axiosServer from '@/utils/axios';
+import { adminGet, buildAdminProxyUrl } from '@/shared/lib/http/admin-fetch';
 
 export type DatePreset = 'today' | 'yesterday' | '7days' | '14days' | '30days' | 'all';
 
@@ -113,22 +113,22 @@ export interface ChatCsvExportParams {
 class ChatService {
   async getChatRooms(params: ChatRoomsParams): Promise<ChatRoomsResponse> {
     try {
-      const response = await axiosServer.get<{
+      const stringParams: Record<string, string> = {
+        page: String(params.page || 1),
+        limit: String(params.limit || 20),
+      };
+      if (params.startDate) stringParams.startDate = params.startDate;
+      if (params.endDate) stringParams.endDate = params.endDate;
+      if (params.preset) stringParams.preset = params.preset;
+      if (params.searchName) stringParams.searchName = params.searchName;
+
+      const raw = await adminGet<{
         data: ChatRoom[];
         meta: { total: number; page: number; limit: number; totalPages: number };
         appliedStartDate: string | null;
         appliedEndDate: string | null;
-      }>('/admin/v2/chat/rooms', {
-        params: {
-          startDate: params.startDate,
-          endDate: params.endDate,
-          preset: params.preset,
-          searchName: params.searchName,
-          page: params.page || 1,
-          limit: params.limit || 20
-        }
-      });
-      const raw = response.data;
+      }>('/admin/v2/chat/rooms', stringParams);
+
       return {
         chatRooms: raw.data,
         total: raw.meta.total,
@@ -146,15 +146,15 @@ class ChatService {
 
   async getChatMessages(params: ChatMessagesParams): Promise<ChatMessagesResponse> {
     try {
-      const response = await axiosServer.get<{ data: ChatMessagesResponse }>(
+      const stringParams: Record<string, string> = {
+        limit: String(params.limit || 50),
+      };
+
+      const result = await adminGet<{ data: ChatMessagesResponse }>(
         `/admin/v2/chat/rooms/${params.chatRoomId}/messages`,
-        {
-          params: {
-            limit: params.limit || 50,
-          }
-        }
+        stringParams,
       );
-      return response.data.data;
+      return result.data;
     } catch (error: any) {
       console.error('채팅 메시지 조회 실패:', error);
       throw new Error(error.response?.data?.message || '채팅 메시지를 불러오는데 실패했습니다.');
@@ -163,14 +163,16 @@ class ChatService {
 
   async getChatStats(params: ChatStatsParams = {}): Promise<ChatStatsResponse> {
     try {
-      const response = await axiosServer.get<{ data: ChatStatsResponse }>('/admin/v2/chat/stats', {
-        params: {
-          startDate: params.startDate,
-          endDate: params.endDate,
-          preset: params.preset,
-        }
-      });
-      return response.data.data;
+      const stringParams: Record<string, string> = {};
+      if (params.startDate) stringParams.startDate = params.startDate;
+      if (params.endDate) stringParams.endDate = params.endDate;
+      if (params.preset) stringParams.preset = params.preset;
+
+      const result = await adminGet<{ data: ChatStatsResponse }>(
+        '/admin/v2/chat/stats',
+        stringParams,
+      );
+      return result.data;
     } catch (error: any) {
       console.error('채팅 통계 조회 실패:', error);
       throw new Error(error.response?.data?.message || '채팅 통계를 불러오는데 실패했습니다.');
@@ -179,24 +181,25 @@ class ChatService {
 
   async exportChatsToCsv(params: ChatCsvExportParams = {}): Promise<void> {
     try {
-      const response = await axiosServer.get('/admin/v2/chat/export', {
-        params: {
-          startDate: params.startDate,
-          endDate: params.endDate,
-          preset: params.preset,
-        },
-        responseType: 'blob'
-      });
+      const queryParams = new URLSearchParams();
+      if (params.startDate) queryParams.set('startDate', params.startDate);
+      if (params.endDate) queryParams.set('endDate', params.endDate);
+      if (params.preset) queryParams.set('preset', params.preset);
+      const queryString = queryParams.toString();
+      const url = buildAdminProxyUrl(`/admin/v2/chat/export${queryString ? `?${queryString}` : ''}`);
 
-      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8' });
-      const url = window.URL.createObjectURL(blob);
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('CSV 내보내기에 실패했습니다.');
+
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = url;
+      link.href = blobUrl;
       link.setAttribute('download', `chat_export_${new Date().toISOString().split('T')[0]}.csv`);
       document.body.appendChild(link);
       link.click();
       link.remove();
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(blobUrl);
     } catch (error: any) {
       console.error('채팅 CSV 내보내기 실패:', error);
       throw new Error(error.response?.data?.message || 'CSV 내보내기에 실패했습니다.');
