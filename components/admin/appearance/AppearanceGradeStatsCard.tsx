@@ -8,8 +8,10 @@ import {
   Grid,
   Chip,
   Divider,
-  LinearProgress
+  LinearProgress,
+  Alert
 } from '@mui/material';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { UserAppearanceGradeStatsResponse, AppearanceGrade } from '@/app/admin/users/appearance/types';
 import { getRegionLabel } from '@/components/admin/common/RegionFilter';
@@ -298,6 +300,24 @@ export default function AppearanceGradeStatsCard({ stats }: AppearanceGradeStats
         </Grid>
 
         <Divider sx={{ my: 3 }} />
+
+        {/* 미분류 안내 */}
+        <Alert
+          severity="info"
+          icon={<InfoOutlinedIcon />}
+          sx={{ mb: 3 }}
+        >
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>
+            미분류(UNKNOWN) 안내
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+            • 신규 가입 후 어드민이 등급을 부여하지 않은 사용자
+            <br />
+            • 7일 이상 미접속하여 등급이 자동 초기화된 사용자 (재접속 시 복원)
+            <br />
+            • 미분류 사용자는 매칭에서 제외됩니다
+          </Typography>
+        </Alert>
 
         {/* 등급별 상세 통계 */}
         <Grid container spacing={2}>
