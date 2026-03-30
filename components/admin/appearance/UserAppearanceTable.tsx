@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import {
   Box,
   Table,
@@ -17,7 +17,6 @@ import {
   Typography,
   CircularProgress,
   Alert,
-  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -29,9 +28,10 @@ import {
   Checkbox,
   Tooltip,
   Menu,
-  Link
+  Link,
+  Stack,
+  alpha,
 } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import AdminService from '@/app/services/admin';
@@ -39,58 +39,75 @@ import {
   UserProfileWithAppearance,
   AppearanceGrade,
   Gender,
-  PaginatedResponse,
-  UserStatus
+  UserStatus,
 } from '@/app/admin/users/appearance/types';
-import { formatDateWithoutTimezoneConversion, formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
+import {
+  formatDateWithoutTimezoneConversion,
+  formatDateTimeWithoutTimezoneConversion,
+} from '@/app/utils/formatters';
 import { appearanceGradeEventBus } from '@/app/admin/users/appearance/event-bus';
 import UserDetailModal, { UserDetail } from './UserDetailModal';
 import BulkEmailNotificationModal from './modals/BulkEmailNotificationModal';
 
-// 등급 색상 정의
 const GRADE_COLORS: Record<AppearanceGrade, string> = {
-  'S': '#8E44AD', // 보라색
-  'A': '#3498DB', // 파란색
-  'B': '#2ECC71', // 초록색
-  'C': '#F39C12', // 주황색
-  'UNKNOWN': '#95A5A6' // 회색
+  S: '#7C3AED',
+  A: '#2563EB',
+  B: '#059669',
+  C: '#D97706',
+  UNKNOWN: '#94A3B8',
 };
 
-// 등급 한글 표시
 const GRADE_LABELS: Record<AppearanceGrade, string> = {
-  'S': 'S등급',
-  'A': 'A등급',
-  'B': 'B등급',
-  'C': 'C등급',
-  'UNKNOWN': '미분류'
+  S: 'S',
+  A: 'A',
+  B: 'B',
+  C: 'C',
+  UNKNOWN: '미분류',
 };
 
-// 성별 한글 표시
 const GENDER_LABELS: Record<Gender, string> = {
-  'MALE': '남성',
-  'FEMALE': '여성'
+  MALE: '남',
+  FEMALE: '여',
 };
 
-// 지역 한글 표시
 const getRegionLabel = (region?: string) => {
   const regionMap: Record<string, string> = {
-    'DJN': '대전',
-    'SJG': '세종',
-    'CJU': '청주',
-    'BSN': '부산',
-    'DGU': '대구',
-    'GJJ': '공주',
-    'GHE': '김해',
-    'ICN': '인천',
-    'SEL': '서울',
-    'KYG': '경기',
-    'CAN': '천안',
-    'GWJ': '광주',
-    'GNG': '강원',
-    'JJA': '제주'
+    DJN: '대전',
+    SJG: '세종',
+    CJU: '청주',
+    BSN: '부산',
+    DGU: '대구',
+    GJJ: '공주',
+    GHE: '김해',
+    ICN: '인천',
+    SEL: '서울',
+    KYG: '경기',
+    CAN: '천안',
+    GWJ: '광주',
+    GNG: '강원',
+    JJA: '제주',
   };
   return region ? regionMap[region] || region : '-';
 };
+
+const headerCellSx = {
+  whiteSpace: 'nowrap',
+  fontWeight: 600,
+  fontSize: '0.8125rem',
+  color: '#475569',
+  bgcolor: '#F8FAFC',
+  borderBottom: '2px solid #E2E8F0',
+  py: 1.5,
+  px: 1.5,
+} as const;
+
+const bodyCellSx = {
+  whiteSpace: 'nowrap',
+  py: 1.25,
+  px: 1.5,
+  fontSize: '0.8125rem',
+  borderBottom: '1px solid #F1F5F9',
+} as const;
 
 interface UserAppearanceTableProps {
   initialFilters?: {
@@ -108,834 +125,737 @@ interface UserAppearanceTableProps {
   userStatus?: UserStatus;
 }
 
-// forwardRef를 사용하여 ref를 전달받을 수 있도록 수정
-import { forwardRef, useImperativeHandle } from 'react';
-
-// 타입 선언 (TypeScript 오류 방지)
 interface UserAppearanceTableRef {
   handleApplyFilter: (filters: any) => void;
 }
 
-const UserAppearanceTable = forwardRef<
-  UserAppearanceTableRef,
-  UserAppearanceTableProps
->(({ initialFilters, userStatus }, ref) => {
-  const [users, setUsers] = useState<UserProfileWithAppearance[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [totalItems, setTotalItems] = useState(0);
-  const [filters, setFilters] = useState(initialFilters || {});
+const UserAppearanceTable = forwardRef<UserAppearanceTableRef, UserAppearanceTableProps>(
+  ({ initialFilters, userStatus }, ref) => {
+    const [users, setUsers] = useState<UserProfileWithAppearance[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
+    const [totalItems, setTotalItems] = useState(0);
+    const [filters, setFilters] = useState(initialFilters || {});
 
-  // 등급 설정 상태
-  const [selectedUser, setSelectedUser] = useState<UserProfileWithAppearance | null>(null);
-  const [selectedGrade, setSelectedGrade] = useState<AppearanceGrade>('UNKNOWN');
-  const [savingGrade, setSavingGrade] = useState(false);
-  const [gradeMenuAnchorEl, setGradeMenuAnchorEl] = useState<null | HTMLElement>(null);
-  const [activeUserId, setActiveUserId] = useState<string | null>(null);
+    const [selectedUser, setSelectedUser] = useState<UserProfileWithAppearance | null>(null);
+    const [selectedGrade, setSelectedGrade] = useState<AppearanceGrade>('UNKNOWN');
+    const [savingGrade, setSavingGrade] = useState(false);
+    const [gradeMenuAnchorEl, setGradeMenuAnchorEl] = useState<null | HTMLElement>(null);
 
-  // 일괄 등급 설정 상태
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  const [bulkEditModalOpen, setBulkEditModalOpen] = useState(false);
-  const [bulkSelectedGrade, setBulkSelectedGrade] = useState<AppearanceGrade>('UNKNOWN');
-  const [savingBulkGrade, setSavingBulkGrade] = useState(false);
+    const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+    const [bulkEditModalOpen, setBulkEditModalOpen] = useState(false);
+    const [bulkSelectedGrade, setBulkSelectedGrade] = useState<AppearanceGrade>('UNKNOWN');
+    const [savingBulkGrade, setSavingBulkGrade] = useState(false);
 
-  // 일괄 이메일 발송 상태
-  const [bulkEmailModalOpen, setBulkEmailModalOpen] = useState(false);
+    const [bulkEmailModalOpen, setBulkEmailModalOpen] = useState(false);
 
-  // 유저 상세 정보 모달 상태
-  const [userDetailModalOpen, setUserDetailModalOpen] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [userDetail, setUserDetail] = useState<UserDetail | null>(null);
-  const [loadingUserDetail, setLoadingUserDetail] = useState(false);
-  const [userDetailError, setUserDetailError] = useState<string | null>(null);
+    const [userDetailModalOpen, setUserDetailModalOpen] = useState(false);
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+    const [userDetail, setUserDetail] = useState<UserDetail | null>(null);
+    const [loadingUserDetail, setLoadingUserDetail] = useState(false);
+    const [userDetailError, setUserDetailError] = useState<string | null>(null);
 
-  // 대학교 인증 승인 다이얼로그 상태
-  const [universityApprovalDialogOpen, setUniversityApprovalDialogOpen] = useState(false);
-  const [userToApprove, setUserToApprove] = useState<UserProfileWithAppearance | null>(null);
-  const [approvingUniversity, setApprovingUniversity] = useState(false);
+    const [universityApprovalDialogOpen, setUniversityApprovalDialogOpen] = useState(false);
+    const [userToApprove, setUserToApprove] = useState<UserProfileWithAppearance | null>(null);
+    const [approvingUniversity, setApprovingUniversity] = useState(false);
 
-  // 사용자 목록 조회
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await AdminService.userAppearance.getUsersWithAppearanceGrade({
-        page: page + 1,
-        limit: rowsPerPage,
-        ...filters,
-        ...(userStatus && { userStatus })
-      });
-
-      setUsers(response.data);
-      setTotalItems(response.meta?.total ?? 0);
-    } catch (err: any) {
-      console.error('사용자 목록 조회 중 오류:', err);
-      setError(err.message || '사용자 목록을 불러오는 중 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUsers();
-  }, [page, rowsPerPage, filters, userStatus]);
-
-  // 페이지 변경 핸들러
-  const handleChangePage = (event: unknown, newPage: number) => {
-    setPage(newPage);
-  };
-
-  // 페이지당 행 수 변경 핸들러
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  // 필터 적용 핸들러
-  const handleApplyFilter = (newFilters: any) => {
-    console.log('필터 적용:', newFilters);
-    setFilters(newFilters);
-    setPage(0); // 필터 변경 시 첫 페이지로 이동
-  };
-
-  // ref를 통해 외부에서 접근할 수 있는 함수 노출
-  useImperativeHandle(ref, () => {
-    console.log('useImperativeHandle 호출됨');
-    return {
-      handleApplyFilter: (newFilters: any) => {
-        console.log('ref를 통한 handleApplyFilter 호출:', newFilters);
-        handleApplyFilter(newFilters);
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await AdminService.userAppearance.getUsersWithAppearanceGrade({
+          page: page + 1,
+          limit: rowsPerPage,
+          ...filters,
+          ...(userStatus && { userStatus }),
+        });
+        setUsers(response.data);
+        setTotalItems(response.meta?.total ?? 0);
+      } catch (err: any) {
+        setError(err.message || '사용자 목록을 불러오는 중 오류가 발생했습니다.');
+      } finally {
+        setLoading(false);
       }
     };
-  });
 
-  // 등급 토글 메뉴 열기
-  const handleOpenGradeMenu = (event: React.MouseEvent<HTMLElement>, user: UserProfileWithAppearance) => {
-    setGradeMenuAnchorEl(event.currentTarget);
-    setSelectedUser(user);
-    setSelectedGrade(user.appearanceGrade);
-    setActiveUserId(user.userId || user.id); // userId가 없으면 id 사용
-  };
+    useEffect(() => {
+      fetchUsers();
+    }, [page, rowsPerPage, filters, userStatus]);
 
-  // 등급 토글 메뉴 닫기
-  const handleCloseGradeMenu = () => {
-    setGradeMenuAnchorEl(null);
-    setActiveUserId(null);
-  };
+    const handleChangePage = (_: unknown, newPage: number) => setPage(newPage);
+    const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+      setRowsPerPage(parseInt(event.target.value, 10));
+      setPage(0);
+    };
 
-  // 대학교 인증 승인 다이얼로그 열기
-  const handleUniversityVerificationApproval = (userId: string) => {
-    const user = users.find(u => (u.userId || u.id) === userId);
-    if (user) {
-      setUserToApprove(user);
-      setUniversityApprovalDialogOpen(true);
-    }
-  };
+    const handleApplyFilter = (newFilters: any) => {
+      setFilters(newFilters);
+      setPage(0);
+    };
 
-  // 대학교 인증 승인 확인 처리
-  const handleConfirmUniversityApproval = async () => {
-    if (!userToApprove) return;
+    useImperativeHandle(ref, () => ({
+      handleApplyFilter: (newFilters: any) => handleApplyFilter(newFilters),
+    }));
 
-    try {
-      setApprovingUniversity(true);
+    const handleOpenGradeMenu = (event: React.MouseEvent<HTMLElement>, user: UserProfileWithAppearance) => {
+      setGradeMenuAnchorEl(event.currentTarget);
+      setSelectedUser(user);
+      setSelectedGrade(user.appearanceGrade);
+    };
 
-      await AdminService.userAppearance.approveUniversityVerification(userToApprove.userId || userToApprove.id);
+    const handleCloseGradeMenu = () => {
+      setGradeMenuAnchorEl(null);
+    };
 
-      // 사용자 목록에서 해당 사용자의 인증 상태 즉시 업데이트
-      setUsers(prevUsers =>
-        prevUsers.map(user =>
-          (user.userId || user.id) === (userToApprove.userId || userToApprove.id)
-            ? { ...user, isUniversityVerified: true }
-            : user
-        )
-      );
-
-      // 다이얼로그 닫기
-      setUniversityApprovalDialogOpen(false);
-      setUserToApprove(null);
-
-    } catch (error: any) {
-      console.error('대학교 인증 승인 중 오류:', error);
-      setError(error.message || '대학교 인증 승인 중 오류가 발생했습니다.');
-    } finally {
-      setApprovingUniversity(false);
-    }
-  };
-
-  // 대학교 인증 승인 다이얼로그 닫기
-  const handleCloseUniversityApprovalDialog = () => {
-    setUniversityApprovalDialogOpen(false);
-    setUserToApprove(null);
-  };
-
-  // 등급 설정 저장
-  const handleSaveGrade = async (newGrade: AppearanceGrade) => {
-    console.log('등급 설정 시작:', { newGrade });
-    console.log('선택된 사용자:', selectedUser);
-
-    if (!selectedUser) {
-      console.error('선택된 사용자가 없습니다.');
-      setError('선택된 사용자가 없습니다.');
-      return;
-    }
-
-    // userId가 없는 경우 id를 사용
-    const userId = selectedUser.userId || selectedUser.id;
-
-    if (!userId) {
-      console.error('선택된 사용자의 ID가 없습니다.');
-      setError('선택된 사용자의 ID가 없습니다.');
-      return;
-    }
-
-    console.log('등급 설정 파라미터:', { userId, grade: newGrade });
-
-    try {
-      setSavingGrade(true);
-      await AdminService.userAppearance.setUserAppearanceGrade(userId, newGrade);
-      console.log('등급 설정 성공!');
-
-      // 목록 업데이트
-      setUsers(users.map(user => {
-        const userIdToCompare = user.userId || user.id;
-        return userIdToCompare === userId
-          ? { ...user, appearanceGrade: newGrade }
-          : user;
-      }));
-
-      // 등급 변경 이벤트 발생 - 통계 데이터 갱신 트리거
-      console.log('등급 변경 이벤트 발생');
-      appearanceGradeEventBus.publish();
-
-      handleCloseGradeMenu();
-    } catch (err: any) {
-      console.error('등급 설정 중 오류:', err);
-      setError(err.message || '등급 설정 중 오류가 발생했습니다.');
-    } finally {
-      setSavingGrade(false);
-    }
-  };
-
-  // 사용자 선택 핸들러
-  const handleSelectUser = (userId: string) => {
-    setSelectedUsers(prev => {
-      if (prev.includes(userId)) {
-        return prev.filter(id => id !== userId);
-      } else {
-        return [...prev, userId];
+    const handleUniversityVerificationApproval = (userId: string) => {
+      const user = users.find((u) => (u.userId || u.id) === userId);
+      if (user) {
+        setUserToApprove(user);
+        setUniversityApprovalDialogOpen(true);
       }
-    });
-  };
+    };
 
-  // 모든 사용자 선택/해제 핸들러
-  const handleSelectAllUsers = () => {
-    if (selectedUsers.length === users.length) {
-      setSelectedUsers([]);
-    } else {
-      // userId가 없으면 id 사용
-      setSelectedUsers(users.map(user => user.userId || user.id).filter(Boolean) as string[]);
-    }
-  };
+    const handleConfirmUniversityApproval = async () => {
+      if (!userToApprove) return;
+      try {
+        setApprovingUniversity(true);
+        await AdminService.userAppearance.approveUniversityVerification(userToApprove.userId || userToApprove.id);
+        setUsers((prev) =>
+          prev.map((user) =>
+            (user.userId || user.id) === (userToApprove.userId || userToApprove.id)
+              ? { ...user, isUniversityVerified: true }
+              : user,
+          ),
+        );
+        setUniversityApprovalDialogOpen(false);
+        setUserToApprove(null);
+      } catch (error: any) {
+        setError(error.message || '대학교 인증 승인 중 오류가 발생했습니다.');
+      } finally {
+        setApprovingUniversity(false);
+      }
+    };
 
-  // 일괄 등급 설정 모달 열기
-  const handleOpenBulkEditModal = () => {
-    if (selectedUsers.length === 0) return;
-    setBulkEditModalOpen(true);
-  };
+    const handleSaveGrade = async (newGrade: AppearanceGrade) => {
+      if (!selectedUser) return;
+      const userId = selectedUser.userId || selectedUser.id;
+      if (!userId) return;
 
-  // 일괄 등급 설정 모달 닫기
-  const handleCloseBulkEditModal = () => {
-    setBulkEditModalOpen(false);
-  };
+      try {
+        setSavingGrade(true);
+        await AdminService.userAppearance.setUserAppearanceGrade(userId, newGrade);
+        setUsers((prev) =>
+          prev.map((user) => ((user.userId || user.id) === userId ? { ...user, appearanceGrade: newGrade } : user)),
+        );
+        appearanceGradeEventBus.publish();
+        handleCloseGradeMenu();
+      } catch (err: any) {
+        setError(err.message || '등급 설정 중 오류가 발생했습니다.');
+      } finally {
+        setSavingGrade(false);
+      }
+    };
 
-  // 일괄 이메일 발송 모달 열기
-  const handleOpenBulkEmailModal = () => {
-    if (selectedUsers.length === 0) return;
-    setBulkEmailModalOpen(true);
-  };
+    const handleSelectUser = (userId: string) => {
+      setSelectedUsers((prev) => (prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]));
+    };
 
-  // 일괄 이메일 발송 모달 닫기
-  const handleCloseBulkEmailModal = () => {
-    setBulkEmailModalOpen(false);
-  };
+    const handleSelectAllUsers = () => {
+      if (selectedUsers.length === users.length) {
+        setSelectedUsers([]);
+      } else {
+        setSelectedUsers(users.map((user) => user.userId || user.id).filter(Boolean) as string[]);
+      }
+    };
 
-  // 유저 상세 정보 모달 열기
-  const handleOpenUserDetailModal = async (userId: string) => {
-    try {
-      setSelectedUserId(userId);
-      setUserDetailModalOpen(true);
-      setLoadingUserDetail(true);
-      setUserDetailError(null);
-      setUserDetail(null);
+    const handleOpenBulkEditModal = () => {
+      if (selectedUsers.length === 0) return;
+      setBulkEditModalOpen(true);
+    };
 
-      console.log('유저 상세 정보 조회 요청:', userId);
-      const data = await AdminService.userAppearance.getUserDetails(userId);
-      console.log('유저 상세 정보 응답:', data);
+    const handleOpenBulkEmailModal = () => {
+      if (selectedUsers.length === 0) return;
+      setBulkEmailModalOpen(true);
+    };
 
-      setUserDetail(data);
-    } catch (error: any) {
-      console.error('유저 상세 정보 조회 중 오류:', error);
-      setUserDetailError(error.message || '유저 상세 정보를 불러오는 중 오류가 발생했습니다.');
-    } finally {
-      setLoadingUserDetail(false);
-    }
-  };
+    const handleOpenUserDetailModal = async (userId: string) => {
+      try {
+        setSelectedUserId(userId);
+        setUserDetailModalOpen(true);
+        setLoadingUserDetail(true);
+        setUserDetailError(null);
+        setUserDetail(null);
+        const data = await AdminService.userAppearance.getUserDetails(userId);
+        setUserDetail(data);
+      } catch (error: any) {
+        setUserDetailError(error.message || '유저 상세 정보를 불러오는 중 오류가 발생했습니다.');
+      } finally {
+        setLoadingUserDetail(false);
+      }
+    };
 
-  // 유저 상세 정보 모달 닫기
-  const handleCloseUserDetailModal = () => {
-    setUserDetailModalOpen(false);
-  };
+    const handleSaveBulkGrade = async () => {
+      if (selectedUsers.length === 0) return;
+      try {
+        setSavingBulkGrade(true);
+        await AdminService.userAppearance.bulkSetUserAppearanceGrade(selectedUsers, bulkSelectedGrade);
+        setUsers((prev) =>
+          prev.map((user) =>
+            selectedUsers.includes(user.userId || user.id)
+              ? { ...user, appearanceGrade: bulkSelectedGrade }
+              : user,
+          ),
+        );
+        appearanceGradeEventBus.publish();
+        setSelectedUsers([]);
+        setBulkEditModalOpen(false);
+      } catch (err: any) {
+        setError(err.message || '일괄 등급 설정 중 오류가 발생했습니다.');
+      } finally {
+        setSavingBulkGrade(false);
+      }
+    };
 
-  // 일괄 등급 설정 저장
-  const handleSaveBulkGrade = async () => {
-    if (selectedUsers.length === 0) return;
+    const getUserId = (user: UserProfileWithAppearance) => user.userId || user.id;
 
-    try {
-      setSavingBulkGrade(true);
-      await AdminService.userAppearance.bulkSetUserAppearanceGrade(selectedUsers, bulkSelectedGrade);
+    const getUniversityName = (user: UserProfileWithAppearance): string => {
+      if (user.university) {
+        return typeof user.university === 'string' ? user.university : user.university.name;
+      }
+      if (user.universityDetails) return user.universityDetails.name;
+      if (user.universityName) return user.universityName;
+      return '-';
+    };
 
-      // 목록 업데이트
-      setUsers(users.map(user => {
-        // userId가 없으면 id 사용
-        const userIdentifier = user.userId || user.id;
-        return selectedUsers.includes(userIdentifier)
-          ? { ...user, appearanceGrade: bulkSelectedGrade }
-          : user;
-      }));
+    const getInstagramId = (user: UserProfileWithAppearance): string | null => {
+      if (!user.instagramId || user.instagramId === 'undefined' || user.instagramId === 'null') {
+        return null;
+      }
+      return user.instagramId;
+    };
 
-      // 등급 변경 이벤트 발생 - 통계 데이터 갱신 트리거
-      console.log('일괄 등급 변경 이벤트 발생');
-      appearanceGradeEventBus.publish();
+    return (
+      <Box>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+            {error}
+          </Alert>
+        )}
 
-      // 선택 초기화
-      setSelectedUsers([]);
-      handleCloseBulkEditModal();
-    } catch (err: any) {
-      console.error('일괄 등급 설정 중 오류:', err);
-      setError(err.message || '일괄 등급 설정 중 오류가 발생했습니다.');
-    } finally {
-      setSavingBulkGrade(false);
-    }
-  };
-
-  return (
-    <Box>
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
-
-      {/* 일괄 작업 버튼 */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-        <Typography variant="subtitle1">
-          {selectedUsers.length > 0
-            ? `${selectedUsers.length}명의 사용자 선택됨`
-            : '사용자를 선택하여 일괄 작업 수행'}
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button
-            variant="contained"
-            color="primary"
-            disabled={selectedUsers.length === 0}
-            onClick={handleOpenBulkEditModal}
-          >
-            일괄 등급 설정
-          </Button>
-          <Button
-            variant="contained"
-            color="info"
-            disabled={selectedUsers.length === 0}
-            onClick={handleOpenBulkEmailModal}
-          >
-            일괄 이메일 발송
-          </Button>
-        </Box>
-      </Box>
-
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell padding="checkbox">
-                <Checkbox
-                  indeterminate={selectedUsers.length > 0 && selectedUsers.length < users.length}
-                  checked={users.length > 0 && selectedUsers.length === users.length}
-                  onChange={handleSelectAllUsers}
-                />
-              </TableCell>
-              <TableCell>프로필</TableCell>
-              <TableCell>이름</TableCell>
-              <TableCell>나이/성별</TableCell>
-              <TableCell>전화번호</TableCell>
-              <TableCell>대학교</TableCell>
-              <TableCell>지역</TableCell>
-              <TableCell>대학교 인증</TableCell>
-              <TableCell>외모 등급</TableCell>
-              <TableCell>휴먼유저</TableCell>
-              <TableCell>프로필 정보</TableCell>
-              <TableCell>인스타그램</TableCell>
-              <TableCell>가입일</TableCell>
-              <TableCell>마지막 접속</TableCell>
-              <TableCell>마지막 알림 발송</TableCell>
-              <TableCell></TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={16} align="center" sx={{ py: 3 }}>
-                  <CircularProgress />
-                </TableCell>
-              </TableRow>
-            ) : users.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={16} align="center" sx={{ py: 3 }}>
-                  <Typography variant="body1">조회된 사용자가 없습니다.</Typography>
-                </TableCell>
-              </TableRow>
+        {/* 일괄 작업 바 */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 2,
+            px: 1,
+          }}
+        >
+          <Typography variant="body2" sx={{ color: '#64748B' }}>
+            {selectedUsers.length > 0 ? (
+              <span>
+                <strong style={{ color: '#1E293B' }}>{selectedUsers.length}명</strong> 선택됨
+              </span>
             ) : (
-              users.map((user) => (
-                <TableRow
-                  key={user.userId || user.id}
-                  sx={{
-                    bgcolor: user.statusAt === 'instagramerror'
-                      ? 'rgba(255, 235, 230, 0.5)'
-                      : user.isLongTermInactive
-                        ? 'rgba(255, 243, 205, 0.3)'
-                        : 'inherit'
-                  }}
-                >
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      checked={selectedUsers.includes(user.userId || user.id)}
-                      onChange={() => handleSelectUser(user.userId || user.id)}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Avatar
-                      src={user.profileImageUrl || user.profileImages?.[0]?.url || ''}
-                      alt={user.name}
-                      sx={{
-                        width: 40,
-                        height: 40,
-                        cursor: 'pointer',
-                        '&:hover': {
-                          boxShadow: '0 0 0 2px #3f51b5'
-                        }
-                      }}
-                      onClick={() => handleOpenUserDetailModal(user.userId || user.id)}
-                    >
-                      {user.name?.charAt(0) || '?'}
-                    </Avatar>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">{user.name}</Typography>
-                    {user.email && (
-                      <Typography variant="caption" color="textSecondary">{user.email}</Typography>
-                    )}
-                  </TableCell>
-                  <TableCell>{user.age}세 / {GENDER_LABELS[user.gender]}</TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {user.phoneNumber || '-'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    {/* 대학교 정보 표시 (여러 필드 구조 지원) */}
-                    {user.university ? (
-                      // 새로운 university 필드가 있는 경우 (문자열 또는 객체)
-                      typeof user.university === 'string' ? (
-                        // university가 문자열인 경우 (새로운 API 응답)
-                        <Typography variant="body2">
-                          {user.university}
-                        </Typography>
-                      ) : (
-                        // university가 객체인 경우 (이전 API 응답)
-                        <Tooltip title={`${user.university.name} (${user.university.emailDomain || ''})`}>
-                          <Typography variant="body2">
-                            {user.university.name}
-                            {user.university.isVerified && (
-                              <span style={{ marginLeft: '4px', color: '#2ECC71' }}>✓</span>
-                            )}
-                          </Typography>
-                        </Tooltip>
-                      )
-                    ) : user.universityDetails ? (
-                      // 기존 universityDetails 필드가 있는 경우
-                      <Tooltip title={`${user.universityDetails.name} (${user.universityDetails.emailDomain || ''})`}>
-                        <Typography variant="body2">
-                          {user.universityDetails.name}
-                          {user.universityDetails.isVerified && (
-                            <span style={{ marginLeft: '4px', color: '#2ECC71' }}>✓</span>
-                          )}
-                        </Typography>
-                      </Tooltip>
-                    ) : user.universityName ? (
-                      // universityName 필드만 있는 경우
-                      <Typography variant="body2">
-                        {user.universityName}
-                      </Typography>
-                    ) : (
-                      // 대학교 정보가 없는 경우
-                      '-'
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {getRegionLabel(user.region)}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {user.isUniversityVerified ? (
-                        <Chip
-                          label="✓ 인증됨"
-                          size="small"
-                          sx={{
-                            bgcolor: '#e8f5e8',
-                            color: '#2e7d32',
-                            fontWeight: 'medium'
-                          }}
-                        />
-                      ) : (
-                        <>
-                          <Chip
-                            label="미인증"
-                            size="small"
-                            sx={{
-                              bgcolor: '#fff3cd',
-                              color: '#856404',
-                              fontWeight: 'medium'
-                            }}
-                          />
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            sx={{
-                              minWidth: 'auto',
-                              px: 1,
-                              py: 0.5,
-                              fontSize: '0.75rem',
-                              borderColor: '#1976d2',
-                              color: '#1976d2',
-                              '&:hover': {
-                                bgcolor: '#e3f2fd',
-                                borderColor: '#1565c0'
-                              }
-                            }}
-                            onClick={() => handleUniversityVerificationApproval(user.userId || user.id)}
-                          >
-                            인증 처리
-                          </Button>
-                        </>
-                      )}
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ position: 'relative' }}>
-                      <Chip
-                        label={GRADE_LABELS[user.appearanceGrade]}
-                        sx={{
-                          bgcolor: GRADE_COLORS[user.appearanceGrade],
-                          color: 'white',
-                          cursor: 'pointer'
-                        }}
-                        onClick={(e) => handleOpenGradeMenu(e, user)}
-                      />
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={user.isLongTermInactive ? "휴먼유저" : "활성유저"}
-                      size="small"
-                      sx={{
-                        bgcolor: user.isLongTermInactive ? '#ffebee' : '#e8f5e8',
-                        color: user.isLongTermInactive ? '#c62828' : '#2e7d32',
-                        fontWeight: 'medium'
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={user.hasPreferences ? "입력 완료" : "미입력"}
-                      size="small"
-                      sx={{
-                        bgcolor: user.hasPreferences ? '#e8f5e8' : '#ffebee',
-                        color: user.hasPreferences ? '#2e7d32' : '#c62828',
-                        fontWeight: 'medium'
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {user.instagramId ? (
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <InstagramIcon sx={{ mr: 0.5, color: '#E1306C' }} fontSize="small" />
-                        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Link
-                              href={user.instagramUrl || `https://instagram.com/${user.instagramId}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                textDecoration: 'none',
-                                color: 'primary.main',
-                                '&:hover': {
-                                  textDecoration: 'underline'
-                                }
-                              }}
-                            >
-                              {user.instagramId}
-                              <OpenInNewIcon sx={{ ml: 0.5 }} fontSize="small" />
-                            </Link>
+              '사용자를 선택하여 일괄 작업 수행'
+            )}
+          </Typography>
+          <Stack direction="row" spacing={1}>
+            <Button
+              variant="outlined"
+              size="small"
+              disabled={selectedUsers.length === 0}
+              onClick={handleOpenBulkEditModal}
+              sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 500 }}
+            >
+              일괄 등급 설정
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              color="info"
+              disabled={selectedUsers.length === 0}
+              onClick={handleOpenBulkEmailModal}
+              sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 500 }}
+            >
+              일괄 이메일 발송
+            </Button>
+          </Stack>
+        </Box>
 
-                            {user.statusAt === 'instagramerror' && (
-                              <Chip
-                                label="인스타그램 오류"
-                                size="small"
-                                color="error"
-                                sx={{ ml: 1, height: 20, fontSize: '0.625rem' }}
-                              />
+        <TableContainer
+          component={Paper}
+          sx={{
+            borderRadius: 2,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+            border: '1px solid #E2E8F0',
+            overflowX: 'auto',
+          }}
+        >
+          <Table size="small" sx={{ minWidth: 1200 }}>
+            <TableHead>
+              <TableRow>
+                <TableCell padding="checkbox" sx={{ ...headerCellSx, pl: 2 }}>
+                  <Checkbox
+                    size="small"
+                    indeterminate={selectedUsers.length > 0 && selectedUsers.length < users.length}
+                    checked={users.length > 0 && selectedUsers.length === users.length}
+                    onChange={handleSelectAllUsers}
+                  />
+                </TableCell>
+                <TableCell sx={{ ...headerCellSx, minWidth: 200 }}>사용자</TableCell>
+                <TableCell sx={{ ...headerCellSx, minWidth: 80 }}>나이</TableCell>
+                <TableCell sx={headerCellSx}>전화번호</TableCell>
+                <TableCell sx={headerCellSx}>대학교</TableCell>
+                <TableCell sx={{ ...headerCellSx, textAlign: 'center' }}>인증</TableCell>
+                <TableCell sx={{ ...headerCellSx, textAlign: 'center' }}>등급</TableCell>
+                <TableCell sx={{ ...headerCellSx, textAlign: 'center' }}>상태</TableCell>
+                <TableCell sx={headerCellSx}>인스타그램</TableCell>
+                <TableCell sx={headerCellSx}>가입일</TableCell>
+                <TableCell sx={headerCellSx}>최근 접속</TableCell>
+                <TableCell sx={headerCellSx}>최근 알림</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={12} align="center" sx={{ py: 6 }}>
+                    <CircularProgress size={28} />
+                  </TableCell>
+                </TableRow>
+              ) : users.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={12} align="center" sx={{ py: 6 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      조회된 사용자가 없습니다.
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                users.map((user) => {
+                  const userId = getUserId(user);
+                  const instagramId = getInstagramId(user);
+
+                  return (
+                    <TableRow
+                      key={userId}
+                      hover
+                      sx={{
+                        bgcolor:
+                          user.statusAt === 'instagramerror'
+                            ? 'rgba(239, 68, 68, 0.04)'
+                            : user.isLongTermInactive
+                              ? 'rgba(245, 158, 11, 0.04)'
+                              : 'inherit',
+                        '&:hover': { bgcolor: '#F8FAFC' },
+                        transition: 'background-color 0.15s',
+                      }}
+                    >
+                      {/* 체크박스 */}
+                      <TableCell padding="checkbox" sx={{ ...bodyCellSx, pl: 2 }}>
+                        <Checkbox
+                          size="small"
+                          checked={selectedUsers.includes(userId)}
+                          onChange={() => handleSelectUser(userId)}
+                        />
+                      </TableCell>
+
+                      {/* 사용자 (프로필 + 이름 + 이메일 통합) */}
+                      <TableCell sx={bodyCellSx}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                          <Avatar
+                            src={user.profileImageUrl || user.profileImages?.[0]?.url || ''}
+                            alt={user.name}
+                            sx={{
+                              width: 36,
+                              height: 36,
+                              cursor: 'pointer',
+                              fontSize: '0.875rem',
+                              transition: 'box-shadow 0.15s',
+                              '&:hover': { boxShadow: '0 0 0 2px #3b82f6' },
+                            }}
+                            onClick={() => handleOpenUserDetailModal(userId)}
+                          >
+                            {user.name?.charAt(0) || '?'}
+                          </Avatar>
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontWeight: 600,
+                                color: '#1E293B',
+                                cursor: 'pointer',
+                                '&:hover': { color: '#2563EB' },
+                              }}
+                              onClick={() => handleOpenUserDetailModal(userId)}
+                            >
+                              {user.name}
+                            </Typography>
+                            {user.email && (
+                              <Typography variant="caption" sx={{ color: '#94A3B8', display: 'block' }}>
+                                {user.email}
+                              </Typography>
                             )}
                           </Box>
                         </Box>
-                      </Box>
-                    ) : (
-                      '-'
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {formatDateWithoutTimezoneConversion(user.createdAt)}
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {user.lastActiveAt ? formatDateTimeWithoutTimezoneConversion(user.lastActiveAt) : '접속 기록 없음'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {(user as any).lastPushNotificationAt ?
-                        formatDateTimeWithoutTimezoneConversion((user as any).lastPushNotificationAt) :
-                        '알림 발송 기록 없음'
-                      }
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    {/* 작업 버튼 제거 */}
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+                      </TableCell>
 
-      <TablePagination
-        component="div"
-        count={totalItems}
-        page={page}
-        onPageChange={handleChangePage}
-        rowsPerPage={rowsPerPage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-        rowsPerPageOptions={[5, 10, 25, 50]}
-        labelRowsPerPage="페이지당 행 수:"
-        labelDisplayedRows={({ from, to, count }) => `${from}-${to} / ${count}`}
-      />
+                      {/* 나이/성별 */}
+                      <TableCell sx={bodyCellSx}>
+                        <Typography variant="body2" sx={{ color: '#334155' }}>
+                          {user.age}
+                          <Typography
+                            component="span"
+                            variant="caption"
+                            sx={{ color: '#94A3B8', ml: 0.5 }}
+                          >
+                            {GENDER_LABELS[user.gender]}
+                          </Typography>
+                        </Typography>
+                      </TableCell>
 
-      {/* 등급 설정 토글 메뉴 */}
-      <Menu
-        anchorEl={gradeMenuAnchorEl}
-        open={Boolean(gradeMenuAnchorEl)}
-        onClose={handleCloseGradeMenu}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'center',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'center',
-        }}
-      >
-        <MenuItem
-          onClick={() => handleSaveGrade('S')}
-          sx={{
-            color: GRADE_COLORS['S'],
-            fontWeight: selectedGrade === 'S' ? 'bold' : 'normal',
-            bgcolor: selectedGrade === 'S' ? 'rgba(142, 68, 173, 0.1)' : 'transparent'
+                      {/* 전화번호 */}
+                      <TableCell sx={bodyCellSx}>
+                        <Typography variant="body2" sx={{ color: '#334155' }}>
+                          {user.phoneNumber || '-'}
+                        </Typography>
+                      </TableCell>
+
+                      {/* 대학교 + 지역 통합 */}
+                      <TableCell sx={bodyCellSx}>
+                        <Typography variant="body2" sx={{ color: '#334155' }}>
+                          {getUniversityName(user)}
+                        </Typography>
+                        {user.region && (
+                          <Typography variant="caption" sx={{ color: '#94A3B8' }}>
+                            {getRegionLabel(user.region)}
+                          </Typography>
+                        )}
+                      </TableCell>
+
+                      {/* 대학교 인증 */}
+                      <TableCell sx={{ ...bodyCellSx, textAlign: 'center' }}>
+                        {user.isUniversityVerified ? (
+                          <Chip
+                            label="인증"
+                            size="small"
+                            sx={{
+                              height: 24,
+                              fontSize: '0.75rem',
+                              fontWeight: 600,
+                              bgcolor: alpha('#059669', 0.1),
+                              color: '#059669',
+                            }}
+                          />
+                        ) : (
+                          <Tooltip title="클릭하여 인증 처리">
+                            <Chip
+                              label="미인증"
+                              size="small"
+                              onClick={() => handleUniversityVerificationApproval(userId)}
+                              sx={{
+                                height: 24,
+                                fontSize: '0.75rem',
+                                fontWeight: 500,
+                                bgcolor: alpha('#D97706', 0.1),
+                                color: '#D97706',
+                                cursor: 'pointer',
+                                '&:hover': { bgcolor: alpha('#D97706', 0.2) },
+                              }}
+                            />
+                          </Tooltip>
+                        )}
+                      </TableCell>
+
+                      {/* 외모 등급 */}
+                      <TableCell sx={{ ...bodyCellSx, textAlign: 'center' }}>
+                        <Chip
+                          label={GRADE_LABELS[user.appearanceGrade]}
+                          size="small"
+                          onClick={(e) => handleOpenGradeMenu(e, user)}
+                          sx={{
+                            height: 24,
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            bgcolor: alpha(GRADE_COLORS[user.appearanceGrade], 0.12),
+                            color: GRADE_COLORS[user.appearanceGrade],
+                            cursor: 'pointer',
+                            border: `1px solid ${alpha(GRADE_COLORS[user.appearanceGrade], 0.3)}`,
+                            '&:hover': {
+                              bgcolor: alpha(GRADE_COLORS[user.appearanceGrade], 0.2),
+                            },
+                          }}
+                        />
+                      </TableCell>
+
+                      {/* 상태 (휴먼 + 프로필정보 통합) */}
+                      <TableCell sx={{ ...bodyCellSx, textAlign: 'center' }}>
+                        <Stack direction="row" spacing={0.5} justifyContent="center">
+                          {user.isLongTermInactive && (
+                            <Chip
+                              label="휴먼"
+                              size="small"
+                              sx={{
+                                height: 22,
+                                fontSize: '0.6875rem',
+                                bgcolor: alpha('#EF4444', 0.1),
+                                color: '#EF4444',
+                              }}
+                            />
+                          )}
+                          {!user.hasPreferences && (
+                            <Chip
+                              label="미입력"
+                              size="small"
+                              sx={{
+                                height: 22,
+                                fontSize: '0.6875rem',
+                                bgcolor: alpha('#94A3B8', 0.1),
+                                color: '#64748B',
+                              }}
+                            />
+                          )}
+                          {!user.isLongTermInactive && user.hasPreferences && (
+                            <Typography variant="caption" sx={{ color: '#94A3B8' }}>
+                              정상
+                            </Typography>
+                          )}
+                        </Stack>
+                      </TableCell>
+
+                      {/* 인스타그램 */}
+                      <TableCell sx={bodyCellSx}>
+                        {instagramId ? (
+                          <Link
+                            href={user.instagramUrl || `https://instagram.com/${instagramId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            sx={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 0.5,
+                              textDecoration: 'none',
+                              color: '#334155',
+                              fontSize: '0.8125rem',
+                              '&:hover': { color: '#E1306C' },
+                            }}
+                          >
+                            <InstagramIcon sx={{ fontSize: 16, color: '#E1306C' }} />
+                            {instagramId}
+                            {user.statusAt === 'instagramerror' && (
+                              <Chip
+                                label="오류"
+                                size="small"
+                                sx={{
+                                  height: 18,
+                                  fontSize: '0.625rem',
+                                  ml: 0.5,
+                                  bgcolor: alpha('#EF4444', 0.1),
+                                  color: '#EF4444',
+                                }}
+                              />
+                            )}
+                          </Link>
+                        ) : (
+                          <Typography variant="body2" sx={{ color: '#CBD5E1' }}>
+                            -
+                          </Typography>
+                        )}
+                      </TableCell>
+
+                      {/* 가입일 */}
+                      <TableCell sx={bodyCellSx}>
+                        <Typography variant="body2" sx={{ color: '#64748B' }}>
+                          {formatDateWithoutTimezoneConversion(user.createdAt)}
+                        </Typography>
+                      </TableCell>
+
+                      {/* 최근 접속 */}
+                      <TableCell sx={bodyCellSx}>
+                        <Typography variant="body2" sx={{ color: '#64748B' }}>
+                          {user.lastActiveAt
+                            ? formatDateTimeWithoutTimezoneConversion(user.lastActiveAt)
+                            : '-'}
+                        </Typography>
+                      </TableCell>
+
+                      {/* 최근 알림 */}
+                      <TableCell sx={bodyCellSx}>
+                        <Typography variant="body2" sx={{ color: '#64748B' }}>
+                          {(user as any).lastPushNotificationAt
+                            ? formatDateTimeWithoutTimezoneConversion((user as any).lastPushNotificationAt)
+                            : '-'}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+
+        <TablePagination
+          component="div"
+          count={totalItems}
+          page={page}
+          onPageChange={handleChangePage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          rowsPerPageOptions={[10, 25, 50]}
+          labelRowsPerPage="행 수:"
+          labelDisplayedRows={({ from, to, count }) => `${from}-${to} / ${count}`}
+          sx={{ borderTop: '1px solid #E2E8F0' }}
+        />
+
+        {/* 등급 설정 메뉴 */}
+        <Menu
+          anchorEl={gradeMenuAnchorEl}
+          open={Boolean(gradeMenuAnchorEl)}
+          onClose={handleCloseGradeMenu}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+          slotProps={{
+            paper: {
+              sx: { borderRadius: 2, boxShadow: '0 4px 20px rgba(0,0,0,0.12)', minWidth: 120 },
+            },
           }}
         >
-          S등급
-        </MenuItem>
-        <MenuItem
-          onClick={() => handleSaveGrade('A')}
-          sx={{
-            color: GRADE_COLORS['A'],
-            fontWeight: selectedGrade === 'A' ? 'bold' : 'normal',
-            bgcolor: selectedGrade === 'A' ? 'rgba(52, 152, 219, 0.1)' : 'transparent'
-          }}
-        >
-          A등급
-        </MenuItem>
-        <MenuItem
-          onClick={() => handleSaveGrade('B')}
-          sx={{
-            color: GRADE_COLORS['B'],
-            fontWeight: selectedGrade === 'B' ? 'bold' : 'normal',
-            bgcolor: selectedGrade === 'B' ? 'rgba(46, 204, 113, 0.1)' : 'transparent'
-          }}
-        >
-          B등급
-        </MenuItem>
-        <MenuItem
-          onClick={() => handleSaveGrade('C')}
-          sx={{
-            color: GRADE_COLORS['C'],
-            fontWeight: selectedGrade === 'C' ? 'bold' : 'normal',
-            bgcolor: selectedGrade === 'C' ? 'rgba(243, 156, 18, 0.1)' : 'transparent'
-          }}
-        >
-          C등급
-        </MenuItem>
-        <MenuItem
-          onClick={() => handleSaveGrade('UNKNOWN')}
-          sx={{
-            color: GRADE_COLORS['UNKNOWN'],
-            fontWeight: selectedGrade === 'UNKNOWN' ? 'bold' : 'normal',
-            bgcolor: selectedGrade === 'UNKNOWN' ? 'rgba(149, 165, 166, 0.1)' : 'transparent'
-          }}
-        >
-          미분류
-        </MenuItem>
-      </Menu>
+          {(['S', 'A', 'B', 'C', 'UNKNOWN'] as AppearanceGrade[]).map((grade) => (
+            <MenuItem
+              key={grade}
+              onClick={() => handleSaveGrade(grade)}
+              selected={selectedGrade === grade}
+              sx={{
+                py: 1,
+                fontSize: '0.875rem',
+                fontWeight: selectedGrade === grade ? 700 : 400,
+                color: GRADE_COLORS[grade],
+              }}
+            >
+              <Box
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  bgcolor: GRADE_COLORS[grade],
+                  mr: 1.5,
+                }}
+              />
+              {GRADE_LABELS[grade]}등급
+            </MenuItem>
+          ))}
+        </Menu>
 
-      {/* 일괄 등급 설정 모달 */}
-      <Dialog open={bulkEditModalOpen} onClose={handleCloseBulkEditModal}>
-        <DialogTitle>일괄 외모 등급 설정</DialogTitle>
-        <DialogContent>
-          <Box sx={{ minWidth: 300, pt: 1 }}>
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              선택한 {selectedUsers.length}명의 사용자에게 적용할 외모 등급을 선택하세요.
-            </Typography>
+        {/* 일괄 등급 설정 모달 */}
+        <Dialog open={bulkEditModalOpen} onClose={() => setBulkEditModalOpen(false)}>
+          <DialogTitle>일괄 외모 등급 설정</DialogTitle>
+          <DialogContent>
+            <Box sx={{ minWidth: 300, pt: 1 }}>
+              <Typography variant="body2" sx={{ mb: 2, color: '#64748B' }}>
+                선택한 <strong>{selectedUsers.length}명</strong>에게 적용할 등급을 선택하세요.
+              </Typography>
+              <FormControl fullWidth sx={{ mt: 1 }}>
+                <InputLabel>외모 등급</InputLabel>
+                <Select
+                  value={bulkSelectedGrade}
+                  label="외모 등급"
+                  onChange={(e) => setBulkSelectedGrade(e.target.value as AppearanceGrade)}
+                >
+                  {(['S', 'A', 'B', 'C', 'UNKNOWN'] as AppearanceGrade[]).map((grade) => (
+                    <MenuItem key={grade} value={grade}>
+                      {GRADE_LABELS[grade]}등급
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setBulkEditModalOpen(false)} disabled={savingBulkGrade}>
+              취소
+            </Button>
+            <Button onClick={handleSaveBulkGrade} variant="contained" disabled={savingBulkGrade}>
+              {savingBulkGrade ? <CircularProgress size={20} /> : '일괄 적용'}
+            </Button>
+          </DialogActions>
+        </Dialog>
 
-            <FormControl fullWidth sx={{ mt: 2 }}>
-              <InputLabel id="bulk-grade-select-label">외모 등급</InputLabel>
-              <Select
-                labelId="bulk-grade-select-label"
-                value={bulkSelectedGrade}
-                label="외모 등급"
-                onChange={(e) => setBulkSelectedGrade(e.target.value as AppearanceGrade)}
-              >
-                <MenuItem value="S">S등급</MenuItem>
-                <MenuItem value="A">A등급</MenuItem>
-                <MenuItem value="B">B등급</MenuItem>
-                <MenuItem value="C">C등급</MenuItem>
-                <MenuItem value="UNKNOWN">미분류</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseBulkEditModal} disabled={savingBulkGrade}>취소</Button>
-          <Button
-            onClick={handleSaveBulkGrade}
-            variant="contained"
-            color="primary"
-            disabled={savingBulkGrade}
-          >
-            {savingBulkGrade ? <CircularProgress size={24} /> : '일괄 적용'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* 일괄 이메일 발송 모달 */}
-      <BulkEmailNotificationModal
-        open={bulkEmailModalOpen}
-        onClose={handleCloseBulkEmailModal}
-        userIds={selectedUsers}
-        onSuccess={() => {
-          // 데이터 새로고침
-          fetchUsers();
-          // 선택 초기화
-          setSelectedUsers([]);
-        }}
-      />
-
-      {/* 유저 상세 정보 모달 */}
-      {!!userDetail && (
-        <UserDetailModal
-          open={userDetailModalOpen}
-          onClose={handleCloseUserDetailModal}
-          userId={selectedUserId}
-          userDetail={userDetail}
-          loading={loadingUserDetail}
-          error={userDetailError}
-          onRefresh={() => {
-            // 데이터 새로고침
+        {/* 일괄 이메일 발송 모달 */}
+        <BulkEmailNotificationModal
+          open={bulkEmailModalOpen}
+          onClose={() => setBulkEmailModalOpen(false)}
+          userIds={selectedUsers}
+          onSuccess={() => {
             fetchUsers();
+            setSelectedUsers([]);
           }}
         />
-      )}
 
-      {/* 대학교 인증 승인 확인 다이얼로그 */}
-      <Dialog
-        open={universityApprovalDialogOpen}
-        onClose={handleCloseUniversityApprovalDialog}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          대학교 인증 승인
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            <strong>{userToApprove?.name}</strong>님의 대학교 인증을 승인하시겠습니까?
-          </Typography>
-          {userToApprove && (
-            <Box sx={{ bgcolor: 'grey.50', p: 2, borderRadius: 1 }}>
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                사용자 정보
-              </Typography>
-              <Typography variant="body2">
-                • 이름: {userToApprove.name}
-              </Typography>
-              <Typography variant="body2">
-                • 대학교: {
-                  typeof userToApprove.university === 'string'
-                    ? userToApprove.university
-                    : userToApprove.university?.name || userToApprove.universityDetails?.name || '-'
-                }
-              </Typography>
-              <Typography variant="body2">
-                • 전화번호: {userToApprove.phoneNumber || '-'}
-              </Typography>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={handleCloseUniversityApprovalDialog}
-            disabled={approvingUniversity}
-          >
-            취소
-          </Button>
-          <Button
-            onClick={handleConfirmUniversityApproval}
-            variant="contained"
-            color="primary"
-            disabled={approvingUniversity}
-            startIcon={approvingUniversity ? <CircularProgress size={16} /> : null}
-          >
-            {approvingUniversity ? '승인 중...' : '예, 승인합니다'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Box>
-  );
-});
+        {/* 유저 상세 정보 모달 */}
+        {!!userDetail && (
+          <UserDetailModal
+            open={userDetailModalOpen}
+            onClose={() => setUserDetailModalOpen(false)}
+            userId={selectedUserId}
+            userDetail={userDetail}
+            loading={loadingUserDetail}
+            error={userDetailError}
+            onRefresh={fetchUsers}
+          />
+        )}
+
+        {/* 대학교 인증 승인 다이얼로그 */}
+        <Dialog
+          open={universityApprovalDialogOpen}
+          onClose={() => {
+            setUniversityApprovalDialogOpen(false);
+            setUserToApprove(null);
+          }}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>대학교 인증 승인</DialogTitle>
+          <DialogContent>
+            <Typography variant="body1" sx={{ mb: 2 }}>
+              <strong>{userToApprove?.name}</strong>님의 대학교 인증을 승인하시겠습니까?
+            </Typography>
+            {userToApprove && (
+              <Box sx={{ bgcolor: '#F8FAFC', p: 2, borderRadius: 2 }}>
+                <Typography variant="body2">이름: {userToApprove.name}</Typography>
+                <Typography variant="body2">
+                  대학교: {getUniversityName(userToApprove)}
+                </Typography>
+                <Typography variant="body2">전화번호: {userToApprove.phoneNumber || '-'}</Typography>
+              </Box>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => {
+                setUniversityApprovalDialogOpen(false);
+                setUserToApprove(null);
+              }}
+              disabled={approvingUniversity}
+            >
+              취소
+            </Button>
+            <Button
+              onClick={handleConfirmUniversityApproval}
+              variant="contained"
+              disabled={approvingUniversity}
+              startIcon={approvingUniversity ? <CircularProgress size={16} /> : null}
+            >
+              {approvingUniversity ? '승인 중...' : '승인'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Box>
+    );
+  },
+);
 
 export default UserAppearanceTable;
