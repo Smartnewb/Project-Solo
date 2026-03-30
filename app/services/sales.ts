@@ -46,10 +46,7 @@ const SALES_ENDPOINT = {
   WEEKLY: "/admin/stats/sales/weekly",
   MONTHLY: "/admin/stats/sales/monthly",
   CUSTOM_PERIOD: "/admin/stats/sales/custom-period",
-  TREND_DAILY: "/admin/stats/sales/trend/daily",
-  TREND_WEEKLY: "/admin/stats/sales/trend/weekly",
-  TREND_MONTHLY: "/admin/stats/sales/trend/monthly",
-  TREND_CUSTOM: "/admin/stats/sales/trend/custom-period",
+  TREND: "/admin/v2/stats/sales/trend",
   SUCCESS_RATE: "/admin/stats/sales/success-rate",
   UNIVERSITY_RANKING: "/admin/stats/sales/university-ranking",
   PAYMENT_ANALYSIS: "/admin/stats/sales/payment-method-analysis",
@@ -190,8 +187,8 @@ export const salesService = {
   // MARK: - 일별 매출 추이 조회
   async getTrendDaily(data: GetSales): Promise<TrendDailyResponse> {
     try {
-      const result = await adminGet<TrendDailyResponse>(SALES_ENDPOINT.TREND_DAILY, toStringParams(data));
-      return result;
+      const res = await adminGet<{ data: TrendDailyResponse }>(SALES_ENDPOINT.TREND, toStringParams({ ...data, period: 'daily' }));
+      return res.data;
     } catch (error) {
       throw new SalesApiError("일별 매출 추이 조회 실패:", error);
     }
@@ -200,8 +197,8 @@ export const salesService = {
   // MARK: - 주별 매출 추이 조회
   async getTrendWeekly(data: GetSales): Promise<TrendWeeklyResponse> {
     try {
-      const result = await adminGet<TrendWeeklyResponse>(SALES_ENDPOINT.TREND_WEEKLY, toStringParams(data));
-      return result;
+      const res = await adminGet<{ data: TrendWeeklyResponse }>(SALES_ENDPOINT.TREND, toStringParams({ ...data, period: 'weekly' }));
+      return res.data;
     } catch (error) {
       throw new SalesApiError("주별 매출 추이 조회 실패:", error);
     }
@@ -210,8 +207,8 @@ export const salesService = {
   // MARK: - 월별 매출 추이 조회
   async getTrendMonthly(data: GetSales): Promise<TrendMonthlyResponse> {
     try {
-      const result = await adminGet<TrendMonthlyResponse>(SALES_ENDPOINT.TREND_MONTHLY, toStringParams(data));
-      return result;
+      const res = await adminGet<{ data: TrendMonthlyResponse }>(SALES_ENDPOINT.TREND, toStringParams({ ...data, period: 'monthly' }));
+      return res.data;
     } catch (error) {
       throw new SalesApiError("월별 매출 추이 조회 실패:", error);
     }
@@ -220,11 +217,8 @@ export const salesService = {
   // MARK: - 사용자 지정 기간 매출 추이 조회
   async getTrendCustom(data: TrendCustomRequest): Promise<TrendCustomResponse> {
     try {
-      const result = await adminPost<TrendCustomResponse>(
-        SALES_ENDPOINT.TREND_CUSTOM,
-        data,
-      );
-      return result;
+      const res = await adminGet<{ data: TrendCustomResponse }>(SALES_ENDPOINT.TREND, toStringParams({ ...data, period: 'custom' }));
+      return res.data;
     } catch (error) {
       throw new SalesApiError("사용자 지정 매출액 조회 실패:", error);
     }
