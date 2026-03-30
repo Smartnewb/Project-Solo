@@ -78,7 +78,8 @@ export const care = {
 		if (params.page != null) stringParams.page = String(params.page);
 		if (params.limit != null) stringParams.limit = String(params.limit);
 		if (params.search != null) stringParams.search = params.search;
-		return adminGet<CareTargetsResponse>('/admin/care/targets', stringParams);
+		const result = await adminGet<{ data: CareTargetsResponse }>('/admin/v2/care/targets', stringParams);
+		return result.data;
 	},
 
 	getPartners: async (userId: string, limit: number = 10) => {
@@ -86,7 +87,8 @@ export const care = {
 	},
 
 	execute: async (body: CareExecuteRequest) => {
-		return adminPost<CareExecuteResponse>('/admin/care/execute', body);
+		const result = await adminPost<{ data: CareExecuteResponse }>('/admin/v2/care/execute', body);
+		return result.data;
 	},
 
 	dismiss: async (targetId: string) => {
@@ -104,6 +106,7 @@ export const care = {
 		if (params.limit != null) stringParams.limit = String(params.limit);
 		if (params.targetUserId != null) stringParams.targetUserId = params.targetUserId;
 		if (params.action != null) stringParams.action = params.action;
-		return adminGet<CareLogsResponse>('/admin/care/logs', stringParams);
+		const result = await adminGet<{ data: CareLogsResponse }>('/admin/v2/care/logs', stringParams);
+		return result.data;
 	},
 };

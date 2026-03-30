@@ -27,12 +27,12 @@ export const pushNotifications = {
 		limit: number = 20,
 	) => {
 		try {
-			const result = await adminPost<any>('/admin/push-notifications/filter-users', {
+			const result = await adminPost<{ data: any }>('/admin/v2/messaging/push/filter-users', {
 				...filters,
 				page,
 				limit,
 			});
-			return result;
+			return result.data;
 		} catch (error) {
 			throw error;
 		}
@@ -48,12 +48,12 @@ export const pushNotifications = {
 		totalCount: number;
 	}> => {
 		try {
-			const result = await adminPost<{
+			const result = await adminPost<{ data: {
 				successCount: number;
 				failureCount: number;
 				totalCount: number;
-			}>('/admin/notifications/bulk', data);
-			return result;
+			} }>('/admin/v2/messaging/push/send', data);
+			return result.data;
 		} catch (error) {
 			throw error;
 		}
@@ -107,11 +107,11 @@ export const aiChat = {
 export const momentQuestions = {
 	generate: async (data: GenerateQuestionsRequest): Promise<GenerateQuestionsResponse> => {
 		try {
-			const result = await adminPost<GenerateQuestionsResponse>(
-				'/admin/questions/generate',
+			const res = await adminPost<{ data: GenerateQuestionsResponse }>(
+				'/admin/v2/content/questions/generate',
 				data,
 			);
-			return result;
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -119,11 +119,11 @@ export const momentQuestions = {
 
 	bulkCreate: async (data: BulkCreateQuestionsRequest): Promise<BulkCreateQuestionsResponse> => {
 		try {
-			const result = await adminPost<BulkCreateQuestionsResponse>(
-				'/admin/questions/bulk-create',
+			const res = await adminPost<{ data: BulkCreateQuestionsResponse }>(
+				'/admin/v2/content/questions/bulk-create',
 				data,
 			);
-			return result;
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -141,8 +141,8 @@ export const momentQuestions = {
 			if (params.limit) stringParams.limit = String(params.limit);
 			if (params.translationStatus) stringParams.translationStatus = params.translationStatus;
 
-			const result = await adminGet<QuestionListResponse>('/admin/questions', stringParams);
-			return result;
+			const res = await adminGet<{ data: QuestionListResponse }>('/admin/v2/content/questions', stringParams);
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -150,8 +150,8 @@ export const momentQuestions = {
 
 	getDetail: async (id: string): Promise<QuestionDetail> => {
 		try {
-			const result = await adminGet<QuestionDetail>(`/admin/questions/${id}`);
-			return result;
+			const res = await adminGet<{ data: QuestionDetail }>(`/admin/v2/content/questions/${id}`);
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -159,8 +159,8 @@ export const momentQuestions = {
 
 	update: async (id: string, data: UpdateQuestionRequest): Promise<QuestionDetail> => {
 		try {
-			const result = await adminPut<QuestionDetail>(`/admin/questions/${id}`, data);
-			return result;
+			const res = await adminPut<{ data: QuestionDetail }>(`/admin/v2/content/questions/${id}`, data);
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -168,7 +168,7 @@ export const momentQuestions = {
 
 	delete: async (id: string): Promise<void> => {
 		try {
-			await adminDelete(`/admin/questions/${id}`);
+			await adminDelete(`/admin/v2/content/questions/${id}`);
 		} catch (error: any) {
 			throw error;
 		}
@@ -176,11 +176,11 @@ export const momentQuestions = {
 
 	translate: async (data: TranslateQuestionsRequest): Promise<TranslateQuestionsResponse> => {
 		try {
-			const result = await adminPost<TranslateQuestionsResponse>(
-				'/admin/questions/translate',
+			const res = await adminPost<{ data: TranslateQuestionsResponse }>(
+				'/admin/v2/content/questions/translate',
 				data,
 			);
-			return result;
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}

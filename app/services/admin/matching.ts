@@ -81,12 +81,12 @@ export const matching = {
 		targetId: string,
 		type: 'rematching' | 'scheduled',
 	) => {
-		const result = await adminPost<any>('/admin/matching/direct-match', {
+		const res = await adminPost<{ data: any }>('/admin/v2/matching/force', {
 			requesterId,
 			targetId,
 			type,
 		});
-		return result;
+		return res.data;
 	},
 
 	// 매칭 실패 내역 조회
@@ -166,8 +166,8 @@ export const matching = {
 			params.name = name.trim();
 		}
 
-		const result = await adminGet<any>('/admin/matching/like-history', params);
-		return result;
+		const res = await adminGet<{ data: any }>('/admin/v2/matching/likes', params);
+		return res.data;
 	},
 
 	getMatchingStats: async (
@@ -211,8 +211,8 @@ export const forceMatching = {
 		if (params.search) queryParams.search = params.search;
 		if (genderParam) queryParams.gender = genderParam;
 
-		const result = await adminGet<any>('/admin/users', queryParams);
-		return result;
+		const res = await adminGet<{ data: any }>('/admin/v2/users', queryParams);
+		return res.data;
 	},
 
 	// 강제 채팅방 생성

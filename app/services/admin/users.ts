@@ -322,13 +322,12 @@ export const userAppearance = {
 		try {
 			;
 
-			const result = await adminPost<any>('/admin/users/detail/status', {
-				userId,
+			const result = await adminPatch<{ data: any }>(`/admin/v2/users/${userId}/profile`, {
 				status,
 				reason,
 			});
 
-			return result;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -353,13 +352,12 @@ export const userAppearance = {
 		try {
 			;
 
-			const result = await adminPost<any>('/admin/notification/email', {
-				userId,
+			const result = await adminPost<{ data: any }>(`/admin/v2/users/${userId}/notification/email`, {
 				subject,
 				message,
 			});
 
-			return result;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -369,12 +367,11 @@ export const userAppearance = {
 		try {
 			;
 
-			const result = await adminPost<any>('/admin/notification/sms', {
-				userId,
+			const result = await adminPost<{ data: any }>(`/admin/v2/users/${userId}/notification/sms`, {
 				message,
 			});
 
-			return result;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -671,9 +668,9 @@ export const userAppearance = {
 
 	getDuplicatePhoneUsers: async () => {
 		try {
-			const result = await adminGet<any>('/admin/users/duplicate-phone');
+			const result = await adminGet<{ data: any }>('/admin/v2/users/duplicate-phones');
 
-			return result;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -732,11 +729,11 @@ export const userAppearance = {
 		try {
 			;
 
-			const result = await adminPost<any>('/admin/university-verification/approve', {
+			const result = await adminPost<{ data: any }>('/admin/v2/profile-review/university-verification/approve', {
 				userId,
 			});
 
-			return result;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -746,11 +743,11 @@ export const userAppearance = {
 		try {
 			;
 
-			const result = await adminPost<any>('/admin/university-verification/reject', {
+			const result = await adminPost<{ data: any }>('/admin/v2/profile-review/university-verification/reject', {
 				userId,
 			});
 
-			return result;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -797,8 +794,8 @@ export const userAppearance = {
 			if (params.name) queryParams.name = params.name;
 			if (params.phoneNumber) queryParams.phoneNumber = params.phoneNumber;
 
-			const result = await adminGet<any>('/admin/users/search', queryParams);
-			return result;
+			const result = await adminGet<{ data: any }>('/admin/v2/users/search', queryParams);
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -890,11 +887,11 @@ export const userAppearance = {
 export const deletedFemales = {
 	getList: async (page: number = 1, limit: number = 20) => {
 		try {
-			const result = await adminGet<DeletedFemalesListResponse>('/admin/deleted-females', {
+			const result = await adminGet<{ data: DeletedFemalesListResponse }>('/admin/v2/retention/deleted-females', {
 				page: page.toString(),
 				limit: limit.toString(),
 			});
-			return result;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}

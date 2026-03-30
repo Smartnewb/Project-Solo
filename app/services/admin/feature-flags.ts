@@ -13,7 +13,8 @@ export interface FeatureFlag {
 
 export const featureFlags = {
 	getAll: async (): Promise<FeatureFlag[]> => {
-		return adminGet<FeatureFlag[]>('/admin/feature-flags');
+		const result = await adminGet<{ data: FeatureFlag[] }>('/admin/v2/feature-flags');
+		return result.data;
 	},
 
 	toggle: async (name: string, enabled: boolean): Promise<FeatureFlag> => {

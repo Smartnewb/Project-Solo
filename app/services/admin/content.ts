@@ -26,7 +26,8 @@ import type {
 export const backgroundPresets = {
 	getActive: async (): Promise<BackgroundPresetsResponse> => {
 		try {
-			return await adminGet<BackgroundPresetsResponse>('/admin/background-presets/active');
+			const res = await adminGet<{ data: BackgroundPresetsResponse }>('/admin/v2/content/background-presets/active');
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -38,7 +39,7 @@ export const backgroundPresets = {
 			const formData = new FormData();
 			formData.append('image', imageFile);
 
-			const data = await adminRequest<UploadImageResponse>('/admin/background-presets/upload', {
+			const data = await adminRequest<UploadImageResponse>('/admin/v2/content/background-presets/upload', {
 				method: 'POST',
 				body: formData,
 			});
@@ -62,7 +63,7 @@ export const backgroundPresets = {
 				formData.append('order', data.order.toString());
 			}
 
-			const responseData = await adminRequest<BackgroundPreset>('/admin/background-presets/upload-and-create', {
+			const responseData = await adminRequest<BackgroundPreset>('/admin/v2/content/background-presets/upload-and-create', {
 				method: 'POST',
 				body: formData,
 			});
@@ -74,7 +75,7 @@ export const backgroundPresets = {
 
 	create: async (data: CreatePresetRequest): Promise<BackgroundPreset> => {
 		try {
-			return await adminPost<BackgroundPreset>('/admin/background-presets', data);
+			return await adminPost<BackgroundPreset>('/admin/v2/content/background-presets', data);
 		} catch (error: any) {
 			throw error;
 		}
@@ -113,7 +114,7 @@ export const cardNews = {
 			formData.append('image', imageFile);
 
 			const data = await adminRequest<UploadImageResponse>(
-				'/admin/posts/card-news/section-images/upload',
+				'/admin/v2/content/card-news/section-images/upload',
 				{
 					method: 'POST',
 					body: formData,
@@ -127,7 +128,7 @@ export const cardNews = {
 
 	create: async (data: CreateCardNewsRequest): Promise<AdminCardNewsItem> => {
 		try {
-			return await adminPost<AdminCardNewsItem>('/admin/posts/card-news', data);
+			return await adminPost<AdminCardNewsItem>('/admin/v2/content/card-news', data);
 		} catch (error: any) {
 			throw error;
 		}
@@ -135,7 +136,8 @@ export const cardNews = {
 
 	get: async (id: string): Promise<AdminCardNewsItem> => {
 		try {
-			return await adminGet<AdminCardNewsItem>(`/admin/posts/card-news/${id}`);
+			const res = await adminGet<{ data: AdminCardNewsItem }>(`/admin/v2/content/card-news/${id}`);
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -143,10 +145,11 @@ export const cardNews = {
 
 	getList: async (page: number = 1, limit: number = 20): Promise<AdminCardNewsListResponse> => {
 		try {
-			return await adminGet<AdminCardNewsListResponse>('/admin/posts/card-news', {
+			const res = await adminGet<{ data: AdminCardNewsListResponse }>('/admin/v2/content/card-news', {
 				page: String(page),
 				limit: String(limit),
 			});
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -154,7 +157,7 @@ export const cardNews = {
 
 	update: async (id: string, data: UpdateCardNewsRequest): Promise<AdminCardNewsItem> => {
 		try {
-			return await adminPut<AdminCardNewsItem>(`/admin/posts/card-news/${id}`, data);
+			return await adminPut<AdminCardNewsItem>(`/admin/v2/content/card-news/${id}`, data);
 		} catch (error: any) {
 			throw error;
 		}
@@ -162,7 +165,7 @@ export const cardNews = {
 
 	delete: async (id: string): Promise<void> => {
 		try {
-			await adminDelete(`/admin/posts/card-news/${id}`);
+			await adminDelete(`/admin/v2/content/card-news/${id}`);
 		} catch (error: any) {
 			throw error;
 		}
@@ -171,7 +174,7 @@ export const cardNews = {
 	publish: async (id: string, data?: PublishCardNewsRequest): Promise<PublishCardNewsResponse> => {
 		try {
 			return await adminPost<PublishCardNewsResponse>(
-				`/admin/posts/card-news/${id}/publish`,
+				`/admin/v2/content/card-news/${id}/publish`,
 				data || {},
 			);
 		} catch (error: any) {
@@ -388,10 +391,11 @@ export const appReviews = {
 			if (params.endDate) query.endDate = params.endDate;
 			if (params.limit !== undefined) query.limit = String(params.limit);
 			if (params.cursor) query.cursor = params.cursor;
-			return await adminGet<AppReviewsResponse>(
-				'/admin/app-reviews',
+			const res = await adminGet<{ data: AppReviewsResponse }>(
+				'/admin/v2/app-reviews',
 				Object.keys(query).length > 0 ? query : undefined,
 			);
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -399,7 +403,8 @@ export const appReviews = {
 
 	getStats: async (): Promise<AppReviewStatsResponse> => {
 		try {
-			return await adminGet<AppReviewStatsResponse>('/admin/app-reviews/stats');
+			const res = await adminGet<{ data: AppReviewStatsResponse }>('/admin/v2/app-reviews/stats');
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -424,7 +429,8 @@ export const communityReviewArticles = {
 			const query: Record<string, string> = { category: 'review' };
 			if (params.limit !== undefined) query.limit = String(params.limit);
 			if (params.cursor) query.cursor = params.cursor;
-			return await adminGet<CommunityReviewArticlesResponse>('/admin/community/articles', query);
+			const res = await adminGet<{ data: CommunityReviewArticlesResponse }>('/admin/v2/community/posts', query);
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}

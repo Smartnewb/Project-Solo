@@ -136,19 +136,18 @@ const communityService = {
 			params.categoryId = categoryId;
 		}
 
-		const response = await adminGet<any>('/admin/community/articles', params);
-
-		const rawArticles = response.articles ?? [];
+		const res = await adminGet<{ data: any[]; meta: any }>('/admin/v2/community/posts', params);
+		const rawArticles = res.data ?? [];
 		const articles = rawArticles.map(normalizeArticle);
-		const pagination = response.pagination;
+		const pagination = res.meta;
 		return {
 			items: articles,
 			meta: {
-				currentPage: pagination?.page ?? page,
-				itemsPerPage: pagination?.limit ?? limit,
-				totalItems: pagination?.total ?? articles.length,
+				currentPage: pagination?.currentPage ?? page,
+				itemsPerPage: pagination?.itemsPerPage ?? limit,
+				totalItems: pagination?.totalItems ?? articles.length,
 				totalPages: pagination?.totalPages ?? 1,
-				hasNextPage: pagination?.hasMore ?? false,
+				hasNextPage: pagination?.hasNextPage ?? false,
 				hasPreviousPage: page > 1,
 			},
 		};
@@ -159,19 +158,19 @@ const communityService = {
 		const startDate = new Date();
 		startDate.setDate(endDate.getDate() - 30);
 
-		const articlesResponse = await adminGet<any>('/admin/community/articles', {
+		const articlesRes = await adminGet<{ data: any[]; meta: any }>('/admin/v2/community/posts', {
 			startDate: startDate.toISOString().split('T')[0],
 			endDate: endDate.toISOString().split('T')[0],
 			page: '1',
 			limit: '1000',
 		});
 
-		const article = articlesResponse?.articles?.find((item: any) => item.id === id);
+		const article = (articlesRes?.data ?? []).find((item: any) => item.id === id);
 		if (!article) {
 			throw new Error('게시글을 찾을 수 없습니다.');
 		}
 
-		const commentsResponse = await adminGet<any>('/admin/community/comments', {
+		const commentsRes = await adminGet<{ data: any[] }>('/admin/v2/community/comments', {
 			articleId: id,
 			article_id: id,
 		});
@@ -179,7 +178,7 @@ const communityService = {
 		const normalized = normalizeArticle(article);
 		const articleDetail: ArticleDetail = {
 			...normalized,
-			comments: commentsResponse?.comments ?? [],
+			comments: commentsRes?.data ?? [],
 			reports: [],
 		};
 
@@ -187,18 +186,13 @@ const communityService = {
 	},
 
 	blindArticle: async (id: string, isBlinded: boolean): Promise<any> => {
-		return adminPatch('/admin/community/articles/blind', {
-			id,
+		return adminPatch(`/admin/v2/community/posts/${id}/status`, {
 			isBlinded,
 		});
 	},
 
 	deleteArticle: async (articleId: string): Promise<any> => {
-		return adminRequest('/admin/community/articles', {
-			method: 'DELETE',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ articleId }),
-		});
+		return adminDelete(`/admin/v2/community/posts/${articleId}`);
 	},
 
 	moveArticleCategory: async (articleId: string, categoryId: string): Promise<any> => {
@@ -209,10 +203,10 @@ const communityService = {
 	},
 
 	getCategories: async (): Promise<{ categories: Category[] }> => {
-		const response = await adminGet<any>('/admin/community/categories');
+		const res = await adminGet<{ data: Category[] }>('/admin/v2/community/categories');
 
 		return {
-			categories: response.categories ?? [],
+			categories: res.data ?? [],
 		};
 	},
 
@@ -222,21 +216,21 @@ const communityService = {
 		page = 1,
 		limit = 10,
 	): Promise<PaginatedResponse<Comment>> => {
-		const response = await adminGet<any>(`/admin/community/comments`, {
+		const res = await adminGet<{ data: any[]; meta: any }>(`/admin/v2/community/comments`, {
 			articleId,
 		});
 
-		const comments = response.comments ?? response.items ?? [];
-		const pagination = response.pagination ?? response.meta;
+		const comments = res.data ?? [];
+		const pagination = res.meta;
 		return {
 			items: comments,
 			meta: pagination ? {
-				currentPage: pagination.page ?? page,
-				itemsPerPage: pagination.limit ?? limit,
-				totalItems: pagination.total ?? comments.length,
+				currentPage: pagination.currentPage ?? page,
+				itemsPerPage: pagination.itemsPerPage ?? limit,
+				totalItems: pagination.totalItems ?? comments.length,
 				totalPages: pagination.totalPages ?? 1,
-				hasNextPage: pagination.hasMore ?? false,
-				hasPreviousPage: (pagination.page ?? page) > 1,
+				hasNextPage: pagination.hasNextPage ?? false,
+				hasPreviousPage: (pagination.currentPage ?? page) > 1,
 			} : {
 				currentPage: page,
 				itemsPerPage: limit,
@@ -256,7 +250,7 @@ const communityService = {
 	},
 
 	deleteComment: async (id: string): Promise<any> => {
-		return adminDelete(`/admin/community/comments/${id}`);
+		return adminDelete(`/admin/v2/community/comments/${id}`);
 	},
 
 	getCommunityReports: async (
@@ -330,16 +324,14 @@ const communityService = {
 
 	bulkBlindArticles: async (ids: string[], isBlinded: boolean): Promise<any> => {
 		if (ids.length === 1) {
-			return adminPatch('/admin/community/articles/blind', {
-				id: ids[0],
+			return adminPatch(`/admin/v2/community/posts/${ids[0]}/status`, {
 				isBlinded,
 			});
 		}
 
 		const results = [];
 		for (const id of ids) {
-			const response = await adminPatch('/admin/community/articles/blind', {
-				id,
+			const response = await adminPatch(`/admin/v2/community/posts/${id}/status`, {
 				isBlinded,
 			});
 			results.push(response);

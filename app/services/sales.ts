@@ -41,35 +41,35 @@ import { University } from "../admin/users/appearance/types";
 
 // MARK: - 엔드포인트
 const SALES_ENDPOINT = {
-  TOTAL: "/admin/stats/sales/total",
-  DAILY: "/admin/stats/sales/daily",
-  WEEKLY: "/admin/stats/sales/weekly",
-  MONTHLY: "/admin/stats/sales/monthly",
-  CUSTOM_PERIOD: "/admin/stats/sales/custom-period",
+  TOTAL: "/admin/v2/stats/sales",
+  DAILY: "/admin/v2/stats/sales",
+  WEEKLY: "/admin/v2/stats/sales",
+  MONTHLY: "/admin/v2/stats/sales",
+  CUSTOM_PERIOD: "/admin/v2/stats/sales",
   TREND: "/admin/v2/stats/sales/trend",
-  SUCCESS_RATE: "/admin/stats/sales/success-rate",
+  SUCCESS_RATE: "/admin/v2/revenue/success-rate",
   UNIVERSITY_RANKING: "/admin/stats/sales/university-ranking",
-  PAYMENT_ANALYSIS: "/admin/stats/sales/payment-method-analysis",
-  GENDER_ANALYSIS: "/admin/stats/sales/gender-analysis",
-  AGE_ANALYSIS: "/admin/stats/sales/age-analysis",
+  PAYMENT_ANALYSIS: "/admin/v2/stats/sales/analysis",
+  GENDER_ANALYSIS: "/admin/v2/stats/sales/analysis",
+  AGE_ANALYSIS: "/admin/v2/stats/sales/analysis",
   IAP_STATS: "/admin/iap-payments/stats",
-  REVENUE_METRICS: "/admin/stats/sales/revenue-metrics",
-  AOV: "/admin/stats/sales/aov",
-  REPURCHASE_ANALYSIS: "/admin/stats/sales/repurchase-analysis",
-  CONVERSION_RATE: "/admin/stats/sales/conversion-rate",
-  LTV: "/admin/stats/sales/ltv",
-  REVENUE_METRICS_TREND: "/admin/stats/sales/revenue-metrics/trend",
-  PRODUCT_SALES: "/admin/stats/products/sales",
-  PRODUCT_RANKING: "/admin/stats/products/ranking",
+  REVENUE_METRICS: "/admin/v2/revenue/metrics",
+  AOV: "/admin/v2/revenue/aov",
+  REPURCHASE_ANALYSIS: "/admin/v2/revenue/repurchase",
+  CONVERSION_RATE: "/admin/v2/revenue/conversion-rate",
+  LTV: "/admin/v2/revenue/ltv",
+  REVENUE_METRICS_TREND: "/admin/v2/revenue/metrics/trend",
+  PRODUCT_SALES: "/admin/v2/revenue/products/sales",
+  PRODUCT_RANKING: "/admin/v2/revenue/products/ranking",
   PERIOD_ANALYSIS: "/admin/stats/products/period-analysis",
-  GEM_CONSUMPTION: "/admin/stats/products/gem-consumption",
+  GEM_CONSUMPTION: "/admin/v2/revenue/products/gem-consumption",
   SYSTEM_COMPARISON: "/admin/stats/products/system-comparison",
-  INSIGHTS_GEM_TRIGGER: "/admin/stats/insights/gem-trigger",
-  INSIGHTS_FEATURE_FUNNEL: "/admin/stats/insights/feature-funnel",
-  INSIGHTS_FIRST_PURCHASE: "/admin/stats/insights/first-purchase",
-  INSIGHTS_WHALE_USERS: "/admin/stats/insights/whale-users",
-  INSIGHTS_GEM_ECONOMY: "/admin/stats/insights/gem-economy",
-  INSIGHTS_MATCHING_FUNNEL: "/admin/stats/insights/matching-funnel",
+  INSIGHTS_GEM_TRIGGER: "/admin/v2/stats/insights/gem-trigger",
+  INSIGHTS_FEATURE_FUNNEL: "/admin/v2/stats/insights/feature-funnel",
+  INSIGHTS_FIRST_PURCHASE: "/admin/v2/stats/insights/first-purchase",
+  INSIGHTS_WHALE_USERS: "/admin/v2/stats/insights/whale-users",
+  INSIGHTS_GEM_ECONOMY: "/admin/v2/stats/insights/gem-economy",
+  INSIGHTS_MATCHING_FUNNEL: "/admin/v2/stats/insights/matching-funnel",
 } as const;
 
 function toStringParams(params: Record<string, any>): Record<string, string> {
@@ -107,7 +107,8 @@ export const salesService = {
         delete params.endDate;
       }
 
-      const result = await adminGet<TotalSalesResponse>(SALES_ENDPOINT.TOTAL, toStringParams(params));
+      const res = await adminGet<{ data: TotalSalesResponse }>(SALES_ENDPOINT.TOTAL, toStringParams(params));
+      const result = res.data;
 
       if (!result) {
         throw new Error("API 응답이 비어있습니다.");
@@ -122,8 +123,8 @@ export const salesService = {
   // MARK: - 일간 매출액 조회
   async getSalesDaily(data: GetSales): Promise<DailySalesResponse> {
     try {
-      const result = await adminGet<DailySalesResponse>(SALES_ENDPOINT.DAILY, toStringParams(data));
-      return result;
+      const res = await adminGet<{ data: DailySalesResponse }>(SALES_ENDPOINT.DAILY, toStringParams(data));
+      return res.data;
     } catch (error) {
       throw new SalesApiError("일간 매출액 조회 실패:", error);
     }
@@ -132,8 +133,8 @@ export const salesService = {
   // MARK: - 주간 매출액 조회
   async getSalesWeekly(data: GetSales): Promise<WeeklySalesResponse> {
     try {
-      const result = await adminGet<WeeklySalesResponse>(SALES_ENDPOINT.WEEKLY, toStringParams(data));
-      return result;
+      const res = await adminGet<{ data: WeeklySalesResponse }>(SALES_ENDPOINT.WEEKLY, toStringParams(data));
+      return res.data;
     } catch (error) {
       throw new SalesApiError("주간 매출액 조회 실패:", error);
     }
@@ -142,8 +143,8 @@ export const salesService = {
   // MARK: - 월간 매출액 조회
   async getSalesMonthly(data: GetSales): Promise<MonthlySalesResponse> {
     try {
-      const result = await adminGet<MonthlySalesResponse>(SALES_ENDPOINT.MONTHLY, toStringParams(data));
-      return result;
+      const res = await adminGet<{ data: MonthlySalesResponse }>(SALES_ENDPOINT.MONTHLY, toStringParams(data));
+      return res.data;
     } catch (error) {
       throw new SalesApiError("월간 매출액 조회", error);
     }
@@ -155,10 +156,11 @@ export const salesService = {
       // 전체 기간 조회인지 확인
       const isFullPeriod = !data.startDate && !data.endDate;
 
-      const result = await adminPost<any>(
+      const res = await adminPost<{ data: any }>(
         SALES_ENDPOINT.CUSTOM_PERIOD,
         data,
       );
+      const result = res.data;
 
       // 응답 데이터 검증 및 정규화
       const normalizedData = {
@@ -228,8 +230,8 @@ export const salesService = {
   // MARK: - 결제 성공률 조회
   async getSuccessRate(): Promise<PaymentSuccessRateResponse> {
     try {
-      const result = await adminGet<PaymentSuccessRateResponse>(SALES_ENDPOINT.SUCCESS_RATE);
-      return result;
+      const res = await adminGet<{ data: PaymentSuccessRateResponse }>(SALES_ENDPOINT.SUCCESS_RATE);
+      return res.data;
     } catch (error) {
       throw new SalesApiError("결제 성공률 조회 실패:", error);
     }
@@ -254,11 +256,11 @@ export const salesService = {
     endDate: string;
   }): Promise<PaymentAnalysis> {
     try {
-      const result = await adminGet<PaymentAnalysis>(SALES_ENDPOINT.PAYMENT_ANALYSIS, {
+      const res = await adminGet<{ data: PaymentAnalysis }>(SALES_ENDPOINT.PAYMENT_ANALYSIS, {
         startDate: data.startDate,
         endDate: data.endDate,
       });
-      return result;
+      return res.data;
     } catch (error) {
       throw new SalesApiError("결제수단별 상세 분석 조회 실패:", error);
     }
@@ -267,8 +269,8 @@ export const salesService = {
   // MARK: - 성별 구매 분석
   async getGenderAnalysis(data: GetAnalysis): Promise<GenderAnalysis> {
     try {
-      const result = await adminGet<GenderAnalysis>(SALES_ENDPOINT.GENDER_ANALYSIS, toStringParams(data));
-      return result;
+      const res = await adminGet<{ data: GenderAnalysis }>(SALES_ENDPOINT.GENDER_ANALYSIS, toStringParams(data));
+      return res.data;
     } catch (error) {
       throw new SalesApiError("성별 구매 분석 조회 실패:", error);
     }
@@ -277,8 +279,8 @@ export const salesService = {
   // MARK: - 연령대별 구매 분석
   async getAgeAnalysis(data: GetAnalysis): Promise<AgeAnalysis> {
     try {
-      const result = await adminGet<AgeAnalysis>(SALES_ENDPOINT.AGE_ANALYSIS, toStringParams(data));
-      return result;
+      const res = await adminGet<{ data: AgeAnalysis }>(SALES_ENDPOINT.AGE_ANALYSIS, toStringParams(data));
+      return res.data;
     } catch (error) {
       throw new SalesApiError("연령대별 구매 분석 조회 실패:", error);
     }
@@ -301,11 +303,11 @@ export const salesService = {
     includeDeleted?: boolean;
   }): Promise<RevenueMetricsResponse> {
     try {
-      const result = await adminGet<RevenueMetricsResponse>(
+      const res = await adminGet<{ data: RevenueMetricsResponse }>(
         SALES_ENDPOINT.REVENUE_METRICS,
         params ? toStringParams(params) : undefined,
       );
-      return result;
+      return res.data;
     } catch (error) {
       throw new SalesApiError("수익 지표 조회 실패:", error);
     }
@@ -318,11 +320,11 @@ export const salesService = {
     includeDeleted?: boolean;
   }): Promise<AverageOrderValueResponse> {
     try {
-      const result = await adminGet<AverageOrderValueResponse>(
+      const res = await adminGet<{ data: AverageOrderValueResponse }>(
         SALES_ENDPOINT.AOV,
         params ? toStringParams(params) : undefined,
       );
-      return result;
+      return res.data;
     } catch (error) {
       throw new SalesApiError("평균 주문 금액 조회 실패:", error);
     }
@@ -331,10 +333,10 @@ export const salesService = {
   // MARK: - 재구매 분석
   async getRepurchaseAnalysis(): Promise<RepurchaseAnalysisResponse> {
     try {
-      const result = await adminGet<RepurchaseAnalysisResponse>(
+      const res = await adminGet<{ data: RepurchaseAnalysisResponse }>(
         SALES_ENDPOINT.REPURCHASE_ANALYSIS,
       );
-      return result;
+      return res.data;
     } catch (error) {
       throw new SalesApiError("재구매 분석 조회 실패:", error);
     }
@@ -346,11 +348,11 @@ export const salesService = {
     endDate?: string;
   }): Promise<ConversionRateResponse> {
     try {
-      const result = await adminGet<ConversionRateResponse>(
+      const res = await adminGet<{ data: ConversionRateResponse }>(
         SALES_ENDPOINT.CONVERSION_RATE,
         params ? toStringParams(params) : undefined,
       );
-      return result;
+      return res.data;
     } catch (error) {
       throw new SalesApiError("결제 전환율 조회 실패:", error);
     }
@@ -359,8 +361,8 @@ export const salesService = {
   // MARK: - LTV 분석
   async getLtvAnalysis(): Promise<LtvAnalysisResponse> {
     try {
-      const result = await adminGet<LtvAnalysisResponse>(SALES_ENDPOINT.LTV);
-      return result;
+      const res = await adminGet<{ data: LtvAnalysisResponse }>(SALES_ENDPOINT.LTV);
+      return res.data;
     } catch (error) {
       throw new SalesApiError("LTV 분석 조회 실패:", error);
     }
@@ -374,11 +376,11 @@ export const salesService = {
     includeDeleted?: boolean;
   }): Promise<RevenueMetricsTrendResponse> {
     try {
-      const result = await adminGet<RevenueMetricsTrendResponse>(
+      const res = await adminGet<{ data: RevenueMetricsTrendResponse }>(
         SALES_ENDPOINT.REVENUE_METRICS_TREND,
         params ? toStringParams(params) : undefined,
       );
-      return result;
+      return res.data;
     } catch (error) {
       throw new SalesApiError("수익 지표 추이 조회 실패:", error);
     }
@@ -390,11 +392,11 @@ export const salesService = {
     pricePeriod?: string;
   }): Promise<ProductSalesResponse> {
     try {
-      const result = await adminGet<ProductSalesResponse>(
+      const res = await adminGet<{ data: ProductSalesResponse }>(
         SALES_ENDPOINT.PRODUCT_SALES,
         params ? toStringParams(params) : undefined,
       );
-      return result;
+      return res.data;
     } catch (error) {
       throw new SalesApiError("상품별 판매 현황 조회 실패:", error);
     }
@@ -406,11 +408,11 @@ export const salesService = {
     pricePeriod?: string;
   }): Promise<ProductRankingResponse> {
     try {
-      const result = await adminGet<ProductRankingResponse>(
+      const res = await adminGet<{ data: ProductRankingResponse }>(
         SALES_ENDPOINT.PRODUCT_RANKING,
         params ? toStringParams(params) : undefined,
       );
-      return result;
+      return res.data;
     } catch (error) {
       throw new SalesApiError("상품 랭킹 조회 실패:", error);
     }
@@ -430,11 +432,11 @@ export const salesService = {
     endDate?: string;
   }): Promise<GemConsumptionResponse> {
     try {
-      const result = await adminGet<GemConsumptionResponse>(
+      const res = await adminGet<{ data: GemConsumptionResponse }>(
         SALES_ENDPOINT.GEM_CONSUMPTION,
         params ? toStringParams(params) : undefined,
       );
-      return result;
+      return res.data;
     } catch (error) {
       throw new SalesApiError("구슬 소비 분석 조회 실패:", error);
     }
@@ -454,11 +456,11 @@ export const salesService = {
     endDate?: string;
   }): Promise<GemTriggerResponse> {
     try {
-      const result = await adminGet<GemTriggerResponse>(
+      const res = await adminGet<{ data: GemTriggerResponse }>(
         SALES_ENDPOINT.INSIGHTS_GEM_TRIGGER,
         params ? toStringParams(params) : undefined,
       );
-      return result;
+      return res.data;
     } catch (error) {
       throw new SalesApiError("구슬 잔액 트리거 분석 조회 실패:", error);
     }
@@ -469,11 +471,11 @@ export const salesService = {
     endDate?: string;
   }): Promise<FeatureFunnelResponse> {
     try {
-      const result = await adminGet<FeatureFunnelResponse>(
+      const res = await adminGet<{ data: FeatureFunnelResponse }>(
         SALES_ENDPOINT.INSIGHTS_FEATURE_FUNNEL,
         params ? toStringParams(params) : undefined,
       );
-      return result;
+      return res.data;
     } catch (error) {
       throw new SalesApiError("기능→결제 퍼널 분석 조회 실패:", error);
     }
@@ -481,10 +483,10 @@ export const salesService = {
 
   async getFirstPurchase(): Promise<FirstPurchaseResponse> {
     try {
-      const result = await adminGet<FirstPurchaseResponse>(
+      const res = await adminGet<{ data: FirstPurchaseResponse }>(
         SALES_ENDPOINT.INSIGHTS_FIRST_PURCHASE,
       );
-      return result;
+      return res.data;
     } catch (error) {
       throw new SalesApiError("첫 결제 트리거 분석 조회 실패:", error);
     }
@@ -495,11 +497,11 @@ export const salesService = {
     endDate?: string;
   }): Promise<WhaleUserResponse> {
     try {
-      const result = await adminGet<WhaleUserResponse>(
+      const res = await adminGet<{ data: WhaleUserResponse }>(
         SALES_ENDPOINT.INSIGHTS_WHALE_USERS,
         params ? toStringParams(params) : undefined,
       );
-      return result;
+      return res.data;
     } catch (error) {
       throw new SalesApiError("고래 유저 분석 조회 실패:", error);
     }
@@ -510,11 +512,11 @@ export const salesService = {
     endDate?: string;
   }): Promise<GemEconomyResponse> {
     try {
-      const result = await adminGet<GemEconomyResponse>(
+      const res = await adminGet<{ data: GemEconomyResponse }>(
         SALES_ENDPOINT.INSIGHTS_GEM_ECONOMY,
         params ? toStringParams(params) : undefined,
       );
-      return result;
+      return res.data;
     } catch (error) {
       throw new SalesApiError("구슬 경제 밸런스 분석 조회 실패:", error);
     }
@@ -525,11 +527,11 @@ export const salesService = {
     endDate?: string;
   }): Promise<MatchingFunnelResponse> {
     try {
-      const result = await adminGet<MatchingFunnelResponse>(
+      const res = await adminGet<{ data: MatchingFunnelResponse }>(
         SALES_ENDPOINT.INSIGHTS_MATCHING_FUNNEL,
         params ? toStringParams(params) : undefined,
       );
-      return result;
+      return res.data;
     } catch (error) {
       throw new SalesApiError("매칭→수익화 퍼널 분석 조회 실패:", error);
     }

@@ -1,5 +1,4 @@
-import axiosServer from '@/utils/axios';
-import { adminRequest } from '@/shared/lib/http/admin-fetch';
+import { adminGet, adminPost, adminRequest } from '@/shared/lib/http/admin-fetch';
 import type {
 	ActionLogsResponse,
 	AdminLikesParams,
@@ -21,6 +20,7 @@ import type {
 	ViewProfileResponse,
 } from '@/types/admin';
 import { getCountryHeader } from './_shared';
+import axiosServer from '@/utils/axios';
 
 // 구슬 관리 API
 export const gems = {
@@ -59,7 +59,7 @@ export const gems = {
 				failedCount?: number;
 				errors?: Array<{ identifier: string; reason: string }>;
 				pushNotificationResult?: { pushSuccessCount: number; pushFailureCount: number };
-			}>('/admin/gems/bulk-grant', {
+			}>('/admin/v2/gems/bulk-grant', {
 				method: 'POST',
 				body: formData,
 			});
@@ -73,8 +73,8 @@ export const gems = {
 
 export const gemPricing = {
 	getAll: async () => {
-		const response = await axiosServer.get('/admin/gem-pricing');
-		return response.data;
+		const res = await adminGet<{ data: any }>('/admin/v2/gems/pricing');
+		return res.data;
 	},
 };
 
@@ -83,11 +83,9 @@ export const femaleRetention = {
 	getInactiveUsers: async (limit: number = 20, offset: number = 0) => {
 		try {
 			;
-			const response = await axiosServer.get('/admin/female-retention', {
-				params: { limit, offset },
-			});
+			const res = await adminGet<{ data: any }>('/admin/v2/retention/female-retention', { limit: String(limit), offset: String(offset) });
 			;
-			return response.data;
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -109,15 +107,8 @@ export const femaleRetention = {
 export const chatRefund = {
 	searchUsers: async (name: string) => {
 		try {
-			const country = getCountryHeader();
-			const response = await axiosServer.get<RefundUserSearchResponse>(
-				'/admin/refund/users/search',
-				{
-					params: { name },
-					headers: { 'X-Country': country },
-				},
-			);
-			return response.data;
+			const res = await adminGet<{ data: RefundUserSearchResponse }>('/admin/v2/payments/chat-refund/users/search', { name });
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -140,15 +131,8 @@ export const chatRefund = {
 
 	previewRefund: async (data: RefundPreviewRequest) => {
 		try {
-			const country = getCountryHeader();
-			const response = await axiosServer.post<RefundPreviewResponse>(
-				'/admin/refund/preview',
-				data,
-				{
-					headers: { 'X-Country': country },
-				},
-			);
-			return response.data;
+			const res = await adminPost<{ data: RefundPreviewResponse }>('/admin/v2/payments/chat-refund/preview', data);
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -156,15 +140,8 @@ export const chatRefund = {
 
 	processRefund: async (data: ProcessRefundRequest) => {
 		try {
-			const country = getCountryHeader();
-			const response = await axiosServer.post<ProcessRefundResponse>(
-				'/admin/refund/process',
-				data,
-				{
-					headers: { 'X-Country': country },
-				},
-			);
-			return response.data;
+			const res = await adminPost<{ data: ProcessRefundResponse }>('/admin/v2/payments/chat-refund/process', data);
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -211,21 +188,19 @@ export const appleRefund = {
 
 export const likes = {
 	getList: async (params: AdminLikesParams): Promise<AdminLikesResponse> => {
-		const response = await axiosServer.get('/admin/likes', { params });
-		return response.data;
+		const res = await adminGet<{ data: AdminLikesResponse }>('/admin/v2/matching/likes', params as Record<string, string>);
+		return res.data;
 	},
 };
 
 export const dormantLikes = {
 	getDashboard: async (page: number = 1, limit: number = 20, inactiveDays: number = 0) => {
 		try {
-			const response = await axiosServer.get<DormantLikesDashboardResponse>(
-				'/admin/dormant-likes',
-				{
-					params: { page, limit, inactiveDays },
-				},
+			const res = await adminGet<{ data: DormantLikesDashboardResponse }>(
+				'/admin/v2/retention/dormant-likes',
+				{ page: String(page), limit: String(limit), inactiveDays: String(inactiveDays) },
 			);
-			return response.data;
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -255,11 +230,11 @@ export const dormantLikes = {
 
 	processLikes: async (data: ProcessLikesRequest) => {
 		try {
-			const response = await axiosServer.post<ProcessLikesResponse>(
-				'/admin/dormant-likes/process',
+			const res = await adminPost<{ data: ProcessLikesResponse }>(
+				'/admin/v2/retention/dormant-likes/process',
 				data,
 			);
-			return response.data;
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -275,10 +250,12 @@ export const dormantLikes = {
 		},
 	) => {
 		try {
-			const response = await axiosServer.get<ActionLogsResponse>('/admin/dormant-likes/logs', {
-				params: { page, limit, ...filters },
-			});
-			return response.data;
+			const params: Record<string, string> = { page: String(page), limit: String(limit) };
+			if (filters?.adminUserId) params.adminUserId = filters.adminUserId;
+			if (filters?.dormantUserId) params.dormantUserId = filters.dormantUserId;
+			if (filters?.batchId) params.batchId = filters.batchId;
+			const res = await adminGet<{ data: ActionLogsResponse }>('/admin/v2/retention/dormant-likes/logs', params);
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -286,11 +263,11 @@ export const dormantLikes = {
 
 	viewProfile: async (data: ViewProfileRequest) => {
 		try {
-			const response = await axiosServer.post<ViewProfileResponse>(
-				'/admin/dormant-likes/view-profile',
+			const res = await adminPost<{ data: ViewProfileResponse }>(
+				'/admin/v2/retention/dormant-likes/view-profile',
 				data,
 			);
-			return response.data;
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}

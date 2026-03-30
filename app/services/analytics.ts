@@ -11,7 +11,8 @@ interface TopPageParams extends DateRange {
 
 const analytics = {
   getActiveUsers: async () => {
-    return adminGet<any>('/admin/analytics/active-users');
+    const result = await adminGet<{ data: any }>('/admin/v2/stats/activity');
+    return result.data;
   },
 
   getPageViews: async (params?: DateRange) => {
