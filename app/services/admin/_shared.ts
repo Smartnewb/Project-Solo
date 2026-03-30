@@ -11,10 +11,16 @@ export interface GenderStatItem {
 	stats: StatItem[];
 }
 
+export interface UnknownBreakdown {
+	neverClassified: number;
+	inactiveReset: number;
+}
+
 export interface FormattedData {
 	total: number;
 	stats: StatItem[];
 	genderStats: GenderStatItem[];
+	unknownBreakdown?: UnknownBreakdown;
 }
 
 export const getCountryHeader = (): string => {

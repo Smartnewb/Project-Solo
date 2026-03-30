@@ -473,6 +473,7 @@ export const userAppearance = {
 				total: 0,
 				stats: [],
 				genderStats: [],
+				unknownBreakdown: undefined,
 			};
 
 			if (typeof responseData === 'object' && responseData !== null) {
@@ -527,6 +528,10 @@ export const userAppearance = {
 							}),
 						},
 					];
+
+					if (responseData.unknownBreakdown) {
+						formattedData.unknownBreakdown = responseData.unknownBreakdown;
+					}
 
 					;
 					;

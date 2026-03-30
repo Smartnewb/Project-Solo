@@ -75,6 +75,12 @@ export interface PaginatedResponse<T> {
   meta: PaginationMeta;
 }
 
+// 미분류 사유별 분류
+export interface UnknownBreakdown {
+  neverClassified: number;
+  inactiveReset: number;
+}
+
 // 외모 등급 통계 응답 타입
 export interface UserAppearanceGradeStatsResponse {
   total: number;
@@ -91,6 +97,7 @@ export interface UserAppearanceGradeStatsResponse {
       percentage: number;
     }[];
   }[];
+  unknownBreakdown?: UnknownBreakdown;
   // 다른 형식의 응답을 위한 확장 필드
   data?: {
     total?: number;

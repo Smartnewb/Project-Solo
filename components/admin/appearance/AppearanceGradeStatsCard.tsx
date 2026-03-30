@@ -9,59 +9,363 @@ import {
   Chip,
   Divider,
   LinearProgress,
-  Alert
+  Stack,
+  alpha,
 } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { UserAppearanceGradeStatsResponse, AppearanceGrade } from '@/app/admin/users/appearance/types';
-import { getRegionLabel } from '@/components/admin/common/RegionFilter';
+import PersonOffOutlinedIcon from '@mui/icons-material/PersonOffOutlined';
+import FiberNewOutlinedIcon from '@mui/icons-material/FiberNewOutlined';
+import BlockOutlinedIcon from '@mui/icons-material/BlockOutlined';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  Legend,
+} from 'recharts';
+import {
+  UserAppearanceGradeStatsResponse,
+  AppearanceGrade,
+} from '@/app/admin/users/appearance/types';
 
-// 등급별 색상 정의
-const GRADE_COLORS = {
-  'S': '#8E44AD', // 보라색
-  'A': '#3498DB', // 파란색
-  'B': '#2ECC71', // 초록색
-  'C': '#F39C12', // 주황색
-  'UNKNOWN': '#95A5A6' // 회색
+const GRADE_COLORS: Record<string, string> = {
+  S: '#7C3AED',
+  A: '#2563EB',
+  B: '#059669',
+  C: '#D97706',
+  UNKNOWN: '#94A3B8',
 };
 
-// 등급 한글 표시
-const GRADE_LABELS = {
-  'S': 'S등급',
-  'A': 'A등급',
-  'B': 'B등급',
-  'C': 'C등급',
-  'UNKNOWN': '미분류'
+const GRADE_LABELS: Record<string, string> = {
+  S: 'S',
+  A: 'A',
+  B: 'B',
+  C: 'C',
+  UNKNOWN: '미분류',
+};
+
+const UNKNOWN_BREAKDOWN_COLORS = {
+  neverClassified: '#64748B',
+  inactiveReset: '#CBD5E1',
 };
 
 interface AppearanceGradeStatsCardProps {
   stats: UserAppearanceGradeStatsResponse;
 }
 
+function GradeStatMiniCard({
+  grade,
+  count,
+  percentage,
+  total,
+}: {
+  grade: string;
+  count: number;
+  percentage: number;
+  total: number;
+}) {
+  const color = GRADE_COLORS[grade] || '#94A3B8';
+  const label = GRADE_LABELS[grade] || grade;
+
+  return (
+    <Box
+      sx={{
+        p: 2,
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: alpha(color, 0.2),
+        bgcolor: alpha(color, 0.04),
+        transition: 'all 0.2s',
+        '&:hover': {
+          borderColor: alpha(color, 0.4),
+          bgcolor: alpha(color, 0.08),
+          transform: 'translateY(-1px)',
+          boxShadow: `0 4px 12px ${alpha(color, 0.15)}`,
+        },
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box
+            sx={{
+              width: 10,
+              height: 10,
+              borderRadius: '50%',
+              bgcolor: color,
+            }}
+          />
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, color }}>
+            {label}등급
+          </Typography>
+        </Box>
+        <Chip
+          label={`${percentage.toFixed(1)}%`}
+          size="small"
+          sx={{
+            height: 22,
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            bgcolor: alpha(color, 0.12),
+            color,
+            border: 'none',
+          }}
+        />
+      </Box>
+      <Typography variant="h5" sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
+        {count.toLocaleString()}
+        <Typography component="span" variant="body2" sx={{ ml: 0.5, color: 'text.secondary', fontWeight: 400 }}>
+          명
+        </Typography>
+      </Typography>
+      <LinearProgress
+        variant="determinate"
+        value={Math.min(percentage, 100)}
+        sx={{
+          height: 4,
+          borderRadius: 2,
+          bgcolor: alpha(color, 0.12),
+          '& .MuiLinearProgress-bar': {
+            borderRadius: 2,
+            bgcolor: color,
+          },
+        }}
+      />
+    </Box>
+  );
+}
+
+function PieChartSection({
+  title,
+  subtitle,
+  data,
+}: {
+  title: string;
+  subtitle?: string;
+  data: { name: string; value: number; percentage: number; grade: string }[];
+}) {
+  const hasData = data.length > 0;
+  const total = data.reduce((sum, d) => sum + d.value, 0);
+
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const d = payload[0].payload;
+      return (
+        <Box
+          sx={{
+            bgcolor: 'background.paper',
+            px: 2,
+            py: 1.5,
+            borderRadius: 2,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
+            border: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+            {d.name}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {d.value.toLocaleString()}명 ({d.percentage.toFixed(1)}%)
+          </Typography>
+        </Box>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <Box>
+      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
+        {title}
+      </Typography>
+      {subtitle && (
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          {subtitle}
+        </Typography>
+      )}
+      <Box sx={{ height: 220 }}>
+        {hasData ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={data}
+                cx="50%"
+                cy="50%"
+                innerRadius={45}
+                outerRadius={75}
+                paddingAngle={2}
+                dataKey="value"
+                nameKey="name"
+              >
+                {data.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={GRADE_COLORS[entry.grade] || '#CCC'}
+                    strokeWidth={0}
+                  />
+                ))}
+              </Pie>
+              <Tooltip content={<CustomTooltip />} />
+              <Legend
+                iconType="circle"
+                iconSize={8}
+                wrapperStyle={{ fontSize: '12px' }}
+                formatter={(value: string) => (
+                  <span style={{ color: '#64748B', fontSize: '12px' }}>{value}</span>
+                )}
+              />
+              <text
+                x="50%"
+                y="45%"
+                textAnchor="middle"
+                dominantBaseline="middle"
+                style={{ fontSize: '20px', fontWeight: 700, fill: '#1E293B' }}
+              >
+                {total.toLocaleString()}
+              </text>
+              <text
+                x="50%"
+                y="56%"
+                textAnchor="middle"
+                dominantBaseline="middle"
+                style={{ fontSize: '11px', fill: '#94A3B8' }}
+              >
+                총원
+              </text>
+            </PieChart>
+          </ResponsiveContainer>
+        ) : (
+          <Box
+            sx={{
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              데이터 없음
+            </Typography>
+          </Box>
+        )}
+      </Box>
+    </Box>
+  );
+}
+
+function UnknownBreakdownSection({
+  neverClassified,
+  inactiveReset,
+  totalUnknown,
+}: {
+  neverClassified: number;
+  inactiveReset: number;
+  totalUnknown: number;
+}) {
+  const neverPct = totalUnknown > 0 ? (neverClassified / totalUnknown) * 100 : 0;
+  const inactivePct = totalUnknown > 0 ? (inactiveReset / totalUnknown) * 100 : 0;
+
+  const items = [
+    {
+      label: '등급 미부여',
+      desc: '신규 가입 후 어드민 분류 대기',
+      count: neverClassified,
+      pct: neverPct,
+      color: UNKNOWN_BREAKDOWN_COLORS.neverClassified,
+      icon: <FiberNewOutlinedIcon sx={{ fontSize: 18 }} />,
+    },
+    {
+      label: '미접속 초기화',
+      desc: '7일 이상 미접속, 재접속 시 복원',
+      count: inactiveReset,
+      pct: inactivePct,
+      color: UNKNOWN_BREAKDOWN_COLORS.inactiveReset,
+      icon: <PersonOffOutlinedIcon sx={{ fontSize: 18 }} />,
+    },
+  ];
+
+  return (
+    <Box
+      sx={{
+        p: 2.5,
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: alpha('#94A3B8', 0.2),
+        bgcolor: alpha('#F8FAFC', 0.8),
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+        <InfoOutlinedIcon sx={{ fontSize: 18, color: '#64748B' }} />
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#334155' }}>
+          미분류 상세 ({totalUnknown.toLocaleString()}명)
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 'auto' }}>
+          <BlockOutlinedIcon sx={{ fontSize: 14, color: '#EF4444' }} />
+          <Typography variant="caption" sx={{ color: '#EF4444', fontWeight: 500 }}>
+            매칭 제외
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* Stacked bar */}
+      <Box sx={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', mb: 2 }}>
+        <Box sx={{ width: `${neverPct}%`, bgcolor: UNKNOWN_BREAKDOWN_COLORS.neverClassified, transition: 'width 0.3s' }} />
+        <Box sx={{ width: `${inactivePct}%`, bgcolor: UNKNOWN_BREAKDOWN_COLORS.inactiveReset, transition: 'width 0.3s' }} />
+      </Box>
+
+      <Stack spacing={1.5}>
+        {items.map((item) => (
+          <Box
+            key={item.label}
+            sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}
+          >
+            <Box
+              sx={{
+                width: 28,
+                height: 28,
+                borderRadius: 1.5,
+                bgcolor: alpha(item.color, 0.15),
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: item.color === UNKNOWN_BREAKDOWN_COLORS.inactiveReset ? '#64748B' : item.color,
+                flexShrink: 0,
+              }}
+            >
+              {item.icon}
+            </Box>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#334155' }}>
+                  {item.label}
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#94A3B8' }}>
+                  {item.desc}
+                </Typography>
+              </Box>
+            </Box>
+            <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
+              <Typography variant="body2" sx={{ fontWeight: 700, color: '#1E293B' }}>
+                {item.count.toLocaleString()}명
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#94A3B8' }}>
+                {item.pct.toFixed(1)}%
+              </Typography>
+            </Box>
+          </Box>
+        ))}
+      </Stack>
+    </Box>
+  );
+}
+
 export default function AppearanceGradeStatsCard({ stats }: AppearanceGradeStatsCardProps) {
-  console.log('AppearanceGradeStatsCard에 전달된 데이터:', JSON.stringify(stats, null, 2));
-
-  // 데이터 구조 분석
-  if (stats) {
-    console.log('통계 데이터 구조:');
-    console.log('- total 값:', stats.total);
-    console.log('- stats 배열 길이:', Array.isArray(stats.stats) ? stats.stats.length : 'stats가 배열이 아님');
-    if (Array.isArray(stats.stats) && stats.stats.length > 0) {
-      console.log('- stats 첫 번째 항목 구조:', stats.stats[0]);
-    }
-    console.log('- genderStats 배열 길이:', Array.isArray(stats.genderStats) ? stats.genderStats.length : 'genderStats가 배열이 아님');
-    if (Array.isArray(stats.genderStats) && stats.genderStats.length > 0) {
-      console.log('- genderStats 첫 번째 항목 구조:', stats.genderStats[0]);
-    }
-  }
-
-  // 데이터 유효성 검사
   if (!stats) {
-    console.error('통계 데이터가 없습니다.');
     return (
-      <Card>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
+      <Card sx={{ borderRadius: 3, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+        <CardContent sx={{ p: 3 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
             외모 등급 통계
           </Typography>
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
@@ -74,20 +378,18 @@ export default function AppearanceGradeStatsCard({ stats }: AppearanceGradeStats
     );
   }
 
-  // 필수 속성 확인 및 기본값 설정
   const safeStats = {
     total: stats.total || 0,
     stats: Array.isArray(stats.stats) ? stats.stats : [],
-    genderStats: Array.isArray(stats.genderStats) ? stats.genderStats : []
+    genderStats: Array.isArray(stats.genderStats) ? stats.genderStats : [],
+    unknownBreakdown: stats.unknownBreakdown,
   };
 
-  // 데이터가 비어있는 경우 처리
   if (safeStats.stats.length === 0 && safeStats.genderStats.length === 0) {
-    console.warn('통계 데이터가 비어있습니다:', stats);
     return (
-      <Card>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
+      <Card sx={{ borderRadius: 3, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+        <CardContent sx={{ p: 3 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
             외모 등급 통계
           </Typography>
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
@@ -100,267 +402,96 @@ export default function AppearanceGradeStatsCard({ stats }: AppearanceGradeStats
     );
   }
 
-  // 차트 데이터 변환 (빈 데이터 필터링 및 정렬)
-  const chartData = safeStats.stats
-    .filter(item => item && item.grade) // 유효한 항목만 필터링
-    .map(item => ({
-      name: GRADE_LABELS[item.grade as AppearanceGrade] || '알 수 없음',
-      value: item.count || 0,
-      percentage: typeof item.percentage === 'number' ? item.percentage : 0,
-      grade: item.grade
-    }))
-    .filter(item => item.value > 0); // 값이 0인 항목 제외
+  const toChartData = (items: { grade: string; count: number; percentage: number }[]) =>
+    items
+      .filter((item) => item && item.grade && (item.count || 0) > 0)
+      .map((item) => ({
+        name: `${GRADE_LABELS[item.grade as AppearanceGrade] || item.grade}등급`,
+        value: item.count || 0,
+        percentage: typeof item.percentage === 'number' ? item.percentage : 0,
+        grade: item.grade,
+      }));
 
-  console.log('차트 데이터:', chartData);
-
-  // 남성 차트 데이터
-  const maleStats = safeStats.genderStats.find(g => g.gender === 'MALE')?.stats || [];
-  const maleChartData = maleStats
-    .filter(item => item && item.grade) // 유효한 항목만 필터링
-    .map(item => ({
-      name: GRADE_LABELS[item.grade as AppearanceGrade] || '알 수 없음',
-      value: item.count || 0,
-      percentage: typeof item.percentage === 'number' ? item.percentage : 0,
-      grade: item.grade
-    }))
-    .filter(item => item.value > 0); // 값이 0인 항목 제외
-
-  console.log('남성 차트 데이터:', maleChartData);
-
-  // 여성 차트 데이터
-  const femaleStats = safeStats.genderStats.find(g => g.gender === 'FEMALE')?.stats || [];
-  const femaleChartData = femaleStats
-    .filter(item => item && item.grade) // 유효한 항목만 필터링
-    .map(item => ({
-      name: GRADE_LABELS[item.grade as AppearanceGrade] || '알 수 없음',
-      value: item.count || 0,
-      percentage: typeof item.percentage === 'number' ? item.percentage : 0,
-      grade: item.grade
-    }))
-    .filter(item => item.value > 0); // 값이 0인 항목 제외
-
-  console.log('여성 차트 데이터:', femaleChartData);
-
-  // 데이터가 있는지 확인
-  const hasData = chartData.length > 0;
-  const hasMaleData = maleChartData.length > 0;
-  const hasFemaleData = femaleChartData.length > 0;
-
-  // 커스텀 툴팁
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <Box sx={{ bgcolor: 'background.paper', p: 2, border: '1px solid #ccc', borderRadius: 1 }}>
-          <Typography variant="subtitle2">{data.name}</Typography>
-          <Typography variant="body2">
-            {data.value.toLocaleString()}명
-            ({typeof data.percentage === 'number' ? data.percentage.toFixed(1) : '0.0'}%)
-          </Typography>
-        </Box>
-      );
-    }
-    return null;
-  };
-
-  // 데이터가 없는 경우 표시할 메시지
-  const EmptyChart = () => (
-    <Box sx={{
-      height: '100%',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexDirection: 'column',
-      p: 2
-    }}>
-      <Typography variant="body1" color="text.secondary" align="center">
-        데이터가 없습니다
-      </Typography>
-    </Box>
+  const chartData = toChartData(safeStats.stats);
+  const maleChartData = toChartData(
+    safeStats.genderStats.find((g) => g.gender === 'MALE')?.stats || [],
+  );
+  const femaleChartData = toChartData(
+    safeStats.genderStats.find((g) => g.gender === 'FEMALE')?.stats || [],
   );
 
+  const unknownStat = safeStats.stats.find((s) => s.grade === 'UNKNOWN');
+  const totalUnknown = unknownStat?.count || 0;
+  const hasBreakdown = safeStats.unknownBreakdown && totalUnknown > 0;
+
   return (
-    <Card>
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          외모 등급 통계
-        </Typography>
-
-        <Grid container spacing={3}>
-          {/* 전체 통계 */}
-          <Grid item xs={12} md={4}>
-            <Typography variant="subtitle1" gutterBottom>
-              전체 등급 분포 (총 {safeStats.total.toLocaleString()}명)
+    <Card sx={{ borderRadius: 3, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'visible' }}>
+      <CardContent sx={{ p: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: '#1E293B' }}>
+              외모 등급 통계
             </Typography>
-            <Box sx={{ height: 250 }}>
-              {hasData ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={chartData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                      nameKey="name"
-                      label={(entry) => entry.name}
-                    >
-                      {chartData.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={GRADE_COLORS[entry.grade as AppearanceGrade] || '#CCCCCC'}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <EmptyChart />
-              )}
-            </Box>
-          </Grid>
-
-          {/* 남성 통계 */}
-          <Grid item xs={12} md={4}>
-            <Typography variant="subtitle1" gutterBottom>
-              남성 등급 분포
+            <Typography variant="body2" sx={{ color: '#94A3B8', mt: 0.25 }}>
+              승인된 사용자 총 {safeStats.total.toLocaleString()}명
             </Typography>
-            <Box sx={{ height: 250 }}>
-              {hasMaleData ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={maleChartData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                      nameKey="name"
-                      label={(entry) => entry.name}
-                    >
-                      {maleChartData.map((entry, index) => (
-                        <Cell
-                          key={`cell-male-${index}`}
-                          fill={GRADE_COLORS[entry.grade as AppearanceGrade] || '#CCCCCC'}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <EmptyChart />
-              )}
-            </Box>
-          </Grid>
+          </Box>
+        </Box>
 
-          {/* 여성 통계 */}
-          <Grid item xs={12} md={4}>
-            <Typography variant="subtitle1" gutterBottom>
-              여성 등급 분포
-            </Typography>
-            <Box sx={{ height: 250 }}>
-              {hasFemaleData ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={femaleChartData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                      nameKey="name"
-                      label={(entry) => entry.name}
-                    >
-                      {femaleChartData.map((entry, index) => (
-                        <Cell
-                          key={`cell-female-${index}`}
-                          fill={GRADE_COLORS[entry.grade as AppearanceGrade] || '#CCCCCC'}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <EmptyChart />
-              )}
-            </Box>
-          </Grid>
-        </Grid>
-
-        <Divider sx={{ my: 3 }} />
-
-        {/* 미분류 안내 */}
-        <Alert
-          severity="info"
-          icon={<InfoOutlinedIcon />}
-          sx={{ mb: 3 }}
-        >
-          <Typography variant="body2" sx={{ fontWeight: 500 }}>
-            미분류(UNKNOWN) 안내
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            • 신규 가입 후 어드민이 등급을 부여하지 않은 사용자
-            <br />
-            • 7일 이상 미접속하여 등급이 자동 초기화된 사용자 (재접속 시 복원)
-            <br />
-            • 미분류 사용자는 매칭에서 제외됩니다
-          </Typography>
-        </Alert>
-
-        {/* 등급별 상세 통계 */}
-        <Grid container spacing={2}>
+        {/* 등급 카드 그리드 */}
+        <Grid container spacing={1.5} sx={{ mb: 3 }}>
           {safeStats.stats
-            .filter(item => item && item.grade) // 유효한 항목만 필터링
+            .filter((item) => item && item.grade)
             .sort((a, b) => {
-              // 등급 순서: S, A, B, C, UNKNOWN
-              const gradeOrder = { 'S': 0, 'A': 1, 'B': 2, 'C': 3, 'UNKNOWN': 4 };
-              return (gradeOrder[a.grade as keyof typeof gradeOrder] || 999) -
-                     (gradeOrder[b.grade as keyof typeof gradeOrder] || 999);
+              const order: Record<string, number> = { S: 0, A: 1, B: 2, C: 3, UNKNOWN: 4 };
+              return (order[a.grade] ?? 99) - (order[b.grade] ?? 99);
             })
             .map((item) => (
-              <Grid item xs={12} sm={6} md={4} lg={2} key={item.grade}>
-                <Card variant="outlined">
-                  <CardContent>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                      <Typography variant="h6" color={GRADE_COLORS[item.grade as AppearanceGrade] || '#CCCCCC'}>
-                        {GRADE_LABELS[item.grade as AppearanceGrade] || '알 수 없음'}
-                      </Typography>
-                      <Chip
-                        label={`${typeof item.percentage === 'number' ? item.percentage.toFixed(1) : '0.0'}%`}
-                        size="small"
-                        sx={{ bgcolor: GRADE_COLORS[item.grade as AppearanceGrade] || '#CCCCCC', color: 'white' }}
-                      />
-                    </Box>
-                    <Typography variant="body1">{(item.count || 0).toLocaleString()}명</Typography>
-                    <LinearProgress
-                      variant="determinate"
-                      value={typeof item.percentage === 'number' ? Math.min(item.percentage, 100) : 0}
-                      sx={{
-                        mt: 1,
-                        height: 8,
-                        borderRadius: 1,
-                        backgroundColor: '#e0e0e0',
-                        '& .MuiLinearProgress-bar': {
-                          backgroundColor: GRADE_COLORS[item.grade as AppearanceGrade] || '#CCCCCC'
-                        }
-                      }}
-                    />
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
+              <Grid item xs={6} sm={4} md key={item.grade}>
+                <GradeStatMiniCard
+                  grade={item.grade}
+                  count={item.count || 0}
+                  percentage={typeof item.percentage === 'number' ? item.percentage : 0}
+                  total={safeStats.total}
+                />
+              </Grid>
+            ))}
+        </Grid>
+
+        {/* 미분류 상세 breakdown */}
+        {hasBreakdown && (
+          <Box sx={{ mb: 3 }}>
+            <UnknownBreakdownSection
+              neverClassified={safeStats.unknownBreakdown!.neverClassified}
+              inactiveReset={safeStats.unknownBreakdown!.inactiveReset}
+              totalUnknown={totalUnknown}
+            />
+          </Box>
+        )}
+
+        <Divider sx={{ my: 2 }} />
+
+        {/* 파이 차트 - 전체 / 남성 / 여성 */}
+        <Grid container spacing={3}>
+          <Grid item xs={12} md={4}>
+            <PieChartSection
+              title="전체"
+              subtitle={`${safeStats.total.toLocaleString()}명`}
+              data={chartData}
+            />
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <PieChartSection
+              title="남성"
+              data={maleChartData}
+            />
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <PieChartSection
+              title="여성"
+              data={femaleChartData}
+            />
+          </Grid>
         </Grid>
       </CardContent>
     </Card>
