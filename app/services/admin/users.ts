@@ -127,18 +127,19 @@ export const userAppearance = {
 		name?: string;
 		university?: string;
 	}) => {
-		return adminGet<{
+		const res = await adminGet<{ data: {
 			users: unknown[];
 			total: number;
 			page: number;
 			limit: number;
 			totalPages: number;
-		}>('/admin/university-verification/pending', {
+		} }>('/admin/v2/profile-review/university-verification/pending', {
 			page: String(params.page ?? 1),
 			limit: String(params.limit ?? 10),
 			name: params.name ?? '',
 			university: params.university ?? '',
 		});
+		return res.data;
 	},
 
 	bulkSetUserAppearanceGrade: async (
@@ -440,7 +441,7 @@ export const userAppearance = {
 		try {
 			;
 
-			const endpoint = '/admin/users/appearance/stats';
+			const endpoint = '/admin/v2/users/appearance/stats';
 			;
 
 			const timestamp = new Date().getTime();
@@ -456,7 +457,8 @@ export const userAppearance = {
 			let responseData: any;
 
 			try {
-				const result = await adminGet<any>(finalUrl);
+				const raw = await adminGet<{ data: any }>(finalUrl);
+				const result = raw.data;
 
 				if (!result || Object.keys(result).length === 0) {
 					return null;
@@ -715,9 +717,10 @@ export const userAppearance = {
 			if (params.name) queryParams.append('name', params.name);
 			if (params.university) queryParams.append('university', params.university);
 
-			const result = await adminGet<any>(
-				`/admin/university-verification/pending?${queryParams.toString()}`,
+			const res = await adminGet<{ data: any }>(
+				`/admin/v2/profile-review/university-verification/pending?${queryParams.toString()}`,
 			);
+			const result = res.data;
 
 			return result;
 		} catch (error: any) {
@@ -928,8 +931,8 @@ export const userEngagement = {
 			if (endDate) params.endDate = endDate;
 			if (includeDeleted !== undefined) params.includeDeleted = String(includeDeleted);
 
-			const result = await adminGet<any>('/admin/stats/user-engagement', params);
-			return result;
+			const res = await adminGet<{ data: any }>('/admin/v2/stats/engagement', params);
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
