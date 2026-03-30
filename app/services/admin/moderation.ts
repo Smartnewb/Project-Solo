@@ -3,7 +3,7 @@ import { adminGet, adminPost, adminPatch } from '@/shared/lib/http/admin-fetch';
 // ━━━ Profile Review API Version Flag ━━━
 // v1: 안정 (admin/profile-images + admin/user-review)
 // v2: WIP  (admin/v2/profile-review) — 현재 깨져있음
-const PROFILE_REVIEW_VERSION: 'v1' | 'v2' = 'v1';
+const PROFILE_REVIEW_VERSION: 'v1' | 'v2' = 'v2';
 
 export interface ReviewHistoryFilter {
 	reviewType?: 'admin' | 'auto';
