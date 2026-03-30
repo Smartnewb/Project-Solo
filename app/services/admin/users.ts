@@ -927,8 +927,8 @@ export const userEngagement = {
 	getStats: async (startDate?: string, endDate?: string, includeDeleted?: boolean) => {
 		try {
 			const params: Record<string, string> = {};
-			if (startDate) params.startDate = startDate;
-			if (endDate) params.endDate = endDate;
+			if (startDate) params.from = startDate;
+			if (endDate) params.to = endDate;
 			if (includeDeleted !== undefined) params.includeDeleted = String(includeDeleted);
 
 			const res = await adminGet<{ data: any }>('/admin/v2/stats/engagement', params);

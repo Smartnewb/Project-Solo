@@ -217,7 +217,8 @@ export const salesService = {
   // MARK: - 사용자 지정 기간 매출 추이 조회
   async getTrendCustom(data: TrendCustomRequest): Promise<TrendCustomResponse> {
     try {
-      const res = await adminGet<{ data: TrendCustomResponse }>(SALES_ENDPOINT.TREND, toStringParams({ ...data, period: 'custom' }));
+      const { startDate, endDate, ...rest } = data;
+      const res = await adminGet<{ data: TrendCustomResponse }>(SALES_ENDPOINT.TREND, toStringParams({ ...rest, period: 'daily', from: startDate, to: endDate }));
       return res.data;
     } catch (error) {
       throw new SalesApiError("사용자 지정 매출액 조회 실패:", error);
