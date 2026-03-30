@@ -20,8 +20,8 @@ const DASHBOARD_ENDPOINT = {
   MATCHING_FUNNEL: "/admin/dashboard/matching/funnel",
   HOURLY_SIGNUPS: "/admin/v2/dashboard/signups",
   GOALS: "/admin/goals",
-  GEM_SYSTEM_FUNNEL: "/admin/dashboard/matching/gem-system-funnel",
-  ACTIONABLE_INSIGHTS: "/admin/dashboard/actionable-insights",
+  GEM_SYSTEM_FUNNEL: "/admin/v2/dashboard/gem-system-funnel",
+  ACTIONABLE_INSIGHTS: "/admin/v2/dashboard/actionable-insights",
 } as const;
 
 export const dashboardService = {
@@ -132,7 +132,8 @@ export const dashboardService = {
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
       if (debug) params.debug = "true";
-      return await adminGet<GemSystemFunnelResponse>(DASHBOARD_ENDPOINT.GEM_SYSTEM_FUNNEL, params);
+      const res = await adminGet<{ data: GemSystemFunnelResponse }>(DASHBOARD_ENDPOINT.GEM_SYSTEM_FUNNEL, params);
+      return res.data;
     } catch (error) {
       console.error("구슬 시스템 퍼널 조회 실패:", error);
       throw error instanceof AdminApiError
@@ -143,7 +144,8 @@ export const dashboardService = {
 
   async getActionableInsights(): Promise<ActionableInsightsResponse> {
     try {
-      return await adminGet<ActionableInsightsResponse>(DASHBOARD_ENDPOINT.ACTIONABLE_INSIGHTS);
+      const res = await adminGet<{ data: ActionableInsightsResponse }>(DASHBOARD_ENDPOINT.ACTIONABLE_INSIGHTS);
+      return res.data;
     } catch (error) {
       console.error("실행 가능한 인사이트 조회 실패:", error);
       throw error instanceof AdminApiError
