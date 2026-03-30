@@ -18,7 +18,7 @@ import type {
 } from './types';
 import type { MatchingPoolStatsResponse, MatchingPoolCountry } from '@/types/admin';
 
-const BASE_PATH = '/admin/scheduled-matching/config';
+const BASE_PATH = '/admin/v2/scheduled-matching/config';
 
 export const scheduledMatchingService = {
   getAllConfigs: async (): Promise<ScheduledMatchingConfig[]> => {
@@ -98,7 +98,7 @@ export const scheduledMatchingService = {
     startDate?: string,
     endDate?: string
   ): Promise<MatchingPoolStatsResponse> => {
-    const response = await axiosServer.get('/admin/stats/matching-pool', {
+    const response = await axiosServer.get('/admin/v2/stats/matching-pool', {
       params: { country, startDate, endDate },
     });
     return response.data;
@@ -107,36 +107,36 @@ export const scheduledMatchingService = {
   // ==================== Manual Matching APIs ====================
 
   createManualMatching: async (data: ManualMatchingRequest): Promise<ManualMatching> => {
-    const response = await axiosServer.post('/admin/matching/manual', data);
+    const response = await axiosServer.post('/admin/v2/matching/manual', data);
     return response.data.data;
   },
 
   validateManualMatching: async (userIds: string[]): Promise<ValidateMatchingResponse> => {
-    const response = await axiosServer.post('/admin/matching/validate', { userIds });
+    const response = await axiosServer.post('/admin/v2/matching/validate', { userIds });
     return response.data.data;
   },
 
   getManualMatchingList: async (
     params: ManualMatchingListParams = {}
   ): Promise<ManualMatchingListResponse> => {
-    const response = await axiosServer.get('/admin/matching/manual', { params });
+    const response = await axiosServer.get('/admin/v2/matching/manual', { params });
     return response.data;
   },
 
   getManualMatchingDetail: async (id: string): Promise<ManualMatching> => {
-    const response = await axiosServer.get(`/admin/matching/manual/${id}`);
+    const response = await axiosServer.get(`/admin/v2/matching/manual/${id}`);
     return response.data.data;
   },
 
   cancelManualMatching: async (id: string, reason: string): Promise<ManualMatching> => {
-    const response = await axiosServer.delete(`/admin/matching/manual/${id}`, {
+    const response = await axiosServer.delete(`/admin/v2/matching/manual/${id}`, {
       data: { reason },
     });
     return response.data.data;
   },
 
   executeManualMatching: async (id: string): Promise<ManualMatching> => {
-    const response = await axiosServer.post(`/admin/matching/manual/${id}/execute`);
+    const response = await axiosServer.post(`/admin/v2/matching/manual/${id}/execute`);
     return response.data.data;
   },
 
@@ -145,7 +145,7 @@ export const scheduledMatchingService = {
   executeScheduleMatching: async (
     data: ScheduleMatchingRequest
   ): Promise<ScheduleMatchingResponse> => {
-    const response = await axiosServer.post('/admin/matching/schedule', data);
+    const response = await axiosServer.post('/admin/v2/matching/schedule', data);
     return response.data;
   },
 };

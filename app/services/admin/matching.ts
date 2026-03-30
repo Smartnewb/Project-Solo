@@ -31,7 +31,7 @@ export const matching = {
 
 	// 중복 매칭 여부 확인
 	getMatchCount: async (myId: string, matcherId: string) => {
-		const result = await adminGet<any>('/admin/matching/match-count', { myId, matcherId });
+		const result = await adminGet<any>('/admin/v2/matching/match-count', { myId, matcherId });
 		return result;
 	},
 
@@ -46,7 +46,7 @@ export const matching = {
 		if (startDate) params.startDate = startDate;
 		if (endDate) params.endDate = endDate;
 
-		const result = await adminGet<any>('/admin/matching/match-count', params);
+		const result = await adminGet<any>('/admin/v2/matching/match-count', params);
 		return result;
 	},
 
@@ -102,7 +102,7 @@ export const matching = {
 			params.reason = reason.trim();
 		}
 
-		const result = await adminGet<any>('/admin/matching/failure-logs', params);
+		const result = await adminGet<any>('/admin/v2/matching/failure-logs', params);
 		return result;
 	},
 
@@ -113,7 +113,7 @@ export const matching = {
 			...options,
 		};
 
-		const result = await adminPost<any>('/admin/matching/user/read', requestData);
+		const result = await adminPost<any>('/admin/v2/matching/user/read', requestData);
 		return result;
 	},
 
@@ -131,19 +131,19 @@ export const matching = {
 		if (name) params.name = name;
 		if (gender && gender !== 'all') params.gender = gender;
 
-		const result = await adminGet<any>('/admin/matching/unmatched-users', params);
+		const result = await adminGet<any>('/admin/v2/matching/unmatched-users', params);
 		return result;
 	},
 
 	// 배치 매칭 처리
 	processBatchMatching: async () => {
-		const result = await adminPost<any>('/admin/matching/batch');
+		const result = await adminPost<any>('/admin/v2/matching/batch');
 		return result;
 	},
 
 	// 단일 사용자 매칭 처리
 	processSingleMatching: async (userId: string) => {
-		const result = await adminPost<any>('/admin/matching/user', { userId });
+		const result = await adminPost<any>('/admin/v2/matching/user', { userId });
 		return result;
 	},
 

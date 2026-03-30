@@ -62,26 +62,26 @@ export const styleReference = {
 		if (params.pageSize != null) queryParams.pageSize = String(params.pageSize);
 		if (params.gender) queryParams.gender = params.gender;
 		if (params.category) queryParams.category = params.category;
-		return adminGet<StyleReferenceListResponse>('/v4/admin/style-reference', queryParams);
+		return adminGet<StyleReferenceListResponse>('/admin/v2/style-reference', queryParams);
 	},
 
 	create: async (data: CreateStyleReferenceRequest): Promise<StyleReferenceItem> => {
-		return adminPost<StyleReferenceItem>('/v4/admin/style-reference', data);
+		return adminPost<StyleReferenceItem>('/admin/v2/style-reference', data);
 	},
 
 	bulkCreate: async (items: CreateStyleReferenceRequest[]): Promise<BulkCreateResult> => {
-		return adminPost<BulkCreateResult>('/v4/admin/style-reference/bulk', { items });
+		return adminPost<BulkCreateResult>('/admin/v2/style-reference/bulk', { items });
 	},
 
 	deactivate: async (id: string): Promise<{ success: boolean }> => {
-		return adminDelete<{ success: boolean }>(`/v4/admin/style-reference/${id}`);
+		return adminDelete<{ success: boolean }>(`/admin/v2/style-reference/${id}`);
 	},
 
 	reactivate: async (id: string): Promise<{ success: boolean }> => {
-		return adminPost<{ success: boolean }>(`/v4/admin/style-reference/${id}/reactivate`);
+		return adminPost<{ success: boolean }>(`/admin/v2/style-reference/${id}/reactivate`);
 	},
 
 	getStats: async (): Promise<StyleReferenceStats> => {
-		return adminGet<StyleReferenceStats>('/v4/admin/style-reference/stats');
+		return adminGet<StyleReferenceStats>('/admin/v2/style-reference/stats');
 	},
 };

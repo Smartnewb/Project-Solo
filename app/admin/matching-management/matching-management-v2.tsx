@@ -107,12 +107,12 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const matchRestMembers = () =>
-  axiosServer.post('/admin/matching/rest-members', undefined, {
+  axiosServer.post('/admin/v2/matching/rest-members', undefined, {
     timeout: 1000 * 60 * 60
   });
 
 const batchAllMatchableUsers = () =>
-  axiosServer.post('/admin/matching/vector', undefined, {
+  axiosServer.post('/admin/v2/system/batch/vector', undefined, {
     timeout: 1000 * 60 * 60
   });
 
@@ -370,7 +370,7 @@ function MatchingManagementV2Content() {
 
     try {
       // API 요청 시 axiosServer 사용
-      const response = await axiosServer.get('/admin/users/appearance', {
+      const response = await axiosServer.get('/admin/v2/users/appearance/stats', {
         params: {
           page: 1,
           limit: 10,
@@ -430,7 +430,7 @@ function MatchingManagementV2Content() {
     setError(null);
 
     try {
-      const response = await axiosServer.post('/admin/matching/user', {
+      const response = await axiosServer.post('/admin/v2/matching/user', {
         userId: selectedUser.id
       });
 
@@ -463,7 +463,7 @@ function MatchingManagementV2Content() {
 
     try {
       // POST 메서드로 변경하고 요청 본문에 파라미터 포함
-      const response = await axiosServer.post('/admin/matching/user/read', {
+      const response = await axiosServer.post('/admin/v2/matching/user/read', {
         userId: selectedUser.id,
         limit: matchLimit
       });
@@ -495,7 +495,7 @@ function MatchingManagementV2Content() {
     setUnmatchedUsersError(null);
 
     try {
-      const response = await axiosServer.get('/admin/matching/unmatched-users', {
+      const response = await axiosServer.get('/admin/v2/matching/unmatched-users', {
         params: {
           page: unmatchedUsersPage,
           limit: unmatchedUsersLimit,
@@ -595,7 +595,7 @@ function MatchingManagementV2Content() {
     setUnmatchedUsersError(null);
 
     try {
-      const response = await axiosServer.post('/admin/matching/user', {
+      const response = await axiosServer.post('/admin/v2/matching/user', {
         userId: selectedUnmatchedUser.id
       });
 

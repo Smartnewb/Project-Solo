@@ -417,7 +417,7 @@ export const stats = {
 export const kpiReport = {
 	getLatest: async (): Promise<import('@/app/admin/kpi-report/types').KpiReport> => {
 		try {
-			return await adminGet<import('@/app/admin/kpi-report/types').KpiReport>('/admin/kpi-report/latest');
+			return await adminGet<import('@/app/admin/kpi-report/types').KpiReport>('/admin/v2/kpi-report/latest');
 		} catch (error: any) {
 			throw error;
 		}
@@ -425,7 +425,7 @@ export const kpiReport = {
 
 	getByWeek: async (year: number, week: number): Promise<import('@/app/admin/kpi-report/types').KpiReport> => {
 		try {
-			return await adminGet<import('@/app/admin/kpi-report/types').KpiReport>(`/admin/kpi-report/${year}/${week}`);
+			return await adminGet<import('@/app/admin/kpi-report/types').KpiReport>(`/admin/v2/kpi-report/${year}/${week}`);
 		} catch (error: any) {
 			throw error;
 		}
@@ -433,7 +433,7 @@ export const kpiReport = {
 
 	getDefinitions: async () => {
 		try {
-			return await adminGet('/admin/kpi-report/definitions');
+			return await adminGet('/admin/v2/kpi-report/definitions');
 		} catch (error: any) {
 			throw error;
 		}
@@ -441,7 +441,7 @@ export const kpiReport = {
 
 	generate: async (year?: number, week?: number): Promise<import('@/app/admin/kpi-report/types').KpiReport> => {
 		try {
-			return await adminPost<import('@/app/admin/kpi-report/types').KpiReport>('/admin/kpi-report/generate', { year, week });
+			return await adminPost<import('@/app/admin/kpi-report/types').KpiReport>('/admin/v2/kpi-report/generate', { year, week });
 		} catch (error: any) {
 			throw error;
 		}

@@ -375,7 +375,7 @@ export default function VisionPhotoTestTab() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await axiosMultipart.post('/admin/photo-validation/test', formData);
+      const response = await axiosMultipart.post('/admin/v2/photo-validation/test', formData);
       setResult(response.data);
     } catch (err: any) {
       setError(

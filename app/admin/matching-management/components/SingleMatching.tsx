@@ -276,7 +276,7 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
 
     try {
       // 기존 매칭 관리 페이지와 동일한 API 사용
-      const response = await axiosServer.get('/admin/users/appearance', {
+      const response = await axiosServer.get('/admin/v2/users/appearance/stats', {
         params: {
           page: 1,
           limit: 20,

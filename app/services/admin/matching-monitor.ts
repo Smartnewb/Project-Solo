@@ -19,7 +19,7 @@ export const matchingMonitor = {
 
 	getUserDiagnosis: async (userId: string): Promise<UserDiagnosisResponse> => {
 		const headerCountry = getCountryHeader();
-		const response = await axiosServer.get(`/admin/matching/users/${userId}/diagnosis`, {
+		const response = await axiosServer.get(`/admin/v2/matching/${userId}/diagnosis`, {
 			headers: { 'X-Country': headerCountry },
 		});
 		return response.data;

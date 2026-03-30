@@ -211,7 +211,7 @@ export const userAppearance = {
 
 	getUserTickets: async (userId: string) => {
 		try {
-			const endpoint = `/admin/tickets/user/${userId}`;
+			const endpoint = `/admin/v2/tickets/user/${userId}`;
 
 			const result = await adminGet<any>(endpoint);
 
@@ -223,7 +223,7 @@ export const userAppearance = {
 
 	createUserTickets: async (userId: string, count: number) => {
 		try {
-			const endpoint = `/admin/tickets`;
+			const endpoint = `/admin/v2/tickets`;
 
 			const result = await adminPost<any>(endpoint, {
 				userId,
@@ -238,7 +238,7 @@ export const userAppearance = {
 
 	deleteUserTickets: async (userId: string, count: number) => {
 		try {
-			const endpoint = `/admin/tickets`;
+			const endpoint = `/admin/v2/tickets`;
 
 			const result = await adminRequest<any>(endpoint, {
 				method: 'DELETE',
@@ -254,7 +254,7 @@ export const userAppearance = {
 
 	getUserGems: async (userId: string) => {
 		try {
-			const endpoint = `/admin/gems/users/${userId}/balance`;
+			const endpoint = `/admin/v2/gems/users/${userId}/balance`;
 
 			const result = await adminGet<any>(endpoint);
 
@@ -266,7 +266,7 @@ export const userAppearance = {
 
 	addUserGems: async (userId: string, amount: number) => {
 		try {
-			const endpoint = `/admin/gems/users/${userId}/add`;
+			const endpoint = `/admin/v2/gems/users/${userId}/add`;
 
 			const result = await adminPost<any>(endpoint, { amount });
 
@@ -278,7 +278,7 @@ export const userAppearance = {
 
 	removeUserGems: async (userId: string, amount: number) => {
 		try {
-			const endpoint = `/admin/gems/users/${userId}/deduct`;
+			const endpoint = `/admin/v2/gems/users/${userId}/deduct`;
 
 			const result = await adminPost<any>(endpoint, { amount });
 
@@ -293,11 +293,10 @@ export const userAppearance = {
 			;
 			;
 
-			const endpoint = `/admin/users/detail/profile`;
+			const endpoint = `/admin/v2/users/${userId}/profile`;
 			;
 
 			const requestData = {
-				userId: userId,
 				name: profileData.name,
 				email: profileData.email,
 				phoneNumber: profileData.phoneNumber,
@@ -307,7 +306,7 @@ export const userAppearance = {
 
 			;
 
-			const result = await adminPost<any>(endpoint, requestData);
+			const result = await adminPatch<any>(endpoint, requestData);
 			return result;
 		} catch (error: any) {
 			throw error;
@@ -337,8 +336,7 @@ export const userAppearance = {
 		try {
 			;
 
-			const result = await adminPost<any>('/admin/users/detail/warning', {
-				userId,
+			const result = await adminPost<any>(`/admin/v2/users/${userId}/warning`, {
 				message,
 			});
 
@@ -381,9 +379,7 @@ export const userAppearance = {
 		try {
 			;
 
-			const result = await adminPost<any>('/admin/users/detail/logout', {
-				userId,
-			});
+			const result = await adminPost<any>(`/admin/v2/users/${userId}/logout`, {});
 
 			return result;
 		} catch (error: any) {
@@ -395,8 +391,7 @@ export const userAppearance = {
 		try {
 			;
 
-			const result = await adminPost<any>('/admin/users/detail/profile-update-request', {
-				userId,
+			const result = await adminPost<any>(`/admin/v2/users/${userId}/profile-update-request`, {
 				message,
 			});
 
@@ -410,9 +405,7 @@ export const userAppearance = {
 		try {
 			;
 
-			const result = await adminPost<any>('/admin/users/detail/instagram-error', {
-				userId,
-			});
+			const result = await adminPost<any>(`/admin/v2/users/${userId}/instagram-error`, {});
 
 			return result;
 		} catch (error: any) {
@@ -424,9 +417,7 @@ export const userAppearance = {
 		try {
 			;
 
-			const result = await adminPost<any>('/admin/users/detail/instagram-reset', {
-				userId,
-			});
+			const result = await adminPost<any>(`/admin/v2/users/${userId}/instagram-reset`, {});
 
 			return result;
 		} catch (error: any) {
@@ -655,7 +646,7 @@ export const userAppearance = {
 		addToBlacklist: boolean = false,
 	) => {
 		try {
-			const result = await adminRequest<any>(`/admin/users/${userId}`, {
+			const result = await adminRequest<any>(`/admin/v2/users/${userId}`, {
 				method: 'DELETE',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ sendEmail, addToBlacklist }),
@@ -772,7 +763,7 @@ export const userAppearance = {
 		try {
 			;
 
-			const result = await adminPatch<any>(`/admin/users/${userId}/blacklist/release`);
+			const result = await adminPatch<any>(`/admin/v2/users/${userId}/blacklist/release`);
 
 			return result;
 		} catch (error: any) {
@@ -805,7 +796,7 @@ export const userAppearance = {
 		try {
 			;
 
-			const result = await adminPatch<any>(`/admin/users/${userId}/reset-password`);
+			const result = await adminPatch<any>(`/admin/v2/users/${userId}/reset-password`);
 
 			return result;
 		} catch (error: any) {
@@ -873,7 +864,7 @@ export const userAppearance = {
 		try {
 			;
 
-			const result = await adminPatch<any>(`/admin/users/approval/${userId}/revoke-approval`, {
+			const result = await adminPatch<any>(`/admin/v2/users/${userId}/revoke-approval`, {
 				revokeReason,
 			});
 
@@ -900,7 +891,7 @@ export const deletedFemales = {
 	restore: async (id: string) => {
 		try {
 			const result = await adminPatch<RestoreFemaleResponse>(
-				`/admin/deleted-females/${id}/restore`,
+				`/admin/v2/retention/deleted-females/${id}/restore`,
 			);
 			return result;
 		} catch (error: any) {
@@ -911,7 +902,7 @@ export const deletedFemales = {
 	sleep: async (id: string) => {
 		try {
 			const result = await adminPatch<SleepFemaleResponse>(
-				`/admin/deleted-females/${id}/sleep`,
+				`/admin/v2/retention/deleted-females/${id}/sleep`,
 			);
 			return result;
 		} catch (error: any) {

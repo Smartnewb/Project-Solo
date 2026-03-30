@@ -95,7 +95,7 @@ export const femaleRetention = {
 	issueTemporaryPassword: async (userId: string) => {
 		try {
 			;
-			const response = await axiosServer.post(`/admin/female-retention/${userId}`);
+			const response = await axiosServer.post(`/admin/v2/retention/female-retention/${userId}`);
 			;
 			return response.data;
 		} catch (error: any) {
@@ -118,7 +118,7 @@ export const chatRefund = {
 		try {
 			const country = getCountryHeader();
 			const response = await axiosServer.get<EligibleChatRoomsResponse>(
-				`/admin/refund/users/${userId}/eligible-rooms`,
+				`/admin/v2/payments/chat-refund/users/${userId}/eligible-rooms`,
 				{
 					headers: { 'X-Country': country },
 				},
@@ -151,7 +151,7 @@ export const chatRefund = {
 export const appleRefund = {
 	getList: async (params: AppleRefundListParams = {}) => {
 		try {
-			const response = await axiosServer.get<AppleRefundListResponse>('/admin/apple-refund', {
+			const response = await axiosServer.get<AppleRefundListResponse>('/admin/v2/apple-refund', {
 				params: {
 					page: params.page || 1,
 					limit: params.limit || 20,
@@ -169,7 +169,7 @@ export const appleRefund = {
 
 	getDetail: async (id: string) => {
 		try {
-			const response = await axiosServer.get(`/admin/apple-refund/${id}`);
+			const response = await axiosServer.get(`/admin/v2/apple-refund/${id}`);
 			return response.data;
 		} catch (error: any) {
 			throw error;
@@ -178,7 +178,7 @@ export const appleRefund = {
 
 	syncRefundStatus: async () => {
 		try {
-			const response = await axiosServer.post('/admin/apple-refund/sync');
+			const response = await axiosServer.post('/admin/v2/apple-refund/sync');
 			return response.data;
 		} catch (error: any) {
 			throw error;
@@ -209,7 +209,7 @@ export const dormantLikes = {
 	getPendingLikes: async (userId: string) => {
 		try {
 			const response = await axiosServer.get<DormantLikeDetailResponse[]>(
-				`/admin/dormant-likes/${userId}`,
+				`/admin/v2/retention/dormant-likes/${userId}`,
 			);
 			return response.data;
 		} catch (error: any) {
@@ -220,7 +220,7 @@ export const dormantLikes = {
 	getCooldownStatus: async (userId: string) => {
 		try {
 			const response = await axiosServer.get<CooldownStatusResponse>(
-				`/admin/dormant-likes/${userId}/cooldown`,
+				`/admin/v2/retention/dormant-likes/${userId}/cooldown`,
 			);
 			return response.data;
 		} catch (error: any) {

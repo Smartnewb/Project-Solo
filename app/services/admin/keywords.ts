@@ -37,26 +37,26 @@ export const keywords = {
 		if (params.page != null) queryParams.page = String(params.page);
 		if (params.pageSize != null) queryParams.pageSize = String(params.pageSize);
 		if (params.search) queryParams.search = params.search;
-		return adminGet<KeywordsResponse>('/v4/admin/keywords', queryParams);
+		return adminGet<KeywordsResponse>('/admin/v2/keywords', queryParams);
 	},
 
 	updateIcon: async (normalizedKeyword: string, iconUrl: string) => {
 		return adminPatch<{ success: boolean }>(
-			'/v4/admin/keywords/icon',
+			'/admin/v2/keywords/icon',
 			{ normalizedKeyword, iconUrl },
 		);
 	},
 
 	updateName: async (oldKeyword: string, newKeyword: string) => {
 		return adminPatch<{ updatedCount: number }>(
-			'/v4/admin/keywords/name',
+			'/admin/v2/keywords/name',
 			{ oldKeyword, newKeyword },
 		);
 	},
 
 	updateCategory: async (normalizedKeyword: string, category: KeywordCategory) => {
 		return adminPatch<{ updatedCount: number }>(
-			'/v4/admin/keywords/category',
+			'/admin/v2/keywords/category',
 			{ normalizedKeyword, category },
 		);
 	},
@@ -64,7 +64,7 @@ export const keywords = {
 	delete: async (keyword: string) => {
 		const encoded = encodeURIComponent(keyword);
 		return adminDelete<{ deletedCount: number }>(
-			`/v4/admin/keywords/${encoded}`,
+			`/admin/v2/keywords/${encoded}`,
 		);
 	},
 };

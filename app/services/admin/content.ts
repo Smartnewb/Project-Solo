@@ -83,7 +83,7 @@ export const backgroundPresets = {
 
 	update: async (id: string, data: Partial<CreatePresetRequest>): Promise<BackgroundPreset> => {
 		try {
-			return await adminPut<BackgroundPreset>(`/admin/background-presets/${id}`, data);
+			return await adminPut<BackgroundPreset>(`/admin/v2/content/background-presets/${id}`, data);
 		} catch (error: any) {
 			throw error;
 		}
@@ -91,7 +91,7 @@ export const backgroundPresets = {
 
 	delete: async (id: string): Promise<void> => {
 		try {
-			await adminDelete(`/admin/background-presets/${id}`);
+			await adminDelete(`/admin/v2/content/background-presets/${id}`);
 		} catch (error: any) {
 			throw error;
 		}
@@ -195,7 +195,7 @@ export const banners = {
 	getList: async (position?: BannerPosition): Promise<Banner[]> => {
 		try {
 			const params = position ? { position } : undefined;
-			return await adminGet<Banner[]>('/admin/banners', params);
+			return await adminGet<Banner[]>('/admin/v2/banners', params);
 		} catch (error: any) {
 			throw error;
 		}
@@ -210,7 +210,7 @@ export const banners = {
 			if (data.startDate) formData.append('startDate', data.startDate);
 			if (data.endDate) formData.append('endDate', data.endDate);
 
-			return adminRequest<Banner>('/admin/banners', {
+			return adminRequest<Banner>('/admin/v2/banners', {
 				method: 'POST',
 				body: formData,
 			});
@@ -221,7 +221,7 @@ export const banners = {
 
 	update: async (id: string, data: UpdateBannerRequest): Promise<Banner> => {
 		try {
-			return await adminPatch<Banner>(`/admin/banners/${id}`, data);
+			return await adminPatch<Banner>(`/admin/v2/banners/${id}`, data);
 		} catch (error: any) {
 			throw error;
 		}
@@ -229,7 +229,7 @@ export const banners = {
 
 	delete: async (id: string): Promise<void> => {
 		try {
-			await adminDelete(`/admin/banners/${id}`);
+			await adminDelete(`/admin/v2/banners/${id}`);
 		} catch (error: any) {
 			throw error;
 		}
@@ -237,7 +237,7 @@ export const banners = {
 
 	updateOrder: async (data: UpdateBannerOrderRequest): Promise<Banner[]> => {
 		try {
-			return await adminPatch<Banner[]>('/admin/banners/order/bulk', data);
+			return await adminPatch<Banner[]>('/admin/v2/banners/order/bulk', data);
 		} catch (error: any) {
 			throw error;
 		}
@@ -251,7 +251,7 @@ export const sometimeArticles = {
 			const formData = new FormData();
 			formData.append("image", imageFile);
 
-			const data = await adminRequest<UploadImageResponse>('/admin/sometime-articles/upload', {
+			const data = await adminRequest<UploadImageResponse>('/admin/v2/sometime-articles/upload', {
 				method: 'POST',
 				body: formData,
 			});
@@ -274,7 +274,7 @@ export const sometimeArticles = {
 			if (params?.page !== undefined) query.page = String(params.page);
 			if (params?.limit !== undefined) query.limit = String(params.limit);
 			return await adminGet<AdminSometimeArticleListResponse>(
-				"/admin/sometime-articles",
+				"/admin/v2/sometime-articles",
 				Object.keys(query).length > 0 ? query : undefined,
 			);
 		} catch (error: any) {
@@ -284,7 +284,7 @@ export const sometimeArticles = {
 
 	get: async (id: string): Promise<AdminSometimeArticleDetail> => {
 		try {
-			return await adminGet<AdminSometimeArticleDetail>(`/admin/sometime-articles/${id}`);
+			return await adminGet<AdminSometimeArticleDetail>(`/admin/v2/sometime-articles/${id}`);
 		} catch (error: any) {
 			throw error;
 		}
@@ -294,7 +294,7 @@ export const sometimeArticles = {
 		data: CreateSometimeArticleRequest,
 	): Promise<AdminSometimeArticleDetail> => {
 		try {
-			return await adminPost<AdminSometimeArticleDetail>("/admin/sometime-articles", data);
+			return await adminPost<AdminSometimeArticleDetail>("/admin/v2/sometime-articles", data);
 		} catch (error: any) {
 			throw error;
 		}
@@ -305,7 +305,7 @@ export const sometimeArticles = {
 		data: UpdateSometimeArticleRequest,
 	): Promise<AdminSometimeArticleDetail> => {
 		try {
-			return await adminPatch<AdminSometimeArticleDetail>(`/admin/sometime-articles/${id}`, data);
+			return await adminPatch<AdminSometimeArticleDetail>(`/admin/v2/sometime-articles/${id}`, data);
 		} catch (error: any) {
 			throw error;
 		}
@@ -313,7 +313,7 @@ export const sometimeArticles = {
 
 	delete: async (id: string): Promise<void> => {
 		try {
-			await adminDelete(`/admin/sometime-articles/${id}`);
+			await adminDelete(`/admin/v2/sometime-articles/${id}`);
 		} catch (error: any) {
 			throw error;
 		}
@@ -413,7 +413,7 @@ export const appReviews = {
 	toggleFeatured: async (pk: string): Promise<{ pk: string; isFeatured: boolean }> => {
 		try {
 			return await adminPatch<{ pk: string; isFeatured: boolean }>(
-				`/admin/app-reviews/${encodeURIComponent(pk)}/featured`,
+				`/admin/v2/app-reviews/${encodeURIComponent(pk)}/featured`,
 			);
 		} catch (error: any) {
 			throw error;
@@ -441,7 +441,7 @@ export const communityReviewArticles = {
 	): Promise<{ id: string; isFeatured: boolean; featuredAt: string | null }> => {
 		try {
 			return await adminPatch<{ id: string; isFeatured: boolean; featuredAt: string | null }>(
-				`/admin/community/articles/${articleId}/featured`,
+				`/admin/v2/community/posts/${articleId}/status`,
 			);
 		} catch (error: any) {
 			throw error;

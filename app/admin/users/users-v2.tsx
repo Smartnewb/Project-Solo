@@ -122,7 +122,7 @@ function UsersV2Content() {
       });
 
       // Nest.js API 호출
-      const response = await axiosServer.get<ApiResponse>(`/admin/users?${params}`);
+      const response = await axiosServer.get<ApiResponse>(`/admin/v2/users?${params}`);
       const { users: userList, pagination } = response.data;
 
       setUsers(userList);

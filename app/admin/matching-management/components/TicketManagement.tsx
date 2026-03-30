@@ -68,7 +68,7 @@ export default function TicketManagement({
     setActionResult(null);
 
     try {
-      const response = await axiosServer.get(`/admin/tickets/user/${userId}`);
+      const response = await axiosServer.get(`/admin/v2/tickets/user/${userId}`);
       ;
       setTicketStatus(response.data);
     } catch (err: any) {
@@ -100,7 +100,7 @@ export default function TicketManagement({
     setActionResult(null);
 
     try {
-      const response = await axiosServer.post('/admin/tickets', {
+      const response = await axiosServer.post('/admin/v2/tickets', {
         userId: selectedUser.id,
         count: ticketCount
       });
@@ -145,7 +145,7 @@ export default function TicketManagement({
     setActionResult(null);
 
     try {
-      const response = await axiosServer.delete('/admin/tickets', {
+      const response = await axiosServer.delete('/admin/v2/tickets', {
         data: {
           userId: selectedUser.id,
           count: ticketCount

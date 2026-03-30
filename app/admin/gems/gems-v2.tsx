@@ -126,7 +126,7 @@ function GemsManagementPageContent() {
     setUserSearchError(null);
 
     try {
-      const response = await axiosServer.get('/admin/users/appearance', {
+      const response = await axiosServer.get('/admin/v2/users/appearance/stats', {
         params: {
           page: 1,
           limit: 20,

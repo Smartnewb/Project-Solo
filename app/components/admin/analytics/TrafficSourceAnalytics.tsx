@@ -17,7 +17,6 @@ import {
 } from '@mui/material';
 import { Pie, Bar } from 'react-chartjs-2';
 import '@/app/utils/chartConfig';
-import { AnalyticsService } from '@/app/services';
 import { format } from 'date-fns';
 
 interface TrafficSourceAnalyticsProps {

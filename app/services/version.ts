@@ -28,23 +28,23 @@ export interface UpdateVersionUpdateRequest {
 
 const versionService = {
 	createVersionUpdate: async (data: CreateVersionUpdateRequest): Promise<VersionUpdate> => {
-		return adminPost<VersionUpdate>('/admin/version-updates', data);
+		return adminPost<VersionUpdate>('/admin/v2/version-updates', data);
 	},
 
 	getAllVersionUpdates: async (): Promise<VersionUpdate[]> => {
-		return adminGet<VersionUpdate[]>('/admin/version-updates');
+		return adminGet<VersionUpdate[]>('/admin/v2/version-updates');
 	},
 
 	getVersionUpdate: async (id: string): Promise<VersionUpdate> => {
-		return adminGet<VersionUpdate>(`/admin/version-updates/${id}`);
+		return adminGet<VersionUpdate>(`/admin/v2/version-updates/${id}`);
 	},
 
 	getLatestVersionUpdate: async (): Promise<VersionUpdate> => {
-		return adminGet<VersionUpdate>('/admin/version-updates/latest');
+		return adminGet<VersionUpdate>('/admin/v2/version-updates/latest');
 	},
 
 	updateVersionUpdate: async (id: string, data: UpdateVersionUpdateRequest): Promise<{ success: boolean; message: string }> => {
-		return adminPut<{ success: boolean; message: string }>(`/admin/version-updates/${id}`, data);
+		return adminPut<{ success: boolean; message: string }>(`/admin/v2/version-updates/${id}`, data);
 	},
 };
 

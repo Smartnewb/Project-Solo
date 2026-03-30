@@ -196,7 +196,7 @@ const communityService = {
 	},
 
 	moveArticleCategory: async (articleId: string, categoryId: string): Promise<any> => {
-		return adminPatch('/admin/community/articles/category', {
+		return adminPatch('/admin/v2/community/articles/category', {
 			articleId,
 			categoryId,
 		});
@@ -243,7 +243,7 @@ const communityService = {
 	},
 
 	blindComment: async (id: string, isBlinded: boolean, reason?: string): Promise<any> => {
-		return adminPatch(`/admin/community/comments/${id}/blind`, {
+		return adminPatch(`/admin/v2/community/comments/${id}/blind`, {
 			isBlinded,
 			reason,
 		});
@@ -268,7 +268,7 @@ const communityService = {
 		if (reporterName) params.reporterName = reporterName;
 		if (reportedName) params.reportedName = reportedName;
 
-		const response = await adminGet<any>('/admin/community/reports', params);
+		const response = await adminGet<any>('/admin/v2/community/reports', params);
 
 		return {
 			items: response.items ?? [],
@@ -289,7 +289,7 @@ const communityService = {
 		page = 1,
 		limit = 10,
 	): Promise<PaginatedResponse<Report>> => {
-		const response = await adminGet<any>('/admin/community/reports', {
+		const response = await adminGet<any>('/admin/v2/community/reports', {
 			type,
 			status,
 			page: String(page),
@@ -315,7 +315,7 @@ const communityService = {
 		memo?: string,
 		blind?: boolean,
 	): Promise<any> => {
-		return adminPatch(`/admin/community/reports/${id}/process`, {
+		return adminPatch(`/admin/v2/community/reports/${id}/process`, {
 			result,
 			memo,
 			blind,
@@ -344,7 +344,7 @@ const communityService = {
 	},
 
 	bulkDeleteArticles: async (ids: string[]): Promise<any> => {
-		return adminRequest('/admin/community/articles/bulk', {
+		return adminRequest('/admin/v2/community/articles/bulk', {
 			method: 'DELETE',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ ids }),
@@ -352,7 +352,7 @@ const communityService = {
 	},
 
 	bulkBlindComments: async (ids: string[], isBlinded: boolean, reason?: string): Promise<any> => {
-		return adminPatch('/admin/community/comments/bulk/blind', {
+		return adminPatch('/admin/v2/community/comments/bulk/blind', {
 			ids,
 			isBlinded,
 			reason,
@@ -360,7 +360,7 @@ const communityService = {
 	},
 
 	bulkDeleteComments: async (ids: string[]): Promise<any> => {
-		return adminRequest('/admin/community/comments/bulk', {
+		return adminRequest('/admin/v2/community/comments/bulk', {
 			method: 'DELETE',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ ids }),

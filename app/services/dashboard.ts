@@ -17,9 +17,9 @@ interface V2Response<T> {
 
 const DASHBOARD_ENDPOINT = {
   SUMMARY: "/admin/v2/dashboard/summary",
-  MATCHING_FUNNEL: "/admin/dashboard/matching/funnel",
+  MATCHING_FUNNEL: "/admin/v2/dashboard/matching/funnel",
   HOURLY_SIGNUPS: "/admin/v2/dashboard/signups",
-  GOALS: "/admin/goals",
+  GOALS: "/admin/v2/goals",
   GEM_SYSTEM_FUNNEL: "/admin/v2/dashboard/gem-system-funnel",
   ACTIONABLE_INSIGHTS: "/admin/v2/dashboard/actionable-insights",
 } as const;

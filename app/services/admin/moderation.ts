@@ -174,7 +174,7 @@ export const reports = {
 
 	getChatHistory: async (chatRoomId: string, page: number = 1, limit: number = 50) => {
 		try {
-			const result = await adminGet<any>(`/admin/community/chat/${chatRoomId}/messages`, {
+			const result = await adminGet<any>(`/admin/v2/chat/rooms/${chatRoomId}/messages`, {
 				page: String(page),
 				limit: String(limit),
 			});
@@ -186,7 +186,7 @@ export const reports = {
 
 	getUserProfileImages: async (userId: string): Promise<string[]> => {
 		try {
-			const result = await adminGet<any>(`/admin/community/users/${userId}/profile-images`);
+			const result = await adminGet<any>(`/admin/v2/community/users/${userId}/profile-images`);
 			const images = result.images || result.data?.images || [];
 			return images.map((img: any) => (typeof img === 'string' ? img : img.url));
 		} catch (error: any) {
@@ -317,7 +317,7 @@ export const userReview = {
 	},
 
 	getImageValidation: async (imageId: string) => {
-		const result = await adminGet<any>(`/admin/profile-images/${imageId}/validation`);
+		const result = await adminGet<any>(`/admin/v2/profile-images/${imageId}/validation`);
 		return result;
 	},
 

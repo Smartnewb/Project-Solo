@@ -15,7 +15,7 @@ export function useBatchStatus() {
     setLoading(true);
     setError(null);
     try {
-      const res = await axiosServer.get<boolean | null>('/admin/matching/batch-status');
+      const res = await axiosServer.get<boolean | null>('/admin/v2/matching/batch-status');
       setStatus(res.data);
     } catch (e: any) {
       setError(e.message || '상태 조회 실패');
@@ -33,7 +33,7 @@ export function useBatchStatus() {
     setLoading(true);
     setError(null);
     try {
-      await axiosServer.post('/admin/matching/batch-status', { status: !status });
+      await axiosServer.post('/admin/v2/matching/batch-status', { status: !status });
       await fetchStatus();
     } catch (e: any) {
       setError(e.message || '상태 변경 실패');

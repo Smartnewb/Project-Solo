@@ -13,12 +13,12 @@ import {
 
 // MARK: - 엔드포인트 정의
 const SMS_ENDPOINTS = {
-    TEMPLATE: '/admin/sms/templates',
-    TEMPLATE_BY_ID: (id: string) =>  `/admin/sms/templates/${id}`,
-    HISTORY: '/admin/sms/histories',
-    HISTORY_BY_ID: (id: string) =>  `/admin/sms/histories/${id}`,
-    SEND_MESSAGE: '/admin/sms/send-bulk',
-    USER_SEARCH: '/admin/sms/users/search'
+    TEMPLATE: '/admin/v2/sms/templates',
+    TEMPLATE_BY_ID: (id: string) =>  `/admin/v2/sms/templates/${id}`,
+    HISTORY: '/admin/v2/sms/histories',
+    HISTORY_BY_ID: (id: string) =>  `/admin/v2/sms/histories/${id}`,
+    SEND_MESSAGE: '/admin/v2/sms/send-bulk',
+    USER_SEARCH: '/admin/v2/sms/users/search'
 } as const;
 
 // MARK: - 로컬스토리지 헬퍼 함수

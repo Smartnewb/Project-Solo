@@ -83,7 +83,7 @@ export const care = {
 	},
 
 	getPartners: async (userId: string, limit: number = 10) => {
-		return adminGet<CarePartner[]>(`/admin/care/targets/${userId}/partners`, { limit: String(limit) });
+		return adminGet<CarePartner[]>(`/admin/v2/care/targets/${userId}/partners`, { limit: String(limit) });
 	},
 
 	execute: async (body: CareExecuteRequest) => {
@@ -92,7 +92,7 @@ export const care = {
 	},
 
 	dismiss: async (targetId: string) => {
-		return adminPost<{ success: boolean }>(`/admin/care/targets/${targetId}/dismiss`);
+		return adminPost<{ success: boolean }>(`/admin/v2/care/targets/${targetId}/dismiss`);
 	},
 
 	getLogs: async (params: {
