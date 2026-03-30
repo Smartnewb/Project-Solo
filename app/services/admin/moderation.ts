@@ -1,10 +1,5 @@
 import { adminGet, adminPost, adminPatch } from '@/shared/lib/http/admin-fetch';
 
-// ━━━ Profile Review API Version Flag ━━━
-// v1: 안정 (admin/profile-images + admin/user-review)
-// v2: WIP  (admin/v2/profile-review) — 현재 깨져있음
-const PROFILE_REVIEW_VERSION: 'v1' | 'v2' = 'v2';
-
 export interface ReviewHistoryFilter {
 	reviewType?: 'admin' | 'auto';
 	reviewStatus?: 'approved' | 'rejected';
@@ -72,7 +67,6 @@ export interface ReviewHistoryResponse {
 	};
 }
 
-// 유저 심사 관련 API
 export interface PendingUsersFilter {
 	gender?: 'MALE' | 'FEMALE';
 	minAge?: number;
@@ -226,14 +220,6 @@ export const userReview = {
 				stringParams.excludeUserIds = excludeUserIds.join(',');
 			}
 
-			if (PROFILE_REVIEW_VERSION === 'v1') {
-				const result = await adminGet<any>('/admin/profile-images/pending', stringParams);
-				return {
-					data: result.users,
-					meta: result.pagination,
-				};
-			}
-
 			const result = await adminGet<{ data: any; meta: any }>('/admin/v2/profile-review/pending', stringParams);
 
 			;
@@ -246,11 +232,6 @@ export const userReview = {
 	getUserDetail: async (userId: string) => {
 		try {
 			;
-
-			if (PROFILE_REVIEW_VERSION === 'v1') {
-				const result = await adminGet<any>(`/admin/user-review/${userId}`);
-				return result;
-			}
 
 			const result = await adminGet<{ data: any }>(`/admin/v2/profile-review/users/${userId}`);
 
@@ -265,11 +246,6 @@ export const userReview = {
 		try {
 			;
 
-			if (PROFILE_REVIEW_VERSION === 'v1') {
-				const result = await adminPost<any>(`/admin/user-review/${userId}/approve`);
-				return result;
-			}
-
 			const result = await adminPost<{ data: any }>(`/admin/v2/profile-review/users/${userId}/approve-profile`);
 
 			;
@@ -282,14 +258,6 @@ export const userReview = {
 	rejectUser: async (userId: string, category: string, reason: string) => {
 		try {
 			;
-
-			if (PROFILE_REVIEW_VERSION === 'v1') {
-				const result = await adminPost<any>(`/admin/user-review/${userId}/reject`, {
-					category,
-					reason,
-				});
-				return result;
-			}
 
 			const result = await adminPost<{ data: any }>(`/admin/v2/profile-review/users/${userId}/reject-profile`, {
 				category,
@@ -338,7 +306,6 @@ export const userReview = {
 		try {
 			;
 
-			// rank는 v2 전용 — v1에는 엔드포인트 없음
 			const url = `/admin/v2/profile-review/users/${userId}/rank${emitEvent ? '?emitEvent=true' : ''}`;
 			const result = await adminPatch<{ data: any }>(url, { rank });
 
@@ -359,7 +326,6 @@ export const userReview = {
 			const stringParams: Record<string, string> = {};
 			if (filters.page) stringParams.page = String(filters.page);
 			if (filters.limit) stringParams.limit = String(filters.limit);
-			// Backend reviewType = approval/rejection (result type), not admin/auto
 			if (filters.reviewStatus) {
 				const reviewTypeMap: Record<string, string> = { approved: 'approval', rejected: 'rejection' };
 				stringParams.reviewType = reviewTypeMap[filters.reviewStatus] || filters.reviewStatus;
@@ -368,33 +334,6 @@ export const userReview = {
 			if (filters.from) stringParams.from = filters.from;
 			if (filters.to) stringParams.to = filters.to;
 			if (filters.reviewedBy) stringParams.reviewer = filters.reviewedBy;
-
-			if (PROFILE_REVIEW_VERSION === 'v1') {
-				const result = await adminGet<any>('/admin/profile-images/review-history', stringParams);
-				const items = result.items || [];
-				const pagination = result.pagination || {};
-				return {
-					items: items.map((item: any) => ({
-						imageId: item.imageId,
-						imageUrl: item.imageUrl,
-						slotIndex: item.slotIndex ?? 0,
-						isMain: item.isMain ?? false,
-						reviewStatus: item.reviewStatus,
-						reviewType: item.reviewType ?? null,
-						reviewedBy: item.reviewedBy ?? null,
-						reviewedAt: item.reviewedAt,
-						rejectionReason: item.rejectionReason,
-						user: item.user,
-					})),
-					pagination: {
-						page: pagination.page,
-						limit: pagination.limit,
-						total: pagination.total,
-						totalPages: Math.ceil((pagination.total || 0) / (pagination.limit || 20)),
-						hasMore: pagination.hasMore,
-					},
-				};
-			}
 
 			const response = await adminGet<{ data: any[]; meta: any }>('/admin/v2/profile-review/history', stringParams);
 
@@ -438,11 +377,6 @@ export const profileImages = {
 		try {
 			;
 
-			if (PROFILE_REVIEW_VERSION === 'v1') {
-				const result = await adminGet<any>('/admin/profile-images/pending');
-				return { data: result.users, meta: result.pagination };
-			}
-
 			const result = await adminGet<{ data: any; meta: any }>('/admin/v2/profile-review/pending');
 
 			;
@@ -456,11 +390,6 @@ export const profileImages = {
 		try {
 			;
 
-			if (PROFILE_REVIEW_VERSION === 'v1') {
-				const result = await adminPost<any>(`/admin/profile-images/users/${userId}/approve`);
-				return result;
-			}
-
 			const result = await adminPost<{ data: any }>(`/admin/v2/profile-review/users/${userId}/approve-profile`);
 
 			;
@@ -473,13 +402,6 @@ export const profileImages = {
 	rejectProfileImage: async (userId: string, rejectionReason: string) => {
 		try {
 			;
-
-			if (PROFILE_REVIEW_VERSION === 'v1') {
-				const result = await adminPost<any>(`/admin/profile-images/users/${userId}/reject`, {
-					rejectionReason,
-				});
-				return result;
-			}
 
 			const result = await adminPost<{ data: any }>(`/admin/v2/profile-review/users/${userId}/reject-profile`, {
 				category: 'image',
@@ -497,11 +419,6 @@ export const profileImages = {
 		try {
 			;
 
-			if (PROFILE_REVIEW_VERSION === 'v1') {
-				const result = await adminPost<any>(`/admin/profile-images/${imageId}/approve`);
-				return result;
-			}
-
 			const result = await adminPost<{ data: any }>(`/admin/v2/profile-review/images/${imageId}/action`, {
 				action: 'approve',
 			});
@@ -516,13 +433,6 @@ export const profileImages = {
 	rejectIndividualImage: async (imageId: string, rejectionReason: string) => {
 		try {
 			;
-
-			if (PROFILE_REVIEW_VERSION === 'v1') {
-				const result = await adminPost<any>(`/admin/profile-images/${imageId}/reject`, {
-					rejectionReason,
-				});
-				return result;
-			}
 
 			const result = await adminPost<{ data: any }>(`/admin/v2/profile-review/images/${imageId}/action`, {
 				action: 'reject',
@@ -540,7 +450,6 @@ export const profileImages = {
 		try {
 			;
 
-			// setMainImage는 v2 전용 — v1에는 엔드포인트 없음
 			const result = await adminPost<{ data: any }>(
 				`/admin/v2/profile-review/images/${imageId}/action`,
 				{ action: 'setMain' },
