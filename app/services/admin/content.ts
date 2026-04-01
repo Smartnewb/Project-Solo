@@ -148,11 +148,16 @@ export const cardNews = {
 
 	getList: async (page: number = 1, limit: number = 20): Promise<AdminCardNewsListResponse> => {
 		try {
-			const res = await adminGet<{ data: AdminCardNewsListResponse }>('/admin/v2/content/card-news', {
+			const res = await adminGet<{ data: AdminCardNewsItem[]; meta: { total: number; page: number; limit: number } }>('/admin/v2/content/card-news', {
 				page: String(page),
 				limit: String(limit),
 			});
-			return res.data;
+			return {
+				items: res.data,
+				total: res.meta.total,
+				page: res.meta.page,
+				limit: res.meta.limit,
+			};
 		} catch (error: any) {
 			throw error;
 		}
