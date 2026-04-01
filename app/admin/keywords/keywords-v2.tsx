@@ -30,6 +30,9 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import CircularProgress from '@mui/material/CircularProgress';
+import Tooltip from '@mui/material/Tooltip';
 import AdminService from '@/app/services/admin';
 import {
 	KEYWORD_CATEGORIES,
@@ -70,6 +73,7 @@ function KeywordsContent() {
 	const confirm = useConfirm();
 	const toast = useToast();
 	const editInputRef = useRef<HTMLInputElement>(null);
+	const [generatingIcon, setGeneratingIcon] = useState<string | undefined>();
 
 	useEffect(() => {
 		const unpatch = patchAdminAxios();
@@ -167,6 +171,19 @@ function KeywordsContent() {
 			fetchKeywords(pagination.page);
 		} catch (err: any) {
 			toast.error(err.response?.data?.message || '삭제에 실패했습니다.');
+		}
+	};
+
+	const handleGenerateIcon = async (item: KeywordItem) => {
+		if (generatingIcon) return;
+		setGeneratingIcon(item.normalizedKeyword);
+		try {
+			await AdminService.keywords.generateIcon(item.keyword);
+			toast.success(`"${item.keyword}" 아이콘 생성이 요청되었습니다. 잠시 후 반영됩니다.`);
+		} catch (err: any) {
+			toast.error(err.message || '아이콘 생성에 실패했습니다.');
+		} finally {
+			setGeneratingIcon(undefined);
 		}
 	};
 
@@ -297,48 +314,69 @@ function KeywordsContent() {
 															</IconButton>
 														</Box>
 													) : (
-														<Box
-															sx={{
-																display: 'flex',
-																alignItems: 'center',
-																gap: 0.5,
-																cursor: 'pointer',
-																'&:hover .edit-hint': { opacity: 1 },
-															}}
-															onClick={() => startEdit('icon', item)}
-														>
-															{item.iconUrl ? (
-																<Box
-																	component="img"
-																	src={item.iconUrl}
-																	sx={{
-																		width: 24,
-																		height: 24,
-																		borderRadius: 1,
-																		objectFit: 'cover',
-																	}}
+														<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+															<Box
+																sx={{
+																	display: 'flex',
+																	alignItems: 'center',
+																	gap: 0.5,
+																	cursor: 'pointer',
+																	'&:hover .edit-hint': { opacity: 1 },
+																}}
+																onClick={() => startEdit('icon', item)}
+															>
+																{item.iconUrl ? (
+																	<Box
+																		component="img"
+																		src={item.iconUrl}
+																		sx={{
+																			width: 24,
+																			height: 24,
+																			borderRadius: 1,
+																			objectFit: 'cover',
+																		}}
+																	/>
+																) : (
+																	<Box
+																		sx={{
+																			width: 24,
+																			height: 24,
+																			borderRadius: 1,
+																			bgcolor: '#e5e7eb',
+																			display: 'flex',
+																			alignItems: 'center',
+																			justifyContent: 'center',
+																			fontSize: 10,
+																			color: '#9ca3af',
+																		}}
+																	>
+																		-
+																	</Box>
+																)}
+																<EditIcon
+																	className="edit-hint"
+																	sx={{ fontSize: 12, color: '#9ca3af', opacity: 0, transition: 'opacity 0.15s' }}
 																/>
-															) : (
-																<Box
-																	sx={{
-																		width: 24,
-																		height: 24,
-																		borderRadius: 1,
-																		bgcolor: '#e5e7eb',
-																		display: 'flex',
-																		alignItems: 'center',
-																		justifyContent: 'center',
-																		fontSize: 10,
-																		color: '#9ca3af',
-																	}}
-																>
-																	-
-																</Box>
+															</Box>
+															{!item.iconUrl && (
+																<Tooltip title="AI 아이콘 생성" arrow>
+																	<IconButton
+																		size="small"
+																		onClick={(e) => {
+																			e.stopPropagation();
+																			handleGenerateIcon(item);
+																		}}
+																		disabled={generatingIcon === item.normalizedKeyword}
+																		sx={{ p: 0.25 }}
+																	>
+																		{generatingIcon === item.normalizedKeyword ? (
+																			<CircularProgress size={14} />
+																		) : (
+																			<AutoFixHighIcon sx={{ fontSize: 14, color: '#8b5cf6' }} />
+																		)}
+																	</IconButton>
+																</Tooltip>
 															)}
-															<EditIcon
-																className="edit-hint"
-																sx={{ fontSize: 12, color: '#9ca3af', opacity: 0, transition: 'opacity 0.15s' }}
-															/>
 														</Box>
 													)}
 												</TableCell>

@@ -1,4 +1,4 @@
-import { adminGet, adminPatch, adminDelete } from '@/shared/lib/http/admin-fetch';
+import { adminGet, adminPost, adminPatch, adminDelete } from '@/shared/lib/http/admin-fetch';
 
 export const KEYWORD_CATEGORIES = {
 	HOBBY: '취미',
@@ -69,6 +69,28 @@ export const keywords = {
 		const encoded = encodeURIComponent(keyword);
 		const res = await adminDelete<{ data: { deletedCount: number } }>(
 			`/admin/v2/keywords/${encoded}`,
+		);
+		return res.data;
+	},
+
+	generateIcon: async (keyword: string) => {
+		const res = await adminPost<{ data: { queued: boolean; keyword: string } }>(
+			'/admin/v2/keywords/icon/generate',
+			{ keyword },
+		);
+		return res.data;
+	},
+
+	generateIconBatch: async () => {
+		const res = await adminPost<{ data: { queued: number; skipped: number } }>(
+			'/admin/v2/keywords/icon/generate-batch',
+		);
+		return res.data;
+	},
+
+	getIconQueueStats: async () => {
+		const res = await adminGet<{ data: { waiting: number; active: number; completed: number; failed: number } }>(
+			'/admin/v2/keywords/icon/queue-stats',
 		);
 		return res.data;
 	},
