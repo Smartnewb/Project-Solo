@@ -87,8 +87,8 @@ function KeywordsContent() {
 				};
 				if (searchTerm) params.search = searchTerm;
 				const data = await AdminService.keywords.getAll(params);
-				setItems(data.items);
-				setPagination({ page: data.page, pageSize: data.pageSize, total: data.total });
+				setItems(data?.items ?? []);
+				setPagination({ page: data?.page ?? 1, pageSize: data?.pageSize ?? 50, total: data?.total ?? 0 });
 			} catch (err: any) {
 				setError(err.response?.data?.message || '키워드 목록을 불러올 수 없습니다.');
 			} finally {

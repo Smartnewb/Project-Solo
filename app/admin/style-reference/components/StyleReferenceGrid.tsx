@@ -37,7 +37,7 @@ export function StyleReferenceGrid({
     );
   }
 
-  if (items.length === 0) {
+  if (!items?.length) {
     return (
       <Box sx={{ textAlign: 'center', py: 6 }}>
         <Typography color="text.secondary">등록된 이미지가 없습니다.</Typography>

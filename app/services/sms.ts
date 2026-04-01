@@ -62,7 +62,8 @@ export const smsService = {
         variables?: string[];
     }): Promise<SmsTemplate> {
         try {
-            return await adminPost<SmsTemplate>(SMS_ENDPOINTS.TEMPLATE, data);
+            const res = await adminPost<{ data: SmsTemplate }>(SMS_ENDPOINTS.TEMPLATE, data);
+            return res.data;
         } catch (error) {
             throw new SmsApiError('템플릿 생성 실패', error);
         }
@@ -70,7 +71,8 @@ export const smsService = {
 
     async getTemplates(): Promise<SmsTemplate[]>{
         try {
-            return await adminGet<SmsTemplate[]>(SMS_ENDPOINTS.TEMPLATE);
+            const res = await adminGet<{ data: SmsTemplate[] }>(SMS_ENDPOINTS.TEMPLATE);
+            return res.data ?? [];
         } catch(error) {
             throw new SmsApiError('템플릿 조회 실패', error);
         }
@@ -78,7 +80,8 @@ export const smsService = {
 
     async getTemplateById(id: string): Promise<SmsTemplate> {
         try {
-            return await adminGet<SmsTemplate>(SMS_ENDPOINTS.TEMPLATE_BY_ID(id));
+            const res = await adminGet<{ data: SmsTemplate }>(SMS_ENDPOINTS.TEMPLATE_BY_ID(id));
+            return res.data;
         } catch (error) {
             throw new SmsApiError(`템플릿(${id}) 조회 실패`, error);
         }
@@ -87,7 +90,8 @@ export const smsService = {
     async updateTemplate(id: string, data: Partial<SmsTemplate>
     ): Promise<SmsTemplate> {
         try {
-            return await adminPut<SmsTemplate>(SMS_ENDPOINTS.TEMPLATE_BY_ID(id), data);
+            const res = await adminPut<{ data: SmsTemplate }>(SMS_ENDPOINTS.TEMPLATE_BY_ID(id), data);
+            return res.data;
         } catch(error) {
             throw new SmsApiError('템플릿 수정 실패', error);
         }
@@ -112,8 +116,8 @@ export const smsService = {
             if (params.page != null) stringParams.page = String(params.page);
             if (params.limit != null) stringParams.limit = String(params.limit);
 
-            const result = await adminGet<UserSearchResponse>(SMS_ENDPOINTS.USER_SEARCH, stringParams);
-            return result || { users: [], meta: { totalCount: 0 } };
+            const res = await adminGet<{ data: UserSearchResponse }>(SMS_ENDPOINTS.USER_SEARCH, stringParams);
+            return res.data ?? { users: [], meta: { totalCount: 0 } };
         } catch (error) {
             throw new SmsApiError('사용자 검색 실패', error);
         }
@@ -121,7 +125,8 @@ export const smsService = {
 
     async sendBulkSms(data: SendSmsRequest): Promise<SendSmsResponse> {
         try {
-            return await adminPost<SendSmsResponse>(SMS_ENDPOINTS.SEND_MESSAGE, data);
+            const res = await adminPost<{ data: SendSmsResponse }>(SMS_ENDPOINTS.SEND_MESSAGE, data);
+            return res.data;
         } catch(error) {
             throw new SmsApiError('문자 메세지 발송 실패', error);
         }
@@ -133,7 +138,8 @@ export const smsService = {
         try {
             const stringParams: Record<string, string> = {};
             if (params?.limit != null) stringParams.limit = String(params.limit);
-            return await adminGet<SmsHistory[]>(SMS_ENDPOINTS.HISTORY, stringParams);
+            const res = await adminGet<{ data: SmsHistory[] }>(SMS_ENDPOINTS.HISTORY, stringParams);
+            return res.data ?? [];
         } catch(error) {
             throw new SmsApiError('sms 내역 조회 실패', error);
         }
@@ -141,7 +147,8 @@ export const smsService = {
 
     async getHistoryDetail(id: string): Promise<GetHistoryDetailResponse> {
         try {
-            return await adminGet<GetHistoryDetailResponse>(SMS_ENDPOINTS.HISTORY_BY_ID(id));
+            const res = await adminGet<{ data: GetHistoryDetailResponse }>(SMS_ENDPOINTS.HISTORY_BY_ID(id));
+            return res.data;
         } catch(error) {
             throw new SmsApiError(`발송 내역 상세 조회 실패 (${id})`, error);
         }

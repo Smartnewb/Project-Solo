@@ -65,7 +65,7 @@ function UniversityClustersPageContent() {
       setLoading(true);
       setError('');
       const data = await AdminService.universities.getClusters();
-      setClusters(data);
+      setClusters(data ?? []);
     } catch (err: any) {
       setError(err.response?.data?.message || '클러스터 데이터를 불러오는데 실패했습니다.');
     } finally {
