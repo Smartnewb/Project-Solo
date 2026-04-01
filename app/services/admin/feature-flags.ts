@@ -18,13 +18,15 @@ export const featureFlags = {
 	},
 
 	toggle: async (name: string, enabled: boolean): Promise<FeatureFlag> => {
-		return adminPatch<FeatureFlag>(`/admin/v2/feature-flags/${name}/toggle`, { enabled });
+		const res = await adminPatch<{ data: FeatureFlag }>(`/admin/v2/feature-flags/${name}/toggle`, { enabled });
+		return res.data;
 	},
 
 	update: async (
 		name: string,
 		data: { description?: string; enabled?: boolean; allowedRoles?: string[] },
 	): Promise<FeatureFlag> => {
-		return adminPatch<FeatureFlag>(`/admin/v2/feature-flags/${name}`, data);
+		const res = await adminPatch<{ data: FeatureFlag }>(`/admin/v2/feature-flags/${name}`, data);
+		return res.data;
 	},
 };

@@ -90,7 +90,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchProfile = async (): Promise<void> => {
     try {
       const token = getAccessToken();
-      if (!token || !state.user) return;
+      if (!token) return;
 
       const response = await axiosServer.get('/profile');
 
@@ -119,9 +119,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // 토큰 갱신
   const refreshAccessToken = async (): Promise<boolean> => {
     try {
-      const response = await axiosServer.post('/auth/refresh', {});
+      const refreshToken = localStorage.getItem('admin_refresh_token');
+      const response = await axiosServer.post('/auth/refresh', {
+        refreshToken: refreshToken || undefined,
+      });
 
       setAccessToken(response.data.accessToken);
+      if (response.data.refreshToken) {
+        setStoredAdminRefreshToken(response.data.refreshToken);
+      }
       return true;
     } catch (error) {
       console.error('토큰 갱신 실패:', error);

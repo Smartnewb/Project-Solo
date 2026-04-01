@@ -214,8 +214,8 @@ export const universities = {
 	},
 
 	getDepartments: async (university: string) => {
-		const result = await adminGet<any>('/admin/v2/universities/departments', { university });
-		return result;
+		const result = await adminGet<{ data: any }>('/admin/v2/universities/departments', { university });
+		return result.data;
 	},
 
 };

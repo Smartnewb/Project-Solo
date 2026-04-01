@@ -125,13 +125,18 @@ const createResponseInterceptor = (axiosInstance: any) => {
           console.log("토큰 만료 감지, 새로고침 시도");
 
           // 토큰 새로고침 요청 (Auth API는 항상 kr 스키마 사용)
+          const refreshToken = localStorage.getItem("admin_refresh_token");
+          const currentToken = localStorage.getItem("accessToken");
           const response = await axios.post(
             `${CLIENT_API_BASE}/auth/refresh`,
-            {},
+            { refreshToken: refreshToken || undefined },
             {
               withCredentials: true,
               headers: {
                 "x-country": "kr",
+                ...(currentToken
+                  ? { Authorization: `Bearer ${currentToken}` }
+                  : {}),
               },
             },
           );

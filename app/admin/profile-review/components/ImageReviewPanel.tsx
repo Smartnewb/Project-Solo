@@ -812,7 +812,7 @@ export default function ImageReviewPanel({
                 {pref.options.map((option, idx) => (
                   <Chip
                     key={idx}
-                    label={option}
+                    label={typeof option === 'object' && option !== null ? (option as any).name ?? JSON.stringify(option) : option}
                     size="small"
                     variant="outlined"
                   />

@@ -62,26 +62,32 @@ export const styleReference = {
 		if (params.pageSize != null) queryParams.pageSize = String(params.pageSize);
 		if (params.gender) queryParams.gender = params.gender;
 		if (params.category) queryParams.category = params.category;
-		return adminGet<StyleReferenceListResponse>('/admin/v2/style-reference', queryParams);
+		const res = await adminGet<{ data: StyleReferenceListResponse }>('/admin/v2/style-reference', queryParams);
+		return res.data;
 	},
 
 	create: async (data: CreateStyleReferenceRequest): Promise<StyleReferenceItem> => {
-		return adminPost<StyleReferenceItem>('/admin/v2/style-reference', data);
+		const res = await adminPost<{ data: StyleReferenceItem }>('/admin/v2/style-reference', data);
+		return res.data;
 	},
 
 	bulkCreate: async (items: CreateStyleReferenceRequest[]): Promise<BulkCreateResult> => {
-		return adminPost<BulkCreateResult>('/admin/v2/style-reference/bulk', { items });
+		const res = await adminPost<{ data: BulkCreateResult }>('/admin/v2/style-reference/bulk', { items });
+		return res.data;
 	},
 
 	deactivate: async (id: string): Promise<{ success: boolean }> => {
-		return adminDelete<{ success: boolean }>(`/admin/v2/style-reference/${id}`);
+		const res = await adminDelete<{ data: { success: boolean } }>(`/admin/v2/style-reference/${id}`);
+		return res.data;
 	},
 
 	reactivate: async (id: string): Promise<{ success: boolean }> => {
-		return adminPost<{ success: boolean }>(`/admin/v2/style-reference/${id}/reactivate`);
+		const res = await adminPost<{ data: { success: boolean } }>(`/admin/v2/style-reference/${id}/reactivate`);
+		return res.data;
 	},
 
 	getStats: async (): Promise<StyleReferenceStats> => {
-		return adminGet<StyleReferenceStats>('/admin/v2/style-reference/stats');
+		const res = await adminGet<{ data: StyleReferenceStats }>('/admin/v2/style-reference/stats');
+		return res.data;
 	},
 };

@@ -51,7 +51,7 @@ export const gems = {
 
 			;
 
-			const responseData = await adminRequest<{
+			const responseData = await adminRequest<{ data: {
 				success: boolean;
 				message?: string;
 				totalProcessed?: number;
@@ -59,12 +59,12 @@ export const gems = {
 				failedCount?: number;
 				errors?: Array<{ identifier: string; reason: string }>;
 				pushNotificationResult?: { pushSuccessCount: number; pushFailureCount: number };
-			}>('/admin/v2/gems/bulk-grant', {
+			} }>('/admin/v2/gems/bulk-grant', {
 				method: 'POST',
 				body: formData,
 			});
 			;
-			return responseData;
+			return responseData.data;
 		} catch (error: any) {
 			throw error;
 		}

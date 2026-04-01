@@ -286,24 +286,39 @@ function ProfileReviewV2Content() {
         );
       }
 
-      // 응답 데이터 정규화 (UI 호환성을 위한 추가 필드)
-      const normalizedUsers: PendingUser[] = response.data.map((user) => {
-        // 전체 이미지 URL 목록 (승인된 이미지 + 대기 중인 이미지)
+      // 응답 데이터 정규화 (V2 API 호환성)
+      const normalizedUsers: PendingUser[] = response.data.map((user: any) => {
+        // V2: pendingImages[].url, approvedImages[].url / V1: approvedImageUrls[], pendingImages[].imageUrl
+        const pendingImgs = (user.pendingImages || []).map((img: any) => ({
+          id: img.imageId ?? img.id,
+          imageUrl: img.url ?? img.imageUrl,
+          imageOrder: img.slotIndex ?? img.imageOrder ?? 0,
+          slotIndex: img.slotIndex ?? 0,
+          isMain: img.isMain ?? false,
+        }));
+        const approvedImgs = (user.approvedImages || user.approvedImageUrls || []);
         const allImageUrls = [
-          ...(user.approvedImageUrls || []),
-          ...(user.pendingImages || []).map((img) => img.imageUrl),
+          ...(Array.isArray(approvedImgs) ? approvedImgs.map((img: any) => typeof img === 'string' ? img : img.url ?? img.imageUrl) : []),
+          ...pendingImgs.map((img: any) => img.imageUrl),
         ];
 
         return {
           ...user,
           // UI 호환성을 위한 추가 필드
           id: user.userId,
-          name: user.userName,
-          profileImages: user.pendingImages,
+          userName: user.name ?? user.userName,
+          name: user.name ?? user.userName,
+          pendingImages: pendingImgs,
+          profileImages: pendingImgs,
           profileImageUrls: allImageUrls,
+          profileUsing: Array.isArray(approvedImgs) ? approvedImgs.map((img: any) => typeof img === 'string' ? { id: '', imageUrl: img, imageOrder: 0, slotIndex: 0, isMain: false } : { id: img.imageId ?? img.id ?? '', imageUrl: img.url ?? img.imageUrl ?? '', imageOrder: img.slotIndex ?? 0, slotIndex: img.slotIndex ?? 0, isMain: img.isMain ?? false, approvedAt: '' }) : [],
+          universityName: user.universityName ?? user.university ?? undefined,
           // 기본값 설정
           preferences: user.preferences || [],
           rejectionHistory: user.rejectionHistory || [],
+          isApproved: user.isApproved ?? false,
+          approved: user.approved ?? false,
+          createdAt: user.createdAt ?? '',
         };
       });
 

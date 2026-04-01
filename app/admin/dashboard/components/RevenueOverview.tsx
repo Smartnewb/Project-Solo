@@ -23,17 +23,18 @@ interface RevenueOverviewProps {
   loading?: boolean;
 }
 
-const formatCurrency = (value: number) => {
-  if (value >= 100000000) {
-    return `${(value / 100000000).toFixed(1)}억`;
+const formatCurrency = (value: number | undefined | null) => {
+  const v = value ?? 0;
+  if (v >= 100000000) {
+    return `${(v / 100000000).toFixed(1)}억`;
   }
-  if (value >= 10000000) {
-    return `${(value / 10000).toFixed(0)}만`;
+  if (v >= 10000000) {
+    return `${(v / 10000).toFixed(0)}만`;
   }
-  if (value >= 10000) {
-    return `${(value / 10000).toFixed(1)}만`;
+  if (v >= 10000) {
+    return `${(v / 10000).toFixed(1)}만`;
   }
-  return `${value.toLocaleString()}`;
+  return `${v.toLocaleString()}`;
 };
 
 export default function RevenueOverview({

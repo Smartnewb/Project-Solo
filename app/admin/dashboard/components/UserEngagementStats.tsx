@@ -149,7 +149,7 @@ const EngagementRateDisplay = ({
 				{engagement.rate}%
 			</Typography>
 			<Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
-				({engagement.activeUsers.toLocaleString()}/{engagement.totalUsers.toLocaleString()})
+				({(engagement.activeUsers ?? 0).toLocaleString()}/{(engagement.totalUsers ?? 0).toLocaleString()})
 			</Typography>
 		</Box>
 	</Box>

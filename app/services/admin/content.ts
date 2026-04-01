@@ -39,11 +39,11 @@ export const backgroundPresets = {
 			const formData = new FormData();
 			formData.append('image', imageFile);
 
-			const data = await adminRequest<UploadImageResponse>('/admin/v2/content/background-presets/upload', {
+			const res = await adminRequest<{ data: UploadImageResponse }>('/admin/v2/content/background-presets/upload', {
 				method: 'POST',
 				body: formData,
 			});
-			return data;
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -63,11 +63,11 @@ export const backgroundPresets = {
 				formData.append('order', data.order.toString());
 			}
 
-			const responseData = await adminRequest<BackgroundPreset>('/admin/v2/content/background-presets/upload-and-create', {
+			const res = await adminRequest<{ data: BackgroundPreset }>('/admin/v2/content/background-presets/upload-and-create', {
 				method: 'POST',
 				body: formData,
 			});
-			return responseData;
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -75,7 +75,8 @@ export const backgroundPresets = {
 
 	create: async (data: CreatePresetRequest): Promise<BackgroundPreset> => {
 		try {
-			return await adminPost<BackgroundPreset>('/admin/v2/content/background-presets', data);
+			const res = await adminPost<{ data: BackgroundPreset }>('/admin/v2/content/background-presets', data);
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -83,7 +84,8 @@ export const backgroundPresets = {
 
 	update: async (id: string, data: Partial<CreatePresetRequest>): Promise<BackgroundPreset> => {
 		try {
-			return await adminPut<BackgroundPreset>(`/admin/v2/content/background-presets/${id}`, data);
+			const res = await adminPut<{ data: BackgroundPreset }>(`/admin/v2/content/background-presets/${id}`, data);
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -113,14 +115,14 @@ export const cardNews = {
 			const formData = new FormData();
 			formData.append('image', imageFile);
 
-			const data = await adminRequest<UploadImageResponse>(
+			const res = await adminRequest<{ data: UploadImageResponse }>(
 				'/admin/v2/content/card-news/section-images/upload',
 				{
 					method: 'POST',
 					body: formData,
 				},
 			);
-			return data;
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -128,7 +130,8 @@ export const cardNews = {
 
 	create: async (data: CreateCardNewsRequest): Promise<AdminCardNewsItem> => {
 		try {
-			return await adminPost<AdminCardNewsItem>('/admin/v2/content/card-news', data);
+			const res = await adminPost<{ data: AdminCardNewsItem }>('/admin/v2/content/card-news', data);
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -157,7 +160,8 @@ export const cardNews = {
 
 	update: async (id: string, data: UpdateCardNewsRequest): Promise<AdminCardNewsItem> => {
 		try {
-			return await adminPut<AdminCardNewsItem>(`/admin/v2/content/card-news/${id}`, data);
+			const res = await adminPut<{ data: AdminCardNewsItem }>(`/admin/v2/content/card-news/${id}`, data);
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -173,10 +177,11 @@ export const cardNews = {
 
 	publish: async (id: string, data?: PublishCardNewsRequest): Promise<PublishCardNewsResponse> => {
 		try {
-			return await adminPost<PublishCardNewsResponse>(
+			const res = await adminPost<{ data: PublishCardNewsResponse }>(
 				`/admin/v2/content/card-news/${id}/publish`,
 				data || {},
 			);
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -195,7 +200,8 @@ export const banners = {
 	getList: async (position?: BannerPosition): Promise<Banner[]> => {
 		try {
 			const params = position ? { position } : undefined;
-			return await adminGet<Banner[]>('/admin/v2/banners', params);
+			const res = await adminGet<{ data: Banner[] }>('/admin/v2/banners', params);
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -210,10 +216,11 @@ export const banners = {
 			if (data.startDate) formData.append('startDate', data.startDate);
 			if (data.endDate) formData.append('endDate', data.endDate);
 
-			return adminRequest<Banner>('/admin/v2/banners', {
+			const res = await adminRequest<{ data: Banner }>('/admin/v2/banners', {
 				method: 'POST',
 				body: formData,
 			});
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -221,7 +228,8 @@ export const banners = {
 
 	update: async (id: string, data: UpdateBannerRequest): Promise<Banner> => {
 		try {
-			return await adminPatch<Banner>(`/admin/v2/banners/${id}`, data);
+			const res = await adminPatch<{ data: Banner }>(`/admin/v2/banners/${id}`, data);
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -237,7 +245,8 @@ export const banners = {
 
 	updateOrder: async (data: UpdateBannerOrderRequest): Promise<Banner[]> => {
 		try {
-			return await adminPatch<Banner[]>('/admin/v2/banners/order/bulk', data);
+			const res = await adminPatch<{ data: Banner[] }>('/admin/v2/banners/order/bulk', data);
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -273,10 +282,11 @@ export const sometimeArticles = {
 			if (params?.status) query.status = params.status;
 			if (params?.page !== undefined) query.page = String(params.page);
 			if (params?.limit !== undefined) query.limit = String(params.limit);
-			return await adminGet<AdminSometimeArticleListResponse>(
+			const res = await adminGet<{ data: AdminSometimeArticleListResponse }>(
 				"/admin/v2/sometime-articles",
 				Object.keys(query).length > 0 ? query : undefined,
 			);
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -284,7 +294,8 @@ export const sometimeArticles = {
 
 	get: async (id: string): Promise<AdminSometimeArticleDetail> => {
 		try {
-			return await adminGet<AdminSometimeArticleDetail>(`/admin/v2/sometime-articles/${id}`);
+			const res = await adminGet<{ data: AdminSometimeArticleDetail }>(`/admin/v2/sometime-articles/${id}`);
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -294,7 +305,8 @@ export const sometimeArticles = {
 		data: CreateSometimeArticleRequest,
 	): Promise<AdminSometimeArticleDetail> => {
 		try {
-			return await adminPost<AdminSometimeArticleDetail>("/admin/v2/sometime-articles", data);
+			const res = await adminPost<{ data: AdminSometimeArticleDetail }>("/admin/v2/sometime-articles", data);
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -305,7 +317,8 @@ export const sometimeArticles = {
 		data: UpdateSometimeArticleRequest,
 	): Promise<AdminSometimeArticleDetail> => {
 		try {
-			return await adminPatch<AdminSometimeArticleDetail>(`/admin/v2/sometime-articles/${id}`, data);
+			const res = await adminPatch<{ data: AdminSometimeArticleDetail }>(`/admin/v2/sometime-articles/${id}`, data);
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -412,9 +425,10 @@ export const appReviews = {
 
 	toggleFeatured: async (pk: string): Promise<{ pk: string; isFeatured: boolean }> => {
 		try {
-			return await adminPatch<{ pk: string; isFeatured: boolean }>(
+			const res = await adminPatch<{ data: { pk: string; isFeatured: boolean } }>(
 				`/admin/v2/app-reviews/${encodeURIComponent(pk)}/featured`,
 			);
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -440,9 +454,10 @@ export const communityReviewArticles = {
 		articleId: string,
 	): Promise<{ id: string; isFeatured: boolean; featuredAt: string | null }> => {
 		try {
-			return await adminPatch<{ id: string; isFeatured: boolean; featuredAt: string | null }>(
+			const res = await adminPatch<{ data: { id: string; isFeatured: boolean; featuredAt: string | null } }>(
 				`/admin/v2/community/posts/${articleId}/status`,
 			);
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}

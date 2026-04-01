@@ -174,11 +174,11 @@ export const reports = {
 
 	getChatHistory: async (chatRoomId: string, page: number = 1, limit: number = 50) => {
 		try {
-			const result = await adminGet<any>(`/admin/v2/chat/rooms/${chatRoomId}/messages`, {
+			const result = await adminGet<{ data: any }>(`/admin/v2/chat/rooms/${chatRoomId}/messages`, {
 				page: String(page),
 				limit: String(limit),
 			});
-			return result;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -186,8 +186,9 @@ export const reports = {
 
 	getUserProfileImages: async (userId: string): Promise<string[]> => {
 		try {
-			const result = await adminGet<any>(`/admin/v2/community/users/${userId}/profile-images`);
-			const images = result.images || result.data?.images || [];
+			const res = await adminGet<{ data: any }>(`/admin/v2/community/users/${userId}/profile-images`);
+			const data = res.data;
+			const images = data.images || [];
 			return images.map((img: any) => (typeof img === 'string' ? img : img.url));
 		} catch (error: any) {
 			throw error;
@@ -317,8 +318,8 @@ export const userReview = {
 	},
 
 	getImageValidation: async (imageId: string) => {
-		const result = await adminGet<any>(`/admin/v2/profile-images/${imageId}/validation`);
-		return result;
+		const result = await adminGet<{ data: any }>(`/admin/v2/profile-images/${imageId}/validation`);
+		return result.data;
 	},
 
 	getReviewHistory: async (filters: ReviewHistoryFilter = {}): Promise<ReviewHistoryResponse> => {

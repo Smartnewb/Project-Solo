@@ -213,9 +213,9 @@ export const userAppearance = {
 		try {
 			const endpoint = `/admin/v2/tickets/user/${userId}`;
 
-			const result = await adminGet<any>(endpoint);
+			const result = await adminGet<{ data: any }>(endpoint);
 
-			return result;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -225,12 +225,12 @@ export const userAppearance = {
 		try {
 			const endpoint = `/admin/v2/tickets`;
 
-			const result = await adminPost<any>(endpoint, {
+			const result = await adminPost<{ data: any }>(endpoint, {
 				userId,
 				count,
 			});
 
-			return result;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -240,13 +240,13 @@ export const userAppearance = {
 		try {
 			const endpoint = `/admin/v2/tickets`;
 
-			const result = await adminRequest<any>(endpoint, {
+			const result = await adminRequest<{ data: any }>(endpoint, {
 				method: 'DELETE',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ userId, count }),
 			});
 
-			return result;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -256,9 +256,9 @@ export const userAppearance = {
 		try {
 			const endpoint = `/admin/v2/gems/users/${userId}/balance`;
 
-			const result = await adminGet<any>(endpoint);
+			const result = await adminGet<{ data: any }>(endpoint);
 
-			return result;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -268,9 +268,9 @@ export const userAppearance = {
 		try {
 			const endpoint = `/admin/v2/gems/users/${userId}/add`;
 
-			const result = await adminPost<any>(endpoint, { amount });
+			const result = await adminPost<{ data: any }>(endpoint, { amount });
 
-			return result;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -280,9 +280,9 @@ export const userAppearance = {
 		try {
 			const endpoint = `/admin/v2/gems/users/${userId}/deduct`;
 
-			const result = await adminPost<any>(endpoint, { amount });
+			const result = await adminPost<{ data: any }>(endpoint, { amount });
 
-			return result;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -306,8 +306,8 @@ export const userAppearance = {
 
 			;
 
-			const result = await adminPatch<any>(endpoint, requestData);
-			return result;
+			const result = await adminPatch<{ data: any }>(endpoint, requestData);
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -336,11 +336,11 @@ export const userAppearance = {
 		try {
 			;
 
-			const result = await adminPost<any>(`/admin/v2/users/${userId}/warning`, {
+			const result = await adminPost<{ data: any }>(`/admin/v2/users/${userId}/warning`, {
 				message,
 			});
 
-			return result;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -379,9 +379,9 @@ export const userAppearance = {
 		try {
 			;
 
-			const result = await adminPost<any>(`/admin/v2/users/${userId}/logout`, {});
+			const result = await adminPost<{ data: any }>(`/admin/v2/users/${userId}/logout`, {});
 
-			return result;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -391,11 +391,11 @@ export const userAppearance = {
 		try {
 			;
 
-			const result = await adminPost<any>(`/admin/v2/users/${userId}/profile-update-request`, {
+			const result = await adminPost<{ data: any }>(`/admin/v2/users/${userId}/profile-update-request`, {
 				message,
 			});
 
-			return result;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -405,9 +405,9 @@ export const userAppearance = {
 		try {
 			;
 
-			const result = await adminPost<any>(`/admin/v2/users/${userId}/instagram-error`, {});
+			const result = await adminPost<{ data: any }>(`/admin/v2/users/${userId}/instagram-error`, {});
 
-			return result;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -417,9 +417,9 @@ export const userAppearance = {
 		try {
 			;
 
-			const result = await adminPost<any>(`/admin/v2/users/${userId}/instagram-reset`, {});
+			const result = await adminPost<{ data: any }>(`/admin/v2/users/${userId}/instagram-reset`, {});
 
-			return result;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -646,12 +646,12 @@ export const userAppearance = {
 		addToBlacklist: boolean = false,
 	) => {
 		try {
-			const result = await adminRequest<any>(`/admin/v2/users/${userId}`, {
+			const result = await adminRequest<{ data: any }>(`/admin/v2/users/${userId}`, {
 				method: 'DELETE',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ sendEmail, addToBlacklist }),
 			});
-			return result;
+			return result.data;
 		} catch (error: any) {
 			throw error.response?.data ?? error.body ?? error;
 		}
@@ -763,9 +763,9 @@ export const userAppearance = {
 		try {
 			;
 
-			const result = await adminPatch<any>(`/admin/v2/users/${userId}/blacklist/release`);
+			const result = await adminPatch<{ data: any }>(`/admin/v2/users/${userId}/blacklist/release`);
 
-			return result;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -796,9 +796,9 @@ export const userAppearance = {
 		try {
 			;
 
-			const result = await adminPatch<any>(`/admin/v2/users/${userId}/reset-password`);
+			const result = await adminPatch<{ data: any }>(`/admin/v2/users/${userId}/reset-password`);
 
-			return result;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -864,11 +864,11 @@ export const userAppearance = {
 		try {
 			;
 
-			const result = await adminPatch<any>(`/admin/v2/users/${userId}/revoke-approval`, {
+			const result = await adminPatch<{ data: any }>(`/admin/v2/users/${userId}/revoke-approval`, {
 				revokeReason,
 			});
 
-			return result;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -890,10 +890,10 @@ export const deletedFemales = {
 
 	restore: async (id: string) => {
 		try {
-			const result = await adminPatch<RestoreFemaleResponse>(
+			const res = await adminPatch<{ data: RestoreFemaleResponse }>(
 				`/admin/v2/retention/deleted-females/${id}/restore`,
 			);
-			return result;
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -901,10 +901,10 @@ export const deletedFemales = {
 
 	sleep: async (id: string) => {
 		try {
-			const result = await adminPatch<SleepFemaleResponse>(
+			const res = await adminPatch<{ data: SleepFemaleResponse }>(
 				`/admin/v2/retention/deleted-females/${id}/sleep`,
 			);
-			return result;
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}

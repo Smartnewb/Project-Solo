@@ -77,7 +77,7 @@ const FunnelBar = ({ step, index, maxCount, isLast }: FunnelBarProps) => {
               variant="body2"
               sx={{ color: 'white', fontWeight: 'bold' }}
             >
-              {step.count.toLocaleString()}
+              {(step.count ?? 0).toLocaleString()}
             </Typography>
           </Box>
         </Tooltip>

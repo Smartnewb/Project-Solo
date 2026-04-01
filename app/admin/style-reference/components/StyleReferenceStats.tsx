@@ -7,8 +7,8 @@ import { CATEGORY_LABELS, GENDER_LABELS } from '../constants';
 export function StyleReferenceStats() {
   const { data, isLoading } = useStyleReferenceStats();
 
-  const total = data?.stats.reduce((acc, s) => acc + s.count, 0) ?? 0;
-  const active = data?.stats.reduce((acc, s) => acc + s.activeCount, 0) ?? 0;
+  const total = data?.stats?.reduce((acc, s) => acc + s.count, 0) ?? 0;
+  const active = data?.stats?.reduce((acc, s) => acc + s.activeCount, 0) ?? 0;
   const inactive = total - active;
 
   const summaryCards = [
@@ -39,7 +39,7 @@ export function StyleReferenceStats() {
           </CardContent>
         </Card>
       ))}
-      {data?.stats.map((s) => (
+      {data?.stats?.map((s) => (
         <Card
           key={`${s.gender}-${s.category}`}
           variant="outlined"

@@ -292,12 +292,12 @@ function InsightsList({ insights }: InsightsListProps) {
 										</Box>
 										{insight.affectedUsers > 0 && (
 											<Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-												영향 받는 유저: {insight.affectedUsers.toLocaleString()}명
+												영향 받는 유저: {(insight.affectedUsers ?? 0).toLocaleString()}명
 											</Typography>
 										)}
 										{insight.potentialRevenueImpact && (
 											<Typography variant="caption" color="error" sx={{ display: 'block' }}>
-												예상 매출 영향: ₩{insight.potentialRevenueImpact.toLocaleString()}
+												예상 매출 영향: ₩{(insight.potentialRevenueImpact ?? 0).toLocaleString()}
 											</Typography>
 										)}
 										{insight.relatedDashboard && (
@@ -374,7 +374,7 @@ function BottlenecksList({ bottlenecks }: BottlenecksListProps) {
 							/>
 
 							<Typography variant="caption" color="text.secondary">
-								이탈 유저: {bottleneck.droppedUsers.toLocaleString()}명
+								이탈 유저: {(bottleneck.droppedUsers ?? 0).toLocaleString()}명
 							</Typography>
 
 							<Box sx={{ mt: 1 }}>
@@ -419,7 +419,7 @@ function PainPointsList({ painPoints }: PainPointsListProps) {
 
 								<Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, mb: 2 }}>
 									<Typography variant="h4" fontWeight="bold" color="error">
-										{point.affectedUsers.toLocaleString()}
+										{(point.affectedUsers ?? 0).toLocaleString()}
 									</Typography>
 									<Typography variant="body2" color="text.secondary">
 										명 ({point.percentage}%)

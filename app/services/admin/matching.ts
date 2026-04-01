@@ -25,14 +25,14 @@ export const matching = {
 			params.type = type;
 		}
 
-		const result = await adminGet<any>('/admin/v2/matching', params);
-		return result;
+		const result = await adminGet<{ data: any }>('/admin/v2/matching', params);
+		return result.data;
 	},
 
 	// 중복 매칭 여부 확인
 	getMatchCount: async (myId: string, matcherId: string) => {
-		const result = await adminGet<any>('/admin/v2/matching/match-count', { myId, matcherId });
-		return result;
+		const result = await adminGet<{ data: any }>('/admin/v2/matching/match-count', { myId, matcherId });
+		return result.data;
 	},
 
 	// 사용자 매칭 횟수 조회
@@ -46,8 +46,8 @@ export const matching = {
 		if (startDate) params.startDate = startDate;
 		if (endDate) params.endDate = endDate;
 
-		const result = await adminGet<any>('/admin/v2/matching/match-count', params);
-		return result;
+		const result = await adminGet<{ data: any }>('/admin/v2/matching/match-count', params);
+		return result.data;
 	},
 
 	// 특정 사용자가 매칭 상대로 선택된 이력 조회
@@ -71,8 +71,8 @@ export const matching = {
 			params.name = name.trim();
 		}
 
-		const result = await adminGet<any>('/admin/v2/matching', params);
-		return result;
+		const result = await adminGet<{ data: any }>('/admin/v2/matching', params);
+		return result.data;
 	},
 
 	// 직접 매칭 생성
@@ -102,8 +102,8 @@ export const matching = {
 			params.reason = reason.trim();
 		}
 
-		const result = await adminGet<any>('/admin/v2/matching/failure-logs', params);
-		return result;
+		const result = await adminGet<{ data: any }>('/admin/v2/matching/failure-logs', params);
+		return result.data;
 	},
 
 	// 특정 사용자의 매칭 결과만 조회
@@ -113,8 +113,8 @@ export const matching = {
 			...options,
 		};
 
-		const result = await adminPost<any>('/admin/v2/matching/user/read', requestData);
-		return result;
+		const result = await adminPost<{ data: any }>('/admin/v2/matching/user/read', requestData);
+		return result.data;
 	},
 
 	// 매칭되지 않은 사용자 조회
@@ -131,20 +131,20 @@ export const matching = {
 		if (name) params.name = name;
 		if (gender && gender !== 'all') params.gender = gender;
 
-		const result = await adminGet<any>('/admin/v2/matching/unmatched-users', params);
-		return result;
+		const result = await adminGet<{ data: any }>('/admin/v2/matching/unmatched-users', params);
+		return result.data;
 	},
 
 	// 배치 매칭 처리
 	processBatchMatching: async () => {
-		const result = await adminPost<any>('/admin/v2/matching/batch');
-		return result;
+		const result = await adminPost<{ data: any }>('/admin/v2/matching/batch');
+		return result.data;
 	},
 
 	// 단일 사용자 매칭 처리
 	processSingleMatching: async (userId: string) => {
-		const result = await adminPost<any>('/admin/v2/matching/user', { userId });
-		return result;
+		const result = await adminPost<{ data: any }>('/admin/v2/matching/user', { userId });
+		return result.data;
 	},
 
 	// 좋아요 이력 조회
@@ -178,8 +178,8 @@ export const matching = {
 			const params: Record<string, string> = { period };
 			if (university) params.university = university;
 
-			const result = await adminGet<{ data: any; meta?: any }>('/admin/v2/matching/stats', params);
-			return result;
+			const result = await adminGet<{ data: any }>('/admin/v2/matching/stats', params);
+			return result.data;
 		} catch (error: any) {
 			if (error?.status === 404 || error?.response?.status === 404) {
 				return null;
@@ -217,7 +217,7 @@ export const forceMatching = {
 
 	// 강제 채팅방 생성
 	createForceChatRoom: async (data: { userIdA: string; userIdB: string; reason?: string }) => {
-		const result = await adminPost<any>('/admin/v2/matching/force', data);
-		return result;
+		const result = await adminPost<{ data: any }>('/admin/v2/matching/force', data);
+		return result.data;
 	},
 };

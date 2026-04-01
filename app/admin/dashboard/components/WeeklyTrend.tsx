@@ -131,16 +131,16 @@ export default function WeeklyTrend({ compact = false }: WeeklyTrendProps) {
       if (value >= 10000) {
         return `${(value / 10000).toFixed(0)}만`;
       }
-      return value.toLocaleString();
+      return (value ?? 0).toLocaleString();
     }
-    return value.toString();
+    return (value ?? 0).toString();
   };
 
   const formatTooltip = (value: number) => {
     if (metric === "sales") {
-      return `₩${value.toLocaleString()}`;
+      return `₩${(value ?? 0).toLocaleString()}`;
     }
-    return `${value}명`;
+    return `${value ?? 0}명`;
   };
 
   return (
