@@ -85,7 +85,7 @@ function ResetPasswordPageContent() {
 
       const userList = Array.isArray(data) ? data : (data?.data ?? []);
       setUsers(userList);
-      const total = data?.total ?? data?.meta?.total ?? userList.length;
+      const total = data?.meta?.total ?? userList.length;
       setTotalCount(total);
       setTotalPages(Math.ceil(total / 10) || 1);
       setPage(pageNum);
