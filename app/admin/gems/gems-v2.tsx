@@ -126,16 +126,19 @@ function GemsManagementPageContent() {
     setUserSearchError(null);
 
     try {
-      const response = await axiosServer.get('/admin/v2/users/appearance/stats', {
+      const isPhone = /^[\d\-]+$/.test(userSearchTerm.trim());
+      const response = await axiosServer.get('/admin/v2/users/search', {
         params: {
           page: 1,
           limit: 20,
-          searchTerm: userSearchTerm
+          ...(isPhone ? { phoneNumber: userSearchTerm.trim() } : { name: userSearchTerm.trim() })
         }
       });
 
       let results: UserSearchResult[] = [];
-      if (response.data?.items && Array.isArray(response.data.items)) {
+      if (response.data?.data && Array.isArray(response.data.data)) {
+        results = response.data.data;
+      } else if (response.data?.items && Array.isArray(response.data.items)) {
         results = response.data.items;
       } else if (Array.isArray(response.data)) {
         results = response.data;

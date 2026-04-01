@@ -370,20 +370,20 @@ function MatchingManagementV2Content() {
 
     try {
       // API 요청 시 axiosServer 사용
-      const response = await axiosServer.get('/admin/v2/users/appearance/stats', {
+      const isPhone = /^[\d\-]+$/.test(searchTerm.trim());
+      const response = await axiosServer.get('/admin/v2/users/search', {
         params: {
           page: 1,
           limit: 10,
-          searchTerm: searchTerm
+          ...(isPhone ? { phoneNumber: searchTerm.trim() } : { name: searchTerm.trim() })
         }
       });
 
-      ;
-
       let results = [];
 
-      if (response.data && response.data.items && Array.isArray(response.data.items)) {
-        // API가 { items: [...] } 형태로 응답할 경우
+      if (response.data?.data && Array.isArray(response.data.data)) {
+        results = response.data.data;
+      } else if (response.data?.items && Array.isArray(response.data.items)) {
         results = response.data.items;
       } else if (response.data && Array.isArray(response.data)) {
         results = response.data;

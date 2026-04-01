@@ -91,7 +91,7 @@ function UsersV2Content() {
   useEffect(() => {
     setPage(1); // 필터 변경 시 페이지 초기화
     fetchUsers();
-  }, [filter, selectedGender, selectedClass, searchTerm]);
+  }, [filter, selectedGender, selectedClass]);
 
   // 페이지 변경 시 데이터 가져오기
   useEffect(() => {
@@ -115,11 +115,13 @@ function UsersV2Content() {
       setLoading(true);
       setError(null); // 오류 상태 초기화
 
-      // API 요청 파라미터 구성 (페이지네이션만)
       const params = new URLSearchParams({
         page: page.toString(),
         limit: pageSize.toString()
       });
+      if (searchTerm.trim()) params.set('search', searchTerm.trim());
+      if (selectedGender !== 'all') params.set('gender', selectedGender);
+      if (filter !== 'all') params.set('filter', filter);
 
       // Nest.js API 호출
       const response = await axiosServer.get<ApiResponse>(`/admin/v2/users?${params}`);
