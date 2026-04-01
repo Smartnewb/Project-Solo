@@ -69,7 +69,7 @@ function UserSearchSection({ gender, selectedUser, onSelectUser }: UserSearchSec
 				page: 1,
 				limit: 10,
 			});
-			setSearchResults(Array.isArray(response) ? response : []);
+			setSearchResults(Array.isArray(response) ? response : (response?.data ?? response?.users ?? []));
 		} catch (error) {
 			setSearchResults([]);
 		} finally {

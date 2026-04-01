@@ -100,11 +100,14 @@ function UsersV2Content() {
     }
   }, [page]);
 
-  // 검색어 입력 시 디바운스 적용
+  // 검색어 입력 시 디바운스 적용 — setPage(1)이 page useEffect를 트리거하여 fetchUsers 실행
   useEffect(() => {
     const timer = setTimeout(() => {
-      setPage(1);
-      fetchUsers();
+      if (page === 1) {
+        fetchUsers();
+      } else {
+        setPage(1);
+      }
     }, 500);
 
     return () => clearTimeout(timer);

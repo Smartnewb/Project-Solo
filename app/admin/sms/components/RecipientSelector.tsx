@@ -158,8 +158,9 @@ export function RecipientSelector({ onRecipientsChange }: RecipientSelectorProps
             // 백엔드 응답: { data: rows, meta: { page, limit } }
             const users = (response as any).data ?? (response as any).users ?? [];
 
-            // users 배열에서 필터링
-            const filteredResults = (users as User[]).filter(
+            // users 배열에서 필터링 (백엔드는 id를 반환, 프론트 타입은 userId)
+            const mappedUsers = (users as any[]).map(u => ({ ...u, userId: u.userId ?? u.id }));
+            const filteredResults = (mappedUsers as User[]).filter(
                 user => !selectedUsers.find(selected => selected.userId === user.userId)
             );
 

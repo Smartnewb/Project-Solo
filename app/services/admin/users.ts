@@ -785,8 +785,8 @@ export const userAppearance = {
 			if (params.name) queryParams.name = params.name;
 			if (params.phoneNumber) queryParams.phoneNumber = params.phoneNumber;
 
-			const result = await adminGet<{ data: any }>('/admin/v2/users/search', queryParams);
-			return result.data;
+			const result = await adminGet<{ data: any; meta: any }>('/admin/v2/users/search', queryParams);
+			return result;
 		} catch (error: any) {
 			throw error;
 		}
