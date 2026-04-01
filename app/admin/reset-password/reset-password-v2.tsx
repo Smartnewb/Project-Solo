@@ -83,7 +83,7 @@ function ResetPasswordPageContent() {
         limit: 10,
       });
 
-      const userList = Array.isArray(data) ? data : (data?.data ?? data?.users ?? []);
+      const userList = Array.isArray(data) ? data : (data?.data ?? []);
       setUsers(userList);
       const total = data?.total ?? data?.meta?.total ?? userList.length;
       setTotalCount(total);
