@@ -495,33 +495,20 @@ function MatchingManagementV2Content() {
     setUnmatchedUsersError(null);
 
     try {
-      const response = await axiosServer.get('/admin/v2/matching/unmatched-users', {
-        params: {
-          page: unmatchedUsersPage,
-          limit: unmatchedUsersLimit,
-          name: unmatchedUsersSearchTerm || undefined,
-          gender: unmatchedUsersGenderFilter === 'all' ? undefined : unmatchedUsersGenderFilter
-        }
-      });
+      const data = await AdminService.matching.getUnmatchedUsers(
+        unmatchedUsersPage,
+        unmatchedUsersLimit,
+        unmatchedUsersSearchTerm || undefined,
+        unmatchedUsersGenderFilter === 'all' ? undefined : unmatchedUsersGenderFilter,
+      );
 
-      ;
-
-      // 새로운 응답 형식에 맞게 처리
-      if (response.data.items && Array.isArray(response.data.items)) {
-        setUnmatchedUsers(response.data.items);
-      } else if (response.data.users && Array.isArray(response.data.users)) {
-        // 이전 형식 지원
-        setUnmatchedUsers(response.data.users);
+      if (data?.items && Array.isArray(data.items)) {
+        setUnmatchedUsers(data.items);
       } else {
         setUnmatchedUsers([]);
       }
 
-      // 메타 정보 처리
-      if (response.data.meta) {
-        setUnmatchedUsersTotalCount(response.data.meta.totalItems || 0);
-      } else {
-        setUnmatchedUsersTotalCount(response.data.totalCount || 0);
-      }
+      setUnmatchedUsersTotalCount(data?.meta?.totalItems || 0);
     } catch (err: any) {
 
       // 서버에서 받은 에러 메시지 표시

@@ -199,12 +199,11 @@ export const forceMatching = {
 		page?: number;
 		limit?: number;
 	}) => {
-		// API 스펙: gender는 대문자(MALE, FEMALE), status는 소문자(approved)
+		// API 스펙: gender는 대문자(MALE, FEMALE), filter는 UsersQuery DTO 기준(verified 등)
 		const genderParam = params.gender ? params.gender.toUpperCase() : undefined;
-		const statusParam = (params.status || 'approved').toLowerCase();
 
 		const queryParams: Record<string, string> = {
-			status: statusParam,
+			filter: 'verified',
 			page: String(params.page || 1),
 			limit: String(params.limit || 10),
 		};

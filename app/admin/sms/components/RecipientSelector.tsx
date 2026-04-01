@@ -150,32 +150,21 @@ export function RecipientSelector({ onRecipientsChange }: RecipientSelectorProps
         setLoading(true);
 
         try {
-            // API 호출 - 응답 타입이 UserSearchResponse
-            const response: UserSearchResponse = await smsService.searchUser({
-                startDate: criteriaDate ? safeFormat(criteriaDate, 'yyyy-MM-dd') : undefined, // NOTE: 캘린더 사용시 criteriaDate를 dateRange.from 으로 변경
-                // endDate: dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined, // NOTE: 미사용 - 날짜 범위 지정용
-                gender: gender !== 'ALL' && gender !== 'CUSTOM'
-                    ? gender as 'MALE' | 'FEMALE'
-                    : undefined,
-                searchTerm: searchTerm,
-                includeWithdrawn: includeWithdrawn,
-                includeRejected: includedRejected,
-                
+            // API 호출 - 백엔드는 search/page/limit만 지원
+            const response = await smsService.searchUser({
+                search: searchTerm || undefined,
             });
 
-            ;
-            ;
-            ;
-            ;
-            ;
+            // 백엔드 응답: { data: rows, meta: { page, limit } }
+            const users = (response as any).data ?? (response as any).users ?? [];
 
             // users 배열에서 필터링
-            const filteredResults = response.users.filter(
+            const filteredResults = (users as User[]).filter(
                 user => !selectedUsers.find(selected => selected.userId === user.userId)
             );
 
             setSearchResults(filteredResults);
-            setTotalCount(response.meta.totalCount);  // totalCount 상태 업데이트
+            setTotalCount(filteredResults.length);
 
         } catch { } finally {
             setLoading(false);

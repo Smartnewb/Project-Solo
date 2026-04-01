@@ -66,11 +66,10 @@ function UserSearchSection({ gender, selectedUser, onSelectUser }: UserSearchSec
 			const response = await AdminService.forceMatching.searchUsers({
 				search: searchTerm.trim(),
 				gender,
-				status: 'approved',
 				page: 1,
 				limit: 10,
 			});
-			setSearchResults(response.users || []);
+			setSearchResults(Array.isArray(response) ? response : []);
 		} catch (error) {
 			setSearchResults([]);
 		} finally {

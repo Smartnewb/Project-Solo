@@ -116,14 +116,10 @@ export const chatRefund = {
 
 	getEligibleRooms: async (userId: string) => {
 		try {
-			const country = getCountryHeader();
-			const response = await axiosServer.get<EligibleChatRoomsResponse>(
+			const result = await adminGet<{ data: EligibleChatRoomsResponse }>(
 				`/admin/v2/payments/chat-refund/users/${userId}/eligible-rooms`,
-				{
-					headers: { 'X-Country': country },
-				},
 			);
-			return response.data;
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -151,17 +147,17 @@ export const chatRefund = {
 export const appleRefund = {
 	getList: async (params: AppleRefundListParams = {}) => {
 		try {
-			const response = await axiosServer.get<AppleRefundListResponse>('/admin/v2/apple-refund', {
-				params: {
-					page: params.page || 1,
-					limit: params.limit || 20,
-					...(params.status && { status: params.status }),
-					...(params.startDate && { startDate: params.startDate }),
-					...(params.endDate && { endDate: params.endDate }),
-					...(params.searchTerm && { searchTerm: params.searchTerm }),
-				},
-			});
-			return response.data;
+			const queryParams: Record<string, string> = {
+				page: String(params.page || 1),
+				limit: String(params.limit || 20),
+			};
+			if (params.status) queryParams.refundStatus = params.status;
+			if (params.startDate) queryParams.startDate = params.startDate;
+			if (params.endDate) queryParams.endDate = params.endDate;
+			if (params.searchTerm) queryParams.transactionId = params.searchTerm;
+
+			const result = await adminGet<{ data: AppleRefundListResponse }>('/admin/v2/apple-refund', queryParams);
+			return result.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -176,9 +172,9 @@ export const appleRefund = {
 		}
 	},
 
-	syncRefundStatus: async () => {
+	syncRefundStatus: async (body?: { paymentId: string; reason: string; adminNote?: string }) => {
 		try {
-			const response = await axiosServer.post('/admin/v2/apple-refund/sync');
+			const response = await axiosServer.post('/admin/v2/apple-refund/sync', body);
 			return response.data;
 		} catch (error: any) {
 			throw error;

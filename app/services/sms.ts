@@ -102,21 +102,15 @@ export const smsService = {
     },
 
     async searchUser(params: {
-        startDate?: string;
-        endDate?: string;
-        gender?: 'MALE' | 'FEMALE';
-        searchTerm?: string;
-        includeWithdrawn?: boolean;
-        includeRejected?: boolean;
+        search?: string;
+        page?: number;
+        limit?: number;
     }): Promise<UserSearchResponse> {
         try {
             const stringParams: Record<string, string> = {};
-            if (params.startDate) stringParams.startDate = params.startDate;
-            if (params.endDate) stringParams.endDate = params.endDate;
-            if (params.gender) stringParams.gender = params.gender;
-            if (params.searchTerm) stringParams.searchTerm = params.searchTerm;
-            if (params.includeWithdrawn != null) stringParams.includeWithdrawn = String(params.includeWithdrawn);
-            if (params.includeRejected != null) stringParams.includeRejected = String(params.includeRejected);
+            if (params.search) stringParams.search = params.search;
+            if (params.page != null) stringParams.page = String(params.page);
+            if (params.limit != null) stringParams.limit = String(params.limit);
 
             const result = await adminGet<UserSearchResponse>(SMS_ENDPOINTS.USER_SEARCH, stringParams);
             return result || { users: [], meta: { totalCount: 0 } };

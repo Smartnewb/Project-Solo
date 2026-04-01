@@ -275,20 +275,20 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
     }
 
     try {
-      // 기존 매칭 관리 페이지와 동일한 API 사용
-      const response = await axiosServer.get('/admin/v2/users/appearance/stats', {
+      const isPhone = /^[\d\-]+$/.test(searchTerm);
+      const response = await axiosServer.get('/admin/v2/users/search', {
         params: {
           page: 1,
           limit: 20,
-          searchTerm: searchTerm
+          ...(isPhone ? { phoneNumber: searchTerm } : { name: searchTerm }),
         }
       });
 
       ;
 
       let results = [];
-      if (response.data && response.data.items && Array.isArray(response.data.items)) {
-        results = response.data.items;
+      if (response.data && response.data.data && Array.isArray(response.data.data)) {
+        results = response.data.data;
       } else if (response.data && Array.isArray(response.data)) {
         results = response.data;
       }
