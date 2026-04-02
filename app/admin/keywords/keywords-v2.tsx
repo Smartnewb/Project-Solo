@@ -75,6 +75,14 @@ function KeywordsContent() {
 	const editInputRef = useRef<HTMLInputElement>(null);
 	const [generatingIcon, setGeneratingIcon] = useState<string | undefined>();
 
+	// 프롬프트 다이얼로그 상태
+	const [promptDialog, setPromptDialog] = useState<{ open: boolean; item: KeywordItem | null }>({
+		open: false,
+		item: null,
+	});
+	const [promptValue, setPromptValue] = useState('');
+	const [promptSubmitting, setPromptSubmitting] = useState(false);
+
 	useEffect(() => {
 		const unpatch = patchAdminAxios();
 		return () => unpatch();
@@ -141,15 +149,38 @@ function KeywordsContent() {
 				if (!trimmed) return;
 				const result = await AdminService.keywords.updateName(editMode.keyword, trimmed);
 				toast.success(`키워드 이름 변경 완료 (${result.updatedCount}명 반영)`);
+				cancelEdit();
+				fetchKeywords(pagination.page);
 			} else if (editMode.type === 'icon') {
 				await AdminService.keywords.updateIcon(editMode.keyword, editValue.trim());
 				toast.success('아이콘 URL 변경 완료');
+				cancelEdit();
+				fetchKeywords(pagination.page);
 			} else if (editMode.type === 'category') {
-				const result = await AdminService.keywords.updateCategory(editMode.keyword, editCategory);
-				toast.success(`카테고리 변경 완료 (${result.updatedCount}명 반영)`);
+				// Optimistic update
+				const targetKeyword = editMode.keyword;
+				const newCategory = editCategory;
+				setItems((prev) =>
+					prev.map((item) =>
+						item.normalizedKeyword === targetKeyword
+							? { ...item, category: newCategory }
+							: item,
+					),
+				);
+				cancelEdit();
+
+				// 백그라운드 API 호출
+				AdminService.keywords.updateCategory(targetKeyword, newCategory).then(
+					(result) => {
+						toast.success(`카테고리 변경 완료 (${result.updatedCount}명 반영)`);
+					},
+					(err: any) => {
+						toast.error(err.response?.data?.message || '카테고리 변경에 실패했습니다.');
+						fetchKeywords(pagination.page); // 실패 시 서버 데이터로 롤백
+					},
+				);
+				return; // setSaving(false) 즉시 실행되도록 finally 이전에 return
 			}
-			cancelEdit();
-			fetchKeywords(pagination.page);
 		} catch (err: any) {
 			toast.error(err.response?.data?.message || '저장에 실패했습니다.');
 		} finally {
@@ -174,6 +205,7 @@ function KeywordsContent() {
 		}
 	};
 
+	// 기본 아이콘 생성 (프롬프트 없음)
 	const handleGenerateIcon = async (item: KeywordItem) => {
 		if (generatingIcon) return;
 		setGeneratingIcon(item.normalizedKeyword);
@@ -184,6 +216,32 @@ function KeywordsContent() {
 			toast.error(err.message || '아이콘 생성에 실패했습니다.');
 		} finally {
 			setGeneratingIcon(undefined);
+		}
+	};
+
+	// 프롬프트 다이얼로그 열기
+	const openPromptDialog = (item: KeywordItem) => {
+		setPromptDialog({ open: true, item });
+		setPromptValue('');
+	};
+
+	// 프롬프트로 아이콘 생성
+	const handleGenerateWithPrompt = async () => {
+		if (!promptDialog.item || promptSubmitting) return;
+		const trimmed = promptValue.trim();
+		if (!trimmed) {
+			toast.error('프롬프트를 입력해주세요.');
+			return;
+		}
+		setPromptSubmitting(true);
+		try {
+			await AdminService.keywords.generateIconWithPrompt(promptDialog.item.keyword, trimmed);
+			toast.success(`"${promptDialog.item.keyword}" 아이콘이 커스텀 프롬프트로 생성 요청되었습니다.`);
+			setPromptDialog({ open: false, item: null });
+		} catch (err: any) {
+			toast.error(err.message || '아이콘 생성에 실패했습니다.');
+		} finally {
+			setPromptSubmitting(false);
 		}
 	};
 
@@ -358,25 +416,25 @@ function KeywordsContent() {
 																	sx={{ fontSize: 12, color: '#9ca3af', opacity: 0, transition: 'opacity 0.15s' }}
 																/>
 															</Box>
-															{!item.iconUrl && (
-																<Tooltip title="AI 아이콘 생성" arrow>
-																	<IconButton
-																		size="small"
-																		onClick={(e) => {
-																			e.stopPropagation();
-																			handleGenerateIcon(item);
-																		}}
-																		disabled={generatingIcon === item.normalizedKeyword}
-																		sx={{ p: 0.25 }}
-																	>
-																		{generatingIcon === item.normalizedKeyword ? (
-																			<CircularProgress size={14} />
-																		) : (
-																			<AutoFixHighIcon sx={{ fontSize: 14, color: '#8b5cf6' }} />
-																		)}
-																	</IconButton>
-																</Tooltip>
-															)}
+															<Tooltip title={item.iconUrl ? 'AI 아이콘 재생성 (프롬프트)' : 'AI 아이콘 생성'} arrow>
+																<IconButton
+																	size="small"
+																	onClick={(e) => {
+																		e.stopPropagation();
+																		item.iconUrl
+																			? openPromptDialog(item)
+																			: handleGenerateIcon(item);
+																	}}
+																	disabled={generatingIcon === item.normalizedKeyword}
+																	sx={{ p: 0.25 }}
+																>
+																	{generatingIcon === item.normalizedKeyword ? (
+																		<CircularProgress size={14} />
+																	) : (
+																		<AutoFixHighIcon sx={{ fontSize: 14, color: item.iconUrl ? '#9ca3af' : '#8b5cf6' }} />
+																	)}
+																</IconButton>
+															</Tooltip>
 														</Box>
 													)}
 												</TableCell>
@@ -473,13 +531,24 @@ function KeywordsContent() {
 												</TableCell>
 
 												<TableCell sx={{ textAlign: 'center' }}>
-													<IconButton
-														size="small"
-														onClick={() => handleDelete(item)}
-														sx={{ color: '#ef4444' }}
-													>
-														<DeleteIcon sx={{ fontSize: 16 }} />
-													</IconButton>
+													<Box sx={{ display: 'flex', gap: 0.25, justifyContent: 'center' }}>
+														<Tooltip title="프롬프트로 아이콘 생성" arrow>
+															<IconButton
+																size="small"
+																onClick={() => openPromptDialog(item)}
+																sx={{ color: '#8b5cf6' }}
+															>
+																<AutoFixHighIcon sx={{ fontSize: 16 }} />
+															</IconButton>
+														</Tooltip>
+														<IconButton
+															size="small"
+															onClick={() => handleDelete(item)}
+															sx={{ color: '#ef4444' }}
+														>
+															<DeleteIcon sx={{ fontSize: 16 }} />
+														</IconButton>
+													</Box>
 												</TableCell>
 											</TableRow>
 										);
@@ -501,6 +570,69 @@ function KeywordsContent() {
 					}
 				/>
 			)}
+
+			{/* 프롬프트 아이콘 생성 다이얼로그 */}
+			<Dialog
+				open={promptDialog.open}
+				onClose={() => !promptSubmitting && setPromptDialog({ open: false, item: null })}
+				maxWidth="sm"
+				fullWidth
+			>
+				<DialogTitle sx={{ fontWeight: 700 }}>
+					AI 아이콘 생성 - &quot;{promptDialog.item?.keyword}&quot;
+				</DialogTitle>
+				<DialogContent>
+					<Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+						아이콘 생성에 사용할 이미지 프롬프트를 입력하세요.
+						{promptDialog.item?.iconUrl && (
+							<> 기존 아이콘이 새로 생성된 아이콘으로 교체됩니다.</>
+						)}
+					</Typography>
+					{promptDialog.item?.iconUrl && (
+						<Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+							<Typography variant="caption" color="text.secondary">현재 아이콘:</Typography>
+							<Box
+								component="img"
+								src={promptDialog.item.iconUrl}
+								sx={{ width: 32, height: 32, borderRadius: 1, objectFit: 'cover' }}
+							/>
+						</Box>
+					)}
+					<TextField
+						autoFocus
+						fullWidth
+						multiline
+						rows={3}
+						value={promptValue}
+						onChange={(e) => setPromptValue(e.target.value)}
+						placeholder="예: A flat colorful fishing icon with a fishing rod and fish. Clean, simple, emoji style."
+						onKeyDown={(e) => {
+							if (e.key === 'Enter' && !e.shiftKey) {
+								e.preventDefault();
+								handleGenerateWithPrompt();
+							}
+						}}
+						sx={{ '& textarea': { fontSize: 13 } }}
+					/>
+				</DialogContent>
+				<DialogActions>
+					<Button
+						onClick={() => setPromptDialog({ open: false, item: null })}
+						disabled={promptSubmitting}
+					>
+						취소
+					</Button>
+					<Button
+						onClick={handleGenerateWithPrompt}
+						variant="contained"
+						disabled={promptSubmitting || !promptValue.trim()}
+						startIcon={promptSubmitting ? <CircularProgress size={16} /> : <AutoFixHighIcon />}
+						sx={{ bgcolor: '#8b5cf6', '&:hover': { bgcolor: '#7c3aed' } }}
+					>
+						{promptSubmitting ? '요청 중...' : '생성 요청'}
+					</Button>
+				</DialogActions>
+			</Dialog>
 		</Box>
 	);
 }

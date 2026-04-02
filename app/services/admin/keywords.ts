@@ -81,6 +81,14 @@ export const keywords = {
 		return res.data;
 	},
 
+	generateIconWithPrompt: async (keyword: string, prompt: string) => {
+		const res = await adminPost<{ data: { queued: boolean; keyword: string } }>(
+			'/admin/v2/keywords/icon/generate-with-prompt',
+			{ keyword, prompt },
+		);
+		return res.data;
+	},
+
 	generateIconBatch: async () => {
 		const res = await adminPost<{ data: { queued: number; skipped: number } }>(
 			'/admin/v2/keywords/icon/generate-batch',
