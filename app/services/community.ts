@@ -203,10 +203,10 @@ const communityService = {
 	},
 
 	getCategories: async (): Promise<{ categories: Category[] }> => {
-		const res = await adminGet<{ data: Category[] }>('/admin/v2/community/categories');
+		const res = await adminGet<{ data: { categories: Category[] } }>('/admin/v2/community/categories');
 
 		return {
-			categories: res.data ?? [],
+			categories: Array.isArray(res.data) ? res.data : (res.data?.categories ?? []),
 		};
 	},
 
