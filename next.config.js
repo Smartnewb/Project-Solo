@@ -34,10 +34,20 @@ const nextConfig = {
       { source: '/api-proxy/admin/:path*', destination: `${backendUrl}/admin/:path*` },
       // Support chat admin calls
       { source: '/api-proxy/support-chat/:path*', destination: `${backendUrl}/support-chat/:path*` },
-      // User auth and profile calls
-      { source: '/api-proxy/auth/login', destination: `${backendUrl}/auth/login` },
-      { source: '/api-proxy/auth/refresh', destination: `${backendUrl}/auth/refresh` },
+      // Community article calls
+      { source: '/api-proxy/articles/:path*', destination: `${backendUrl}/articles/:path*` },
+      { source: '/api-proxy/articles', destination: `${backendUrl}/articles` },
+      // Auth calls
+      { source: '/api-proxy/auth/:path*', destination: `${backendUrl}/auth/:path*` },
+      // Profile calls
+      { source: '/api-proxy/profile/:path*', destination: `${backendUrl}/profile/:path*` },
       { source: '/api-proxy/profile', destination: `${backendUrl}/profile` },
+      // University calls
+      { source: '/api-proxy/universities/:path*', destination: `${backendUrl}/universities/:path*` },
+      { source: '/api-proxy/universities', destination: `${backendUrl}/universities` },
+      // Matching calls
+      { source: '/api-proxy/matching/:path*', destination: `${backendUrl}/matching/:path*` },
+      { source: '/api-proxy/matching', destination: `${backendUrl}/matching` },
       { source: '/api/admin/rematch-request', destination: `${backendUrl}/admin/matching/rematch-request` },
       { source: '/api/notifications/:path*', destination: `${backendUrl}/notifications/:path*` },
       { source: '/api/notifications', destination: `${backendUrl}/notifications` },

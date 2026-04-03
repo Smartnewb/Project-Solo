@@ -188,7 +188,7 @@ export default function Community() {
       setPosts(postsWithComments);
     };
 
-    if (posts.length > 0) {
+    if (Array.isArray(posts) && posts.length > 0) {
       loadComments();
     }
   }, [posts.length]);
@@ -212,7 +212,9 @@ export default function Community() {
         },
       });
 
-      const newPosts = response.data.items;
+      const newPosts = Array.isArray(response.data?.items)
+        ? response.data.items
+        : [];
 
       // 첫 페이지면 기존 데이터 교체, 아니면 추가
       if (page === 1) {
@@ -739,13 +741,14 @@ export default function Community() {
           Authorization: `Bearer ${token}`,
         },
       });
+      const comments = Array.isArray(response.data) ? response.data : [];
       // 댓글 목록을 받아온 후 바로 상태 업데이트
       setPosts((prevPosts) => {
         const updatedPosts = prevPosts.map((post) => {
           if (post.id === postId) {
             return {
               ...post,
-              comments: response.data,
+              comments,
             };
       }
       return post;
@@ -753,7 +756,7 @@ export default function Community() {
         return updatedPosts;
       });
 
-      return response.data;
+      return comments;
     } catch (error) {
       console.error("댓글 조회 중 오류가 발생했습니다:", error);
       return [];
