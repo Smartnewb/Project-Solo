@@ -41,7 +41,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import AddIcon from '@mui/icons-material/Add';
 import { UserSearchResult, MatchingResult } from '../types';
 import AdminService from '@/app/services/admin';
-import axiosServer from '@/utils/axios';
+import { adminGet } from '@/shared/lib/http/admin-fetch';
 
 // 매칭 이력 아이템 인터페이스
 interface MatchHistoryItem {
@@ -276,21 +276,19 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
 
     try {
       const isPhone = /^[\d\-]+$/.test(searchTerm);
-      const response = await axiosServer.get('/admin/v2/users/search', {
-        params: {
-          page: 1,
-          limit: 20,
-          ...(isPhone ? { phoneNumber: searchTerm } : { name: searchTerm }),
-        }
+      const response = await adminGet<any>('/admin/v2/users/search', {
+        page: '1',
+        limit: '20',
+        ...(isPhone ? { phoneNumber: searchTerm } : { name: searchTerm }),
       });
 
       ;
 
       let results = [];
-      if (response.data && response.data.data && Array.isArray(response.data.data)) {
-        results = response.data.data;
-      } else if (response.data && Array.isArray(response.data)) {
+      if (response && response.data && Array.isArray(response.data)) {
         results = response.data;
+      } else if (response && Array.isArray(response)) {
+        results = response;
       }
 
       setTargetUserSearchResults(results);

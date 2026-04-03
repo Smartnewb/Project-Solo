@@ -29,15 +29,10 @@ import type {
   TypeMetaItem,
   UniversityType,
 } from '@/types/admin';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 
 type TabValue = 'all' | 'active' | 'inactive';
 
 function UniversitiesPageContent() {
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
 
   const [universities, setUniversities] = useState<UniversityItem[]>([]);
   const [loading, setLoading] = useState(true);

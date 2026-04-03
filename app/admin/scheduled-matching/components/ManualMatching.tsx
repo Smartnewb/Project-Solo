@@ -38,7 +38,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import WarningIcon from '@mui/icons-material/Warning';
 import { Button } from '@/shared/ui';
-import { useAuth } from '@/contexts/AuthContext';
+
 import { scheduledMatchingService } from '../service';
 import { safeToLocaleString } from '@/app/utils/formatters';
 import type {
@@ -95,8 +95,6 @@ const formatDateTime = (dateString: string) => {
 };
 
 export default function ManualMatching() {
-  const { user } = useAuth();
-
   // Form state
   const [userId1, setUserId1] = useState('');
   const [userId2, setUserId2] = useState('');

@@ -39,7 +39,6 @@ import {
 	type KeywordItem,
 	type KeywordCategory,
 } from '@/app/services/admin/keywords';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog';
 import { useToast } from '@/shared/ui/admin/toast';
 
@@ -82,11 +81,6 @@ function KeywordsContent() {
 	});
 	const [promptValue, setPromptValue] = useState('');
 	const [promptSubmitting, setPromptSubmitting] = useState(false);
-
-	useEffect(() => {
-		const unpatch = patchAdminAxios();
-		return () => unpatch();
-	}, []);
 
 	const fetchKeywords = useCallback(
 		async (page: number = 1) => {

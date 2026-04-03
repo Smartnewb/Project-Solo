@@ -33,7 +33,6 @@ import AddIcon from '@mui/icons-material/Add';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import RestoreIcon from '@mui/icons-material/Restore';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 import { useAdminForm } from '@/app/admin/hooks/forms';
 import { cardNewsFormSchema, type CardNewsFormData } from '@/app/admin/hooks/forms/schemas/card-news.schema';
 
@@ -48,11 +47,6 @@ interface Category {
 
 function CreateCardNewsPageContent() {
   const router = useRouter();
-
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
 
   const { control, watch, reset, handleFormSubmit, formState: { isSubmitting } } = useAdminForm<CardNewsFormData>({
     schema: cardNewsFormSchema,

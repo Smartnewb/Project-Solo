@@ -28,7 +28,6 @@ import AdminService from '@/app/services/admin';
 import KeyIcon from '@mui/icons-material/Key';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 import { safeToLocaleString } from '@/app/utils/formatters';
 
 interface InactiveUser {
@@ -61,11 +60,6 @@ function FemaleRetentionPageContent() {
   });
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<InactiveUser | null>(null);
-
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
 
   useEffect(() => {
     fetchInactiveUsers();

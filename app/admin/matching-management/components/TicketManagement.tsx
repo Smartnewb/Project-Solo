@@ -29,7 +29,7 @@ import {
   Person as PersonIcon,
   Phone as PhoneIcon
 } from '@mui/icons-material';
-import axiosServer from '@/utils/axios';
+import { adminGet, adminPost, adminRequest } from '@/shared/lib/http/admin-fetch';
 import { UserSearchResult, TicketStatusResponse, TicketActionResponse } from '../types';
 
 interface TicketManagementProps {
@@ -68,9 +68,9 @@ export default function TicketManagement({
     setActionResult(null);
 
     try {
-      const response = await axiosServer.get(`/admin/v2/tickets/user/${userId}`);
+      const response = await adminGet<TicketStatusResponse>(`/admin/v2/tickets/user/${userId}`);
       ;
-      setTicketStatus(response.data);
+      setTicketStatus(response);
     } catch (err: any) {
       const errorMessage = err.response?.data?.message ||
                           err.response?.data?.error ||
@@ -100,13 +100,12 @@ export default function TicketManagement({
     setActionResult(null);
 
     try {
-      const response = await axiosServer.post('/admin/v2/tickets', {
+      const result = await adminPost<TicketActionResponse>('/admin/v2/tickets', {
         userId: selectedUser.id,
         count: ticketCount
       });
 
       ;
-      const result = response.data as TicketActionResponse;
 
       setActionResult(`성공적으로 ${result.createdCount}개의 티켓을 생성했습니다.`);
 
@@ -145,15 +144,16 @@ export default function TicketManagement({
     setActionResult(null);
 
     try {
-      const response = await axiosServer.delete('/admin/v2/tickets', {
-        data: {
+      const result = await adminRequest<TicketActionResponse>('/admin/v2/tickets', {
+        method: 'DELETE',
+        body: JSON.stringify({
           userId: selectedUser.id,
           count: ticketCount
-        }
+        }),
+        headers: { 'Content-Type': 'application/json' }
       });
 
       ;
-      const result = response.data as TicketActionResponse;
 
       setActionResult(`성공적으로 ${result.deletedCount}개의 티켓을 회수했습니다.`);
 

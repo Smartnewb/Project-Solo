@@ -24,7 +24,6 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import AdminService from '@/app/services/admin';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 import type { CareLog } from '@/app/services/admin/care';
 
 const ACTION_LABELS: Record<string, { label: string; color: string; bg: string }> = {
@@ -41,11 +40,6 @@ function CareLogsContent() {
 	const [actionFilter, setActionFilter] = useState<string>('');
 	const [searchInput, setSearchInput] = useState('');
 	const [searchTerm, setSearchTerm] = useState('');
-
-	useEffect(() => {
-		const unpatch = patchAdminAxios();
-		return () => unpatch();
-	}, []);
 
 	const fetchLogs = useCallback(
 		async (page: number = 1) => {

@@ -6,14 +6,9 @@ import AdminService, {
 	FcmTokenSummary,
 	FcmTokenUserItem,
 } from '@/app/services/admin';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 import { safeToLocaleString } from '@/app/utils/formatters';
 
 function FcmTokensPageContent() {
-	useEffect(() => {
-		const unpatch = patchAdminAxios();
-		return () => unpatch();
-	}, []);
 
 	const [loading, setLoading] = useState(false);
 	const [summary, setSummary] = useState<FcmTokenSummary | null>(null);

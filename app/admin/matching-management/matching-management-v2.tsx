@@ -21,8 +21,7 @@ import {
   Avatar,
   Chip
 } from '@mui/material';
-import axiosServer from '@/utils/axios';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
+import { adminGet, adminPost, adminRequest } from '@/shared/lib/http/admin-fetch';
 import { useBatchStatus } from './useBatchStatus';
 
 // 컴포넌트 임포트
@@ -107,20 +106,15 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const matchRestMembers = () =>
-  axiosServer.post('/admin/v2/matching/rest-members', undefined, {
-    timeout: 1000 * 60 * 60
+  adminRequest('/admin/v2/matching/rest-members', {
+    method: 'POST',
+    signal: AbortSignal.timeout(60 * 60 * 1000),
   });
 
 const batchAllMatchableUsers = () =>
-  axiosServer.post('/admin/v2/system/batch/vector', undefined, {
-    timeout: 1000 * 60 * 60
-  });
+  adminPost('/admin/v2/system/batch/vector');
 
 function MatchingManagementV2Content() {
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return unpatch;
-  }, []);
   const [activeTab, setActiveTab] = useState<number>(0);
   const {
     status: batchStatus,
@@ -369,24 +363,21 @@ function MatchingManagementV2Content() {
     setError(null);
 
     try {
-      // API 요청 시 axiosServer 사용
       const isPhone = /^[\d\-]+$/.test(searchTerm.trim());
-      const response = await axiosServer.get('/admin/v2/users/search', {
-        params: {
-          page: 1,
-          limit: 10,
-          ...(isPhone ? { phoneNumber: searchTerm.trim() } : { name: searchTerm.trim() })
-        }
+      const response = await adminGet<any>('/admin/v2/users/search', {
+        page: '1',
+        limit: '10',
+        ...(isPhone ? { phoneNumber: searchTerm.trim() } : { name: searchTerm.trim() })
       });
 
       let results = [];
 
-      if (response.data?.data && Array.isArray(response.data.data)) {
-        results = response.data.data;
-      } else if (response.data?.items && Array.isArray(response.data.items)) {
-        results = response.data.items;
-      } else if (response.data && Array.isArray(response.data)) {
+      if (response?.data && Array.isArray(response.data)) {
         results = response.data;
+      } else if (response?.items && Array.isArray(response.items)) {
+        results = response.items;
+      } else if (response && Array.isArray(response)) {
+        results = response;
       }
 
       setSearchResults(results);
@@ -430,12 +421,12 @@ function MatchingManagementV2Content() {
     setError(null);
 
     try {
-      const response = await axiosServer.post('/admin/v2/matching/user', {
+      const response = await adminPost<MatchingResult>('/admin/v2/matching/user', {
         userId: selectedUser.id
       });
 
       ;
-      setMatchingResult(response.data);
+      setMatchingResult(response);
     } catch (err: any) {
 
       // 서버에서 받은 에러 메시지 표시
@@ -463,13 +454,13 @@ function MatchingManagementV2Content() {
 
     try {
       // POST 메서드로 변경하고 요청 본문에 파라미터 포함
-      const response = await axiosServer.post('/admin/v2/matching/user/read', {
+      const response = await adminPost<MatchingSimulationResult>('/admin/v2/matching/user/read', {
         userId: selectedUser.id,
         limit: matchLimit
       });
 
       ;
-      setSimulationResult(response.data);
+      setSimulationResult(response);
     } catch (err: any) {
 
       // 서버에서 받은 에러 메시지 표시
@@ -582,7 +573,7 @@ function MatchingManagementV2Content() {
     setUnmatchedUsersError(null);
 
     try {
-      const response = await axiosServer.post('/admin/v2/matching/user', {
+      const response = await adminPost('/admin/v2/matching/user', {
         userId: selectedUnmatchedUser.id
       });
 

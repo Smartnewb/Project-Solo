@@ -32,7 +32,6 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import SearchIcon from '@mui/icons-material/Search';
 import AdminService from '@/app/services/admin';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 
 // ─── Types ─────────────────────────────────────────────
 
@@ -267,11 +266,6 @@ function PricingRow({
 
 function GemPricingPageContent() {
 	const [data, setData] = useState<GemPricingResponse | null>(null);
-
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 

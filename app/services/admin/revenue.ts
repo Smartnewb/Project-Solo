@@ -19,8 +19,8 @@ import type {
 	ViewProfileRequest,
 	ViewProfileResponse,
 } from '@/types/admin';
-import { getCountryHeader } from './_shared';
-import axiosServer from '@/utils/axios';
+
+
 
 // 구슬 관리 API
 export const gems = {
@@ -95,9 +95,8 @@ export const femaleRetention = {
 	issueTemporaryPassword: async (userId: string) => {
 		try {
 			;
-			const response = await axiosServer.post(`/admin/v2/retention/female-retention/${userId}`);
-			;
-			return response.data;
+			const data = await adminPost<any>(`/admin/v2/retention/female-retention/${userId}`);
+			return data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -165,8 +164,8 @@ export const appleRefund = {
 
 	getDetail: async (id: string) => {
 		try {
-			const response = await axiosServer.get(`/admin/v2/apple-refund/${id}`);
-			return response.data;
+			const data = await adminGet<any>(`/admin/v2/apple-refund/${id}`);
+			return data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -174,8 +173,8 @@ export const appleRefund = {
 
 	syncRefundStatus: async (body?: { paymentId: string; reason: string; adminNote?: string }) => {
 		try {
-			const response = await axiosServer.post('/admin/v2/apple-refund/sync', body);
-			return response.data;
+			const data = await adminPost<any>('/admin/v2/apple-refund/sync', body);
+			return data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -184,7 +183,20 @@ export const appleRefund = {
 
 export const likes = {
 	getList: async (params: AdminLikesParams): Promise<AdminLikesResponse> => {
-		const res = await adminGet<{ data: AdminLikesResponse }>('/admin/v2/matching/likes', params as Record<string, string>);
+		const query: Record<string, string> = {};
+		if (params.page != null) query.page = String(params.page);
+		if (params.limit != null) query.limit = String(params.limit);
+		if (params.status) query.status = params.status;
+		if (params.hasLetter != null) query.hasLetter = String(params.hasLetter);
+		if (params.isMutualLike != null) query.isMutualLike = String(params.isMutualLike);
+		if (params.senderUserId) query.senderUserId = params.senderUserId;
+		if (params.forwardUserId) query.forwardUserId = params.forwardUserId;
+		if (params.searchName) query.searchName = params.searchName;
+		if (params.startDate) query.startDate = params.startDate;
+		if (params.endDate) query.endDate = params.endDate;
+		if (params.sortBy) query.sortBy = params.sortBy;
+		if (params.sortOrder) query.sortOrder = params.sortOrder;
+		const res = await adminGet<{ data: AdminLikesResponse }>('/admin/v2/matching/likes', query);
 		return res.data;
 	},
 };
@@ -204,10 +216,10 @@ export const dormantLikes = {
 
 	getPendingLikes: async (userId: string) => {
 		try {
-			const response = await axiosServer.get<DormantLikeDetailResponse[]>(
+			const data = await adminGet<DormantLikeDetailResponse[]>(
 				`/admin/v2/retention/dormant-likes/${userId}`,
 			);
-			return response.data;
+			return data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -215,10 +227,10 @@ export const dormantLikes = {
 
 	getCooldownStatus: async (userId: string) => {
 		try {
-			const response = await axiosServer.get<CooldownStatusResponse>(
+			const data = await adminGet<CooldownStatusResponse>(
 				`/admin/v2/retention/dormant-likes/${userId}/cooldown`,
 			);
-			return response.data;
+			return data;
 		} catch (error: any) {
 			throw error;
 		}

@@ -1,6 +1,4 @@
-import axiosServer from '@/utils/axios';
 import { adminGet } from '@/shared/lib/http/admin-fetch';
-import { getCountryHeader } from './_shared';
 import type {
 	MatchingDashboardResponse,
 	UserDiagnosisResponse,
@@ -18,10 +16,6 @@ export const matchingMonitor = {
 	},
 
 	getUserDiagnosis: async (userId: string): Promise<UserDiagnosisResponse> => {
-		const headerCountry = getCountryHeader();
-		const response = await axiosServer.get(`/admin/v2/matching/${userId}/diagnosis`, {
-			headers: { 'X-Country': headerCountry },
-		});
-		return response.data;
+		return adminGet<UserDiagnosisResponse>(`/admin/v2/matching/${userId}/diagnosis`);
 	},
 };

@@ -20,14 +20,14 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { Button } from '@/shared/ui';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAdminSession } from '@/shared/contexts/admin-session-context';
 import { scheduledMatchingService } from '../service';
 import type { Country, ScheduledMatchingConfig, CreateScheduledMatchingConfigRequest, UpdateScheduledMatchingConfigRequest } from '../types';
 import { safeToLocaleString } from '@/app/utils/formatters';
 import { parseCronToHumanReadable, CRON_PRESETS, TIMEZONE_OPTIONS } from '../utils';
 
 export default function ScheduleConfig() {
-  const { user } = useAuth();
+  const { session } = useAdminSession();
   const [selectedCountry, setSelectedCountry] = useState<Country>('KR');
   const [configs, setConfigs] = useState<ScheduledMatchingConfig[]>([]);
   const [loading, setLoading] = useState(true);
@@ -115,7 +115,7 @@ export default function ScheduleConfig() {
           loginWindowDays: formData.loginWindowDays,
           includeUnknownRank: formData.includeUnknownRank,
           description: formData.description || undefined,
-          lastModifiedBy: user?.email || undefined,
+          lastModifiedBy: session?.user?.email || undefined,
         };
         await scheduledMatchingService.updateConfig(selectedCountry, updateData);
         setSuccess('설정이 수정되었습니다.');

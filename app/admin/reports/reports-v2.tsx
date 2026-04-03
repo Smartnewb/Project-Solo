@@ -52,7 +52,6 @@ import { safeToLocaleDateString } from '@/app/utils/formatters';
 import UserDetailModal, {
   type UserDetail,
 } from "@/components/admin/appearance/UserDetailModal";
-import { patchAdminAxios } from "@/shared/lib/http/admin-axios-interceptor";
 
 interface Reporter {
   id: string;
@@ -125,11 +124,6 @@ const REASONS_REQUIRING_CHAT = ["부적절한 언어 사용", "스팸/광고"];
 const REASONS_REQUIRING_PROFILE_IMAGES = ["허위 프로필", "부적절한 사진"];
 
 function ReportsManagementContent() {
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return unpatch;
-  }, []);
-
   const toast = useToast();
 
   const [reports, setReports] = useState<Report[]>([]);

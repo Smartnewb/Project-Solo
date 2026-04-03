@@ -202,6 +202,7 @@ export interface ValidateMatchingResponse {
 export interface ManualMatchingListParams {
   status?: MatchingStatus;
   matchType?: ManualMatchType;
+  type?: string;
   createdBy?: string;
   startDate?: string;
   endDate?: string;

@@ -22,15 +22,9 @@ import { useRouter } from 'next/navigation';
 import AdminService from '@/app/services/admin';
 import type { ActionLogsResponse, ActionLogResponse } from '@/types/admin';
 import { safeToLocaleString } from '@/app/utils/formatters';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 
 function DormantLikesLogsPageContent() {
   const router = useRouter();
-
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
   const [logs, setLogs] = useState<ActionLogResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

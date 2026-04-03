@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { Alert, Box, Button, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import UploadIcon from '@mui/icons-material/Upload';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
 import {
@@ -33,11 +32,6 @@ const DEFAULT_FILTERS: Filters = {
 export default function StyleReferenceV2() {
   const toast = useToast();
   const confirmAction = useConfirm();
-
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
 
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [page, setPage] = useState(1);

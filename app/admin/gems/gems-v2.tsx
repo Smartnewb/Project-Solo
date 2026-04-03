@@ -49,8 +49,7 @@ import {
   ListItemText,
   Avatar
 } from '@mui/material';
-import axiosServer from '@/utils/axios';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
+import { adminGet } from '@/shared/lib/http/admin-fetch';
 import { useAdminForm } from '@/app/admin/hooks/forms';
 import { gemsFormSchema, type GemsFormData } from '@/app/admin/hooks/forms/schemas/gems.schema';
 import { MAX_GEM_GRANT } from '@/app/admin/constants/gem-limits';
@@ -84,10 +83,6 @@ interface BulkGrantResponse {
 }
 
 function GemsManagementPageContent() {
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return unpatch;
-  }, []);
   const toast = useToast();
   const bulkGrantGems = useBulkGrantGems();
 
@@ -127,21 +122,19 @@ function GemsManagementPageContent() {
 
     try {
       const isPhone = /^[\d\-]+$/.test(userSearchTerm.trim());
-      const response = await axiosServer.get('/admin/v2/users/search', {
-        params: {
-          page: 1,
-          limit: 20,
-          ...(isPhone ? { phoneNumber: userSearchTerm.trim() } : { name: userSearchTerm.trim() })
-        }
+      const response = await adminGet<any>('/admin/v2/users/search', {
+        page: '1',
+        limit: '20',
+        ...(isPhone ? { phoneNumber: userSearchTerm.trim() } : { name: userSearchTerm.trim() })
       });
 
       let results: UserSearchResult[] = [];
-      if (response.data?.data && Array.isArray(response.data.data)) {
-        results = response.data.data;
-      } else if (response.data?.items && Array.isArray(response.data.items)) {
-        results = response.data.items;
-      } else if (Array.isArray(response.data)) {
+      if (response?.data && Array.isArray(response.data)) {
         results = response.data;
+      } else if (response?.items && Array.isArray(response.items)) {
+        results = response.items;
+      } else if (Array.isArray(response)) {
+        results = response;
       }
 
       setUserSearchResults(results);

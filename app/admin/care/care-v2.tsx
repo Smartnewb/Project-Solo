@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Box, Typography } from '@mui/material';
 import AdminService from '@/app/services/admin';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 import type { CareTarget, CarePartner } from '@/app/services/admin/care';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog';
 import { useToast } from '@/shared/ui/admin/toast';
@@ -31,11 +30,6 @@ function CareV2Content() {
 
 	const confirm = useConfirm();
 	const toast = useToast();
-
-	useEffect(() => {
-		const unpatch = patchAdminAxios();
-		return () => unpatch();
-	}, []);
 
 	const fetchTargets = useCallback(async (page: number = 1, search?: string) => {
 		try {

@@ -10,15 +10,10 @@ import {
 import QuestionGenerationTab from './components/QuestionGenerationTab';
 import QuestionListTab from './components/QuestionListTab';
 import QuestionTranslationTab from './components/QuestionTranslationTab';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 
 type TabValue = 'generation' | 'list' | 'translation';
 
 function MomentManagementPageContent() {
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
 
   const [tabValue, setTabValue] = useState<TabValue>('list');
 

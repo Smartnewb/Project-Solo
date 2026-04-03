@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import AdminService from '@/app/services/admin';
 import { AppleRefundItem, AppleRefundStatus, AppleRefundListParams } from '@/types/admin';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 import { safeToLocaleString } from '@/app/utils/formatters';
 import { useAdminForm } from '@/app/admin/hooks/forms';
 import { iosRefundFilterSchema, IosRefundFilterFormValues } from '@/app/admin/hooks/forms/schemas/ios-refund.schema';
@@ -32,11 +31,6 @@ function IOSRefundPageContent() {
   const searchTerm = filterForm.watch('searchTerm');
   const startDate = filterForm.watch('startDate');
   const endDate = filterForm.watch('endDate');
-
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
 
   const fetchData = useCallback(async () => {
     try {

@@ -4,7 +4,7 @@ import { ClientProviders } from './client-providers';
 
 export const metadata: Metadata = {
   title: 'Sometime',
-  description: '나의 이상형을 찾아서',
+  description: '관리자 대시보드',
 };
 
 export default function RootLayout({

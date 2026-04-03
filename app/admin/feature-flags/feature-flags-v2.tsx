@@ -26,7 +26,6 @@ import {
 } from '@mui/material';
 import AdminService from '@/app/services/admin';
 import type { FeatureFlag } from '@/app/services/admin';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 import { safeToLocaleDateString } from '@/app/utils/formatters';
 
 const AVAILABLE_ROLES = ['admin', 'tester', 'user'];
@@ -56,11 +55,6 @@ export default function FeatureFlagsV2() {
   const [editEnabled, setEditEnabled] = useState(false);
   const [editRoles, setEditRoles] = useState<string[]>([]);
   const [editSaving, setEditSaving] = useState(false);
-
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
 
   const fetchFlags = useCallback(async () => {
     try {

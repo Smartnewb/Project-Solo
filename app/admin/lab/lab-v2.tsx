@@ -12,7 +12,6 @@ import {
   PhotoCamera as PhotoCameraIcon,
 } from '@mui/icons-material';
 import VisionPhotoTestTab from './components/VisionPhotoTestTab';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -37,10 +36,6 @@ const TabPanel = (props: TabPanelProps) => {
 };
 
 function LabPageContent() {
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
 
   const [tabValue, setTabValue] = useState(0);
 

@@ -18,7 +18,6 @@ import { useCountry } from '@/contexts/CountryContext';
 import AdminService from '@/app/services/admin';
 import type { AdminClusterItem } from '@/types/admin';
 import ClusterTreemapView from './components/ClusterTreemapView';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 
 const ClusterMapView = dynamic(
   () => import('./components/ClusterMapView'),
@@ -46,11 +45,6 @@ type ViewMode = 'map' | 'treemap';
 
 function UniversityClustersPageContent() {
   const { country } = useCountry();
-
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
   const [clusters, setClusters] = useState<AdminClusterItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

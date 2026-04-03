@@ -27,7 +27,6 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import AdminService from '@/app/services/admin';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 import { safeToLocaleString } from '@/app/utils/formatters';
 import { useAdminForm } from '@/app/admin/hooks/forms';
 import {
@@ -59,11 +58,6 @@ function ResetPasswordPageContent() {
       searchQuery: '',
     },
   });
-
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
 
   const searchUsers = async (pageNum: number = 1) => {
     const query = getValues('searchQuery').trim();

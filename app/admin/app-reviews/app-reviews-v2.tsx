@@ -7,13 +7,8 @@ import PublicIcon from '@mui/icons-material/Public';
 import ReviewDashboard from './components/ReviewDashboard';
 import ReviewList from './components/ReviewList';
 import PublicReviewManagement from './components/PublicReviewManagement';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 
 function AppReviewsPageContent() {
-	useEffect(() => {
-		const unpatch = patchAdminAxios();
-		return () => unpatch();
-	}, []);
 
 	const [activeTab, setActiveTab] = useState(0);
 	const [filterFromChart, setFilterFromChart] = useState<{

@@ -35,7 +35,6 @@ import {
   Edit as EditIcon,
   Visibility as ViewIcon,
 } from '@mui/icons-material';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 import { useAdminForm } from '@/app/admin/hooks/forms';
 import { versionFormSchema, type VersionFormData } from '@/app/admin/hooks/forms/schemas/version.schema';
 import { safeToLocaleString, safeToLocaleDateString } from '@/app/utils/formatters';
@@ -50,11 +49,6 @@ function VersionManagementContent() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedVersion, setSelectedVersion] = useState<VersionUpdate | null>(null);
-
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
 
   const { control: createControl, reset: resetCreate, handleFormSubmit: handleCreateSubmit } = useAdminForm<VersionFormData>({
     schema: versionFormSchema,

@@ -36,7 +36,7 @@ import {
   Tab,
   Link
 } from '@mui/material';
-import axiosServer from '@/utils/axios';
+import { adminGet, adminPatch } from '@/shared/lib/http/admin-fetch';
 import UserDetailModal, { UserDetail } from './UserDetailModal';
 import RegionFilter, { useRegionFilter } from '@/components/admin/common/RegionFilter';
 import { Check as CheckIcon, Close as CloseIcon } from '@mui/icons-material';
@@ -287,8 +287,7 @@ const ApprovalManagementPanel: React.FC = () => {
     setUserDetailError(null);
 
     try {
-      const response = await axiosServer.get(`/admin/users/detail/${userId}`);
-      const userData = response.data;
+      const userData = await adminGet<any>(`/admin/users/detail/${userId}`);
 
       // API 응답 데이터를 UserDetail 형식에 맞게 변환
       const userDetail: UserDetail = {
@@ -328,7 +327,7 @@ const ApprovalManagementPanel: React.FC = () => {
 
     setProcessing(true);
     try {
-      await axiosServer.patch(`/admin/users/approval/${selectedUserId}/status`, {
+      await adminPatch(`/admin/users/approval/${selectedUserId}/status`, {
         status: 'approved'
       });
 
@@ -356,7 +355,7 @@ const ApprovalManagementPanel: React.FC = () => {
         ? customRejectionReason.trim()
         : getRejectionReasonLabel(rejectionReason);
 
-      await axiosServer.patch(`/admin/users/approval/${selectedUserId}/status`, {
+      await adminPatch(`/admin/users/approval/${selectedUserId}/status`, {
         status: 'rejected',
         rejectionReason: finalRejectionReason
       });

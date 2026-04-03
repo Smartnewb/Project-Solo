@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import axiosServer from '@/utils/axios';
+import { adminGet } from '@/shared/lib/http/admin-fetch';
 import { formatDateWithoutTimezoneConversion, formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 
 type ProfileImage = {
   id: string;
@@ -70,11 +69,6 @@ const getGenderText = (gender: string) => {
 };
 
 function UsersV2Content() {
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return unpatch;
-  }, []);
-
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -118,17 +112,17 @@ function UsersV2Content() {
       setLoading(true);
       setError(null); // 오류 상태 초기화
 
-      const params = new URLSearchParams({
+      const params: Record<string, string> = {
         page: page.toString(),
         limit: pageSize.toString()
-      });
-      if (searchTerm.trim()) params.set('search', searchTerm.trim());
-      if (selectedGender !== 'all') params.set('gender', selectedGender);
-      if (filter !== 'all') params.set('filter', filter);
+      };
+      if (searchTerm.trim()) params.search = searchTerm.trim();
+      if (selectedGender !== 'all') params.gender = selectedGender;
+      if (filter !== 'all') params.filter = filter;
 
       // Nest.js API 호출
-      const response = await axiosServer.get<ApiResponse>(`/admin/v2/users?${params}`);
-      const { users: userList, pagination } = response.data;
+      const response = await adminGet<ApiResponse>('/admin/v2/users', params);
+      const { users: userList, pagination } = response;
 
       setUsers(userList);
       setTotalCount(pagination.total);

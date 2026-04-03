@@ -33,7 +33,6 @@ import type {
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { patchAdminAxios } from '@/shared/lib/http/admin-axios-interceptor';
 import { useAdminForm } from '@/app/admin/hooks/forms';
 import { sometimeArticleSchema, SometimeArticleFormValues } from '@/app/admin/hooks/forms/schemas/sometime-article.schema';
 
@@ -55,11 +54,6 @@ const CATEGORY_OPTIONS: { value: SometimeArticleCategory; label: string }[] = [
 
 function EditSometimeArticlePageContent() {
   const router = useRouter();
-
-  useEffect(() => {
-    const unpatch = patchAdminAxios();
-    return () => unpatch();
-  }, []);
 
   const params = useParams();
   const id = (params?.id || '') as string;
