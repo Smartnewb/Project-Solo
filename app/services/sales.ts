@@ -240,11 +240,11 @@ export const salesService = {
   // MARK: - 대학별 매출 순위 조회
   async getUniversityRank(data: GetAnalysis): Promise<UniversityRanking> {
     try {
-      const result = await adminGet<UniversityRanking>(
+      const result = await adminGet<{ data: UniversityRanking }>(
         SALES_ENDPOINT.UNIVERSITY_RANKING,
         toStringParams(data),
       );
-      return result;
+      return result.data;
     } catch (error) {
       throw new SalesApiError("대학별 매출 순위 조회 실패:", error);
     }
