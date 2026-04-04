@@ -1,5 +1,17 @@
 import { adminGet, adminPost, adminPatch } from '@/shared/lib/http/admin-fetch';
 
+function normalizeDisplayText(value: unknown): string | null {
+	if (value == null) return null;
+	if (typeof value === 'string') return value;
+	if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+	if (typeof value === 'object') {
+		const record = value as { name?: unknown; id?: unknown };
+		if (typeof record.name === 'string') return record.name;
+		if (typeof record.id === 'string') return record.id;
+	}
+	return null;
+}
+
 export interface ReviewHistoryFilter {
 	reviewType?: 'admin' | 'auto';
 	reviewStatus?: 'approved' | 'rejected';
@@ -247,10 +259,8 @@ export const userReview = {
 		try {
 			;
 
-			const result = await adminPost<{ data: any }>(`/admin/v2/profile-review/users/${userId}/approve-profile`);
-
-			;
-			return result.data;
+			await adminPost(`/admin/v2/profile-review/users/${userId}/approve-profile`);
+			return;
 		} catch (error: any) {
 			throw error;
 		}
@@ -260,13 +270,12 @@ export const userReview = {
 		try {
 			;
 
-			const result = await adminPost<{ data: any }>(`/admin/v2/profile-review/users/${userId}/reject-profile`, {
+			await adminPost(`/admin/v2/profile-review/users/${userId}/reject-profile`, {
 				category,
 				reason,
 			});
 
-			;
-			return result.data;
+			return;
 		} catch (error: any) {
 			throw error;
 		}
@@ -308,10 +317,8 @@ export const userReview = {
 			;
 
 			const url = `/admin/v2/profile-review/users/${userId}/rank${emitEvent ? '?emitEvent=true' : ''}`;
-			const result = await adminPatch<{ data: any }>(url, { rank });
-
-			;
-			return result.data;
+			await adminPatch(url, { rank });
+			return;
 		} catch (error: any) {
 			throw error;
 		}
@@ -347,13 +354,15 @@ export const userReview = {
 				isMain: item.isMain ?? false,
 				reviewStatus: item.reviewStatus,
 				reviewType: item.reviewType ?? null,
-				reviewedBy: item.reviewerName ?? item.reviewedBy ?? null,
+				reviewedBy:
+					normalizeDisplayText(item.reviewerName) ??
+					normalizeDisplayText(item.reviewedBy),
 				reviewedAt: item.reviewedAt,
-				rejectionReason: item.reason,
+				rejectionReason: normalizeDisplayText(item.reason),
 				user: {
 					userId: item.userId,
-					name: item.userName,
-					gender: item.gender,
+					name: normalizeDisplayText(item.userName),
+					gender: normalizeDisplayText(item.gender),
 					age: item.age,
 				},
 			}));
@@ -391,10 +400,8 @@ export const profileImages = {
 		try {
 			;
 
-			const result = await adminPost<{ data: any }>(`/admin/v2/profile-review/users/${userId}/approve-profile`);
-
-			;
-			return result.data;
+			await adminPost(`/admin/v2/profile-review/users/${userId}/approve-profile`);
+			return;
 		} catch (error: any) {
 			throw error;
 		}
@@ -404,13 +411,12 @@ export const profileImages = {
 		try {
 			;
 
-			const result = await adminPost<{ data: any }>(`/admin/v2/profile-review/users/${userId}/reject-profile`, {
+			await adminPost(`/admin/v2/profile-review/users/${userId}/reject-profile`, {
 				category: 'image',
 				reason: rejectionReason,
 			});
 
-			;
-			return result.data;
+			return;
 		} catch (error: any) {
 			throw error;
 		}
@@ -420,12 +426,11 @@ export const profileImages = {
 		try {
 			;
 
-			const result = await adminPost<{ data: any }>(`/admin/v2/profile-review/images/${imageId}/action`, {
+			await adminPost(`/admin/v2/profile-review/images/${imageId}/action`, {
 				action: 'approve',
 			});
 
-			;
-			return result.data;
+			return;
 		} catch (error: any) {
 			throw error;
 		}
@@ -435,13 +440,12 @@ export const profileImages = {
 		try {
 			;
 
-			const result = await adminPost<{ data: any }>(`/admin/v2/profile-review/images/${imageId}/action`, {
+			await adminPost(`/admin/v2/profile-review/images/${imageId}/action`, {
 				action: 'reject',
 				reason: rejectionReason,
 			});
 
-			;
-			return result.data;
+			return;
 		} catch (error: any) {
 			throw error;
 		}
@@ -451,13 +455,12 @@ export const profileImages = {
 		try {
 			;
 
-			const result = await adminPost<{ data: any }>(
+			await adminPost(
 				`/admin/v2/profile-review/images/${imageId}/action`,
 				{ action: 'setMain' },
 			);
 
-			;
-			return result.data;
+			return;
 		} catch (error: any) {
 			throw error;
 		}

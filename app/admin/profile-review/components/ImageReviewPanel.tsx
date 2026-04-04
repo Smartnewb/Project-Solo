@@ -184,6 +184,11 @@ export default function ImageReviewPanel({
         toast.success('대표 프로필이 승인되었습니다. 회원 상태가 "승인됨"으로 변경되었습니다.');
       }
     } catch (error: any) {
+      if (error.response?.status === 400 && error.response?.data?.message === "심사 대기 중인 이미지가 아닙니다.") {
+        await onImageApproved(imageId);
+        toast.info("이미 심사 완료된 이미지라 목록을 새로고침했습니다.");
+        return;
+      }
       toast.error(
         error.response?.data?.message || "이미지 승인 중 오류가 발생했습니다.",
       );
@@ -236,6 +241,15 @@ export default function ImageReviewPanel({
         toast.success('대표 프로필이 거절되었습니다. 회원 상태가 "거절됨"으로 변경되었습니다.');
       }
     } catch (error: any) {
+      if (error.response?.status === 400 && error.response?.data?.message === "심사 대기 중인 이미지가 아닙니다.") {
+        setRejectImageModalOpen(false);
+        const staleImageId = selectedImageId;
+        setSelectedImageId(null);
+        setImageRejectionReason("");
+        await onImageRejected(staleImageId);
+        toast.info("이미 심사 완료된 이미지라 목록을 새로고침했습니다.");
+        return;
+      }
       toast.error(
         error.response?.data?.message || "이미지 거절 중 오류가 발생했습니다.",
       );
