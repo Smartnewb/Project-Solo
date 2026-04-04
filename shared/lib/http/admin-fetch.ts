@@ -22,6 +22,16 @@ export class AdminApiError extends Error {
   }
 }
 
+async function parseJsonBody<T>(res: Response): Promise<T> {
+  const text = await res.text();
+
+  if (!text) {
+    return undefined as T;
+  }
+
+  return JSON.parse(text) as T;
+}
+
 async function request<T>(
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   path: string,
@@ -45,16 +55,16 @@ async function request<T>(
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => null);
+    const body = await parseJsonBody<unknown>(res).catch(() => null);
     throw new AdminApiError(
-      body?.message ?? `Request failed: ${res.status}`,
+      (body as { message?: string } | null)?.message ?? `Request failed: ${res.status}`,
       res.status,
       body,
     );
   }
 
   if (res.status === 204) return undefined as T;
-  return res.json();
+  return parseJsonBody<T>(res);
 }
 
 export function buildAdminProxyUrl(path: string): string {
@@ -69,16 +79,16 @@ export async function adminRequest<T>(
   const res = await fetch(buildAdminProxyUrl(path), init);
 
   if (!res.ok) {
-    const body = await res.json().catch(() => null);
+    const body = await parseJsonBody<unknown>(res).catch(() => null);
     throw new AdminApiError(
-      body?.message ?? `Request failed: ${res.status}`,
+      (body as { message?: string } | null)?.message ?? `Request failed: ${res.status}`,
       res.status,
       body,
     );
   }
 
   if (res.status === 204) return undefined as T;
-  return res.json();
+  return parseJsonBody<T>(res);
 }
 
 export function adminGet<T>(

@@ -114,8 +114,8 @@ export const userAppearance = {
 		}
 
 		try {
-			const result = await adminPatch<{ data: any }>(`/admin/v2/users/${userId}/appearance`, { rank: grade });
-			return result.data;
+			await adminPatch(`/admin/v2/users/${userId}/appearance`, { rank: grade });
+			return;
 		} catch (error: any) {
 			throw error;
 		}
@@ -264,11 +264,12 @@ export const userAppearance = {
 		}
 	},
 
-	addUserGems: async (userId: string, amount: number) => {
+	addUserGems: async (userId: string, amount: number, reason?: string) => {
 		try {
 			const endpoint = `/admin/v2/gems/users/${userId}/add`;
+			const normalizedReason = reason?.trim() || '관리자 수동 구슬 지급';
 
-			const result = await adminPost<{ data: any }>(endpoint, { amount });
+			const result = await adminPost<{ data: any }>(endpoint, { amount, reason: normalizedReason });
 
 			return result.data;
 		} catch (error: any) {
@@ -276,11 +277,12 @@ export const userAppearance = {
 		}
 	},
 
-	removeUserGems: async (userId: string, amount: number) => {
+	removeUserGems: async (userId: string, amount: number, reason?: string) => {
 		try {
 			const endpoint = `/admin/v2/gems/users/${userId}/deduct`;
+			const normalizedReason = reason?.trim() || '관리자 수동 구슬 차감';
 
-			const result = await adminPost<{ data: any }>(endpoint, { amount });
+			const result = await adminPost<{ data: any }>(endpoint, { amount, reason: normalizedReason });
 
 			return result.data;
 		} catch (error: any) {

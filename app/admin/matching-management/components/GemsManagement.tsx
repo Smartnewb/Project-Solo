@@ -118,7 +118,11 @@ const GemsManagement: React.FC<GemsManagementProps> = ({
     setActionResult(null);
 
     try {
-      const response = await AdminService.userAppearance.addUserGems(selectedUser.id, gemsCount);
+      const response = await AdminService.userAppearance.addUserGems(
+        selectedUser.id,
+        gemsCount,
+        reason,
+      );
       ;
 
       setActionResult(
@@ -154,7 +158,10 @@ const GemsManagement: React.FC<GemsManagementProps> = ({
     setActionResult(null);
 
     try {
-      const response = await AdminService.userAppearance.removeUserGems(selectedUser.id, gemsCount);
+      const response = await AdminService.userAppearance.removeUserGems(
+        selectedUser.id,
+        gemsCount,
+      );
       ;
 
       setActionResult(`성공적으로 ${gemsCount}개의 구슬을 제거했습니다.`);
