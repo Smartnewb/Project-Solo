@@ -24,7 +24,7 @@ interface AccountStatusModalProps {
   onSuccess?: () => void;
 }
 
-type AccountStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+type AccountStatus = 'ACTIVE' | 'SUSPENDED';
 
 const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
   open,
@@ -102,7 +102,6 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
                 disabled={loading}
               >
                 <MenuItem value="ACTIVE">활성화</MenuItem>
-                <MenuItem value="INACTIVE">비활성화</MenuItem>
                 <MenuItem value="SUSPENDED">정지</MenuItem>
               </Select>
             </FormControl>
@@ -118,7 +117,7 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
               placeholder="상태 변경 사유를 입력하세요"
               helperText={
                 status !== 'ACTIVE'
-                  ? '사용자에게 이메일로 계정 상태 변경 알림과 사유가 전송됩니다.'
+                  ? '현재 백엔드는 계정 정지/해제만 지원합니다. 사유는 내부 메모 용도로만 사용됩니다.'
                   : '활성화 상태로 변경 시 사유는 선택사항입니다.'
               }
               required={status !== 'ACTIVE'}
@@ -128,22 +127,11 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
             {status !== 'ACTIVE' && (
               <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(25, 118, 210, 0.08)', borderRadius: 1 }}>
                 <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium', color: 'primary.main' }}>
-                  <strong>이메일 알림 안내</strong>
+                  <strong>처리 안내</strong>
                 </Typography>
                 <Typography variant="body2" sx={{ mb: 1 }}>
-                  계정 상태 변경 시 사용자에게 다음 정보가 포함된 이메일이 자동으로 발송됩니다:
+                  현재 이 기능은 계정 정지/해제 처리만 수행하며, 사용자 이메일은 자동 발송하지 않습니다.
                 </Typography>
-                <ul style={{ margin: '0', paddingLeft: '20px' }}>
-                  <li>
-                    <Typography variant="body2">변경된 계정 상태 ({status === 'INACTIVE' ? '비활성화' : '정지'})</Typography>
-                  </li>
-                  <li>
-                    <Typography variant="body2">상태 변경 사유 (위에 입력한 내용)</Typography>
-                  </li>
-                  <li>
-                    <Typography variant="body2">변경 일시</Typography>
-                  </li>
-                </ul>
                 {status === 'SUSPENDED' && (
                   <Typography color="error" variant="body2" sx={{ mt: 1, fontWeight: 'medium' }}>
                     주의: 계정 정지는 사용자가 앱에 로그인할 수 없게 됩니다.

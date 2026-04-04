@@ -386,6 +386,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
       await AdminService.userAppearance.setInstagramError(userId);
 
+      setUserDetail(prev => prev ? { ...prev, statusAt: 'instagramerror' } : prev);
       setActionSuccess('인스타그램 오류 상태가 설정되었습니다.');
       if (onRefresh) onRefresh();
     } catch (error: any) {
@@ -595,6 +596,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
       await AdminService.userAppearance.resetInstagramError(userId);
 
+      setUserDetail(prev => prev ? { ...prev, statusAt: null } : prev);
       setActionSuccess('인스타그램 오류 상태가 해제되었습니다.');
       if (onRefresh) onRefresh();
     } catch (error: any) {

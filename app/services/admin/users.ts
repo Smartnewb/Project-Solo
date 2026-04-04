@@ -180,6 +180,23 @@ export const userAppearance = {
 				data.appearanceGrade = data.rank;
 			}
 
+			if (data.statusAt === undefined) {
+				data.statusAt = null;
+			}
+
+			if (!data.accountStatus) {
+				data.accountStatus = data.isSuspended ? 'SUSPENDED' : 'ACTIVE';
+			}
+
+			if (!data.approvalStatus && data.status) {
+				const approvalStatusMap: Record<string, 'PENDING' | 'APPROVED' | 'REJECTED'> = {
+					pending: 'PENDING',
+					approved: 'APPROVED',
+					rejected: 'REJECTED',
+				};
+				data.approvalStatus = approvalStatusMap[data.status] ?? undefined;
+			}
+
 			// 프로필 이미지 정규화: images, profileImageUrls, profileImages 모두 지원
 			if (data.images && Array.isArray(data.images) && data.images.length > 0) {
 				data.profileImages = data.images.map((img: any, index: number) => ({
@@ -321,13 +338,12 @@ export const userAppearance = {
 		reason?: string,
 	) => {
 		try {
-			;
+			const endpoint =
+				status === 'ACTIVE'
+					? `/admin/v2/users/${userId}/unsuspend`
+					: `/admin/v2/users/${userId}/suspend`;
 
-			const result = await adminPatch<{ data: any }>(`/admin/v2/users/${userId}/profile`, {
-				status,
-				reason,
-			});
-
+			const result = await adminPost<{ data: any }>(endpoint, reason?.trim() ? { reason } : {});
 			return result.data;
 		} catch (error: any) {
 			throw error;
@@ -336,10 +352,9 @@ export const userAppearance = {
 
 	sendWarningMessage: async (userId: string, message: string) => {
 		try {
-			;
-
 			const result = await adminPost<{ data: any }>(`/admin/v2/users/${userId}/warning`, {
-				message,
+				category: 'OTHER',
+				reason: message,
 			});
 
 			return result.data;
@@ -391,8 +406,6 @@ export const userAppearance = {
 
 	sendProfileUpdateRequest: async (userId: string, message: string) => {
 		try {
-			;
-
 			const result = await adminPost<{ data: any }>(`/admin/v2/users/${userId}/profile-update-request`, {
 				message,
 			});
@@ -405,8 +418,6 @@ export const userAppearance = {
 
 	setInstagramError: async (userId: string) => {
 		try {
-			;
-
 			const result = await adminPost<{ data: any }>(`/admin/v2/users/${userId}/instagram-error`, {});
 
 			return result.data;
