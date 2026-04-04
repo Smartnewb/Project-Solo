@@ -213,8 +213,8 @@ export const universities = {
 		return result.data.clusters;
 	},
 
-	getDepartments: async (university: string) => {
-		const result = await adminGet<{ data: any }>('/admin/v2/universities/departments', { university });
+	getDepartments: async (universityId: string) => {
+		const result = await adminGet<{ data: any }>(`/admin/v2/universities/${universityId}/departments`);
 		return result.data;
 	},
 

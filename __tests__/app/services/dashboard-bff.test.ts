@@ -17,7 +17,7 @@ describe('dashboard and kpi services use BFF client', () => {
 
     await dashboardService.getSummary();
 
-    expect(adminGet).toHaveBeenCalledWith('/admin/dashboard/summary');
+    expect(adminGet).toHaveBeenCalledWith('/admin/v2/dashboard/summary');
   });
 
   it('loads latest KPI report through adminGet', async () => {
@@ -25,7 +25,7 @@ describe('dashboard and kpi services use BFF client', () => {
 
     await AdminService.kpiReport.getLatest();
 
-    expect(adminGet).toHaveBeenCalledWith('/admin/kpi-report/latest');
+    expect(adminGet).toHaveBeenCalledWith('/admin/v2/kpi-report/latest');
   });
 
   it('generates KPI report through adminPost', async () => {
@@ -33,7 +33,7 @@ describe('dashboard and kpi services use BFF client', () => {
 
     await AdminService.kpiReport.generate(2026, 10);
 
-    expect(adminPost).toHaveBeenCalledWith('/admin/kpi-report/generate', {
+    expect(adminPost).toHaveBeenCalledWith('/admin/v2/kpi-report/generate', {
       year: 2026,
       week: 10,
     });
@@ -47,11 +47,49 @@ describe('dashboard and kpi services use BFF client', () => {
       limit: 1,
     });
 
-    expect(adminGet).toHaveBeenCalledWith('/admin/university-verification/pending', {
+    expect(adminGet).toHaveBeenCalledWith('/admin/v2/profile-review/university-verification/pending', {
       page: '1',
       limit: '1',
-      name: undefined,
-      university: undefined,
+      name: '',
+      university: '',
+    });
+  });
+
+  it('normalizes engagement stats into the nested dashboard shape', async () => {
+    (adminGet as jest.Mock).mockResolvedValue({
+      data: {
+        likesPerUser: { mean: 3.2, median: 2 },
+        mutualLikesPerUser: { mean: 1.4, median: 1 },
+        chatOpensPerUser: { mean: 0.8, median: 0 },
+        likeEngagement: { activeUsers: 10, totalUsers: 20, rate: 50 },
+        mutualLikeEngagement: { activeUsers: 6, totalUsers: 20, rate: 30 },
+        chatOpenEngagement: { activeUsers: 4, totalUsers: 20, rate: 20 },
+        startDate: '2026-04-01',
+        endDate: '2026-04-05',
+      },
+    });
+
+    await expect(
+      AdminService.userEngagement.getStats('2026-04-01', '2026-04-05', false),
+    ).resolves.toEqual({
+      stats: {
+        likesPerUser: { mean: 3.2, median: 2 },
+        mutualLikesPerUser: { mean: 1.4, median: 1 },
+        chatOpensPerUser: { mean: 0.8, median: 0 },
+        likeEngagement: { activeUsers: 10, totalUsers: 20, rate: 50 },
+        mutualLikeEngagement: { activeUsers: 6, totalUsers: 20, rate: 30 },
+        chatOpenEngagement: { activeUsers: 4, totalUsers: 20, rate: 20 },
+        periodEngagement: undefined,
+      },
+      startDate: '2026-04-01',
+      endDate: '2026-04-05',
+      periodType: 'custom',
+    });
+
+    expect(adminGet).toHaveBeenCalledWith('/admin/v2/stats/engagement', {
+      from: '2026-04-01',
+      to: '2026-04-05',
+      includeDeleted: 'false',
     });
   });
 });

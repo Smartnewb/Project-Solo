@@ -922,7 +922,26 @@ export const userEngagement = {
 			if (includeDeleted !== undefined) params.includeDeleted = String(includeDeleted);
 
 			const res = await adminGet<{ data: any }>('/admin/v2/stats/engagement', params);
-			return res.data;
+			const payload = res.data ?? {};
+			return {
+				stats: {
+					likesPerUser: payload.likesPerUser ?? { mean: 0, median: 0 },
+					mutualLikesPerUser: payload.mutualLikesPerUser ?? { mean: 0, median: 0 },
+					chatOpensPerUser: payload.chatOpensPerUser ?? { mean: 0, median: 0 },
+					likeEngagement: payload.likeEngagement ?? { activeUsers: 0, totalUsers: 0, rate: 0 },
+					mutualLikeEngagement:
+						payload.mutualLikeEngagement ?? { activeUsers: 0, totalUsers: 0, rate: 0 },
+					chatOpenEngagement:
+						payload.chatOpenEngagement ?? { activeUsers: 0, totalUsers: 0, rate: 0 },
+					periodEngagement: payload.periodEngagement,
+				},
+				startDate: payload.startDate ?? startDate ?? null,
+				endDate:
+					payload.endDate ??
+					endDate ??
+					new Date().toISOString().split('T')[0],
+				periodType: payload.periodType ?? (startDate || endDate ? 'custom' : 'all'),
+			};
 		} catch (error: any) {
 			throw error;
 		}
