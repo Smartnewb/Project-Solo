@@ -288,6 +288,7 @@ function ProfileReviewV2Content() {
 
       // 응답 데이터 정규화 (V2 API 호환성)
       const normalizedUsers: PendingUser[] = response.data.map((user: any) => {
+        const reviewContextSource = user.reviewContext || user.context || null;
         // V2: pendingImages[].url, approvedImages[].url / V1: approvedImageUrls[], pendingImages[].imageUrl
         const pendingImgs = (user.pendingImages || []).map((img: any) => ({
           id: img.imageId ?? img.id,
@@ -316,6 +317,27 @@ function ProfileReviewV2Content() {
           // 기본값 설정
           preferences: user.preferences || [],
           rejectionHistory: user.rejectionHistory || [],
+          reviewContext: reviewContextSource
+            ? {
+                reportCount: Number(reviewContextSource.reportCount ?? 0),
+                hasSuspensionHistory: Boolean(reviewContextSource.hasSuspensionHistory),
+                userCreatedAt:
+                  reviewContextSource.userCreatedAt ??
+                  reviewContextSource.createdAt ??
+                  user.createdAt ??
+                  "",
+                isFirstReview: Boolean(reviewContextSource.isFirstReview),
+                receivedLikeCount: Number(reviewContextSource.receivedLikeCount ?? 0),
+                matchCount: Number(reviewContextSource.matchCount ?? 0),
+                chatRoomCount: Number(reviewContextSource.chatRoomCount ?? 0),
+                hasPurchased:
+                  Boolean(reviewContextSource.hasPurchased) ||
+                  Number(reviewContextSource.purchaseCount ?? 0) > 0 ||
+                  Number(reviewContextSource.totalPurchaseAmount ?? 0) > 0,
+                totalPurchaseAmount: Number(reviewContextSource.totalPurchaseAmount ?? 0) || undefined,
+                isUniversityVerified: Boolean(reviewContextSource.isUniversityVerified),
+              }
+            : undefined,
           isApproved: user.isApproved ?? false,
           approved: user.approved ?? false,
           createdAt: user.createdAt ?? '',
