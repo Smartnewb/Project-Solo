@@ -111,7 +111,10 @@ export const momentQuestions = {
 				'/admin/v2/content/questions/generate',
 				data,
 			);
-			return res.data;
+			return {
+				...res.data,
+				candidates: Array.isArray(res.data?.candidates) ? res.data.candidates : [],
+			};
 		} catch (error: any) {
 			throw error;
 		}
@@ -123,7 +126,10 @@ export const momentQuestions = {
 				'/admin/v2/content/questions/bulk-create',
 				data,
 			);
-			return res.data;
+			return {
+				...res.data,
+				questions: Array.isArray(res.data?.questions) ? res.data.questions : [],
+			};
 		} catch (error: any) {
 			throw error;
 		}
@@ -142,7 +148,16 @@ export const momentQuestions = {
 			if (params.translationStatus) stringParams.translationStatus = params.translationStatus;
 
 			const res = await adminGet<{ data: QuestionListResponse }>('/admin/v2/content/questions', stringParams);
-			return res.data;
+			const data = res.data ?? ({} as QuestionListResponse);
+			return {
+				questions: Array.isArray(data.questions) ? data.questions : [],
+				pagination: data.pagination ?? {
+					total: 0,
+					page: params.page ?? 1,
+					limit: params.limit ?? 15,
+					totalPages: 1,
+				},
+			};
 		} catch (error: any) {
 			throw error;
 		}
@@ -151,7 +166,27 @@ export const momentQuestions = {
 	getDetail: async (id: string): Promise<QuestionDetail> => {
 		try {
 			const res = await adminGet<{ data: QuestionDetail }>(`/admin/v2/content/questions/${id}`);
-			return res.data;
+			const data = res.data;
+			return {
+				...data,
+				options: Array.isArray(data?.options) ? data.options : [],
+				translations: data?.translations?.jp
+					? {
+							jp: {
+								...data.translations.jp,
+								options: Array.isArray(data.translations.jp.options)
+									? data.translations.jp.options
+									: [],
+							},
+						}
+					: data?.translations,
+				metadata: data?.metadata
+					? {
+							...data.metadata,
+							keywords: Array.isArray(data.metadata.keywords) ? data.metadata.keywords : [],
+						}
+					: data?.metadata,
+			};
 		} catch (error: any) {
 			throw error;
 		}
@@ -180,7 +215,16 @@ export const momentQuestions = {
 				'/admin/v2/content/questions/translate',
 				data,
 			);
-			return res.data;
+			if ('translations' in res.data) {
+				return {
+					...res.data,
+					translations: Array.isArray(res.data.translations) ? res.data.translations : [],
+				};
+			}
+			return {
+				...res.data,
+				results: Array.isArray(res.data.results) ? res.data.results : [],
+			};
 		} catch (error: any) {
 			throw error;
 		}

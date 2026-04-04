@@ -1,5 +1,5 @@
 // TITLE: - 어드민 매출 지표 서비스 레이어
-import { adminGet, adminPost } from "@/shared/lib/http/admin-fetch";
+import { adminGet } from "@/shared/lib/http/admin-fetch";
 import {
   CustomSalesRequest,
   CustomSalesResponse,
@@ -156,9 +156,10 @@ export const salesService = {
       // 전체 기간 조회인지 확인
       const isFullPeriod = !data.startDate && !data.endDate;
 
-      const res = await adminPost<{ data: any }>(
+      const params: Record<string, any> = { ...data };
+      const res = await adminGet<{ data: any }>(
         SALES_ENDPOINT.CUSTOM_PERIOD,
-        data,
+        toStringParams(params),
       );
       const result = res.data;
 
@@ -289,8 +290,8 @@ export const salesService = {
   // MARK: - IAP 통계 조회
   async getIapStats(): Promise<IapStatsResponse> {
     try {
-      const result = await adminGet<IapStatsResponse>(SALES_ENDPOINT.IAP_STATS);
-      return result;
+      const response = await adminGet<{ data: IapStatsResponse }>(SALES_ENDPOINT.IAP_STATS);
+      return response.data;
     } catch (error) {
       throw new SalesApiError("IAP 통계 조회 실패:", error);
     }
@@ -420,8 +421,8 @@ export const salesService = {
 
   async getPeriodAnalysis(): Promise<PeriodAnalysisResponse> {
     try {
-      const result = await adminGet<PeriodAnalysisResponse>(SALES_ENDPOINT.PERIOD_ANALYSIS);
-      return result;
+      const response = await adminGet<{ data: PeriodAnalysisResponse }>(SALES_ENDPOINT.PERIOD_ANALYSIS);
+      return response.data;
     } catch (error) {
       throw new SalesApiError("기간별 분석 조회 실패:", error);
     }
@@ -444,8 +445,8 @@ export const salesService = {
 
   async getSystemComparison(): Promise<SystemComparisonResponse> {
     try {
-      const result = await adminGet<SystemComparisonResponse>(SALES_ENDPOINT.SYSTEM_COMPARISON);
-      return result;
+      const response = await adminGet<{ data: SystemComparisonResponse }>(SALES_ENDPOINT.SYSTEM_COMPARISON);
+      return response.data;
     } catch (error) {
       throw new SalesApiError("시스템 비교 조회 실패:", error);
     }

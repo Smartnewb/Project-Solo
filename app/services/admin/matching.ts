@@ -82,9 +82,9 @@ export const matching = {
 		type: 'rematching' | 'scheduled',
 	) => {
 		const res = await adminPost<{ data: any }>('/admin/v2/matching/force', {
-			requesterId,
-			targetId,
-			type,
+			userIdA: requesterId,
+			userIdB: targetId,
+			reason: `single-matching:${type}`,
 		});
 		return res.data;
 	},

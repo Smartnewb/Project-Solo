@@ -386,6 +386,10 @@ const UserAppearanceTable = forwardRef<UserAppearanceTableRef, UserAppearanceTab
           </Stack>
         </Box>
 
+        <Typography variant="caption" sx={{ display: 'block', mb: 1.5, px: 1, color: '#64748B' }}>
+          정렬 기준: 최근 접속 우선, 미접속 사용자는 가입일 최신순
+        </Typography>
+
         <TableContainer
           component={Paper}
           sx={{

@@ -3,10 +3,6 @@ import {
   DashboardSummaryResponse,
   MatchingFunnelResponse,
   HourlySignupsResponse,
-  GoalsResponse,
-  Goal,
-  GoalCreateRequest,
-  GoalUpdateRequest,
   GemSystemFunnelResponse,
   ActionableInsightsResponse,
 } from "@/app/admin/dashboard/types";
@@ -19,7 +15,6 @@ const DASHBOARD_ENDPOINT = {
   SUMMARY: "/admin/v2/dashboard/summary",
   MATCHING_FUNNEL: "/admin/v2/dashboard/matching/funnel",
   HOURLY_SIGNUPS: "/admin/v2/dashboard/signups",
-  GOALS: "/admin/v2/goals",
   GEM_SYSTEM_FUNNEL: "/admin/v2/dashboard/gem-system-funnel",
   ACTIONABLE_INSIGHTS: "/admin/v2/dashboard/actionable-insights",
 } as const;
@@ -44,10 +39,11 @@ export const dashboardService = {
     endDate: string,
   ): Promise<MatchingFunnelResponse> {
     try {
-      return await adminGet<MatchingFunnelResponse>(DASHBOARD_ENDPOINT.MATCHING_FUNNEL, {
+      const response = await adminGet<V2Response<MatchingFunnelResponse>>(DASHBOARD_ENDPOINT.MATCHING_FUNNEL, {
         startDate,
         endDate,
       });
+      return response.data;
     } catch (error) {
       console.error("매칭 퍼널 조회 실패:", error);
       throw error instanceof AdminApiError
@@ -68,57 +64,6 @@ export const dashboardService = {
       throw error instanceof AdminApiError
         ? error
         : new AdminApiError("시간별 가입자 추이 조회에 실패했습니다.", 500);
-    }
-  },
-
-  // 목표 목록 조회
-  async getGoals(targetMonth?: string): Promise<GoalsResponse> {
-    try {
-      return await adminGet<GoalsResponse>(
-        DASHBOARD_ENDPOINT.GOALS,
-        targetMonth ? { targetMonth } : undefined,
-      );
-    } catch (error) {
-      console.error("목표 목록 조회 실패:", error);
-      throw error instanceof AdminApiError
-        ? error
-        : new AdminApiError("목표 목록 조회에 실패했습니다.", 500);
-    }
-  },
-
-  // 목표 생성
-  async createGoal(data: GoalCreateRequest): Promise<Goal> {
-    try {
-      return await adminPost<Goal>(DASHBOARD_ENDPOINT.GOALS, data);
-    } catch (error) {
-      console.error("목표 생성 실패:", error);
-      throw error instanceof AdminApiError
-        ? error
-        : new AdminApiError("목표 생성에 실패했습니다.", 500);
-    }
-  },
-
-  // 목표 수정
-  async updateGoal(id: string, data: GoalUpdateRequest): Promise<Goal> {
-    try {
-      return await adminPut<Goal>(`${DASHBOARD_ENDPOINT.GOALS}/${id}`, data);
-    } catch (error) {
-      console.error("목표 수정 실패:", error);
-      throw error instanceof AdminApiError
-        ? error
-        : new AdminApiError("목표 수정에 실패했습니다.", 500);
-    }
-  },
-
-  // 목표 삭제
-  async deleteGoal(id: string): Promise<void> {
-    try {
-      await adminDelete(`${DASHBOARD_ENDPOINT.GOALS}/${id}`);
-    } catch (error) {
-      console.error("목표 삭제 실패:", error);
-      throw error instanceof AdminApiError
-        ? error
-        : new AdminApiError("목표 삭제에 실패했습니다.", 500);
     }
   },
 

@@ -16,6 +16,7 @@ export const matchingMonitor = {
 	},
 
 	getUserDiagnosis: async (userId: string): Promise<UserDiagnosisResponse> => {
-		return adminGet<UserDiagnosisResponse>(`/admin/v2/matching/${userId}/diagnosis`);
+		const response = await adminGet<{ data: UserDiagnosisResponse }>(`/admin/v2/matching/${userId}/diagnosis`);
+		return response.data;
 	},
 };

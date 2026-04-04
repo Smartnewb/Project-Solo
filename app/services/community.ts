@@ -268,14 +268,21 @@ const communityService = {
 		if (reporterName) params.reporterName = reporterName;
 		if (reportedName) params.reportedName = reportedName;
 
-		const response = await adminGet<any>('/admin/v2/community/reports', params);
+		const response = await adminGet<{ data: any[]; meta: any }>('/admin/v2/community/reports', params);
 
 		return {
-			items: response.items ?? [],
-			meta: response.meta ?? {
+			items: response.data ?? [],
+			meta: response.meta ? {
+				currentPage: response.meta.page ?? page,
+				itemsPerPage: response.meta.limit ?? limit,
+				totalItems: response.meta.total ?? 0,
+				totalPages: response.meta.totalPages ?? 1,
+				hasNextPage: (response.meta.page ?? page) < (response.meta.totalPages ?? 1),
+				hasPreviousPage: (response.meta.page ?? page) > 1,
+			} : {
 				currentPage: page,
 				itemsPerPage: limit,
-				totalItems: response.items?.length ?? 0,
+				totalItems: response.data?.length ?? 0,
 				totalPages: 1,
 				hasNextPage: false,
 				hasPreviousPage: page > 1,
@@ -289,7 +296,7 @@ const communityService = {
 		page = 1,
 		limit = 10,
 	): Promise<PaginatedResponse<Report>> => {
-		const response = await adminGet<any>('/admin/v2/community/reports', {
+		const response = await adminGet<{ data: any[]; meta: any }>('/admin/v2/community/reports', {
 			type,
 			status,
 			page: String(page),
@@ -297,11 +304,18 @@ const communityService = {
 		});
 
 		return {
-			items: response.items ?? [],
-			meta: response.meta ?? {
+			items: response.data ?? [],
+			meta: response.meta ? {
+				currentPage: response.meta.page ?? page,
+				itemsPerPage: response.meta.limit ?? limit,
+				totalItems: response.meta.total ?? 0,
+				totalPages: response.meta.totalPages ?? 1,
+				hasNextPage: (response.meta.page ?? page) < (response.meta.totalPages ?? 1),
+				hasPreviousPage: (response.meta.page ?? page) > 1,
+			} : {
 				currentPage: page,
 				itemsPerPage: limit,
-				totalItems: response.items?.length ?? 0,
+				totalItems: response.data?.length ?? 0,
 				totalPages: 1,
 				hasNextPage: false,
 				hasPreviousPage: page > 1,

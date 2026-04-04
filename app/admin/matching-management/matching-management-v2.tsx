@@ -30,7 +30,6 @@ import SingleMatching from './components/SingleMatching';
 import MatchingSimulation from './components/MatchingSimulation';
 import UnmatchedUsers from './components/UnmatchedUsers';
 import MatcherHistory from './components/MatcherHistory';
-import TicketManagement from './components/TicketManagement';
 import GemsManagement from './components/GemsManagement';
 import LikeHistory from './components/LikeHistory';
 import ForceMatchingTab from './components/ForceMatchingTab';
@@ -121,7 +120,7 @@ function MatchingManagementV2Content() {
     loading: batchStatusLoading,
     error: batchStatusError,
     toggleStatus
-  } = useBatchStatus();
+  } = useBatchStatus(activeTab === 9);
 
   // 공통 상태
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -421,11 +420,7 @@ function MatchingManagementV2Content() {
     setError(null);
 
     try {
-      const response = await adminPost<MatchingResult>('/admin/v2/matching/user', {
-        userId: selectedUser.id
-      });
-
-      ;
+      const response = await AdminService.matching.processSingleMatching(selectedUser.id);
       setMatchingResult(response);
     } catch (err: any) {
 
@@ -454,12 +449,7 @@ function MatchingManagementV2Content() {
 
     try {
       // POST 메서드로 변경하고 요청 본문에 파라미터 포함
-      const response = await adminPost<MatchingSimulationResult>('/admin/v2/matching/user/read', {
-        userId: selectedUser.id,
-        limit: matchLimit
-      });
-
-      ;
+      const response = await AdminService.matching.findMatches(selectedUser.id, { limit: matchLimit });
       setSimulationResult(response);
     } catch (err: any) {
 
@@ -607,7 +597,6 @@ function MatchingManagementV2Content() {
         <Tab label="매칭 내역 조회" />
         <Tab label="좋아요 이력" />
         <Tab label="매칭 실패 내역" />
-        <Tab label="재매칭 티켓 관리" />
         <Tab label="매칭 상대 이력" />
         <Tab label="매칭 대기 사용자" />
         <Tab label="단일 매칭" />
@@ -1029,22 +1018,8 @@ function MatchingManagementV2Content() {
         </LocalizationProvider>
       </TabPanel>
 
-      {/* 재매칭 티켓 관리 */}
-      <TabPanel value={activeTab} index={4}>
-        <TicketManagement
-          searchTerm={searchTerm}
-          searchLoading={searchLoading}
-          error={error}
-          searchResults={searchResults}
-          selectedUser={selectedUser}
-          setSearchTerm={setSearchTerm}
-          searchUsers={searchUsers}
-          handleUserSelect={handleUserSelect}
-        />
-      </TabPanel>
-
       {/* 매칭 상대 이력 */}
-      <TabPanel value={activeTab} index={5}>
+      <TabPanel value={activeTab} index={4}>
         <MatcherHistory
           searchTerm={searchTerm}
           searchLoading={searchLoading}
@@ -1058,7 +1033,7 @@ function MatchingManagementV2Content() {
       </TabPanel>
 
       {/* 매칭 대기 사용자 */}
-      <TabPanel value={activeTab} index={6}>
+      <TabPanel value={activeTab} index={5}>
         <UnmatchedUsers
           unmatchedUsers={unmatchedUsers}
           unmatchedUsersLoading={unmatchedUsersLoading}
@@ -1097,7 +1072,7 @@ function MatchingManagementV2Content() {
       </TabPanel>
 
       {/* 단일 매칭 */}
-      <TabPanel value={activeTab} index={7}>
+      <TabPanel value={activeTab} index={6}>
         <UserSearch
           searchTerm={searchTerm}
           searchLoading={searchLoading}
@@ -1117,7 +1092,7 @@ function MatchingManagementV2Content() {
       </TabPanel>
 
       {/* 매칭 시뮬레이션 */}
-      <TabPanel value={activeTab} index={8}>
+      <TabPanel value={activeTab} index={7}>
         <UserSearch
           searchTerm={searchTerm}
           searchLoading={searchLoading}
@@ -1141,12 +1116,12 @@ function MatchingManagementV2Content() {
       </TabPanel>
 
       {/* 강제 매칭 */}
-      <TabPanel value={activeTab} index={9}>
+      <TabPanel value={activeTab} index={8}>
         <ForceMatchingTab />
       </TabPanel>
 
       {/* 00시 매칭 여부 */}
-      <TabPanel value={activeTab} index={10}>
+      <TabPanel value={activeTab} index={9}>
         <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
           <Typography variant="h6" gutterBottom>
             00시 매칭 On/Off
@@ -1168,7 +1143,7 @@ function MatchingManagementV2Content() {
       </TabPanel>
 
       {/* 잔여 사용자 매칭 */}
-      <TabPanel value={activeTab} index={11}>
+      <TabPanel value={activeTab} index={10}>
         <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
           <Typography variant="h6" gutterBottom>
             (굉장히 급조한 API) 잔여 사용자 매칭 (위험)
@@ -1189,7 +1164,7 @@ function MatchingManagementV2Content() {
       </TabPanel>
 
       {/* 임베드 데이터 갱신 */}
-      <TabPanel value={activeTab} index={12}>
+      <TabPanel value={activeTab} index={11}>
         <Paper sx={{ p: 3, mb: 3, maxWidth: 400 }}>
           <Typography variant="h6" gutterBottom>
             매칭 조건에 포함되는 전체 사용자의 벡터 갱신 (오래걸림)

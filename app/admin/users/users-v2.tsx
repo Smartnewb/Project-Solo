@@ -52,13 +52,12 @@ interface User {
 }
 
 type ApiResponse = {
-  users: User[];
-  pagination: {
+  data: User[];
+  meta: {
     page: number;
     limit: number;
     total: number;
     totalPages: number;
-    hasMore: boolean;
   };
 };
 
@@ -122,7 +121,8 @@ function UsersV2Content() {
 
       // Nest.js API 호출
       const response = await adminGet<ApiResponse>('/admin/v2/users', params);
-      const { users: userList, pagination } = response;
+      const userList = response.data ?? [];
+      const pagination = response.meta;
 
       setUsers(userList);
       setTotalCount(pagination.total);

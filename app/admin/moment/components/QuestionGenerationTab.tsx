@@ -130,9 +130,13 @@ export default function QuestionGenerationTab() {
         ...(dimension === 'auto' && useCustomDistribution ? { distribution } : {}),
       });
 
-      setCandidates(response.candidates);
+      const normalizedCandidates = (Array.isArray(response.candidates) ? response.candidates : []).map((candidate) => ({
+        ...candidate,
+        options: Array.isArray(candidate.options) ? candidate.options : [],
+      }));
+      setCandidates(normalizedCandidates);
       setMetadata(response.metadata);
-      setSelectedIds(new Set(response.candidates.map(c => c.tempId)));
+      setSelectedIds(new Set(normalizedCandidates.map(c => c.tempId)));
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || '질문 생성에 실패했습니다.');
     } finally {
@@ -368,7 +372,7 @@ export default function QuestionGenerationTab() {
       {metadata && (
         <Paper sx={{ p: 2, mb: 3 }}>
           <Typography variant="body2" color="text.secondary">
-            모델: {metadata.model} | 토큰: {metadata.outputTokens} | 비용: ${metadata.cost.toFixed(4)} | 시간: {metadata.processingTimeMs}ms
+            모델: {metadata.model} | 토큰: {metadata.outputTokens ?? 0} | 비용: ${Number(metadata.cost ?? 0).toFixed(4)} | 시간: {metadata.processingTimeMs ?? 0}ms
           </Typography>
         </Paper>
       )}
@@ -434,7 +438,7 @@ export default function QuestionGenerationTab() {
                       )}
                       <Box sx={{ mt: 1 }}>
                         <Typography variant="body2" color="text.secondary">
-                          선택지: {candidate.options.map(o => o.text).join(' / ')}
+                          선택지: {(Array.isArray(candidate.options) ? candidate.options : []).map(o => o.text).join(' / ')}
                         </Typography>
                       </Box>
                     </Box>

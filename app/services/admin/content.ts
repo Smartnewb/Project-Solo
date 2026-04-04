@@ -263,13 +263,13 @@ export const sometimeArticles = {
 		try {
 
 			const formData = new FormData();
-			formData.append("image", imageFile);
+			formData.append("file", imageFile);
 
-			const data = await adminRequest<UploadImageResponse>('/admin/v2/sometime-articles/upload', {
+			const response = await adminRequest<{ data: UploadImageResponse }>('/admin/v2/sometime-articles/upload', {
 				method: 'POST',
 				body: formData,
 			});
-			return data;
+			return response.data;
 		} catch (error: any) {
 			throw error;
 		}

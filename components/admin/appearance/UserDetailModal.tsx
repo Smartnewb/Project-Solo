@@ -60,6 +60,8 @@ import EditProfileModal from './modals/EditProfileModal';
 import EmailNotificationModal from './modals/EmailNotificationModal';
 import SmsNotificationModal from './modals/SmsNotificationModal';
 
+const SHOW_REMATCH_TICKET_ADMIN = false;
+
 // 성별 레이블
 const GENDER_LABELS = {
   MALE: '남성',
@@ -220,7 +222,9 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   // 모달이 열릴 때 티켓 정보 로드
   useEffect(() => {
     if (userId && open) {
-      fetchTicketInfo();
+      if (SHOW_REMATCH_TICKET_ADMIN) {
+        fetchTicketInfo();
+      }
       fetchGemsInfo();
     }
   }, [userId, open]);
@@ -1339,6 +1343,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                     </Grid>
 
                     {/* 재매칭 티켓 정보 */}
+                    {SHOW_REMATCH_TICKET_ADMIN && (
                     <Grid item xs={12}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                         <ConfirmationNumberIcon fontSize="small" color="action" />
@@ -1422,6 +1427,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                         </Box>
                       )}
                     </Grid>
+                    )}
 
                     {/* 구슬 정보 */}
                     <Grid item xs={12}>
@@ -1708,7 +1714,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           </Typography>
 
           {/* 재매칭 티켓 경고 메시지 */}
-          {ticketInfo?.stats?.available > 0 && (
+          {SHOW_REMATCH_TICKET_ADMIN && ticketInfo?.stats?.available > 0 && (
             <Alert severity="warning" sx={{ mb: 2 }}>
               <Typography variant="body2">
                 <strong>주의:</strong> 이 사용자는 재매칭 티켓을 <strong>{ticketInfo.stats.available}장</strong> 보유하고 있습니다.
@@ -1760,6 +1766,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       </Dialog>
 
       {/* 재매칭 티켓 추가 모달 */}
+      {SHOW_REMATCH_TICKET_ADMIN && (
       <Dialog
         open={ticketAddModalOpen}
         onClose={() => setTicketAddModalOpen(false)}
@@ -1804,8 +1811,10 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
+      )}
 
       {/* 재매칭 티켓 제거 모달 */}
+      {SHOW_REMATCH_TICKET_ADMIN && (
       <Dialog
         open={ticketRemoveModalOpen}
         onClose={() => setTicketRemoveModalOpen(false)}
@@ -1860,6 +1869,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
+      )}
 
       {/* 구슬 추가 모달 */}
       <Dialog

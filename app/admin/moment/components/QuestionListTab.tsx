@@ -95,8 +95,8 @@ export default function QuestionListTab() {
         isActive: true,
       });
 
-      setQuestions(response.questions);
-      setPagination(response.pagination);
+      setQuestions(Array.isArray(response.questions) ? response.questions : []);
+      setPagination(response.pagination ?? { total: 0, page, limit, totalPages: 1 });
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || '질문 목록 조회에 실패했습니다.');
     } finally {

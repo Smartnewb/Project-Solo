@@ -69,7 +69,7 @@ export default function QuestionDetailDialog({
           선택지 (한국어)
         </Typography>
         <List dense>
-          {question.options
+          {(Array.isArray(question.options) ? question.options : [])
             .sort((a, b) => a.order - b.order)
             .map((option) => (
               <ListItem key={option.id}>
@@ -90,7 +90,7 @@ export default function QuestionDetailDialog({
               {question.translations.jp.text}
             </Typography>
             <List dense>
-              {question.translations.jp.options
+              {(Array.isArray(question.translations.jp.options) ? question.translations.jp.options : [])
                 .sort((a, b) => a.order - b.order)
                 .map((option, index) => (
                   <ListItem key={index}>
@@ -135,7 +135,7 @@ export default function QuestionDetailDialog({
             {question.metadata.theme && (
               <Typography variant="body2">테마: {question.metadata.theme}</Typography>
             )}
-            {question.metadata.keywords && (
+            {Array.isArray(question.metadata.keywords) && (
               <Box sx={{ mt: 1 }}>
                 {question.metadata.keywords.map((kw) => (
                   <Chip key={kw} label={kw} size="small" sx={{ mr: 0.5, mb: 0.5 }} />

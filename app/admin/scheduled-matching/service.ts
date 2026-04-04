@@ -112,7 +112,8 @@ export const scheduledMatchingService = {
     if (params.page) queryParams.page = String(params.page);
     if (params.limit) queryParams.limit = String(params.limit);
     if (params.status) queryParams.status = params.status;
-    if (params.type) queryParams.type = params.type;
+    if (params.matchType) queryParams.type = params.matchType;
+    else if (params.type) queryParams.type = params.type;
     return adminGet<ManualMatchingListResponse>('/admin/v2/matching/manual', queryParams);
   },
 

@@ -95,8 +95,8 @@ export const femaleRetention = {
 	issueTemporaryPassword: async (userId: string) => {
 		try {
 			;
-			const data = await adminPost<any>(`/admin/v2/retention/female-retention/${userId}`);
-			return data;
+			const response = await adminPost<{ data: any }>(`/admin/v2/retention/female-retention/${userId}`);
+			return response.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -155,8 +155,24 @@ export const appleRefund = {
 			if (params.endDate) queryParams.endDate = params.endDate;
 			if (params.searchTerm) queryParams.transactionId = params.searchTerm;
 
-			const result = await adminGet<{ data: AppleRefundListResponse }>('/admin/v2/apple-refund', queryParams);
-			return result.data;
+			const result = await adminGet<{ data: { items: any[]; total: number; page: number; limit: number; totalPages: number } }>('/admin/v2/apple-refund', queryParams);
+			return {
+				items: (result.data.items ?? []).map((item) => ({
+					...item,
+					originalTransactionId: item.originalTransactionId ?? item.transactionId,
+					purchaseDate: item.purchaseDate ?? item.paidAt,
+					refundDate: item.refundDate ?? item.refundedAt,
+					updatedAt: item.updatedAt ?? item.createdAt,
+				})),
+				meta: {
+					page: result.data.page,
+					limit: result.data.limit,
+					totalCount: result.data.total,
+					totalPages: result.data.totalPages,
+					hasNext: result.data.page < result.data.totalPages,
+					hasPrev: result.data.page > 1,
+				},
+			} satisfies AppleRefundListResponse;
 		} catch (error: any) {
 			throw error;
 		}
@@ -164,8 +180,8 @@ export const appleRefund = {
 
 	getDetail: async (id: string) => {
 		try {
-			const data = await adminGet<any>(`/admin/v2/apple-refund/${id}`);
-			return data;
+			const response = await adminGet<{ data: any }>(`/admin/v2/apple-refund/${id}`);
+			return response.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -173,8 +189,8 @@ export const appleRefund = {
 
 	syncRefundStatus: async (body?: { paymentId: string; reason: string; adminNote?: string }) => {
 		try {
-			const data = await adminPost<any>('/admin/v2/apple-refund/sync', body);
-			return data;
+			const response = await adminPost<{ data: any }>('/admin/v2/apple-refund/sync', body);
+			return response.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -216,10 +232,10 @@ export const dormantLikes = {
 
 	getPendingLikes: async (userId: string) => {
 		try {
-			const data = await adminGet<DormantLikeDetailResponse[]>(
+			const response = await adminGet<{ data: DormantLikeDetailResponse[] }>(
 				`/admin/v2/retention/dormant-likes/${userId}`,
 			);
-			return data;
+			return response.data;
 		} catch (error: any) {
 			throw error;
 		}
@@ -227,10 +243,10 @@ export const dormantLikes = {
 
 	getCooldownStatus: async (userId: string) => {
 		try {
-			const data = await adminGet<CooldownStatusResponse>(
+			const response = await adminGet<{ data: CooldownStatusResponse }>(
 				`/admin/v2/retention/dormant-likes/${userId}/cooldown`,
 			);
-			return data;
+			return response.data;
 		} catch (error: any) {
 			throw error;
 		}

@@ -74,9 +74,9 @@ export default function QuestionTranslationTab() {
         isActive: true,
       });
 
-      setQuestions(response.questions);
-      setTotalPages(response.pagination.totalPages);
-      setTotalCount(response.pagination.total);
+      setQuestions(Array.isArray(response.questions) ? response.questions : []);
+      setTotalPages(response.pagination?.totalPages ?? 1);
+      setTotalCount(response.pagination?.total ?? 0);
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || '질문 목록 조회에 실패했습니다.');
     } finally {
@@ -285,10 +285,10 @@ export default function QuestionTranslationTab() {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Box>
                 <Typography variant="body1">
-                  번역 예상: <strong>{previewData.translations.length}개</strong>
+                번역 예상: <strong>{Array.isArray(previewData.translations) ? previewData.translations.length : 0}개</strong>
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  예상 비용: ${previewData.metadata.estimatedCost.toFixed(4)} | 예상 시간: {previewData.metadata.estimatedTimeMs}ms
+                  예상 비용: ${Number(previewData.metadata?.estimatedCost ?? 0).toFixed(4)} | 예상 시간: {previewData.metadata?.estimatedTimeMs ?? 0}ms
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', gap: 1 }}>
@@ -308,7 +308,7 @@ export default function QuestionTranslationTab() {
           </Paper>
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {previewData.translations.map((item, index) => (
+            {(Array.isArray(previewData.translations) ? previewData.translations : []).map((item, index) => (
               <Card key={item.sourceId} variant="outlined">
                 <CardContent>
                   <Typography variant="subtitle2" color="text.secondary" gutterBottom>
@@ -321,7 +321,7 @@ export default function QuestionTranslationTab() {
                       </Typography>
                       <Typography variant="body1">{item.source.text}</Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                        {item.source.options.join(' / ')}
+                        {(Array.isArray(item.source.options) ? item.source.options : []).join(' / ')}
                       </Typography>
                     </Box>
                     <Divider orientation="vertical" flexItem />
@@ -331,7 +331,7 @@ export default function QuestionTranslationTab() {
                       </Typography>
                       <Typography variant="body1">{item.translated.text}</Typography>
                       <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                        {item.translated.options.join(' / ')}
+                        {(Array.isArray(item.translated.options) ? item.translated.options : []).join(' / ')}
                       </Typography>
                     </Box>
                   </Box>
@@ -352,7 +352,7 @@ export default function QuestionTranslationTab() {
             성공: {resultData.translated}개 / 실패: {resultData.failed}개
           </Typography>
           <Typography variant="body2" color="text.secondary" gutterBottom>
-            실제 비용: ${resultData.metadata.actualCost.toFixed(4)} | 처리 시간: {resultData.metadata.processingTimeMs}ms
+            실제 비용: ${Number(resultData.metadata?.actualCost ?? 0).toFixed(4)} | 처리 시간: {resultData.metadata?.processingTimeMs ?? 0}ms
           </Typography>
 
           {resultData.failed > 0 && (

@@ -50,6 +50,16 @@ const SEVERITY_CONFIG: Record<InsightSeverity, { color: string; bgColor: string;
 	info: { color: '#3b82f6', bgColor: '#eff6ff', icon: <InfoIcon fontSize="small" /> },
 };
 
+function normalizeActionUrl(actionUrl: string): string {
+	switch (actionUrl) {
+		case '/admin/approvals':
+		case '/admin/images':
+			return '/admin/profile-review';
+		default:
+			return actionUrl;
+	}
+}
+
 interface HealthScoreGaugeProps {
 	healthScore: HealthScore;
 }
@@ -152,7 +162,7 @@ function UrgentActions({ actions }: UrgentActionsProps) {
 
 			<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
 				{actions.map((action, index) => (
-					<Link href={action.actionUrl} key={index}>
+					<Link href={normalizeActionUrl(action.actionUrl)} key={index}>
 						<Card
 							sx={{
 								cursor: 'pointer',

@@ -1,5 +1,9 @@
 import { adminGet, adminPost, adminPut } from '@/shared/lib/http/admin-fetch';
 
+interface V2Response<T> {
+	data: T;
+}
+
 export interface VersionUpdate {
 	id: string;
 	version: string;
@@ -28,23 +32,28 @@ export interface UpdateVersionUpdateRequest {
 
 const versionService = {
 	createVersionUpdate: async (data: CreateVersionUpdateRequest): Promise<VersionUpdate> => {
-		return adminPost<VersionUpdate>('/admin/v2/version-updates', data);
+		const response = await adminPost<V2Response<VersionUpdate>>('/admin/v2/version-updates', data);
+		return response.data;
 	},
 
 	getAllVersionUpdates: async (): Promise<VersionUpdate[]> => {
-		return adminGet<VersionUpdate[]>('/admin/v2/version-updates');
+		const response = await adminGet<V2Response<VersionUpdate[]>>('/admin/v2/version-updates');
+		return response.data;
 	},
 
 	getVersionUpdate: async (id: string): Promise<VersionUpdate> => {
-		return adminGet<VersionUpdate>(`/admin/v2/version-updates/${id}`);
+		const response = await adminGet<V2Response<VersionUpdate>>(`/admin/v2/version-updates/${id}`);
+		return response.data;
 	},
 
 	getLatestVersionUpdate: async (): Promise<VersionUpdate> => {
-		return adminGet<VersionUpdate>('/admin/v2/version-updates/latest');
+		const response = await adminGet<V2Response<VersionUpdate>>('/admin/v2/version-updates/latest');
+		return response.data;
 	},
 
-	updateVersionUpdate: async (id: string, data: UpdateVersionUpdateRequest): Promise<{ success: boolean; message: string }> => {
-		return adminPut<{ success: boolean; message: string }>(`/admin/v2/version-updates/${id}`, data);
+	updateVersionUpdate: async (id: string, data: UpdateVersionUpdateRequest): Promise<VersionUpdate> => {
+		const response = await adminPut<V2Response<VersionUpdate>>(`/admin/v2/version-updates/${id}`, data);
+		return response.data;
 	},
 };
 
