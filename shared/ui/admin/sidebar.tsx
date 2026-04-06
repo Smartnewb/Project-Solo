@@ -74,6 +74,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
       { href: '/admin/card-news', label: '카드뉴스 관리' },
       { href: '/admin/banners', label: '배너 관리' },
       { href: '/admin/sometime-articles', label: '썸타임 이야기' },
+      { href: '/admin/utm-management', label: 'UTM 추적' },
     ],
   },
   {
