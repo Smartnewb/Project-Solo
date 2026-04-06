@@ -32,6 +32,7 @@ export { styleReference } from './style-reference';
 export { care } from './care';
 export { keywords } from './keywords';
 export { KEYWORD_CATEGORIES } from './keywords';
+export { ghostAccount } from './ghost-account';
 export type { KeywordCategory, KeywordItem, KeywordsResponse } from './keywords';
 export type {
 	CareTarget,
@@ -113,6 +114,7 @@ import { matchingMonitor } from './matching-monitor';
 import { styleReference } from './style-reference';
 import { care } from './care';
 import { keywords } from './keywords';
+import { ghostAccount } from './ghost-account';
 
 const AdminService = {
 	stats,
@@ -151,6 +153,7 @@ const AdminService = {
 	care,
 	keywords,
 	revenueV2,
+	ghostAccount,
 };
 
 export default AdminService;
