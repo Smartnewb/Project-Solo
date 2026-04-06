@@ -32,6 +32,14 @@ export { styleReference } from './style-reference';
 export { care } from './care';
 export { keywords } from './keywords';
 export { KEYWORD_CATEGORIES } from './keywords';
+export { utm } from './utm';
+export type {
+	UtmLink,
+	UtmDashboardSummary,
+	UtmFunnelStep,
+	UtmChannelRow,
+	UtmCampaignRow,
+} from './utm';
 export type { KeywordCategory, KeywordItem, KeywordsResponse } from './keywords';
 export type {
 	CareTarget,
@@ -113,6 +121,7 @@ import { matchingMonitor } from './matching-monitor';
 import { styleReference } from './style-reference';
 import { care } from './care';
 import { keywords } from './keywords';
+import { utm } from './utm';
 
 const AdminService = {
 	stats,
@@ -151,6 +160,7 @@ const AdminService = {
 	care,
 	keywords,
 	revenueV2,
+	utm,
 };
 
 export default AdminService;
