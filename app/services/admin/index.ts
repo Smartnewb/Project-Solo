@@ -32,6 +32,14 @@ export { styleReference } from './style-reference';
 export { care } from './care';
 export { keywords } from './keywords';
 export { KEYWORD_CATEGORIES } from './keywords';
+export { utm } from './utm';
+export type {
+	UtmLink,
+	UtmDashboardSummary,
+	UtmFunnelStep,
+	UtmChannelRow,
+	UtmCampaignRow,
+} from './utm';
 export { ghostAccount } from './ghost-account';
 export type { KeywordCategory, KeywordItem, KeywordsResponse } from './keywords';
 export type {
@@ -114,6 +122,7 @@ import { matchingMonitor } from './matching-monitor';
 import { styleReference } from './style-reference';
 import { care } from './care';
 import { keywords } from './keywords';
+import { utm } from './utm';
 import { ghostAccount } from './ghost-account';
 
 const AdminService = {
@@ -153,6 +162,7 @@ const AdminService = {
 	care,
 	keywords,
 	revenueV2,
+	utm,
 	ghostAccount,
 };
 
