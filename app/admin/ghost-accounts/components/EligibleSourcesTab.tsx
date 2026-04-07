@@ -12,7 +12,6 @@ import {
 	CircularProgress,
 	Typography,
 	Pagination,
-	Grid,
 	Stack,
 } from '@mui/material';
 import { useGhostAccountEligibleSources, ghostAccountKeys } from '@/app/admin/hooks';
@@ -156,132 +155,140 @@ export default function EligibleSourcesTab() {
 				</Typography>
 			)}
 
-			<Grid container spacing={2}>
+			<Box
+				sx={{
+					columns: { xs: 1, sm: 2, md: 3, lg: 4 },
+					columnGap: '16px',
+				}}
+			>
 				{items.map((source) => {
 					const selected = isSelected(source.userId);
 					const mainImage = source.imageUrls[0];
 
 					return (
-						<Grid item xs={12} sm={6} md={4} lg={3} key={source.userId}>
-							<Card
-								sx={{
-									position: 'relative',
-									border: selected ? '2px solid' : '1px solid',
-									borderColor: selected ? 'primary.main' : 'divider',
-									cursor: 'pointer',
-									transition: 'border-color 0.15s',
-									'&:hover': { borderColor: selected ? 'primary.main' : 'action.hover' },
-								}}
-								onClick={() => handleToggle(source.userId)}
-							>
-								<Box sx={{ position: 'absolute', top: 8, left: 8, zIndex: 1 }}>
-									<Checkbox
-										checked={selected}
-										onChange={() => handleToggle(source.userId)}
-										onClick={(e) => e.stopPropagation()}
-										size="small"
-										sx={{
-											bgcolor: 'rgba(255,255,255,0.85)',
-											borderRadius: '4px',
-											p: '2px',
-										}}
-									/>
-								</Box>
+						<Card
+							key={source.userId}
+							sx={{
+								position: 'relative',
+								breakInside: 'avoid',
+								mb: 2,
+								border: selected ? '2px solid' : '1px solid',
+								borderColor: selected ? 'primary.main' : 'divider',
+								cursor: 'pointer',
+								transition: 'all 0.15s',
+								'&:hover': {
+									borderColor: selected ? 'primary.main' : 'grey.400',
+									boxShadow: 2,
+								},
+							}}
+							onClick={() => handleToggle(source.userId)}
+						>
+							<Box sx={{ position: 'absolute', top: 8, left: 8, zIndex: 1 }}>
+								<Checkbox
+									checked={selected}
+									onChange={() => handleToggle(source.userId)}
+									onClick={(e) => e.stopPropagation()}
+									size="small"
+									sx={{
+										bgcolor: 'rgba(255,255,255,0.85)',
+										borderRadius: '4px',
+										p: '2px',
+									}}
+								/>
+							</Box>
 
-								{mainImage ? (
-									<CardMedia
-										component="img"
-										height={200}
-										image={mainImage}
-										alt={source.name}
-										sx={{ objectFit: 'cover' }}
-									/>
-								) : (
-									<Box
-										sx={{
-											height: 200,
-											bgcolor: 'grey.100',
-											display: 'flex',
-											alignItems: 'center',
-											justifyContent: 'center',
-										}}
-									>
-										<Typography variant="body2" color="text.disabled">
-											이미지 없음
-										</Typography>
-									</Box>
-								)}
-
-								{source.imageUrls.length > 1 && (
-									<Box
-										sx={{
-											position: 'absolute',
-											top: 8,
-											right: 8,
-											bgcolor: 'rgba(0,0,0,0.6)',
-											color: 'white',
-											px: 1,
-											py: 0.25,
-											borderRadius: '4px',
-											fontSize: '0.75rem',
-										}}
-									>
-										+{source.imageUrls.length - 1}
-									</Box>
-								)}
-
-								<CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
-									<Stack direction="row" justifyContent="space-between" alignItems="center">
-										<Typography variant="subtitle2" fontWeight="bold">
-											{source.name}
-										</Typography>
-										<Typography variant="caption" color="text.secondary">
-											{source.age}세
-										</Typography>
-									</Stack>
-
-									<Stack direction="row" gap={0.5} sx={{ mt: 0.5 }} flexWrap="wrap">
-										{source.rank && (
-											<Chip label={source.rank} size="small" variant="outlined" />
-										)}
-										{source.mbti && (
-											<Chip label={source.mbti} size="small" variant="outlined" />
-										)}
-										<Chip
-											label={`${source.daysSinceDeleted}일 경과`}
-											size="small"
-											color="warning"
-											variant="outlined"
-										/>
-									</Stack>
-
-									<Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-										탈퇴일: {safeToLocaleString(source.deletedAt, 'ko-KR', {
-											year: 'numeric',
-											month: '2-digit',
-											day: '2-digit',
-										}, '-')}
+							{mainImage ? (
+								<CardMedia
+									component="img"
+									image={mainImage}
+									alt={source.name}
+									sx={{ width: '100%', display: 'block' }}
+								/>
+							) : (
+								<Box
+									sx={{
+										height: 180,
+										bgcolor: 'grey.100',
+										display: 'flex',
+										alignItems: 'center',
+										justifyContent: 'center',
+									}}
+								>
+									<Typography variant="body2" color="text.disabled">
+										이미지 없음
 									</Typography>
+								</Box>
+							)}
 
-									<Button
-										variant="outlined"
+							{source.imageUrls.length > 1 && (
+								<Box
+									sx={{
+										position: 'absolute',
+										top: 8,
+										right: 8,
+										bgcolor: 'rgba(0,0,0,0.6)',
+										color: 'white',
+										px: 1,
+										py: 0.25,
+										borderRadius: '4px',
+										fontSize: '0.75rem',
+									}}
+								>
+									+{source.imageUrls.length - 1}
+								</Box>
+							)}
+
+							<CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
+								<Stack direction="row" justifyContent="space-between" alignItems="center">
+									<Typography variant="subtitle2" fontWeight="bold">
+										{source.name}
+									</Typography>
+									<Typography variant="caption" color="text.secondary">
+										{source.age}세
+									</Typography>
+								</Stack>
+
+								<Stack direction="row" gap={0.5} sx={{ mt: 0.5 }} flexWrap="wrap">
+									{source.rank && (
+										<Chip label={source.rank} size="small" variant="outlined" />
+									)}
+									{source.mbti && (
+										<Chip label={source.mbti} size="small" variant="outlined" />
+									)}
+									<Chip
+										label={`${source.daysSinceDeleted}일 경과`}
 										size="small"
-										fullWidth
-										sx={{ mt: 1 }}
-										onClick={(e) => {
-											e.stopPropagation();
-											handleCreateSingle(source.userId);
-										}}
-										disabled={bulkProcessing}
-									>
-										Ghost 생성
-									</Button>
-								</CardContent>
-							</Card>
-						</Grid>
+										color="warning"
+										variant="outlined"
+									/>
+								</Stack>
+
+								<Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+									탈퇴일: {safeToLocaleString(source.deletedAt, 'ko-KR', {
+										year: 'numeric',
+										month: '2-digit',
+										day: '2-digit',
+									}, '-')}
+								</Typography>
+
+								<Button
+									variant="outlined"
+									size="small"
+									fullWidth
+									sx={{ mt: 1 }}
+									onClick={(e) => {
+										e.stopPropagation();
+										handleCreateSingle(source.userId);
+									}}
+									disabled={bulkProcessing}
+								>
+									Ghost 생성
+								</Button>
+							</CardContent>
+						</Card>
 					);
 				})}
-			</Grid>
+			</Box>
 
 			{totalPages > 1 && (
 				<Box display="flex" justifyContent="center" sx={{ mt: 3 }}>
