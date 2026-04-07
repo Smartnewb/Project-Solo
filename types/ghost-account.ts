@@ -43,6 +43,7 @@ export interface EligibleSource {
 	introduction: string | null;
 	deletedAt: string;
 	imageCount: number;
+	imageUrls: string[];
 	daysSinceDeleted: number;
 }
 
