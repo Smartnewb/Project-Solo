@@ -40,6 +40,7 @@ export type {
 	UtmChannelRow,
 	UtmCampaignRow,
 } from './utm';
+export { ghostAccount } from './ghost-account';
 export type { KeywordCategory, KeywordItem, KeywordsResponse } from './keywords';
 export type {
 	CareTarget,
@@ -122,6 +123,7 @@ import { styleReference } from './style-reference';
 import { care } from './care';
 import { keywords } from './keywords';
 import { utm } from './utm';
+import { ghostAccount } from './ghost-account';
 
 const AdminService = {
 	stats,
@@ -161,6 +163,7 @@ const AdminService = {
 	keywords,
 	revenueV2,
 	utm,
+	ghostAccount,
 };
 
 export default AdminService;

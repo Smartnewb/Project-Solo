@@ -87,6 +87,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
       { href: '/admin/dormant-likes/logs', label: '처리 이력' },
       { href: '/admin/care', label: '유저 케어' },
       { href: '/admin/care/logs', label: '케어 이력' },
+      { href: '/admin/ghost-accounts', label: 'Ghost 관리' },
     ],
   },
   {

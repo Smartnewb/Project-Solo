@@ -29,3 +29,4 @@ export * from './use-revenue';
 export * from './use-system';
 export * from './forms';
 export * from './use-style-reference';
+export * from './use-ghost-account';
