@@ -125,6 +125,7 @@ export interface ArchetypeTraits {
 	ageRange: { min: number; max: number };
 	mbtiPool: string[];
 	keywordPool: string[];
+	toneHints?: string[];
 }
 
 export interface ArchetypeListItem {
@@ -137,10 +138,14 @@ export interface ArchetypeListItem {
 	updatedAt: string;
 }
 
+/** BE 요청 body의 archetypeFields — 응답의 traits 필드명과 다름에 주의 */
 export interface ArchetypeFields {
+	code?: string;
 	name: string;
 	description?: string;
-	traits: ArchetypeTraits;
+	mbtiOptions?: string[];
+	keywordOptions?: string[];
+	introductionTemplates?: string[];
 }
 
 // ─── Status summary ──────────────────────────────────────

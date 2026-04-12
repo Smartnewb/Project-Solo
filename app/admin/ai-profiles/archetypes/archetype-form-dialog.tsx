@@ -3,11 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ghostInjection } from '@/app/services/admin/ghost-injection';
-import type {
-	ArchetypeListItem,
-	ArchetypeTraits,
-} from '@/app/types/ghost-injection';
-import { AdminApiError } from '@/shared/lib/http/admin-fetch';
+import type { ArchetypeListItem } from '@/app/types/ghost-injection';
+import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
 import { useToast } from '@/shared/ui/admin/toast';
 import { Button } from '@/shared/ui/button';
 import {
@@ -38,57 +35,60 @@ interface ArchetypeFormDialogProps {
 }
 
 interface FormState {
+	code: string;
 	name: string;
 	description: string;
 	minAge: string;
 	maxAge: string;
 	mbtiPool: string[];
 	keywordsRaw: string;
+	toneHintsRaw: string;
 	reason: string;
 }
 
 const EMPTY_STATE: FormState = {
+	code: '',
 	name: '',
 	description: '',
 	minAge: '20',
 	maxAge: '25',
 	mbtiPool: [],
 	keywordsRaw: '',
+	toneHintsRaw: '',
 	reason: '',
 };
 
 function toFormState(source?: ArchetypeListItem | null): FormState {
 	if (!source) return { ...EMPTY_STATE };
 	return {
+		code: '',
 		name: source.name,
 		description: source.description ?? '',
 		minAge: String(source.traits.ageRange.min),
 		maxAge: String(source.traits.ageRange.max),
 		mbtiPool: [...source.traits.mbtiPool],
 		keywordsRaw: source.traits.keywordPool.join(', '),
+		toneHintsRaw: (source.traits.toneHints ?? []).join(', '),
 		reason: '',
 	};
 }
 
-function parseKeywords(raw: string): string[] {
+function parseList(raw: string): string[] {
 	return raw
 		.split(/[\n,]/)
 		.map((item) => item.trim())
 		.filter(Boolean);
 }
 
-function buildTraits(state: FormState): ArchetypeTraits | null {
-	const min = Number(state.minAge);
-	const max = Number(state.maxAge);
-	if (!Number.isFinite(min) || !Number.isFinite(max) || min < 18 || max < min) {
-		return null;
-	}
-	const keywords = parseKeywords(state.keywordsRaw);
-	return {
-		ageRange: { min, max },
-		mbtiPool: state.mbtiPool,
-		keywordPool: keywords,
-	};
+/** name → snake_case code 자동 생성 */
+function toCode(name: string): string {
+	return name
+		.trim()
+		.toLowerCase()
+		.replace(/[가-힣]+/g, (match) => match)
+		.replace(/\s+/g, '_')
+		.replace(/[^a-z0-9가-힣_]/g, '')
+		.slice(0, 64);
 }
 
 export function ArchetypeFormDialog({
@@ -107,16 +107,28 @@ export function ArchetypeFormDialog({
 
 	const mutation = useMutation({
 		mutationFn: () => {
-			const traits = buildTraits(state);
-			if (!traits) throw new Error('나이 범위가 올바르지 않습니다.');
+			const min = Number(state.minAge);
+			const max = Number(state.maxAge);
+			if (!Number.isFinite(min) || !Number.isFinite(max) || min < 18 || max < min) {
+				throw new Error('나이 범위가 올바르지 않습니다.');
+			}
+
+			const keywords = parseList(state.keywordsRaw);
+			const toneHints = parseList(state.toneHintsRaw);
+			const code = isEdit ? undefined : (state.code.trim() || toCode(state.name));
+
 			const body = {
 				archetypeFields: {
+					...(code ? { code } : {}),
 					name: state.name.trim(),
 					description: state.description.trim() || undefined,
-					traits,
+					mbtiOptions: state.mbtiPool,
+					keywordOptions: keywords,
+					...(toneHints.length > 0 ? { introductionTemplates: toneHints } : {}),
 				},
 				reason: state.reason.trim(),
 			};
+
 			if (isEdit && editing) {
 				return ghostInjection.updateArchetype(editing.archetypeId, body);
 			}
@@ -127,23 +139,19 @@ export function ArchetypeFormDialog({
 			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.archetypes() });
 			onOpenChange(false);
 		},
-		onError: (error) => {
-			const msg =
-				error instanceof AdminApiError
-					? ((error.body as { message?: string } | null)?.message ?? error.message)
-					: error instanceof Error
-					  ? error.message
-					  : '요청 실패';
-			toast.error(msg);
-		},
+		onError: (error) => toast.error(getAdminErrorMessage(error)),
 	});
 
-	const traitsValid = buildTraits(state) !== null;
+	const minAge = Number(state.minAge);
+	const maxAge = Number(state.maxAge);
+	const ageValid = Number.isFinite(minAge) && Number.isFinite(maxAge) && minAge >= 18 && maxAge >= minAge;
+
 	const canSubmit =
 		state.name.trim().length >= 2 &&
+		(isEdit || (state.code.trim() || state.name.trim()).length >= 2) &&
 		state.mbtiPool.length > 0 &&
-		parseKeywords(state.keywordsRaw).length > 0 &&
-		traitsValid &&
+		parseList(state.keywordsRaw).length > 0 &&
+		ageValid &&
 		isReasonValid(state.reason) &&
 		!mutation.isPending;
 
@@ -167,7 +175,22 @@ export function ArchetypeFormDialog({
 				</DialogHeader>
 
 				<div className="grid grid-cols-1 gap-4 py-2 md:grid-cols-2">
-					<div className="space-y-1 md:col-span-2">
+					{!isEdit && (
+						<div className="space-y-1">
+							<Label htmlFor="archetype-code">코드 *</Label>
+							<Input
+								id="archetype-code"
+								value={state.code}
+								onChange={(event) => setState({ ...state, code: event.target.value })}
+								placeholder={state.name ? toCode(state.name) : '예: active_student'}
+							/>
+							<p className="text-xs text-slate-500">
+								고유 식별자. 비워두면 이름에서 자동 생성됩니다.
+							</p>
+						</div>
+					)}
+
+					<div className={isEdit ? 'space-y-1 md:col-span-2' : 'space-y-1'}>
 						<Label htmlFor="archetype-name">이름 *</Label>
 						<Input
 							id="archetype-name"
@@ -184,7 +207,7 @@ export function ArchetypeFormDialog({
 							rows={2}
 							value={state.description}
 							onChange={(event) => setState({ ...state, description: event.target.value })}
-							placeholder="이 유형에 대한 간단한 설명 (예: 활발하고 사교적인 성격)"
+							placeholder="이 유형에 대한 간단한 설명. AI 소개글 생성 실패 시 이 텍스트가 대신 사용됩니다."
 						/>
 					</div>
 
@@ -224,8 +247,8 @@ export function ArchetypeFormDialog({
 										onClick={() => toggleMbti(mbti)}
 										className={`rounded-md border px-2 py-1.5 text-xs font-medium transition-colors ${
 											active
-												? 'border-primary bg-primary text-white'
-												: 'border-slate-200 bg-white text-slate-600 hover:border-primary hover:text-primary'
+												? 'border-slate-800 bg-slate-800 text-white'
+												: 'border-slate-200 bg-white text-slate-600 hover:border-slate-400'
 										}`}
 									>
 										{mbti}
@@ -245,7 +268,20 @@ export function ArchetypeFormDialog({
 							placeholder="쉼표 또는 줄바꿈으로 구분 (예: 여행, 카페, 독서)"
 						/>
 						<p className="text-xs text-slate-500">
-							현재 {parseKeywords(state.keywordsRaw).length}개 키워드
+							현재 {parseList(state.keywordsRaw).length}개 키워드 · Ghost 생성 시 이 중 3~5개가 랜덤 선택됩니다.
+						</p>
+					</div>
+
+					<div className="space-y-1 md:col-span-2">
+						<Label htmlFor="archetype-tone">말투 힌트</Label>
+						<Input
+							id="archetype-tone"
+							value={state.toneHintsRaw}
+							onChange={(event) => setState({ ...state, toneHintsRaw: event.target.value })}
+							placeholder="쉼표로 구분 (예: 자연스러운, 친근한, 밝은)"
+						/>
+						<p className="text-xs text-slate-500">
+							AI 소개글 생성 시 말투를 제어합니다. 비워두면 기본값(자연스러운, 친근한)이 사용됩니다.
 						</p>
 					</div>
 
