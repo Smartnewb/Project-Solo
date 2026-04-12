@@ -23,7 +23,7 @@ module.exports = {
           foreground: 'hsl(var(--secondary-foreground))'
         },
         accent: {
-          DEFAULT: 'var(--color-accent)',       // #FD79A8
+          DEFAULT: 'var(--color-accent)',       // slate-100 (hover 배경)
           foreground: 'hsl(var(--accent-foreground))'
         },
         background: 'var(--color-background)',  // #F8FAFD

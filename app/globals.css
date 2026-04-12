@@ -9,7 +9,8 @@
   --color-primary: #6C5CE7;      /* 메인 퍼플 */
   --color-primary-light: #A8A4E3; /* 라이트 퍼플 */
   --color-secondary: #00B894;    /* 민트 */
-  --color-accent: #FD79A8;       /* 핑크 */
+  --color-accent: #f1f5f9;       /* slate-100 (hover 배경용) */
+  --color-accent-pink: #FD79A8;  /* 핑크 (필요 시 직접 참조) */
   --color-background: #F8FAFD;   /* 배경색 */
   --color-text: #2D3436;         /* 텍스트 */
   --color-text-light: #636E72;   /* 보조 텍스트 */
