@@ -28,17 +28,17 @@ function formatPercent(value: number): string {
 export function LtvCapCard({ status }: LtvCapCardProps) {
 	const toast = useToast();
 	const queryClient = useQueryClient();
-	const currentCap = status?.ltvCap.value ?? 0;
-	const currentRate = status?.currentMetrics.currentInjectionRate ?? 0;
+	const currentCap = status?.ltvCap?.value ?? 0;
+	const currentRate = status?.currentMetrics?.currentInjectionRate ?? 0;
 
 	const [percent, setPercent] = useState<number>(() => Math.round(currentCap * 100));
 	const [reason, setReason] = useState('');
 
 	useEffect(() => {
-		if (status?.ltvCap.value !== undefined) {
+		if (status?.ltvCap?.value !== undefined) {
 			setPercent(Math.round(status.ltvCap.value * 100));
 		}
-	}, [status?.ltvCap.value]);
+	}, [status?.ltvCap?.value]);
 
 	const mutation = useMutation({
 		mutationFn: () =>

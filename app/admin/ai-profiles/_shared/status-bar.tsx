@@ -27,11 +27,11 @@ export function AiProfilesStatusBar() {
 		staleTime: 0,
 	});
 
-	const flagValue = data?.featureFlag.value ?? false;
-	const ltvCap = data?.ltvCap.value ?? 0;
-	const injectionRate = data?.currentMetrics.currentInjectionRate ?? 0;
-	const activeGhosts = data?.currentMetrics.activeGhostCount ?? 0;
-	const thisWeekSent = data?.currentMetrics.thisWeekCandidatesSent ?? 0;
+	const flagValue = data?.featureFlag?.value ?? false;
+	const ltvCap = data?.ltvCap?.value ?? 0;
+	const injectionRate = data?.currentMetrics?.currentInjectionRate ?? 0;
+	const activeGhosts = data?.currentMetrics?.activeGhostCount ?? 0;
+	const thisWeekSent = data?.currentMetrics?.thisWeekCandidatesSent ?? 0;
 
 	return (
 		<div className="sticky top-0 z-10 flex flex-wrap items-center gap-6 border-b bg-slate-50 px-6 py-3 text-sm">

@@ -33,7 +33,7 @@ export function FeatureFlagCard({ status }: FeatureFlagCardProps) {
 	const queryClient = useQueryClient();
 	const [reason, setReason] = useState('');
 
-	const current = status?.featureFlag.value ?? false;
+	const current = status?.featureFlag?.value ?? false;
 
 	const mutation = useMutation({
 		mutationFn: ({ value, reason }: { value: boolean; reason: string }) =>
@@ -94,8 +94,8 @@ export function FeatureFlagCard({ status }: FeatureFlagCardProps) {
 			</CardHeader>
 			<CardContent className="space-y-4">
 				<div className="text-xs text-slate-500">
-					마지막 변경: {formatDateTime(status?.featureFlag.updatedAt ?? null)}
-					{status?.featureFlag.updatedBy ? ` · ${status.featureFlag.updatedBy}` : ''}
+					마지막 변경: {formatDateTime(status?.featureFlag?.updatedAt ?? null)}
+					{status?.featureFlag?.updatedBy ? ` · ${status.featureFlag.updatedBy}` : ''}
 				</div>
 
 				<ReasonInput value={reason} onChange={setReason} minLength={10} />

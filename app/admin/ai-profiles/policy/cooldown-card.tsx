@@ -20,7 +20,7 @@ interface CooldownCardProps {
 export function CooldownCard({ status }: CooldownCardProps) {
 	const toast = useToast();
 	const queryClient = useQueryClient();
-	const current = status?.cooldown.cooldownCount ?? 0;
+	const current = status?.cooldown?.cooldownCount ?? 0;
 	const [cooldown, setCooldown] = useState<string>(String(current));
 	const [reason, setReason] = useState('');
 
