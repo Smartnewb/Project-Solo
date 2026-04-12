@@ -246,8 +246,8 @@ export default function UtmDashboard() {
                 tick={{ fontSize: 13 }}
               />
               <RechartsTooltip
-                formatter={(value: number, _name: string, props: { payload: UtmFunnelStep }) => [
-                  `${value.toLocaleString()} (${props.payload.rate.toFixed(1)}%)`,
+                formatter={(value: number, _name: string, props: { payload?: UtmFunnelStep }) => [
+                  `${value.toLocaleString()} (${props.payload?.rate.toFixed(1) ?? '—'}%)`,
                   '수',
                 ]}
               />
