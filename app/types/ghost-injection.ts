@@ -68,6 +68,10 @@ export interface GhostPhotoItem {
 
 export interface GhostDetail extends GhostListItem {
 	introduction: string | null;
+	/** BE profileSnapshot.introductionData.metadata.source — 'ai' | 'template' | null */
+	introductionSource?: 'ai' | 'template' | null;
+	/** 프로필 생성 시 선택된 키워드 */
+	keywords?: string[] | null;
 	photos: GhostPhotoItem[];
 	exposureStats: GhostExposureStats;
 	recentAuditEvents: GhostAuditEventItem[];
@@ -208,6 +212,17 @@ export interface CreateGhostBody {
 	universityId: string;
 	departmentId: string;
 	reason: string;
+}
+
+/** POST /create 응답 — 생성된 Ghost 요약 */
+export interface CreateGhostResult {
+	ghostAccountId: string;
+	name: string;
+	age: number;
+	mbti: string | null;
+	introduction: string | null;
+	keywords: string[] | null;
+	introductionSource: 'ai' | 'template' | null;
 }
 
 export interface UpdateGhostFields {

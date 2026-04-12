@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, ChevronsUpDown, X } from 'lucide-react';
+import { Check, ChevronsUpDown, Sparkles, X } from 'lucide-react';
 import { universities } from '@/app/services/admin';
 import { ghostInjection } from '@/app/services/admin/ghost-injection';
+import type { CreateGhostResult } from '@/app/types/ghost-injection';
 import { useDebounce } from '@/shared/hooks';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
 import { useToast } from '@/shared/ui/admin/toast';
@@ -55,6 +56,7 @@ export function GhostCreateDialog({ open, onOpenChange }: GhostCreateDialogProps
 	const debouncedUniversitySearch = useDebounce(universitySearch, 300);
 	const [universityPopoverOpen, setUniversityPopoverOpen] = useState(false);
 	const [departmentPopoverOpen, setDepartmentPopoverOpen] = useState(false);
+	const [createdResult, setCreatedResult] = useState<CreateGhostResult | null>(null);
 
 	useEffect(() => {
 		if (open) {
@@ -64,6 +66,7 @@ export function GhostCreateDialog({ open, onOpenChange }: GhostCreateDialogProps
 			setPhaseSchoolIds([]);
 			setReason('');
 			setUniversitySearch('');
+			setCreatedResult(null);
 		}
 	}, [open]);
 
@@ -128,11 +131,11 @@ export function GhostCreateDialog({ open, onOpenChange }: GhostCreateDialogProps
 				departmentId: department!.id,
 				reason: reason.trim(),
 			}),
-		onSuccess: () => {
+		onSuccess: (data) => {
 			toast.success('가상 프로필이 생성되었습니다.');
 			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.ghosts() });
 			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.status() });
-			onOpenChange(false);
+			setCreatedResult(data ?? null);
 		},
 		onError: (error) => toast.error(getAdminErrorMessage(error)),
 	});
@@ -151,6 +154,78 @@ export function GhostCreateDialog({ open, onOpenChange }: GhostCreateDialogProps
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-xl">
+				{createdResult ? (
+					<>
+						<DialogHeader>
+							<DialogTitle>가상 프로필이 생성되었습니다</DialogTitle>
+							<DialogDescription>
+								프로필 유형 특성에 맞춰 아래 프로필이 자동 생성되었습니다. 비활성 상태이며, 활성화 후 매칭에 투입됩니다.
+							</DialogDescription>
+						</DialogHeader>
+
+						<div className="space-y-4 py-2">
+							<div className="rounded-lg border bg-slate-50 p-4 space-y-3">
+								<div className="grid grid-cols-3 gap-3 text-sm">
+									<div>
+										<div className="text-xs text-slate-500">이름</div>
+										<div className="font-semibold text-slate-800">{createdResult.name}</div>
+									</div>
+									<div>
+										<div className="text-xs text-slate-500">나이</div>
+										<div className="font-semibold text-slate-800">만 {createdResult.age}세</div>
+									</div>
+									<div>
+										<div className="text-xs text-slate-500">MBTI</div>
+										<div className="font-semibold text-slate-800">{createdResult.mbti ?? '—'}</div>
+									</div>
+								</div>
+
+								{createdResult.introduction && (
+									<div>
+										<div className="flex items-center gap-2 mb-1">
+											<span className="text-xs text-slate-500">자기소개</span>
+											{createdResult.introductionSource === 'ai' && (
+												<Badge variant="outline" className="border-violet-200 bg-violet-50 text-[10px] text-violet-700">
+													<Sparkles className="mr-0.5 h-2.5 w-2.5" /> AI 생성
+												</Badge>
+											)}
+										</div>
+										<p className="text-sm text-slate-700 whitespace-pre-line rounded-md bg-white border px-3 py-2">
+											{createdResult.introduction}
+										</p>
+									</div>
+								)}
+
+								{createdResult.keywords && createdResult.keywords.length > 0 && (
+									<div>
+										<div className="text-xs text-slate-500 mb-1">키워드</div>
+										<div className="flex flex-wrap gap-1.5">
+											{createdResult.keywords.map((kw) => (
+												<Badge key={kw} variant="outline" className="text-xs">
+													{kw}
+												</Badge>
+											))}
+										</div>
+									</div>
+								)}
+							</div>
+
+							<p className="text-xs text-slate-500">
+								ID: {createdResult.ghostAccountId}
+							</p>
+						</div>
+
+						<DialogFooter>
+							<Button variant="outline" onClick={() => { setCreatedResult(null); }}>
+								추가 생성
+							</Button>
+							<Button onClick={() => onOpenChange(false)}>
+								닫기
+							</Button>
+						</DialogFooter>
+					</>
+				) : (
+					<>
 				<DialogHeader>
 					<DialogTitle>가상 프로필 생성</DialogTitle>
 					<DialogDescription>
@@ -330,6 +405,8 @@ export function GhostCreateDialog({ open, onOpenChange }: GhostCreateDialogProps
 						{mutation.isPending ? '생성 중…' : '생성'}
 					</Button>
 				</DialogFooter>
+					</>
+				)}
 			</DialogContent>
 		</Dialog>
 	);

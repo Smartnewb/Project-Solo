@@ -7,6 +7,7 @@ import type { GhostDetail, UpdateGhostFields } from '@/app/types/ghost-injection
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
 import { useToast } from '@/shared/ui/admin/toast';
 import { Alert, AlertDescription } from '@/shared/ui/alert';
+import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
@@ -211,6 +212,19 @@ export function GhostDetailDrawer({ ghostAccountId, onClose }: GhostDetailDrawer
 								</div>
 							</section>
 
+							{detail.keywords && detail.keywords.length > 0 && (
+								<section className="space-y-2">
+									<h3 className="text-sm font-semibold text-slate-900">키워드</h3>
+									<div className="flex flex-wrap gap-1.5">
+										{detail.keywords.map((kw) => (
+											<Badge key={kw} variant="outline" className="text-xs">
+												{kw}
+											</Badge>
+										))}
+									</div>
+								</section>
+							)}
+
 							<section className="space-y-3">
 								<h3 className="text-sm font-semibold text-slate-900">프로필 편집</h3>
 								<div className="grid grid-cols-2 gap-3">
@@ -250,9 +264,16 @@ export function GhostDetailDrawer({ ghostAccountId, onClose }: GhostDetailDrawer
 										/>
 									</div>
 									<div className="col-span-2 space-y-1">
+										<div className="flex items-center gap-2">
 										<Label htmlFor="ghost-intro" className="text-xs">
 											자기소개
 										</Label>
+										{detail.introductionSource === 'ai' && (
+											<Badge variant="outline" className="border-violet-200 bg-violet-50 text-[10px] text-violet-700">
+												AI 생성
+											</Badge>
+										)}
+									</div>
 										<Textarea
 											id="ghost-intro"
 											rows={3}

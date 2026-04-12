@@ -14,6 +14,7 @@ import type {
 	CandidateListItem,
 	CandidateListQuery,
 	CreateGhostBody,
+	CreateGhostResult,
 	GenerateWeeklyBody,
 	GenerateWeeklyResult,
 	GhostDetail,
@@ -80,7 +81,8 @@ export const ghostInjection = {
 	getStatus: () => adminGet<GhostInjectionStatus>(`${BASE}/status`),
 
 	// ─── Ghost 관리 (A1–A5) ────────────────────────────────
-	createGhost: (body: CreateGhostBody) => adminPost(`${BASE}/create`, body),
+	createGhost: (body: CreateGhostBody) =>
+		adminPost<CreateGhostResult>(`${BASE}/create`, body),
 
 	updateGhost: (ghostAccountId: string, body: UpdateGhostBody) =>
 		adminPatch(`${BASE}/${ghostAccountId}`, body),
