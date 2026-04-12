@@ -246,7 +246,7 @@ export function GhostBatchCreateDialog({ open, onOpenChange }: GhostBatchCreateD
 
 	return (
 		<Dialog open={open} onOpenChange={(v) => { if (!isSubmitting) onOpenChange(v); }}>
-			<DialogContent className="flex h-[90vh] max-w-4xl flex-col p-0">
+			<DialogContent className="flex h-[90vh] max-w-6xl flex-col p-0">
 				{phase === 'result' ? (
 					/* ─── Result phase ─── */
 					<div className="flex flex-1 flex-col overflow-hidden">
@@ -494,6 +494,24 @@ export function GhostBatchCreateDialog({ open, onOpenChange }: GhostBatchCreateD
 										</Button>
 									</div>
 
+									{archetypesQuery.isLoading && (
+										<div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+											프로필 유형 불러오는 중…
+										</div>
+									)}
+
+									{archetypesQuery.isError && (
+										<div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+											프로필 유형을 불러오지 못했습니다. 네트워크 또는 BE 상태를 확인하세요.
+										</div>
+									)}
+
+									{!archetypesQuery.isLoading && !archetypesQuery.isError && archetypeItems.length === 0 && (
+										<div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+											등록된 프로필 유형이 없습니다. <strong>프로필 유형 관리</strong> 페이지에서 먼저 추가하세요.
+										</div>
+									)}
+
 									<div className="space-y-2">
 										{rows.map((row) => (
 											<div
@@ -506,7 +524,7 @@ export function GhostBatchCreateDialog({ open, onOpenChange }: GhostBatchCreateD
 														onValueChange={(v) => updateRow(row.id, { archetypeId: v })}
 													>
 														<SelectTrigger className="h-9">
-															<SelectValue placeholder="프로필 유형 선택" />
+															<SelectValue placeholder={archetypeItems.length === 0 ? '유형 없음' : '프로필 유형 선택'} />
 														</SelectTrigger>
 														<SelectContent>
 															{archetypeItems.map((item) => (
