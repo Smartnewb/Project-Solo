@@ -2,7 +2,14 @@
 export { stats, kpiReport } from './dashboard';
 export { userAppearance, deletedFemales, userEngagement } from './users';
 export { matching, forceMatching } from './matching';
-export { pushNotifications, aiChat, momentQuestions } from './messaging';
+export { pushNotifications, pushNotificationCatalog, aiChat, momentQuestions } from './messaging';
+export type {
+	PushNotificationCatalogResponse,
+	PushNotificationItem,
+	PushNotificationTemplate,
+	PushNotificationVariant,
+	FreshmenMilestone,
+} from './messaging';
 export {
 	backgroundPresets,
 	cardNews,
@@ -95,7 +102,7 @@ export type {
 import { stats, kpiReport } from './dashboard';
 import { userAppearance, deletedFemales, userEngagement } from './users';
 import { matching, forceMatching } from './matching';
-import { pushNotifications, aiChat, momentQuestions } from './messaging';
+import { pushNotifications, pushNotificationCatalog, aiChat, momentQuestions } from './messaging';
 import {
 	backgroundPresets,
 	cardNews,
@@ -134,6 +141,7 @@ const AdminService = {
 	profileImages,
 	userReview,
 	pushNotifications,
+	pushNotificationCatalog,
 	aiChat,
 	backgroundPresets,
 	cardNews,

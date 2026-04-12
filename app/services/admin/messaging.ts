@@ -12,6 +12,54 @@ import type {
 	UpdateQuestionRequest,
 } from '@/types/moment';
 
+export const pushNotificationCatalog = {
+	getCatalog: async (locale: 'ko' | 'ja' | 'all' = 'all') => {
+		const params: Record<string, string> = {};
+		if (locale !== 'all') params.locale = locale;
+		const result = await adminGet<{ data: PushNotificationCatalogResponse }>(
+			'/admin/v2/push-notifications/catalog',
+			params,
+		);
+		return result.data;
+	},
+};
+
+export interface PushNotificationTemplate {
+	title: string;
+	body: string;
+}
+
+export interface PushNotificationVariant {
+	condition: string;
+	templates: Record<string, PushNotificationTemplate>;
+}
+
+export interface PushNotificationItem {
+	eventType: string;
+	category: string;
+	dynamic: boolean;
+	sampleParams: Record<string, any>;
+	templates: Record<string, PushNotificationTemplate>;
+	variants?: PushNotificationVariant[];
+}
+
+export interface FreshmenMilestone {
+	milestone: number;
+	title: string;
+	templates: Record<string, { body: string }>;
+}
+
+export interface PushNotificationCatalogResponse {
+	notifications: PushNotificationItem[];
+	freshmenMilestones: FreshmenMilestone[];
+	meta: {
+		totalEventTypes: number;
+		locales: string[];
+		categories: string[];
+		sources: string[];
+	};
+}
+
 export const pushNotifications = {
 	filterUsers: async (
 		filters: {

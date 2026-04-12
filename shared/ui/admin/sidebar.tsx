@@ -90,6 +90,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
     items: [
       { href: '/admin/sms', label: 'SMS 관리' },
       { href: '/admin/push-notifications', label: '푸시 알림 관리' },
+      { href: '/admin/push-notifications/catalog', label: '알림 구조도' },
       { href: '/admin/fcm-tokens', label: 'FCM 토큰 현황' },
       { href: '/admin/card-news', label: '카드뉴스 관리' },
       { href: '/admin/banners', label: '배너 관리' },
@@ -114,7 +115,6 @@ export const NAV_CATEGORIES: NavCategory[] = [
     label: '가상 매칭',
     items: [
       { href: '/admin/ai-profiles/ghosts', label: '가상 프로필' },
-      { href: '/admin/ai-profiles/archetypes', label: '프로필 유형' },
       { href: '/admin/ai-profiles/candidates', label: '매칭 후보' },
       { href: '/admin/ai-profiles/policy', label: '노출 정책' },
       { href: '/admin/ai-profiles/schools', label: '학교 설정' },
