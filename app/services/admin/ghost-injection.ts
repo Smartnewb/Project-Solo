@@ -34,6 +34,8 @@ import type {
 	ToggleGhostStatusBody,
 	UpdateGhostBody,
 	UpsertArchetypeBody,
+	BackfillProfilesBody,
+	BackfillProfilesResult,
 } from '@/app/types/ghost-injection';
 
 const BASE = '/admin/ghost-injection';
@@ -134,6 +136,10 @@ export const ghostInjection = {
 
 	updateArchetype: (archetypeId: string, body: UpsertArchetypeBody) =>
 		adminPut(`${BASE}/archetypes/${archetypeId}`, body),
+
+	// ─── 백필 ──────────────────────────────────────────────
+	backfillProfiles: (body: BackfillProfilesBody) =>
+		adminPost<BackfillProfilesResult>(`${BASE}/backfill-profiles`, body),
 };
 
 export type GhostInjectionService = typeof ghostInjection;

@@ -12,9 +12,9 @@ import type {
 import { Alert, AlertDescription } from '@/shared/ui/alert';
 import { Button } from '@/shared/ui/button';
 import { ghostInjectionKeys } from '../_shared/query-keys';
+import { GhostBatchCreateDialog } from './ghost-batch-create-dialog';
 import { GhostBulkActions } from './ghost-bulk-actions';
 import { GhostCardView } from './ghost-card-view';
-import { GhostCreateDialog } from './ghost-create-dialog';
 import { GhostDetailDrawer } from './ghost-detail-drawer';
 import { GhostFilters } from './ghost-filters';
 import { GhostStatusDialog } from './ghost-status-dialog';
@@ -183,7 +183,7 @@ export function GhostsClient() {
 				</div>
 			</div>
 
-			<GhostCreateDialog open={createOpen} onOpenChange={setCreateOpen} />
+			<GhostBatchCreateDialog open={createOpen} onOpenChange={setCreateOpen} />
 			<GhostDetailDrawer
 				key={selectedGhostId ?? 'closed'}
 				ghostAccountId={selectedGhostId}

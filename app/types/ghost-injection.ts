@@ -308,3 +308,22 @@ export interface UpsertArchetypeBody {
 	archetypeFields: ArchetypeFields;
 	reason: string;
 }
+
+// ─── Backfill ───────────────────────────────────────────
+
+export interface BackfillProfilesBody {
+	reason: string;
+	archetypeId?: string;
+}
+
+export interface BackfillProfilesResult {
+	totalFound: number;
+	updated: number;
+	failed: number;
+	details: Array<{
+		ghostAccountId: string;
+		ghostUserId: string;
+		status: 'updated' | 'failed';
+		error?: string;
+	}>;
+}

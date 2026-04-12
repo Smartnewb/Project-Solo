@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
+import { Plus, RefreshCw } from 'lucide-react';
 import { ghostInjection } from '@/app/services/admin/ghost-injection';
 import type { ArchetypeListItem } from '@/app/types/ghost-injection';
 import { Alert, AlertDescription } from '@/shared/ui/alert';
@@ -18,6 +18,7 @@ import {
 } from '@/shared/ui/table';
 import { ghostInjectionKeys } from '../_shared/query-keys';
 import { ArchetypeFormDialog } from './archetype-form-dialog';
+import { BackfillDialog } from './backfill-dialog';
 
 function formatDate(value: string): string {
 	try {
@@ -34,6 +35,8 @@ function formatDate(value: string): string {
 export function ArchetypesClient() {
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [editing, setEditing] = useState<ArchetypeListItem | null>(null);
+	const [backfillOpen, setBackfillOpen] = useState(false);
+	const [backfillTarget, setBackfillTarget] = useState<ArchetypeListItem | null>(null);
 
 	const { data, isLoading, isError, error } = useQuery({
 		queryKey: ghostInjectionKeys.archetypes(),
@@ -61,9 +64,14 @@ export function ArchetypesClient() {
 						가상 프로필의 유형을 정의합니다. 나이 범위, MBTI, 관심사 키워드를 설정하면 생성 시 자동으로 랜덤 프로필이 만들어집니다.
 					</p>
 				</div>
-				<Button onClick={handleCreate}>
-					<Plus className="mr-2 h-4 w-4" /> 유형 추가
-				</Button>
+				<div className="flex items-center gap-2">
+					<Button variant="outline" onClick={() => { setBackfillTarget(null); setBackfillOpen(true); }}>
+						<RefreshCw className="mr-2 h-4 w-4" /> 전체 프로필 재생성
+					</Button>
+					<Button onClick={handleCreate}>
+						<Plus className="mr-2 h-4 w-4" /> 유형 추가
+					</Button>
+				</div>
 			</header>
 
 			{isError ? (
@@ -143,9 +151,20 @@ export function ArchetypesClient() {
 										{formatDate(archetype.updatedAt)}
 									</TableCell>
 									<TableCell>
-										<Button variant="outline" size="sm" onClick={() => handleEdit(archetype)}>
-											수정
-										</Button>
+										<div className="flex items-center gap-1">
+											<Button
+												variant="ghost"
+												size="icon"
+												className="h-8 w-8"
+												title="이 유형의 프로필 재생성"
+												onClick={() => { setBackfillTarget(archetype); setBackfillOpen(true); }}
+											>
+												<RefreshCw className="h-3.5 w-3.5" />
+											</Button>
+											<Button variant="outline" size="sm" onClick={() => handleEdit(archetype)}>
+												수정
+											</Button>
+										</div>
 									</TableCell>
 								</TableRow>
 							))
@@ -155,6 +174,12 @@ export function ArchetypesClient() {
 			</div>
 
 			<ArchetypeFormDialog open={dialogOpen} onOpenChange={setDialogOpen} editing={editing} />
+			<BackfillDialog
+				open={backfillOpen}
+				onOpenChange={setBackfillOpen}
+				archetypeId={backfillTarget?.archetypeId}
+				archetypeName={backfillTarget?.name}
+			/>
 		</section>
 	);
 }
