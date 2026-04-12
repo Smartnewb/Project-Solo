@@ -2,16 +2,36 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { ChevronDown } from 'lucide-react';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/shared/ui/collapsible';
 
-interface NavItem {
+interface NavLink {
   href: string;
   label: string;
 }
+
+interface NavExpandable {
+  id: string;
+  label: string;
+  children: NavLink[];
+  defaultOpen?: boolean;
+}
+
+type NavItem = NavLink | NavExpandable;
 
 interface NavCategory {
   icon: string;
   label: string;
   items: NavItem[];
+}
+
+function isExpandable(item: NavItem): item is NavExpandable {
+  return 'children' in item;
 }
 
 export const NAV_CATEGORIES: NavCategory[] = [
@@ -87,7 +107,25 @@ export const NAV_CATEGORIES: NavCategory[] = [
       { href: '/admin/dormant-likes/logs', label: '처리 이력' },
       { href: '/admin/care', label: '유저 케어' },
       { href: '/admin/care/logs', label: '케어 이력' },
-      { href: '/admin/ghost-accounts', label: 'Ghost 관리' },
+    ],
+  },
+  {
+    icon: '🤖',
+    label: 'AI Profiles',
+    items: [
+      {
+        id: 'ai-profiles',
+        label: 'Ghost Injection',
+        defaultOpen: true,
+        children: [
+          { href: '/admin/ai-profiles/ghosts', label: 'Ghost 관리' },
+          { href: '/admin/ai-profiles/candidates', label: '후보 관리' },
+          { href: '/admin/ai-profiles/policy', label: '정책 설정' },
+          { href: '/admin/ai-profiles/schools', label: '학교 관리' },
+          { href: '/admin/ai-profiles/archetypes', label: '아키타입' },
+          { href: '/admin/ai-profiles/rollback', label: '비상 롤백' },
+        ],
+      },
     ],
   },
   {
@@ -101,6 +139,84 @@ export const NAV_CATEGORIES: NavCategory[] = [
   },
 ];
 
+function useExpandableState(
+  id: string,
+  defaultOpen: boolean,
+  forceOpen: boolean,
+): [boolean, (next: boolean) => void] {
+  const storageKey = `admin-sidebar.${id}.open`;
+  const [open, setOpen] = useState<boolean>(defaultOpen);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const stored = window.localStorage.getItem(storageKey);
+      if (stored !== null) {
+        setOpen(stored === '1');
+      }
+    } catch {
+      // ignore quota/access errors
+    }
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (forceOpen) setOpen(true);
+  }, [forceOpen]);
+
+  const update = (next: boolean) => {
+    setOpen(next);
+    try {
+      window.localStorage.setItem(storageKey, next ? '1' : '0');
+    } catch {
+      // ignore
+    }
+  };
+
+  return [open, update];
+}
+
+interface ExpandableGroupProps {
+  item: NavExpandable;
+  pathname: string;
+  onNavigate?: () => void;
+}
+
+function ExpandableGroup({ item, pathname, onNavigate }: ExpandableGroupProps) {
+  const childHrefs = item.children.map((c) => c.href);
+  const containsActive = childHrefs.some((href) => pathname === href || pathname.startsWith(`${href}/`));
+  const [open, setOpen] = useExpandableState(item.id, item.defaultOpen ?? false, containsActive);
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger className="flex w-full items-center justify-between px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50">
+        <span>{item.label}</span>
+        <ChevronDown
+          className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`}
+        />
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <ul>
+          {item.children.map((child) => (
+            <li key={child.href}>
+              <Link
+                href={child.href}
+                onClick={onNavigate}
+                className={`block pl-8 pr-4 py-2.5 text-sm transition-colors ${
+                  pathname === child.href
+                    ? 'bg-primary text-white'
+                    : 'text-gray-600 hover:bg-primary hover:text-white'
+                }`}
+              >
+                {child.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
 export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
 
@@ -112,21 +228,34 @@ export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
             {category.icon} {category.label}
           </div>
           <ul>
-            {category.items.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  onClick={onNavigate}
-                  className={`block px-4 py-2.5 text-sm transition-colors ${
-                    pathname === item.href
-                      ? 'bg-primary text-white'
-                      : 'text-gray-600 hover:bg-primary hover:text-white'
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              </li>
-            ))}
+            {category.items.map((item) => {
+              if (isExpandable(item)) {
+                return (
+                  <li key={item.id}>
+                    <ExpandableGroup
+                      item={item}
+                      pathname={pathname ?? ''}
+                      onNavigate={onNavigate}
+                    />
+                  </li>
+                );
+              }
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    onClick={onNavigate}
+                    className={`block px-4 py-2.5 text-sm transition-colors ${
+                      pathname === item.href
+                        ? 'bg-primary text-white'
+                        : 'text-gray-600 hover:bg-primary hover:text-white'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </div>
       ))}

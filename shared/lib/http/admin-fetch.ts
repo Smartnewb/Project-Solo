@@ -22,6 +22,14 @@ export class AdminApiError extends Error {
   }
 }
 
+export function getAdminErrorMessage(error: unknown, fallback = '요청 실패'): string {
+  if (error instanceof AdminApiError) {
+    return (error.body as { message?: string } | null)?.message ?? error.message;
+  }
+  if (error instanceof Error) return error.message;
+  return fallback;
+}
+
 async function parseJsonBody<T>(res: Response): Promise<T> {
   const text = await res.text();
 
@@ -110,6 +118,6 @@ export function adminPatch<T>(path: string, body?: unknown): Promise<T> {
   return request<T>('PATCH', path, { body });
 }
 
-export function adminDelete<T>(path: string): Promise<T> {
-  return request<T>('DELETE', path);
+export function adminDelete<T>(path: string, body?: unknown): Promise<T> {
+  return request<T>('DELETE', path, { body });
 }

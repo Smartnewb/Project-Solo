@@ -12,14 +12,29 @@ interface FlatItem {
 }
 
 function flattenNav(): FlatItem[] {
-  return NAV_CATEGORIES.flatMap((cat) =>
-    cat.items.map((item) => ({
-      href: item.href,
-      label: item.label,
-      category: cat.label,
-      icon: cat.icon,
-    })),
-  );
+  const flat: FlatItem[] = [];
+  for (const cat of NAV_CATEGORIES) {
+    for (const item of cat.items) {
+      if ('children' in item) {
+        for (const child of item.children) {
+          flat.push({
+            href: child.href,
+            label: child.label,
+            category: cat.label,
+            icon: cat.icon,
+          });
+        }
+      } else {
+        flat.push({
+          href: item.href,
+          label: item.label,
+          category: cat.label,
+          icon: cat.icon,
+        });
+      }
+    }
+  }
+  return flat;
 }
 
 export function CommandSearch() {
