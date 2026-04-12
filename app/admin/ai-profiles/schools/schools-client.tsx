@@ -66,7 +66,7 @@ function BlacklistPanel() {
 
 	const handleRemove = async (entry: BlacklistEntryItem) => {
 		const ok = await confirm({
-			title: '블랙리스트 제거',
+			title: '차단 해제',
 			message: `${entry.schoolName}을(를) 차단 목록에서 제거하시겠어요? 해당 학교에 가상 프로필 노출이 다시 가능해집니다.`,
 			confirmText: '제거',
 			severity: 'warning',
@@ -87,7 +87,7 @@ function BlacklistPanel() {
 					신고율이 높거나 문제가 있는 학교를 차단합니다. 차단된 학교에는 가상 프로필이 노출되지 않습니다.
 				</p>
 				<Button onClick={() => setDialogOpen(true)}>
-					<Plus className="mr-2 h-4 w-4" /> 블랙리스트 추가
+					<Plus className="mr-2 h-4 w-4" /> 차단 학교 추가
 				</Button>
 			</div>
 

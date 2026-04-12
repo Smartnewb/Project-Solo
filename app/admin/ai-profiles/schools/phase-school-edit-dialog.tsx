@@ -1,9 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { universities } from '@/app/services/admin';
 import { ghostInjection } from '@/app/services/admin/ghost-injection';
 import type { GhostPhaseBucket, PhaseSchoolItem } from '@/app/types/ghost-injection';
+import { useDebounce } from '@/shared/hooks';
 import { AdminApiError } from '@/shared/lib/http/admin-fetch';
 import { useToast } from '@/shared/ui/admin/toast';
 import { Button } from '@/shared/ui/button';
@@ -17,6 +20,7 @@ import {
 } from '@/shared/ui/dialog';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover';
 import {
 	Select,
 	SelectContent,
@@ -24,14 +28,20 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/shared/ui/select';
+import { cn } from '@/shared/utils';
 import { ReasonInput, isReasonValid } from '../_shared/reason-input';
 import { ghostInjectionKeys } from '../_shared/query-keys';
 
 interface PhaseSchoolEditDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	/** null이면 신규 등록 모드(schoolId 입력 필요) */
+	/** null이면 신규 등록 모드 */
 	target: PhaseSchoolItem | null;
+}
+
+interface SchoolOption {
+	id: string;
+	name: string;
 }
 
 export function PhaseSchoolEditDialog({
@@ -42,33 +52,54 @@ export function PhaseSchoolEditDialog({
 	const toast = useToast();
 	const queryClient = useQueryClient();
 	const isCreate = target === null;
-	const [schoolId, setSchoolId] = useState('');
-	const [schoolName, setSchoolName] = useState('');
+
+	const [school, setSchool] = useState<SchoolOption | null>(null);
 	const [bucket, setBucket] = useState<GhostPhaseBucket>('TREATMENT');
 	const [phase, setPhase] = useState('1');
 	const [reason, setReason] = useState('');
 
+	const [schoolSearch, setSchoolSearch] = useState('');
+	const debouncedSearch = useDebounce(schoolSearch, 300);
+	const [popoverOpen, setPopoverOpen] = useState(false);
+
 	useEffect(() => {
 		if (!open) return;
 		if (target) {
-			setSchoolId(target.schoolId);
-			setSchoolName(target.schoolName);
+			setSchool({ id: target.schoolId, name: target.schoolName });
 			setBucket(target.bucket);
 			setPhase(String(target.phase));
 		} else {
-			setSchoolId('');
-			setSchoolName('');
+			setSchool(null);
 			setBucket('TREATMENT');
 			setPhase('1');
 		}
 		setReason('');
+		setSchoolSearch('');
 	}, [open, target]);
+
+	const schoolsQuery = useQuery({
+		queryKey: ['admin', 'universities', 'list', debouncedSearch],
+		queryFn: async () => {
+			const result = await universities.getList({
+				page: 1,
+				limit: 30,
+				name: debouncedSearch || undefined,
+				isActive: true,
+			});
+			return result as { items: Array<{ id: string; name: string }> };
+		},
+		enabled: open && isCreate && popoverOpen,
+		staleTime: 5 * 60 * 1000,
+	});
+
+	const schoolItems = schoolsQuery.data?.items ?? [];
 
 	const mutation = useMutation({
 		mutationFn: () => {
+			if (!school) throw new Error('학교를 선택해주세요.');
 			const phaseNum = Number(phase);
-			return ghostInjection.setPhaseSchool(schoolId.trim(), {
-				schoolName: schoolName.trim(),
+			return ghostInjection.setPhaseSchool(school.id, {
+				schoolName: school.name,
 				bucket,
 				phase: phaseNum,
 				reason: reason.trim(),
@@ -92,8 +123,7 @@ export function PhaseSchoolEditDialog({
 
 	const phaseNum = Number(phase);
 	const canSubmit =
-		schoolId.trim().length > 0 &&
-		schoolName.trim().length >= 2 &&
+		Boolean(school) &&
 		Number.isFinite(phaseNum) &&
 		phaseNum >= 1 &&
 		isReasonValid(reason) &&
@@ -113,28 +143,62 @@ export function PhaseSchoolEditDialog({
 
 				<div className="space-y-4 py-2">
 					<div className="space-y-1">
-						<Label htmlFor="phase-school-id">학교 ID *</Label>
-						<Input
-							id="phase-school-id"
-							value={schoolId}
-							onChange={(event) => setSchoolId(event.target.value)}
-							disabled={!isCreate}
-							placeholder="UUID 형식"
-						/>
-					</div>
-
-					<div className="space-y-1">
-						<Label htmlFor="phase-school-name">학교명 *</Label>
-						<Input
-							id="phase-school-name"
-							value={schoolName}
-							onChange={(event) => setSchoolName(event.target.value)}
-						/>
+						<Label>학교 *</Label>
+						{isCreate ? (
+							<Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+								<PopoverTrigger asChild>
+									<Button
+										variant="outline"
+										role="combobox"
+										className="w-full justify-between font-normal"
+									>
+										<span className={cn(!school && 'text-slate-400')}>
+											{school?.name ?? '학교를 선택하세요'}
+										</span>
+										<ChevronsUpDown className="h-4 w-4 opacity-50" />
+									</Button>
+								</PopoverTrigger>
+								<PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+									<div className="border-b p-2">
+										<Input
+											placeholder="학교명 검색"
+											value={schoolSearch}
+											onChange={(event) => setSchoolSearch(event.target.value)}
+											className="h-8"
+										/>
+									</div>
+									<div className="max-h-60 overflow-y-auto py-1">
+										{schoolsQuery.isLoading ? (
+											<div className="px-3 py-2 text-xs text-slate-500">불러오는 중…</div>
+										) : schoolItems.length === 0 ? (
+											<div className="px-3 py-2 text-xs text-slate-500">결과가 없습니다.</div>
+										) : (
+											schoolItems.map((item) => (
+												<button
+													key={item.id}
+													type="button"
+													className="flex w-full items-center justify-between px-3 py-1.5 text-sm hover:bg-slate-100"
+													onClick={() => {
+														setSchool({ id: item.id, name: item.name });
+														setPopoverOpen(false);
+													}}
+												>
+													<span>{item.name}</span>
+													{school?.id === item.id ? <Check className="h-4 w-4" /> : null}
+												</button>
+											))
+										)}
+									</div>
+								</PopoverContent>
+							</Popover>
+						) : (
+							<Input value={school?.name ?? ''} disabled />
+						)}
 					</div>
 
 					<div className="grid grid-cols-2 gap-3">
 						<div className="space-y-1">
-							<Label>버킷 *</Label>
+							<Label>그룹 *</Label>
 							<Select value={bucket} onValueChange={(value) => setBucket(value as GhostPhaseBucket)}>
 								<SelectTrigger>
 									<SelectValue />
