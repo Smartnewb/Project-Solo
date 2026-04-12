@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2 } from 'lucide-react';
+import { HelpCircle, Plus, Trash2 } from 'lucide-react';
 import { ghostInjection } from '@/app/services/admin/ghost-injection';
 import type {
 	BlacklistEntryItem,
@@ -25,6 +25,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
 import { ghostInjectionKeys } from '../_shared/query-keys';
 import { BlacklistAddDialog } from './blacklist-add-dialog';
+import { ExperimentGuideDialog } from './experiment-guide-dialog';
 import { PhaseSchoolEditDialog } from './phase-school-edit-dialog';
 
 function formatDate(value: string): string {
@@ -262,14 +263,23 @@ function PhaseSchoolsPanel() {
 }
 
 export function SchoolsClient() {
+	const [guideOpen, setGuideOpen] = useState(false);
+
 	return (
 		<section className="px-6 py-8">
-			<header className="mb-6">
-				<h1 className="text-2xl font-semibold text-slate-900">학교 설정</h1>
-				<p className="mt-1 text-sm text-slate-500">
-					차단 학교와 실험 그룹을 관리합니다.
-				</p>
+			<header className="mb-6 flex items-start justify-between">
+				<div>
+					<h1 className="text-2xl font-semibold text-slate-900">학교 설정</h1>
+					<p className="mt-1 text-sm text-slate-500">
+						차단 학교와 실험 그룹을 관리합니다.
+					</p>
+				</div>
+				<Button variant="outline" size="sm" onClick={() => setGuideOpen(true)}>
+					<HelpCircle className="mr-1.5 h-4 w-4" /> 실험 그룹 가이드
+				</Button>
 			</header>
+
+			<ExperimentGuideDialog open={guideOpen} onOpenChange={setGuideOpen} />
 
 			<Tabs defaultValue="blacklist">
 				<TabsList>
