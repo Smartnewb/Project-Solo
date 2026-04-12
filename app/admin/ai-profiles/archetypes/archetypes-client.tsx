@@ -56,20 +56,20 @@ export function ArchetypesClient() {
 		<section className="px-6 py-8">
 			<header className="mb-6 flex items-start justify-between">
 				<div>
-					<h1 className="text-2xl font-semibold text-slate-900">아키타입 관리</h1>
+					<h1 className="text-2xl font-semibold text-slate-900">프로필 유형 관리</h1>
 					<p className="mt-1 text-sm text-slate-500">
-						Ghost 페르소나 아키타입 라이브러리. 나이·MBTI·키워드 풀을 정의합니다.
+						가상 프로필의 유형을 정의합니다. 나이 범위, MBTI, 관심사 키워드를 설정하면 생성 시 자동으로 랜덤 프로필이 만들어집니다.
 					</p>
 				</div>
 				<Button onClick={handleCreate}>
-					<Plus className="mr-2 h-4 w-4" /> 아키타입 생성
+					<Plus className="mr-2 h-4 w-4" /> 유형 추가
 				</Button>
 			</header>
 
 			{isError ? (
 				<Alert variant="destructive" className="mb-4">
 					<AlertDescription>
-						{error instanceof Error ? error.message : '아키타입 목록을 불러오지 못했습니다.'}
+						{error instanceof Error ? error.message : '프로필 유형 목록을 불러오지 못했습니다.'}
 					</AlertDescription>
 				</Alert>
 			) : null}
@@ -82,7 +82,7 @@ export function ArchetypesClient() {
 							<TableHead>나이</TableHead>
 							<TableHead>MBTI Pool</TableHead>
 							<TableHead>키워드</TableHead>
-							<TableHead className="text-right">활성 Ghost</TableHead>
+							<TableHead className="text-right">활성 프로필</TableHead>
 							<TableHead>수정일</TableHead>
 							<TableHead className="w-16" />
 						</TableRow>
@@ -97,7 +97,7 @@ export function ArchetypesClient() {
 						) : archetypes.length === 0 ? (
 							<TableRow>
 								<TableCell colSpan={7} className="py-12 text-center text-sm text-slate-500">
-									등록된 아키타입이 없습니다. 상단 버튼으로 첫 아키타입을 추가하세요.
+									등록된 프로필 유형이 없습니다. 상단 버튼으로 첫 유형을 추가하세요.
 								</TableCell>
 							</TableRow>
 						) : (

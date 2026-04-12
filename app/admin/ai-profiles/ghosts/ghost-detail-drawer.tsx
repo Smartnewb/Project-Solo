@@ -106,7 +106,7 @@ export function GhostDetailDrawer({ ghostAccountId, onClose }: GhostDetailDrawer
 
 	const mutation = useMutation({
 		mutationFn: () => {
-			if (!ghostAccountId) throw new Error('Ghost ID 없음');
+			if (!ghostAccountId) throw new Error('프로필 ID 없음');
 			if (Object.keys(fieldsToUpdate).length === 0) {
 				throw new Error('변경된 항목이 없습니다.');
 			}
@@ -116,7 +116,7 @@ export function GhostDetailDrawer({ ghostAccountId, onClose }: GhostDetailDrawer
 			});
 		},
 		onSuccess: () => {
-			toast.success('Ghost 프로필이 수정되었습니다.');
+			toast.success('가상 프로필이 수정되었습니다.');
 			queryClient.invalidateQueries({
 				queryKey: ghostInjectionKeys.ghostDetail(ghostAccountId ?? ''),
 			});
@@ -133,9 +133,9 @@ export function GhostDetailDrawer({ ghostAccountId, onClose }: GhostDetailDrawer
 		<Sheet open={Boolean(ghostAccountId)} onOpenChange={(open) => !open && onClose()}>
 			<SheetContent side="right" className="w-full overflow-y-auto sm:max-w-2xl">
 				<SheetHeader>
-					<SheetTitle>{detail?.name ?? 'Ghost 상세'}</SheetTitle>
+					<SheetTitle>{detail?.name ?? '프로필 상세'}</SheetTitle>
 					<SheetDescription>
-						{detail ? `ID: ${detail.ghostAccountId}` : 'Ghost 프로필 상세 정보 및 편집'}
+						{detail ? `ID: ${detail.ghostAccountId}` : '가상 프로필 상세 정보 및 편집'}
 					</SheetDescription>
 				</SheetHeader>
 
@@ -155,7 +155,7 @@ export function GhostDetailDrawer({ ghostAccountId, onClose }: GhostDetailDrawer
 								</div>
 								<div className="grid grid-cols-2 gap-2 rounded-md border bg-slate-50 p-3 text-xs">
 									<div>
-										<span className="text-slate-500">아키타입</span>
+										<span className="text-slate-500">프로필 유형</span>
 										<div className="font-medium text-slate-800">
 											{detail.archetype?.name ?? '—'}
 										</div>
@@ -183,25 +183,25 @@ export function GhostDetailDrawer({ ghostAccountId, onClose }: GhostDetailDrawer
 								<h3 className="text-sm font-semibold text-slate-900">노출 통계</h3>
 								<div className="grid grid-cols-4 gap-2 rounded-md border bg-slate-50 p-3 text-center text-xs">
 									<div>
-										<div className="text-slate-500">Shown</div>
+										<div className="text-slate-500">노출</div>
 										<div className="text-base font-semibold tabular-nums text-slate-800">
 											{detail.exposureStats.totalShown}
 										</div>
 									</div>
 									<div>
-										<div className="text-slate-500">Accepted</div>
+										<div className="text-slate-500">수락</div>
 										<div className="text-base font-semibold tabular-nums text-slate-800">
 											{detail.exposureStats.totalAccepted}
 										</div>
 									</div>
 									<div>
-										<div className="text-slate-500">Reported</div>
+										<div className="text-slate-500">신고</div>
 										<div className="text-base font-semibold tabular-nums text-red-600">
 											{detail.exposureStats.totalReported}
 										</div>
 									</div>
 									<div>
-										<div className="text-slate-500">Last</div>
+										<div className="text-slate-500">최근</div>
 										<div className="text-xs text-slate-700">
 											{detail.exposureStats.lastShownAt
 												? formatDate(detail.exposureStats.lastShownAt)

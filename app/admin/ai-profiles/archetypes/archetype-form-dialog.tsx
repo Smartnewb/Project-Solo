@@ -123,7 +123,7 @@ export function ArchetypeFormDialog({
 			return ghostInjection.createArchetype(body);
 		},
 		onSuccess: () => {
-			toast.success(isEdit ? '아키타입이 수정되었습니다.' : '아키타입이 생성되었습니다.');
+			toast.success(isEdit ? '프로필 유형이 수정되었습니다.' : '프로필 유형이 추가되었습니다.');
 			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.archetypes() });
 			onOpenChange(false);
 		},
@@ -160,9 +160,9 @@ export function ArchetypeFormDialog({
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-2xl">
 				<DialogHeader>
-					<DialogTitle>{isEdit ? '아키타입 수정' : '아키타입 생성'}</DialogTitle>
+					<DialogTitle>{isEdit ? '프로필 유형 수정' : '프로필 유형 추가'}</DialogTitle>
 					<DialogDescription>
-						Ghost 페르소나 아키타입 라이브러리에 추가되는 항목입니다. 모든 변경 사항은 감사 로그에 기록됩니다.
+						가상 프로필 생성 시 사용할 유형을 정의합니다. 모든 변경 사항은 감사 로그에 기록됩니다.
 					</DialogDescription>
 				</DialogHeader>
 
@@ -184,7 +184,7 @@ export function ArchetypeFormDialog({
 							rows={2}
 							value={state.description}
 							onChange={(event) => setState({ ...state, description: event.target.value })}
-							placeholder="페르소나에 대한 간단한 설명"
+							placeholder="이 유형에 대한 간단한 설명 (예: 활발하고 사교적인 성격)"
 						/>
 					</div>
 

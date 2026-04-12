@@ -97,8 +97,8 @@ export function GhostFilters({ query, onChange }: GhostFiltersProps) {
 						</SelectTrigger>
 						<SelectContent>
 							<SelectItem value={ALL}>전체</SelectItem>
-							<SelectItem value="ACTIVE">ACTIVE</SelectItem>
-							<SelectItem value="INACTIVE">INACTIVE</SelectItem>
+							<SelectItem value="ACTIVE">활성</SelectItem>
+							<SelectItem value="INACTIVE">비활성</SelectItem>
 						</SelectContent>
 					</Select>
 				</div>
@@ -139,7 +139,7 @@ export function GhostFilters({ query, onChange }: GhostFiltersProps) {
 				</div>
 
 				<div className="space-y-1">
-					<Label className="text-xs">아키타입</Label>
+					<Label className="text-xs">프로필 유형</Label>
 					<Select
 						value={query.archetypeId ?? ALL}
 						onValueChange={(value) =>

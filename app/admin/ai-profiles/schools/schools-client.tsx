@@ -67,7 +67,7 @@ function BlacklistPanel() {
 	const handleRemove = async (entry: BlacklistEntryItem) => {
 		const ok = await confirm({
 			title: '블랙리스트 제거',
-			message: `${entry.schoolName}을(를) 블랙리스트에서 제거하시겠어요? 해당 학교에 Ghost 주입이 다시 가능해집니다.`,
+			message: `${entry.schoolName}을(를) 차단 목록에서 제거하시겠어요? 해당 학교에 가상 프로필 노출이 다시 가능해집니다.`,
 			confirmText: '제거',
 			severity: 'warning',
 		});
@@ -84,7 +84,7 @@ function BlacklistPanel() {
 		<div className="space-y-4">
 			<div className="flex items-center justify-between">
 				<p className="text-sm text-slate-500">
-					신고율이 높거나 문제가 있는 학교를 차단합니다. 즉시 반영(60초 캐시).
+					신고율이 높거나 문제가 있는 학교를 차단합니다. 차단된 학교에는 가상 프로필이 노출되지 않습니다.
 				</p>
 				<Button onClick={() => setDialogOpen(true)}>
 					<Plus className="mr-2 h-4 w-4" /> 블랙리스트 추가
@@ -183,16 +183,16 @@ function PhaseSchoolsPanel() {
 		<div className="space-y-4">
 			<div className="flex items-center justify-between">
 				<p className="text-sm text-slate-500">
-					학교를 TREATMENT(Ghost 주입 대상) 또는 CONTROL(대조군) 버킷에 배정합니다.
+					학교를 실험군(가상 프로필 노출 대상) 또는 대조군으로 배정합니다.
 				</p>
 				<Button onClick={handleCreate}>
-					<Plus className="mr-2 h-4 w-4" /> Phase-School 등록
+					<Plus className="mr-2 h-4 w-4" /> 실험 그룹 등록
 				</Button>
 			</div>
 
 			{isError ? (
 				<Alert variant="destructive">
-					<AlertDescription>Phase-School 목록을 불러오지 못했습니다.</AlertDescription>
+					<AlertDescription>실험 그룹 목록을 불러오지 못했습니다.</AlertDescription>
 				</Alert>
 			) : null}
 
@@ -203,7 +203,7 @@ function PhaseSchoolsPanel() {
 							<TableHead>학교명</TableHead>
 							<TableHead>버킷</TableHead>
 							<TableHead>Phase</TableHead>
-							<TableHead className="text-right">활성 Ghost</TableHead>
+							<TableHead className="text-right">활성 프로필</TableHead>
 							<TableHead>수정일</TableHead>
 							<TableHead className="w-16" />
 						</TableRow>
@@ -218,7 +218,7 @@ function PhaseSchoolsPanel() {
 						) : items.length === 0 ? (
 							<TableRow>
 								<TableCell colSpan={6} className="py-12 text-center text-sm text-slate-500">
-									등록된 Phase-School이 없습니다.
+									등록된 실험 그룹이 없습니다.
 								</TableCell>
 							</TableRow>
 						) : (
@@ -265,16 +265,16 @@ export function SchoolsClient() {
 	return (
 		<section className="px-6 py-8">
 			<header className="mb-6">
-				<h1 className="text-2xl font-semibold text-slate-900">학교 관리</h1>
+				<h1 className="text-2xl font-semibold text-slate-900">학교 설정</h1>
 				<p className="mt-1 text-sm text-slate-500">
-					블랙리스트와 Phase-School 버킷을 관리합니다.
+					차단 학교와 실험 그룹을 관리합니다.
 				</p>
 			</header>
 
 			<Tabs defaultValue="blacklist">
 				<TabsList>
 					<TabsTrigger value="blacklist">블랙리스트</TabsTrigger>
-					<TabsTrigger value="phase-schools">Phase-School</TabsTrigger>
+					<TabsTrigger value="phase-schools">실험 그룹</TabsTrigger>
 				</TabsList>
 				<TabsContent value="blacklist" className="mt-4">
 					<BlacklistPanel />

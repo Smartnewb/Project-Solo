@@ -47,7 +47,7 @@ export function LtvCapCard({ status }: LtvCapCardProps) {
 				reason: reason.trim(),
 			}),
 		onSuccess: () => {
-			toast.success(`LTV Cap을 ${percent}%로 설정했습니다.`);
+			toast.success(`노출 상한을 ${percent}%로 설정했습니다.`);
 			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.status() });
 			setReason('');
 		},
@@ -77,23 +77,23 @@ export function LtvCapCard({ status }: LtvCapCardProps) {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>LTV Cap</CardTitle>
+				<CardTitle>노출 상한</CardTitle>
 				<CardDescription>
-					전체 매칭 중 Ghost 매칭 비율 상한. 현재 침투율이 Cap의 80% 이상이면 경고 색상 표시.
+					전체 매칭 중 가상 프로필 노출 비율의 상한. 현재 비율이 상한의 80% 이상이면 경고 표시.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">
 				<div className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
 					<div>
-						<div className="text-xs text-slate-500">현재 Cap</div>
+						<div className="text-xs text-slate-500">현재 상한</div>
 						<div className="font-semibold text-slate-800">{formatPercent(currentCap)}</div>
 					</div>
 					<div>
-						<div className="text-xs text-slate-500">현재 침투율</div>
+						<div className="text-xs text-slate-500">현재 노출 비율</div>
 						<div className={toneClass}>{formatPercent(currentRate)}</div>
 					</div>
 					<div>
-						<div className="text-xs text-slate-500">신규 Cap (미리보기)</div>
+						<div className="text-xs text-slate-500">신규 상한 (미리보기)</div>
 						<div className="font-semibold text-primary">{percent}%</div>
 					</div>
 				</div>

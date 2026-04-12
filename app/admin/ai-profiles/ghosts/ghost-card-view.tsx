@@ -31,7 +31,7 @@ export function GhostCardView({
 	if (items.length === 0) {
 		return (
 			<div className="rounded-md border bg-white py-12 text-center text-sm text-slate-500">
-				Ghost 프로필이 없습니다.
+				가상 프로필이 없습니다.
 			</div>
 		);
 	}
@@ -74,7 +74,7 @@ export function GhostCardView({
 							<div className="text-xs text-slate-500">만 {item.age}세</div>
 						</div>
 						<div className="text-xs text-slate-500">
-							{item.mbti ?? '—'} · {item.archetype?.name ?? '아키타입 없음'}
+							{item.mbti ?? '—'} · {item.archetype?.name ?? '유형 없음'}
 						</div>
 						<div className="truncate text-xs text-slate-600">
 							{item.university?.name ?? '대학 없음'}

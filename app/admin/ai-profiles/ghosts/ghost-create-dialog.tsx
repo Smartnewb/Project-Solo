@@ -129,7 +129,7 @@ export function GhostCreateDialog({ open, onOpenChange }: GhostCreateDialogProps
 				reason: reason.trim(),
 			}),
 		onSuccess: () => {
-			toast.success('Ghost 프로필이 생성되었습니다.');
+			toast.success('가상 프로필이 생성되었습니다.');
 			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.ghosts() });
 			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.status() });
 			onOpenChange(false);
@@ -152,23 +152,23 @@ export function GhostCreateDialog({ open, onOpenChange }: GhostCreateDialogProps
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-xl">
 				<DialogHeader>
-					<DialogTitle>Ghost 프로필 생성</DialogTitle>
+					<DialogTitle>가상 프로필 생성</DialogTitle>
 					<DialogDescription>
-						아키타입을 선택하면 해당 트레잇에 맞춰 합성 Ghost가 생성됩니다. 생성 직후 INACTIVE 상태로 시작됩니다.
+						프로필 유형을 선택하면 해당 특성(나이·MBTI·키워드)에 맞춰 가상 프로필이 자동 생성됩니다. 생성 직후 비활성 상태로 시작됩니다.
 					</DialogDescription>
 				</DialogHeader>
 
 				<div className="space-y-4 py-2">
 					<div className="space-y-1">
-						<Label>아키타입 *</Label>
+						<Label>프로필 유형 *</Label>
 						<Select value={archetypeId} onValueChange={setArchetypeId}>
 							<SelectTrigger>
-								<SelectValue placeholder="아키타입을 선택하세요" />
+								<SelectValue placeholder="프로필 유형을 선택하세요" />
 							</SelectTrigger>
 							<SelectContent>
 								{archetypeItems.length === 0 ? (
 									<div className="px-3 py-2 text-xs text-slate-500">
-										{archetypesQuery.isLoading ? '불러오는 중…' : '등록된 아키타입이 없습니다.'}
+										{archetypesQuery.isLoading ? '불러오는 중…' : '등록된 프로필 유형이 없습니다. 프로필 유형 메뉴에서 먼저 추가하세요.'}
 									</div>
 								) : (
 									archetypeItems.map((item) => (
@@ -282,13 +282,13 @@ export function GhostCreateDialog({ open, onOpenChange }: GhostCreateDialogProps
 					</div>
 
 					<div className="space-y-1">
-						<Label>노출 대상 Phase-School * ({phaseSchoolIds.length}개 선택)</Label>
+						<Label>노출 대상 학교 * ({phaseSchoolIds.length}개 선택)</Label>
 						<div className="max-h-40 overflow-y-auto rounded-md border bg-slate-50 p-2">
 							{phaseSchoolsQuery.isLoading ? (
 								<p className="px-2 py-1 text-xs text-slate-500">불러오는 중…</p>
 							) : phaseSchoolItems.length === 0 ? (
 								<p className="px-2 py-1 text-xs text-slate-500">
-									TREATMENT Phase-School이 없습니다. 먼저 학교 관리 페이지에서 등록하세요.
+									실험군 학교가 없습니다. 학교 설정에서 먼저 등록하세요.
 								</p>
 							) : (
 								<div className="flex flex-wrap gap-1.5">
@@ -315,7 +315,7 @@ export function GhostCreateDialog({ open, onOpenChange }: GhostCreateDialogProps
 							)}
 						</div>
 						<p className="text-xs text-slate-500">
-							이 Ghost가 노출될 학교 버킷을 하나 이상 선택하세요.
+							이 가상 프로필이 노출될 학교를 하나 이상 선택하세요.
 						</p>
 					</div>
 

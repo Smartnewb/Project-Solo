@@ -111,21 +111,14 @@ export const NAV_CATEGORIES: NavCategory[] = [
   },
   {
     icon: '🤖',
-    label: 'AI Profiles',
+    label: '가상 매칭',
     items: [
-      {
-        id: 'ai-profiles',
-        label: 'Ghost Injection',
-        defaultOpen: true,
-        children: [
-          { href: '/admin/ai-profiles/ghosts', label: 'Ghost 관리' },
-          { href: '/admin/ai-profiles/candidates', label: '후보 관리' },
-          { href: '/admin/ai-profiles/policy', label: '정책 설정' },
-          { href: '/admin/ai-profiles/schools', label: '학교 관리' },
-          { href: '/admin/ai-profiles/archetypes', label: '아키타입' },
-          { href: '/admin/ai-profiles/rollback', label: '비상 롤백' },
-        ],
-      },
+      { href: '/admin/ai-profiles/ghosts', label: '가상 프로필' },
+      { href: '/admin/ai-profiles/archetypes', label: '프로필 유형' },
+      { href: '/admin/ai-profiles/candidates', label: '매칭 후보' },
+      { href: '/admin/ai-profiles/policy', label: '노출 정책' },
+      { href: '/admin/ai-profiles/schools', label: '학교 설정' },
+      { href: '/admin/ai-profiles/rollback', label: '긴급 중단' },
     ],
   },
   {

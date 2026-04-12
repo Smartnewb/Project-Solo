@@ -34,7 +34,7 @@ export function CooldownCard({ status }: CooldownCardProps) {
 			return ghostInjection.setCooldown({ cooldownCount: num, reason: reason.trim() });
 		},
 		onSuccess: () => {
-			toast.success('Cooldown 정책이 업데이트되었습니다.');
+			toast.success('노출 간격 설정이 업데이트되었습니다.');
 			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.status() });
 			setReason('');
 		},
@@ -56,15 +56,15 @@ export function CooldownCard({ status }: CooldownCardProps) {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle>Cooldown</CardTitle>
+				<CardTitle>노출 간격</CardTitle>
 				<CardDescription>
-					Ghost 노출 후 다음 노출까지 일반 매칭 최소 횟수. 너무 낮으면 연속 Ghost 노출 위험.
+					가상 프로필 노출 후 다음 노출까지 필요한 일반 매칭 최소 횟수. 너무 낮으면 연속 노출 위험.
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">
 				<div className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
 					<div>
-						<div className="text-xs text-slate-500">현재 Cooldown</div>
+						<div className="text-xs text-slate-500">현재 간격</div>
 						<div className="font-semibold text-slate-800">{current}회</div>
 					</div>
 					<div>
@@ -74,7 +74,7 @@ export function CooldownCard({ status }: CooldownCardProps) {
 				</div>
 
 				<div className="space-y-1">
-					<Label htmlFor="cooldown-count">Cooldown 횟수</Label>
+					<Label htmlFor="cooldown-count">간격 횟수</Label>
 					<Input
 						id="cooldown-count"
 						type="number"

@@ -36,7 +36,7 @@ export function GhostBulkActions({ schoolId, schoolLabel }: GhostBulkActionsProp
 		mutationFn: () =>
 			ghostInjection.bulkInactivateSchool(schoolId, { reason: reason.trim() }),
 		onSuccess: () => {
-			toast.success('해당 학교의 Ghost가 일괄 비활성화되었습니다.');
+			toast.success('해당 학교의 가상 프로필이 일괄 비활성화되었습니다.');
 			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.ghosts() });
 			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.status() });
 			setDialogOpen(false);
@@ -53,7 +53,7 @@ export function GhostBulkActions({ schoolId, schoolLabel }: GhostBulkActionsProp
 		const ok = await confirm({
 			title: '정말 진행하시겠어요?',
 			message:
-				'이 학교의 모든 ACTIVE Ghost가 비활성화됩니다. 이 동작은 개별 되돌림이 필요하므로 신중히 진행하세요.',
+				'이 학교의 모든 활성 가상 프로필이 비활성화됩니다. 개별 되돌림이 필요하므로 신중히 진행하세요.',
 			severity: 'error',
 			confirmText: '일괄 비활성화',
 		});
@@ -64,21 +64,21 @@ export function GhostBulkActions({ schoolId, schoolLabel }: GhostBulkActionsProp
 	return (
 		<>
 			<Button variant="destructive" onClick={() => setDialogOpen(true)}>
-				<AlertTriangle className="mr-2 h-4 w-4" /> 이 학교 Ghost 전부 비활성화
+				<AlertTriangle className="mr-2 h-4 w-4" /> 이 학교 가상 프로필 전부 비활성화
 			</Button>
 
 			<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>학교 Ghost 일괄 비활성화</DialogTitle>
+						<DialogTitle>학교 가상 프로필 일괄 비활성화</DialogTitle>
 						<DialogDescription>
-							{schoolLabel ? `"${schoolLabel}" ` : ''}학교에 속한 모든 ACTIVE Ghost를 비활성화합니다.
+							{schoolLabel ? `"${schoolLabel}" ` : ''}학교에 속한 모든 활성 가상 프로필을 비활성화합니다.
 						</DialogDescription>
 					</DialogHeader>
 
 					<Alert variant="destructive">
 						<AlertDescription>
-							이 작업은 되돌리기 어렵습니다. 개별 Ghost를 다시 활성화하려면 수동 작업이 필요합니다.
+							이 작업은 되돌리기 어렵습니다. 개별 프로필을 다시 활성화하려면 수동 작업이 필요합니다.
 						</AlertDescription>
 					</Alert>
 

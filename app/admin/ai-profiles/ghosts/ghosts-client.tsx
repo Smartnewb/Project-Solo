@@ -108,15 +108,15 @@ export function GhostsClient() {
 		<section className="space-y-4 px-6 py-8">
 			<header className="flex items-start justify-between gap-4">
 				<div>
-					<h1 className="text-2xl font-semibold text-slate-900">Ghost 관리</h1>
+					<h1 className="text-2xl font-semibold text-slate-900">가상 프로필 관리</h1>
 					<p className="mt-1 text-sm text-slate-500">
-						합성 Ghost 프로필을 조회·생성·수정·비활성화합니다. 모든 변경은 감사 로그에 기록됩니다.
+						가상 프로필을 조회·생성·수정·비활성화합니다. 모든 변경은 감사 로그에 기록됩니다.
 					</p>
 				</div>
 				<div className="flex items-center gap-2">
 					<GhostViewToggle value={view} onChange={setView} />
 					<Button onClick={() => setCreateOpen(true)}>
-						<Plus className="mr-1 h-4 w-4" /> Ghost 생성
+						<Plus className="mr-1 h-4 w-4" /> 프로필 생성
 					</Button>
 				</div>
 			</header>
@@ -126,7 +126,7 @@ export function GhostsClient() {
 			{query.schoolId ? (
 				<div className="flex items-center justify-between rounded-md border border-amber-200 bg-amber-50 px-4 py-2">
 					<p className="text-xs text-amber-800">
-						학교 필터가 적용되어 있습니다. 이 학교의 Ghost를 일괄로 비활성화할 수 있습니다.
+						학교 필터가 적용되어 있습니다. 이 학교의 가상 프로필을 일괄 비활성화할 수 있습니다.
 					</p>
 					<GhostBulkActions schoolId={query.schoolId} schoolLabel={selectedSchoolLabel} />
 				</div>
@@ -135,7 +135,7 @@ export function GhostsClient() {
 			{listQuery.isError ? (
 				<Alert variant="destructive">
 					<AlertDescription>
-						Ghost 목록을 불러오지 못했습니다. Feature Flag 또는 백엔드 머지 상태를 확인해주세요.
+						가상 프로필 목록을 불러오지 못했습니다.
 					</AlertDescription>
 				</Alert>
 			) : null}

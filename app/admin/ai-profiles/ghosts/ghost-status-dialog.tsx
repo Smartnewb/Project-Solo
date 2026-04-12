@@ -36,7 +36,7 @@ export function GhostStatusDialog({ ghost, onClose }: GhostStatusDialogProps) {
 
 	const mutation = useMutation({
 		mutationFn: () => {
-			if (!ghost) throw new Error('Ghost 없음');
+			if (!ghost) throw new Error('프로필 없음');
 			return ghostInjection.toggleGhostStatus(ghost.ghostAccountId, {
 				targetStatus: nextStatus,
 				reason: reason.trim(),
@@ -44,7 +44,7 @@ export function GhostStatusDialog({ ghost, onClose }: GhostStatusDialogProps) {
 		},
 		onSuccess: () => {
 			toast.success(
-				nextStatus === 'ACTIVE' ? 'Ghost가 활성화되었습니다.' : 'Ghost가 비활성화되었습니다.',
+				nextStatus === 'ACTIVE' ? '가상 프로필이 활성화되었습니다.' : '가상 프로필이 비활성화되었습니다.',
 			);
 			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.ghosts() });
 			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.status() });
@@ -62,7 +62,7 @@ export function GhostStatusDialog({ ghost, onClose }: GhostStatusDialogProps) {
 				<DialogHeader>
 					<DialogTitle>{actionLabel}하시겠어요?</DialogTitle>
 					<DialogDescription>
-						{ghost ? `"${ghost.name}" Ghost를 ${nextStatus} 상태로 전환합니다.` : null}
+						{ghost ? `"${ghost.name}" 가상 프로필을 ${nextStatus === 'ACTIVE' ? '활성' : '비활성'} 상태로 전환합니다.` : null}
 					</DialogDescription>
 				</DialogHeader>
 

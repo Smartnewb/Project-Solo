@@ -75,7 +75,7 @@ export function PhaseSchoolEditDialog({
 			});
 		},
 		onSuccess: () => {
-			toast.success(isCreate ? 'Phase-School 등록되었습니다.' : 'Phase-School 수정되었습니다.');
+			toast.success(isCreate ? '실험 그룹이 등록되었습니다.' : '실험 그룹이 수정되었습니다.');
 			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.phaseSchools() });
 			onOpenChange(false);
 		},
@@ -104,10 +104,10 @@ export function PhaseSchoolEditDialog({
 			<DialogContent>
 				<DialogHeader>
 					<DialogTitle>
-						{isCreate ? 'Phase-School 등록' : `Phase-School 수정 — ${target?.schoolName}`}
+						{isCreate ? '실험 그룹 등록' : `실험 그룹 수정 — ${target?.schoolName}`}
 					</DialogTitle>
 					<DialogDescription>
-						학교를 TREATMENT(실험군) 또는 CONTROL(대조군) 버킷에 배정합니다.
+						학교를 실험군 또는 대조군에 배정합니다. 실험군 학교의 유저에게만 가상 프로필이 노출됩니다.
 					</DialogDescription>
 				</DialogHeader>
 
@@ -140,8 +140,8 @@ export function PhaseSchoolEditDialog({
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
-									<SelectItem value="TREATMENT">TREATMENT (실험군)</SelectItem>
-									<SelectItem value="CONTROL">CONTROL (대조군)</SelectItem>
+									<SelectItem value="TREATMENT">실험군 (TREATMENT)</SelectItem>
+									<SelectItem value="CONTROL">대조군 (CONTROL)</SelectItem>
 								</SelectContent>
 							</Select>
 						</div>

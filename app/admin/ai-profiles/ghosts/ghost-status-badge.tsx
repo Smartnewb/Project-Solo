@@ -15,11 +15,11 @@ export function GhostStatusBadge({ status, isExhausted, className }: GhostStatus
 		);
 	}
 	if (status === 'ACTIVE') {
-		return <Badge className={cn('bg-emerald-500 hover:bg-emerald-500', className)}>ACTIVE</Badge>;
+		return <Badge className={cn('bg-emerald-500 hover:bg-emerald-500', className)}>활성</Badge>;
 	}
 	return (
 		<Badge className={cn('bg-slate-300 text-slate-700 hover:bg-slate-300', className)}>
-			INACTIVE
+			비활성
 		</Badge>
 	);
 }

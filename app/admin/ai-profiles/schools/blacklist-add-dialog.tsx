@@ -74,7 +74,7 @@ export function BlacklistAddDialog({ open, onOpenChange }: BlacklistAddDialogPro
 				<DialogHeader>
 					<DialogTitle>블랙리스트 추가</DialogTitle>
 					<DialogDescription>
-						해당 학교에는 즉시 Ghost 주입이 차단됩니다 (60초 캐시 후 완전 반영).
+						해당 학교에는 즉시 가상 프로필 노출이 차단됩니다.
 					</DialogDescription>
 				</DialogHeader>
 

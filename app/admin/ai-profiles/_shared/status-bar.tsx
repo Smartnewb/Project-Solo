@@ -36,7 +36,7 @@ export function AiProfilesStatusBar() {
 	return (
 		<div className="sticky top-0 z-10 flex flex-wrap items-center gap-6 border-b bg-slate-50 px-6 py-3 text-sm">
 			<div className="flex items-center gap-2">
-				<span className="text-xs uppercase tracking-wider text-slate-500">Feature Flag</span>
+				<span className="text-xs uppercase tracking-wider text-slate-500">시스템</span>
 				{isLoading ? (
 					<Badge variant="outline">로딩…</Badge>
 				) : isError ? (
@@ -51,14 +51,14 @@ export function AiProfilesStatusBar() {
 			</div>
 
 			<div className="flex items-center gap-2">
-				<span className="text-xs uppercase tracking-wider text-slate-500">침투율</span>
+				<span className="text-xs uppercase tracking-wider text-slate-500">노출 비율</span>
 				<span className={cn(injectionToneClass(injectionRate, ltvCap))}>
 					{formatPercent(injectionRate)} / {formatPercent(ltvCap)}
 				</span>
 			</div>
 
 			<div className="flex items-center gap-2">
-				<span className="text-xs uppercase tracking-wider text-slate-500">활성 Ghost</span>
+				<span className="text-xs uppercase tracking-wider text-slate-500">활성 프로필</span>
 				<span className="font-medium text-slate-800">{activeGhosts.toLocaleString()}</span>
 			</div>
 

@@ -40,7 +40,7 @@ export function FeatureFlagCard({ status }: FeatureFlagCardProps) {
 			ghostInjection.setFeatureFlag({ value, reason }),
 		onSuccess: (_, variables) => {
 			toast.success(
-				variables.value ? 'Feature Flag 활성화되었습니다.' : 'Feature Flag 비활성화되었습니다.',
+				variables.value ? '가상 매칭 시스템이 활성화되었습니다.' : '가상 매칭 시스템이 비활성화되었습니다.',
 			);
 			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.status() });
 			setReason('');
@@ -65,9 +65,9 @@ export function FeatureFlagCard({ status }: FeatureFlagCardProps) {
 
 		if (nextValue) {
 			const ok = await confirm({
-				title: 'Feature Flag 활성화',
+				title: '시스템 활성화',
 				message:
-					'Ghost Injection 전체 주입이 활성화됩니다. 정말 진행하시겠어요? (비상 시 /비상 롤백 페이지에서 즉시 차단 가능)',
+					'가상 매칭 시스템이 활성화됩니다. 정말 진행하시겠어요? (비상 시 긴급 중단 페이지에서 즉시 차단 가능)',
 				confirmText: '활성화',
 				severity: 'warning',
 			});
@@ -82,8 +82,8 @@ export function FeatureFlagCard({ status }: FeatureFlagCardProps) {
 			<CardHeader>
 				<div className="flex items-center justify-between">
 					<div>
-						<CardTitle>Feature Flag</CardTitle>
-						<CardDescription>Ghost Injection 전체 ON/OFF</CardDescription>
+						<CardTitle>시스템 ON/OFF</CardTitle>
+						<CardDescription>가상 매칭 시스템 전체 활성화/비활성화</CardDescription>
 					</div>
 					{current ? (
 						<Badge className="bg-emerald-500 hover:bg-emerald-500">ON</Badge>

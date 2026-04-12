@@ -17,9 +17,9 @@ export function PolicyClient() {
 	return (
 		<section className="px-6 py-8">
 			<header className="mb-6">
-				<h1 className="text-2xl font-semibold text-slate-900">정책 설정</h1>
+				<h1 className="text-2xl font-semibold text-slate-900">노출 정책</h1>
 				<p className="mt-1 text-sm text-slate-500">
-					Feature Flag, LTV Cap, Cooldown 정책을 관리합니다. 모든 변경은 감사 로그에 기록됩니다.
+					가상 매칭 시스템의 노출 정책을 관리합니다. 모든 변경은 감사 로그에 기록됩니다.
 				</p>
 			</header>
 

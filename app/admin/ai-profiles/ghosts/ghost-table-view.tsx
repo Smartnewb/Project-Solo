@@ -43,7 +43,7 @@ export function GhostTableView({
 						<TableHead>이름 / 나이</TableHead>
 						<TableHead>MBTI</TableHead>
 						<TableHead>대학 / 학과</TableHead>
-						<TableHead>아키타입</TableHead>
+						<TableHead>프로필 유형</TableHead>
 						<TableHead>상태</TableHead>
 						<TableHead>수정일</TableHead>
 						<TableHead className="text-right">액션</TableHead>
@@ -59,7 +59,7 @@ export function GhostTableView({
 					) : items.length === 0 ? (
 						<TableRow>
 							<TableCell colSpan={8} className="py-12 text-center text-sm text-slate-500">
-								Ghost 프로필이 없습니다.
+								가상 프로필이 없습니다.
 							</TableCell>
 						</TableRow>
 					) : (
