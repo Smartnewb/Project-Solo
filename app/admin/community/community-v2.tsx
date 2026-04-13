@@ -46,6 +46,7 @@ import {
 } from '@mui/material';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Controller } from 'react-hook-form';
 import AdminService from '@/app/services/admin';
@@ -1742,7 +1743,19 @@ function ReportList() {
 }
 
 function AdminCommunityContent() {
-	const [currentTab, setCurrentTab] = useState(0);
+	const searchParams = useSearchParams();
+	const resolveTabIndex = (tab: string | null) => {
+		if (tab === 'reports' || tab === '1') {
+			return 1;
+		}
+
+		return 0;
+	};
+	const [currentTab, setCurrentTab] = useState(() => resolveTabIndex(searchParams?.get('tab') ?? null));
+
+	useEffect(() => {
+		setCurrentTab(resolveTabIndex(searchParams?.get('tab') ?? null));
+	}, [searchParams]);
 
 
 	// 탭 변경 핸들러

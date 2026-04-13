@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from 'next/navigation';
 import { Controller } from "react-hook-form";
 import { useToast } from "@/shared/ui/admin/toast/toast-context";
 import { useAdminForm } from "@/app/admin/hooks/forms";
@@ -125,6 +126,9 @@ const REASONS_REQUIRING_PROFILE_IMAGES = ["허위 프로필", "부적절한 사�
 
 function ReportsManagementContent() {
   const toast = useToast();
+  const searchParams = useSearchParams();
+  const deepLinkedReportId = searchParams?.get('reportId') ?? null;
+  const lastOpenedReportIdRef = useRef<string | null>(null);
 
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(false);
@@ -160,6 +164,40 @@ function ReportsManagementContent() {
   const [userDetail, setUserDetail] = useState<UserDetail | null>(null);
   const [userDetailLoading, setUserDetailLoading] = useState(false);
   const [userDetailError, setUserDetailError] = useState<string | null>(null);
+
+  const openReportDetail = useCallback(
+    async (reportId: string, fallbackReport?: Report) => {
+      setDetailDialogOpen(true);
+      setDetailLoading(true);
+      setActiveTab(0);
+      setChatHistory(null);
+      setProfileImages([]);
+
+      try {
+        const detailResponse = await AdminService.reports.getProfileReportDetail(reportId);
+        const reportDetail: ReportDetail = fallbackReport
+          ? {
+              ...fallbackReport,
+              ...detailResponse,
+            }
+          : (detailResponse as ReportDetail);
+
+        setSelectedReport(reportDetail);
+        statusForm.setValue('status', reportDetail.status);
+      } catch (err: unknown) {
+        if (fallbackReport) {
+          setSelectedReport(fallbackReport);
+          statusForm.setValue('status', fallbackReport.status);
+        } else {
+          setDetailDialogOpen(false);
+          setError('신고 상세 정보를 불러오는데 실패했습니다.');
+        }
+      } finally {
+        setDetailLoading(false);
+      }
+    },
+    [statusForm],
+  );
 
   const fetchReports = async () => {
     try {
@@ -200,6 +238,20 @@ function ReportsManagementContent() {
     fetchReports();
   }, [page, rowsPerPage, statusFilter, reporterNameFilter, reportedNameFilter]);
 
+  useEffect(() => {
+    if (!deepLinkedReportId) {
+      lastOpenedReportIdRef.current = null;
+      return;
+    }
+
+    if (lastOpenedReportIdRef.current === deepLinkedReportId) {
+      return;
+    }
+
+    lastOpenedReportIdRef.current = deepLinkedReportId;
+    void openReportDetail(deepLinkedReportId);
+  }, [deepLinkedReportId, openReportDetail]);
+
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
@@ -231,28 +283,7 @@ function ReportsManagementContent() {
   };
 
   const handleViewDetail = async (report: Report) => {
-    setDetailDialogOpen(true);
-    setDetailLoading(true);
-    setActiveTab(0);
-    setChatHistory(null);
-    setProfileImages([]);
-
-    try {
-      const detailResponse = await AdminService.reports.getProfileReportDetail(
-        report.id,
-      );
-      const reportDetail: ReportDetail = {
-        ...report,
-        ...detailResponse,
-      };
-      setSelectedReport(reportDetail);
-      statusForm.setValue("status", reportDetail.status);
-    } catch (err: unknown) {
-      setSelectedReport(report);
-      statusForm.setValue("status", report.status);
-    } finally {
-      setDetailLoading(false);
-    }
+    await openReportDetail(report.id, report);
   };
 
   const handleCloseDetailDialog = () => {
