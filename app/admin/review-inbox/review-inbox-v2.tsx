@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  AutoAwesome as AutoAwesomeIcon,
   CheckCircle as CheckCircleIcon,
   DescriptionOutlined as DescriptionOutlinedIcon,
   DoneAll as DoneAllIcon,
@@ -26,23 +25,30 @@ import {
 } from '@mui/material';
 import { getReviewInbox } from '@/app/services/review-inbox';
 import type {
-  PendingReviewInboxBucket,
   ReviewInboxAction,
   ReviewInboxBucket,
   ReviewInboxEvidenceType,
+  ReviewInboxItem,
   ReviewInboxResponse,
+  ReviewInboxSourceKind,
 } from './types';
 
 const reviewInboxBucketLabels: Record<ReviewInboxBucket, string> = {
   approval: '사람 승인 필요',
   judgment: '직접 판단 필요',
-  done: 'AI 처리 완료',
+  done: '완료 이력',
 };
 
 const reviewInboxBucketDescriptions: Record<ReviewInboxBucket, string> = {
   approval: '명확한 건 → 원본 화면에서 처리',
   judgment: '맥락 확인 필요 → 직접 판단',
-  done: '오늘 자동 처리 건수',
+  done: '완료 상태 항목 확인',
+};
+
+const reviewInboxSourceKindLabels: Record<ReviewInboxSourceKind, string> = {
+  profile_report: '프로필 신고',
+  community_report: '커뮤니티 신고',
+  support_chat: '1:1 문의',
 };
 
 const bucketTone = {
@@ -84,6 +90,22 @@ const evidenceTone = {
   },
 } satisfies Record<ReviewInboxEvidenceType, { icon: JSX.Element; color: string; bg: string }>;
 
+function formatDateTime(value?: string) {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return parsed.toLocaleString('ko-KR', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+}
+
 function getActionButtonProps(action: ReviewInboxAction) {
   if (action.tone === 'danger') {
     return {
@@ -109,15 +131,17 @@ function getInitialSelectedIds(data: ReviewInboxResponse | null) {
   return {
     approval: data?.buckets.approval.items[0]?.id ?? null,
     judgment: data?.buckets.judgment.items[0]?.id ?? null,
-  } satisfies Record<PendingReviewInboxBucket, string | null>;
+    done: data?.buckets.done.items[0]?.id ?? null,
+  } satisfies Record<ReviewInboxBucket, string | null>;
 }
 
 export default function ReviewInboxV2() {
   const [activeBucket, setActiveBucket] = useState<ReviewInboxBucket>('approval');
   const [data, setData] = useState<ReviewInboxResponse | null>(null);
-  const [selectedIds, setSelectedIds] = useState<Record<PendingReviewInboxBucket, string | null>>({
+  const [selectedIds, setSelectedIds] = useState<Record<ReviewInboxBucket, string | null>>({
     approval: null,
     judgment: null,
+    done: null,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -170,18 +194,27 @@ export default function ReviewInboxV2() {
     [data],
   );
 
-  const activeItems = activeBucket === 'done' ? [] : data?.buckets[activeBucket].items ?? [];
-  const selectedItem =
-    activeBucket === 'done'
-      ? null
-      : activeItems.find((item) => item.id === selectedIds[activeBucket]) ?? activeItems[0] ?? null;
+  const doneBreakdown = useMemo(
+    () =>
+      data?.doneBreakdown ?? {
+        profile_report: 0,
+        community_report: 0,
+        support_chat: 0,
+      },
+    [data],
+  );
 
-  const handleSelectItem = (bucket: PendingReviewInboxBucket, id: string) => {
+  const activeItems = data?.buckets[activeBucket].items ?? [];
+  const selectedItem = activeItems.find((item) => item.id === selectedIds[activeBucket]) ?? activeItems[0] ?? null;
+
+  const handleSelectItem = (bucket: ReviewInboxBucket, id: string) => {
     setSelectedIds((current) => ({
       ...current,
       [bucket]: id,
     }));
   };
+
+  const pendingCount = counts.approval + counts.judgment;
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 }, display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -190,7 +223,7 @@ export default function ReviewInboxV2() {
           검토 인박스
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
-          AI가 끝내지 못한 예외만 확인하면 됩니다.
+          사람이 확인할 건과 이미 완료된 이력을 함께 보되, 처리 주체는 확인 가능한 범위까지만 표시합니다.
         </Typography>
       </Box>
 
@@ -239,14 +272,21 @@ export default function ReviewInboxV2() {
                   flexShrink: 0,
                 }}
               >
-                <AutoAwesomeIcon fontSize="small" />
+                <DoneAllIcon fontSize="small" />
               </Box>
-              <Typography variant="body2" sx={{ color: '#1f2937' }}>
-                <Box component="span" sx={{ fontWeight: 700, color: '#6d28d9' }}>
-                  오늘 AI가 {counts.done}건 자동 처리
-                </Box>{' '}
-                했고, 사람 확인이 남은 건은 {counts.approval + counts.judgment}건뿐입니다.
-              </Typography>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="body2" sx={{ color: '#1f2937' }}>
+                  <Box component="span" sx={{ fontWeight: 700, color: '#6d28d9' }}>
+                    지금 사람이 확인할 건은 {pendingCount}건
+                  </Box>{' '}
+                  이고, 완료 상태로 정리된 이력은 {counts.done}건입니다.
+                </Typography>
+                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mt: 1.5 }}>
+                  <Chip size="small" label={`프로필 신고 ${doneBreakdown.profile_report}건`} variant="outlined" />
+                  <Chip size="small" label={`커뮤니티 신고 ${doneBreakdown.community_report}건`} variant="outlined" />
+                  <Chip size="small" label={`1:1 문의 ${doneBreakdown.support_chat}건`} variant="outlined" />
+                </Stack>
+              </Box>
             </CardContent>
           </Card>
 
@@ -330,24 +370,16 @@ export default function ReviewInboxV2() {
                 </Box>
                 <Divider />
 
-                {activeBucket === 'done' ? (
-                  <Box sx={{ px: 3, py: 5, textAlign: 'center', color: 'text.secondary' }}>
-                    <DoneAllIcon sx={{ fontSize: 44, color: '#10b981', mb: 1.5 }} />
-                    <Typography variant="body1" sx={{ fontWeight: 600, color: 'text.primary' }}>
-                      오늘 AI가 자동 처리한 {counts.done}건은 모두 큐 밖에서 정리됐습니다.
-                    </Typography>
-                    <Typography variant="body2" sx={{ mt: 1 }}>
-                      완료 건은 다음 단계에서 별도 이력 보기와 연결합니다.
-                    </Typography>
-                  </Box>
-                ) : activeItems.length === 0 ? (
+                {activeItems.length === 0 ? (
                   <Box sx={{ px: 3, py: 5, textAlign: 'center', color: 'text.secondary' }}>
                     <CheckCircleIcon sx={{ fontSize: 44, color: bucketTone[activeBucket].color, mb: 1.5 }} />
                     <Typography variant="body1" sx={{ fontWeight: 600, color: 'text.primary' }}>
-                      현재 남아 있는 예외가 없습니다.
+                      {activeBucket === 'done' ? '완료 이력으로 표시할 최근 항목이 없습니다.' : '현재 남아 있는 예외가 없습니다.'}
                     </Typography>
                     <Typography variant="body2" sx={{ mt: 1 }}>
-                      새로운 예외가 생기면 이 리스트에만 다시 쌓입니다.
+                      {activeBucket === 'done'
+                        ? '처리 완료된 건이 생기면 여기서 유형과 처리 방식을 함께 확인할 수 있습니다.'
+                        : '새로운 예외가 생기면 이 리스트에만 다시 쌓입니다.'}
                     </Typography>
                   </Box>
                 ) : (
@@ -398,6 +430,14 @@ export default function ReviewInboxV2() {
                             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
                               {item.source}
                             </Typography>
+                            {(item.bucket === 'done' || item.handlerLabel) && (
+                              <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap" sx={{ mt: 1 }}>
+                                <Chip size="small" label={reviewInboxSourceKindLabels[item.sourceKind]} variant="outlined" />
+                                {item.handlerLabel ? (
+                                  <Chip size="small" label={item.handlerLabel} variant="outlined" />
+                                ) : null}
+                              </Stack>
+                            )}
                             <Typography
                               variant="caption"
                               sx={{
@@ -452,10 +492,19 @@ export default function ReviewInboxV2() {
                             fontWeight: 600,
                           }}
                         />
+                        <Chip size="small" variant="outlined" label={reviewInboxSourceKindLabels[selectedItem.sourceKind]} />
+                        {selectedItem.handlerLabel ? (
+                          <Chip size="small" variant="outlined" label={selectedItem.handlerLabel} />
+                        ) : null}
                       </Stack>
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>
                         {selectedItem.source}
                       </Typography>
+                      {formatDateTime(selectedItem.completedAt) ? (
+                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                          완료 시각 · {formatDateTime(selectedItem.completedAt)}
+                        </Typography>
+                      ) : null}
                     </Box>
 
                     <Box
@@ -467,7 +516,7 @@ export default function ReviewInboxV2() {
                       }}
                     >
                       <Typography variant="overline" sx={{ color: '#7c3aed', fontWeight: 700, lineHeight: 1.2 }}>
-                        왜 지금 검토가 필요한가
+                        {selectedItem.bucket === 'done' ? '어떻게 정리되었는가' : '왜 지금 검토가 필요한가'}
                       </Typography>
                       <Typography variant="body2" sx={{ mt: 0.75, fontWeight: 700, color: 'text.primary' }}>
                         {selectedItem.why}

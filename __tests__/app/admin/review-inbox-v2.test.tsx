@@ -10,6 +10,11 @@ const reviewInboxResponse = {
     judgment: 3,
     done: 19,
   },
+  doneBreakdown: {
+    profile_report: 6,
+    community_report: 1,
+    support_chat: 12,
+  },
   buckets: {
     approval: {
       total: 2,
@@ -95,6 +100,35 @@ const reviewInboxResponse = {
         },
       ],
     },
+    done: {
+      total: 19,
+      items: [
+        {
+          id: 'support_chat:s-done-1',
+          sourceKind: 'support_chat',
+          sourceId: 's-done-1',
+          sourceStatus: 'resolved',
+          bucket: 'done',
+          title: '혜진 문의 세션',
+          source: '1:1 문의 · 해결 완료',
+          recommendation: '세션 다시 보기',
+          why: 'AI가 먼저 응대한 뒤 어드민이 이어서 정리한 1:1 문의입니다.',
+          summary: '문제 해결됐어요 감사합니다',
+          createdAt: '2026-04-12T10:00:00.000Z',
+          completedAt: '2026-04-15T11:00:00.000Z',
+          handlerKind: 'ai_assisted',
+          handlerLabel: 'AI 응대 후 어드민 개입',
+          evidence: [
+            { id: 'done-1', type: 'history', label: '도메인 · 계정' },
+            { id: 'done-2', type: 'history', label: '처리 결과 · 해결 완료' },
+            { id: 'done-3', type: 'history', label: '처리 방식 · AI 응대 후 어드민 개입' },
+          ],
+          actions: [
+            { id: 'open-support-session-done', label: '세션 다시 보기', tone: 'primary', href: '/admin/support-chat?session=s-done-1' },
+          ],
+        },
+      ],
+    },
   },
   generatedAt: '2026-04-15T10:01:00.000Z',
   warnings: [],
@@ -136,14 +170,14 @@ describe('ReviewInboxV2', () => {
       screen.getByRole('heading', { level: 2, name: '민지 문의 세션' }),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'AI 처리 완료 19건 보기' }));
+    await user.click(screen.getByRole('button', { name: '완료 이력 19건 보기' }));
 
-    expect(screen.getByRole('button', { name: 'AI 처리 완료 19건 보기' })).toHaveAttribute(
+    expect(screen.getByRole('button', { name: '완료 이력 19건 보기' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
-    expect(
-      screen.getByText(/오늘 AI가 자동 처리한 19건은 모두 큐 밖에서 정리됐습니다/),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: '혜진 문의 세션' })).toBeInTheDocument();
+    expect(screen.getAllByText('1:1 문의')[0]).toBeInTheDocument();
+    expect(screen.getAllByText('AI 응대 후 어드민 개입')[0]).toBeInTheDocument();
   });
 });
