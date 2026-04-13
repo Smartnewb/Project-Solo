@@ -4,6 +4,8 @@ export type PendingReviewInboxBucket = Exclude<ReviewInboxBucket, 'done'>;
 
 export type ReviewInboxSourceKind = 'profile_report' | 'community_report' | 'support_chat';
 
+export type ReviewInboxHandlerKind = 'ai_only' | 'ai_assisted' | 'admin_only' | 'unknown';
+
 export type ReviewInboxEvidenceType = 'image' | 'text' | 'history';
 
 export type ReviewInboxActionTone = 'primary' | 'neutral' | 'danger';
@@ -26,13 +28,16 @@ export interface ReviewInboxItem {
   sourceKind: ReviewInboxSourceKind;
   sourceId: string;
   sourceStatus: string;
-  bucket: PendingReviewInboxBucket;
+  bucket: ReviewInboxBucket;
   title: string;
   source: string;
   recommendation: string;
   why: string;
   summary: string;
   createdAt: string;
+  completedAt?: string;
+  handlerKind?: ReviewInboxHandlerKind;
+  handlerLabel?: string;
   evidence: ReviewInboxEvidence[];
   actions: ReviewInboxAction[];
 }
@@ -48,9 +53,16 @@ export interface ReviewInboxSummaryCounts {
   done: number;
 }
 
+export interface ReviewInboxDoneBreakdown {
+  profile_report: number;
+  community_report: number;
+  support_chat: number;
+}
+
 export interface ReviewInboxResponse {
   summary: ReviewInboxSummaryCounts;
-  buckets: Record<PendingReviewInboxBucket, ReviewInboxBucketData>;
+  doneBreakdown: ReviewInboxDoneBreakdown;
+  buckets: Record<ReviewInboxBucket, ReviewInboxBucketData>;
   generatedAt: string;
   warnings: string[];
 }

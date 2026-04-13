@@ -84,8 +84,40 @@ describe('admin review inbox route', () => {
           meta: { total: 1 },
         }),
       )
-      .mockResolvedValueOnce(makeBackendJsonResponse({ data: [], meta: { total: 4 } }))
-      .mockResolvedValueOnce(makeBackendJsonResponse({ data: [], meta: { total: 2 } }))
+      .mockResolvedValueOnce(
+        makeBackendJsonResponse({
+          data: [
+            {
+              id: 'profile-resolved-1',
+              reporter: { id: 'r-3', name: '신고자C' },
+              reported: { id: 'u-3', name: '피신고자C' },
+              reason: '허위 프로필',
+              description: '이미 조치되었습니다.',
+              status: 'RESOLVED',
+              createdAt: '2026-04-13T08:00:00.000Z',
+              updatedAt: '2026-04-15T06:00:00.000Z',
+            },
+          ],
+          meta: { total: 4 },
+        }),
+      )
+      .mockResolvedValueOnce(
+        makeBackendJsonResponse({
+          data: [
+            {
+              id: 'profile-dismissed-1',
+              reporter: { id: 'r-4', name: '신고자D' },
+              reported: { id: 'u-4', name: '피신고자D' },
+              reason: '기타',
+              description: '근거 부족으로 반려되었습니다.',
+              status: 'DISMISSED',
+              createdAt: '2026-04-12T08:00:00.000Z',
+              updatedAt: '2026-04-14T07:00:00.000Z',
+            },
+          ],
+          meta: { total: 2 },
+        }),
+      )
       .mockResolvedValueOnce(
         makeBackendJsonResponse({
           data: [
@@ -104,8 +136,42 @@ describe('admin review inbox route', () => {
         }),
       )
       .mockResolvedValueOnce(makeBackendJsonResponse({ data: [], meta: { total: 0 } }))
-      .mockResolvedValueOnce(makeBackendJsonResponse({ data: [], meta: { total: 5 } }))
-      .mockResolvedValueOnce(makeBackendJsonResponse({ data: [], meta: { total: 1 } }))
+      .mockResolvedValueOnce(
+        makeBackendJsonResponse({
+          data: [
+            {
+              id: 'community-resolved-1',
+              reporter: { id: 'cr-2', name: '커뮤신고자2' },
+              reported: { id: 'cu-2', name: '커뮤피신고자2' },
+              article: { id: 'article-2', title: '해결된 게시글', content: '본문' },
+              reason: '스팸/도배성 게시글',
+              description: '이미 삭제 처리됨',
+              status: 'resolved',
+              createdAt: '2026-04-11T07:00:00.000Z',
+              updatedAt: '2026-04-14T09:00:00.000Z',
+            },
+          ],
+          meta: { total: 5 },
+        }),
+      )
+      .mockResolvedValueOnce(
+        makeBackendJsonResponse({
+          data: [
+            {
+              id: 'community-rejected-1',
+              reporter: { id: 'cr-3', name: '커뮤신고자3' },
+              reported: { id: 'cu-3', name: '커뮤피신고자3' },
+              article: { id: 'article-3', title: '반려된 게시글', content: '본문' },
+              reason: '욕설/혐오',
+              description: '반려됨',
+              status: 'rejected',
+              createdAt: '2026-04-10T07:00:00.000Z',
+              updatedAt: '2026-04-13T09:00:00.000Z',
+            },
+          ],
+          meta: { total: 1 },
+        }),
+      )
       .mockResolvedValueOnce(
         makeBackendJsonResponse({
           sessions: [
@@ -146,8 +212,37 @@ describe('admin review inbox route', () => {
       )
       .mockResolvedValueOnce(
         makeBackendJsonResponse({
-          sessions: [],
+          sessions: [
+            {
+              sessionId: 'session-resolved-1',
+              userId: 'user-3',
+              userNickname: '혜진',
+              status: 'resolved',
+              language: 'ko',
+              messageCount: 6,
+              lastMessage: '문제 해결됐어요 감사합니다',
+              domain: 'account',
+              collectedInfo: { issueType: 'account' },
+              createdAt: '2026-04-12T10:00:00.000Z',
+              updatedAt: '2026-04-15T11:00:00.000Z',
+              resolvedAt: '2026-04-15T11:00:00.000Z',
+              assignedAdminId: 'admin-1',
+            },
+          ],
           pagination: { total: 7, page: 1, limit: 1, totalPages: 7 },
+        }),
+      )
+      .mockResolvedValueOnce(
+        makeBackendJsonResponse({
+          sessionId: 'session-resolved-1',
+          assignedAdminId: 'admin-1',
+          createdAt: '2026-04-12T10:00:00.000Z',
+          resolvedAt: '2026-04-15T11:00:00.000Z',
+          messages: [
+            { senderType: 'user' },
+            { senderType: 'bot' },
+            { senderType: 'admin' },
+          ],
         }),
       );
 
@@ -156,8 +251,10 @@ describe('admin review inbox route', () => {
 
     expect(response.status).toBe(200);
     expect(body.summary).toEqual({ approval: 2, judgment: 3, done: 19 });
+    expect(body.doneBreakdown).toEqual({ profile_report: 6, community_report: 6, support_chat: 7 });
     expect(body.buckets.approval.total).toBe(2);
     expect(body.buckets.judgment.total).toBe(3);
+    expect(body.buckets.done.total).toBe(19);
     expect(body.buckets.approval.items[0]).toMatchObject({
       sourceKind: 'profile_report',
       title: '피신고자A 프로필 신고',
@@ -170,7 +267,15 @@ describe('admin review inbox route', () => {
       recommendation: '세션 열기',
     });
     expect(body.buckets.judgment.items[0].actions[0].href).toBe('/admin/support-chat?session=session-waiting-1');
+    expect(body.buckets.done.items[0]).toMatchObject({
+      sourceKind: 'support_chat',
+      source: '1:1 문의 · 해결 완료',
+      handlerKind: 'ai_assisted',
+      handlerLabel: 'AI 응대 후 어드민 개입',
+      recommendation: '세션 다시 보기',
+    });
+    expect(body.buckets.done.items[0].actions[0].href).toBe('/admin/support-chat?session=session-resolved-1');
     expect(body.warnings).toEqual([]);
-    expect(mockFetch).toHaveBeenCalledTimes(11);
+    expect(mockFetch).toHaveBeenCalledTimes(12);
   });
 });
