@@ -4,13 +4,12 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Box, Card, CardContent, Typography, Skeleton } from "@mui/material";
 import {
+  AutoAwesome as ReviewInboxIcon,
   AssignmentInd as ProfileReviewIcon,
-  ReportProblem as ReportIcon,
-  SupportAgent as SupportIcon,
   School as SchoolIcon,
 } from "@mui/icons-material";
-import supportChatService from "@/app/services/support-chat";
 import AdminService from "@/app/services/admin";
+import { getReviewInbox } from "@/app/services/review-inbox";
 
 interface ActionItemCardProps {
   title: string;
@@ -107,10 +106,8 @@ function ActionItemCard({
 export default function ActionRequired() {
   const [pendingReview, setPendingReview] = useState(0);
   const [reviewLoading, setReviewLoading] = useState(true);
-  const [pendingReports, setPendingReports] = useState(0);
-  const [reportsLoading, setReportsLoading] = useState(true);
-  const [pendingQA, setPendingQA] = useState(0);
-  const [qaLoading, setQaLoading] = useState(true);
+  const [reviewInboxPending, setReviewInboxPending] = useState(0);
+  const [reviewInboxLoading, setReviewInboxLoading] = useState(true);
   const [pendingCertification, setPendingCertification] = useState(0);
   const [certificationLoading, setCertificationLoading] = useState(true);
 
@@ -120,41 +117,22 @@ export default function ActionRequired() {
         setReviewLoading(true);
         const response = await AdminService.userReview.getPendingUsers(1, 1);
         setPendingReview(response.meta?.total ?? 0);
-      } catch (error) {
+      } catch (_error) {
         setPendingReview(0);
       } finally {
         setReviewLoading(false);
       }
     };
 
-    const fetchReportsCount = async () => {
+    const fetchReviewInboxCount = async () => {
       try {
-        setReportsLoading(true);
-        const params = new URLSearchParams();
-        params.append("page", "1");
-        params.append("limit", "1");
-        params.append("status", "pending");
-        const response = await AdminService.getProfileReports(params);
-        setPendingReports(response.meta?.total ?? 0);
-      } catch (error) {
-        setPendingReports(0);
+        setReviewInboxLoading(true);
+        const response = await getReviewInbox();
+        setReviewInboxPending(response.summary.approval + response.summary.judgment);
+      } catch (_error) {
+        setReviewInboxPending(0);
       } finally {
-        setReportsLoading(false);
-      }
-    };
-
-    const fetchQACount = async () => {
-      try {
-        setQaLoading(true);
-        const response = await supportChatService.getSessions({
-          status: "waiting_admin",
-          limit: 1,
-        });
-        setPendingQA(response.pagination?.total ?? 0);
-      } catch (error) {
-        setPendingQA(0);
-      } finally {
-        setQaLoading(false);
+        setReviewInboxLoading(false);
       }
     };
 
@@ -169,7 +147,7 @@ export default function ActionRequired() {
         setPendingCertification(
           response.pagination?.total ?? response.total ?? 0,
         );
-      } catch (error) {
+      } catch (_error) {
         setPendingCertification(0);
       } finally {
         setCertificationLoading(false);
@@ -177,13 +155,11 @@ export default function ActionRequired() {
     };
 
     fetchReviewCount();
-    fetchReportsCount();
-    fetchQACount();
+    fetchReviewInboxCount();
     fetchCertificationCount();
   }, []);
 
-  const totalPending =
-    pendingReview + pendingReports + pendingQA + pendingCertification;
+  const totalPending = pendingReview + reviewInboxPending + pendingCertification;
 
   return (
     <Card sx={{ mb: 3 }}>
@@ -225,6 +201,15 @@ export default function ActionRequired() {
 
         <Box className="flex gap-3 flex-wrap">
           <ActionItemCard
+            title="검토 인박스"
+            count={reviewInboxPending}
+            icon={<ReviewInboxIcon fontSize="small" />}
+            link="/admin/review-inbox"
+            color="#7c3aed"
+            bgColor="#f5f3ff"
+            loading={reviewInboxLoading}
+          />
+          <ActionItemCard
             title="회원 심사"
             count={pendingReview}
             icon={<ProfileReviewIcon fontSize="small" />}
@@ -232,24 +217,6 @@ export default function ActionRequired() {
             color="#3b82f6"
             bgColor="#eff6ff"
             loading={reviewLoading}
-          />
-          <ActionItemCard
-            title="신고 관리"
-            count={pendingReports}
-            icon={<ReportIcon fontSize="small" />}
-            link="/admin/reports"
-            color="#ef4444"
-            bgColor="#fef2f2"
-            loading={reportsLoading}
-          />
-          <ActionItemCard
-            title="Q&A 대기"
-            count={pendingQA}
-            icon={<SupportIcon fontSize="small" />}
-            link="/admin/support-chat"
-            color="#8b5cf6"
-            bgColor="#f5f3ff"
-            loading={qaLoading}
           />
           <ActionItemCard
             title="학생증 인증"
