@@ -20,7 +20,9 @@ function SupportChatPageContent() {
   const [activeTab, setActiveTab] = useState<'active' | 'resolved'>('active');
   const [domainFilter, setDomainFilter] = useState<SupportDomain | 'all'>('all');
   const [unreadMap, setUnreadMap] = useState<Record<string, number>>({});
-  const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
+  const [mobileView, setMobileView] = useState<'list' | 'chat'>(() =>
+    isMobile && sessionFromUrl ? 'chat' : 'list'
+  );
 
   const prevMessageCountsRef = useRef<Record<string, number>>({});
   const initializedFromUrlRef = useRef(false);
