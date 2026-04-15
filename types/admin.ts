@@ -30,6 +30,8 @@ export interface CardSection {
   imageUrl?: string;
 }
 
+export type CardNewsLayoutMode = 'article' | 'image_only';
+
 export interface AdminCardNewsItem {
   id: string;
   title: string;
@@ -37,6 +39,7 @@ export interface AdminCardNewsItem {
   postType: string;
   category: Category;
   backgroundImage?: BackgroundImage;
+  layoutMode: CardNewsLayoutMode;
   hasReward: boolean;
   sections?: CardSection[];
   readCount: number;
@@ -64,6 +67,7 @@ export interface CreateCardNewsRequest {
     presetId?: string;
     customUrl?: string;
   };
+  layoutMode?: CardNewsLayoutMode;
   hasReward: boolean;
   sections: Array<{
     order: number;
@@ -83,6 +87,7 @@ export interface UpdateCardNewsRequest {
     presetId?: string;
     customUrl?: string;
   };
+  layoutMode?: CardNewsLayoutMode;
   hasReward?: boolean;
   sections?: Array<{
     order: number;
