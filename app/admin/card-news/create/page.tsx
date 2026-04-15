@@ -28,6 +28,7 @@ import PresetEditModal from '../components/PresetEditModal';
 import BackgroundSelector from '../components/BackgroundSelector';
 import CardNewsPreview from '../components/CardNewsPreview';
 import CardNewsDetailPreview from '../components/CardNewsDetailPreview';
+import LayoutModeSelector from '../components/LayoutModeSelector';
 import type { BackgroundPreset } from '@/types/admin';
 import AddIcon from '@mui/icons-material/Add';
 import SaveIcon from '@mui/icons-material/Save';
@@ -54,6 +55,7 @@ function CreateCardNewsPageContent() {
       title: '',
       description: '',
       categoryCode: '',
+      layoutMode: 'article',
       hasReward: false,
       pushTitle: '',
       pushMessage: '',
@@ -66,6 +68,7 @@ function CreateCardNewsPageContent() {
   const watchedTitle = watch('title');
   const watchedDescription = watch('description');
   const watchedHasReward = watch('hasReward');
+  const watchedLayoutMode = watch('layoutMode');
   const watchedPushTitle = watch('pushTitle') ?? '';
   const watchedPushMessage = watch('pushMessage') ?? '';
   const watchedSections = watch('sections');
@@ -273,6 +276,13 @@ function CreateCardNewsPageContent() {
   };
 
   const onSubmit = handleFormSubmit(async (data) => {
+    if (data.layoutMode === 'image_only') {
+      const missing = data.sections.findIndex(s => !s.imageUrl);
+      if (missing !== -1) {
+        setSubmitError(`카드 ${missing + 1}: 이미지 전용 모드에서는 섹션 이미지가 필수입니다.`);
+        return;
+      }
+    }
     if (backgroundType === 'PRESET' && !selectedPresetId) {
       setSubmitError('배경 프리셋을 선택해주세요.');
       return;
@@ -287,6 +297,7 @@ function CreateCardNewsPageContent() {
       title: data.title.trim(),
       description: data.description.trim(),
       categoryCode: data.categoryCode,
+      layoutMode: data.layoutMode,
       backgroundImage: backgroundType === 'PRESET'
         ? { type: 'PRESET' as const, presetId: selectedPresetId }
         : { type: 'CUSTOM' as const, customUrl: customBackgroundUrl },
@@ -365,6 +376,19 @@ function CreateCardNewsPageContent() {
             <Typography variant="h6" sx={{ mb: 2 }}>
               기본 정보
             </Typography>
+
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
+                레이아웃 모드
+              </Typography>
+              <Controller
+                name="layoutMode"
+                control={control}
+                render={({ field }) => (
+                  <LayoutModeSelector value={field.value} onChange={field.onChange} />
+                )}
+              />
+            </Box>
 
             <Controller
               name="title"
@@ -528,6 +552,7 @@ function CreateCardNewsPageContent() {
                             <CardEditor
                               index={index}
                               control={control}
+                              layoutMode={watchedLayoutMode}
                               onDelete={() => handleDeleteSection(index)}
                               canDelete={fields.length > 1}
                               onImageUploaded={(i, url) => update(i, { ...watchedSections[i], imageUrl: url, order: i })}
@@ -579,7 +604,7 @@ function CreateCardNewsPageContent() {
             backgroundImageUrl={previewBackgroundUrl}
             hasReward={watchedHasReward}
           />
-          <CardNewsDetailPreview sections={watchedSections} />
+          <CardNewsDetailPreview sections={watchedSections} layoutMode={watchedLayoutMode} />
         </Box>
       </Box>
 
