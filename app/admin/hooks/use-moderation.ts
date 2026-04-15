@@ -4,12 +4,13 @@ import type { PendingUsersFilter, ReviewHistoryFilter } from '@/app/services/adm
 
 // Query keys
 export const moderationKeys = {
-  all: ['admin', 'moderation'] as const,
-  reports: () => [...moderationKeys.all, 'reports'] as const,
-  profileReports: (params: URLSearchParams) => [...moderationKeys.reports(), 'profile', params.toString()] as const,
-  profileReportDetail: (reportId: string) => [...moderationKeys.reports(), 'profile', 'detail', reportId] as const,
-  chatHistory: (chatRoomId: string, page: number, limit: number) =>
-    [...moderationKeys.reports(), 'chat-history', chatRoomId, { page, limit }] as const,
+	all: ['admin', 'moderation'] as const,
+	reports: () => [...moderationKeys.all, 'reports'] as const,
+	profileReports: (params: URLSearchParams) => [...moderationKeys.reports(), 'profile', params.toString()] as const,
+	profileReportDetail: (reportId: string) => [...moderationKeys.reports(), 'profile', 'detail', reportId] as const,
+	profileReportHistory: (reportId: string) => [...moderationKeys.reports(), 'profile', 'history', reportId] as const,
+	chatHistory: (chatRoomId: string, page: number, limit: number) =>
+		[...moderationKeys.reports(), 'chat-history', chatRoomId, { page, limit }] as const,
   userProfileImages: (userId: string) => [...moderationKeys.reports(), 'user-profile-images', userId] as const,
   userReview: () => [...moderationKeys.all, 'user-review'] as const,
   pendingUsers: (page: number, limit: number, search?: string, filters?: PendingUsersFilter, excludeUserIds?: string[]) =>
@@ -31,29 +32,41 @@ export function useProfileReports(params: URLSearchParams) {
 }
 
 export function useProfileReportDetail(reportId: string) {
-  return useQuery({
-    queryKey: moderationKeys.profileReportDetail(reportId),
-    queryFn: () => AdminService.reports.getProfileReportDetail(reportId),
-    enabled: !!reportId,
-  });
+	return useQuery({
+		queryKey: moderationKeys.profileReportDetail(reportId),
+		queryFn: () => AdminService.reports.getProfileReportDetail(reportId),
+		enabled: !!reportId,
+	});
+}
+
+export function useProfileReportHistory(reportId: string) {
+	return useQuery({
+		queryKey: moderationKeys.profileReportHistory(reportId),
+		queryFn: () => AdminService.reports.getProfileReportHistory(reportId),
+		enabled: !!reportId,
+	});
 }
 
 export function useUpdateReportStatus() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({
-      reportId,
-      status,
-      adminMemo,
-    }: {
-      reportId: string;
-      status: 'pending' | 'reviewing' | 'resolved' | 'rejected';
-      adminMemo?: string;
-    }) => AdminService.reports.updateReportStatus(reportId, status, adminMemo),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: moderationKeys.reports() });
-    },
-  });
+	const queryClient = useQueryClient();
+	return useMutation({
+		mutationFn: ({
+			reportId,
+			status,
+			note,
+			type,
+		}: {
+			reportId: string;
+			status: 'pending' | 'reviewing' | 'resolved' | 'rejected';
+			type?: 'profile' | 'community';
+			note?: string | null;
+		}) => AdminService.reports.updateReportStatus(reportId, status, { type, note }),
+		onSuccess: (_result, { reportId }) => {
+			queryClient.invalidateQueries({ queryKey: moderationKeys.reports() });
+			queryClient.invalidateQueries({ queryKey: moderationKeys.profileReportDetail(reportId) });
+			queryClient.invalidateQueries({ queryKey: moderationKeys.profileReportHistory(reportId) });
+		},
+	});
 }
 
 export function useChatHistory(chatRoomId: string, page: number = 1, limit: number = 50) {
