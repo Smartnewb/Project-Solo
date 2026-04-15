@@ -131,8 +131,8 @@ const ACTION_OPTIONS: { value: ReportAction; label: string }[] = [
   { value: 'dismissed', label: '반려' },
 ];
 
-function getDefaultActionForStatus(status: ReportStatus): ReportAction {
-  if (status === 'rejected') return 'dismissed';
+function getDefaultActionForStatus(status: ReportStatus | 'dismissed'): ReportAction {
+  if (status === 'rejected' || status === 'dismissed') return 'dismissed';
   if (status === 'resolved') return 'warned';
   return 'escalated';
 }
@@ -425,6 +425,7 @@ function ReportsManagementContent() {
       reviewing: { label: "검토중", color: "info" as const },
       resolved: { label: "처리완료", color: "success" as const },
       rejected: { label: "반려", color: "error" as const },
+      dismissed: { label: "반려", color: "error" as const },
     };
 
     const statusInfo = statusMap[status as keyof typeof statusMap] || {

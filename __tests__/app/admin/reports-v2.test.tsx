@@ -140,4 +140,43 @@ describe('ReportsV2 deep link', () => {
     expect(screen.getByText('운영자A')).toBeInTheDocument();
     expect(screen.getByText('허위 프로필 확인')).toBeInTheDocument();
   });
+
+  it('does not render the raw dismissed backend status string in the detail dialog', async () => {
+    mockedGetProfileReportDetail.mockResolvedValue({
+      id: 'profile-pending-1',
+      reporter: {
+        id: 'r-1',
+        name: '신고자A',
+        email: 'reporter@test.com',
+        phoneNumber: '010-1111-2222',
+        age: 24,
+        gender: 'FEMALE',
+        profileImageUrl: '',
+      },
+      reported: {
+        id: 'u-1',
+        name: '피신고자A',
+        email: 'reported@test.com',
+        phoneNumber: '010-3333-4444',
+        age: 25,
+        gender: 'MALE',
+        profileImageUrl: '',
+      },
+      reason: '허위 프로필',
+      description: '프로필 내용이 실제와 다릅니다.',
+      evidenceImages: ['https://img.test/a.png'],
+      status: 'dismissed',
+      createdAt: '2026-04-15T09:00:00.000Z',
+      updatedAt: null,
+    });
+
+    render(<ReportsV2 />);
+
+    await waitFor(() => {
+      expect(mockedGetProfileReportDetail).toHaveBeenCalledWith('profile-pending-1');
+    });
+
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(screen.queryByText('dismissed')).not.toBeInTheDocument();
+  });
 });
