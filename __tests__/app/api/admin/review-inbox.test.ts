@@ -244,6 +244,42 @@ describe('admin review inbox route', () => {
             { senderType: 'admin' },
           ],
         }),
+      )
+      .mockResolvedValueOnce(
+        makeBackendJsonResponse({
+          data: [
+            {
+              id: 'history-profile-resolved-1',
+              reportType: 'profile',
+              reportId: 'profile-resolved-1',
+              reviewerId: 'admin-1',
+              reviewerName: '운영자A',
+              previousStatus: 'reviewing',
+              nextStatus: 'resolved',
+              action: 'warned',
+              note: '허위 프로필 확인',
+              createdAt: '2026-04-15T05:30:00.000Z',
+            },
+          ],
+        }),
+      )
+      .mockResolvedValueOnce(
+        makeBackendJsonResponse({
+          data: [
+            {
+              id: 'history-profile-dismissed-1',
+              reportType: 'profile',
+              reportId: 'profile-dismissed-1',
+              reviewerId: 'admin-2',
+              reviewerName: '운영자B',
+              previousStatus: 'reviewing',
+              nextStatus: 'dismissed',
+              action: 'dismissed',
+              note: '근거 부족',
+              createdAt: '2026-04-14T06:30:00.000Z',
+            },
+          ],
+        }),
       );
 
     const response = await GET(createRequest());
@@ -274,8 +310,22 @@ describe('admin review inbox route', () => {
       handlerLabel: 'AI 응대 후 어드민 개입',
       recommendation: '세션 다시 보기',
     });
+    const completedProfileItem = body.buckets.done.items.find(
+      (item: { sourceId: string }) => item.sourceId === 'profile-resolved-1',
+    );
+    expect(completedProfileItem).toMatchObject({
+      sourceKind: 'profile_report',
+      completedAt: '2026-04-15T05:30:00.000Z',
+      handlerKind: 'admin_only',
+      handlerLabel: '어드민이 직접 처리',
+    });
+    expect(completedProfileItem.evidence).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: '처리 메모 · 허위 프로필 확인' }),
+      ]),
+    );
     expect(body.buckets.done.items[0].actions[0].href).toBe('/admin/support-chat?session=session-resolved-1');
     expect(body.warnings).toEqual([]);
-    expect(mockFetch).toHaveBeenCalledTimes(12);
+    expect(mockFetch).toHaveBeenCalledTimes(14);
   });
 });

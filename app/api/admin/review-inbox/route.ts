@@ -74,6 +74,23 @@ type CommunityReport = {
   updatedAt?: string;
 };
 
+type ReportHistoryItem = {
+  id: string;
+  reportType?: 'profile' | 'community';
+  reportId?: string;
+  reviewerId?: string;
+  reviewerName?: string;
+  previousStatus?: string;
+  nextStatus?: string;
+  action?: string;
+  note?: string | null;
+  createdAt?: string;
+};
+
+type ReportHistoryResponse = {
+  data?: ReportHistoryItem[];
+};
+
 type SessionMeta = Awaited<ReturnType<typeof getSessionMeta>>;
 
 const DOMAIN_LABELS: Record<NonNullable<SupportSessionSummary['domain']>, string> = {
@@ -192,6 +209,49 @@ function getCompletedCommunityStatusLabel(sourceStatus: 'resolved' | 'rejected')
   return sourceStatus === 'resolved' ? '처리 완료' : '반려';
 }
 
+function getReportHistoryItems(result?: PromiseSettledResult<ReportHistoryResponse>) {
+  if (!result || result.status !== 'fulfilled') {
+    return [] as ReportHistoryItem[];
+  }
+
+  return (result.value.data ?? [])
+    .map((item) => ({
+      id: item.id,
+      reportType: item.reportType ?? (item as { report_type?: 'profile' | 'community' }).report_type,
+      reportId: item.reportId ?? (item as { report_id?: string }).report_id,
+      reviewerId: item.reviewerId ?? (item as { reviewer_id?: string }).reviewer_id,
+      reviewerName: item.reviewerName ?? (item as { reviewer_name?: string }).reviewer_name,
+      previousStatus: item.previousStatus ?? (item as { previous_status?: string }).previous_status,
+      nextStatus: item.nextStatus ?? (item as { next_status?: string }).next_status,
+      action: item.action,
+      note: item.note,
+      createdAt: item.createdAt ?? (item as { created_at?: string }).created_at,
+    }))
+    .sort((left, right) => new Date(right.createdAt ?? 0).getTime() - new Date(left.createdAt ?? 0).getTime());
+}
+
+function getCompletedProfileHandler(historyItem?: ReportHistoryItem | null) {
+  if (!historyItem) {
+    return {
+      kind: 'unknown' as const,
+      label: '처리 주체 확인 불가',
+      why: '현재 처리 주체를 구분할 수 없는 완료 이력입니다.',
+      reviewedBy: null,
+      historySource: 'legacy' as const,
+    };
+  }
+
+  return {
+    kind: 'admin_only' as const,
+    label: '어드민이 직접 처리',
+    why: historyItem.reviewerName
+      ? `${historyItem.reviewerName} 어드민이 직접 정리한 신고 처리 이력입니다.`
+      : '어드민이 직접 정리한 신고 처리 이력입니다.',
+    reviewedBy: historyItem.reviewerName ?? historyItem.reviewerId ?? null,
+    historySource: 'backend' as const,
+  };
+}
+
 function getSupportHandler(session: SupportSessionSummary, detailResult?: PromiseSettledResult<SupportSessionDetail>) {
   if (detailResult?.status === 'fulfilled') {
     const senderTypes = new Set(detailResult.value.messages?.map((message) => message.senderType) ?? []);
@@ -276,10 +336,16 @@ function mapProfileReport(report: ProfileReport, bucket: 'approval' | 'judgment'
   };
 }
 
-function mapCompletedProfileReport(report: ProfileReport, sourceStatus: 'resolved' | 'dismissed'): ReviewInboxItem {
+function mapCompletedProfileReport(
+  report: ProfileReport,
+  sourceStatus: 'resolved' | 'dismissed',
+  historyResult?: PromiseSettledResult<ReportHistoryResponse>,
+): ReviewInboxItem {
   const reason = toReasonLabel(report.reason);
   const reportedName = report.reported?.name || '알 수 없는 사용자';
   const statusLabel = getCompletedProfileStatusLabel(sourceStatus);
+  const latestHistory = getReportHistoryItems(historyResult)[0] ?? null;
+  const handler = getCompletedProfileHandler(latestHistory);
 
   return {
     id: `profile_report:${report.id}`,
@@ -290,14 +356,23 @@ function mapCompletedProfileReport(report: ProfileReport, sourceStatus: 'resolve
     title: `${reportedName} 프로필 신고`,
     source: `프로필 신고 · ${statusLabel}`,
     recommendation: '처리 이력 보기',
-    why: `이미 ${statusLabel} 상태로 정리된 프로필 신고입니다.`,
+    why: handler.why,
     summary: report.description?.trim() || `${reason} 사유로 접수된 프로필 신고입니다.`,
     createdAt: report.createdAt,
-    completedAt: getCompletedAt(report.updatedAt, report.createdAt),
-    handlerKind: 'unknown',
-    handlerLabel: '처리 주체 확인 불가',
+    completedAt: getCompletedAt(latestHistory?.createdAt, getCompletedAt(report.updatedAt, report.createdAt)),
+    handlerKind: handler.kind,
+    handlerLabel: handler.label,
+    reviewedBy: handler.reviewedBy,
+    reviewNote: latestHistory?.note?.trim() || null,
+    historySource: handler.historySource,
     evidence: createEvidence([
       { id: `${report.id}-status`, type: 'history', label: `처리 결과 · ${statusLabel}` },
+      latestHistory?.action
+        ? { id: `${report.id}-action`, type: 'history', label: `처리 액션 · ${latestHistory.action}` }
+        : null,
+      latestHistory?.note?.trim()
+        ? { id: `${report.id}-note`, type: 'text', label: `처리 메모 · ${latestHistory.note}` }
+        : null,
       { id: `${report.id}-reason`, type: 'text', label: `신고 사유 · ${reason}` },
       report.reporter?.name && report.reported?.name
         ? {
@@ -501,6 +576,7 @@ function buildReviewInboxResponse(payload: {
   supportHandling: PromiseSettledResult<SupportSessionsResponse>;
   supportResolved: PromiseSettledResult<SupportSessionsResponse>;
   supportResolvedDetails: Map<string, PromiseSettledResult<SupportSessionDetail>>;
+  profileCompletedHistories: Map<string, PromiseSettledResult<ReportHistoryResponse>>;
 }): ReviewInboxResponse {
   const approvalItems = sortByNewest([
     ...getReportItems(payload.profilePending).map((item) => mapProfileReport(item, 'approval')),
@@ -515,8 +591,12 @@ function buildReviewInboxResponse(payload: {
   ]).slice(0, ACTIVE_BUCKET_LIMIT);
 
   const doneItems = sortByLatestCompletion([
-    ...getReportItems(payload.profileResolved).map((item) => mapCompletedProfileReport(item, 'resolved')),
-    ...getReportItems(payload.profileDismissed).map((item) => mapCompletedProfileReport(item, 'dismissed')),
+    ...getReportItems(payload.profileResolved).map((item) =>
+      mapCompletedProfileReport(item, 'resolved', payload.profileCompletedHistories.get(item.id)),
+    ),
+    ...getReportItems(payload.profileDismissed).map((item) =>
+      mapCompletedProfileReport(item, 'dismissed', payload.profileCompletedHistories.get(item.id)),
+    ),
     ...getReportItems(payload.communityResolved).map((item) => mapCompletedCommunityReport(item, 'resolved')),
     ...getReportItems(payload.communityRejected).map((item) => mapCompletedCommunityReport(item, 'rejected')),
     ...getSupportItems(payload.supportResolved).map((item) =>
@@ -664,6 +744,7 @@ export async function GET(_request: Request) {
   ]);
 
   const supportResolvedDetails = new Map<string, PromiseSettledResult<SupportSessionDetail>>();
+  const profileCompletedHistories = new Map<string, PromiseSettledResult<ReportHistoryResponse>>();
 
   if (supportResolved.status === 'fulfilled') {
     const resolvedSessions = getSupportItems(supportResolved);
@@ -675,6 +756,23 @@ export async function GET(_request: Request) {
 
     resolvedSessions.forEach((session, index) => {
       supportResolvedDetails.set(session.sessionId, detailResults[index]);
+    });
+  }
+
+  const completedProfileReports = [
+    ...getReportItems(profileResolved),
+    ...getReportItems(profileDismissed),
+  ];
+
+  if (completedProfileReports.length > 0) {
+    const historyResults = await Promise.allSettled(
+      completedProfileReports.map((report) =>
+        fetchBackendJson<ReportHistoryResponse>(token, sessionMeta, `admin/v2/reports/${report.id}/history`, {}),
+      ),
+    );
+
+    completedProfileReports.forEach((report, index) => {
+      profileCompletedHistories.set(report.id, historyResults[index]);
     });
   }
 
@@ -692,6 +790,7 @@ export async function GET(_request: Request) {
       supportHandling,
       supportResolved,
       supportResolvedDetails,
+      profileCompletedHistories,
     }),
   );
 }
