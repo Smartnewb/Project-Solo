@@ -27,6 +27,7 @@ import PresetEditModal from '../../components/PresetEditModal';
 import BackgroundSelector from '../../components/BackgroundSelector';
 import CardNewsPreview from '../../components/CardNewsPreview';
 import CardNewsDetailPreview from '../../components/CardNewsDetailPreview';
+import LayoutModeSelector from '../../components/LayoutModeSelector';
 import type { BackgroundPreset } from '@/types/admin';
 import AddIcon from '@mui/icons-material/Add';
 import SaveIcon from '@mui/icons-material/Save';
@@ -53,6 +54,7 @@ function EditCardNewsPageContent() {
       title: '',
       description: '',
       categoryCode: '',
+      layoutMode: 'article',
       hasReward: false,
       pushTitle: '',
       pushMessage: '',
@@ -65,6 +67,7 @@ function EditCardNewsPageContent() {
   const watchedTitle = watch('title');
   const watchedDescription = watch('description');
   const watchedHasReward = watch('hasReward');
+  const watchedLayoutMode = watch('layoutMode');
   const watchedSections = watch('sections');
 
   // Non-form state
@@ -126,6 +129,7 @@ function EditCardNewsPageContent() {
         title: cardNewsData.title,
         description: cardNewsData.description || '',
         categoryCode: cardNewsData.category.code,
+        layoutMode: cardNewsData.layoutMode || 'article',
         hasReward: cardNewsData.hasReward || false,
         pushTitle: cardNewsData.pushNotificationTitle || '',
         pushMessage: cardNewsData.pushNotificationMessage || '',
@@ -252,6 +256,13 @@ function EditCardNewsPageContent() {
   };
 
   const onSubmit = handleFormSubmit(async (data) => {
+    if (data.layoutMode === 'image_only' && !isPublished) {
+      const missing = data.sections.findIndex(s => !s.imageUrl);
+      if (missing !== -1) {
+        setSubmitError(`카드 ${missing + 1}: 이미지 전용 모드에서는 섹션 이미지가 필수입니다.`);
+        return;
+      }
+    }
     if (backgroundType === 'PRESET' && !selectedPresetId) {
       setSubmitError('배경 프리셋을 선택해주세요.');
       return;
@@ -265,6 +276,7 @@ function EditCardNewsPageContent() {
     const payload: any = {
       title: data.title.trim(),
       description: data.description.trim(),
+      layoutMode: data.layoutMode,
       backgroundImage: backgroundType === 'PRESET'
         ? { type: 'PRESET' as const, presetId: selectedPresetId }
         : { type: 'CUSTOM' as const, customUrl: customBackgroundUrl },
@@ -336,6 +348,23 @@ function EditCardNewsPageContent() {
                 발행된 카드뉴스입니다. 제목, 설명, 배경 이미지, 보상, 푸시 메시지만 수정 가능합니다. 섹션은 수정할 수 없습니다.
               </Alert>
             )}
+
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="subtitle2" fontWeight="bold" sx={{ mb: 1 }}>
+                레이아웃 모드
+              </Typography>
+              <Controller
+                name="layoutMode"
+                control={control}
+                render={({ field }) => (
+                  <LayoutModeSelector
+                    value={field.value}
+                    onChange={field.onChange}
+                    disabled={isPublished}
+                  />
+                )}
+              />
+            </Box>
 
             <Controller
               name="title"
@@ -489,6 +518,7 @@ function EditCardNewsPageContent() {
                               <CardEditor
                                 index={index}
                                 control={control}
+                                layoutMode={watchedLayoutMode}
                                 onDelete={() => handleDeleteSection(index)}
                                 canDelete={fields.length > 1}
                                 onImageUploaded={(i, url) => update(i, { ...watchedSections[i], imageUrl: url, order: i })}
@@ -547,7 +577,7 @@ function EditCardNewsPageContent() {
             backgroundImageUrl={previewBackgroundUrl}
             hasReward={watchedHasReward}
           />
-          <CardNewsDetailPreview sections={watchedSections} />
+          <CardNewsDetailPreview sections={watchedSections} layoutMode={watchedLayoutMode} />
         </Box>
       </Box>
 
