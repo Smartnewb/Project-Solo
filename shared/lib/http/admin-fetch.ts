@@ -40,18 +40,34 @@ async function parseJsonBody<T>(res: Response): Promise<T> {
   return JSON.parse(text) as T;
 }
 
+export type AdminQueryValue =
+  | string
+  | number
+  | boolean
+  | string[]
+  | undefined
+  | null;
+export type AdminQueryParams = Record<string, AdminQueryValue>;
+
 async function request<T>(
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   path: string,
-  options?: { body?: unknown; params?: Record<string, string> },
+  options?: { body?: unknown; params?: AdminQueryParams },
 ): Promise<T> {
   let url = `${PROXY_BASE}${path}`;
 
   if (options?.params) {
-    const search = new URLSearchParams(
-      Object.entries(options.params).filter(([, v]) => v != null),
-    ).toString();
-    if (search) url += `?${search}`;
+    const search = new URLSearchParams();
+    for (const [key, value] of Object.entries(options.params)) {
+      if (value == null || value === '') continue;
+      if (Array.isArray(value)) {
+        for (const v of value) search.append(key, v);
+      } else {
+        search.append(key, String(value));
+      }
+    }
+    const qs = search.toString();
+    if (qs) url += `?${qs}`;
   }
 
   const res = await fetch(url, {
@@ -101,7 +117,7 @@ export async function adminRequest<T>(
 
 export function adminGet<T>(
   path: string,
-  params?: Record<string, string>,
+  params?: AdminQueryParams,
 ): Promise<T> {
   return request<T>('GET', path, { params });
 }
