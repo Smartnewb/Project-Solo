@@ -112,6 +112,15 @@ type UpdateReportStatusOptions =
 			note?: string | null;
 	  };
 
+function normalizeFrontendReportStatus(status?: string | null): 'pending' | 'reviewing' | 'resolved' | 'rejected' {
+	const normalized = status?.toLowerCase();
+
+	if (normalized === 'reviewing') return 'reviewing';
+	if (normalized === 'resolved') return 'resolved';
+	if (normalized === 'rejected' || normalized === 'dismissed') return 'rejected';
+	return 'pending';
+}
+
 function toBackendReportStatus(
 	status: 'pending' | 'reviewing' | 'resolved' | 'rejected',
 ): BackendReportStatus {
@@ -212,7 +221,7 @@ export const reports = {
 				reason: item.reason || '',
 				description: item.description || null,
 				evidenceImages: item.evidenceImages || [],
-				status: item.status || 'pending',
+				status: normalizeFrontendReportStatus(item.status),
 				createdAt: item.createdAt,
 				updatedAt: null,
 			}));
@@ -231,7 +240,10 @@ export const reports = {
 			const result = await adminGet<{ data: any }>(
 				`/admin/v2/reports/${reportId}`,
 			);
-			return result.data;
+			return {
+				...result.data,
+				status: normalizeFrontendReportStatus(result.data?.status),
+			};
 		} catch (error: any) {
 			throw error;
 		}
@@ -271,7 +283,7 @@ export const reports = {
 					return rightTime - leftTime;
 				});
 		} catch (error: any) {
-			throw error;
+			return [];
 		}
 	},
 

@@ -111,6 +111,46 @@ describe('moderation admin services', () => {
     });
   });
 
+  it('normalizes dismissed profile report statuses into rejected in list responses', async () => {
+    (adminGet as jest.Mock).mockResolvedValue({
+      data: [
+        {
+          id: 'report-1',
+          reporterId: 'reporter-1',
+          reporterName: '신고자A',
+          reportedId: 'reported-1',
+          reportedName: '피신고자A',
+          reason: '허위 프로필',
+          description: null,
+          evidenceImages: [],
+          status: 'DISMISSED',
+          createdAt: '2026-04-15T12:00:00.000Z',
+        },
+      ],
+      meta: { total: 1, page: 1, limit: 10, totalPages: 1 },
+    });
+
+    const params = new URLSearchParams();
+    const result = await reports.getProfileReports(params);
+
+    expect(result.items[0]?.status).toBe('rejected');
+  });
+
+  it('normalizes dismissed profile report detail status into rejected', async () => {
+    (adminGet as jest.Mock).mockResolvedValue({
+      data: {
+        id: 'report-1',
+        status: 'dismissed',
+        reason: '허위 프로필',
+        createdAt: '2026-04-15T12:00:00.000Z',
+      },
+    });
+
+    const result = await reports.getProfileReportDetail('report-1');
+
+    expect(result.status).toBe('rejected');
+  });
+
   it('normalizes report history items from the reports v2 endpoint', async () => {
     (adminGet as jest.Mock).mockResolvedValue({
       data: [
@@ -145,5 +185,11 @@ describe('moderation admin services', () => {
     ]);
 
     expect(adminGet).toHaveBeenCalledWith('/admin/v2/reports/report-1/history');
+  });
+
+  it('returns an empty report history when the backend history endpoint is unavailable', async () => {
+    (adminGet as jest.Mock).mockRejectedValue(new Error('Not Found'));
+
+    await expect(reports.getProfileReportHistory('report-1')).resolves.toEqual([]);
   });
 });
