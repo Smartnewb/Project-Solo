@@ -4,7 +4,7 @@ jest.mock('@/shared/lib/http/admin-fetch', () => ({
   adminPatch: jest.fn(),
 }));
 
-import { profileImages, userReview } from '@/app/services/admin/moderation';
+import { profileImages, reports, userReview } from '@/app/services/admin/moderation';
 import { adminGet, adminPatch, adminPost } from '@/shared/lib/http/admin-fetch';
 
 describe('moderation admin services', () => {
@@ -87,5 +87,63 @@ describe('moderation admin services', () => {
         hasMore: false,
       },
     });
+  });
+
+  it('sends the new report status payload contract for profile reports', async () => {
+    (adminPatch as jest.Mock).mockResolvedValue({
+      data: {
+        success: true,
+      },
+    });
+
+    await expect(
+      reports.updateReportStatus('report-1', 'rejected', {
+        type: 'profile',
+        note: '운영 메모',
+      }),
+    ).resolves.toEqual({ success: true });
+
+    expect(adminPatch).toHaveBeenCalledWith('/admin/v2/reports/report-1/status', {
+      type: 'profile',
+      status: 'dismissed',
+      action: 'dismissed',
+      note: '운영 메모',
+    });
+  });
+
+  it('normalizes report history items from the reports v2 endpoint', async () => {
+    (adminGet as jest.Mock).mockResolvedValue({
+      data: [
+        {
+          id: 'history-1',
+          reportType: 'profile',
+          reportId: 'report-1',
+          reviewerId: 'admin-1',
+          reviewerName: { id: 'admin-1', name: '운영자A' },
+          previousStatus: 'reviewing',
+          nextStatus: 'dismissed',
+          action: 'dismissed',
+          note: { id: 'memo-1', name: '허위 프로필 확인' },
+          createdAt: '2026-04-15T12:00:00.000Z',
+        },
+      ],
+    });
+
+    await expect(reports.getProfileReportHistory('report-1')).resolves.toEqual([
+      {
+        id: 'history-1',
+        reportType: 'profile',
+        reportId: 'report-1',
+        reviewerId: 'admin-1',
+        reviewerName: '운영자A',
+        previousStatus: 'reviewing',
+        nextStatus: 'dismissed',
+        action: 'dismissed',
+        note: '허위 프로필 확인',
+        createdAt: '2026-04-15T12:00:00.000Z',
+      },
+    ]);
+
+    expect(adminGet).toHaveBeenCalledWith('/admin/v2/reports/report-1/history');
   });
 });

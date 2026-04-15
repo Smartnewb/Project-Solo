@@ -87,6 +87,76 @@ export interface PendingUsersFilter {
 	region?: string;
 }
 
+export type ReportTargetType = 'profile' | 'community';
+export type ReportAction = 'dismissed' | 'warned' | 'suspended' | 'banned' | 'escalated';
+type BackendReportStatus = 'pending' | 'reviewing' | 'resolved' | 'dismissed';
+
+export interface ReportHistoryEntry {
+	id: string;
+	reportType: ReportTargetType;
+	reportId: string;
+	reviewerId: string | null;
+	reviewerName: string | null;
+	previousStatus: string;
+	nextStatus: string;
+	action: ReportAction;
+	note: string | null;
+	createdAt: string | null;
+}
+
+type UpdateReportStatusOptions =
+	| string
+	| {
+			type?: ReportTargetType;
+			action?: ReportAction;
+			note?: string | null;
+	  };
+
+function toBackendReportStatus(
+	status: 'pending' | 'reviewing' | 'resolved' | 'rejected',
+): BackendReportStatus {
+	return status === 'rejected' ? 'dismissed' : status;
+}
+
+function toDefaultReportAction(status: BackendReportStatus): ReportAction {
+	if (status === 'dismissed') return 'dismissed';
+	if (status === 'resolved') return 'warned';
+	return 'escalated';
+}
+
+function normalizeReportUpdateOptions(options?: UpdateReportStatusOptions) {
+	if (typeof options === 'string') {
+		return {
+			type: 'profile' as const,
+			note: options,
+		};
+	}
+
+	return {
+		type: options?.type ?? 'profile',
+		action: options?.action,
+		note: options?.note ?? null,
+	};
+}
+
+function normalizeReportHistoryEntry(item: any): ReportHistoryEntry {
+	return {
+		id: item.id,
+		reportType: (item.reportType ?? item.report_type ?? 'profile') as ReportTargetType,
+		reportId: item.reportId ?? item.report_id,
+		reviewerId: normalizeDisplayText(item.reviewerId ?? item.reviewer_id),
+		reviewerName:
+			normalizeDisplayText(item.reviewerName) ??
+			normalizeDisplayText(item.reviewer_name) ??
+			normalizeDisplayText(item.reviewedBy),
+		previousStatus: item.previousStatus ?? item.previous_status,
+		nextStatus: item.nextStatus ?? item.next_status,
+		action: item.action,
+		note: normalizeDisplayText(item.note),
+		createdAt: item.createdAt ?? item.created_at ?? null,
+	};
+}
+
 export const reports = {
 	getProfileReports: async (params: URLSearchParams) => {
 		try {
@@ -170,15 +240,36 @@ export const reports = {
 	updateReportStatus: async (
 		reportId: string,
 		status: 'pending' | 'reviewing' | 'resolved' | 'rejected',
-		adminMemo?: string,
+		options?: UpdateReportStatusOptions,
 	) => {
 		try {
-			const backendStatus = status === 'rejected' ? 'dismissed' : status;
+			const backendStatus = toBackendReportStatus(status);
+			const normalizedOptions = normalizeReportUpdateOptions(options);
 			const result = await adminPatch<{ data: any }>(
 				`/admin/v2/reports/${reportId}/status`,
-				{ status: backendStatus, reason: adminMemo },
+				{
+					type: normalizedOptions.type,
+					status: backendStatus,
+					action: normalizedOptions.action ?? toDefaultReportAction(backendStatus),
+					note: normalizedOptions.note,
+				},
 			);
 			return result.data;
+		} catch (error: any) {
+			throw error;
+		}
+	},
+
+	getProfileReportHistory: async (reportId: string): Promise<ReportHistoryEntry[]> => {
+		try {
+			const result = await adminGet<{ data: any[] }>(`/admin/v2/reports/${reportId}/history`);
+			return (result.data || [])
+				.map((item: any) => normalizeReportHistoryEntry(item))
+				.sort((left, right) => {
+					const leftTime = left.createdAt ? new Date(left.createdAt).getTime() : 0;
+					const rightTime = right.createdAt ? new Date(right.createdAt).getTime() : 0;
+					return rightTime - leftTime;
+				});
 		} catch (error: any) {
 			throw error;
 		}

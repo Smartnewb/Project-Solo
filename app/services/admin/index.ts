@@ -73,6 +73,9 @@ export type { FormattedData, StatItem, GenderStatItem } from './_shared';
 export type {
 	ReviewHistoryFilter,
 	ReviewHistoryItem,
+	ReportAction,
+	ReportHistoryEntry,
+	ReportTargetType,
 	VisionFaceAnnotation,
 	ImageValidationResponse,
 	ReviewHistoryResponse,
