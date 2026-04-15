@@ -53,7 +53,7 @@ export const utm = {
 		if (params?.page != null) query.page = String(params.page);
 		if (params?.search) query.search = params.search;
 		if (params?.utmSource) query.utmSource = params.utmSource;
-		return adminGet<{ data: UtmLink[]; total: number }>('/admin/v2/utm/links', query);
+		return adminGet<{ data: UtmLink[]; meta: { total: number; page: number; limit: number } }>('/admin/v2/utm/links', query);
 	},
 
 	createLink: async (data: {

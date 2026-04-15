@@ -65,7 +65,7 @@ export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
         search: search || undefined,
       });
       setLinks(result.data);
-      setTotal(result.total);
+      setTotal(result.meta.total);
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || '링크 목록을 불러오지 못했습니다.');
     } finally {
