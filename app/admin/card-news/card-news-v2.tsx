@@ -176,6 +176,15 @@ function CardNewsPageContent() {
                       size="small"
                       color="default"
                     />
+                    {item.layoutMode === 'image_only' && (
+                      <Chip
+                        label="이미지 전용"
+                        size="small"
+                        color="secondary"
+                        variant="outlined"
+                        sx={{ ml: 1 }}
+                      />
+                    )}
                   </TableCell>
                   <TableCell align="center">
                     {item.pushSentAt ? (
