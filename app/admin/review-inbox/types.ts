@@ -38,6 +38,9 @@ export interface ReviewInboxItem {
   completedAt?: string;
   handlerKind?: ReviewInboxHandlerKind;
   handlerLabel?: string;
+  reviewedBy?: string | null;
+  reviewNote?: string | null;
+  historySource?: 'backend' | 'legacy';
   evidence: ReviewInboxEvidence[];
   actions: ReviewInboxAction[];
 }
