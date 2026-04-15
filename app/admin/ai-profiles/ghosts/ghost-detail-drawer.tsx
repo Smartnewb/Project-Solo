@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import { ghostInjection } from '@/app/services/admin/ghost-injection';
-import type { GhostDetail, UpdateGhostFields } from '@/app/types/ghost-injection';
+import type { GhostDetail, ImageVendor, UpdateGhostFields } from '@/app/types/ghost-injection';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
 import { useToast } from '@/shared/ui/admin/toast';
 import { Alert, AlertDescription } from '@/shared/ui/alert';
@@ -12,6 +13,13 @@ import { Button } from '@/shared/ui/button';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
 import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/shared/ui/select';
+import {
 	Sheet,
 	SheetContent,
 	SheetDescription,
@@ -19,10 +27,21 @@ import {
 	SheetTitle,
 } from '@/shared/ui/sheet';
 import { Textarea } from '@/shared/ui/textarea';
+import { cn } from '@/shared/utils';
+import {
+	DEFAULT_VENDOR,
+	DEFAULT_VENDOR_ID,
+	findVendorOption,
+	GHOST_VENDOR_OPTIONS,
+	vendorOptionsForSelect,
+	vendorSupportsReference,
+} from '../_shared/ghost-vendor-options';
 import { ReasonInput, isReasonValid } from '../_shared/reason-input';
 import { ghostInjectionKeys } from '../_shared/query-keys';
 import { GhostPhotoSlot } from './ghost-photo-slot';
 import { GhostStatusBadge } from './ghost-status-badge';
+
+const PHOTO_REGEN_REASON = '사진 재생성';
 
 interface GhostDetailDrawerProps {
 	ghostAccountId: string | null;
@@ -156,12 +175,6 @@ export function GhostDetailDrawer({ ghostAccountId, onClose }: GhostDetailDrawer
 								</div>
 								<div className="grid grid-cols-2 gap-2 rounded-md border bg-slate-50 p-3 text-xs">
 									<div>
-										<span className="text-slate-500">프로필 유형</span>
-										<div className="font-medium text-slate-800">
-											{detail.archetype?.name ?? '—'}
-										</div>
-									</div>
-									<div>
 										<span className="text-slate-500">대학</span>
 										<div className="font-medium text-slate-800">
 											{detail.university?.name ?? '—'}
@@ -172,6 +185,10 @@ export function GhostDetailDrawer({ ghostAccountId, onClose }: GhostDetailDrawer
 										<div className="font-medium text-slate-800">
 											{detail.department?.name ?? '—'}
 										</div>
+									</div>
+									<div>
+										<span className="text-slate-500">등급</span>
+										<div className="font-medium text-slate-800">{detail.rank}</div>
 									</div>
 									<div>
 										<span className="text-slate-500">생성일</span>
@@ -315,6 +332,8 @@ export function GhostDetailDrawer({ ghostAccountId, onClose }: GhostDetailDrawer
 								</p>
 							</section>
 
+							<PhotoRegenerationSection detail={detail} />
+
 							<section className="space-y-2">
 								<h3 className="text-sm font-semibold text-slate-900">최근 감사 로그</h3>
 								{detail.recentAuditEvents.length === 0 ? (
@@ -344,5 +363,140 @@ export function GhostDetailDrawer({ ghostAccountId, onClose }: GhostDetailDrawer
 				</div>
 			</SheetContent>
 		</Sheet>
+	);
+}
+
+function PhotoRegenerationSection({ detail }: { detail: GhostDetail }) {
+	const toast = useToast();
+	const queryClient = useQueryClient();
+	const [vendorId, setVendorId] = useState(DEFAULT_VENDOR_ID);
+	const [prompt, setPrompt] = useState('');
+	const [selectedRefs, setSelectedRefs] = useState<Set<string>>(new Set());
+	const [reason, setReason] = useState('');
+
+	const vendor: ImageVendor = findVendorOption(vendorId)?.value ?? DEFAULT_VENDOR;
+	const canUseReference = vendorSupportsReference(vendor);
+
+	const mutation = useMutation({
+		mutationFn: () =>
+			ghostInjection.regeneratePhotos(detail.ghostAccountId, {
+				prompt: prompt.trim() || undefined,
+				referencePhotoUrls: canUseReference && selectedRefs.size > 0 ? Array.from(selectedRefs) : undefined,
+				reason: reason.trim() || PHOTO_REGEN_REASON,
+				vendor,
+			}),
+		onSuccess: () => {
+			toast.success('사진이 재생성되었습니다.');
+			setPrompt('');
+			setSelectedRefs(new Set());
+			setReason('');
+			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.ghostDetail(detail.ghostAccountId) });
+			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.ghosts() });
+		},
+		onError: (error) => toast.error(getAdminErrorMessage(error)),
+	});
+
+	const toggleRef = (url: string) => {
+		setSelectedRefs((prev) => {
+			const next = new Set(prev);
+			if (next.has(url)) next.delete(url);
+			else next.add(url);
+			return next;
+		});
+	};
+
+	const handleVendorChange = (id: string) => {
+		setVendorId(id);
+		setSelectedRefs(new Set());
+	};
+
+	return (
+		<section className="space-y-3">
+			<div className="flex items-center gap-2">
+				<h3 className="text-sm font-semibold text-slate-900">사진 재생성</h3>
+				<Sparkles className="h-3.5 w-3.5 text-amber-500" />
+			</div>
+
+			<div className="space-y-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3">
+				<div className="space-y-1">
+					<Label className="text-xs">벤더</Label>
+					<Select value={vendorId} onValueChange={handleVendorChange}>
+						<SelectTrigger className="h-8 text-xs">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							{vendorOptionsForSelect().map((option) => (
+								<SelectItem key={option.id} value={option.id}>
+									<div className="flex items-center gap-1.5">
+										<span>{option.label}</span>
+										<span className="text-[10px] text-slate-400">{option.pricePerImage}</span>
+									</div>
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+				</div>
+
+				{canUseReference && detail.photos.length > 0 && (
+					<div className="space-y-1">
+						<Label className="text-xs">
+							레퍼런스 이미지 ({selectedRefs.size}장 선택)
+						</Label>
+						<div className="grid grid-cols-3 gap-1.5">
+							{detail.photos.map((photo) => {
+								const isRef = selectedRefs.has(photo.url);
+								return (
+									<div
+										key={photo.imageId}
+										onClick={() => toggleRef(photo.url)}
+										className={cn(
+											'relative aspect-square cursor-pointer overflow-hidden rounded-md border-2',
+											isRef ? 'border-blue-500 ring-1 ring-blue-200' : 'border-transparent hover:border-slate-300',
+										)}
+									>
+										{/* eslint-disable-next-line @next/next/no-img-element */}
+										<img src={photo.url} alt={`슬롯 ${photo.slotIndex}`} className="h-full w-full object-cover" />
+										{isRef && <div className="absolute inset-0 bg-blue-500/20" />}
+									</div>
+								);
+							})}
+						</div>
+					</div>
+				)}
+
+				<div className="space-y-1">
+					<Label className="text-xs">프롬프트 (선택)</Label>
+					<Textarea
+						value={prompt}
+						onChange={(e) => setPrompt(e.target.value)}
+						placeholder="비워두면 프로필 정보 기반 기본 프롬프트가 사용됩니다."
+						rows={2}
+						className="text-xs"
+					/>
+				</div>
+
+				<ReasonInput value={reason} onChange={setReason} minLength={10} rows={2} />
+
+				{!canUseReference && (
+					<p className="text-[11px] text-slate-400">
+						{findVendorOption(vendorId)?.label ?? '이 벤더'}는 레퍼런스 이미지(img2img)를 지원하지 않습니다.
+					</p>
+				)}
+
+				<Button
+					size="sm"
+					variant="outline"
+					className="w-full"
+					disabled={mutation.isPending || !isReasonValid(reason)}
+					onClick={() => mutation.mutate()}
+				>
+					{mutation.isPending ? (
+						<><Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> 재생성 중…</>
+					) : (
+						<><RefreshCw className="mr-1 h-3.5 w-3.5" /> 사진 재생성</>
+					)}
+				</Button>
+			</div>
+		</section>
 	);
 }

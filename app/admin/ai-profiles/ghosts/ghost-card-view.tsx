@@ -5,6 +5,7 @@ import type { GhostListItem } from '@/app/types/ghost-injection';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent } from '@/shared/ui/card';
+import { RankBadge } from '../_shared/rank-badge';
 import { GhostStatusBadge } from './ghost-status-badge';
 
 interface GhostCardViewProps {
@@ -73,8 +74,9 @@ export function GhostCardView({
 							<div className="font-semibold text-slate-900">{item.name}</div>
 							<div className="text-xs text-slate-500">만 {item.age}세</div>
 						</div>
-						<div className="text-xs text-slate-500">
-							{item.mbti ?? '—'} · {item.archetype?.name ?? '유형 없음'}
+						<div className="flex items-center gap-1.5 text-xs text-slate-500">
+							<span>{item.mbti ?? '—'}</span>
+							<RankBadge rank={item.rank} />
 						</div>
 						<div className="truncate text-xs text-slate-600">
 							{item.university?.name ?? '대학 없음'}

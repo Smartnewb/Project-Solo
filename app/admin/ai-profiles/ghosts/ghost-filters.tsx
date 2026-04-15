@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import { universities } from '@/app/services/admin';
-import { ghostInjection } from '@/app/services/admin/ghost-injection';
 import type {
 	GhostAccountStatus,
 	GhostListQuery,
@@ -20,7 +19,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/shared/ui/select';
-import { ghostInjectionKeys } from '../_shared/query-keys';
 
 interface GhostFiltersProps {
 	query: GhostListQuery;
@@ -38,11 +36,6 @@ export function GhostFilters({ query, onChange }: GhostFiltersProps) {
 		setQInput(query.q ?? '');
 	}, [query.q]);
 
-	const archetypesQuery = useQuery({
-		queryKey: ghostInjectionKeys.archetypes(),
-		queryFn: () => ghostInjection.listArchetypes(),
-	});
-
 	const schoolsQuery = useQuery({
 		queryKey: ['admin', 'universities', 'list', debouncedSchoolSearch],
 		queryFn: async () => {
@@ -57,7 +50,6 @@ export function GhostFilters({ query, onChange }: GhostFiltersProps) {
 		staleTime: 5 * 60 * 1000,
 	});
 
-	const archetypeItems = archetypesQuery.data?.items ?? [];
 	const schoolItems = schoolsQuery.data?.items ?? [];
 
 	const selectedSchoolName = schoolItems.find((item) => item.id === query.schoolId)?.name;
@@ -74,12 +66,12 @@ export function GhostFilters({ query, onChange }: GhostFiltersProps) {
 	};
 
 	const hasFilter = Boolean(
-		query.status || query.schoolId || query.archetypeId || query.q,
+		query.status || query.schoolId || query.q,
 	);
 
 	return (
 		<div className="rounded-md border bg-white p-4">
-			<div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+			<div className="grid grid-cols-1 gap-3 md:grid-cols-3">
 				<div className="space-y-1">
 					<Label className="text-xs">상태</Label>
 					<Select
@@ -131,32 +123,6 @@ export function GhostFilters({ query, onChange }: GhostFiltersProps) {
 							<SelectItem value={ALL}>전체</SelectItem>
 							{schoolItems.map((item) => (
 								<SelectItem key={item.id} value={item.id}>
-									{item.name}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-				</div>
-
-				<div className="space-y-1">
-					<Label className="text-xs">프로필 유형</Label>
-					<Select
-						value={query.archetypeId ?? ALL}
-						onValueChange={(value) =>
-							onChange({
-								...query,
-								archetypeId: value === ALL ? undefined : value,
-								page: 1,
-							})
-						}
-					>
-						<SelectTrigger className="h-9">
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value={ALL}>전체</SelectItem>
-							{archetypeItems.map((item) => (
-								<SelectItem key={item.archetypeId} value={item.archetypeId}>
 									{item.name}
 								</SelectItem>
 							))}

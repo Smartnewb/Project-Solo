@@ -48,6 +48,7 @@ export type {
 	UtmCampaignRow,
 } from './utm';
 export { ghostInjection } from './ghost-injection';
+export { ghostReferencePool } from './ghost-reference-pool';
 export type { KeywordCategory, KeywordItem, KeywordsResponse } from './keywords';
 export type {
 	CareTarget,
@@ -134,6 +135,7 @@ import { care } from './care';
 import { keywords } from './keywords';
 import { utm } from './utm';
 import { ghostInjection } from './ghost-injection';
+import { ghostReferencePool } from './ghost-reference-pool';
 
 const AdminService = {
 	stats,
@@ -175,6 +177,7 @@ const AdminService = {
 	revenueV2,
 	utm,
 	ghostInjection,
+	ghostReferencePool,
 };
 
 export default AdminService;

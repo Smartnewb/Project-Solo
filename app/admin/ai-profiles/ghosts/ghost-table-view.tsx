@@ -11,6 +11,7 @@ import {
 	TableHeader,
 	TableRow,
 } from '@/shared/ui/table';
+import { RankBadge } from '../_shared/rank-badge';
 import { GhostStatusBadge } from './ghost-status-badge';
 
 interface GhostTableViewProps {
@@ -42,8 +43,8 @@ export function GhostTableView({
 						<TableHead className="w-16">사진</TableHead>
 						<TableHead>이름 / 나이</TableHead>
 						<TableHead>MBTI</TableHead>
+						<TableHead>등급</TableHead>
 						<TableHead>대학 / 학과</TableHead>
-						<TableHead>프로필 유형</TableHead>
 						<TableHead>상태</TableHead>
 						<TableHead>수정일</TableHead>
 						<TableHead className="text-right">액션</TableHead>
@@ -88,11 +89,13 @@ export function GhostTableView({
 									<div className="text-xs text-slate-500">만 {item.age}세</div>
 								</TableCell>
 								<TableCell className="text-sm">{item.mbti ?? '—'}</TableCell>
+								<TableCell>
+									<RankBadge rank={item.rank} />
+								</TableCell>
 								<TableCell className="text-sm">
 									<div>{item.university?.name ?? '—'}</div>
 									<div className="text-xs text-slate-500">{item.department?.name ?? '—'}</div>
 								</TableCell>
-								<TableCell className="text-sm">{item.archetype?.name ?? '—'}</TableCell>
 								<TableCell>
 									<GhostStatusBadge status={item.status} isExhausted={item.isExhausted} />
 								</TableCell>

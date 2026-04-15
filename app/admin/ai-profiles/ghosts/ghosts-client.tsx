@@ -31,7 +31,6 @@ function parseQueryFromURL(params: URLSearchParams): GhostListQuery {
 	return {
 		status: status === 'ACTIVE' || status === 'INACTIVE' ? status : undefined,
 		schoolId: params.get('schoolId') ?? undefined,
-		archetypeId: params.get('archetypeId') ?? undefined,
 		q: params.get('q') ?? undefined,
 		page: Number.isFinite(page) && page > 0 ? page : 1,
 		limit: Number.isFinite(limit) && limit > 0 ? limit : DEFAULT_LIMIT,
@@ -48,7 +47,6 @@ function serializeQuery(query: GhostListQuery, view: GhostView): string {
 	const params = new URLSearchParams();
 	if (query.status) params.set('status', query.status);
 	if (query.schoolId) params.set('schoolId', query.schoolId);
-	if (query.archetypeId) params.set('archetypeId', query.archetypeId);
 	if (query.q) params.set('q', query.q);
 	if (query.page && query.page > 1) params.set('page', String(query.page));
 	if (query.limit && query.limit !== DEFAULT_LIMIT) params.set('limit', String(query.limit));

@@ -7,14 +7,14 @@ import {
 } from '@/shared/lib/http/admin-fetch';
 import type {
 	AddBlacklistBody,
-	ArchetypeListItem,
 	BlacklistEntryItem,
 	BulkInactivateBody,
 	CandidateActionBody,
 	CandidateListItem,
 	CandidateListQuery,
+	BatchCreateResult,
+	CreateBatchGhostBody,
 	CreateGhostBody,
-	CreateGhostResult,
 	GenerateWeeklyBody,
 	GenerateWeeklyResult,
 	GhostDetail,
@@ -33,31 +33,17 @@ import type {
 	SetPhaseSchoolBody,
 	ToggleGhostStatusBody,
 	UpdateGhostBody,
-	UpsertArchetypeBody,
 	BackfillProfilesBody,
 	BackfillProfilesResult,
+	RegeneratePhotosBody,
+	RegeneratePhotosResult,
 } from '@/app/types/ghost-injection';
 
 const BASE = '/admin/ghost-injection';
 
-function toQueryString(
-	params: Record<string, string | number | boolean | undefined | null>,
-): Record<string, string> {
-	const result: Record<string, string> = {};
-	for (const [key, value] of Object.entries(params)) {
-		if (value === undefined || value === null || value === '') continue;
-		result[key] = String(value);
-	}
-	return result;
-}
-
 export const ghostInjection = {
-	// ─── Queries (G1–G7) ───────────────────────────────────
 	listGhosts: (query: GhostListQuery = {}) =>
-		adminGet<GhostInjectionPaginated<GhostListItem>>(
-			`${BASE}/ghosts`,
-			toQueryString({ ...query }),
-		),
+		adminGet<GhostInjectionPaginated<GhostListItem>>(`${BASE}/ghosts`, { ...query }),
 
 	getGhost: (ghostAccountId: string) =>
 		adminGet<GhostDetail>(`${BASE}/ghosts/${ghostAccountId}`),
@@ -65,26 +51,23 @@ export const ghostInjection = {
 	listCandidates: (query: CandidateListQuery = {}) =>
 		adminGet<GhostInjectionPaginated<CandidateListItem>>(
 			`${BASE}/candidates`,
-			toQueryString({ ...query }),
+			{ ...query },
 		),
 
 	listPhaseSchools: (query: PhaseSchoolListQuery = {}) =>
-		adminGet<{ items: PhaseSchoolItem[] }>(
-			`${BASE}/phase-schools`,
-			toQueryString({ ...query }),
-		),
+		adminGet<{ items: PhaseSchoolItem[] }>(`${BASE}/phase-schools`, { ...query }),
 
 	listBlacklist: () =>
 		adminGet<{ items: BlacklistEntryItem[] }>(`${BASE}/blacklist`),
-
-	listArchetypes: () =>
-		adminGet<{ items: ArchetypeListItem[] }>(`${BASE}/archetypes`),
 
 	getStatus: () => adminGet<GhostInjectionStatus>(`${BASE}/status`),
 
 	// ─── Ghost 관리 (A1–A5) ────────────────────────────────
 	createGhost: (body: CreateGhostBody) =>
-		adminPost<CreateGhostResult>(`${BASE}/create`, body),
+		adminPost(`${BASE}/create`, body),
+
+	createBatch: (body: CreateBatchGhostBody) =>
+		adminPost<BatchCreateResult>(`${BASE}/create-batch`, body),
 
 	updateGhost: (ghostAccountId: string, body: UpdateGhostBody) =>
 		adminPatch(`${BASE}/${ghostAccountId}`, body),
@@ -94,6 +77,9 @@ export const ghostInjection = {
 		slotIndex: number,
 		body: ReplaceGhostPhotoBody,
 	) => adminPut(`${BASE}/${ghostAccountId}/photo/${slotIndex}`, body),
+
+	regeneratePhotos: (ghostAccountId: string, body: RegeneratePhotosBody) =>
+		adminPost<RegeneratePhotosResult>(`${BASE}/${ghostAccountId}/regenerate-photos`, body),
 
 	toggleGhostStatus: (ghostAccountId: string, body: ToggleGhostStatusBody) =>
 		adminPatch(`${BASE}/${ghostAccountId}/status`, body),
@@ -129,13 +115,6 @@ export const ghostInjection = {
 
 	setPhaseSchool: (schoolId: string, body: SetPhaseSchoolBody) =>
 		adminPut(`${BASE}/phase-schools/${schoolId}`, body),
-
-	// ─── 아키타입 (E3) ─────────────────────────────────────
-	createArchetype: (body: UpsertArchetypeBody) =>
-		adminPost(`${BASE}/archetypes`, body),
-
-	updateArchetype: (archetypeId: string, body: UpsertArchetypeBody) =>
-		adminPut(`${BASE}/archetypes/${archetypeId}`, body),
 
 	// ─── 백필 ──────────────────────────────────────────────
 	backfillProfiles: (body: BackfillProfilesBody) =>

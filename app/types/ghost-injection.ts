@@ -6,13 +6,10 @@ export type GhostAccountStatus = 'ACTIVE' | 'INACTIVE';
 export type GhostCandidateStatus = 'PENDING' | 'QUEUED' | 'CANCELED' | 'SENT';
 export type GhostPhaseBucket = 'TREATMENT' | 'CONTROL';
 export type GhostTargetStatus = 'ACTIVE' | 'INACTIVE';
+export type ImageVendor = 'grok' | 'seedream' | 'openai';
+export type AgeBucket = '20-22' | '23-25' | '26-28';
 
 // ─── Common refs ─────────────────────────────────────────
-
-export interface GhostArchetypeRef {
-	id: string;
-	name: string;
-}
 
 export interface GhostUniversityRef {
 	id: string;
@@ -26,6 +23,8 @@ export interface GhostDepartmentRef {
 
 // ─── Ghost list/detail ────────────────────────────────────
 
+export type GhostRank = 'A' | 'B' | 'C';
+
 export interface GhostListItem {
 	ghostAccountId: string;
 	ghostUserId: string;
@@ -33,13 +32,17 @@ export interface GhostListItem {
 	age: number;
 	mbti: string | null;
 	gender: 'FEMALE';
+	rank: GhostRank;
 	status: GhostAccountStatus;
 	isExhausted: boolean;
-	archetype: GhostArchetypeRef | null;
 	university: GhostUniversityRef | null;
 	department: GhostDepartmentRef | null;
 	primaryPhotoUrl: string | null;
 	photoCount: number;
+	/** 임포트 모달용 — BE가 ?include=photos 시 채움 */
+	photoUrls?: string[];
+	/** 임포트 모달용 — 이미 풀에 임포트된 사진 URL 집합 */
+	importedPhotoUrls?: string[];
 	createdAt: string;
 	updatedAt: string;
 }
@@ -102,7 +105,7 @@ export interface CandidateListItem {
 	sentAt: string | null;
 }
 
-// ─── Phase-School / Blacklist / Archetype ────────────────
+// ─── Phase-School / Blacklist ────────────────────────────
 
 export interface PhaseSchoolItem {
 	schoolId: string;
@@ -119,33 +122,6 @@ export interface BlacklistEntryItem {
 	reason: string;
 	addedBy: string | null;
 	addedAt: string;
-}
-
-export interface ArchetypeTraits {
-	ageRange: { min: number; max: number };
-	mbtiPool: string[];
-	keywordPool: string[];
-	toneHints?: string[];
-}
-
-export interface ArchetypeListItem {
-	archetypeId: string;
-	name: string;
-	description: string | null;
-	traits: ArchetypeTraits;
-	activeGhostCount: number;
-	createdAt: string;
-	updatedAt: string;
-}
-
-/** BE 요청 body의 archetypeFields — 응답의 traits 필드명과 다름에 주의 */
-export interface ArchetypeFields {
-	code?: string;
-	name: string;
-	description?: string;
-	mbtiOptions?: string[];
-	keywordOptions?: string[];
-	introductionTemplates?: string[];
 }
 
 // ─── Status summary ──────────────────────────────────────
@@ -177,12 +153,17 @@ export interface GhostInjectionStatus {
 export interface GhostListQuery {
 	status?: GhostAccountStatus;
 	schoolId?: string;
-	archetypeId?: string;
 	q?: string;
 	page?: number;
 	limit?: number;
-	sort?: 'createdAt' | 'updatedAt';
+	sort?: 'createdAt' | 'updatedAt' | 'rank';
 	order?: 'asc' | 'desc';
+	rank?: GhostRank[];
+	ageBucket?: AgeBucket;
+	minPhotoCount?: number;
+	excludeAlreadyImported?: boolean;
+	/** photoUrls/importedPhotoUrls 응답 포함 여부 */
+	includePhotos?: boolean;
 }
 
 export interface CandidateListQuery {
@@ -212,22 +193,36 @@ export interface GhostInjectionPaginated<T> {
 // ─── Mutation bodies ─────────────────────────────────────
 
 export interface CreateGhostBody {
-	personaArchetypeId: string;
-	phaseSchoolIds: string[];
-	universityId: string;
-	departmentId: string;
 	reason: string;
+	vendor?: ImageVendor;
 }
 
-/** POST /create 응답 — 생성된 Ghost 요약 */
-export interface CreateGhostResult {
-	ghostAccountId: string;
+export interface CreateBatchGhostBody {
+	count: number;
+	reason: string;
+	vendor?: ImageVendor;
+}
+
+export interface BatchCreateResultItem {
+	ghostAccountId: string | null;
 	name: string;
 	age: number;
-	mbti: string | null;
+	mbti: string;
+	rank: GhostRank;
 	introduction: string | null;
-	keywords: string[] | null;
-	introductionSource: 'ai' | 'template' | null;
+	university: { id: string; name: string } | null;
+	department: { id: string; name: string } | null;
+	photoUrls: string[];
+	status: 'success' | 'failed';
+	error?: string;
+}
+
+export interface BatchCreateResult {
+	total: number;
+	success: number;
+	failed: number;
+	vendor: ImageVendor;
+	results: BatchCreateResultItem[];
 }
 
 export interface UpdateGhostFields {
@@ -245,6 +240,18 @@ export interface UpdateGhostBody {
 export interface ReplaceGhostPhotoBody {
 	newImageId: string;
 	reason: string;
+}
+
+export interface RegeneratePhotosBody {
+	prompt?: string;
+	referencePhotoUrls?: string[];
+	reason: string;
+	vendor?: ImageVendor;
+}
+
+export interface RegeneratePhotosResult {
+	ghostAccountId: string;
+	photos: GhostPhotoItem[];
 }
 
 export interface ToggleGhostStatusBody {
@@ -309,16 +316,184 @@ export interface SetPhaseSchoolBody {
 	reason: string;
 }
 
-export interface UpsertArchetypeBody {
-	archetypeFields: ArchetypeFields;
+// ─── Reference Pool ──────────────────────────────────────
+
+export interface GhostReferenceImageTags {
+	mood?: string;
+	setting?: string;
+	style?: string;
+}
+
+export interface GhostReferenceImageSourceMeta {
+	vendor: string;
+	model: string;
+	prompt: string;
+	jobId?: string;
+}
+
+export interface GhostReferenceImage {
+	id: string;
+	s3Key: string;
+	s3Url: string;
+	ageBucket: AgeBucket;
+	isActive: boolean;
+	usageCount: number;
+	lastUsedAt: string | null;
+	curatedBy: string;
+	curatedAt: string;
+	tags: GhostReferenceImageTags | null;
+	sourceMeta: GhostReferenceImageSourceMeta | null;
+	sourceGhostAccountId: string | null;
+	sourceUserId: string | null;
+	sourcePhotoUrl: string | null;
+	createdAt: string;
+	updatedAt: string | null;
+	deletedAt: string | null;
+}
+
+export interface CurationCandidate {
+	s3Key: string;
+	s3Url: string;
+	prompt: string;
+	vendor: string;
+	model: string;
+	ageBucket: AgeBucket;
+}
+
+export interface GenerateCurationBatchBody {
+	count?: number;
+	ageBucket?: AgeBucket;
+	vendor?: ImageVendor;
 	reason: string;
+}
+
+export interface PromoteCurationSelection {
+	s3Key: string;
+	s3Url: string;
+	ageBucket: AgeBucket;
+	tags?: GhostReferenceImageTags;
+	sourceMeta: GhostReferenceImageSourceMeta;
+}
+
+export interface PromoteCurationBody {
+	selections: PromoteCurationSelection[];
+	reason: string;
+}
+
+export interface DeactivateReferenceBody {
+	reason: string;
+}
+
+export interface ListReferencePoolQuery {
+	isActive?: boolean;
+	ageBucket?: AgeBucket;
+	limit?: number;
+	offset?: number;
+}
+
+export interface ListReferencePoolResponse {
+	items: GhostReferenceImage[];
+	total: number;
+}
+
+export interface GhostReferencePoolStats {
+	total: number;
+	active: number;
+	avgUsage: number;
+	last24hUsage: number;
+	minThresholdBreach: boolean;
+}
+
+export interface PromoteFromGhostSelection {
+	ghostAccountId: string;
+	photoUrl: string;
+	tags?: GhostReferenceImageTags;
+}
+
+export interface PromoteFromGhostBody {
+	selections: PromoteFromGhostSelection[];
+	reason: string;
+}
+
+export interface PromoteFromGhostSkipped {
+	ghostAccountId: string;
+	photoUrl: string;
+	reason: 'duplicate' | 'age-out-of-range' | 'photo-not-found' | 'ghost-not-found' | string;
+}
+
+export interface PromoteFromGhostResult {
+	imported: GhostReferenceImage[];
+	skipped: PromoteFromGhostSkipped[];
+}
+
+// ─── Real User Import (F5) ──────────────────────────────
+
+export type UserRank = 'S' | 'A' | 'B' | 'C';
+
+export interface RealUserPhotoItem {
+	imageId: string;
+	s3Url: string;
+	slotIndex: number;
+	isMain: boolean;
+}
+
+export interface RealUserListItem {
+	userId: string;
+	name: string;
+	age: number;
+	rank: UserRank;
+	photoCount: number;
+	photos: RealUserPhotoItem[];
+	importedPhotoUrls: string[];
+}
+
+export interface PaginationMeta {
+	currentPage: number;
+	itemsPerPage: number;
+	totalItems: number;
+	hasNextPage: boolean;
+	hasPreviousPage: boolean;
+}
+
+export interface RealUserListResponse {
+	items: RealUserListItem[];
+	meta: PaginationMeta;
+}
+
+export interface RealUserListQuery {
+	rank?: UserRank[];
+	ageBucket?: AgeBucket;
+	page?: number;
+	limit?: number;
+	excludeAlreadyImported?: boolean;
+}
+
+export interface PromoteFromUserSelection {
+	userId: string;
+	photoUrl: string;
+	tags?: GhostReferenceImageTags;
+}
+
+export interface PromoteFromUserBody {
+	selections: PromoteFromUserSelection[];
+	reason: string;
+}
+
+export interface PromoteFromUserSkipped {
+	userId: string;
+	photoUrl: string;
+	reason: 'duplicate' | 'age-out-of-range' | 'photo-not-found' | 'user-not-found' | 'copy-failed' | string;
+}
+
+export interface PromoteFromUserResult {
+	imported: GhostReferenceImage[];
+	skipped: PromoteFromUserSkipped[];
 }
 
 // ─── Backfill ───────────────────────────────────────────
 
 export interface BackfillProfilesBody {
 	reason: string;
-	archetypeId?: string;
 }
 
 export interface BackfillProfilesResult {

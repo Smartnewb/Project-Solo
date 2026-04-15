@@ -1,7 +1,9 @@
 import type {
 	CandidateListQuery,
 	GhostListQuery,
+	ListReferencePoolQuery,
 	PhaseSchoolListQuery,
+	RealUserListQuery,
 } from '@/app/types/ghost-injection';
 
 export const ghostInjectionKeys = {
@@ -22,5 +24,13 @@ export const ghostInjectionKeys = {
 		[...ghostInjectionKeys.phaseSchools(), 'list', query] as const,
 
 	blacklist: () => [...ghostInjectionKeys.all, 'blacklist'] as const,
-	archetypes: () => [...ghostInjectionKeys.all, 'archetypes'] as const,
+};
+
+export const referencePoolKeys = {
+	all: ['admin', 'ghost-reference-pool'] as const,
+	stats: () => [...referencePoolKeys.all, 'stats'] as const,
+	list: (query: ListReferencePoolQuery) =>
+		[...referencePoolKeys.all, 'list', query] as const,
+	realUsers: (query: RealUserListQuery) =>
+		[...referencePoolKeys.all, 'real-users', query] as const,
 };
