@@ -3,6 +3,7 @@
 import { Box, Typography } from '@mui/material';
 import { useRef, useState, useEffect } from 'react';
 import DOMPurify from 'dompurify';
+import type { CardNewsLayoutMode } from '@/app/admin/hooks/forms/schemas/card-news.schema';
 
 interface CardSection {
   order: number;
@@ -13,9 +14,11 @@ interface CardSection {
 
 interface CardNewsDetailPreviewProps {
   sections: CardSection[];
+  layoutMode?: CardNewsLayoutMode;
 }
 
-export default function CardNewsDetailPreview({ sections }: CardNewsDetailPreviewProps) {
+export default function CardNewsDetailPreview({ sections, layoutMode = 'article' }: CardNewsDetailPreviewProps) {
+  const isImageOnly = layoutMode === 'image_only';
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -174,7 +177,7 @@ export default function CardNewsDetailPreview({ sections }: CardNewsDetailPrevie
                 width: '100%',
                 minWidth: '100%',
                 scrollSnapAlign: 'start',
-                p: '30px 20px 40px 20px',
+                p: isImageOnly ? 0 : '30px 20px 40px 20px',
                 flexShrink: 0
               }}
             >
@@ -182,9 +185,9 @@ export default function CardNewsDetailPreview({ sections }: CardNewsDetailPrevie
               <Box
                 sx={{
                   width: '100%',
-                  aspectRatio: '4 / 5',
+                  aspectRatio: isImageOnly ? '3 / 4' : '4 / 5',
                   background: '#F7F3FF',
-                  borderRadius: '16px',
+                  borderRadius: isImageOnly ? 0 : '16px',
                   overflow: 'hidden',
                   display: 'flex',
                   justifyContent: 'center',
@@ -202,56 +205,62 @@ export default function CardNewsDetailPreview({ sections }: CardNewsDetailPrevie
                       objectFit: 'cover'
                     }}
                   />
+                ) : isImageOnly ? (
+                  <Typography variant="caption" color="text.secondary">
+                    이미지 없음
+                  </Typography>
                 ) : (
                   <Typography sx={{ fontSize: 60 }}>📰</Typography>
                 )}
               </Box>
 
-              {/* Text Area */}
-              <Box sx={{ mt: 3 }}>
-                <Typography
-                  sx={{
-                    fontSize: 24,
-                    fontWeight: 700,
-                    color: '#000000',
-                    lineHeight: '32px',
-                    mb: 2,
-                    opacity: section.title ? 1 : 0.6
-                  }}
-                >
-                  {section.title || `카드 ${index + 1} 제목을 입력하세요`}
-                </Typography>
+              {/* Text Area - article 모드에서만 렌더 */}
+              {!isImageOnly && (
+                <Box sx={{ mt: 3 }}>
+                  <Typography
+                    sx={{
+                      fontSize: 24,
+                      fontWeight: 700,
+                      color: '#000000',
+                      lineHeight: '32px',
+                      mb: 2,
+                      opacity: section.title ? 1 : 0.6
+                    }}
+                  >
+                    {section.title || `카드 ${index + 1} 제목을 입력하세요`}
+                  </Typography>
 
-                <Box
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 1,
-                    '& p': {
-                      margin: 0,
-                      fontSize: 16,
-                      lineHeight: '24px',
-                      color: '#333333'
-                    },
-                    '& strong': {
-                      fontWeight: 700,
-                      color: '#000000'
-                    },
-                    '& b': {
-                      fontWeight: 700,
-                      color: '#000000'
-                    },
-                    opacity: section.content && section.content !== '<p><br></p>' ? 1 : 0.6
-                  }}
-                  dangerouslySetInnerHTML={{
-                    __html: DOMPurify.sanitize(
-                      section.content && section.content !== '<p><br></p>'
-                        ? section.content
-                        : '<p>카드 본문을 입력하세요</p>'
-                    )
-                  }}
-                />
-              </Box>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 1,
+                      '& p': {
+                        margin: 0,
+                        fontSize: 16,
+                        lineHeight: '24px',
+                        color: '#333333'
+                      },
+                      '& strong': {
+                        fontWeight: 700,
+                        color: '#000000'
+                      },
+                      '& b': {
+                        fontWeight: 700,
+                        color: '#000000'
+                      },
+                      opacity: section.content && section.content !== '<p><br></p>' ? 1 : 0.6
+                    }}
+                    dangerouslySetInnerHTML={{
+                      __html: DOMPurify.sanitize(
+                        section.content && section.content !== '<p><br></p>'
+                          ? section.content
+                          : '<p>카드 본문을 입력하세요</p>'
+                      )
+                    }}
+                  />
+                </Box>
+              )}
             </Box>
           ))}
         </Box>

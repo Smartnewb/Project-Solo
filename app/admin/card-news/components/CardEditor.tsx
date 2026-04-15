@@ -25,13 +25,14 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import dynamic from 'next/dynamic';
 import 'react-quill/dist/quill.snow.css';
 import AdminService from '@/app/services/admin';
-import type { CardNewsFormData } from '@/app/admin/hooks/forms/schemas/card-news.schema';
+import type { CardNewsFormData, CardNewsLayoutMode } from '@/app/admin/hooks/forms/schemas/card-news.schema';
 
 const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
 
 interface CardEditorProps {
   index: number;
   control: Control<CardNewsFormData>;
+  layoutMode: CardNewsLayoutMode;
   onDelete: () => void;
   canDelete: boolean;
   onImageUploaded: (index: number, url: string) => void;
@@ -78,6 +79,7 @@ function CharProgress({ current, max }: { current: number; max: number }) {
 export default function CardEditor({
   index,
   control,
+  layoutMode,
   onDelete,
   canDelete,
   onImageUploaded,
@@ -87,6 +89,7 @@ export default function CardEditor({
 }: CardEditorProps) {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [expanded, setExpanded] = useState(true);
+  const [memoExpanded, setMemoExpanded] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -200,129 +203,302 @@ export default function CardEditor({
       {/* Collapsible content */}
       <Collapse in={expanded}>
         <Box sx={{ px: 3, pb: 3 }}>
-          <Controller
-            name={`sections.${index}.title`}
-            control={control}
-            render={({ field, fieldState }) => (
-              <Box sx={{ mb: 2 }}>
-                <TextField
-                  {...field}
-                  fullWidth
-                  label="카드 제목"
-                  placeholder="카드 제목을 입력하세요 (최대 50자)"
-                  inputProps={{ maxLength: 50 }}
-                  error={!!fieldState.error}
-                  helperText={fieldState.error?.message}
-                  required
-                />
-                <CharProgress current={field.value.length} max={50} />
-              </Box>
-            )}
-          />
+          {layoutMode === 'article' ? (
+            <>
+              <Controller
+                name={`sections.${index}.title`}
+                control={control}
+                render={({ field, fieldState }) => (
+                  <Box sx={{ mb: 2 }}>
+                    <TextField
+                      {...field}
+                      fullWidth
+                      label="카드 제목"
+                      placeholder="카드 제목을 입력하세요 (최대 50자)"
+                      inputProps={{ maxLength: 50 }}
+                      error={!!fieldState.error}
+                      helperText={fieldState.error?.message}
+                      required
+                    />
+                    <CharProgress current={field.value.length} max={50} />
+                  </Box>
+                )}
+              />
 
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              카드 본문 * (최대 500자)
-            </Typography>
-            <Controller
-              name={`sections.${index}.content`}
-              control={control}
-              render={({ field }) => (
-                <>
-                  <Box sx={{ '& .ql-container': { minHeight: '200px' } }}>
-                    <ReactQuill
-                      value={field.value}
-                      onChange={field.onChange}
-                      modules={quillModules}
-                      formats={quillFormats}
-                      placeholder="카드 본문을 입력하세요... (굵게, 기울임, 목록, 링크 지원)"
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  카드 본문 * (최대 500자)
+                </Typography>
+                <Controller
+                  name={`sections.${index}.content`}
+                  control={control}
+                  render={({ field, fieldState }) => (
+                    <>
+                      <Box sx={{ '& .ql-container': { minHeight: '200px' } }}>
+                        <ReactQuill
+                          value={field.value}
+                          onChange={field.onChange}
+                          modules={quillModules}
+                          formats={quillFormats}
+                          placeholder="카드 본문을 입력하세요... (굵게, 기울임, 목록, 링크 지원)"
+                        />
+                      </Box>
+                      <CharProgress current={field.value.length} max={500} />
+                      {fieldState.error && (
+                        <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
+                          {fieldState.error.message}
+                        </Typography>
+                      )}
+                    </>
+                  )}
+                />
+              </Box>
+
+              <Divider sx={{ my: 2 }} />
+
+              {/* Image section with drag & drop */}
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  섹션 이미지 (선택 사항)
+                </Typography>
+
+                {imageUrl ? (
+                  <Box>
+                    <Box
+                      component="img"
+                      src={imageUrl}
+                      alt="섹션 이미지"
+                      sx={{
+                        width: '100%',
+                        maxWidth: 400,
+                        height: 'auto',
+                        borderRadius: 1,
+                        border: '1px solid #e0e0e0',
+                        mb: 1
+                      }}
+                      onError={(e: any) => { e.target.style.display = 'none'; }}
+                    />
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Button variant="outlined" size="small" component="label" disabled={uploadingImage}>
+                        {uploadingImage ? '업로드 중...' : '이미지 변경'}
+                        <input type="file" hidden accept="image/jpeg,image/png" onChange={handleImageUpload} ref={fileInputRef} />
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        color="error"
+                        startIcon={<CloseIcon />}
+                        onClick={() => onImageRemoved(index)}
+                      >
+                        이미지 제거
+                      </Button>
+                    </Box>
+                  </Box>
+                ) : (
+                  <Box
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    sx={{
+                      border: dragOver ? '2px dashed #7A4AE2' : '2px dashed #ccc',
+                      borderRadius: 2,
+                      p: 4,
+                      textAlign: 'center',
+                      backgroundColor: dragOver ? 'rgba(122, 74, 226, 0.04)' : 'transparent',
+                      transition: 'all 0.2s',
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {uploadingImage ? (
+                      <CircularProgress size={24} />
+                    ) : (
+                      <>
+                        <PhotoCameraIcon sx={{ fontSize: 40, color: dragOver ? '#7A4AE2' : '#bbb', mb: 1 }} />
+                        <Typography variant="body2" color={dragOver ? 'primary' : 'text.secondary'}>
+                          이미지를 여기에 드래그하거나 클릭하여 업로드
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          JPG 또는 PNG, 최대 10MB
+                        </Typography>
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/jpeg,image/png"
+                      onChange={handleImageUpload}
+                      ref={fileInputRef}
                     />
                   </Box>
-                  <CharProgress current={field.value.length} max={500} />
-                </>
-              )}
-            />
-          </Box>
-
-          <Divider sx={{ my: 2 }} />
-
-          {/* Image section with drag & drop */}
-          <Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              섹션 이미지 (선택 사항)
-            </Typography>
-
-            {imageUrl ? (
-              <Box>
-                <Box
-                  component="img"
-                  src={imageUrl}
-                  alt="섹션 이미지"
-                  sx={{
-                    width: '100%',
-                    maxWidth: 400,
-                    height: 'auto',
-                    borderRadius: 1,
-                    border: '1px solid #e0e0e0',
-                    mb: 1
-                  }}
-                  onError={(e: any) => { e.target.style.display = 'none'; }}
-                />
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                  <Button variant="outlined" size="small" component="label" disabled={uploadingImage}>
-                    {uploadingImage ? '업로드 중...' : '이미지 변경'}
-                    <input type="file" hidden accept="image/jpeg,image/png" onChange={handleImageUpload} ref={fileInputRef} />
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    color="error"
-                    startIcon={<CloseIcon />}
-                    onClick={() => onImageRemoved(index)}
-                  >
-                    이미지 제거
-                  </Button>
-                </Box>
-              </Box>
-            ) : (
-              <Box
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                sx={{
-                  border: dragOver ? '2px dashed #7A4AE2' : '2px dashed #ccc',
-                  borderRadius: 2,
-                  p: 4,
-                  textAlign: 'center',
-                  backgroundColor: dragOver ? 'rgba(122, 74, 226, 0.04)' : 'transparent',
-                  transition: 'all 0.2s',
-                  cursor: 'pointer',
-                }}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {uploadingImage ? (
-                  <CircularProgress size={24} />
-                ) : (
-                  <>
-                    <PhotoCameraIcon sx={{ fontSize: 40, color: dragOver ? '#7A4AE2' : '#bbb', mb: 1 }} />
-                    <Typography variant="body2" color={dragOver ? 'primary' : 'text.secondary'}>
-                      이미지를 여기에 드래그하거나 클릭하여 업로드
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      JPG 또는 PNG, 최대 10MB
-                    </Typography>
-                  </>
                 )}
-                <input
-                  type="file"
-                  hidden
-                  accept="image/jpeg,image/png"
-                  onChange={handleImageUpload}
-                  ref={fileInputRef}
-                />
               </Box>
-            )}
-          </Box>
+            </>
+          ) : (
+            <>
+              {/* image_only: 이미지 영역을 최상단 + 필수 표시 */}
+              <Box sx={{ mb: 1.5 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  섹션 이미지 *
+                </Typography>
+
+                {imageUrl ? (
+                  <Box>
+                    <Box
+                      component="img"
+                      src={imageUrl}
+                      alt="섹션 이미지"
+                      sx={{
+                        width: '100%',
+                        maxWidth: 400,
+                        height: 'auto',
+                        borderRadius: 1,
+                        border: '1px solid #e0e0e0',
+                        mb: 1
+                      }}
+                      onError={(e: any) => { e.target.style.display = 'none'; }}
+                    />
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Button variant="outlined" size="small" component="label" disabled={uploadingImage}>
+                        {uploadingImage ? '업로드 중...' : '이미지 변경'}
+                        <input type="file" hidden accept="image/jpeg,image/png" onChange={handleImageUpload} ref={fileInputRef} />
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        color="error"
+                        startIcon={<CloseIcon />}
+                        onClick={() => onImageRemoved(index)}
+                      >
+                        이미지 제거
+                      </Button>
+                    </Box>
+                  </Box>
+                ) : (
+                  <Box
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    sx={{
+                      border: dragOver ? '2px dashed #7A4AE2' : '2px dashed #f44336',
+                      borderRadius: 2,
+                      p: 4,
+                      textAlign: 'center',
+                      backgroundColor: dragOver ? 'rgba(122, 74, 226, 0.04)' : 'rgba(244, 67, 54, 0.04)',
+                      transition: 'all 0.2s',
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {uploadingImage ? (
+                      <CircularProgress size={24} />
+                    ) : (
+                      <>
+                        <PhotoCameraIcon sx={{ fontSize: 40, color: dragOver ? '#7A4AE2' : '#f44336', mb: 1 }} />
+                        <Typography variant="body2" color={dragOver ? 'primary' : 'error'} fontWeight="bold">
+                          이미지를 업로드해주세요 (필수)
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          드래그 앤 드롭 또는 클릭 · JPG/PNG, 최대 10MB
+                        </Typography>
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/jpeg,image/png"
+                      onChange={handleImageUpload}
+                      ref={fileInputRef}
+                    />
+                  </Box>
+                )}
+
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                  권장 비율: 1:1 또는 3:4 (세로형). 다른 비율도 동작하나 앱에서 레터박스가 생길 수 있습니다.
+                </Typography>
+              </Box>
+
+              <Divider sx={{ my: 2 }} />
+
+              {/* 관리용 메모 아코디언 */}
+              <Box
+                sx={{
+                  border: '1px solid',
+                  borderColor: 'grey.300',
+                  borderRadius: 1,
+                  overflow: 'hidden',
+                }}
+              >
+                <Box
+                  onClick={() => setMemoExpanded(prev => !prev)}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    px: 2,
+                    py: 1,
+                    cursor: 'pointer',
+                    backgroundColor: 'grey.50',
+                    '&:hover': { backgroundColor: 'grey.100' },
+                  }}
+                >
+                  <Typography variant="body2" sx={{ flex: 1, color: 'text.secondary' }}>
+                    관리용 메모 (앱 미노출)
+                    <Typography component="span" variant="caption" sx={{ ml: 1, color: 'text.disabled' }}>
+                      — {[title, content && content !== '<p><br></p>' ? content : null].filter(Boolean).length}개 작성됨
+                    </Typography>
+                  </Typography>
+                  {memoExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+                </Box>
+                <Collapse in={memoExpanded}>
+                  <Box sx={{ p: 2 }}>
+                    <Controller
+                      name={`sections.${index}.title`}
+                      control={control}
+                      render={({ field, fieldState }) => (
+                        <Box sx={{ mb: 2 }}>
+                          <TextField
+                            {...field}
+                            fullWidth
+                            size="small"
+                            label="카드 제목 (관리용)"
+                            placeholder="운영 관리용 메모 (앱에는 노출되지 않음)"
+                            inputProps={{ maxLength: 50 }}
+                            error={!!fieldState.error}
+                            helperText={fieldState.error?.message}
+                          />
+                          <CharProgress current={field.value.length} max={50} />
+                        </Box>
+                      )}
+                    />
+
+                    <Box>
+                      <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+                        카드 본문 (관리용, 최대 500자)
+                      </Typography>
+                      <Controller
+                        name={`sections.${index}.content`}
+                        control={control}
+                        render={({ field }) => (
+                          <>
+                            <Box sx={{ '& .ql-container': { minHeight: '120px' } }}>
+                              <ReactQuill
+                                value={field.value}
+                                onChange={field.onChange}
+                                modules={quillModules}
+                                formats={quillFormats}
+                                placeholder="운영 관리용 메모 (앱에는 노출되지 않음)"
+                              />
+                            </Box>
+                            <CharProgress current={field.value.length} max={500} />
+                          </>
+                        )}
+                      />
+                    </Box>
+                  </Box>
+                </Collapse>
+              </Box>
+            </>
+          )}
         </Box>
       </Collapse>
     </Paper>
