@@ -49,6 +49,7 @@ import {
   Description as DescriptionIcon,
 } from "@mui/icons-material";
 import AdminService from "@/app/services/admin";
+import type { ReportHistoryEntry } from '@/app/services/admin';
 import { safeToLocaleDateString } from '@/app/utils/formatters';
 import UserDetailModal, {
   type UserDetail,
@@ -113,6 +114,7 @@ interface ChatHistoryResponse {
 }
 
 type ReportStatus = "pending" | "reviewing" | "resolved" | "rejected";
+type ReportAction = 'dismissed' | 'warned' | 'suspended' | 'banned' | 'escalated';
 
 const STATUS_OPTIONS: { value: ReportStatus; label: string }[] = [
   { value: "pending", label: "대기중" },
@@ -120,6 +122,20 @@ const STATUS_OPTIONS: { value: ReportStatus; label: string }[] = [
   { value: "resolved", label: "처리완료" },
   { value: "rejected", label: "반려" },
 ];
+
+const ACTION_OPTIONS: { value: ReportAction; label: string }[] = [
+  { value: 'escalated', label: '검토 승격' },
+  { value: 'warned', label: '경고' },
+  { value: 'suspended', label: '정지' },
+  { value: 'banned', label: '차단' },
+  { value: 'dismissed', label: '반려' },
+];
+
+function getDefaultActionForStatus(status: ReportStatus): ReportAction {
+  if (status === 'rejected') return 'dismissed';
+  if (status === 'resolved') return 'warned';
+  return 'escalated';
+}
 
 const REASONS_REQUIRING_CHAT = ["부적절한 언어 사용", "스팸/광고"];
 const REASONS_REQUIRING_PROFILE_IMAGES = ["허위 프로필", "부적절한 사진"];
@@ -149,6 +165,7 @@ function ReportsManagementContent() {
   const [chatHistory, setChatHistory] = useState<ChatHistoryResponse | null>(
     null,
   );
+  const [reportHistory, setReportHistory] = useState<ReportHistoryEntry[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
   const [profileImages, setProfileImages] = useState<string[]>([]);
   const [profileImagesLoading, setProfileImagesLoading] = useState(false);
@@ -156,8 +173,10 @@ function ReportsManagementContent() {
 
   const statusForm = useAdminForm<ReportStatusFormValues>({
     schema: reportStatusSchema,
-    defaultValues: { status: "pending" },
+    defaultValues: { status: "pending", action: 'escalated' },
   });
+
+  const watchedStatus = statusForm.watch('status');
 
   const [userDetailModalOpen, setUserDetailModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -172,9 +191,25 @@ function ReportsManagementContent() {
       setActiveTab(0);
       setChatHistory(null);
       setProfileImages([]);
+      setReportHistory([]);
 
       try {
-        const detailResponse = await AdminService.reports.getProfileReportDetail(reportId);
+        const [detailResult, historyResult] = await Promise.allSettled([
+          AdminService.reports.getProfileReportDetail(reportId),
+          AdminService.reports.getProfileReportHistory(reportId),
+        ]);
+
+        const detailResponse =
+          detailResult.status === 'fulfilled' ? detailResult.value : null;
+        const nextHistory =
+          historyResult.status === 'fulfilled' ? historyResult.value : [];
+
+        setReportHistory(nextHistory);
+
+        if (!detailResponse) {
+          throw new Error('report detail unavailable');
+        }
+
         const reportDetail: ReportDetail = fallbackReport
           ? {
               ...fallbackReport,
@@ -184,10 +219,12 @@ function ReportsManagementContent() {
 
         setSelectedReport(reportDetail);
         statusForm.setValue('status', reportDetail.status);
+        statusForm.setValue('action', getDefaultActionForStatus(reportDetail.status));
       } catch (err: unknown) {
         if (fallbackReport) {
           setSelectedReport(fallbackReport);
           statusForm.setValue('status', fallbackReport.status);
+          statusForm.setValue('action', getDefaultActionForStatus(fallbackReport.status));
         } else {
           setDetailDialogOpen(false);
           setError('신고 상세 정보를 불러오는데 실패했습니다.');
@@ -252,6 +289,12 @@ function ReportsManagementContent() {
     void openReportDetail(deepLinkedReportId);
   }, [deepLinkedReportId, openReportDetail]);
 
+  useEffect(() => {
+    if (!watchedStatus) return;
+
+    statusForm.setValue('action', getDefaultActionForStatus(watchedStatus));
+  }, [statusForm, watchedStatus]);
+
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
@@ -291,6 +334,7 @@ function ReportsManagementContent() {
     setSelectedReport(null);
     setChatHistory(null);
     setProfileImages([]);
+    setReportHistory([]);
     setActiveTab(0);
   };
 
@@ -334,10 +378,16 @@ function ReportsManagementContent() {
       await AdminService.reports.updateReportStatus(
         selectedReport.id,
         data.status,
+        { type: 'profile', action: data.action },
       );
       toast.success("상태가 변경되었습니다.");
-      setSelectedReport({ ...selectedReport, status: data.status });
+      await openReportDetail(selectedReport.id, {
+        ...selectedReport,
+        status: data.status,
+      });
       fetchReports();
+    } catch (_error: unknown) {
+      toast.error("상태 변경에 실패했습니다.");
     } finally {
       setStatusUpdating(false);
     }
@@ -415,6 +465,18 @@ function ReportsManagementContent() {
     REASONS_REQUIRING_CHAT.includes(reason);
   const requiresProfileImages = (reason: string) =>
     REASONS_REQUIRING_PROFILE_IMAGES.includes(reason);
+
+  const getReviewActionLabel = (action: ReportHistoryEntry['action']) => {
+    const actionMap: Record<ReportHistoryEntry['action'], string> = {
+      dismissed: '반려',
+      warned: '경고',
+      suspended: '정지',
+      banned: '차단',
+      escalated: '검토 승격',
+    };
+
+    return actionMap[action] || action;
+  };
 
   const renderChatMessages = () => {
     if (!chatHistory) return null;
@@ -633,6 +695,8 @@ function ReportsManagementContent() {
   const renderBasicInfo = () => {
     if (!selectedReport) return null;
 
+    const latestReview = reportHistory[0] ?? null;
+
     return (
       <Box>
         <Card sx={{ mb: 3 }}>
@@ -663,12 +727,30 @@ function ReportsManagementContent() {
                     </FormControl>
                   )}
                 />
+                <Controller
+                  name="action"
+                  control={statusForm.control}
+                  render={({ field }) => (
+                    <FormControl size="small" sx={{ minWidth: 140 }}>
+                      <InputLabel>처리 액션</InputLabel>
+                      <Select {...field} label="처리 액션">
+                        {ACTION_OPTIONS.map((option) => (
+                          <MenuItem key={option.value} value={option.value}>
+                            {option.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  )}
+                />
                 <Button
                   variant="contained"
                   size="small"
                   onClick={handleStatusChange}
                   disabled={
-                    statusUpdating || statusForm.watch("status") === selectedReport.status
+                    statusUpdating ||
+                    (statusForm.watch("status") === selectedReport.status &&
+                      statusForm.watch('action') === getDefaultActionForStatus(selectedReport.status))
                   }
                 >
                   {statusUpdating ? <CircularProgress size={20} /> : "변경"}
@@ -705,7 +787,9 @@ function ReportsManagementContent() {
                   최종 수정일시
                 </Typography>
                 <Typography variant="body1">
-                  {selectedReport.updatedAt
+                  {latestReview?.createdAt
+                    ? formatDate(latestReview.createdAt)
+                    : selectedReport.updatedAt
                     ? formatDate(selectedReport.updatedAt)
                     : "없음"}
                 </Typography>
@@ -738,6 +822,97 @@ function ReportsManagementContent() {
             </Grid>
           </CardContent>
         </Card>
+
+        {latestReview && (
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                처리 이력
+              </Typography>
+              <Grid container spacing={2} sx={{ mb: reportHistory.length > 1 ? 2 : 0 }}>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    최근 처리자
+                  </Typography>
+                  <Typography variant="body1">
+                    {latestReview.reviewerName || latestReview.reviewerId || '-'}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    최근 처리 시각
+                  </Typography>
+                  <Typography variant="body1">
+                    {latestReview.createdAt ? formatDate(latestReview.createdAt) : '-'}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    최근 처리 결과
+                  </Typography>
+                  <Typography variant="body1">
+                    {getReviewActionLabel(latestReview.action)}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    상태 변경
+                  </Typography>
+                  <Typography variant="body1">
+                    {latestReview.previousStatus} → {latestReview.nextStatus}
+                  </Typography>
+                </Grid>
+                {latestReview.note && (
+                  <Grid item xs={12}>
+                    <Typography variant="body2" color="text.secondary">
+                      처리 메모
+                    </Typography>
+                    <Typography
+                      variant="body1"
+                      sx={{
+                        whiteSpace: "pre-wrap",
+                        bgcolor: "#f5f5f5",
+                        p: 1.5,
+                        borderRadius: 1,
+                        mt: 0.5,
+                      }}
+                    >
+                      {latestReview.note}
+                    </Typography>
+                  </Grid>
+                )}
+              </Grid>
+
+              {reportHistory.length > 1 && (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  {reportHistory.map((historyItem) => (
+                    <Box
+                      key={historyItem.id}
+                      sx={{
+                        border: '1px solid #e0e0e0',
+                        borderRadius: 1,
+                        p: 1.5,
+                      }}
+                    >
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {getReviewActionLabel(historyItem.action)}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                        {(historyItem.reviewerName || historyItem.reviewerId || '알 수 없는 처리자')}
+                        {historyItem.createdAt ? ` · ${formatDate(historyItem.createdAt)}` : ''}
+                      </Typography>
+                      {historyItem.note && (
+                        <Typography variant="body2" sx={{ mt: 1 }}>
+                          {historyItem.note}
+                        </Typography>
+                      )}
+                    </Box>
+                  ))}
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <Card
           sx={{

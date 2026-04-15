@@ -9,7 +9,7 @@ jest.mock('react-hook-form', () => ({
     render({
       field: {
         name,
-        value: 'pending',
+        value: name === 'action' ? 'warned' : 'pending',
         onChange: jest.fn(),
         onBlur: jest.fn(),
         ref: jest.fn(),
@@ -35,7 +35,7 @@ jest.mock('@/shared/ui/admin/toast/toast-context', () => ({
 jest.mock('@/app/admin/hooks/forms', () => ({
   useAdminForm: jest.fn(() => ({
     control: {},
-    watch: jest.fn(() => 'pending'),
+    watch: jest.fn((name?: string) => (name === 'action' ? 'warned' : 'pending')),
     setValue: jest.fn(),
     handleFormSubmit: (callback: (...args: unknown[]) => unknown) => callback,
   })),
@@ -48,14 +48,15 @@ jest.mock('@/components/admin/appearance/UserDetailModal', () => ({
 
 jest.mock('@/app/services/admin', () => ({
   __esModule: true,
-  default: {
-    getProfileReports: jest.fn(),
-    reports: {
-      getProfileReportDetail: jest.fn(),
-      getChatHistory: jest.fn(),
-      getUserProfileImages: jest.fn(),
-      updateReportStatus: jest.fn(),
-    },
+    default: {
+      getProfileReports: jest.fn(),
+      reports: {
+        getProfileReportDetail: jest.fn(),
+        getProfileReportHistory: jest.fn(),
+        getChatHistory: jest.fn(),
+        getUserProfileImages: jest.fn(),
+        updateReportStatus: jest.fn(),
+      },
     userAppearance: {
       getUserDetails: jest.fn(),
     },
@@ -66,6 +67,10 @@ const mockedAdminService = AdminService as jest.Mocked<typeof AdminService>;
 const mockedGetProfileReportDetail =
   AdminService.reports.getProfileReportDetail as jest.MockedFunction<
     typeof AdminService.reports.getProfileReportDetail
+  >;
+const mockedGetProfileReportHistory =
+  AdminService.reports.getProfileReportHistory as jest.MockedFunction<
+    typeof AdminService.reports.getProfileReportHistory
   >;
 
 describe('ReportsV2 deep link', () => {
@@ -102,6 +107,20 @@ describe('ReportsV2 deep link', () => {
       createdAt: '2026-04-15T09:00:00.000Z',
       updatedAt: null,
     });
+    mockedGetProfileReportHistory.mockResolvedValue([
+      {
+        id: 'history-1',
+        reportType: 'profile',
+        reportId: 'profile-pending-1',
+        reviewerId: 'admin-1',
+        reviewerName: '운영자A',
+        previousStatus: 'reviewing',
+        nextStatus: 'dismissed',
+        action: 'dismissed',
+        note: '허위 프로필 확인',
+        createdAt: '2026-04-15T10:00:00.000Z',
+      },
+    ]);
   });
 
   it('opens the report detail dialog from the reportId query parameter', async () => {
@@ -111,8 +130,14 @@ describe('ReportsV2 deep link', () => {
       expect(mockedGetProfileReportDetail).toHaveBeenCalledWith('profile-pending-1');
     });
 
+    await waitFor(() => {
+      expect(mockedGetProfileReportHistory).toHaveBeenCalledWith('profile-pending-1');
+    });
+
     expect(await screen.findByRole('dialog')).toBeInTheDocument();
     expect(await screen.findByText('profile-pending-1')).toBeInTheDocument();
     expect(screen.getByText('허위 프로필')).toBeInTheDocument();
+    expect(screen.getByText('운영자A')).toBeInTheDocument();
+    expect(screen.getByText('허위 프로필 확인')).toBeInTheDocument();
   });
 });
