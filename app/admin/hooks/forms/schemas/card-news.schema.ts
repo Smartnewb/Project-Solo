@@ -3,6 +3,13 @@ import { z } from 'zod';
 export const layoutModeSchema = z.enum(['article', 'image_only']);
 export type CardNewsLayoutMode = z.infer<typeof layoutModeSchema>;
 
+export function isQuillEmpty(value: string | undefined | null): boolean {
+  if (!value) return true;
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return true;
+  return /^<p>\s*(<br\s*\/?>)?\s*<\/p>$/.test(trimmed);
+}
+
 export const cardSectionSchema = z.object({
   order: z.number(),
   title: z.string().max(50, '카드 제목은 최대 50자까지 입력 가능합니다.'),
@@ -31,7 +38,7 @@ export const cardNewsFormSchema = z
             message: '카드 제목을 입력해주세요.',
           });
         }
-        if (!section.content || section.content.trim().length === 0 || section.content === '<p><br></p>') {
+        if (isQuillEmpty(section.content)) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: ['sections', idx, 'content'],
@@ -39,8 +46,7 @@ export const cardNewsFormSchema = z
           });
         }
       });
-    }
-    if (data.layoutMode === 'image_only') {
+    } else if (data.layoutMode === 'image_only') {
       data.sections.forEach((section, idx) => {
         if (!section.imageUrl) {
           ctx.addIssue({

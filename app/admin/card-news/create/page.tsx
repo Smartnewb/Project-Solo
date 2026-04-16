@@ -276,13 +276,6 @@ function CreateCardNewsPageContent() {
   };
 
   const onSubmit = handleFormSubmit(async (data) => {
-    if (data.layoutMode === 'image_only') {
-      const missing = data.sections.findIndex(s => !s.imageUrl);
-      if (missing !== -1) {
-        setSubmitError(`카드 ${missing + 1}: 이미지 전용 모드에서는 섹션 이미지가 필수입니다.`);
-        return;
-      }
-    }
     if (backgroundType === 'PRESET' && !selectedPresetId) {
       setSubmitError('배경 프리셋을 선택해주세요.');
       return;
