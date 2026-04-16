@@ -93,13 +93,19 @@ export default function ChatManagementTab() {
   const [error, setError] = useState<string>('');
   const [csvExporting, setCsvExporting] = useState(false);
 
-  const fetchChatRooms = async (preset?: DatePreset) => {
+  const fetchChatRooms = async ({
+    preset,
+    pageOverride,
+  }: {
+    preset?: DatePreset;
+    pageOverride?: number;
+  } = {}) => {
     setLoading(true);
     setError('');
 
     try {
       const params: any = {
-        page: page + 1,
+        page: (pageOverride ?? page) + 1,
         limit: rowsPerPage
       };
 
@@ -154,13 +160,13 @@ export default function ChatManagementTab() {
     setStartDate(null);
     setEndDate(null);
     setPage(0);
-    fetchChatRooms(preset);
+    fetchChatRooms({ preset, pageOverride: 0 });
   };
 
   const handleCustomDateSearch = () => {
     if (!startDate || !endDate) return;
     setPage(0);
-    fetchChatRooms();
+    fetchChatRooms({ pageOverride: 0 });
   };
 
   const handleCsvExport = async () => {
@@ -221,7 +227,7 @@ export default function ChatManagementTab() {
   };
 
   useEffect(() => {
-    fetchChatRooms(selectedPreset);
+    fetchChatRooms({ preset: selectedPreset });
   }, []);
 
   useEffect(() => {
@@ -254,7 +260,12 @@ export default function ChatManagementTab() {
             placeholder="사용자 이름 검색"
             value={searchName}
             onChange={(e) => setSearchName(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') { setPage(0); fetchChatRooms(); } }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                setPage(0);
+                fetchChatRooms({ pageOverride: 0 });
+              }
+            }}
             sx={{ minWidth: 180 }}
             InputProps={{
               startAdornment: (
