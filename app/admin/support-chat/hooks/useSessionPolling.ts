@@ -37,19 +37,23 @@ export function useSessionPolling(): UseSessionPollingReturn {
   const isFirstFetchRef = useRef(true);
 
   const fetchActive = useCallback(async () => {
-    const [waitingRes, handlingRes] = await Promise.all([
+    const [waitingRes, handlingRes, botRes] = await Promise.all([
       supportChatService.getSessions({ status: 'waiting_admin', limit: 100 }),
       supportChatService.getSessions({ status: 'admin_handling', limit: 100 }),
+      supportChatService.getSessions({ status: 'bot_handling', limit: 100 }),
     ]);
 
     const waiting = waitingRes.sessions;
     const handling = handlingRes.sessions;
+    const bot = botRes.sessions;
 
-    // Detect new waiting sessions
+    const pending = [...waiting, ...bot];
+
+    // Detect new pending (waiting_admin + bot_handling) sessions
     if (!isFirstFetchRef.current) {
-      const currentWaitingIds = new Set(waiting.map((s) => s.sessionId));
+      const currentPendingIds = new Set(pending.map((s) => s.sessionId));
       const newIds = new Set<string>();
-      currentWaitingIds.forEach((id) => {
+      currentPendingIds.forEach((id) => {
         if (!prevWaitingIdsRef.current.has(id)) {
           newIds.add(id);
         }
@@ -59,13 +63,13 @@ export function useSessionPolling(): UseSessionPollingReturn {
       }
     }
     isFirstFetchRef.current = false;
-    prevWaitingIdsRef.current = new Set(waiting.map((s) => s.sessionId));
+    prevWaitingIdsRef.current = new Set(pending.map((s) => s.sessionId));
 
-    const combined = [...waiting, ...handling];
+    const combined = [...pending, ...handling];
     setActiveSessions(combined);
     setStatusCounts((prev) => ({
       ...prev,
-      waiting: waitingRes.pagination.total,
+      waiting: waitingRes.pagination.total + botRes.pagination.total,
       handling: handlingRes.pagination.total,
     }));
 
