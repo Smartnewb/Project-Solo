@@ -1,13 +1,22 @@
 'use client';
 
 import { useEffect, useState, useMemo, useCallback, Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import { pushNotificationCatalog } from '@/app/services/admin';
 import type {
 	PushNotificationCatalogResponse,
 	PushNotificationItem,
 	FreshmenMilestone,
 } from '@/app/services/admin';
-import { NotificationGraph } from './notification-graph';
+
+const NotificationGraph = dynamic(() => import('./notification-graph').then(mod => ({ default: mod.NotificationGraph })), {
+	ssr: false,
+	loading: () => (
+		<div className="flex items-center justify-center h-full text-slate-400 text-sm">
+			3D 씬 로딩 중...
+		</div>
+	),
+});
 
 type Locale = 'ko' | 'ja' | 'all';
 

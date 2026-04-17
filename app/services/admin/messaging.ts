@@ -17,7 +17,7 @@ export const pushNotificationCatalog = {
 		const params: Record<string, string> = {};
 		if (locale !== 'all') params.locale = locale;
 		const result = await adminGet<{ data: PushNotificationCatalogResponse }>(
-			'/admin/v2/push-notifications/catalog',
+			'/admin/v2/messaging/push/catalog',
 			params,
 		);
 		return result.data;
