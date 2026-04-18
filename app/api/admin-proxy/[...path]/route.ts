@@ -41,12 +41,9 @@ function isPathAllowed(targetPath: string): boolean {
 	);
 }
 
-async function refreshAccessToken(meta: AdminSessionMeta | null): Promise<string | null> {
-	const refreshToken = await getAdminRefreshToken();
-	if (!refreshToken || !meta) {
-		return null;
-	}
+const inFlightRefreshes = new Map<string, Promise<string | null>>();
 
+async function doRefresh(meta: AdminSessionMeta, refreshToken: string): Promise<string | null> {
 	try {
 		const res = await fetch(`${BACKEND_URL}/auth/refresh`, {
 			method: 'POST',
@@ -78,6 +75,25 @@ async function refreshAccessToken(meta: AdminSessionMeta | null): Promise<string
 		adminLog.error('/api/admin-proxy', 'refresh_failed', error);
 		return null;
 	}
+}
+
+async function refreshAccessToken(meta: AdminSessionMeta | null): Promise<string | null> {
+	const refreshToken = await getAdminRefreshToken();
+	if (!refreshToken || !meta) {
+		return null;
+	}
+
+	const dedupKey = `${meta.id}:${refreshToken}`;
+	const existing = inFlightRefreshes.get(dedupKey);
+	if (existing) {
+		return existing;
+	}
+
+	const pending = doRefresh(meta, refreshToken).finally(() => {
+		inFlightRefreshes.delete(dedupKey);
+	});
+	inFlightRefreshes.set(dedupKey, pending);
+	return pending;
 }
 
 async function callBackend(

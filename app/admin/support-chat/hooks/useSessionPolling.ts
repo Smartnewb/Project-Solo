@@ -6,7 +6,6 @@ import type { SupportSessionSummary } from '@/app/types/support-chat';
 
 const POLLING_INTERVAL = 30_000;
 const RESOLVED_FETCH_LIMIT = 100;
-const MAX_RESOLVED_PAGES = 200;
 
 interface StatusCounts {
   waiting: number;
@@ -76,54 +75,23 @@ export function useSessionPolling(): UseSessionPollingReturn {
     return combined;
   }, []);
 
-  const fetchAllResolvedSessions = useCallback(async () => {
-    let page = 1;
-    let totalPages = 1;
-    let total = 0;
-    const aggregated: SupportSessionSummary[] = [];
-
-    while (page <= totalPages && page <= MAX_RESOLVED_PAGES) {
-      const res = await supportChatService.getSessions({
-        status: 'resolved',
-        page,
-        limit: RESOLVED_FETCH_LIMIT,
-      });
-
-      aggregated.push(...res.sessions);
-      total = res.pagination.total || total;
-
-      const pageLimit = res.pagination.limit || RESOLVED_FETCH_LIMIT;
-      const derivedTotalPages =
-        res.pagination.totalPages ||
-        Math.ceil((res.pagination.total || aggregated.length) / Math.max(pageLimit, 1)) ||
-        1;
-      totalPages = Math.max(totalPages, derivedTotalPages);
-
-      if (res.sessions.length === 0 || page >= derivedTotalPages) {
-        break;
-      }
-      page += 1;
-    }
-
-    if (totalPages > MAX_RESOLVED_PAGES) {
-      ;
-    }
+  const fetchResolved = useCallback(async () => {
+    const res = await supportChatService.getSessions({
+      status: 'resolved',
+      page: 1,
+      limit: RESOLVED_FETCH_LIMIT,
+    });
 
     const uniqueSessions = Array.from(
-      new Map(aggregated.map((session) => [session.sessionId, session])).values()
+      new Map(res.sessions.map((session) => [session.sessionId, session])).values()
     );
 
-    return {
-      sessions: uniqueSessions,
-      total: total || uniqueSessions.length,
-    };
+    setResolvedSessions(uniqueSessions);
+    setStatusCounts((prev) => ({
+      ...prev,
+      resolved: res.pagination.total || uniqueSessions.length,
+    }));
   }, []);
-
-  const fetchResolved = useCallback(async () => {
-    const res = await fetchAllResolvedSessions();
-    setResolvedSessions(res.sessions);
-    setStatusCounts((prev) => ({ ...prev, resolved: res.total }));
-  }, [fetchAllResolvedSessions]);
 
   const refresh = useCallback(async () => {
     setLoading(true);

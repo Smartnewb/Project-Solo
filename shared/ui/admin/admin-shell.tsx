@@ -35,13 +35,14 @@ export function AdminShell({ children }: { children: ReactNode }) {
         if (res.ok) {
           const data = await res.json();
           setSession(data);
-        } else {
+        } else if (res.status === 401 || res.status === 403) {
           setError('Authentication required');
           router.push('/');
+        } else {
+          setError('세션 확인 실패 (서버 오류). 페이지를 새로고침하세요.');
         }
       } catch {
-        setError('Authentication required');
-        router.push('/');
+        setError('네트워크 오류로 세션을 확인할 수 없습니다. 페이지를 새로고침하세요.');
       } finally {
         setIsLoading(false);
       }
@@ -78,7 +79,22 @@ export function AdminShell({ children }: { children: ReactNode }) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
-  if (error || !session) {
+  if (!session) {
+    if (error && error !== 'Authentication required') {
+      return (
+        <div className="flex items-center justify-center min-h-screen p-6">
+          <div className="max-w-md text-center space-y-4">
+            <p className="text-gray-700">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-gray-900 text-white rounded hover:bg-gray-800"
+            >
+              새로고침
+            </button>
+          </div>
+        </div>
+      );
+    }
     return null;
   }
 
