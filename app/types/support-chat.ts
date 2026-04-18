@@ -4,6 +4,13 @@ export type SupportSenderType = 'user' | 'bot' | 'admin';
 export type SupportDomain = 'payment' | 'matching' | 'chat' | 'account' | 'other';
 export type SupportPhase = 'asking' | 'answering';
 
+export type SupportMessageSource =
+  | 'webhook'
+  | 'webhook_tier2'
+  | 'cs_agent'
+  | 'admin'
+  | 'faq_match';
+
 export interface SupportMessageMetadata {
   sources?: {
     question: string;
@@ -15,6 +22,10 @@ export interface SupportMessageMetadata {
   domain?: SupportDomain;
   collectedInfo?: Record<string, string>;
   phase?: SupportPhase;
+  source?: SupportMessageSource | string;
+  reason?: string;
+  webhook_handled?: boolean;
+  tool?: string;
 }
 
 export interface SupportMessage {
@@ -159,4 +170,12 @@ export const INFO_KEY_LABELS: Record<string, string> = {
   chatRoomId: '채팅방 ID',
   accountEmail: '계정 이메일',
   description: '상세 내용',
+};
+
+export const SOURCE_LABELS: Record<string, { label: string; color: 'default' | 'primary' | 'success' | 'warning' | 'info' }> = {
+  webhook: { label: '🤖 FAQ 자동응답', color: 'success' },
+  webhook_tier2: { label: '🧠 AI Tier2 응답', color: 'info' },
+  cs_agent: { label: '🛎️ CS 에이전트', color: 'primary' },
+  faq_match: { label: '📖 FAQ 매칭', color: 'success' },
+  admin: { label: '👤 어드민', color: 'default' },
 };

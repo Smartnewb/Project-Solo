@@ -43,6 +43,7 @@ import {
   DOMAIN_LABELS,
   INFO_KEY_LABELS,
   PHASE_LABELS,
+  SOURCE_LABELS,
 } from '@/app/types/support-chat';
 
 interface ChatDetailDialogProps {
@@ -268,13 +269,41 @@ export default function ChatDetailDialog({
             borderRadius: 2,
           }}
         >
-          {message.senderType === 'bot' && message.metadata?.phase && (
-            <Chip
-              label={PHASE_LABELS[message.metadata.phase]}
-              size="small"
-              sx={{ fontSize: '0.65rem', height: 20, mb: 0.5 }}
-              color={message.metadata.phase === 'answering' ? 'success' : 'default'}
-            />
+          {(message.senderType === 'bot' || message.senderType === 'admin') && (message.metadata?.phase || message.metadata?.source || message.metadata?.webhook_handled) && (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 0.5 }}>
+              {message.metadata?.phase && (
+                <Chip
+                  label={PHASE_LABELS[message.metadata.phase]}
+                  size="small"
+                  sx={{ fontSize: '0.65rem', height: 20 }}
+                  color={message.metadata.phase === 'answering' ? 'success' : 'default'}
+                />
+              )}
+              {message.metadata?.source && (
+                <Chip
+                  label={SOURCE_LABELS[message.metadata.source]?.label || `출처: ${message.metadata.source}`}
+                  size="small"
+                  sx={{ fontSize: '0.65rem', height: 20 }}
+                  color={SOURCE_LABELS[message.metadata.source]?.color || 'default'}
+                />
+              )}
+              {message.metadata?.webhook_handled && !message.metadata?.source && (
+                <Chip
+                  label="🤖 webhook 처리"
+                  size="small"
+                  sx={{ fontSize: '0.65rem', height: 20 }}
+                  color="info"
+                />
+              )}
+              {message.metadata?.tool && (
+                <Chip
+                  label={`🔧 ${message.metadata.tool}`}
+                  size="small"
+                  sx={{ fontSize: '0.65rem', height: 20 }}
+                  variant="outlined"
+                />
+              )}
+            </Box>
           )}
           <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
             {message.content}
@@ -282,6 +311,15 @@ export default function ChatDetailDialog({
           {message.metadata?.confidence !== undefined && (
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
               신뢰도: {(message.metadata.confidence * 100).toFixed(0)}%
+            </Typography>
+          )}
+          {message.metadata?.reason && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: 'block', mt: 0.5, fontStyle: 'italic' }}
+            >
+              사유: {message.metadata.reason}
             </Typography>
           )}
         </Card>
