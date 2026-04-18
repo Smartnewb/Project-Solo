@@ -69,8 +69,8 @@ export function useSessionPolling(): UseSessionPollingReturn {
     setActiveSessions(combined);
     setStatusCounts((prev) => ({
       ...prev,
-      waiting: waitingRes.pagination.total + botRes.pagination.total,
-      handling: handlingRes.pagination.total,
+      waiting: waitingRes.pagination.total,
+      handling: handlingRes.pagination.total + botRes.pagination.total,
     }));
 
     return combined;
