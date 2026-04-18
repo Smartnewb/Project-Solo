@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminAccessToken, getSessionMeta } from '@/shared/auth';
+import {
+	clearAdminCookies,
+	getAdminAccessToken,
+	getAdminRefreshToken,
+	getSessionMeta,
+	setAdminAccessToken,
+	setAdminRefreshToken,
+	setSessionMeta,
+	type AdminSessionMeta,
+} from '@/shared/auth';
+import { adminLog } from '@/shared/lib/admin-logger';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api';
 
-// Allowlist of permitted path prefixes (SSRF prevention)
 const ALLOWED_PATH_PREFIXES = [
 	'admin/',
 	'auth/',
@@ -27,70 +36,125 @@ const ALLOWED_PATH_PREFIXES = [
 ];
 
 function isPathAllowed(targetPath: string): boolean {
-  return ALLOWED_PATH_PREFIXES.some((prefix) => targetPath === prefix.replace(/\/$/, '') || targetPath.startsWith(prefix));
+	return ALLOWED_PATH_PREFIXES.some(
+		(prefix) => targetPath === prefix.replace(/\/$/, '') || targetPath.startsWith(prefix),
+	);
+}
+
+async function refreshAccessToken(meta: AdminSessionMeta | null): Promise<string | null> {
+	const refreshToken = await getAdminRefreshToken();
+	if (!refreshToken || !meta) {
+		return null;
+	}
+
+	try {
+		const res = await fetch(`${BACKEND_URL}/auth/refresh`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'x-country': meta.selectedCountry,
+			},
+			body: JSON.stringify({ refreshToken }),
+		});
+
+		if (!res.ok) {
+			await clearAdminCookies();
+			return null;
+		}
+
+		const data = (await res.json()) as { accessToken?: string; refreshToken?: string };
+		if (!data.accessToken) {
+			await clearAdminCookies();
+			return null;
+		}
+
+		await setAdminAccessToken(data.accessToken);
+		if (typeof data.refreshToken === 'string' && data.refreshToken.length > 0) {
+			await setAdminRefreshToken(data.refreshToken);
+		}
+		await setSessionMeta({ ...meta, issuedAt: Date.now() });
+		return data.accessToken;
+	} catch (error) {
+		adminLog.error('/api/admin-proxy', 'refresh_failed', error);
+		return null;
+	}
+}
+
+async function callBackend(
+	url: string,
+	method: string,
+	body: BodyInit | null,
+	token: string,
+	meta: AdminSessionMeta | null,
+	contentType: string | null,
+): Promise<Response> {
+	const headers: Record<string, string> = {
+		Authorization: `Bearer ${token}`,
+	};
+	if (contentType) headers['Content-Type'] = contentType;
+	if (meta?.selectedCountry) headers['x-country'] = meta.selectedCountry;
+
+	return fetch(url, { method, headers, body });
 }
 
 async function proxyRequest(request: NextRequest, { params }: { params: { path: string[] } }) {
-  const token = await getAdminAccessToken();
-  const meta = await getSessionMeta();
+	let token = await getAdminAccessToken();
+	const meta = await getSessionMeta();
 
-  if (!token) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-  }
+	if (!token) {
+		return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+	}
 
-  const targetPath = params.path.join('/');
+	const targetPath = params.path.join('/');
 
-  if (!isPathAllowed(targetPath)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
-  const url = new URL(`${BACKEND_URL}/${targetPath}`);
+	if (!isPathAllowed(targetPath)) {
+		return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+	}
 
-  request.nextUrl.searchParams.forEach((value, key) => {
-    url.searchParams.set(key, value);
-  });
+	const url = new URL(`${BACKEND_URL}/${targetPath}`);
 
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${token}`,
-  };
+	request.nextUrl.searchParams.forEach((value, key) => {
+		url.searchParams.set(key, value);
+	});
 
-  const contentType = request.headers.get('content-type');
-  if (contentType) {
-    headers['Content-Type'] = contentType;
-  }
+	const contentType = request.headers.get('content-type');
 
-  if (meta?.selectedCountry) {
-    headers['x-country'] = meta.selectedCountry;
-  }
+	let body: BodyInit | null = null;
+	if (request.method !== 'GET' && request.method !== 'HEAD') {
+		body = await request.arrayBuffer();
+	}
 
-  let body: BodyInit | null = null;
-  if (request.method !== 'GET' && request.method !== 'HEAD') {
-    body = await request.arrayBuffer();
-  }
+	let backendRes = await callBackend(url.toString(), request.method, body, token, meta, contentType);
 
-  const backendRes = await fetch(url.toString(), {
-    method: request.method,
-    headers,
-    body,
-  });
+	if (backendRes.status === 401 && targetPath !== 'auth/refresh') {
+		const newToken = await refreshAccessToken(meta);
+		if (newToken) {
+			backendRes = await callBackend(
+				url.toString(),
+				request.method,
+				body,
+				newToken,
+				meta,
+				contentType,
+			);
+		}
+	}
 
-  const responseBody = await backendRes.arrayBuffer();
+	const responseBody = await backendRes.arrayBuffer();
 
-  // Forward all backend response headers (Content-Disposition, Cache-Control, etc.)
-  const responseHeaders = new Headers();
-  backendRes.headers.forEach((value, key) => {
-    const lower = key.toLowerCase();
-    // Skip hop-by-hop headers that must not be forwarded
-    if (lower === 'transfer-encoding' || lower === 'connection') return;
-    responseHeaders.set(key, value);
-  });
+	const responseHeaders = new Headers();
+	backendRes.headers.forEach((value, key) => {
+		const lower = key.toLowerCase();
+		if (lower === 'transfer-encoding' || lower === 'connection') return;
+		responseHeaders.set(key, value);
+	});
 
-  // 204 No Content must not include a body
-  const resBody = backendRes.status === 204 ? null : responseBody;
+	const resBody = backendRes.status === 204 ? null : responseBody;
 
-  return new NextResponse(resBody, {
-    status: backendRes.status,
-    headers: responseHeaders,
-  });
+	return new NextResponse(resBody, {
+		status: backendRes.status,
+		headers: responseHeaders,
+	});
 }
 
 export const GET = proxyRequest;
