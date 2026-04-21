@@ -31,6 +31,18 @@ export {
 } from './revenue';
 export { revenueV2 } from './revenue-v2';
 export type { RevenueSummary, RevenueBreakdown, DailyRevenueTrend } from './revenue-v2';
+export { blacklist, usersStats } from './blacklist';
+export type {
+	BlacklistItem,
+	BlacklistHistoryEntry,
+	BlacklistRegisterRequest,
+	BlacklistReleaseRequest,
+	BlacklistRegisterResponse,
+	BlacklistReleaseResponse,
+	BlacklistListParams,
+	UsersStatsResponse,
+	PaginationMeta,
+} from './blacklist';
 export { fcmTokens, universities } from './system';
 export { featureFlags } from './feature-flags';
 export type { FeatureFlag } from './feature-flags';
