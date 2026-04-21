@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Box, Card, CardContent, Typography, Skeleton } from "@mui/material";
+import { Box, Card, CardContent, Typography, Skeleton, Tooltip } from "@mui/material";
 import {
   AutoAwesome as ReviewInboxIcon,
   AssignmentInd as ProfileReviewIcon,
   School as SchoolIcon,
 } from "@mui/icons-material";
-import AdminService from "@/app/services/admin";
+import { ShieldBan } from "lucide-react";
+import AdminService, { usersStats } from "@/app/services/admin";
 import { getReviewInbox } from "@/app/services/review-inbox";
 
 interface ActionItemCardProps {
@@ -19,6 +20,8 @@ interface ActionItemCardProps {
   color: string;
   bgColor: string;
   loading?: boolean;
+  subtitle?: string;
+  tooltip?: string;
 }
 
 function ActionItemCard({
@@ -29,10 +32,12 @@ function ActionItemCard({
   color,
   bgColor,
   loading,
+  subtitle,
+  tooltip,
 }: ActionItemCardProps) {
   const hasItems = count > 0;
 
-  return (
+  const cardContent = (
     <Link href={link} className="block flex-1 min-w-[140px]">
       <Card
         sx={{
@@ -95,12 +100,22 @@ function ActionItemCard({
                   </Typography>
                 </Typography>
               )}
+              {subtitle && (
+                <Typography variant="caption" color="text.secondary" display="block">
+                  {subtitle}
+                </Typography>
+              )}
             </Box>
           </Box>
         </CardContent>
       </Card>
     </Link>
   );
+
+  if (tooltip) {
+    return <Tooltip title={tooltip} arrow>{cardContent}</Tooltip>;
+  }
+  return cardContent;
 }
 
 export default function ActionRequired() {
@@ -110,6 +125,8 @@ export default function ActionRequired() {
   const [reviewInboxLoading, setReviewInboxLoading] = useState(true);
   const [pendingCertification, setPendingCertification] = useState(0);
   const [certificationLoading, setCertificationLoading] = useState(true);
+  const [blacklistedCount, setBlacklistedCount] = useState(0);
+  const [blacklistedLoading, setBlacklistedLoading] = useState(true);
 
   useEffect(() => {
     const fetchReviewCount = async () => {
@@ -154,9 +171,22 @@ export default function ActionRequired() {
       }
     };
 
+    const fetchBlacklistedCount = async () => {
+      try {
+        setBlacklistedLoading(true);
+        const response = await usersStats.get();
+        setBlacklistedCount(response.data?.blacklisted ?? 0);
+      } catch (_error) {
+        setBlacklistedCount(0);
+      } finally {
+        setBlacklistedLoading(false);
+      }
+    };
+
     fetchReviewCount();
     fetchReviewInboxCount();
     fetchCertificationCount();
+    fetchBlacklistedCount();
   }, []);
 
   const totalPending = pendingReview + reviewInboxPending + pendingCertification;
@@ -226,6 +256,17 @@ export default function ActionRequired() {
             color="#f59e0b"
             bgColor="#fffbeb"
             loading={certificationLoading}
+          />
+          <ActionItemCard
+            title="블랙리스트"
+            count={blacklistedCount}
+            icon={<ShieldBan size={18} />}
+            link="/admin/blacklist"
+            color="#dc2626"
+            bgColor="#fef2f2"
+            loading={blacklistedLoading}
+            subtitle="활성 기준"
+            tooltip="suspended와 다른 수치. user_blacklist 활성 row 기준."
           />
         </Box>
       </CardContent>
