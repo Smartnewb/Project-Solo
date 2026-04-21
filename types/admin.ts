@@ -858,3 +858,59 @@ export interface UpdateSometimeArticleRequest {
   seo?: SometimeArticleSEO;
   publishedAt?: string;
 }
+
+// ==================== Unified Content (Notices) ====================
+
+export type ContentStatus = 'draft' | 'published' | 'archived';
+export type NoticePriority = 'high' | 'normal';
+export type NoticeCategoryCode = 'notice';
+export type ContentCategoryCode =
+  | 'relationship'
+  | 'dating'
+  | 'psychology'
+  | 'essay'
+  | 'qna'
+  | 'event';
+
+export interface AdminNoticeItem {
+  id: string;
+  title: string;
+  subtitle?: string;
+  categoryCode: NoticeCategoryCode;
+  content: string;
+  priority: NoticePriority;
+  expiresAt?: string | null;
+  url?: string | null;
+  hasReward: boolean;
+  pushEnabled: boolean;
+  pushTitle?: string | null;
+  pushMessage?: string | null;
+  status: ContentStatus;
+  publishedAt?: string | null;
+  pushSentAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminNoticeListResponse {
+  items: AdminNoticeItem[];
+  meta: { page: number; limit: number; totalItems: number; totalPages: number };
+}
+
+export interface CreateNoticeRequest
+  extends Omit<
+    AdminNoticeItem,
+    'id' | 'status' | 'publishedAt' | 'pushSentAt' | 'createdAt' | 'updatedAt'
+  > {}
+export interface UpdateNoticeRequest extends Partial<AdminNoticeItem> {}
+
+export interface PublishNoticeRequest {
+  pushEnabled: boolean;
+  pushTitle?: string;
+  pushMessage?: string;
+}
+
+export interface PublishNoticeResponse {
+  success: boolean;
+  sentCount?: number;
+}
