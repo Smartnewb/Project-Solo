@@ -1,17 +1,18 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Box, Tabs, Tab, Typography, Button, Menu, MenuItem } from '@mui/material';
+import { Box, Tabs, Tab, Typography, Button, Menu, MenuItem, CircularProgress } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { AllContentTable } from './components/AllContentTable';
 import { CardSeriesTable } from './components/CardSeriesTable';
 import { ArticleTable } from './components/ArticleTable';
 import { NoticeTable } from './components/NoticeTable';
+import type { ContentType } from './constants';
 
-type TabValue = 'all' | 'card-series' | 'article' | 'notice';
+type TabValue = 'all' | ContentType;
 
-export default function ContentPage() {
+function ContentPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentTab = ((searchParams.get('tab') as TabValue) || 'all') as TabValue;
@@ -21,7 +22,7 @@ export default function ContentPage() {
     router.replace(`/admin/content?tab=${tab}`);
   };
 
-  const handleCreate = (type: 'card-series' | 'article' | 'notice') => {
+  const handleCreate = (type: ContentType) => {
     setAnchorEl(null);
     router.push(`/admin/content/${type}/create`);
   };
@@ -71,7 +72,7 @@ export default function ContentPage() {
           <Button
             variant="contained"
             startIcon={<AddIcon />}
-            onClick={() => handleCreate(currentTab as 'card-series' | 'article' | 'notice')}
+            onClick={() => handleCreate(currentTab as ContentType)}
           >
             {tabCreateLabel} 작성
           </Button>
@@ -90,5 +91,19 @@ export default function ContentPage() {
       {currentTab === 'article' && <ArticleTable />}
       {currentTab === 'notice' && <NoticeTable />}
     </Box>
+  );
+}
+
+export default function ContentPage() {
+  return (
+    <Suspense
+      fallback={
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}>
+          <CircularProgress />
+        </Box>
+      }
+    >
+      <ContentPageInner />
+    </Suspense>
   );
 }

@@ -30,13 +30,15 @@ import {
 } from '@/app/admin/hooks';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
-import { safeToLocaleString } from '@/app/utils/formatters';
+import { formatDateTimeKR } from '@/app/utils/formatters';
+import { getApiErrorMessage } from '@/app/utils/errors';
 import { StatusBadge } from './StatusBadge';
 import { CategoryBadge } from './CategoryBadge';
+import type { ContentType } from '../constants';
 
 type UnifiedRow = {
   id: string;
-  type: 'card-series' | 'article' | 'notice';
+  type: ContentType;
   title: string;
   categoryCode: string;
   status: ContentStatus;
@@ -120,7 +122,7 @@ export function AllContentTable() {
     return rows.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
   }, [cardsData, articlesData, noticesData]);
 
-  const isLoading = cardsLoading && articlesLoading && noticesLoading;
+  const isLoading = cardsLoading || articlesLoading || noticesLoading;
 
   const handleEdit = (row: UnifiedRow) => {
     router.push(`/admin/content/${row.type}/edit/${row.id}`);
@@ -138,19 +140,9 @@ export function AllContentTable() {
       else await deleteNotice.mutateAsync(row.id);
       toast.success('삭제되었습니다.');
     } catch (err: unknown) {
-      const error = err as { message?: string };
-      toast.error(error.message || '삭제에 실패했습니다.');
+      toast.error(getApiErrorMessage(err, '삭제에 실패했습니다.'));
     }
   };
-
-  const formatDate = (dateString: string) =>
-    safeToLocaleString(dateString, 'ko-KR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
 
   if (isLoading) {
     return (
@@ -210,7 +202,7 @@ export function AllContentTable() {
                     <StatusBadge status={row.status} />
                   </TableCell>
                   <TableCell align="center">
-                    {row.createdAt ? formatDate(row.createdAt) : '-'}
+                    {row.createdAt ? formatDateTimeKR(row.createdAt) : '-'}
                   </TableCell>
                   <TableCell align="center">
                     <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
@@ -243,7 +235,7 @@ export function AllContentTable() {
         <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2, gap: 1 }}>
           {hasMoreCards && (
             <Button size="small" variant="outlined" onClick={() => setCardsPage((p) => p + 1)}>
-              카드시리즈 더 보기
+              카드시리즈 다음 페이지
             </Button>
           )}
           {hasMoreArticles && (
@@ -252,7 +244,7 @@ export function AllContentTable() {
               variant="outlined"
               onClick={() => setArticlesPage((p) => p + 1)}
             >
-              아티클 더 보기
+              아티클 다음 페이지
             </Button>
           )}
           {hasMoreNotices && (
@@ -261,7 +253,7 @@ export function AllContentTable() {
               variant="outlined"
               onClick={() => setNoticesPage((p) => p + 1)}
             >
-              공지 더 보기
+              공지 다음 페이지
             </Button>
           )}
         </Box>

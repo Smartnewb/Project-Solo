@@ -124,7 +124,7 @@ export const noticeFormSchema = z
       .min(1, '제목을 입력해주세요.')
       .max(50, '제목은 최대 50자까지 입력 가능합니다.'),
     subtitle: z.string().max(100, '부제목은 최대 100자까지 입력 가능합니다.').optional(),
-    categoryCode: noticeCategoryCodeSchema.default('notice'),
+    categoryCode: noticeCategoryCodeSchema,
     content: z.string().min(1, '본문을 입력해주세요.'),
     priority: noticePrioritySchema,
     expiresAt: z.string().optional().nullable(),
