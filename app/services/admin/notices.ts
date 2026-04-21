@@ -6,9 +6,10 @@ import type {
   UpdateNoticeRequest,
   PublishNoticeRequest,
   PublishNoticeResponse,
+  PushResendNoticeRequest,
 } from '@/types/admin';
 
-const USE_MOCK = process.env.NEXT_PUBLIC_NOTICE_API_MOCK !== 'false';
+const USE_MOCK = process.env.NEXT_PUBLIC_NOTICE_API_MOCK === 'true';
 const MOCK_KEY = 'admin_notice_mock';
 
 function readMock(): AdminNoticeItem[] {
@@ -144,7 +145,7 @@ export const notices = {
         status: 'published',
         publishedAt: now,
         pushSentAt: data.pushEnabled ? now : all[idx].pushSentAt ?? null,
-        pushEnabled: data.pushEnabled,
+        pushEnabled: data.pushEnabled ?? all[idx].pushEnabled,
       };
       writeMock(all);
       return { success: true, sentCount: data.pushEnabled ? 1000 : undefined };
@@ -152,6 +153,47 @@ export const notices = {
     const res = await adminPost<{ data: PublishNoticeResponse }>(
       `/admin/v2/content/notices/${id}/publish`,
       data,
+    );
+    return res.data;
+  },
+
+  pushResend: async (
+    id: string,
+    data: PushResendNoticeRequest,
+  ): Promise<PublishNoticeResponse> => {
+    if (USE_MOCK) {
+      const all = readMock();
+      const idx = all.findIndex((n) => n.id === id);
+      if (idx < 0) throw new Error('Not found');
+      const now = new Date().toISOString();
+      all[idx] = {
+        ...all[idx],
+        pushSentAt: now,
+        pushTitle: data.pushTitle,
+        pushMessage: data.pushMessage,
+      };
+      writeMock(all);
+      return { success: true, sentCount: 1000 };
+    }
+    const res = await adminPost<{ data: PublishNoticeResponse }>(
+      `/admin/v2/content/notices/${id}/push`,
+      data,
+    );
+    return res.data;
+  },
+
+  archive: async (id: string): Promise<AdminNoticeItem> => {
+    if (USE_MOCK) {
+      const all = readMock();
+      const idx = all.findIndex((n) => n.id === id);
+      if (idx < 0) throw new Error('Not found');
+      all[idx] = { ...all[idx], status: 'archived', updatedAt: new Date().toISOString() };
+      writeMock(all);
+      return all[idx];
+    }
+    const res = await adminPost<{ data: AdminNoticeItem }>(
+      `/admin/v2/content/notices/${id}/archive`,
+      {},
     );
     return res.data;
   },

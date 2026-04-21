@@ -9,6 +9,7 @@ import type {
   CreateSometimeArticleRequest,
   PublishCardNewsRequest,
   PublishNoticeRequest,
+  PushResendNoticeRequest,
   UpdateBannerOrderRequest,
   UpdateBannerRequest,
   UpdateCardNewsRequest,
@@ -417,6 +418,29 @@ export function usePublishNotice() {
     mutationFn: ({ id, data }: { id: string; data: PublishNoticeRequest }) =>
       AdminService.notices.publish(id, data),
     onSuccess: (_result, { id }) => {
+      queryClient.invalidateQueries({ queryKey: contentKeys.notices() });
+      queryClient.invalidateQueries({ queryKey: contentKeys.noticeDetail(id) });
+    },
+  });
+}
+
+export function usePushResendNotice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: PushResendNoticeRequest }) =>
+      AdminService.notices.pushResend(id, data),
+    onSuccess: (_result, { id }) => {
+      queryClient.invalidateQueries({ queryKey: contentKeys.notices() });
+      queryClient.invalidateQueries({ queryKey: contentKeys.noticeDetail(id) });
+    },
+  });
+}
+
+export function useArchiveNotice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => AdminService.notices.archive(id),
+    onSuccess: (_result, id) => {
       queryClient.invalidateQueries({ queryKey: contentKeys.notices() });
       queryClient.invalidateQueries({ queryKey: contentKeys.noticeDetail(id) });
     },

@@ -905,9 +905,14 @@ export interface CreateNoticeRequest
 export interface UpdateNoticeRequest extends Partial<AdminNoticeItem> {}
 
 export interface PublishNoticeRequest {
-  pushEnabled: boolean;
+  pushEnabled?: boolean;
   pushTitle?: string;
   pushMessage?: string;
+}
+
+export interface PushResendNoticeRequest {
+  pushTitle: string;
+  pushMessage: string;
 }
 
 export interface PublishNoticeResponse {
