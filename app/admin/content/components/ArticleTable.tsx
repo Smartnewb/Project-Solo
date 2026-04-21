@@ -26,13 +26,13 @@ import {
 } from '@/app/admin/hooks';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
-import { safeToLocaleString } from '@/app/utils/formatters';
+import { formatDateTimeKR } from '@/app/utils/formatters';
+import { getApiErrorMessage } from '@/app/utils/errors';
 import { StatusBadge } from './StatusBadge';
 import { CategoryBadge } from './CategoryBadge';
 import { ContentFilters } from './ContentFilters';
 import { PublishDialog } from './PublishDialog';
-
-const NEW_CATEGORY_CODES = ['relationship', 'dating', 'psychology', 'essay', 'qna', 'event'];
+import { LEGACY_CATEGORY_SENTINEL, NEW_CATEGORY_CODES } from '../constants';
 
 function mapArticleStatusToContentStatus(s: string): ContentStatus {
   if (s === 'published') return 'published';
@@ -53,7 +53,7 @@ export function ArticleTable() {
   const [publishItem, setPublishItem] = useState<{ id: string; title: string } | null>(null);
 
   const categoryParam =
-    category && category !== '__legacy__' ? category : undefined;
+    category && category !== LEGACY_CATEGORY_SENTINEL ? category : undefined;
 
   const { data, isLoading } = useSometimeArticleList({
     page: page + 1,
@@ -67,7 +67,7 @@ export function ArticleTable() {
 
   const filtered = items.filter((it) => {
     if (search && !it.title.toLowerCase().includes(search.toLowerCase())) return false;
-    if (category === '__legacy__') {
+    if (category === LEGACY_CATEGORY_SENTINEL) {
       return !NEW_CATEGORY_CODES.includes(it.category as string);
     }
     return true;
@@ -87,19 +87,9 @@ export function ArticleTable() {
       await deleteArticle.mutateAsync(id);
       toast.success('아티클이 삭제되었습니다.');
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || '삭제에 실패했습니다.');
+      toast.error(getApiErrorMessage(err, '삭제에 실패했습니다.'));
     }
   };
-
-  const formatDate = (dateString: string | null) =>
-    safeToLocaleString(dateString, 'ko-KR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
 
   if (isLoading && items.length === 0) {
     return (
@@ -166,7 +156,7 @@ export function ArticleTable() {
                       <StatusBadge status={derived} />
                     </TableCell>
                     <TableCell align="center">{item.viewCount}</TableCell>
-                    <TableCell align="center">{formatDate(item.publishedAt)}</TableCell>
+                    <TableCell align="center">{formatDateTimeKR(item.publishedAt)}</TableCell>
                     <TableCell align="center">
                       <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
                         <IconButton

@@ -4,6 +4,7 @@ import { Paper, Box, Typography, Button, Chip } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import { useUrgentNotices, useArchiveNotice } from '@/app/admin/hooks';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
+import { getApiErrorMessage } from '@/app/utils/errors';
 
 export function UrgentNoticeBox() {
   const router = useRouter();
@@ -18,8 +19,7 @@ export function UrgentNoticeBox() {
       await archive.mutateAsync(id);
       toast.success('긴급 공지를 종료했습니다.');
     } catch (err: unknown) {
-      const error = err as { message?: string };
-      toast.error(error.message || '공지 종료에 실패했습니다.');
+      toast.error(getApiErrorMessage(err, '공지 종료에 실패했습니다.'));
     }
   };
 

@@ -8,6 +8,7 @@ import type {
   PublishNoticeResponse,
   PushResendNoticeRequest,
 } from '@/types/admin';
+import { toStringParams } from './_shared';
 
 const USE_MOCK = process.env.NEXT_PUBLIC_NOTICE_API_MOCK === 'true';
 const MOCK_KEY = 'admin_notice_mock';
@@ -24,15 +25,6 @@ function writeMock(items: AdminNoticeItem[]) {
   if (typeof window !== 'undefined') {
     localStorage.setItem(MOCK_KEY, JSON.stringify(items));
   }
-}
-
-function toStringParams(params: Record<string, unknown>): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const [k, v] of Object.entries(params)) {
-    if (v === undefined || v === null || v === '') continue;
-    out[k] = String(v);
-  }
-  return out;
 }
 
 export interface NoticeListParams {

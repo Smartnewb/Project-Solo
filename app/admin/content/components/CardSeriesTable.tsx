@@ -26,11 +26,13 @@ import {
 } from '@/app/admin/hooks';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
-import { safeToLocaleString } from '@/app/utils/formatters';
+import { formatDateTimeKR } from '@/app/utils/formatters';
+import { getApiErrorMessage } from '@/app/utils/errors';
 import { StatusBadge } from './StatusBadge';
 import { CategoryBadge } from './CategoryBadge';
 import { ContentFilters } from './ContentFilters';
 import { PublishDialog } from './PublishDialog';
+import { LEGACY_CATEGORY_SENTINEL } from '../constants';
 
 function deriveStatus(item: AdminCardNewsItem): ContentStatus {
   return item.pushSentAt ? 'published' : 'draft';
@@ -56,8 +58,7 @@ export function CardSeriesTable() {
   const filtered = useMemo(() => {
     return items.filter((it) => {
       if (search && !it.title.toLowerCase().includes(search.toLowerCase())) return false;
-      if (category === '__legacy__') {
-        // no legacy for card-news categories
+      if (category === LEGACY_CATEGORY_SENTINEL) {
         return false;
       }
       if (category && it.category?.code !== category) return false;
@@ -83,19 +84,9 @@ export function CardSeriesTable() {
       await deleteCardNews.mutateAsync(id);
       toast.success('카드시리즈가 삭제되었습니다.');
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      toast.error(error.response?.data?.message || '삭제에 실패했습니다.');
+      toast.error(getApiErrorMessage(err, '삭제에 실패했습니다.'));
     }
   };
-
-  const formatDate = (dateString: string) =>
-    safeToLocaleString(dateString, 'ko-KR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
 
   if (isLoading && items.length === 0) {
     return (
@@ -162,7 +153,7 @@ export function CardSeriesTable() {
                       <StatusBadge status={derived} />
                     </TableCell>
                     <TableCell align="center">{item.readCount}</TableCell>
-                    <TableCell align="center">{formatDate(item.createdAt)}</TableCell>
+                    <TableCell align="center">{formatDateTimeKR(item.createdAt)}</TableCell>
                     <TableCell align="center">
                       <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
                         <IconButton

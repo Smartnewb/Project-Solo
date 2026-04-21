@@ -19,6 +19,16 @@ export function safeToLocaleString(value: unknown, locales: string = 'ko-KR', op
   return date.toLocaleString(locales, options);
 }
 
+export function formatDateTimeKR(dateString: string | null | undefined): string {
+  return safeToLocaleString(dateString, 'ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 export function safeToLocaleDateString(value: unknown, locales: string = 'ko-KR', options?: Intl.DateTimeFormatOptions, fallback = '-'): string {
   const date = toSafeDate(value);
   if (!date) return fallback;

@@ -29,3 +29,12 @@ export const getCountryHeader = (): string => {
 	}
 	return 'kr';
 };
+
+export function toStringParams(params: Record<string, unknown>): Record<string, string> {
+	const out: Record<string, string> = {};
+	for (const [k, v] of Object.entries(params)) {
+		if (v === undefined || v === null || v === '') continue;
+		out[k] = String(v);
+	}
+	return out;
+}
