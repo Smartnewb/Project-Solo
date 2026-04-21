@@ -1,5 +1,5 @@
-import CardNewsPageV2 from './card-news-v2';
+import { redirect } from 'next/navigation';
 
-export default function CardNewsPage() {
-  return <CardNewsPageV2 />;
+export default function Page() {
+  redirect('/admin/content?tab=card-series');
 }
