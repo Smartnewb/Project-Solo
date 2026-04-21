@@ -1,0 +1,227 @@
+'use client';
+
+import { useState } from 'react';
+import {
+  Box,
+  Typography,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Chip,
+  IconButton,
+  CircularProgress,
+  TablePagination,
+  Link as MuiLink,
+} from '@mui/material';
+import { useRouter } from 'next/navigation';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import SendIcon from '@mui/icons-material/Send';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import {
+  useNoticeList,
+  useDeleteNotice,
+} from '@/app/admin/hooks';
+import { useToast } from '@/shared/ui/admin/toast/toast-context';
+import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
+import { StatusBadge } from './StatusBadge';
+import { ContentFilters } from './ContentFilters';
+import { UrgentNoticeBox } from './UrgentNoticeBox';
+import { PublishDialog } from './PublishDialog';
+
+function formatExpires(expiresAt?: string | null) {
+  if (!expiresAt) return '제한없음';
+  const diff = new Date(expiresAt).getTime() - Date.now();
+  if (diff < 0) return '만료됨';
+  const days = Math.ceil(diff / 86400000);
+  return `D-${days}`;
+}
+
+export function NoticeTable() {
+  const router = useRouter();
+  const toast = useToast();
+  const confirmAction = useConfirm();
+
+  const [category, setCategory] = useState('');
+  const [status, setStatus] = useState('');
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [publishItem, setPublishItem] = useState<{ id: string; title: string } | null>(null);
+
+  const { data, isLoading } = useNoticeList({
+    page: page + 1,
+    limit: rowsPerPage,
+    ...(status ? { status } : {}),
+    ...(search ? { search } : {}),
+  });
+
+  const deleteNotice = useDeleteNotice();
+  const items = data?.items || [];
+
+  const handleEdit = (id: string) => {
+    router.push(`/admin/content/notice/edit/${id}`);
+  };
+
+  const handleDelete = async (id: string) => {
+    const ok = await confirmAction({
+      title: '공지 삭제',
+      message: '이 공지를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
+    });
+    if (!ok) return;
+    try {
+      await deleteNotice.mutateAsync(id);
+      toast.success('공지가 삭제되었습니다.');
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      toast.error(error.message || '삭제에 실패했습니다.');
+    }
+  };
+
+  if (isLoading && items.length === 0) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  return (
+    <Box>
+      <UrgentNoticeBox />
+
+      <ContentFilters
+        category={category}
+        status={status}
+        search={search}
+        onChange={(next) => {
+          if (next.category !== undefined) setCategory(next.category);
+          if (next.status !== undefined) setStatus(next.status);
+          if (next.search !== undefined) setSearch(next.search);
+          setPage(0);
+        }}
+        includeNoticeCategory
+      />
+
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>제목</TableCell>
+              <TableCell align="center">우선순위</TableCell>
+              <TableCell align="center">만료</TableCell>
+              <TableCell align="center">링크</TableCell>
+              <TableCell align="center">상태</TableCell>
+              <TableCell align="center">작업</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {items.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} align="center">
+                  <Typography color="text.secondary" sx={{ py: 4 }}>
+                    공지가 없습니다.
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ) : (
+              items.map((item) => (
+                <TableRow key={item.id} hover>
+                  <TableCell>
+                    <Typography variant="body2" fontWeight="medium">
+                      {item.title}
+                    </Typography>
+                    {item.subtitle && (
+                      <Typography variant="caption" color="text.secondary">
+                        {item.subtitle}
+                      </Typography>
+                    )}
+                  </TableCell>
+                  <TableCell align="center">
+                    <Chip
+                      label={item.priority === 'high' ? '긴급' : '일반'}
+                      size="small"
+                      color={item.priority === 'high' ? 'error' : 'default'}
+                    />
+                  </TableCell>
+                  <TableCell align="center">{formatExpires(item.expiresAt)}</TableCell>
+                  <TableCell align="center">
+                    {item.url ? (
+                      <MuiLink
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener"
+                        sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}
+                      >
+                        이동 <OpenInNewIcon fontSize="inherit" />
+                      </MuiLink>
+                    ) : (
+                      '-'
+                    )}
+                  </TableCell>
+                  <TableCell align="center">
+                    <StatusBadge status={item.status} expiresAt={item.expiresAt} />
+                  </TableCell>
+                  <TableCell align="center">
+                    <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                      <IconButton
+                        size="small"
+                        color="primary"
+                        onClick={() => handleEdit(item.id)}
+                        title="수정"
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                      {item.status !== 'published' && (
+                        <IconButton
+                          size="small"
+                          color="success"
+                          onClick={() => setPublishItem({ id: item.id, title: item.title })}
+                          title="발행"
+                        >
+                          <SendIcon fontSize="small" />
+                        </IconButton>
+                      )}
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => handleDelete(item.id)}
+                        title="삭제"
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+        <TablePagination
+          component="div"
+          count={data?.meta?.totalItems || 0}
+          page={page}
+          onPageChange={(_, newPage) => setPage(newPage)}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={(e) => {
+            setRowsPerPage(parseInt(e.target.value, 10));
+            setPage(0);
+          }}
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          labelRowsPerPage="페이지당 행 수"
+        />
+      </TableContainer>
+
+      <PublishDialog
+        open={!!publishItem}
+        onClose={() => setPublishItem(null)}
+        type="notice"
+        item={publishItem}
+      />
+    </Box>
+  );
+}
