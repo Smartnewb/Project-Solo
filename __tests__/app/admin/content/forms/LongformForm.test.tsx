@@ -13,7 +13,14 @@ const mockCreate = jest.fn();
 const mockUpdate = jest.fn();
 const mockGet = jest.fn();
 const mockPublish = jest.fn();
-const mockBackgroundGet = jest.fn(() => Promise.resolve([]));
+type MockPreset = {
+  id: string;
+  name: string;
+  displayName: string;
+  imageUrl: string;
+  order: number;
+};
+const mockBackgroundGet = jest.fn<Promise<MockPreset[]>, []>(() => Promise.resolve([]));
 
 jest.mock('@/app/services/admin', () => ({
   __esModule: true,
