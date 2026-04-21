@@ -22,9 +22,12 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SendIcon from '@mui/icons-material/Send';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import ArchiveIcon from '@mui/icons-material/Archive';
+import CampaignIcon from '@mui/icons-material/Campaign';
 import {
   useNoticeList,
   useDeleteNotice,
+  useArchiveNotice,
 } from '@/app/admin/hooks';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
@@ -32,6 +35,7 @@ import { StatusBadge } from './StatusBadge';
 import { ContentFilters } from './ContentFilters';
 import { UrgentNoticeBox } from './UrgentNoticeBox';
 import { PublishDialog } from './PublishDialog';
+import { PushResendDialog } from './PushResendDialog';
 
 function formatExpires(expiresAt?: string | null) {
   if (!expiresAt) return '제한없음';
@@ -52,6 +56,12 @@ export function NoticeTable() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [publishItem, setPublishItem] = useState<{ id: string; title: string } | null>(null);
+  const [resendItem, setResendItem] = useState<{
+    id: string;
+    title: string;
+    pushTitle?: string | null;
+    pushMessage?: string | null;
+  } | null>(null);
 
   const { data, isLoading } = useNoticeList({
     page: page + 1,
@@ -61,6 +71,7 @@ export function NoticeTable() {
   });
 
   const deleteNotice = useDeleteNotice();
+  const archiveNotice = useArchiveNotice();
   const items = data?.items || [];
 
   const handleEdit = (id: string) => {
@@ -79,6 +90,21 @@ export function NoticeTable() {
     } catch (err: unknown) {
       const error = err as { message?: string };
       toast.error(error.message || '삭제에 실패했습니다.');
+    }
+  };
+
+  const handleArchive = async (id: string) => {
+    const ok = await confirmAction({
+      title: '공지 보관',
+      message: '이 공지를 보관 처리하시겠습니까? 사용자에게 더 이상 노출되지 않습니다.',
+    });
+    if (!ok) return;
+    try {
+      await archiveNotice.mutateAsync(id);
+      toast.success('공지가 보관되었습니다.');
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      toast.error(error.message || '보관에 실패했습니다.');
     }
   };
 
@@ -186,6 +212,33 @@ export function NoticeTable() {
                           <SendIcon fontSize="small" />
                         </IconButton>
                       )}
+                      {item.status === 'published' && (
+                        <>
+                          <IconButton
+                            size="small"
+                            color="info"
+                            onClick={() =>
+                              setResendItem({
+                                id: item.id,
+                                title: item.title,
+                                pushTitle: item.pushTitle,
+                                pushMessage: item.pushMessage,
+                              })
+                            }
+                            title="푸시 재발송"
+                          >
+                            <CampaignIcon fontSize="small" />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleArchive(item.id)}
+                            title="보관"
+                            disabled={archiveNotice.isPending}
+                          >
+                            <ArchiveIcon fontSize="small" />
+                          </IconButton>
+                        </>
+                      )}
                       <IconButton
                         size="small"
                         color="error"
@@ -221,6 +274,12 @@ export function NoticeTable() {
         onClose={() => setPublishItem(null)}
         type="notice"
         item={publishItem}
+      />
+
+      <PushResendDialog
+        open={!!resendItem}
+        onClose={() => setResendItem(null)}
+        item={resendItem}
       />
     </Box>
   );

@@ -2,20 +2,20 @@
 
 import { Paper, Box, Typography, Button, Chip } from '@mui/material';
 import { useRouter } from 'next/navigation';
-import { useUrgentNotices, useUpdateNotice } from '@/app/admin/hooks';
+import { useUrgentNotices, useArchiveNotice } from '@/app/admin/hooks';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
 
 export function UrgentNoticeBox() {
   const router = useRouter();
   const toast = useToast();
   const { data } = useUrgentNotices();
-  const update = useUpdateNotice();
+  const archive = useArchiveNotice();
 
   if (!data || data.length === 0) return null;
 
   const handleArchive = async (id: string) => {
     try {
-      await update.mutateAsync({ id, data: { status: 'archived' } });
+      await archive.mutateAsync(id);
       toast.success('긴급 공지를 종료했습니다.');
     } catch (err: unknown) {
       const error = err as { message?: string };
@@ -67,7 +67,7 @@ export function UrgentNoticeBox() {
               size="small"
               color="error"
               onClick={() => handleArchive(n.id)}
-              disabled={update.isPending}
+              disabled={archive.isPending}
             >
               종료
             </Button>
