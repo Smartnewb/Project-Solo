@@ -2,6 +2,7 @@
 
 import { useParams, notFound } from 'next/navigation';
 import { CardSeriesForm } from '../../components/forms/CardSeriesForm';
+import { LongformForm } from '../../components/forms/LongformForm';
 import { ArticleForm } from '../../components/forms/ArticleForm';
 import { NoticeForm } from '../../components/forms/NoticeForm';
 import { CONTENT_TYPES, type ContentType } from '../../constants';
@@ -14,6 +15,7 @@ export default function CreatePage() {
   const { type } = useParams<{ type: string }>();
   if (!isContentType(type)) notFound();
   if (type === 'card-series') return <CardSeriesForm mode="create" />;
+  if (type === 'longform') return <LongformForm mode="create" />;
   if (type === 'article') return <ArticleForm mode="create" />;
   return <NoticeForm mode="create" />;
 }

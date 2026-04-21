@@ -53,12 +53,14 @@ function mapArticleStatusToContentStatus(s: string): ContentStatus {
 
 const TYPE_LABELS: Record<UnifiedRow['type'], string> = {
   'card-series': '카드시리즈',
+  longform: '롱폼',
   article: '아티클',
   notice: '공지',
 };
 
-const TYPE_COLORS: Record<UnifiedRow['type'], 'primary' | 'info' | 'error'> = {
+const TYPE_COLORS: Record<UnifiedRow['type'], 'primary' | 'secondary' | 'info' | 'error'> = {
   'card-series': 'primary',
+  longform: 'secondary',
   article: 'info',
   notice: 'error',
 };
@@ -90,9 +92,10 @@ export function AllContentTable() {
   const merged: UnifiedRow[] = useMemo(() => {
     const rows: UnifiedRow[] = [];
     (cardsData?.items || []).forEach((c) => {
+      const cardType: ContentType = c.layoutMode === 'longform' ? 'longform' : 'card-series';
       rows.push({
         id: c.id,
-        type: 'card-series',
+        type: cardType,
         title: c.title,
         categoryCode: c.category?.code || 'unknown',
         status: c.pushSentAt ? 'published' : 'draft',
@@ -135,7 +138,8 @@ export function AllContentTable() {
     });
     if (!ok) return;
     try {
-      if (row.type === 'card-series') await deleteCardNews.mutateAsync(row.id);
+      if (row.type === 'card-series' || row.type === 'longform')
+        await deleteCardNews.mutateAsync(row.id);
       else if (row.type === 'article') await deleteArticle.mutateAsync(row.id);
       else await deleteNotice.mutateAsync(row.id);
       toast.success('삭제되었습니다.');

@@ -6,6 +6,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { Suspense, useState } from 'react';
 import { AllContentTable } from './components/AllContentTable';
 import { CardSeriesTable } from './components/CardSeriesTable';
+import { LongformTable } from './components/LongformTable';
 import { ArticleTable } from './components/ArticleTable';
 import { NoticeTable } from './components/NoticeTable';
 import type { ContentType } from './constants';
@@ -30,6 +31,8 @@ function ContentPageInner() {
   const tabCreateLabel =
     currentTab === 'card-series'
       ? '카드시리즈'
+      : currentTab === 'longform'
+      ? '롱폼'
       : currentTab === 'article'
       ? '아티클'
       : currentTab === 'notice'
@@ -64,6 +67,7 @@ function ContentPageInner() {
               onClose={() => setAnchorEl(null)}
             >
               <MenuItem onClick={() => handleCreate('card-series')}>카드시리즈</MenuItem>
+              <MenuItem onClick={() => handleCreate('longform')}>롱폼 아티클</MenuItem>
               <MenuItem onClick={() => handleCreate('article')}>아티클</MenuItem>
               <MenuItem onClick={() => handleCreate('notice')}>공지사항</MenuItem>
             </Menu>
@@ -82,12 +86,14 @@ function ContentPageInner() {
       <Tabs value={currentTab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
         <Tab value="all" label="전체" />
         <Tab value="card-series" label="카드시리즈" />
+        <Tab value="longform" label="롱폼 아티클" />
         <Tab value="article" label="아티클" />
         <Tab value="notice" label="공지사항" />
       </Tabs>
 
       {currentTab === 'all' && <AllContentTable />}
       {currentTab === 'card-series' && <CardSeriesTable />}
+      {currentTab === 'longform' && <LongformTable />}
       {currentTab === 'article' && <ArticleTable />}
       {currentTab === 'notice' && <NoticeTable />}
     </Box>

@@ -67,7 +67,7 @@ export function PublishDialog({ open, onClose, type, item, onPublished }: Props)
     if (!validate()) return;
 
     try {
-      if (type === 'card-series') {
+      if (type === 'card-series' || type === 'longform') {
         const result = await publishCardNews.mutateAsync({
           id: item.id,
           data: {
@@ -79,11 +79,12 @@ export function PublishDialog({ open, onClose, type, item, onPublished }: Props)
               : {}),
           },
         });
+        const successLabel = type === 'longform' ? '롱폼 아티클' : '카드시리즈';
         if (result.success) {
           toast.success(
             pushEnabled
               ? `푸시 알림이 ${result.sentCount ?? 0}명에게 발송되었습니다.`
-              : '카드시리즈가 발행되었습니다.',
+              : `${successLabel}이(가) 발행되었습니다.`,
           );
         } else {
           toast.error('발행에 실패했습니다. 다시 시도해주세요.');
@@ -127,7 +128,13 @@ export function PublishDialog({ open, onClose, type, item, onPublished }: Props)
   };
 
   const typeLabel =
-    type === 'card-series' ? '카드시리즈' : type === 'article' ? '아티클' : '공지';
+    type === 'card-series'
+      ? '카드시리즈'
+      : type === 'longform'
+      ? '롱폼 아티클'
+      : type === 'article'
+      ? '아티클'
+      : '공지';
 
   return (
     <Dialog open={open && !!item} onClose={onClose} maxWidth="sm" fullWidth>
