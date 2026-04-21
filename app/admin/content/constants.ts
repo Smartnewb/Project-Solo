@@ -1,4 +1,4 @@
-export const CONTENT_TYPES = ['card-series', 'article', 'notice'] as const;
+export const CONTENT_TYPES = ['card-series', 'longform', 'article', 'notice'] as const;
 export type ContentType = (typeof CONTENT_TYPES)[number];
 
 export const NEW_CATEGORY_OPTIONS = [

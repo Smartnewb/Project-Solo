@@ -124,11 +124,14 @@ export function CardSeriesForm({ mode, id }: Props) {
           title: cardNewsData.title,
           description: cardNewsData.description || '',
           categoryCode: cardNewsData.category.code,
-          layoutMode: cardNewsData.layoutMode || 'image_only',
+          layoutMode:
+            cardNewsData.layoutMode === 'article' || cardNewsData.layoutMode === 'image_only'
+              ? cardNewsData.layoutMode
+              : 'image_only',
           hasReward: cardNewsData.hasReward || false,
           pushTitle: cardNewsData.pushNotificationTitle || '',
           pushMessage: cardNewsData.pushNotificationMessage || '',
-          sections: cardNewsData.sections || [],
+          sections: cardNewsData.sections ?? [],
         });
         if (cardNewsData.backgroundImage) {
           if (cardNewsData.backgroundImage.presetName) {

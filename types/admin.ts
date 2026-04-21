@@ -30,11 +30,14 @@ export interface CardSection {
   imageUrl?: string;
 }
 
-export type CardNewsLayoutMode = 'article' | 'image_only';
+export type CardNewsLayoutMode = 'article' | 'image_only' | 'longform';
+export const CARD_NEWS_LAYOUT_MODES: CardNewsLayoutMode[] = ['article', 'image_only', 'longform'];
+export type CardNewsTrack = 'cards' | 'longform';
 
 export interface AdminCardNewsItem {
   id: string;
   title: string;
+  subtitle?: string;
   description?: string;
   postType: string;
   category: Category;
@@ -42,6 +45,8 @@ export interface AdminCardNewsItem {
   layoutMode: CardNewsLayoutMode;
   hasReward: boolean;
   sections?: CardSection[];
+  body?: string;
+  readTimeMinutes?: number;
   readCount: number;
   pushNotificationTitle?: string;
   pushNotificationMessage?: string;
@@ -60,6 +65,7 @@ export interface AdminCardNewsListResponse {
 
 export interface CreateCardNewsRequest {
   title: string;
+  subtitle?: string;
   description?: string;
   categoryCode: string;
   backgroundImage?: {
@@ -69,18 +75,20 @@ export interface CreateCardNewsRequest {
   };
   layoutMode?: CardNewsLayoutMode;
   hasReward: boolean;
-  sections: Array<{
+  sections?: Array<{
     order: number;
     title: string;
     content: string;
     imageUrl?: string;
   }>;
+  body?: string;
   pushNotificationTitle?: string;
   pushNotificationMessage?: string;
 }
 
 export interface UpdateCardNewsRequest {
   title?: string;
+  subtitle?: string;
   description?: string;
   backgroundImage?: {
     type: 'PRESET' | 'CUSTOM';
@@ -95,6 +103,7 @@ export interface UpdateCardNewsRequest {
     content: string;
     imageUrl?: string;
   }>;
+  body?: string;
   pushNotificationTitle?: string;
   pushNotificationMessage?: string;
 }

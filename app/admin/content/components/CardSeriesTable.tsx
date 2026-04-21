@@ -50,7 +50,11 @@ export function CardSeriesTable() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [publishItem, setPublishItem] = useState<{ id: string; title: string } | null>(null);
 
-  const { data, isLoading } = useCardNewsList(page + 1, rowsPerPage);
+  const { data, isLoading } = useCardNewsList({
+    page: page + 1,
+    limit: rowsPerPage,
+    track: 'cards',
+  });
   const deleteCardNews = useDeleteCardNews();
 
   const items = data?.items || [];

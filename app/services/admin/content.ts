@@ -8,6 +8,7 @@ import type {
 	BackgroundPresetsResponse,
 	Banner,
 	BannerPosition,
+	CardNewsTrack,
 	CreateBannerRequest,
 	CreateCardNewsRequest,
 	CreatePresetRequest,
@@ -146,12 +147,21 @@ export const cardNews = {
 		}
 	},
 
-	getList: async (page: number = 1, limit: number = 20): Promise<AdminCardNewsListResponse> => {
+	getList: async (
+		page: number = 1,
+		limit: number = 20,
+		track?: CardNewsTrack,
+	): Promise<AdminCardNewsListResponse> => {
 		try {
-			const res = await adminGet<{ data: AdminCardNewsItem[]; meta: { total: number; page: number; limit: number } }>('/admin/v2/content/card-news', {
+			const params: Record<string, string> = {
 				page: String(page),
 				limit: String(limit),
-			});
+			};
+			if (track) params.track = track;
+			const res = await adminGet<{ data: AdminCardNewsItem[]; meta: { total: number; page: number; limit: number } }>(
+				'/admin/v2/content/card-news',
+				params,
+			);
 			return {
 				items: res.data,
 				total: res.meta.total,

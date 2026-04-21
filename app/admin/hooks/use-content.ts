@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AdminService from '@/app/services/admin';
 import type {
   BannerPosition,
+  CardNewsTrack,
   CreateBannerRequest,
   CreateCardNewsRequest,
   CreateNoticeRequest,
@@ -25,7 +26,8 @@ export const contentKeys = {
   backgroundPresets: () => [...contentKeys.all, 'background-presets'] as const,
   backgroundPresetsActive: () => [...contentKeys.backgroundPresets(), 'active'] as const,
   cardNews: () => [...contentKeys.all, 'card-news'] as const,
-  cardNewsList: (page: number, limit: number) => [...contentKeys.cardNews(), 'list', { page, limit }] as const,
+  cardNewsList: (page: number, limit: number, track?: CardNewsTrack) =>
+    [...contentKeys.cardNews(), 'list', { page, limit, track }] as const,
   cardNewsDetail: (id: string) => [...contentKeys.cardNews(), 'detail', id] as const,
   cardNewsCategories: () => [...contentKeys.cardNews(), 'categories'] as const,
   banners: () => [...contentKeys.all, 'banners'] as const,
@@ -106,11 +108,31 @@ export function useDeleteBackgroundPreset() {
 
 // ==================== Card News ====================
 
-export function useCardNewsList(page: number = 1, limit: number = 20) {
+export interface UseCardNewsListParams {
+  page?: number;
+  limit?: number;
+  track?: CardNewsTrack;
+}
+
+export function useCardNewsList(
+  pageOrParams: number | UseCardNewsListParams = 1,
+  limit: number = 20,
+) {
+  const params: UseCardNewsListParams =
+    typeof pageOrParams === 'number'
+      ? { page: pageOrParams, limit }
+      : pageOrParams;
+  const page = params.page ?? 1;
+  const resolvedLimit = params.limit ?? 20;
+  const track = params.track;
   return useQuery({
-    queryKey: contentKeys.cardNewsList(page, limit),
-    queryFn: () => AdminService.cardNews.getList(page, limit),
+    queryKey: contentKeys.cardNewsList(page, resolvedLimit, track),
+    queryFn: () => AdminService.cardNews.getList(page, resolvedLimit, track),
   });
+}
+
+export function useLongformList(params?: { page?: number; limit?: number }) {
+  return useCardNewsList({ ...params, track: 'longform' });
 }
 
 export function useCardNewsDetail(id: string) {
