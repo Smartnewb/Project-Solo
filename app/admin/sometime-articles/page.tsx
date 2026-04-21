@@ -1,5 +1,5 @@
-import SometimeArticlesPageV2 from './sometime-articles-v2';
+import { redirect } from 'next/navigation';
 
-export default function SometimeArticlesPagePage() {
-  return <SometimeArticlesPageV2 />;
+export default function Page() {
+  redirect('/admin/content?tab=article');
 }
