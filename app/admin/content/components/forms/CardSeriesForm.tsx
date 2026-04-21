@@ -11,7 +11,6 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  Alert,
   CircularProgress,
   Divider,
   FormControlLabel,
@@ -33,15 +32,10 @@ import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useAdminForm } from '@/app/admin/hooks/forms';
 import { cardNewsFormSchema, type CardNewsFormData } from '@/app/admin/hooks/forms/schemas/card-news.schema';
-
-const NEW_CATEGORY_OPTIONS: { code: string; label: string }[] = [
-  { code: 'relationship', label: '연애' },
-  { code: 'dating', label: '데이트' },
-  { code: 'psychology', label: '심리' },
-  { code: 'essay', label: '에세이' },
-  { code: 'qna', label: '질의응답' },
-  { code: 'event', label: '이벤트' },
-];
+import { useToast } from '@/shared/ui/admin/toast/toast-context';
+import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
+import { getApiErrorMessage } from '@/app/utils/errors';
+import { NEW_CATEGORY_OPTIONS } from '../../constants';
 
 interface Props {
   mode: 'create' | 'edit';
@@ -50,6 +44,8 @@ interface Props {
 
 export function CardSeriesForm({ mode, id }: Props) {
   const router = useRouter();
+  const toast = useToast();
+  const confirmAction = useConfirm();
   const isEdit = mode === 'edit';
 
   const { control, watch, reset, handleFormSubmit, formState: { isSubmitting } } =
@@ -86,7 +82,6 @@ export function CardSeriesForm({ mode, id }: Props) {
   const [presetEditModalOpen, setPresetEditModalOpen] = useState(false);
   const [editingPreset, setEditingPreset] = useState<BackgroundPreset | null>(null);
   const [presetsLoading, setPresetsLoading] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const previewBackgroundUrl = useMemo(() => {
     if (backgroundType === 'CUSTOM' && customBackgroundUrl) return customBackgroundUrl;
@@ -152,8 +147,7 @@ export function CardSeriesForm({ mode, id }: Props) {
         if (presets.length > 0) setSelectedPresetId(presets[0].id);
       }
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setSubmitError(error.response?.data?.message || '데이터를 불러오는데 실패했습니다.');
+      toast.error(getApiErrorMessage(err, '데이터를 불러오는데 실패했습니다.'));
     } finally {
       setInitialLoading(false);
     }
@@ -170,8 +164,7 @@ export function CardSeriesForm({ mode, id }: Props) {
       setCustomBackgroundUrl(response.url);
       setBackgroundType('CUSTOM');
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      alert(error.response?.data?.message || '이미지 업로드에 실패했습니다.');
+      toast.error(getApiErrorMessage(err, '이미지 업로드에 실패했습니다.'));
     } finally {
       setUploadingBackground(false);
     }
@@ -186,18 +179,17 @@ export function CardSeriesForm({ mode, id }: Props) {
       if (selectedPresetId === presetId) setSelectedPresetId('');
       await fetchBackgroundPresets();
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      alert(error.response?.data?.message || '프리셋 삭제에 실패했습니다.');
+      toast.error(getApiErrorMessage(err, '프리셋 삭제에 실패했습니다.'));
     }
   };
 
   const handleAddCard = () => {
     if (isEdit && isPublished) {
-      alert('발행된 카드시리즈의 섹션은 수정할 수 없습니다.');
+      toast.error('발행된 카드시리즈의 섹션은 수정할 수 없습니다.');
       return;
     }
     if (fields.length >= 7) {
-      alert('최대 7개의 카드까지만 추가할 수 있습니다.');
+      toast.error('최대 7개의 카드까지만 추가할 수 있습니다.');
       return;
     }
     append({ order: fields.length, title: '', content: '', imageUrl: undefined });
@@ -229,22 +221,25 @@ export function CardSeriesForm({ mode, id }: Props) {
     if (from !== to) move(from, to);
   };
 
-  const handleCancel = () => {
-    if (confirm('작성 중인 내용이 저장되지 않습니다. 취소하시겠습니까?')) {
+  const handleCancel = async () => {
+    const ok = await confirmAction({
+      title: '작성 취소',
+      message: '작성 중인 내용이 저장되지 않습니다. 취소하시겠습니까?',
+    });
+    if (ok) {
       router.push('/admin/content?tab=card-series');
     }
   };
 
   const onSubmit = handleFormSubmit(async (data) => {
     if (backgroundType === 'PRESET' && !selectedPresetId) {
-      setSubmitError('배경 프리셋을 선택해주세요.');
+      toast.error('배경 프리셋을 선택해주세요.');
       return;
     }
     if (backgroundType === 'CUSTOM' && !customBackgroundUrl) {
-      setSubmitError('배경 이미지를 업로드해주세요.');
+      toast.error('배경 이미지를 업로드해주세요.');
       return;
     }
-    setSubmitError(null);
 
     const basePayload = {
       title: data.title.trim(),
@@ -271,19 +266,18 @@ export function CardSeriesForm({ mode, id }: Props) {
         const updatePayload: Record<string, unknown> = { ...basePayload };
         if (!isPublished) updatePayload.sections = sections;
         await AdminService.cardNews.update(id, updatePayload);
-        alert('카드시리즈가 수정되었습니다.');
+        toast.success('카드시리즈가 수정되었습니다.');
       } else {
         await AdminService.cardNews.create({
           ...basePayload,
           categoryCode: data.categoryCode,
           sections,
         });
-        alert('카드시리즈가 생성되었습니다.');
+        toast.success('카드시리즈가 생성되었습니다.');
       }
       router.push('/admin/content?tab=card-series');
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      setSubmitError(error.response?.data?.message || '저장에 실패했습니다.');
+      toast.error(getApiErrorMessage(err, '저장에 실패했습니다.'));
     }
   });
 
@@ -306,12 +300,6 @@ export function CardSeriesForm({ mode, id }: Props) {
           {isEdit ? '카드시리즈 수정' : '새 카드시리즈 작성'}
         </Typography>
       </Box>
-
-      {submitError && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setSubmitError(null)}>
-          {submitError}
-        </Alert>
-      )}
 
       <Box
         sx={{

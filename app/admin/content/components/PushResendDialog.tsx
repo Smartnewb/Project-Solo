@@ -1,9 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Box, Button, Paper, TextField, Typography } from '@mui/material';
+import {
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { usePushResendNotice } from '@/app/admin/hooks';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
+import { getApiErrorMessage } from '@/app/utils/errors';
 
 interface Props {
   open: boolean;
@@ -29,9 +38,8 @@ export function PushResendDialog({ open, onClose, item }: Props) {
     }
   }, [item]);
 
-  if (!open || !item) return null;
-
   const handleSubmit = async () => {
+    if (!item) return;
     if (!pushTitle.trim() || !pushMessage.trim()) {
       toast.error('푸시 제목과 메시지는 필수입니다.');
       return;
@@ -44,31 +52,19 @@ export function PushResendDialog({ open, onClose, item }: Props) {
       toast.success(`푸시 재발송 완료. ${res.sentCount ?? 0}명에게 전송.`);
       onClose();
     } catch (err: unknown) {
-      const error = err as { message?: string };
-      toast.error(error.message || '재발송에 실패했습니다.');
+      toast.error(getApiErrorMessage(err, '재발송에 실패했습니다.'));
     }
   };
 
   return (
-    <Box
-      sx={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 1300,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-      onClick={onClose}
-    >
-      <Paper sx={{ p: 3, maxWidth: 480, width: '100%', mx: 2 }} onClick={(e) => e.stopPropagation()}>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          푸시 재발송
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          &quot;{item.title}&quot; 공지의 푸시 알림을 다시 발송합니다.
-        </Typography>
+    <Dialog open={open && !!item} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>푸시 재발송</DialogTitle>
+      <DialogContent>
+        {item && (
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            &quot;{item.title}&quot; 공지의 푸시 알림을 다시 발송합니다.
+          </Typography>
+        )}
         <TextField
           fullWidth
           label="푸시 제목"
@@ -88,19 +84,19 @@ export function PushResendDialog({ open, onClose, item }: Props) {
           multiline
           rows={2}
         />
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 3 }}>
-          <Button onClick={onClose} disabled={mutation.isPending}>
-            취소
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleSubmit}
-            disabled={mutation.isPending || !pushTitle.trim() || !pushMessage.trim()}
-          >
-            {mutation.isPending ? '발송 중...' : '재발송'}
-          </Button>
-        </Box>
-      </Paper>
-    </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} disabled={mutation.isPending}>
+          취소
+        </Button>
+        <Button
+          variant="contained"
+          onClick={handleSubmit}
+          disabled={mutation.isPending || !pushTitle.trim() || !pushMessage.trim()}
+        >
+          {mutation.isPending ? '발송 중...' : '재발송'}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }

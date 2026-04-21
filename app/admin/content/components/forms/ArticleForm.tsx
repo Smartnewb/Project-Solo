@@ -31,6 +31,13 @@ import {
   sometimeArticleSchema,
   type SometimeArticleFormValues,
 } from '@/app/admin/hooks/forms/schemas/sometime-article.schema';
+import { useToast } from '@/shared/ui/admin/toast/toast-context';
+import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
+import { getApiErrorMessage } from '@/app/utils/errors';
+import {
+  LEGACY_CATEGORY_LABELS,
+  NEW_CATEGORY_OPTIONS,
+} from '../../constants';
 
 const STATUS_OPTIONS = [
   { value: 'draft', label: '초안' },
@@ -38,25 +45,6 @@ const STATUS_OPTIONS = [
   { value: 'published', label: '발행됨' },
   { value: 'archived', label: '보관' },
 ] as const;
-
-// New content category options (category field still typed to legacy enum; we cast in dropdown)
-const NEW_CATEGORY_OPTIONS = [
-  { value: 'relationship', label: '연애' },
-  { value: 'dating', label: '데이트' },
-  { value: 'psychology', label: '심리' },
-  { value: 'essay', label: '에세이' },
-  { value: 'qna', label: '질의응답' },
-  { value: 'event', label: '이벤트' },
-];
-
-const LEGACY_CATEGORY_LABELS: Record<string, string> = {
-  story: '스토리',
-  interview: '인터뷰',
-  tips: '팁',
-  team: '팀 소개',
-  update: '업데이트',
-  safety: '안전 가이드',
-};
 
 const generateSlug = (title: string): string =>
   title
@@ -73,6 +61,8 @@ interface Props {
 
 export function ArticleForm({ mode, id }: Props) {
   const router = useRouter();
+  const toast = useToast();
+  const confirmAction = useConfirm();
   const isEdit = mode === 'edit';
 
   const {
@@ -139,8 +129,7 @@ export function ArticleForm({ mode, id }: Props) {
             keywords: detail.seo?.keywords?.join(', ') || '',
           });
         } catch (err: unknown) {
-          const error = err as { message?: string };
-          alert(error.message || '아티클 로드 실패');
+          toast.error(getApiErrorMessage(err, '아티클 로드 실패'));
         }
       })();
     }
@@ -155,8 +144,12 @@ export function ArticleForm({ mode, id }: Props) {
     }
   };
 
-  const handleCancel = () => {
-    if (confirm('작성 중인 내용이 저장되지 않습니다. 취소하시겠습니까?')) {
+  const handleCancel = async () => {
+    const ok = await confirmAction({
+      title: '작성 취소',
+      message: '작성 중인 내용이 저장되지 않습니다. 취소하시겠습니까?',
+    });
+    if (ok) {
       router.push('/admin/content?tab=article');
     }
   };
@@ -210,7 +203,7 @@ export function ArticleForm({ mode, id }: Props) {
           ...(data.status === 'published' && { publishedAt: new Date().toISOString() }),
         };
         await AdminService.sometimeArticles.update(id, updatePayload);
-        alert('아티클이 수정되었습니다.');
+        toast.success('아티클이 수정되었습니다.');
       } else {
         const createPayload: CreateSometimeArticleRequest = {
           slug: data.slug.trim(),
@@ -236,17 +229,17 @@ export function ArticleForm({ mode, id }: Props) {
           ...(data.status === 'published' && { publishedAt: new Date().toISOString() }),
         };
         await AdminService.sometimeArticles.create(createPayload);
-        alert('아티클이 생성되었습니다.');
+        toast.success('아티클이 생성되었습니다.');
       }
       router.push('/admin/content?tab=article');
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } }; message?: string };
-      alert(error.response?.data?.message || error.message || '저장에 실패했습니다.');
+      toast.error(getApiErrorMessage(err, '저장에 실패했습니다.'));
     }
   });
 
-  // Render legacy category as option if current value is legacy (so edit mode keeps data)
-  const categoryIsLegacy = !NEW_CATEGORY_OPTIONS.some((c) => c.value === currentCategory);
+  const categoryIsLegacy = !NEW_CATEGORY_OPTIONS.some(
+    (c) => (c.code as string) === (currentCategory as string),
+  );
 
   return (
     <Box sx={{ p: 3, maxWidth: 1200, mx: 'auto' }}>
@@ -326,7 +319,7 @@ export function ArticleForm({ mode, id }: Props) {
                 <InputLabel>카테고리</InputLabel>
                 <Select {...field} label="카테고리">
                   {NEW_CATEGORY_OPTIONS.map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
+                    <MenuItem key={option.code} value={option.code}>
                       {option.label}
                     </MenuItem>
                   ))}

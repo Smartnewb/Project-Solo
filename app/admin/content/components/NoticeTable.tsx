@@ -31,6 +31,8 @@ import {
 } from '@/app/admin/hooks';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
+import { getApiErrorMessage } from '@/app/utils/errors';
+import { useDebounce } from '@/shared/hooks/use-debounce';
 import { StatusBadge } from './StatusBadge';
 import { ContentFilters } from './ContentFilters';
 import { UrgentNoticeBox } from './UrgentNoticeBox';
@@ -50,7 +52,6 @@ export function NoticeTable() {
   const toast = useToast();
   const confirmAction = useConfirm();
 
-  const [category, setCategory] = useState('');
   const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
@@ -63,11 +64,13 @@ export function NoticeTable() {
     pushMessage?: string | null;
   } | null>(null);
 
+  const debouncedSearch = useDebounce(search, 300);
+
   const { data, isLoading } = useNoticeList({
     page: page + 1,
     limit: rowsPerPage,
     ...(status ? { status } : {}),
-    ...(search ? { search } : {}),
+    ...(debouncedSearch ? { search: debouncedSearch } : {}),
   });
 
   const deleteNotice = useDeleteNotice();
@@ -88,8 +91,7 @@ export function NoticeTable() {
       await deleteNotice.mutateAsync(id);
       toast.success('공지가 삭제되었습니다.');
     } catch (err: unknown) {
-      const error = err as { message?: string };
-      toast.error(error.message || '삭제에 실패했습니다.');
+      toast.error(getApiErrorMessage(err, '삭제에 실패했습니다.'));
     }
   };
 
@@ -103,8 +105,7 @@ export function NoticeTable() {
       await archiveNotice.mutateAsync(id);
       toast.success('공지가 보관되었습니다.');
     } catch (err: unknown) {
-      const error = err as { message?: string };
-      toast.error(error.message || '보관에 실패했습니다.');
+      toast.error(getApiErrorMessage(err, '보관에 실패했습니다.'));
     }
   };
 
@@ -121,16 +122,15 @@ export function NoticeTable() {
       <UrgentNoticeBox />
 
       <ContentFilters
-        category={category}
+        category=""
         status={status}
         search={search}
         onChange={(next) => {
-          if (next.category !== undefined) setCategory(next.category);
           if (next.status !== undefined) setStatus(next.status);
           if (next.search !== undefined) setSearch(next.search);
           setPage(0);
         }}
-        includeNoticeCategory
+        hideCategory
       />
 
       <TableContainer component={Paper}>

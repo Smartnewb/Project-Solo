@@ -4,7 +4,10 @@ import { useEffect, useState } from 'react';
 import {
   Box,
   Button,
-  Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   Switch,
   TextField,
   Typography,
@@ -16,13 +19,15 @@ import {
   usePublishNotice,
 } from '@/app/admin/hooks';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
+import { getApiErrorMessage } from '@/app/utils/errors';
+import type { ContentType } from '../constants';
 
-export type PublishDialogType = 'card-series' | 'article' | 'notice';
+export type PublishDialogType = ContentType;
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  type: PublishDialogType;
+  type: ContentType;
   item: { id: string; title: string } | null;
   onPublished?: () => void;
 }
@@ -45,8 +50,6 @@ export function PublishDialog({ open, onClose, type, item, onPublished }: Props)
     }
   }, [open, item?.id]);
 
-  if (!open || !item) return null;
-
   const isPending =
     publishCardNews.isPending || updateArticle.isPending || publishNotice.isPending;
 
@@ -60,6 +63,7 @@ export function PublishDialog({ open, onClose, type, item, onPublished }: Props)
   };
 
   const handleConfirm = async () => {
+    if (!item) return;
     if (!validate()) return;
 
     try {
@@ -118,8 +122,7 @@ export function PublishDialog({ open, onClose, type, item, onPublished }: Props)
       onPublished?.();
       onClose();
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } }; message?: string };
-      toast.error(error.response?.data?.message || error.message || '발행에 실패했습니다.');
+      toast.error(getApiErrorMessage(err, '발행에 실패했습니다.'));
     }
   };
 
@@ -127,33 +130,19 @@ export function PublishDialog({ open, onClose, type, item, onPublished }: Props)
     type === 'card-series' ? '카드시리즈' : type === 'article' ? '아티클' : '공지';
 
   return (
-    <Box
-      sx={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 1300,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-      onClick={onClose}
-    >
-      <Paper
-        sx={{ p: 3, maxWidth: 480, width: '100%', mx: 2 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          {typeLabel} 발행
-        </Typography>
+    <Dialog open={open && !!item} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>{typeLabel} 발행</DialogTitle>
+      <DialogContent>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           이 {typeLabel}을(를) 발행하시겠습니까?
         </Typography>
-        <Box sx={{ mb: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
-          <Typography variant="body2" color="text.secondary">
-            <strong>제목:</strong> {item.title}
-          </Typography>
-        </Box>
+        {item && (
+          <Box sx={{ mb: 2, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              <strong>제목:</strong> {item.title}
+            </Typography>
+          </Box>
+        )}
 
         <FormControlLabel
           control={
@@ -192,21 +181,20 @@ export function PublishDialog({ open, onClose, type, item, onPublished }: Props)
             />
           </>
         )}
-
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 3 }}>
-          <Button onClick={onClose} disabled={isPending}>
-            취소
-          </Button>
-          <Button
-            onClick={handleConfirm}
-            color="primary"
-            variant="contained"
-            disabled={isPending || (pushEnabled && !pushMessage.trim())}
-          >
-            {isPending ? '발행 중...' : '발행'}
-          </Button>
-        </Box>
-      </Paper>
-    </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} disabled={isPending}>
+          취소
+        </Button>
+        <Button
+          onClick={handleConfirm}
+          color="primary"
+          variant="contained"
+          disabled={isPending || (pushEnabled && !pushMessage.trim())}
+        >
+          {isPending ? '발행 중...' : '발행'}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }

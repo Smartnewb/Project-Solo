@@ -22,20 +22,19 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useRouter } from 'next/navigation';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import type { ZodSchema } from 'zod';
 import { useAdminForm } from '@/app/admin/hooks/forms';
 import {
   noticeFormSchema,
   type NoticeFormData,
 } from '@/app/admin/hooks/forms/schemas/content.schema';
-
-const noticeSchemaForForm = noticeFormSchema as unknown as ZodSchema<NoticeFormData>;
 import {
   useCreateNotice,
   useUpdateNotice,
   useNoticeDetail,
 } from '@/app/admin/hooks';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
+import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
+import { getApiErrorMessage } from '@/app/utils/errors';
 import type { CreateNoticeRequest, UpdateNoticeRequest } from '@/types/admin';
 
 interface Props {
@@ -46,6 +45,7 @@ interface Props {
 export function NoticeForm({ mode, id }: Props) {
   const router = useRouter();
   const toast = useToast();
+  const confirmAction = useConfirm();
   const isEdit = mode === 'edit';
 
   const {
@@ -55,7 +55,7 @@ export function NoticeForm({ mode, id }: Props) {
     handleFormSubmit,
     formState: { isSubmitting },
   } = useAdminForm<NoticeFormData>({
-    schema: noticeSchemaForForm,
+    schema: noticeFormSchema,
     defaultValues: {
       title: '',
       subtitle: '',
@@ -95,8 +95,12 @@ export function NoticeForm({ mode, id }: Props) {
     }
   }, [isEdit, detail, reset]);
 
-  const handleCancel = () => {
-    if (confirm('작성 중인 내용이 저장되지 않습니다. 취소하시겠습니까?')) {
+  const handleCancel = async () => {
+    const ok = await confirmAction({
+      title: '작성 취소',
+      message: '작성 중인 내용이 저장되지 않습니다. 취소하시겠습니까?',
+    });
+    if (ok) {
       router.push('/admin/content?tab=notice');
     }
   };
@@ -137,8 +141,7 @@ export function NoticeForm({ mode, id }: Props) {
       }
       router.push('/admin/content?tab=notice');
     } catch (err: unknown) {
-      const error = err as { message?: string };
-      toast.error(error.message || '저장에 실패했습니다.');
+      toast.error(getApiErrorMessage(err, '저장에 실패했습니다.'));
     }
   });
 
@@ -168,7 +171,6 @@ export function NoticeForm({ mode, id }: Props) {
           </Alert>
         )}
 
-        {/* 기본 정보 */}
         <Paper sx={{ p: 3, mb: 3 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>
             기본 정보
@@ -227,7 +229,6 @@ export function NoticeForm({ mode, id }: Props) {
           />
         </Paper>
 
-        {/* 게시 설정 */}
         <Paper sx={{ p: 3, mb: 3 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>
             게시 설정
@@ -286,7 +287,6 @@ export function NoticeForm({ mode, id }: Props) {
           />
         </Paper>
 
-        {/* 푸시 알림 */}
         <Paper sx={{ p: 3, mb: 3 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>
             푸시 알림
@@ -347,7 +347,6 @@ export function NoticeForm({ mode, id }: Props) {
           )}
         </Paper>
 
-        {/* 보상 */}
         <Paper sx={{ p: 3, mb: 3 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>
             보상
