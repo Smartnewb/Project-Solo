@@ -19,6 +19,8 @@ export {
 	communityReviewArticles,
 	publicReviews,
 } from './content';
+export { notices } from './notices';
+export type { NoticeListParams } from './notices';
 export { reports, userReview, profileImages } from './moderation';
 export {
 	gems,
@@ -128,6 +130,7 @@ import {
 	communityReviewArticles,
 	publicReviews,
 } from './content';
+import { notices } from './notices';
 import { reports, userReview, profileImages } from './moderation';
 import {
 	gems,
@@ -172,6 +175,7 @@ const AdminService = {
 	appleRefund,
 	likes,
 	momentQuestions,
+	notices,
 	sometimeArticles,
 	userEngagement,
 	forceMatching,
