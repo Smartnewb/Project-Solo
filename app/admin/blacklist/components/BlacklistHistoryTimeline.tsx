@@ -32,6 +32,7 @@ export function BlacklistHistoryTimeline({ userId, onRelease }: Props) {
     queryKey: ['blacklist-history', userId],
     queryFn: () => blacklist.getHistory(userId),
     enabled: !!userId,
+    staleTime: 60_000,
   });
 
   if (isLoading) {

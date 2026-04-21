@@ -17,7 +17,8 @@ export function AdminNameLabel({ adminId }: { adminId: string | null | undefined
       try {
         const res = await adminGet<AdminUserResponse>(`/admin/v2/users/${adminId}`);
         return res.data?.name ?? adminId;
-      } catch {
+      } catch (err) {
+        console.warn('admin name lookup failed', adminId, err);
         return adminId;
       }
     },
@@ -26,5 +27,5 @@ export function AdminNameLabel({ adminId }: { adminId: string | null | undefined
   });
 
   if (!adminId) return <span className="text-gray-400">-</span>;
-  return <span>{data ?? '...'}</span>;
+  return <span>{data ?? adminId}</span>;
 }

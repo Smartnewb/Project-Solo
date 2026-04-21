@@ -13,6 +13,7 @@ import {
   Alert,
 } from '@mui/material';
 import { RotateCcw } from 'lucide-react';
+import { useMutation } from '@tanstack/react-query';
 import { blacklist } from '@/app/services/admin';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
 import { formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
@@ -39,33 +40,39 @@ export function BlacklistReleaseDialog({
   onSuccess,
 }: Props) {
   const [releaseReason, setReleaseReason] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  const mutation = useMutation({
+    mutationFn: () => {
+      const trimmed = releaseReason.trim();
+      return blacklist.release(userId, trimmed ? { releaseReason: trimmed } : undefined);
+    },
+    onSuccess: () => {
+      onSuccess?.();
+      resetAndClose();
+    },
+  });
+  const submitting = mutation.isPending;
+  const error = mutation.isError
+    ? getAdminErrorMessage(mutation.error, '블랙리스트 해제 실패')
+    : null;
+
+  const resetAndClose = () => {
+    setReleaseReason('');
+    mutation.reset();
+    onClose();
+  };
 
   const handleClose = () => {
     if (submitting) return;
-    setReleaseReason('');
-    setError(null);
-    onClose();
+    resetAndClose();
   };
 
   const releaseReasonOver = releaseReason.length > RELEASE_REASON_MAX;
   const submitDisabled = submitting || releaseReasonOver;
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (submitDisabled) return;
-    setSubmitting(true);
-    setError(null);
-    try {
-      const trimmed = releaseReason.trim();
-      await blacklist.release(userId, trimmed ? { releaseReason: trimmed } : undefined);
-      onSuccess?.();
-      handleClose();
-    } catch (err) {
-      setError(getAdminErrorMessage(err, '블랙리스트 해제 실패'));
-    } finally {
-      setSubmitting(false);
-    }
+    mutation.mutate();
   };
 
   return (
@@ -120,11 +127,7 @@ export function BlacklistReleaseDialog({
           maxRows={4}
           margin="normal"
           error={releaseReasonOver}
-          helperText={
-            <span style={{ color: releaseReasonOver ? '#dc2626' : undefined }}>
-              {releaseReason.length}/{RELEASE_REASON_MAX}
-            </span>
-          }
+          helperText={`${releaseReason.length}/${RELEASE_REASON_MAX}`}
         />
 
         {error && (

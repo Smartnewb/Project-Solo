@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useDebounce } from '@/shared/hooks/use-debounce';
 import {
   Box,
   Typography,
@@ -36,22 +37,12 @@ export default function BlacklistPage() {
 
   const [page, setPage] = useState<number>(initialPage);
   const [searchInput, setSearchInput] = useState<string>(initialSearch);
-  const [debouncedSearch, setDebouncedSearch] = useState<string>(initialSearch);
+  const debouncedSearch = useDebounce(searchInput, DEBOUNCE_MS);
 
-  // Debounce search
   useEffect(() => {
-    const t = setTimeout(() => {
-      setDebouncedSearch(searchInput);
-      // Reset page on search change
-      if (searchInput !== debouncedSearch) {
-        setPage(1);
-      }
-    }, DEBOUNCE_MS);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchInput]);
+    setPage(1);
+  }, [debouncedSearch]);
 
-  // Sync URL
   useEffect(() => {
     const sp = new URLSearchParams();
     if (debouncedSearch) sp.set('search', debouncedSearch);
@@ -77,12 +68,11 @@ export default function BlacklistPage() {
   const total = meta?.total ?? 0;
   const totalPages = meta?.totalPages ?? 1;
 
-  // Dialog state
   const [releaseTarget, setReleaseTarget] = useState<BlacklistItem | null>(null);
   const [historyUserId, setHistoryUserId] = useState<string | null>(null);
 
   const handleReleaseSuccess = () => {
-    queryClient.invalidateQueries({ queryKey: ['blacklist'] });
+    queryClient.invalidateQueries({ queryKey: ['blacklist', { page, search: debouncedSearch }] });
     if (historyUserId) {
       queryClient.invalidateQueries({ queryKey: ['blacklist-history', historyUserId] });
     }

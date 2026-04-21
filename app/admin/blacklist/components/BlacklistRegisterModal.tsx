@@ -17,8 +17,11 @@ import {
   Stack,
 } from '@mui/material';
 import { ShieldBan, AlertTriangle } from 'lucide-react';
+import { useMutation } from '@tanstack/react-query';
 import { blacklist } from '@/app/services/admin';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
+
+const WARNING_ID = 'blacklist-register-warning';
 
 interface Props {
   open: boolean;
@@ -50,16 +53,34 @@ export function BlacklistRegisterModal({ open, onClose, user, onSuccess }: Props
   const [reason, setReason] = useState('');
   const [memo, setMemo] = useState('');
   const [confirmed, setConfirmed] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const handleClose = () => {
-    if (submitting) return;
+  const mutation = useMutation({
+    mutationFn: () =>
+      blacklist.register(user.id, {
+        reason: reason.trim(),
+        memo: memo.trim() ? memo.trim() : undefined,
+      }),
+    onSuccess: () => {
+      onSuccess?.();
+      resetAndClose();
+    },
+  });
+  const submitting = mutation.isPending;
+  const error = mutation.isError
+    ? getAdminErrorMessage(mutation.error, '블랙리스트 등록 실패')
+    : null;
+
+  const resetAndClose = () => {
     setReason('');
     setMemo('');
     setConfirmed(false);
-    setError(null);
+    mutation.reset();
     onClose();
+  };
+
+  const handleClose = () => {
+    if (submitting) return;
+    resetAndClose();
   };
 
   const appendQuickReason = (label: string) => {
@@ -79,22 +100,9 @@ export function BlacklistRegisterModal({ open, onClose, user, onSuccess }: Props
     reasonOver ||
     memoOver;
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (submitDisabled) return;
-    setSubmitting(true);
-    setError(null);
-    try {
-      await blacklist.register(user.id, {
-        reason: reason.trim(),
-        memo: memo.trim() ? memo.trim() : undefined,
-      });
-      onSuccess?.();
-      handleClose();
-    } catch (err) {
-      setError(getAdminErrorMessage(err, '블랙리스트 등록 실패'));
-    } finally {
-      setSubmitting(false);
-    }
+    mutation.mutate();
   };
 
   return (
@@ -126,6 +134,7 @@ export function BlacklistRegisterModal({ open, onClose, user, onSuccess }: Props
         </Box>
 
         <Alert
+          id={WARNING_ID}
           severity="warning"
           icon={<AlertTriangle size={18} />}
           sx={{ mb: 2 }}
@@ -169,11 +178,7 @@ export function BlacklistRegisterModal({ open, onClose, user, onSuccess }: Props
           required
           margin="normal"
           error={reasonOver}
-          helperText={
-            <span style={{ color: reasonOver ? '#dc2626' : undefined }}>
-              {reason.length}/{REASON_MAX}
-            </span>
-          }
+          helperText={`${reason.length}/${REASON_MAX}`}
         />
 
         <TextField
@@ -186,11 +191,7 @@ export function BlacklistRegisterModal({ open, onClose, user, onSuccess }: Props
           maxRows={6}
           margin="normal"
           error={memoOver}
-          helperText={
-            <span style={{ color: memoOver ? '#dc2626' : undefined }}>
-              {memo.length}/{MEMO_MAX}
-            </span>
-          }
+          helperText={`${memo.length}/${MEMO_MAX}`}
         />
 
         <FormControlLabel
@@ -199,6 +200,7 @@ export function BlacklistRegisterModal({ open, onClose, user, onSuccess }: Props
             <Checkbox
               checked={confirmed}
               onChange={(e) => setConfirmed(e.target.checked)}
+              inputProps={{ 'aria-describedby': WARNING_ID }}
             />
           }
           label="이 유저를 블랙리스트 등록합니다. 확인했습니다."

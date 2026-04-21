@@ -269,6 +269,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     queryKey: ['blacklist-history', userId],
     queryFn: () => blacklistApi.getHistory(userId as string),
     enabled: !!userId && open,
+    staleTime: 60_000,
   });
 
   const blacklistHistory = blacklistHistoryQuery.data?.data?.history ?? [];
