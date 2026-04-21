@@ -52,6 +52,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
       { href: '/admin/users/appearance', label: '사용자 관리' },
       { href: '/admin/profile-review', label: '프로필 심사' },
       { href: '/admin/reports', label: '프로필 신고 관리' },
+      { href: '/admin/blacklist', label: '블랙리스트' },
       { href: '/admin/review-inbox', label: '검토 인박스' },
       { href: '/admin/community', label: '커뮤니티' },
       { href: '/admin/support-chat', label: '고객 지원' },
