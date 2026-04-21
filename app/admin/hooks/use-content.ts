@@ -4,12 +4,15 @@ import type {
   BannerPosition,
   CreateBannerRequest,
   CreateCardNewsRequest,
+  CreateNoticeRequest,
   CreatePresetRequest,
   CreateSometimeArticleRequest,
   PublishCardNewsRequest,
+  PublishNoticeRequest,
   UpdateBannerOrderRequest,
   UpdateBannerRequest,
   UpdateCardNewsRequest,
+  UpdateNoticeRequest,
   UpdateSometimeArticleRequest,
   UploadAndCreatePresetRequest,
 } from '@/types/admin';
@@ -37,6 +40,10 @@ export const contentKeys = {
   publicReviews: () => [...contentKeys.all, 'public-reviews'] as const,
   publicReviewList: (params?: object) => [...contentKeys.publicReviews(), 'list', params] as const,
   featuredAppReviews: (params?: object) => [...contentKeys.publicReviews(), 'featured', params] as const,
+  notices: () => [...contentKeys.all, 'notices'] as const,
+  noticeList: (params?: object) => [...contentKeys.all, 'notices', 'list', params] as const,
+  noticeDetail: (id: string) => [...contentKeys.all, 'notices', 'detail', id] as const,
+  urgentNotices: () => [...contentKeys.all, 'notices', 'urgent'] as const,
 };
 
 // ==================== Background Presets ====================
@@ -339,5 +346,79 @@ export function useFeaturedAppReviews(params: { store?: 'APP_STORE' | 'PLAY_STOR
   return useQuery({
     queryKey: contentKeys.featuredAppReviews(params),
     queryFn: () => AdminService.publicReviews.getFeaturedAppReviews(params),
+  });
+}
+
+// ==================== Notices ====================
+
+export function useNoticeList(params?: {
+  page?: number;
+  limit?: number;
+  status?: string;
+  priority?: string;
+  search?: string;
+}) {
+  return useQuery({
+    queryKey: contentKeys.noticeList(params),
+    queryFn: () => AdminService.notices.list(params),
+  });
+}
+
+export function useUrgentNotices() {
+  return useQuery({
+    queryKey: contentKeys.urgentNotices(),
+    queryFn: () => AdminService.notices.urgent(),
+  });
+}
+
+export function useNoticeDetail(id: string) {
+  return useQuery({
+    queryKey: contentKeys.noticeDetail(id),
+    queryFn: () => AdminService.notices.detail(id),
+    enabled: !!id,
+  });
+}
+
+export function useCreateNotice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CreateNoticeRequest) => AdminService.notices.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: contentKeys.notices() });
+    },
+  });
+}
+
+export function useUpdateNotice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateNoticeRequest }) =>
+      AdminService.notices.update(id, data),
+    onSuccess: (_result, { id }) => {
+      queryClient.invalidateQueries({ queryKey: contentKeys.notices() });
+      queryClient.invalidateQueries({ queryKey: contentKeys.noticeDetail(id) });
+    },
+  });
+}
+
+export function useDeleteNotice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => AdminService.notices.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: contentKeys.notices() });
+    },
+  });
+}
+
+export function usePublishNotice() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: PublishNoticeRequest }) =>
+      AdminService.notices.publish(id, data),
+    onSuccess: (_result, { id }) => {
+      queryClient.invalidateQueries({ queryKey: contentKeys.notices() });
+      queryClient.invalidateQueries({ queryKey: contentKeys.noticeDetail(id) });
+    },
   });
 }
