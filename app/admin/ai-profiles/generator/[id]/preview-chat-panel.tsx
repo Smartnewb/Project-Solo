@@ -8,7 +8,8 @@ import { Alert, AlertDescription } from '@/shared/ui/alert';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { Textarea } from '@/shared/ui/textarea';
-import { useDraftErrorHandler } from './use-draft-mutation';
+import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
+import { useAiProfileErrorHandler } from '../_shared-error';
 
 interface Props {
   draftId: string;
@@ -18,7 +19,9 @@ interface Props {
 const MAX_USER_TURNS = 3;
 
 export function PreviewChatPanel({ draftId, disabled = false }: Props) {
-  const handleError = useDraftErrorHandler(draftId);
+  const handleError = useAiProfileErrorHandler(
+    aiProfileGeneratorKeys.draftDetail(draftId),
+  );
   const [userMessages, setUserMessages] = useState<string[]>([]);
   const [turns, setTurns] = useState<PreviewChatTurn[]>([]);
   const [input, setInput] = useState('');

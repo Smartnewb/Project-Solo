@@ -29,6 +29,11 @@ import {
   TableRow,
 } from '@/shared/ui/table';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
+import { formatDate, shortId } from '../_shared/format';
+import {
+  BATCH_STATUS_LABEL,
+  BATCH_STATUS_VALUES,
+} from '../_shared/status';
 import { GeneratorTabs } from '../_tabs';
 import { BatchDetailDrawer } from './batch-detail-drawer';
 import { BatchEnqueueDialog } from './batch-enqueue-dialog';
@@ -41,21 +46,13 @@ type StatusFilter = BatchJobStatus | 'all';
 
 const STATUS_OPTIONS: Array<{ value: StatusFilter; label: string }> = [
   { value: 'all', label: '전체 상태' },
-  { value: 'pending', label: '대기' },
-  { value: 'running', label: '실행 중' },
-  { value: 'completed', label: '완료' },
-  { value: 'cancelled', label: '취소됨' },
-  { value: 'failed', label: '실패' },
+  ...BATCH_STATUS_VALUES.map((v) => ({
+    value: v as StatusFilter,
+    label: BATCH_STATUS_LABEL[v],
+  })),
 ];
 
-const STATUS_VALUES: StatusFilter[] = [
-  'all',
-  'pending',
-  'running',
-  'completed',
-  'cancelled',
-  'failed',
-];
+const STATUS_VALUES: StatusFilter[] = ['all', ...BATCH_STATUS_VALUES];
 
 function parseQueryFromURL(params: URLSearchParams): BatchJobListQuery {
   const statusRaw = params.get('status');
@@ -78,22 +75,6 @@ function serializeQuery(query: BatchJobListQuery): string {
   if (query.limit && query.limit !== DEFAULT_LIMIT)
     params.set('limit', String(query.limit));
   return params.toString();
-}
-
-function formatDate(value: string | null): string {
-  if (!value) return '-';
-  try {
-    return new Date(value).toLocaleString('ko-KR', {
-      dateStyle: 'short',
-      timeStyle: 'short',
-    });
-  } catch {
-    return value;
-  }
-}
-
-function shortId(id: string): string {
-  return id.length > 10 ? `${id.slice(0, 8)}…` : id;
 }
 
 export function BatchClient() {

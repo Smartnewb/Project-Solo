@@ -37,6 +37,11 @@ import {
   TableRow,
 } from '@/shared/ui/table';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
+import { formatDate } from '../_shared/format';
+import {
+  PROMPT_VERSION_STATUS_LABEL,
+  PROMPT_VERSION_STATUS_VALUES,
+} from '../_shared/status';
 import { GeneratorTabs } from '../_tabs';
 import { useAiProfileErrorHandler } from '../_shared-error';
 import { PromptVersionDetailDrawer } from './prompt-version-detail-drawer';
@@ -46,16 +51,11 @@ const DEFAULT_LIMIT = 20;
 
 const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'all', label: '전체 상태' },
-  { value: 'draft', label: '초안' },
-  { value: 'active', label: '활성' },
-  { value: 'archived', label: '아카이브' },
+  ...PROMPT_VERSION_STATUS_VALUES.map((v) => ({
+    value: v,
+    label: PROMPT_VERSION_STATUS_LABEL[v],
+  })),
 ];
-
-const STATUS_LABEL: Record<PromptVersionStatus, string> = {
-  draft: '초안',
-  active: '활성',
-  archived: '아카이브',
-};
 
 const STATUS_VARIANT: Record<
   PromptVersionStatus,
@@ -98,18 +98,6 @@ function serializeQuery(query: PromptVersionListQuery): string {
   if (query.limit && query.limit !== DEFAULT_LIMIT)
     params.set('limit', String(query.limit));
   return params.toString();
-}
-
-function formatDate(value: string | null): string {
-  if (!value) return '-';
-  try {
-    return new Date(value).toLocaleString('ko-KR', {
-      dateStyle: 'short',
-      timeStyle: 'short',
-    });
-  } catch {
-    return value;
-  }
 }
 
 export function PromptVersionsClient() {
@@ -315,7 +303,7 @@ export function PromptVersionsClient() {
                     </TableCell>
                     <TableCell>
                       <Badge variant={STATUS_VARIANT[pv.status]}>
-                        {STATUS_LABEL[pv.status]}
+                        {PROMPT_VERSION_STATUS_LABEL[pv.status]}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right font-mono text-xs text-slate-600">

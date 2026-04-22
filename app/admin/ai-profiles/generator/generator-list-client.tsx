@@ -22,6 +22,12 @@ import {
   SelectValue,
 } from '@/shared/ui/select';
 import { aiProfileGeneratorKeys } from '../_shared/query-keys';
+import { formatDate, shortId } from './_shared/format';
+import {
+  DRAFT_STATUS_LABEL,
+  DRAFT_STATUS_VALUES,
+  DRAFT_STATUS_VARIANT,
+} from './_shared/status';
 import { DraftCreateDialog } from './draft-create-dialog';
 import { GeneratorTabs } from './_tabs';
 
@@ -29,37 +35,12 @@ const DEFAULT_LIMIT = 20;
 
 const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'all', label: '전체 상태' },
-  { value: 'draft', label: '초안' },
-  { value: 'generating', label: '생성 중' },
-  { value: 'failed', label: '실패' },
-  { value: 'published', label: '배포됨' },
-  { value: 'archived', label: '아카이브' },
+  ...DRAFT_STATUS_VALUES.map((v) => ({ value: v, label: DRAFT_STATUS_LABEL[v] })),
 ];
-
-const STATUS_LABEL: Record<AiProfileDraftStatus, string> = {
-  draft: '초안',
-  generating: '생성 중',
-  failed: '실패',
-  published: '배포됨',
-  archived: '아카이브',
-};
-
-const STATUS_VARIANT: Record<
-  AiProfileDraftStatus,
-  'default' | 'secondary' | 'destructive' | 'outline'
-> = {
-  draft: 'secondary',
-  generating: 'default',
-  failed: 'destructive',
-  published: 'default',
-  archived: 'outline',
-};
 
 function parseQueryFromURL(params: URLSearchParams): AiProfileDraftListQuery {
   const statusRaw = params.get('status');
-  const status = (
-    ['draft', 'generating', 'failed', 'published', 'archived'] as const
-  ).includes(statusRaw as AiProfileDraftStatus)
+  const status = DRAFT_STATUS_VALUES.includes(statusRaw as AiProfileDraftStatus)
     ? (statusRaw as AiProfileDraftStatus)
     : undefined;
 
@@ -82,23 +63,6 @@ function serializeQuery(query: AiProfileDraftListQuery): string {
   if (query.limit && query.limit !== DEFAULT_LIMIT)
     params.set('limit', String(query.limit));
   return params.toString();
-}
-
-function shortId(id: string): string {
-  if (id.length <= 8) return id;
-  return `${id.slice(0, 8)}…`;
-}
-
-function formatDate(value: string | null): string {
-  if (!value) return '-';
-  try {
-    return new Date(value).toLocaleString('ko-KR', {
-      dateStyle: 'short',
-      timeStyle: 'short',
-    });
-  } catch {
-    return value;
-  }
 }
 
 export function GeneratorListClient() {
@@ -244,8 +208,8 @@ export function GeneratorListClient() {
                       {shortId(draft.id)}
                     </td>
                     <td className="px-4 py-2">
-                      <Badge variant={STATUS_VARIANT[draft.status]}>
-                        {STATUS_LABEL[draft.status]}
+                      <Badge variant={DRAFT_STATUS_VARIANT[draft.status]}>
+                        {DRAFT_STATUS_LABEL[draft.status]}
                       </Badge>
                     </td>
                     <td className="px-4 py-2 text-slate-700">

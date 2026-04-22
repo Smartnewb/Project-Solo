@@ -17,7 +17,7 @@ import {
 } from '@/shared/ui/dialog';
 import { Switch } from '@/shared/ui/switch';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
-import { useDraftErrorHandler } from './use-draft-mutation';
+import { useAiProfileErrorHandler } from '../_shared-error';
 
 interface Props {
   open: boolean;
@@ -46,7 +46,9 @@ export function PublishDialog({
 }: Props) {
   const toast = useToast();
   const queryClient = useQueryClient();
-  const handleError = useDraftErrorHandler(draftId);
+  const handleError = useAiProfileErrorHandler(
+    aiProfileGeneratorKeys.draftDetail(draftId),
+  );
   const [acknowledged, setAcknowledged] = useState(false);
 
   useEffect(() => {

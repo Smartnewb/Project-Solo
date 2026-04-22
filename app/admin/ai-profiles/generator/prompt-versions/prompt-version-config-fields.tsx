@@ -1,17 +1,12 @@
 'use client';
 
-import { ChevronDown } from 'lucide-react';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/shared/ui/collapsible';
 import { Label } from '@/shared/ui/label';
 import { Textarea } from '@/shared/ui/textarea';
 import {
   DOMAIN_LABEL,
   FULL_DOMAINS,
 } from '@/app/types/ai-profile-generator';
+import { Section } from '../_shared/collapsible-section';
 import { KeyedListInput } from '../_shared/keyed-list-input';
 import { TemperatureTable } from '../_shared/temperature-table';
 
@@ -27,31 +22,6 @@ interface Props {
   value: PromptVersionConfigFieldsValue;
   onChange: (next: PromptVersionConfigFieldsValue) => void;
   disabled?: boolean;
-}
-
-function Section({
-  title,
-  defaultOpen = false,
-  children,
-}: {
-  title: string;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <Collapsible
-      defaultOpen={defaultOpen}
-      className="rounded-md border border-slate-200"
-    >
-      <CollapsibleTrigger className="flex w-full items-center justify-between px-3 py-2 text-left text-sm font-medium hover:bg-slate-50">
-        <span>{title}</span>
-        <ChevronDown className="h-4 w-4 text-slate-500" />
-      </CollapsibleTrigger>
-      <CollapsibleContent className="space-y-3 border-t border-slate-200 p-3">
-        {children}
-      </CollapsibleContent>
-    </Collapsible>
-  );
 }
 
 export function PromptVersionConfigFields({

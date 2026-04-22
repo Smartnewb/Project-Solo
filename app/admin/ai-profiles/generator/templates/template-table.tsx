@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/shared/ui/table';
+import { formatDate } from '../_shared/format';
 
 interface Props {
   items: AiProfileTemplate[];
@@ -24,18 +25,6 @@ interface Props {
 function truncate(value: string | null | undefined, max = 60): string {
   if (!value) return '-';
   return value.length > max ? `${value.slice(0, max)}…` : value;
-}
-
-function formatDate(value: string | null): string {
-  if (!value) return '-';
-  try {
-    return new Date(value).toLocaleString('ko-KR', {
-      dateStyle: 'short',
-      timeStyle: 'short',
-    });
-  } catch {
-    return value;
-  }
 }
 
 const SKELETON_ROWS = 5;

@@ -15,7 +15,7 @@ import {
 } from '@/shared/ui/dialog';
 import { Label } from '@/shared/ui/label';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
-import { useDraftErrorHandler } from './use-draft-mutation';
+import { useAiProfileErrorHandler } from '../_shared-error';
 
 interface Props {
   open: boolean;
@@ -35,7 +35,9 @@ export function MediaUploadDialog({
 }: Props) {
   const toast = useToast();
   const queryClient = useQueryClient();
-  const handleError = useDraftErrorHandler(draftId);
+  const handleError = useAiProfileErrorHandler(
+    aiProfileGeneratorKeys.draftDetail(draftId),
+  );
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [file, setFile] = useState<File | null>(null);

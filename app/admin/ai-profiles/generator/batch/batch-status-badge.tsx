@@ -4,14 +4,7 @@ import { Loader2 } from 'lucide-react';
 import type { BatchJobStatus } from '@/app/types/ai-profile-generator';
 import { Badge } from '@/shared/ui/badge';
 import { cn } from '@/shared/utils/index';
-
-const STATUS_LABEL: Record<BatchJobStatus, string> = {
-  pending: '대기',
-  running: '실행 중',
-  completed: '완료',
-  cancelled: '취소됨',
-  failed: '실패',
-};
+import { BATCH_STATUS_LABEL } from '../_shared/status';
 
 const STATUS_CLASS: Record<BatchJobStatus, string> = {
   pending:
@@ -42,7 +35,7 @@ export function BatchStatusBadge({ status, className }: Props) {
       {status === 'running' ? (
         <Loader2 className="h-3 w-3 animate-spin" />
       ) : null}
-      <span>{STATUS_LABEL[status]}</span>
+      <span>{BATCH_STATUS_LABEL[status]}</span>
     </Badge>
   );
 }

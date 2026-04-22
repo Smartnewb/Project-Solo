@@ -14,19 +14,8 @@ import {
   CardTitle,
 } from '@/shared/ui/card';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
+import { formatDate } from '../_shared/format';
 import { useAiProfileErrorHandler } from '../_shared-error';
-
-function formatDate(value: string | null): string {
-  if (!value) return '-';
-  try {
-    return new Date(value).toLocaleString('ko-KR', {
-      dateStyle: 'short',
-      timeStyle: 'short',
-    });
-  } catch {
-    return value;
-  }
-}
 
 export function CleanupSection() {
   const toast = useToast();

@@ -17,9 +17,9 @@ import {
 } from '@/shared/ui/card';
 import { Switch } from '@/shared/ui/switch';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
+import { useAiProfileErrorHandler } from '../_shared-error';
 import { DomainJsonEditor } from './domain-json-editor';
 import { DomainStatusBadge } from './domain-status-badge';
-import { useDraftErrorHandler } from './use-draft-mutation';
 
 interface Props {
   draftId: string;
@@ -50,7 +50,9 @@ export function DomainCard({
   readOnly = false,
 }: Props) {
   const queryClient = useQueryClient();
-  const handleError = useDraftErrorHandler(draftId);
+  const handleError = useAiProfileErrorHandler(
+    aiProfileGeneratorKeys.draftDetail(draftId),
+  );
 
   const invalidate = () =>
     queryClient.invalidateQueries({

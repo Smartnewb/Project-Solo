@@ -20,8 +20,8 @@ import {
 } from '@/shared/ui/select';
 import { Textarea } from '@/shared/ui/textarea';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
+import { useAiProfileErrorHandler } from '../_shared-error';
 import { MediaUploadDialog } from './media-upload-dialog';
-import { useDraftErrorHandler } from './use-draft-mutation';
 
 interface Props {
   draftId: string;
@@ -40,7 +40,9 @@ export function PhotoSlotCard({
 }: Props) {
   const toast = useToast();
   const queryClient = useQueryClient();
-  const handleError = useDraftErrorHandler(draftId);
+  const handleError = useAiProfileErrorHandler(
+    aiProfileGeneratorKeys.draftDetail(draftId),
+  );
 
   const [style, setStyle] = useState<PhotoStyle>('portrait');
   const [customPrompt, setCustomPrompt] = useState('');

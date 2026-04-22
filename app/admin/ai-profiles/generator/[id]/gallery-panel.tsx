@@ -18,8 +18,8 @@ import {
   DialogTitle,
 } from '@/shared/ui/dialog';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
+import { useAiProfileErrorHandler } from '../_shared-error';
 import { PhotoActionMenu } from './photo-action-menu';
-import { useDraftErrorHandler } from './use-draft-mutation';
 
 interface Props {
   draftId: string;
@@ -53,7 +53,9 @@ export function GalleryPanel({
 }: Props) {
   const toast = useToast();
   const queryClient = useQueryClient();
-  const handleError = useDraftErrorHandler(draftId);
+  const handleError = useAiProfileErrorHandler(
+    aiProfileGeneratorKeys.draftDetail(draftId),
+  );
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const deleteMutation = useMutation({

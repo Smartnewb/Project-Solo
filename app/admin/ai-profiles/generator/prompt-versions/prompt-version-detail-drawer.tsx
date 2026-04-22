@@ -12,17 +12,13 @@ import {
   SheetTitle,
 } from '@/shared/ui/sheet';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
+import { formatDate } from '../_shared/format';
+import { PROMPT_VERSION_STATUS_LABEL } from '../_shared/status';
 
 interface Props {
   promptVersionId: string | null;
   onClose: () => void;
 }
-
-const STATUS_LABEL: Record<PromptVersionStatus, string> = {
-  draft: '초안',
-  active: '활성',
-  archived: '아카이브',
-};
 
 const STATUS_VARIANT: Record<
   PromptVersionStatus,
@@ -32,18 +28,6 @@ const STATUS_VARIANT: Record<
   active: 'default',
   archived: 'outline',
 };
-
-function formatDate(value: string | null): string {
-  if (!value) return '-';
-  try {
-    return new Date(value).toLocaleString('ko-KR', {
-      dateStyle: 'short',
-      timeStyle: 'short',
-    });
-  } catch {
-    return value;
-  }
-}
 
 export function PromptVersionDetailDrawer({
   promptVersionId,
@@ -90,7 +74,7 @@ export function PromptVersionDetailDrawer({
                   {pv.name}
                 </h3>
                 <Badge variant={STATUS_VARIANT[pv.status]}>
-                  {STATUS_LABEL[pv.status]}
+                  {PROMPT_VERSION_STATUS_LABEL[pv.status]}
                 </Badge>
                 <span className="font-mono text-xs text-slate-500">
                   v{pv.version}

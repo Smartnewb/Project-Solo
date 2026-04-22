@@ -14,24 +14,13 @@ import {
   SheetTitle,
 } from '@/shared/ui/sheet';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
+import { formatDate } from '../_shared/format';
 import { useAiProfileErrorHandler } from '../_shared-error';
 import { BatchStatusBadge } from './batch-status-badge';
 
 interface Props {
   batchJobId: string | null;
   onClose: () => void;
-}
-
-function formatDate(value: string | null): string {
-  if (!value) return '-';
-  try {
-    return new Date(value).toLocaleString('ko-KR', {
-      dateStyle: 'short',
-      timeStyle: 'short',
-    });
-  } catch {
-    return value;
-  }
 }
 
 export function BatchDetailDrawer({ batchJobId, onClose }: Props) {

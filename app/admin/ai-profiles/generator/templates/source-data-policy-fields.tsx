@@ -20,6 +20,11 @@ import {
 } from '@/shared/ui/select';
 import { AdvancedJsonPanel } from '../_shared/advanced-json-panel';
 import { NumberRangeInput } from '../_shared/number-range-input';
+import {
+  asStringArray,
+  pickExtra,
+  pruneEmpty,
+} from '../_shared/policy-utils';
 import { StringListInput } from '../_shared/string-list-input';
 
 interface Props {
@@ -39,39 +44,6 @@ const KNOWN_KEYS = [
 ] as const;
 
 const UNSET = 'unset';
-
-function pickExtra(value: Record<string, unknown>): Record<string, unknown> {
-  const extra: Record<string, unknown> = {};
-  for (const key of Object.keys(value)) {
-    if (!(KNOWN_KEYS as readonly string[]).includes(key)) {
-      extra[key] = value[key];
-    }
-  }
-  return extra;
-}
-
-function pruneEmpty(obj: Record<string, unknown>): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(obj)) {
-    if (v === undefined || v === null) continue;
-    if (Array.isArray(v) && v.length === 0) continue;
-    if (typeof v === 'string' && v.trim() === '') continue;
-    if (
-      typeof v === 'object' &&
-      !Array.isArray(v) &&
-      Object.keys(v as Record<string, unknown>).length === 0
-    ) {
-      continue;
-    }
-    out[k] = v;
-  }
-  return out;
-}
-
-function asStringArray(v: unknown): string[] {
-  if (!Array.isArray(v)) return [];
-  return v.filter((item): item is string => typeof item === 'string');
-}
 
 function asRange(v: unknown): { min?: number; max?: number } {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return {};
@@ -99,7 +71,7 @@ export function SourceDataPolicyFields({ value, onChange, disabled }: Props) {
       ? (value.fallbackStrategy as string)
       : '';
 
-  const extra = pickExtra(value);
+  const extra = pickExtra(value, KNOWN_KEYS);
 
   const emitKnown = (patch: Record<string, unknown>) => {
     const known: Record<string, unknown> = {

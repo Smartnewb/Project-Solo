@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@/shared/ui/select';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
-import { useDraftErrorHandler } from './use-draft-mutation';
+import { useAiProfileErrorHandler } from '../_shared-error';
 
 interface Props {
   draftId: string;
@@ -29,7 +29,9 @@ interface Props {
 
 export function TemplateApplyMenu({ draftId, currentVersion }: Props) {
   const queryClient = useQueryClient();
-  const handleError = useDraftErrorHandler(draftId);
+  const handleError = useAiProfileErrorHandler(
+    aiProfileGeneratorKeys.draftDetail(draftId),
+  );
 
   const [selectedId, setSelectedId] = useState<string>('');
   const [confirmOpen, setConfirmOpen] = useState(false);

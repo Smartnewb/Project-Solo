@@ -14,7 +14,6 @@ import {
   type AiProfileDomain,
   type AiProfileDomainGroup,
   type AiProfileDomainStatus,
-  type AiProfileDraftStatus,
 } from '@/app/types/ai-profile-generator';
 import { Alert, AlertDescription } from '@/shared/ui/alert';
 import { useToast } from '@/shared/ui/admin/toast';
@@ -30,6 +29,11 @@ import {
 } from '@/shared/ui/dialog';
 import { AdminApiError } from '@/shared/lib/http/admin-fetch';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
+import {
+  DRAFT_STATUS_LABEL,
+  DRAFT_STATUS_VARIANT,
+} from '../_shared/status';
+import { useAiProfileErrorHandler } from '../_shared-error';
 import { DomainCard } from './domain-card';
 import { DomainGroup } from './domain-group';
 import { GalleryPanel } from './gallery-panel';
@@ -38,37 +42,19 @@ import { PreviewChatPanel } from './preview-chat-panel';
 import { PublishDialog } from './publish-dialog';
 import { RepresentativeImagePanel } from './representative-image-panel';
 import { TemplateApplyMenu } from './template-apply-menu';
-import { useDraftErrorHandler } from './use-draft-mutation';
 import { ValidationPanel } from './validation-panel';
 
 interface Props {
   draftId: string;
 }
 
-const STATUS_LABEL: Record<AiProfileDraftStatus, string> = {
-  draft: '초안',
-  generating: '생성 중',
-  failed: '실패',
-  published: '배포됨',
-  archived: '아카이브',
-};
-
-const STATUS_VARIANT: Record<
-  AiProfileDraftStatus,
-  'default' | 'secondary' | 'destructive' | 'outline'
-> = {
-  draft: 'secondary',
-  generating: 'default',
-  failed: 'destructive',
-  published: 'default',
-  archived: 'outline',
-};
-
 export function DraftEditorClient({ draftId }: Props) {
   const router = useRouter();
   const toast = useToast();
   const queryClient = useQueryClient();
-  const handleError = useDraftErrorHandler(draftId);
+  const handleError = useAiProfileErrorHandler(
+    aiProfileGeneratorKeys.draftDetail(draftId),
+  );
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
@@ -174,8 +160,8 @@ export function DraftEditorClient({ draftId }: Props) {
           </h1>
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
             <span className="font-mono">{draft.id}</span>
-            <Badge variant={STATUS_VARIANT[draft.status]}>
-              {STATUS_LABEL[draft.status]}
+            <Badge variant={DRAFT_STATUS_VARIANT[draft.status]}>
+              {DRAFT_STATUS_LABEL[draft.status]}
             </Badge>
             <span>v{draft.version}</span>
             {draft.publishedCompanionId ? (

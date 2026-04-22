@@ -17,6 +17,7 @@ import {
 import { Label } from '@/shared/ui/label';
 import { Textarea } from '@/shared/ui/textarea';
 import { AdvancedJsonPanel } from '../_shared/advanced-json-panel';
+import { asStringArray, pickExtra } from '../_shared/policy-utils';
 import { StringListInput } from '../_shared/string-list-input';
 
 interface Props {
@@ -26,11 +27,6 @@ interface Props {
 }
 
 const KNOWN_DOMAIN_KEYS = FULL_DOMAINS as readonly string[];
-
-function asStringArray(v: unknown): string[] {
-  if (!Array.isArray(v)) return [];
-  return v.filter((item): item is string => typeof item === 'string');
-}
 
 function asBlueprint(v: unknown): DomainBlueprint {
   if (!v || typeof v !== 'object' || Array.isArray(v)) {
@@ -62,19 +58,9 @@ function pickKnown(value: Record<string, unknown>): Record<string, DomainBluepri
   return out;
 }
 
-function pickExtra(value: Record<string, unknown>): Record<string, unknown> {
-  const extra: Record<string, unknown> = {};
-  for (const key of Object.keys(value)) {
-    if (!KNOWN_DOMAIN_KEYS.includes(key)) {
-      extra[key] = value[key];
-    }
-  }
-  return extra;
-}
-
 export function DomainBlueprintsFields({ value, onChange, disabled }: Props) {
   const known = pickKnown(value);
-  const extra = pickExtra(value);
+  const extra = pickExtra(value, KNOWN_DOMAIN_KEYS);
 
   const emit = (nextKnown: Record<string, DomainBlueprint>) => {
     const merged: Record<string, unknown> = { ...extra };

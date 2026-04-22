@@ -6,7 +6,7 @@ import type { AiProfilePhoto } from '@/app/types/ai-profile-generator';
 import { useToast } from '@/shared/ui/admin/toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
-import { useDraftErrorHandler } from './use-draft-mutation';
+import { useAiProfileErrorHandler } from '../_shared-error';
 
 interface Props {
   draftId: string;
@@ -25,7 +25,9 @@ export function RepresentativeImagePanel({
 }: Props) {
   const toast = useToast();
   const queryClient = useQueryClient();
-  const handleError = useDraftErrorHandler(draftId);
+  const handleError = useAiProfileErrorHandler(
+    aiProfileGeneratorKeys.draftDetail(draftId),
+  );
 
   const setMutation = useMutation({
     mutationFn: (photoId: string) =>
