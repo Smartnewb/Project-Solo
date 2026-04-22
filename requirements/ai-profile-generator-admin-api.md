@@ -145,3 +145,44 @@ REST 관례 기반 추정 — 백엔드 구현 완료 후 수정:
 
 Request: `{ userMessages: string[] }` (1–3 messages)
 Response: `{ turns: [{ role: 'user'|'assistant', content: string }] }`
+
+## Phase 3 추정 Endpoint (구현 시 확정 필요)
+
+### Template
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/admin/v2/ai-companions/templates` | list (기존) |
+| GET | `/admin/v2/ai-companions/templates/:id` | detail |
+| POST | `/admin/v2/ai-companions/templates` | create |
+| PATCH | `/admin/v2/ai-companions/templates/:id` | update (expectedVersion) |
+| POST | `/admin/v2/ai-companions/templates/:id/archive` | archive |
+| POST | `/admin/v2/ai-companions/templates/:id/restore` | restore (archived → active) |
+| POST | `/admin/v2/ai-companions/templates/:id/duplicate` | duplicate — 버전 증가된 새 템플릿 생성 |
+
+### Prompt Version
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/admin/v2/ai-companions/prompt-versions` | list |
+| GET | `/admin/v2/ai-companions/prompt-versions/:id` | detail (snapshot 포함) |
+| POST | `/admin/v2/ai-companions/prompt-versions` | create |
+| PATCH | `/admin/v2/ai-companions/prompt-versions/:id` | update (expectedVersion, draft 상태만) |
+| POST | `/admin/v2/ai-companions/prompt-versions/:id/activate` | active 전환 (기존 active는 자동 archive) |
+| POST | `/admin/v2/ai-companions/prompt-versions/:id/archive` | archive |
+
+### Template body
+
+Create:
+`{ name, description?, baseInstruction, domainInstructions?, lockedFields?, randomizationPolicy?, sourceDataPolicy?, imagePolicy?, safetyPolicy?, domainBlueprints?, promptVersionId? }`
+
+Update:
+`{ expectedVersion, ...(create fields optional) }`
+
+### Prompt Version body
+
+Create:
+`{ name, config: { globalInstruction, domainInstructions?, safetyInstruction?, repairInstruction?, temperatureByDomain? }, description? }`
+
+Update:
+`{ expectedVersion, name?, config?, description? }`

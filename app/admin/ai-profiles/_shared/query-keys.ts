@@ -5,7 +5,11 @@ import type {
 	PhaseSchoolListQuery,
 	RealUserListQuery,
 } from '@/app/types/ghost-injection';
-import type { AiProfileDraftListQuery } from '@/app/types/ai-profile-generator';
+import type {
+	AiProfileDraftListQuery,
+	PromptVersionListQuery,
+	TemplateListQuery,
+} from '@/app/types/ai-profile-generator';
 
 export const ghostInjectionKeys = {
 	all: ['admin', 'ghost-injection'] as const,
@@ -35,6 +39,16 @@ export const aiProfileGeneratorKeys = {
 	draftDetail: (id: string) =>
 		[...aiProfileGeneratorKeys.drafts(), 'detail', id] as const,
 	templates: () => [...aiProfileGeneratorKeys.all, 'templates'] as const,
+	templateList: (query: TemplateListQuery) =>
+		[...aiProfileGeneratorKeys.templates(), 'list', query] as const,
+	templateDetail: (id: string) =>
+		[...aiProfileGeneratorKeys.templates(), 'detail', id] as const,
+	promptVersions: () =>
+		[...aiProfileGeneratorKeys.all, 'prompt-versions'] as const,
+	promptVersionList: (query: PromptVersionListQuery) =>
+		[...aiProfileGeneratorKeys.promptVersions(), 'list', query] as const,
+	promptVersionDetail: (id: string) =>
+		[...aiProfileGeneratorKeys.promptVersions(), 'detail', id] as const,
 	publishDryRun: (id: string, version: number) =>
 		[...aiProfileGeneratorKeys.draftDetail(id), 'publish-dry-run', version] as const,
 	previewChat: (id: string) =>

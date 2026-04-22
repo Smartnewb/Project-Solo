@@ -194,6 +194,17 @@ export interface AiProfileTemplate {
   description: string | null;
   version: number;
   status: 'active' | 'archived';
+  baseInstruction: string;
+  domainInstructions: Record<string, string> | null;
+  lockedFields: Partial<Record<AiProfileDomain, string[]>> | null;
+  randomizationPolicy: Record<string, unknown> | null;
+  sourceDataPolicy: Record<string, unknown> | null;
+  imagePolicy: Record<string, unknown> | null;
+  safetyPolicy: Record<string, unknown> | null;
+  domainBlueprints: Record<string, unknown> | null;
+  promptVersionId: string | null;
+  lastUsedAt: string | null;
+  usageCount: number;
   createdAt: string;
   updatedAt: string | null;
 }
@@ -201,6 +212,88 @@ export interface AiProfileTemplate {
 export interface AiProfileTemplateListResponse {
   items: AiProfileTemplate[];
   total: number;
+}
+
+export interface TemplateListQuery {
+  status?: 'active' | 'archived' | 'all';
+  q?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface TemplateListResponse {
+  items: AiProfileTemplate[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface CreateTemplateBody {
+  name: string;
+  description?: string;
+  baseInstruction: string;
+  domainInstructions?: Record<string, string>;
+  lockedFields?: Partial<Record<AiProfileDomain, string[]>>;
+  randomizationPolicy?: Record<string, unknown>;
+  sourceDataPolicy?: Record<string, unknown>;
+  imagePolicy?: Record<string, unknown>;
+  safetyPolicy?: Record<string, unknown>;
+  domainBlueprints?: Record<string, unknown>;
+  promptVersionId?: string;
+}
+
+export interface UpdateTemplateBody extends Partial<CreateTemplateBody> {
+  expectedVersion: number;
+}
+
+export interface PromptVersionConfig {
+  globalInstruction: string;
+  domainInstructions?: Record<string, string>;
+  safetyInstruction?: string;
+  repairInstruction?: string;
+  temperatureByDomain?: Record<string, number>;
+}
+
+export type PromptVersionStatus = 'draft' | 'active' | 'archived';
+
+export interface PromptVersion {
+  id: string;
+  name: string;
+  description: string | null;
+  status: PromptVersionStatus;
+  config: PromptVersionConfig;
+  version: number;
+  createdByAdminUserId: string;
+  createdAt: string;
+  updatedAt: string | null;
+  activatedAt: string | null;
+}
+
+export interface PromptVersionListQuery {
+  status?: PromptVersionStatus | 'all';
+  q?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface PromptVersionListResponse {
+  items: PromptVersion[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface CreatePromptVersionBody {
+  name: string;
+  description?: string;
+  config: PromptVersionConfig;
+}
+
+export interface UpdatePromptVersionBody {
+  expectedVersion: number;
+  name?: string;
+  description?: string;
+  config?: PromptVersionConfig;
 }
 
 export type PhotoStyle = 'portrait' | 'casual' | 'custom';
