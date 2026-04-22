@@ -29,7 +29,7 @@ import {
 } from '@/shared/ui/select';
 import { Textarea } from '@/shared/ui/textarea';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
-import { emptyObjectToUndef } from '../_shared/policy-utils';
+import { emptyObjectToUndef, pruneEmpty } from '../_shared/policy-utils';
 import { useAiProfileErrorHandler } from '../_shared-error';
 import {
   TemplatePolicyFields,
@@ -127,15 +127,23 @@ export function TemplateFormDialog({ open, onOpenChange, template }: Props) {
       }
 
       const domainInstructions = emptyObjectToUndef(
-        form.policy.domainInstructions,
-      );
+        pruneEmpty(form.policy.domainInstructions),
+      ) as Record<string, string> | undefined;
       const randomizationPolicy = emptyObjectToUndef(
-        form.policy.randomizationPolicy,
+        pruneEmpty(form.policy.randomizationPolicy),
       );
-      const safetyPolicy = emptyObjectToUndef(form.policy.safetyPolicy);
-      const sourceDataPolicy = emptyObjectToUndef(form.policy.sourceDataPolicy);
-      const imagePolicy = emptyObjectToUndef(form.policy.imagePolicy);
-      const domainBlueprints = emptyObjectToUndef(form.policy.domainBlueprints);
+      const safetyPolicy = emptyObjectToUndef(
+        pruneEmpty(form.policy.safetyPolicy),
+      );
+      const sourceDataPolicy = emptyObjectToUndef(
+        pruneEmpty(form.policy.sourceDataPolicy),
+      );
+      const imagePolicy = emptyObjectToUndef(
+        pruneEmpty(form.policy.imagePolicy),
+      );
+      const domainBlueprints = emptyObjectToUndef(
+        pruneEmpty(form.policy.domainBlueprints),
+      );
 
       const createBody: CreateTemplateBody = {
         name,
