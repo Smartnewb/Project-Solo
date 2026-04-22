@@ -4,11 +4,15 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { ArrowLeft, Trash2, Upload } from 'lucide-react';
 import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
 import {
-  MVP_DOMAINS,
+  DOMAIN_GROUP_LABEL,
+  DOMAIN_GROUP_ORDER,
+  DOMAIN_TO_GROUP,
+  FULL_DOMAINS,
   type AiProfileDomain,
+  type AiProfileDomainGroup,
   type AiProfileDomainStatus,
   type AiProfileDraftStatus,
 } from '@/app/types/ai-profile-generator';
@@ -27,6 +31,12 @@ import {
 import { AdminApiError } from '@/shared/lib/http/admin-fetch';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
 import { DomainCard } from './domain-card';
+import { DomainGroup } from './domain-group';
+import { GalleryPanel } from './gallery-panel';
+import { PhotoSlotCard } from './photo-slot-card';
+import { PreviewChatPanel } from './preview-chat-panel';
+import { PublishDialog } from './publish-dialog';
+import { RepresentativeImagePanel } from './representative-image-panel';
 import { TemplateApplyMenu } from './template-apply-menu';
 import { useDraftErrorHandler } from './use-draft-mutation';
 import { ValidationPanel } from './validation-panel';
@@ -61,6 +71,7 @@ export function DraftEditorClient({ draftId }: Props) {
   const handleError = useDraftErrorHandler(draftId);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [publishOpen, setPublishOpen] = useState(false);
 
   const detailQuery = useQuery({
     queryKey: aiProfileGeneratorKeys.draftDetail(draftId),
@@ -136,6 +147,18 @@ export function DraftEditorClient({ draftId }: Props) {
   const draft = detailQuery.data;
   if (!draft) return null;
 
+  const readOnly =
+    draft.status === 'published' || draft.status === 'archived';
+  const canPublish = draft.status === 'draft' || draft.status === 'failed';
+
+  const domainsByGroup = DOMAIN_GROUP_ORDER.reduce(
+    (acc, group) => {
+      acc[group] = FULL_DOMAINS.filter((d) => DOMAIN_TO_GROUP[d] === group);
+      return acc;
+    },
+    {} as Record<AiProfileDomainGroup, AiProfileDomain[]>,
+  );
+
   return (
     <section className="space-y-4 px-6 py-8">
       <header className="flex flex-wrap items-start justify-between gap-4">
@@ -155,49 +178,108 @@ export function DraftEditorClient({ draftId }: Props) {
               {STATUS_LABEL[draft.status]}
             </Badge>
             <span>v{draft.version}</span>
+            {draft.publishedCompanionId ? (
+              <span className="font-mono text-emerald-600">
+                companion: {draft.publishedCompanionId}
+              </span>
+            ) : null}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <TemplateApplyMenu
-            draftId={draftId}
-            currentVersion={draft.version}
-          />
+          {!readOnly ? (
+            <TemplateApplyMenu
+              draftId={draftId}
+              currentVersion={draft.version}
+            />
+          ) : null}
           <Button
-            variant="destructive"
             size="sm"
-            onClick={() => setDeleteOpen(true)}
-            disabled={deleteMutation.isPending}
+            onClick={() => setPublishOpen(true)}
+            disabled={!canPublish}
           >
-            <Trash2 className="mr-1 h-4 w-4" /> 삭제
+            <Upload className="mr-1 h-4 w-4" /> 발행
           </Button>
+          {!readOnly ? (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setDeleteOpen(true)}
+              disabled={deleteMutation.isPending}
+            >
+              <Trash2 className="mr-1 h-4 w-4" /> 삭제
+            </Button>
+          ) : null}
         </div>
       </header>
 
       <div className="grid gap-4 lg:grid-cols-4">
-        <div className="space-y-4 lg:col-span-3">
-          <div className="grid gap-4 md:grid-cols-2">
-            {MVP_DOMAINS.map((domain: AiProfileDomain) => {
-              const status: AiProfileDomainStatus =
-                draft.domainStatus?.[domain] ?? 'empty';
-              return (
-                <DomainCard
-                  key={domain}
-                  draftId={draftId}
-                  domain={domain}
-                  status={status}
-                  payload={draft.domains?.[domain] ?? null}
-                  version={draft.version}
-                  locked={draft.lockedFields?.[domain]}
-                  draftLockedFields={draft.lockedFields ?? {}}
-                />
-              );
-            })}
-          </div>
+        <div className="space-y-5 lg:col-span-3">
+          {DOMAIN_GROUP_ORDER.map((group) => {
+            const domains = domainsByGroup[group];
+            if (!domains || domains.length === 0) return null;
+            return (
+              <DomainGroup key={group} label={DOMAIN_GROUP_LABEL[group]}>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {domains.map((domain) => {
+                    const status: AiProfileDomainStatus =
+                      draft.domainStatus?.[domain] ?? 'empty';
+                    return (
+                      <DomainCard
+                        key={domain}
+                        draftId={draftId}
+                        domain={domain}
+                        status={status}
+                        payload={draft.domains?.[domain] ?? null}
+                        version={draft.version}
+                        locked={draft.lockedFields?.[domain]}
+                        draftLockedFields={draft.lockedFields ?? {}}
+                        readOnly={readOnly}
+                      />
+                    );
+                  })}
+                </div>
+                {group === 'photo' ? (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <PhotoSlotCard
+                      draftId={draftId}
+                      version={draft.version}
+                      gallery={draft.gallery ?? []}
+                      representativeImageUrl={draft.representativeImageUrl}
+                      readOnly={readOnly}
+                    />
+                    <RepresentativeImagePanel
+                      draftId={draftId}
+                      version={draft.version}
+                      representativeImageUrl={draft.representativeImageUrl}
+                      gallery={draft.gallery ?? []}
+                      readOnly={readOnly}
+                    />
+                    <div className="md:col-span-2">
+                      <GalleryPanel
+                        draftId={draftId}
+                        version={draft.version}
+                        gallery={draft.gallery ?? []}
+                        readOnly={readOnly}
+                      />
+                    </div>
+                  </div>
+                ) : null}
+              </DomainGroup>
+            );
+          })}
         </div>
-        <div className="lg:col-span-1">
+        <div className="space-y-4 lg:col-span-1">
           <ValidationPanel validation={draft.validation} />
+          <PreviewChatPanel draftId={draftId} disabled={readOnly} />
         </div>
       </div>
+
+      <PublishDialog
+        open={publishOpen}
+        onOpenChange={setPublishOpen}
+        draftId={draftId}
+        version={draft.version}
+      />
 
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent>
