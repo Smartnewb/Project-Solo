@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
 import type {
   BatchJob,
@@ -30,10 +29,12 @@ import {
 } from '@/shared/ui/table';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
 import { formatDate, shortId } from '../_shared/format';
+import { PaginationFooter } from '../_shared/pagination-footer';
 import {
   BATCH_STATUS_LABEL,
   BATCH_STATUS_VALUES,
 } from '../_shared/status';
+import { useQuerySyncedState } from '../_shared/use-query-synced-state';
 import { GeneratorTabs } from '../_tabs';
 import { BatchDetailDrawer } from './batch-detail-drawer';
 import { BatchEnqueueDialog } from './batch-enqueue-dialog';
@@ -68,32 +69,22 @@ function parseQueryFromURL(params: URLSearchParams): BatchJobListQuery {
   };
 }
 
-function serializeQuery(query: BatchJobListQuery): string {
+function serializeQuery(query: BatchJobListQuery): URLSearchParams {
   const params = new URLSearchParams();
   if (query.status) params.set('status', query.status);
   if (query.page && query.page > 1) params.set('page', String(query.page));
   if (query.limit && query.limit !== DEFAULT_LIMIT)
     params.set('limit', String(query.limit));
-  return params.toString();
+  return params;
 }
 
 export function BatchClient() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const [query, setQuery] = useState<BatchJobListQuery>(() =>
-    parseQueryFromURL(searchParams ?? new URLSearchParams()),
-  );
+  const [query, setQuery] = useQuerySyncedState<BatchJobListQuery>({
+    parse: parseQueryFromURL,
+    serialize: serializeQuery,
+  });
   const [enqueueOpen, setEnqueueOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const nextQs = serializeQuery(query);
-    const currentQs = searchParams?.toString() ?? '';
-    if (nextQs !== currentQs) {
-      router.replace(nextQs ? `?${nextQs}` : '?', { scroll: false });
-    }
-  }, [query, router, searchParams]);
 
   const listQuery = useQuery({
     queryKey: aiProfileGeneratorKeys.batchJobList(query),
@@ -243,40 +234,24 @@ export function BatchClient() {
         </Table>
       </div>
 
-      <div className="flex items-center justify-between text-xs text-slate-500">
-        <div>
-          전체 <span className="font-semibold text-slate-800">{total}</span>개 ·
-          Page {page} / {totalPages}
-        </div>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page <= 1 || listQuery.isFetching}
-            onClick={() =>
-              setQuery((prev) => ({
-                ...prev,
-                page: Math.max(1, (prev.page ?? 1) - 1),
-              }))
-            }
-          >
-            <ChevronLeft className="h-4 w-4" /> 이전
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= totalPages || listQuery.isFetching}
-            onClick={() =>
-              setQuery((prev) => ({
-                ...prev,
-                page: Math.min(totalPages, (prev.page ?? 1) + 1),
-              }))
-            }
-          >
-            다음 <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      <PaginationFooter
+        total={total}
+        page={page}
+        totalPages={totalPages}
+        disabled={listQuery.isFetching}
+        onPrev={() =>
+          setQuery((prev) => ({
+            ...prev,
+            page: Math.max(1, (prev.page ?? 1) - 1),
+          }))
+        }
+        onNext={() =>
+          setQuery((prev) => ({
+            ...prev,
+            page: Math.min(totalPages, (prev.page ?? 1) + 1),
+          }))
+        }
+      />
 
       <BatchEnqueueDialog open={enqueueOpen} onOpenChange={setEnqueueOpen} />
       <BatchDetailDrawer

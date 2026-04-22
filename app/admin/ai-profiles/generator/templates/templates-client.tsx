@@ -1,14 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
 import {
   keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, Plus, Search } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
 import type {
   AiProfileTemplate,
@@ -27,6 +26,8 @@ import {
   SelectValue,
 } from '@/shared/ui/select';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
+import { PaginationFooter } from '../_shared/pagination-footer';
+import { useQuerySyncedState } from '../_shared/use-query-synced-state';
 import { GeneratorTabs } from '../_tabs';
 import { useAiProfileErrorHandler } from '../_shared-error';
 import { TemplateFormDialog } from './template-form-dialog';
@@ -61,19 +62,17 @@ function parseQueryFromURL(params: URLSearchParams): TemplateListQuery {
   };
 }
 
-function serializeQuery(query: TemplateListQuery): string {
+function serializeQuery(query: TemplateListQuery): URLSearchParams {
   const params = new URLSearchParams();
   if (query.status && query.status !== 'all') params.set('status', query.status);
   if (query.q) params.set('q', query.q);
   if (query.page && query.page > 1) params.set('page', String(query.page));
   if (query.limit && query.limit !== DEFAULT_LIMIT)
     params.set('limit', String(query.limit));
-  return params.toString();
+  return params;
 }
 
 export function TemplatesClient() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const toast = useToast();
   const qc = useQueryClient();
   const confirm = useConfirm();
@@ -81,21 +80,14 @@ export function TemplatesClient() {
     aiProfileGeneratorKeys.templates(),
   );
 
-  const [query, setQuery] = useState<TemplateListQuery>(() =>
-    parseQueryFromURL(searchParams ?? new URLSearchParams()),
-  );
+  const [query, setQuery] = useQuerySyncedState<TemplateListQuery>({
+    parse: parseQueryFromURL,
+    serialize: serializeQuery,
+  });
   const [searchInput, setSearchInput] = useState<string>(() => query.q ?? '');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] =
     useState<AiProfileTemplate | null>(null);
-
-  useEffect(() => {
-    const nextQs = serializeQuery(query);
-    const currentQs = searchParams?.toString() ?? '';
-    if (nextQs !== currentQs) {
-      router.replace(nextQs ? `?${nextQs}` : '?', { scroll: false });
-    }
-  }, [query, router, searchParams]);
 
   useEffect(() => {
     const trimmed = searchInput.trim();
@@ -257,40 +249,24 @@ export function TemplatesClient() {
         onDuplicate={handleDuplicate}
       />
 
-      <div className="flex items-center justify-between text-xs text-slate-500">
-        <div>
-          전체 <span className="font-semibold text-slate-800">{total}</span>개 ·
-          Page {page} / {totalPages}
-        </div>
-        <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page <= 1 || listQuery.isFetching}
-            onClick={() =>
-              setQuery((prev) => ({
-                ...prev,
-                page: Math.max(1, (prev.page ?? 1) - 1),
-              }))
-            }
-          >
-            <ChevronLeft className="h-4 w-4" /> 이전
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= totalPages || listQuery.isFetching}
-            onClick={() =>
-              setQuery((prev) => ({
-                ...prev,
-                page: Math.min(totalPages, (prev.page ?? 1) + 1),
-              }))
-            }
-          >
-            다음 <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      <PaginationFooter
+        total={total}
+        page={page}
+        totalPages={totalPages}
+        disabled={listQuery.isFetching}
+        onPrev={() =>
+          setQuery((prev) => ({
+            ...prev,
+            page: Math.max(1, (prev.page ?? 1) - 1),
+          }))
+        }
+        onNext={() =>
+          setQuery((prev) => ({
+            ...prev,
+            page: Math.min(totalPages, (prev.page ?? 1) + 1),
+          }))
+        }
+      />
 
       <TemplateFormDialog
         open={dialogOpen}
