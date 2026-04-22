@@ -83,7 +83,9 @@ export function PromptVersionDetailDrawer({
             <dl className="grid grid-cols-2 gap-3 text-xs text-slate-500">
               <div>
                 <dt className="font-medium">작성자</dt>
-                <dd className="font-mono">{pv.createdByAdminUserId}</dd>
+                <dd className="font-mono">
+                  {pv.createdByAdminUserId ?? '—'}
+                </dd>
               </div>
               <div>
                 <dt className="font-medium">생성일</dt>
@@ -94,8 +96,8 @@ export function PromptVersionDetailDrawer({
                 <dd>{formatDate(pv.updatedAt)}</dd>
               </div>
               <div>
-                <dt className="font-medium">활성화일</dt>
-                <dd>{formatDate(pv.activatedAt)}</dd>
+                <dt className="font-medium">기본 버전</dt>
+                <dd>{pv.isDefault ? '예' : '아니오'}</dd>
               </div>
             </dl>
 
@@ -104,7 +106,17 @@ export function PromptVersionDetailDrawer({
                 config 스냅샷
               </h4>
               <pre className="max-h-[40vh] overflow-auto rounded-md border border-slate-200 bg-slate-50 p-3 font-mono text-xs text-slate-800">
-                {JSON.stringify(pv.config, null, 2)}
+                {JSON.stringify(
+                  {
+                    globalInstruction: pv.globalInstruction,
+                    domainInstructions: pv.domainInstructions,
+                    safetyInstruction: pv.safetyInstruction,
+                    repairInstruction: pv.repairInstruction,
+                    temperatureByDomain: pv.temperatureByDomain,
+                  },
+                  null,
+                  2,
+                )}
               </pre>
             </section>
           </div>

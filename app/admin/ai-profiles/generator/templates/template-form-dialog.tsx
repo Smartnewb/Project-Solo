@@ -111,9 +111,8 @@ export function TemplateFormDialog({ open, onOpenChange, template }: Props) {
   }, [open, template]);
 
   const promptVersionsQuery = useQuery({
-    queryKey: aiProfileGeneratorKeys.promptVersionList({ status: 'active' }),
-    queryFn: () =>
-      aiProfileGenerator.listPromptVersions({ status: 'active' }),
+    queryKey: aiProfileGeneratorKeys.promptVersionList({ isActive: true }),
+    queryFn: () => aiProfileGenerator.listPromptVersions({ isActive: true }),
     enabled: open,
   });
 
@@ -162,13 +161,13 @@ export function TemplateFormDialog({ open, onOpenChange, template }: Props) {
       };
 
       if (isEdit && template) {
-        const updateBody: UpdateTemplateBody = {
-          expectedVersion: template.version,
-          ...createBody,
-        };
-        return aiProfileGenerator.updateTemplate(template.id, updateBody);
+        const updateBody: UpdateTemplateBody = { ...createBody };
+        return aiProfileGenerator.updateGenerationTemplate(
+          template.id,
+          updateBody,
+        );
       }
-      return aiProfileGenerator.createTemplate(createBody);
+      return aiProfileGenerator.createGenerationTemplate(createBody);
     },
     onSuccess: () => {
       toast.success(isEdit ? '템플릿이 수정되었습니다.' : '템플릿이 생성되었습니다.');

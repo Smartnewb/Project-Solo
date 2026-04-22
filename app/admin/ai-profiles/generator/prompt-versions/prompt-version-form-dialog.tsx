@@ -6,7 +6,6 @@ import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
 import type {
   CreatePromptVersionBody,
   PromptVersion,
-  PromptVersionConfig,
   UpdatePromptVersionBody,
 } from '@/app/types/ai-profile-generator';
 import { useToast } from '@/shared/ui/admin/toast';
@@ -39,6 +38,7 @@ interface FormState {
   name: string;
   description: string;
   config: PromptVersionConfigFieldsValue;
+  isDefault: boolean;
 }
 
 function emptyConfig(): PromptVersionConfigFieldsValue {
@@ -57,19 +57,20 @@ function initState(pv: PromptVersion | null): FormState {
       name: '',
       description: '',
       config: emptyConfig(),
+      isDefault: false,
     };
   }
-  const { config } = pv;
   return {
     name: pv.name,
     description: pv.description ?? '',
     config: {
-      globalInstruction: config.globalInstruction,
-      domainInstructions: config.domainInstructions ?? {},
-      safetyInstruction: config.safetyInstruction ?? '',
-      repairInstruction: config.repairInstruction ?? '',
-      temperatureByDomain: config.temperatureByDomain ?? {},
+      globalInstruction: pv.globalInstruction ?? '',
+      domainInstructions: pv.domainInstructions ?? {},
+      safetyInstruction: pv.safetyInstruction ?? '',
+      repairInstruction: pv.repairInstruction ?? '',
+      temperatureByDomain: pv.temperatureByDomain ?? {},
     },
+    isDefault: pv.isDefault,
   };
 }
 
@@ -79,7 +80,7 @@ export function PromptVersionFormDialog({
   promptVersion,
 }: Props) {
   const isEdit = promptVersion !== null;
-  const editDisabled = isEdit && promptVersion.status !== 'draft';
+  const editDisabled = isEdit && promptVersion.status === 'archived';
   const toast = useToast();
   const qc = useQueryClient();
   const handleError = useAiProfileErrorHandler(
@@ -100,10 +101,6 @@ export function PromptVersionFormDialog({
     mutationFn: async () => {
       const name = form.name.trim();
       if (!name) throw new Error('이름을 입력하세요.');
-      const globalInstruction = form.config.globalInstruction.trim();
-      if (!globalInstruction) {
-        throw new Error('글로벌 지시문을 입력하세요.');
-      }
 
       const domainInstructions =
         Object.keys(form.config.domainInstructions).length > 0
@@ -114,20 +111,18 @@ export function PromptVersionFormDialog({
           ? form.config.temperatureByDomain
           : undefined;
 
-      const config: PromptVersionConfig = {
-        globalInstruction,
-        domainInstructions,
-        safetyInstruction: form.config.safetyInstruction.trim() || undefined,
-        repairInstruction: form.config.repairInstruction.trim() || undefined,
-        temperatureByDomain,
-      };
+      const globalInstruction =
+        form.config.globalInstruction.trim() || undefined;
 
       if (isEdit && promptVersion) {
         const body: UpdatePromptVersionBody = {
-          expectedVersion: promptVersion.version,
           name,
           description: form.description.trim() || undefined,
-          config,
+          globalInstruction,
+          domainInstructions,
+          safetyInstruction: form.config.safetyInstruction.trim() || undefined,
+          repairInstruction: form.config.repairInstruction.trim() || undefined,
+          temperatureByDomain,
         };
         return aiProfileGenerator.updatePromptVersion(promptVersion.id, body);
       }
@@ -135,7 +130,12 @@ export function PromptVersionFormDialog({
       const createBody: CreatePromptVersionBody = {
         name,
         description: form.description.trim() || undefined,
-        config,
+        globalInstruction,
+        domainInstructions,
+        safetyInstruction: form.config.safetyInstruction.trim() || undefined,
+        repairInstruction: form.config.repairInstruction.trim() || undefined,
+        temperatureByDomain,
+        isDefault: form.isDefault || undefined,
       };
       return aiProfileGenerator.createPromptVersion(createBody);
     },
@@ -172,7 +172,7 @@ export function PromptVersionFormDialog({
           </DialogTitle>
           <DialogDescription>
             {editDisabled
-              ? '활성화되었거나 아카이브된 버전은 편집할 수 없습니다. 복제해 새 draft를 만드세요.'
+              ? '아카이브된 버전은 편집할 수 없습니다. 새 버전을 생성하세요.'
               : '글로벌/도메인별 지시문과 safety, repair, temperature를 구조화된 폼으로 관리합니다.'}
           </DialogDescription>
         </DialogHeader>
@@ -207,6 +207,22 @@ export function PromptVersionFormDialog({
               rows={2}
             />
           </div>
+
+          {!isEdit ? (
+            <label className="flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={form.isDefault}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    isDefault: event.target.checked,
+                  }))
+                }
+              />
+              생성 즉시 기본 프롬프트 버전으로 설정
+            </label>
+          ) : null}
 
           <PromptVersionConfigFields
             value={form.config}

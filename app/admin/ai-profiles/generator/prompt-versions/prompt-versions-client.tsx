@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   keepPreviousData,
   useMutation,
@@ -12,7 +12,6 @@ import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
 import type {
   PromptVersion,
   PromptVersionListQuery,
-  PromptVersionStatus,
 } from '@/app/types/ai-profile-generator';
 import { Alert, AlertDescription } from '@/shared/ui/alert';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog';
@@ -37,13 +36,10 @@ import {
 } from '@/shared/ui/table';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
 import { formatDate } from '../_shared/format';
-import { PaginationFooter } from '../_shared/pagination-footer';
 import {
   PROMPT_VERSION_STATUS_LABEL,
-  PROMPT_VERSION_STATUS_VALUES,
   PROMPT_VERSION_STATUS_VARIANT,
 } from '../_shared/status';
-import { useQuerySyncedState } from '../_shared/use-query-synced-state';
 import { GeneratorTabs } from '../_tabs';
 import { useAiProfileErrorHandler } from '../_shared-error';
 import { PromptVersionDetailDrawer } from './prompt-version-detail-drawer';
@@ -51,46 +47,18 @@ import { PromptVersionFormDialog } from './prompt-version-form-dialog';
 
 const DEFAULT_LIMIT = 20;
 
-const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
+type ActiveFilter = 'all' | 'active' | 'archived';
+
+const ACTIVE_OPTIONS: Array<{ value: ActiveFilter; label: string }> = [
   { value: 'all', label: '전체 상태' },
-  ...PROMPT_VERSION_STATUS_VALUES.map((v) => ({
-    value: v,
-    label: PROMPT_VERSION_STATUS_LABEL[v],
-  })),
+  { value: 'active', label: '활성' },
+  { value: 'archived', label: '아카이브' },
 ];
 
-type StatusFilter = PromptVersionStatus | 'all';
-
-function parseQueryFromURL(
-  params: URLSearchParams,
-): PromptVersionListQuery {
-  const statusRaw = params.get('status');
-  const status: StatusFilter | undefined = (
-    ['draft', 'active', 'archived', 'all'] as const
-  ).includes(statusRaw as StatusFilter)
-    ? (statusRaw as StatusFilter)
-    : undefined;
-
-  const page = Number(params.get('page'));
-  const limit = Number(params.get('limit'));
-
-  return {
-    status,
-    q: params.get('q') ?? undefined,
-    page: Number.isFinite(page) && page > 0 ? page : 1,
-    limit: Number.isFinite(limit) && limit > 0 ? limit : DEFAULT_LIMIT,
-  };
-}
-
-function serializeQuery(query: PromptVersionListQuery): URLSearchParams {
-  const params = new URLSearchParams();
-  if (query.status && query.status !== 'all')
-    params.set('status', query.status);
-  if (query.q) params.set('q', query.q);
-  if (query.page && query.page > 1) params.set('page', String(query.page));
-  if (query.limit && query.limit !== DEFAULT_LIMIT)
-    params.set('limit', String(query.limit));
-  return params;
+function activeFilterToFlag(filter: ActiveFilter): boolean | undefined {
+  if (filter === 'active') return true;
+  if (filter === 'archived') return false;
+  return undefined;
 }
 
 export function PromptVersionsClient() {
@@ -101,23 +69,38 @@ export function PromptVersionsClient() {
     aiProfileGeneratorKeys.promptVersions(),
   );
 
-  const [query, setQuery] = useQuerySyncedState<PromptVersionListQuery>({
-    parse: parseQueryFromURL,
-    serialize: serializeQuery,
-  });
-  const [searchInput, setSearchInput] = useState<string>(() => query.q ?? '');
+  const [q, setQ] = useState('');
+  const [debouncedQ, setDebouncedQ] = useState('');
+  const [activeFilter, setActiveFilter] = useState<ActiveFilter>('all');
+  const [cursor, setCursor] = useState<string | undefined>();
+  const [accumulated, setAccumulated] = useState<PromptVersion[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPv, setEditingPv] = useState<PromptVersion | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
 
   useEffect(() => {
-    const trimmed = searchInput.trim();
-    if ((query.q ?? '') === trimmed) return;
     const t = setTimeout(() => {
-      setQuery((prev) => ({ ...prev, q: trimmed || undefined, page: 1 }));
+      setDebouncedQ(q.trim());
+      setCursor(undefined);
+      setAccumulated([]);
     }, 300);
     return () => clearTimeout(t);
-  }, [searchInput, query.q]);
+  }, [q]);
+
+  useEffect(() => {
+    setCursor(undefined);
+    setAccumulated([]);
+  }, [activeFilter]);
+
+  const query: PromptVersionListQuery = useMemo(
+    () => ({
+      q: debouncedQ || undefined,
+      limit: DEFAULT_LIMIT,
+      cursor,
+      isActive: activeFilterToFlag(activeFilter),
+    }),
+    [debouncedQ, cursor, activeFilter],
+  );
 
   const listQuery = useQuery({
     queryKey: aiProfileGeneratorKeys.promptVersionList(query),
@@ -125,13 +108,23 @@ export function PromptVersionsClient() {
     placeholderData: keepPreviousData,
   });
 
-  const activateMutation = useMutation({
-    mutationFn: (id: string) => aiProfileGenerator.activatePromptVersion(id),
+  useEffect(() => {
+    if (!listQuery.data) return;
+    setAccumulated((prev) =>
+      cursor ? [...prev, ...listQuery.data.items] : listQuery.data.items,
+    );
+  }, [listQuery.data, cursor]);
+
+  const setDefaultMutation = useMutation({
+    mutationFn: (id: string) =>
+      aiProfileGenerator.setDefaultPromptVersion(id),
     onSuccess: () => {
-      toast.success('프롬프트 버전을 활성화했습니다.');
+      toast.success('기본 프롬프트 버전으로 설정했습니다.');
       qc.invalidateQueries({
         queryKey: aiProfileGeneratorKeys.promptVersions(),
       });
+      setCursor(undefined);
+      setAccumulated([]);
     },
     onError: handleError,
   });
@@ -143,6 +136,8 @@ export function PromptVersionsClient() {
       qc.invalidateQueries({
         queryKey: aiProfileGeneratorKeys.promptVersions(),
       });
+      setCursor(undefined);
+      setAccumulated([]);
     },
     onError: handleError,
   });
@@ -157,15 +152,15 @@ export function PromptVersionsClient() {
     setDialogOpen(true);
   };
 
-  const handleActivate = async (pv: PromptVersion) => {
+  const handleSetDefault = async (pv: PromptVersion) => {
     const ok = await confirm({
-      title: '프롬프트 버전 활성화',
-      message: `"${pv.name}" 을 활성화하시겠습니까? 활성화 시 현재 active 버전은 자동으로 archive 됩니다.`,
-      confirmText: '활성화',
+      title: '기본 프롬프트 버전 설정',
+      message: `"${pv.name}" 을 기본 프롬프트 버전으로 설정하시겠습니까?`,
+      confirmText: '설정',
       cancelText: '취소',
       severity: 'warning',
     });
-    if (ok) activateMutation.mutate(pv.id);
+    if (ok) setDefaultMutation.mutate(pv.id);
   };
 
   const handleArchive = async (pv: PromptVersion) => {
@@ -179,11 +174,7 @@ export function PromptVersionsClient() {
     if (ok) archiveMutation.mutate(pv.id);
   };
 
-  const items = listQuery.data?.items ?? [];
-  const total = listQuery.data?.total ?? 0;
-  const page = query.page ?? 1;
-  const limit = query.limit ?? DEFAULT_LIMIT;
-  const totalPages = Math.max(1, Math.ceil(total / limit));
+  const nextCursor = listQuery.data?.nextCursor ?? null;
 
   return (
     <section className="space-y-4 px-6 py-8">
@@ -209,28 +200,22 @@ export function PromptVersionsClient() {
         <div className="relative">
           <Search className="pointer-events-none absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
+            value={q}
+            onChange={(event) => setQ(event.target.value)}
             placeholder="이름 검색"
             className="w-64 pl-8"
           />
         </div>
         <div className="w-44">
           <Select
-            value={query.status ?? 'all'}
-            onValueChange={(value) =>
-              setQuery((prev) => ({
-                ...prev,
-                status: value === 'all' ? undefined : (value as StatusFilter),
-                page: 1,
-              }))
-            }
+            value={activeFilter}
+            onValueChange={(value) => setActiveFilter(value as ActiveFilter)}
           >
             <SelectTrigger>
               <SelectValue placeholder="상태" />
             </SelectTrigger>
             <SelectContent>
-              {STATUS_OPTIONS.map((opt) => (
+              {ACTIVE_OPTIONS.map((opt) => (
                 <SelectItem key={opt.value} value={opt.value}>
                   {opt.label}
                 </SelectItem>
@@ -254,14 +239,14 @@ export function PromptVersionsClient() {
             <TableRow>
               <TableHead>이름</TableHead>
               <TableHead className="w-24">상태</TableHead>
+              <TableHead className="w-20">기본</TableHead>
               <TableHead className="w-16 text-right">버전</TableHead>
               <TableHead className="w-40">생성일</TableHead>
-              <TableHead className="w-40">활성화일</TableHead>
               <TableHead className="w-72 text-right">액션</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {listQuery.isLoading ? (
+            {listQuery.isLoading && accumulated.length === 0 ? (
               Array.from({ length: 5 }).map((_, idx) => (
                 <TableRow key={`skeleton-${idx}`}>
                   <TableCell colSpan={6}>
@@ -269,7 +254,7 @@ export function PromptVersionsClient() {
                   </TableCell>
                 </TableRow>
               ))
-            ) : items.length === 0 ? (
+            ) : accumulated.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={6}
@@ -279,106 +264,85 @@ export function PromptVersionsClient() {
                 </TableCell>
               </TableRow>
             ) : (
-              items.map((pv) => {
-                return (
-                  <TableRow key={pv.id}>
-                    <TableCell className="font-medium text-slate-900">
-                      {pv.name}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={PROMPT_VERSION_STATUS_VARIANT[pv.status]}>
-                        {PROMPT_VERSION_STATUS_LABEL[pv.status]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-mono text-xs text-slate-600">
-                      v{pv.version}
-                    </TableCell>
-                    <TableCell className="text-slate-500">
-                      {formatDate(pv.createdAt)}
-                    </TableCell>
-                    <TableCell className="text-slate-500">
-                      {formatDate(pv.activatedAt)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        {pv.status === 'draft' ? (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEdit(pv)}
-                            >
-                              편집
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleActivate(pv)}
-                            >
-                              활성화
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleArchive(pv)}
-                            >
-                              아카이브
-                            </Button>
-                          </>
-                        ) : pv.status === 'active' ? (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setDetailId(pv.id)}
-                            >
-                              상세
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleArchive(pv)}
-                            >
-                              아카이브
-                            </Button>
-                          </>
-                        ) : (
+              accumulated.map((pv) => (
+                <TableRow key={pv.id}>
+                  <TableCell className="font-medium text-slate-900">
+                    {pv.name}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={PROMPT_VERSION_STATUS_VARIANT[pv.status]}>
+                      {PROMPT_VERSION_STATUS_LABEL[pv.status]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {pv.isDefault ? (
+                      <Badge variant="default">기본</Badge>
+                    ) : null}
+                  </TableCell>
+                  <TableCell className="text-right font-mono text-xs text-slate-600">
+                    v{pv.version}
+                  </TableCell>
+                  <TableCell className="text-slate-500">
+                    {formatDate(pv.createdAt)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setDetailId(pv.id)}
+                      >
+                        상세
+                      </Button>
+                      {pv.status !== 'archived' ? (
+                        <>
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setDetailId(pv.id)}
+                            onClick={() => handleEdit(pv)}
                           >
-                            상세
+                            편집
                           </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
+                          {!pv.isDefault ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleSetDefault(pv)}
+                            >
+                              기본 설정
+                            </Button>
+                          ) : null}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleArchive(pv)}
+                          >
+                            아카이브
+                          </Button>
+                        </>
+                      ) : null}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
             )}
           </TableBody>
         </Table>
       </div>
 
-      <PaginationFooter
-        total={total}
-        page={page}
-        totalPages={totalPages}
-        disabled={listQuery.isFetching}
-        onPrev={() =>
-          setQuery((prev) => ({
-            ...prev,
-            page: Math.max(1, (prev.page ?? 1) - 1),
-          }))
-        }
-        onNext={() =>
-          setQuery((prev) => ({
-            ...prev,
-            page: Math.min(totalPages, (prev.page ?? 1) + 1),
-          }))
-        }
-      />
+      <div className="flex items-center justify-between text-xs text-slate-500">
+        <span>표시 중 {accumulated.length}건</span>
+        {nextCursor ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCursor(nextCursor)}
+            disabled={listQuery.isFetching}
+          >
+            {listQuery.isFetching ? '불러오는 중…' : '더 보기'}
+          </Button>
+        ) : null}
+      </div>
 
       <PromptVersionFormDialog
         open={dialogOpen}
