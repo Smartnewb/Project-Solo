@@ -60,7 +60,7 @@ export function PublishDialog({
     queryFn: () =>
       aiProfileGenerator.publishDryRun(draftId, { expectedVersion: version }),
     enabled: open,
-    staleTime: 0,
+    staleTime: 60_000,
     retry: false,
   });
 

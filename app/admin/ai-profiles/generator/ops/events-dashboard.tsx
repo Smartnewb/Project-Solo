@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
 import { Alert, AlertDescription } from '@/shared/ui/alert';
+import { Button } from '@/shared/ui/button';
 import {
   Card,
   CardContent,
@@ -27,6 +28,8 @@ import {
 } from '@/shared/ui/select';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
 
+const MAX_VISIBLE_SERIES = 8;
+
 const DAY_OPTIONS: Array<{ value: number; label: string }> = [
   { value: 7, label: '7일' },
   { value: 14, label: '14일' },
@@ -35,6 +38,7 @@ const DAY_OPTIONS: Array<{ value: number; label: string }> = [
 
 export function EventsDashboard() {
   const [days, setDays] = useState<number>(7);
+  const [showAll, setShowAll] = useState(false);
 
   const eventsQuery = useQuery({
     queryKey: aiProfileGeneratorKeys.eventCounts(days),
@@ -42,6 +46,8 @@ export function EventsDashboard() {
   });
 
   const series = eventsQuery.data?.series ?? [];
+  const visibleSeries = showAll ? series : series.slice(0, MAX_VISIBLE_SERIES);
+  const hiddenCount = series.length - MAX_VISIBLE_SERIES;
 
   return (
     <section className="space-y-3">
@@ -81,29 +87,42 @@ export function EventsDashboard() {
           표시할 이벤트가 없습니다.
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          {series.map((s) => (
-            <Card key={s.event}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold text-slate-800">
-                  {s.event}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div style={{ width: '100%', height: 200 }}>
-                  <ResponsiveContainer>
-                    <BarChart data={s.buckets}>
-                      <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 10 }} />
-                      <Tooltip />
-                      <Bar dataKey="count" fill="#0ea5e9" radius={[2, 2, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {visibleSeries.map((s) => (
+              <Card key={s.event}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-semibold text-slate-800">
+                    {s.event}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div style={{ width: '100%', height: 200 }}>
+                    <ResponsiveContainer>
+                      <BarChart data={s.buckets}>
+                        <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                        <YAxis allowDecimals={false} tick={{ fontSize: 10 }} />
+                        <Tooltip />
+                        <Bar dataKey="count" fill="#0ea5e9" radius={[2, 2, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          {series.length > MAX_VISIBLE_SERIES && !showAll ? (
+            <div className="flex justify-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAll(true)}
+              >
+                + {hiddenCount}개 더 보기
+              </Button>
+            </div>
+          ) : null}
+        </>
       )}
     </section>
   );

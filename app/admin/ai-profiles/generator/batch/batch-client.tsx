@@ -90,7 +90,13 @@ export function BatchClient() {
     queryKey: aiProfileGeneratorKeys.batchJobList(query),
     queryFn: () => aiProfileGenerator.listBatchJobs(query),
     placeholderData: keepPreviousData,
-    refetchInterval: POLL_INTERVAL_MS,
+    refetchInterval: (q) => {
+      const items = q.state.data?.items ?? [];
+      const hasActive = items.some(
+        (i) => i.status === 'pending' || i.status === 'running',
+      );
+      return hasActive ? POLL_INTERVAL_MS : false;
+    },
   });
 
   const items: BatchJob[] = listQuery.data?.items ?? [];

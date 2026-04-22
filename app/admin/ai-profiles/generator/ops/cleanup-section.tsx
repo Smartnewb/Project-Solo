@@ -28,7 +28,11 @@ export function CleanupSection() {
   const statusQuery = useQuery({
     queryKey: aiProfileGeneratorKeys.cleanupStatus(),
     queryFn: () => aiProfileGenerator.getCleanupStatus(),
-    refetchInterval: 30_000,
+    refetchInterval: (q) => {
+      const data = q.state.data;
+      if (!data) return 30_000;
+      return data.pendingCandidates > 0 ? 30_000 : false;
+    },
   });
 
   const runMutation = useMutation({
