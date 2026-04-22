@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from '@/shared/ui/dialog';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
+import { PhotoActionMenu } from './photo-action-menu';
 import { useDraftErrorHandler } from './use-draft-mutation';
 
 interface Props {
@@ -46,7 +47,7 @@ const MODERATION_VARIANT: Record<
 
 export function GalleryPanel({
   draftId,
-  version: _version,
+  version,
   gallery,
   readOnly = false,
 }: Props) {
@@ -96,6 +97,12 @@ export function GalleryPanel({
                     <X className="h-3.5 w-3.5" />
                   </button>
                 ) : null}
+                <PhotoActionMenu
+                  draftId={draftId}
+                  version={version}
+                  photo={photo}
+                  readOnly={readOnly}
+                />
                 <div className="aspect-square overflow-hidden rounded-md bg-slate-50">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img

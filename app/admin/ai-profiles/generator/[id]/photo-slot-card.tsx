@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Upload } from 'lucide-react';
 import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
 import type {
   AiProfilePhoto,
@@ -19,6 +20,7 @@ import {
 } from '@/shared/ui/select';
 import { Textarea } from '@/shared/ui/textarea';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
+import { MediaUploadDialog } from './media-upload-dialog';
 import { useDraftErrorHandler } from './use-draft-mutation';
 
 interface Props {
@@ -42,6 +44,7 @@ export function PhotoSlotCard({
 
   const [style, setStyle] = useState<PhotoStyle>('portrait');
   const [customPrompt, setCustomPrompt] = useState('');
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   const generateMutation = useMutation({
     mutationFn: () =>
@@ -107,7 +110,16 @@ export function PhotoSlotCard({
                 />
               </div>
             ) : null}
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setUploadOpen(true)}
+                disabled={generateMutation.isPending}
+              >
+                <Upload className="mr-1 h-3.5 w-3.5" />
+                파일 업로드
+              </Button>
               <Button
                 size="sm"
                 onClick={() => generateMutation.mutate()}
@@ -123,6 +135,13 @@ export function PhotoSlotCard({
           </p>
         )}
       </CardContent>
+
+      <MediaUploadDialog
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+        draftId={draftId}
+        version={version}
+      />
     </Card>
   );
 }
