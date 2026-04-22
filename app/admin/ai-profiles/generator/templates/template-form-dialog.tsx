@@ -56,9 +56,9 @@ function emptyPolicy(): TemplatePolicyFieldsValue {
     domainInstructions: {},
     randomizationPolicy: {},
     safetyPolicy: {},
-    sourceDataPolicyJson: '',
-    imagePolicyJson: '',
-    domainBlueprintsJson: '',
+    sourceDataPolicy: {},
+    imagePolicy: {},
+    domainBlueprints: {},
   };
 }
 
@@ -77,15 +77,9 @@ function initState(template: AiProfileTemplate | null): FormState {
     domainInstructions: template.domainInstructions ?? {},
     randomizationPolicy: template.randomizationPolicy ?? {},
     safetyPolicy: template.safetyPolicy ?? {},
-    sourceDataPolicyJson: template.sourceDataPolicy
-      ? JSON.stringify(template.sourceDataPolicy, null, 2)
-      : '',
-    imagePolicyJson: template.imagePolicy
-      ? JSON.stringify(template.imagePolicy, null, 2)
-      : '',
-    domainBlueprintsJson: template.domainBlueprints
-      ? JSON.stringify(template.domainBlueprints, null, 2)
-      : '',
+    sourceDataPolicy: template.sourceDataPolicy ?? {},
+    imagePolicy: template.imagePolicy ?? {},
+    domainBlueprints: template.domainBlueprints ?? {},
   };
 
   return {
@@ -95,26 +89,6 @@ function initState(template: AiProfileTemplate | null): FormState {
     promptVersionId: template.promptVersionId ?? PROMPT_VERSION_NONE,
     policy,
   };
-}
-
-function parseJsonObject<T = Record<string, unknown>>(
-  raw: string,
-  label: string,
-): { ok: true; value: T | undefined } | { ok: false; error: string } {
-  const trimmed = raw.trim();
-  if (!trimmed) return { ok: true, value: undefined };
-  try {
-    const parsed = JSON.parse(trimmed);
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-      return { ok: false, error: `${label}: 객체(JSON) 형식이 필요합니다.` };
-    }
-    return { ok: true, value: parsed as T };
-  } catch (err) {
-    return {
-      ok: false,
-      error: `${label}: JSON 파싱 실패 (${(err as Error).message})`,
-    };
-  }
 }
 
 export function TemplateFormDialog({ open, onOpenChange, template }: Props) {
@@ -151,24 +125,6 @@ export function TemplateFormDialog({ open, onOpenChange, template }: Props) {
         throw new Error('기본 지시문은 10자 이상이어야 합니다.');
       }
 
-      const sourceDataParsed = parseJsonObject(
-        form.policy.sourceDataPolicyJson,
-        '원본 데이터 정책',
-      );
-      if (!sourceDataParsed.ok) throw new Error(sourceDataParsed.error);
-
-      const imageParsed = parseJsonObject(
-        form.policy.imagePolicyJson,
-        '이미지 정책',
-      );
-      if (!imageParsed.ok) throw new Error(imageParsed.error);
-
-      const blueprintsParsed = parseJsonObject(
-        form.policy.domainBlueprintsJson,
-        '도메인 블루프린트',
-      );
-      if (!blueprintsParsed.ok) throw new Error(blueprintsParsed.error);
-
       const domainInstructions =
         Object.keys(form.policy.domainInstructions).length > 0
           ? form.policy.domainInstructions
@@ -181,6 +137,18 @@ export function TemplateFormDialog({ open, onOpenChange, template }: Props) {
         Object.keys(form.policy.safetyPolicy).length > 0
           ? form.policy.safetyPolicy
           : undefined;
+      const sourceDataPolicy =
+        Object.keys(form.policy.sourceDataPolicy).length > 0
+          ? form.policy.sourceDataPolicy
+          : undefined;
+      const imagePolicy =
+        Object.keys(form.policy.imagePolicy).length > 0
+          ? form.policy.imagePolicy
+          : undefined;
+      const domainBlueprints =
+        Object.keys(form.policy.domainBlueprints).length > 0
+          ? form.policy.domainBlueprints
+          : undefined;
 
       const createBody: CreateTemplateBody = {
         name,
@@ -188,10 +156,10 @@ export function TemplateFormDialog({ open, onOpenChange, template }: Props) {
         baseInstruction,
         domainInstructions,
         randomizationPolicy,
-        sourceDataPolicy: sourceDataParsed.value,
-        imagePolicy: imageParsed.value,
+        sourceDataPolicy,
+        imagePolicy,
         safetyPolicy,
-        domainBlueprints: blueprintsParsed.value,
+        domainBlueprints,
         promptVersionId:
           form.promptVersionId !== PROMPT_VERSION_NONE
             ? form.promptVersionId

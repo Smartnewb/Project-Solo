@@ -14,21 +14,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/ui/select';
-import { Textarea } from '@/shared/ui/textarea';
 import {
   DOMAIN_LABEL,
   FULL_DOMAINS,
 } from '@/app/types/ai-profile-generator';
 import { KeyedListInput } from '../_shared/keyed-list-input';
 import { StringListInput } from '../_shared/string-list-input';
+import { DomainBlueprintsFields } from './domain-blueprints-fields';
+import { ImagePolicyFields } from './image-policy-fields';
+import { SourceDataPolicyFields } from './source-data-policy-fields';
 
 export interface TemplatePolicyFieldsValue {
   domainInstructions: Record<string, string>;
   randomizationPolicy: Record<string, unknown>;
   safetyPolicy: Record<string, unknown>;
-  sourceDataPolicyJson: string;
-  imagePolicyJson: string;
-  domainBlueprintsJson: string;
+  sourceDataPolicy: Record<string, unknown>;
+  imagePolicy: Record<string, unknown>;
+  domainBlueprints: Record<string, unknown>;
 }
 
 interface Props {
@@ -203,48 +205,26 @@ export function TemplatePolicyFields({ value, onChange, disabled }: Props) {
         </div>
       </Section>
 
-      <Section
-        title="원본 데이터 정책 (raw JSON)"
-        description="고급 — 백엔드 스키마 참조. 빈 값이면 미지정."
-      >
-        <Textarea
-          value={value.sourceDataPolicyJson}
-          onChange={(event) =>
-            update('sourceDataPolicyJson', event.target.value)
-          }
-          rows={5}
-          className="font-mono text-xs"
-          placeholder={'{\n  "pinnedFields": ["age"]\n}'}
+      <Section title="원본 데이터 정책">
+        <SourceDataPolicyFields
+          value={value.sourceDataPolicy}
+          onChange={(next) => update('sourceDataPolicy', next)}
           disabled={disabled}
         />
       </Section>
 
-      <Section
-        title="이미지 정책 (raw JSON)"
-        description="고급 — 백엔드 스키마 참조. 빈 값이면 미지정."
-      >
-        <Textarea
-          value={value.imagePolicyJson}
-          onChange={(event) => update('imagePolicyJson', event.target.value)}
-          rows={5}
-          className="font-mono text-xs"
-          placeholder={'{\n  "style": "portrait"\n}'}
+      <Section title="이미지 정책">
+        <ImagePolicyFields
+          value={value.imagePolicy}
+          onChange={(next) => update('imagePolicy', next)}
           disabled={disabled}
         />
       </Section>
 
-      <Section
-        title="도메인 블루프린트 (raw JSON)"
-        description="고급 — 백엔드 스키마 참조. 빈 값이면 미지정."
-      >
-        <Textarea
-          value={value.domainBlueprintsJson}
-          onChange={(event) =>
-            update('domainBlueprintsJson', event.target.value)
-          }
-          rows={5}
-          className="font-mono text-xs"
-          placeholder={'{\n  "personalityCore": {}\n}'}
+      <Section title="도메인 블루프린트">
+        <DomainBlueprintsFields
+          value={value.domainBlueprints}
+          onChange={(next) => update('domainBlueprints', next)}
           disabled={disabled}
         />
       </Section>
