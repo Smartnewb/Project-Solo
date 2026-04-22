@@ -6,7 +6,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Plus, Search } from 'lucide-react';
 import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
 import {
-  MVP_DOMAINS,
+  GENERATABLE_DOMAINS,
   type AiProfileDraftListQuery,
   type AiProfileDraftStatus,
 } from '@/app/types/ai-profile-generator';
@@ -94,7 +94,7 @@ export function GeneratorListClient() {
   });
 
   const items = listQuery.data?.items ?? [];
-  const total = listQuery.data?.total ?? 0;
+  const total = listQuery.data?.totalCount ?? 0;
   const page = query.page ?? 1;
   const limit = query.limit ?? DEFAULT_LIMIT;
   const totalPages = Math.max(1, Math.ceil(total / limit));
@@ -188,7 +188,7 @@ export function GeneratorListClient() {
               </tr>
             ) : (
               items.map((draft) => {
-                const readyCount = MVP_DOMAINS.filter(
+                const readyCount = GENERATABLE_DOMAINS.filter(
                   (d) => draft.domainStatus?.[d] === 'ready',
                 ).length;
                 return (
@@ -208,7 +208,7 @@ export function GeneratorListClient() {
                       </Badge>
                     </td>
                     <td className="px-4 py-2 text-slate-700">
-                      {readyCount} / {MVP_DOMAINS.length}
+                      {readyCount} / {GENERATABLE_DOMAINS.length}
                     </td>
                     <td className="px-4 py-2 text-slate-500">
                       {formatDate(draft.updatedAt ?? draft.createdAt)}
