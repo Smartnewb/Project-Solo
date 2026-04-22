@@ -24,6 +24,10 @@ import { Label } from '@/shared/ui/label';
 import { Textarea } from '@/shared/ui/textarea';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
 import { useAiProfileErrorHandler } from '../_shared-error';
+import {
+  PromptVersionConfigFields,
+  type PromptVersionConfigFieldsValue,
+} from './prompt-version-config-fields';
 
 interface Props {
   open: boolean;
@@ -34,11 +38,17 @@ interface Props {
 interface FormState {
   name: string;
   description: string;
-  globalInstruction: string;
-  domainInstructionsJson: string;
-  safetyInstruction: string;
-  repairInstruction: string;
-  temperatureByDomainJson: string;
+  config: PromptVersionConfigFieldsValue;
+}
+
+function emptyConfig(): PromptVersionConfigFieldsValue {
+  return {
+    globalInstruction: '',
+    domainInstructions: {},
+    safetyInstruction: '',
+    repairInstruction: '',
+    temperatureByDomain: {},
+  };
 }
 
 function initState(pv: PromptVersion | null): FormState {
@@ -46,47 +56,21 @@ function initState(pv: PromptVersion | null): FormState {
     return {
       name: '',
       description: '',
-      globalInstruction: '',
-      domainInstructionsJson: '',
-      safetyInstruction: '',
-      repairInstruction: '',
-      temperatureByDomainJson: '',
+      config: emptyConfig(),
     };
   }
   const { config } = pv;
   return {
     name: pv.name,
     description: pv.description ?? '',
-    globalInstruction: config.globalInstruction,
-    domainInstructionsJson: config.domainInstructions
-      ? JSON.stringify(config.domainInstructions, null, 2)
-      : '',
-    safetyInstruction: config.safetyInstruction ?? '',
-    repairInstruction: config.repairInstruction ?? '',
-    temperatureByDomainJson: config.temperatureByDomain
-      ? JSON.stringify(config.temperatureByDomain, null, 2)
-      : '',
+    config: {
+      globalInstruction: config.globalInstruction,
+      domainInstructions: config.domainInstructions ?? {},
+      safetyInstruction: config.safetyInstruction ?? '',
+      repairInstruction: config.repairInstruction ?? '',
+      temperatureByDomain: config.temperatureByDomain ?? {},
+    },
   };
-}
-
-function parseJsonObject<T = Record<string, unknown>>(
-  raw: string,
-  label: string,
-): { ok: true; value: T | undefined } | { ok: false; error: string } {
-  const trimmed = raw.trim();
-  if (!trimmed) return { ok: true, value: undefined };
-  try {
-    const parsed = JSON.parse(trimmed);
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-      return { ok: false, error: `${label}: 객체(JSON) 형식이 필요합니다.` };
-    }
-    return { ok: true, value: parsed as T };
-  } catch (err) {
-    return {
-      ok: false,
-      error: `${label}: JSON 파싱 실패 (${(err as Error).message})`,
-    };
-  }
 }
 
 export function PromptVersionFormDialog({
@@ -116,27 +100,26 @@ export function PromptVersionFormDialog({
     mutationFn: async () => {
       const name = form.name.trim();
       if (!name) throw new Error('이름을 입력하세요.');
-      const globalInstruction = form.globalInstruction.trim();
+      const globalInstruction = form.config.globalInstruction.trim();
       if (!globalInstruction) {
         throw new Error('글로벌 지시문을 입력하세요.');
       }
-      const domainParsed = parseJsonObject<Record<string, string>>(
-        form.domainInstructionsJson,
-        '도메인별 지시문',
-      );
-      if (!domainParsed.ok) throw new Error(domainParsed.error);
-      const temperatureParsed = parseJsonObject<Record<string, number>>(
-        form.temperatureByDomainJson,
-        '도메인별 temperature',
-      );
-      if (!temperatureParsed.ok) throw new Error(temperatureParsed.error);
+
+      const domainInstructions =
+        Object.keys(form.config.domainInstructions).length > 0
+          ? form.config.domainInstructions
+          : undefined;
+      const temperatureByDomain =
+        Object.keys(form.config.temperatureByDomain).length > 0
+          ? form.config.temperatureByDomain
+          : undefined;
 
       const config: PromptVersionConfig = {
         globalInstruction,
-        domainInstructions: domainParsed.value,
-        safetyInstruction: form.safetyInstruction.trim() || undefined,
-        repairInstruction: form.repairInstruction.trim() || undefined,
-        temperatureByDomain: temperatureParsed.value,
+        domainInstructions,
+        safetyInstruction: form.config.safetyInstruction.trim() || undefined,
+        repairInstruction: form.config.repairInstruction.trim() || undefined,
+        temperatureByDomain,
       };
 
       if (isEdit && promptVersion) {
@@ -190,7 +173,7 @@ export function PromptVersionFormDialog({
           <DialogDescription>
             {editDisabled
               ? '활성화되었거나 아카이브된 버전은 편집할 수 없습니다. 복제해 새 draft를 만드세요.'
-              : '글로벌/도메인별 지시문과 safety, repair 지시문을 관리합니다.'}
+              : '글로벌/도메인별 지시문과 safety, repair, temperature를 구조화된 폼으로 관리합니다.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -225,91 +208,13 @@ export function PromptVersionFormDialog({
             />
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="pv-global">글로벌 지시문</Label>
-            <Textarea
-              id="pv-global"
-              value={form.globalInstruction}
-              onChange={(event) =>
-                setForm((prev) => ({
-                  ...prev,
-                  globalInstruction: event.target.value,
-                }))
-              }
-              rows={5}
-              placeholder="모든 도메인 생성에 공통으로 적용되는 시스템 프롬프트"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="pv-domain">도메인별 지시문 (JSON, 선택)</Label>
-            <Textarea
-              id="pv-domain"
-              value={form.domainInstructionsJson}
-              onChange={(event) =>
-                setForm((prev) => ({
-                  ...prev,
-                  domainInstructionsJson: event.target.value,
-                }))
-              }
-              rows={5}
-              className="font-mono text-xs"
-              placeholder={
-                '{\n  "personalityCore": "도메인별 지시문",\n  "voice": "..."\n}'
-              }
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="pv-safety">safety 지시문 (선택)</Label>
-            <Textarea
-              id="pv-safety"
-              value={form.safetyInstruction}
-              onChange={(event) =>
-                setForm((prev) => ({
-                  ...prev,
-                  safetyInstruction: event.target.value,
-                }))
-              }
-              rows={3}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="pv-repair">repair 지시문 (선택)</Label>
-            <Textarea
-              id="pv-repair"
-              value={form.repairInstruction}
-              onChange={(event) =>
-                setForm((prev) => ({
-                  ...prev,
-                  repairInstruction: event.target.value,
-                }))
-              }
-              rows={3}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="pv-temperature">
-              도메인별 temperature (JSON, 선택)
-            </Label>
-            <Textarea
-              id="pv-temperature"
-              value={form.temperatureByDomainJson}
-              onChange={(event) =>
-                setForm((prev) => ({
-                  ...prev,
-                  temperatureByDomainJson: event.target.value,
-                }))
-              }
-              rows={4}
-              className="font-mono text-xs"
-              placeholder={
-                '{\n  "personalityCore": 0.8,\n  "voice": 0.6\n}'
-              }
-            />
-          </div>
+          <PromptVersionConfigFields
+            value={form.config}
+            onChange={(next) =>
+              setForm((prev) => ({ ...prev, config: next }))
+            }
+            disabled={editDisabled}
+          />
 
           {validationError ? (
             <p className="text-sm text-rose-600">{validationError}</p>

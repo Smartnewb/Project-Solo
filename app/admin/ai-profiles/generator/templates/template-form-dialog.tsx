@@ -30,6 +30,10 @@ import {
 import { Textarea } from '@/shared/ui/textarea';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
 import { useAiProfileErrorHandler } from '../_shared-error';
+import {
+  TemplatePolicyFields,
+  type TemplatePolicyFieldsValue,
+} from './template-policy-fields';
 
 interface Props {
   open: boolean;
@@ -43,9 +47,19 @@ interface FormState {
   name: string;
   description: string;
   baseInstruction: string;
-  domainInstructionsJson: string;
-  policyJson: string;
   promptVersionId: string;
+  policy: TemplatePolicyFieldsValue;
+}
+
+function emptyPolicy(): TemplatePolicyFieldsValue {
+  return {
+    domainInstructions: {},
+    randomizationPolicy: {},
+    safetyPolicy: {},
+    sourceDataPolicyJson: '',
+    imagePolicyJson: '',
+    domainBlueprintsJson: '',
+  };
 }
 
 function initState(template: AiProfileTemplate | null): FormState {
@@ -54,36 +68,36 @@ function initState(template: AiProfileTemplate | null): FormState {
       name: '',
       description: '',
       baseInstruction: '',
-      domainInstructionsJson: '',
-      policyJson: '',
       promptVersionId: PROMPT_VERSION_NONE,
+      policy: emptyPolicy(),
     };
   }
-  const policy: Record<string, unknown> = {};
-  if (template.randomizationPolicy)
-    policy.randomizationPolicy = template.randomizationPolicy;
-  if (template.sourceDataPolicy)
-    policy.sourceDataPolicy = template.sourceDataPolicy;
-  if (template.imagePolicy) policy.imagePolicy = template.imagePolicy;
-  if (template.safetyPolicy) policy.safetyPolicy = template.safetyPolicy;
-  if (template.domainBlueprints)
-    policy.domainBlueprints = template.domainBlueprints;
+
+  const policy: TemplatePolicyFieldsValue = {
+    domainInstructions: template.domainInstructions ?? {},
+    randomizationPolicy: template.randomizationPolicy ?? {},
+    safetyPolicy: template.safetyPolicy ?? {},
+    sourceDataPolicyJson: template.sourceDataPolicy
+      ? JSON.stringify(template.sourceDataPolicy, null, 2)
+      : '',
+    imagePolicyJson: template.imagePolicy
+      ? JSON.stringify(template.imagePolicy, null, 2)
+      : '',
+    domainBlueprintsJson: template.domainBlueprints
+      ? JSON.stringify(template.domainBlueprints, null, 2)
+      : '',
+  };
 
   return {
     name: template.name,
     description: template.description ?? '',
     baseInstruction: template.baseInstruction,
-    domainInstructionsJson: template.domainInstructions
-      ? JSON.stringify(template.domainInstructions, null, 2)
-      : '',
-    policyJson: Object.keys(policy).length
-      ? JSON.stringify(policy, null, 2)
-      : '',
     promptVersionId: template.promptVersionId ?? PROMPT_VERSION_NONE,
+    policy,
   };
 }
 
-function parseJsonField<T = Record<string, unknown>>(
+function parseJsonObject<T = Record<string, unknown>>(
   raw: string,
   label: string,
 ): { ok: true; value: T | undefined } | { ok: false; error: string } {
@@ -136,32 +150,48 @@ export function TemplateFormDialog({ open, onOpenChange, template }: Props) {
       if (baseInstruction.length < 10) {
         throw new Error('기본 지시문은 10자 이상이어야 합니다.');
       }
-      const domainParsed = parseJsonField<Record<string, string>>(
-        form.domainInstructionsJson,
-        '도메인별 지시문',
-      );
-      if (!domainParsed.ok) throw new Error(domainParsed.error);
-      const policyParsed = parseJsonField(form.policyJson, '기타 정책 JSON');
-      if (!policyParsed.ok) throw new Error(policyParsed.error);
 
-      const policy = (policyParsed.value ?? {}) as Partial<CreateTemplateBody>;
+      const sourceDataParsed = parseJsonObject(
+        form.policy.sourceDataPolicyJson,
+        '원본 데이터 정책',
+      );
+      if (!sourceDataParsed.ok) throw new Error(sourceDataParsed.error);
+
+      const imageParsed = parseJsonObject(
+        form.policy.imagePolicyJson,
+        '이미지 정책',
+      );
+      if (!imageParsed.ok) throw new Error(imageParsed.error);
+
+      const blueprintsParsed = parseJsonObject(
+        form.policy.domainBlueprintsJson,
+        '도메인 블루프린트',
+      );
+      if (!blueprintsParsed.ok) throw new Error(blueprintsParsed.error);
+
+      const domainInstructions =
+        Object.keys(form.policy.domainInstructions).length > 0
+          ? form.policy.domainInstructions
+          : undefined;
+      const randomizationPolicy =
+        Object.keys(form.policy.randomizationPolicy).length > 0
+          ? form.policy.randomizationPolicy
+          : undefined;
+      const safetyPolicy =
+        Object.keys(form.policy.safetyPolicy).length > 0
+          ? form.policy.safetyPolicy
+          : undefined;
 
       const createBody: CreateTemplateBody = {
         name,
         description: form.description.trim() || undefined,
         baseInstruction,
-        domainInstructions: domainParsed.value,
-        randomizationPolicy:
-          (policy.randomizationPolicy as Record<string, unknown>) ?? undefined,
-        sourceDataPolicy:
-          (policy.sourceDataPolicy as Record<string, unknown>) ?? undefined,
-        imagePolicy:
-          (policy.imagePolicy as Record<string, unknown>) ?? undefined,
-        safetyPolicy:
-          (policy.safetyPolicy as Record<string, unknown>) ?? undefined,
-        domainBlueprints:
-          (policy.domainBlueprints as Record<string, unknown>) ?? undefined,
-        lockedFields: policy.lockedFields ?? undefined,
+        domainInstructions,
+        randomizationPolicy,
+        sourceDataPolicy: sourceDataParsed.value,
+        imagePolicy: imageParsed.value,
+        safetyPolicy,
+        domainBlueprints: blueprintsParsed.value,
         promptVersionId:
           form.promptVersionId !== PROMPT_VERSION_NONE
             ? form.promptVersionId
@@ -201,8 +231,8 @@ export function TemplateFormDialog({ open, onOpenChange, template }: Props) {
         <DialogHeader>
           <DialogTitle>{isEdit ? '템플릿 편집' : '새 템플릿 생성'}</DialogTitle>
           <DialogDescription>
-            이름, 기본 지시문, 도메인별 지시문, 프롬프트 버전을 지정합니다. 고급
-            정책 JSON은 선택입니다.
+            이름, 기본 지시문, 도메인별 지시문, 프롬프트 버전, 정책을 구조화된
+            폼으로 관리합니다.
           </DialogDescription>
         </DialogHeader>
 
@@ -252,25 +282,6 @@ export function TemplateFormDialog({ open, onOpenChange, template }: Props) {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="template-domain-instructions">
-              도메인별 지시문 (JSON, 선택)
-            </Label>
-            <Textarea
-              id="template-domain-instructions"
-              value={form.domainInstructionsJson}
-              onChange={(event) =>
-                setForm((prev) => ({
-                  ...prev,
-                  domainInstructionsJson: event.target.value,
-                }))
-              }
-              rows={5}
-              className="font-mono text-xs"
-              placeholder={'{\n  "voice": "말투 지시문",\n  "chatBehavior": "..."\n}'}
-            />
-          </div>
-
-          <div className="space-y-1.5">
             <Label htmlFor="template-prompt-version">
               프롬프트 버전 (선택)
             </Label>
@@ -299,28 +310,12 @@ export function TemplateFormDialog({ open, onOpenChange, template }: Props) {
             ) : null}
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="template-policy">기타 정책 JSON (선택)</Label>
-            <Textarea
-              id="template-policy"
-              value={form.policyJson}
-              onChange={(event) =>
-                setForm((prev) => ({
-                  ...prev,
-                  policyJson: event.target.value,
-                }))
-              }
-              rows={6}
-              className="font-mono text-xs"
-              placeholder={
-                '{\n  "randomizationPolicy": {},\n  "imagePolicy": {},\n  "safetyPolicy": {}\n}'
-              }
-            />
-            <p className="text-xs text-slate-400">
-              randomizationPolicy, sourceDataPolicy, imagePolicy, safetyPolicy,
-              domainBlueprints, lockedFields 키를 한 객체에 담아 입력합니다.
-            </p>
-          </div>
+          <TemplatePolicyFields
+            value={form.policy}
+            onChange={(next) =>
+              setForm((prev) => ({ ...prev, policy: next }))
+            }
+          />
 
           {validationError ? (
             <p className="text-sm text-rose-600">{validationError}</p>
