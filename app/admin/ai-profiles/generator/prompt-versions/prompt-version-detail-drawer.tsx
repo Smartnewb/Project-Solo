@@ -2,7 +2,6 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
-import type { PromptVersionStatus } from '@/app/types/ai-profile-generator';
 import { Badge } from '@/shared/ui/badge';
 import {
   Sheet,
@@ -13,21 +12,15 @@ import {
 } from '@/shared/ui/sheet';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
 import { formatDate } from '../_shared/format';
-import { PROMPT_VERSION_STATUS_LABEL } from '../_shared/status';
+import {
+  PROMPT_VERSION_STATUS_LABEL,
+  PROMPT_VERSION_STATUS_VARIANT,
+} from '../_shared/status';
 
 interface Props {
   promptVersionId: string | null;
   onClose: () => void;
 }
-
-const STATUS_VARIANT: Record<
-  PromptVersionStatus,
-  'default' | 'secondary' | 'outline'
-> = {
-  draft: 'secondary',
-  active: 'default',
-  archived: 'outline',
-};
 
 export function PromptVersionDetailDrawer({
   promptVersionId,
@@ -73,7 +66,7 @@ export function PromptVersionDetailDrawer({
                 <h3 className="text-lg font-semibold text-slate-900">
                   {pv.name}
                 </h3>
-                <Badge variant={STATUS_VARIANT[pv.status]}>
+                <Badge variant={PROMPT_VERSION_STATUS_VARIANT[pv.status]}>
                   {PROMPT_VERSION_STATUS_LABEL[pv.status]}
                 </Badge>
                 <span className="font-mono text-xs text-slate-500">

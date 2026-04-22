@@ -58,3 +58,12 @@ export const PROMPT_VERSION_STATUS_VALUES: PromptVersionStatus[] = [
   'active',
   'archived',
 ];
+
+export const PROMPT_VERSION_STATUS_VARIANT: Record<
+  PromptVersionStatus,
+  'default' | 'secondary' | 'destructive' | 'outline'
+> = {
+  draft: 'secondary',
+  active: 'default',
+  archived: 'outline',
+};

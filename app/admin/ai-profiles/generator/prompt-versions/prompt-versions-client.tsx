@@ -41,6 +41,7 @@ import { PaginationFooter } from '../_shared/pagination-footer';
 import {
   PROMPT_VERSION_STATUS_LABEL,
   PROMPT_VERSION_STATUS_VALUES,
+  PROMPT_VERSION_STATUS_VARIANT,
 } from '../_shared/status';
 import { useQuerySyncedState } from '../_shared/use-query-synced-state';
 import { GeneratorTabs } from '../_tabs';
@@ -57,15 +58,6 @@ const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
     label: PROMPT_VERSION_STATUS_LABEL[v],
   })),
 ];
-
-const STATUS_VARIANT: Record<
-  PromptVersionStatus,
-  'default' | 'secondary' | 'outline'
-> = {
-  draft: 'secondary',
-  active: 'default',
-  archived: 'outline',
-};
 
 type StatusFilter = PromptVersionStatus | 'all';
 
@@ -294,7 +286,7 @@ export function PromptVersionsClient() {
                       {pv.name}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={STATUS_VARIANT[pv.status]}>
+                      <Badge variant={PROMPT_VERSION_STATUS_VARIANT[pv.status]}>
                         {PROMPT_VERSION_STATUS_LABEL[pv.status]}
                       </Badge>
                     </TableCell>
