@@ -120,3 +120,28 @@ REST 관례 기반 추정 — 백엔드 구현 완료 후 수정:
 | POST | `/admin/v2/ai-companions/drafts/:id/apply-template` | apply template |
 
 모든 mutation body는 `expectedVersion: number`를 포함한다고 가정한다.
+
+## Phase 2 추정 Endpoint (구현 시 확정 필요)
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| POST | `/admin/v2/ai-companions/drafts/:id/photos/generate` | `photoPrompt` 기반 photo slot 생성 |
+| POST | `/admin/v2/ai-companions/drafts/:id/photos` | representative image / gallery 항목 수동 등록 |
+| DELETE | `/admin/v2/ai-companions/drafts/:id/photos/:photoId` | 갤러리 항목 제거 |
+| PATCH | `/admin/v2/ai-companions/drafts/:id/representative-image` | 대표 이미지 지정 |
+| POST | `/admin/v2/ai-companions/drafts/:id/publish/dry-run` | Publish 프리뷰 (실 insert 없음) |
+| POST | `/admin/v2/ai-companions/drafts/:id/publish` | Actual publish — `companions` insert |
+| POST | `/admin/v2/ai-companions/drafts/:id/preview-chat` | 3턴 시뮬레이션 (저장 안함) |
+
+### Photo generate body
+
+`{ expectedVersion, style?: 'portrait'|'casual'|'custom', customPrompt?: string }`
+
+### Publish dry-run response
+
+`{ companionPreview: Companion, warnings: ValidationWarning[], blocked: boolean }`
+
+### Preview chat
+
+Request: `{ userMessages: string[] }` (1–3 messages)
+Response: `{ turns: [{ role: 'user'|'assistant', content: string }] }`

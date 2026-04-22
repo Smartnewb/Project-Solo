@@ -35,6 +35,10 @@ export const aiProfileGeneratorKeys = {
 	draftDetail: (id: string) =>
 		[...aiProfileGeneratorKeys.drafts(), 'detail', id] as const,
 	templates: () => [...aiProfileGeneratorKeys.all, 'templates'] as const,
+	publishDryRun: (id: string, version: number) =>
+		[...aiProfileGeneratorKeys.draftDetail(id), 'publish-dry-run', version] as const,
+	previewChat: (id: string) =>
+		[...aiProfileGeneratorKeys.draftDetail(id), 'preview-chat'] as const,
 };
 
 export const referencePoolKeys = {
