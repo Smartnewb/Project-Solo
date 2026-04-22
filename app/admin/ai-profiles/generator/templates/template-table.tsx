@@ -18,8 +18,6 @@ interface Props {
   isLoading: boolean;
   onEdit: (template: AiProfileTemplate) => void;
   onArchive: (template: AiProfileTemplate) => void;
-  onRestore: (template: AiProfileTemplate) => void;
-  onDuplicate: (template: AiProfileTemplate) => void;
 }
 
 function truncate(value: string | null | undefined, max = 60): string {
@@ -29,14 +27,7 @@ function truncate(value: string | null | undefined, max = 60): string {
 
 const SKELETON_ROWS = 5;
 
-export function TemplateTable({
-  items,
-  isLoading,
-  onEdit,
-  onArchive,
-  onRestore,
-  onDuplicate,
-}: Props) {
+export function TemplateTable({ items, isLoading, onEdit, onArchive }: Props) {
   return (
     <div className="overflow-x-auto rounded-md border border-slate-200 bg-white">
       <Table>
@@ -49,7 +40,7 @@ export function TemplateTable({
             <TableHead className="w-20 text-right">사용 수</TableHead>
             <TableHead className="w-40">마지막 사용</TableHead>
             <TableHead className="w-40">수정일</TableHead>
-            <TableHead className="w-64 text-right">액션</TableHead>
+            <TableHead className="w-48 text-right">액션</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -97,24 +88,7 @@ export function TemplateTable({
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                      {archived ? (
-                        <>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onRestore(template)}
-                          >
-                            복원
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onDuplicate(template)}
-                          >
-                            복제
-                          </Button>
-                        </>
-                      ) : (
+                      {archived ? null : (
                         <>
                           <Button
                             variant="outline"
@@ -122,13 +96,6 @@ export function TemplateTable({
                             onClick={() => onEdit(template)}
                           >
                             편집
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => onDuplicate(template)}
-                          >
-                            복제
                           </Button>
                           <Button
                             variant="outline"

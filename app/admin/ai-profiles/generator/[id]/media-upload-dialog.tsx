@@ -3,6 +3,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
+import {
+  PHOTO_SLOTS,
+  PHOTO_SLOT_LABEL,
+  type PhotoSlot,
+} from '@/app/types/ai-profile-generator';
 import { useToast } from '@/shared/ui/admin/toast';
 import { Button } from '@/shared/ui/button';
 import {
@@ -13,7 +18,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/shared/ui/dialog';
+import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select';
+import { Textarea } from '@/shared/ui/textarea';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
 import { useAiProfileErrorHandler } from '../_shared-error';
 
@@ -42,7 +56,9 @@ export function MediaUploadDialog({
 
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [setAsRepresentative, setSetAsRepresentative] = useState(false);
+  const [slot, setSlot] = useState<PhotoSlot>('representative');
+  const [prompt, setPrompt] = useState('');
+  const [tags, setTags] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const resetState = () => {
@@ -51,7 +67,9 @@ export function MediaUploadDialog({
       if (prev) URL.revokeObjectURL(prev);
       return null;
     });
-    setSetAsRepresentative(false);
+    setSlot('representative');
+    setPrompt('');
+    setTags('');
     setValidationError(null);
     if (inputRef.current) inputRef.current.value = '';
   };
@@ -99,10 +117,12 @@ export function MediaUploadDialog({
       if (!file) {
         throw new Error('업로드할 파일을 선택하세요.');
       }
-      return aiProfileGenerator.uploadPhoto(draftId, {
+      return aiProfileGenerator.uploadMedia(draftId, {
         file,
         expectedVersion: version,
-        setAsRepresentative,
+        slot,
+        prompt: prompt.trim() || undefined,
+        tags: tags.trim() || undefined,
       });
     },
     onSuccess: () => {
@@ -126,7 +146,7 @@ export function MediaUploadDialog({
         <DialogHeader>
           <DialogTitle>사진 업로드</DialogTitle>
           <DialogDescription>
-            JPEG, PNG, WebP 형식의 이미지를 10MB 이하로 업로드할 수 있습니다.
+            JPEG, PNG, WebP 형식의 이미지를 10MB 이하로 업로드합니다.
           </DialogDescription>
         </DialogHeader>
 
@@ -157,17 +177,42 @@ export function MediaUploadDialog({
             </div>
           ) : null}
 
-          <label className="flex items-center gap-2 text-sm text-slate-700">
-            <input
-              type="checkbox"
-              checked={setAsRepresentative}
-              onChange={(event) =>
-                setSetAsRepresentative(event.target.checked)
-              }
-              disabled={mutation.isPending}
+          <div className="space-y-1.5">
+            <Label>슬롯</Label>
+            <Select value={slot} onValueChange={(v) => setSlot(v as PhotoSlot)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PHOTO_SLOTS.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {PHOTO_SLOT_LABEL[s]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="media-upload-prompt">프롬프트 (선택)</Label>
+            <Textarea
+              id="media-upload-prompt"
+              rows={2}
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="생성에 사용한 프롬프트 기록"
             />
-            대표 이미지로 설정
-          </label>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="media-upload-tags">태그 (선택, 쉼표 구분)</Label>
+            <Input
+              id="media-upload-tags"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              placeholder="예) 외출, 자연광"
+            />
+          </div>
 
           {validationError ? (
             <p className="text-sm text-rose-600">{validationError}</p>

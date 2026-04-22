@@ -1,7 +1,6 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Lock, Unlock } from 'lucide-react';
 import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
 import {
   DOMAIN_LABEL,
@@ -15,10 +14,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/shared/ui/card';
-import { Switch } from '@/shared/ui/switch';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
 import { useAiProfileErrorHandler } from '../_shared-error';
-import { DomainJsonEditor } from './domain-json-editor';
 import { DomainStatusBadge } from './domain-status-badge';
 
 interface Props {
@@ -27,27 +24,22 @@ interface Props {
   status: AiProfileDomainStatus;
   payload: unknown;
   version: number;
-  locked: string[] | undefined;
-  draftLockedFields: Record<string, string[] | undefined>;
   readOnly?: boolean;
+  onOpenFieldEdit?: (domain: AiProfileDomain, path: string) => void;
+  onOpenFieldRegenerate?: (domain: AiProfileDomain, path: string) => void;
+  onOpenInstruction?: (domain: AiProfileDomain) => void;
 }
 
-const DOMAIN_LOCK_FLAG = '__all__';
-
-function isDomainLocked(locked: string[] | undefined): boolean {
-  if (!locked || locked.length === 0) return false;
-  return locked.includes(DOMAIN_LOCK_FLAG);
-}
-
+// TODO(phase7): replace with full field-tree + per-field action menu.
+// For now: read-only JSON view + domain-level generate/regenerate + instruction CTA.
 export function DomainCard({
   draftId,
   domain,
   status,
   payload,
   version,
-  locked,
-  draftLockedFields,
   readOnly = false,
+  onOpenInstruction,
 }: Props) {
   const queryClient = useQueryClient();
   const handleError = useAiProfileErrorHandler(
@@ -60,65 +52,16 @@ export function DomainCard({
     });
 
   const generateMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (mode: 'generate' | 'regenerate') =>
       aiProfileGenerator.generateDomain(draftId, domain, {
         expectedVersion: version,
+        mode,
       }),
     onSuccess: invalidate,
     onError: handleError,
   });
 
-  const regenerateMutation = useMutation({
-    mutationFn: () =>
-      aiProfileGenerator.regenerateDomain(draftId, domain, {
-        expectedVersion: version,
-      }),
-    onSuccess: invalidate,
-    onError: handleError,
-  });
-
-  const saveMutation = useMutation({
-    mutationFn: (next: unknown) =>
-      aiProfileGenerator.patchDomain(draftId, domain, {
-        expectedVersion: version,
-        payload: next,
-      }),
-    onSuccess: invalidate,
-    onError: handleError,
-  });
-
-  const lockedNow = isDomainLocked(locked);
-
-  const lockMutation = useMutation({
-    mutationFn: (nextLocked: boolean) => {
-      const nextLockedFields: Record<string, string[]> = {};
-      for (const [key, value] of Object.entries(draftLockedFields)) {
-        if (value && value.length > 0) nextLockedFields[key] = value;
-      }
-      if (nextLocked) {
-        nextLockedFields[domain] = [DOMAIN_LOCK_FLAG];
-      } else {
-        delete nextLockedFields[domain];
-      }
-      return aiProfileGenerator.patchDraft(draftId, {
-        expectedVersion: version,
-        lockedFields: nextLockedFields as Partial<
-          Record<AiProfileDomain, string[]>
-        >,
-      });
-    },
-    onSuccess: invalidate,
-    onError: handleError,
-  });
-
-  const mutations = [
-    generateMutation,
-    regenerateMutation,
-    saveMutation,
-    lockMutation,
-  ];
-  const isBusy =
-    status === 'generating' || mutations.some((m) => m.isPending);
+  const isBusy = status === 'generating' || generateMutation.isPending;
 
   const canGenerate = status === 'empty';
   const canRegenerate =
@@ -127,25 +70,17 @@ export function DomainCard({
     status === 'blocked' ||
     status === 'failed';
 
+  const jsonText =
+    payload == null
+      ? '(비어 있음)'
+      : JSON.stringify(payload, null, 2);
+
   return (
     <Card className="flex flex-col">
       <CardHeader className="flex-row items-start justify-between space-y-0 pb-2">
         <div className="space-y-1">
           <CardTitle className="text-base">{DOMAIN_LABEL[domain]}</CardTitle>
           <DomainStatusBadge status={status} />
-        </div>
-        <div className="flex items-center gap-2 text-xs text-slate-600">
-          {lockedNow ? (
-            <Lock className="h-3.5 w-3.5" />
-          ) : (
-            <Unlock className="h-3.5 w-3.5" />
-          )}
-          <span>잠금</span>
-          <Switch
-            checked={lockedNow}
-            disabled={isBusy || readOnly}
-            onCheckedChange={(checked) => lockMutation.mutate(checked)}
-          />
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -154,8 +89,8 @@ export function DomainCard({
             {canGenerate ? (
               <Button
                 size="sm"
-                onClick={() => generateMutation.mutate()}
-                disabled={isBusy || lockedNow}
+                onClick={() => generateMutation.mutate('generate')}
+                disabled={isBusy}
               >
                 {generateMutation.isPending ? '생성 중…' : '생성'}
               </Button>
@@ -164,23 +99,27 @@ export function DomainCard({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => regenerateMutation.mutate()}
-                disabled={isBusy || lockedNow}
+                onClick={() => generateMutation.mutate('regenerate')}
+                disabled={isBusy}
               >
-                {regenerateMutation.isPending ? '재생성 중…' : '재생성'}
+                전체 재생성
+              </Button>
+            ) : null}
+            {onOpenInstruction ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onOpenInstruction(domain)}
+                disabled={isBusy}
+              >
+                자연어 수정
               </Button>
             ) : null}
           </div>
         ) : null}
-        <DomainJsonEditor
-          value={payload}
-          onSave={async (next) => {
-            await saveMutation.mutateAsync(next);
-          }}
-          disabled={isBusy || lockedNow || readOnly}
-          readOnly={readOnly}
-          saving={saveMutation.isPending}
-        />
+        <pre className="max-h-64 overflow-auto rounded bg-slate-50 p-3 text-xs text-slate-700">
+          {jsonText}
+        </pre>
       </CardContent>
     </Card>
   );

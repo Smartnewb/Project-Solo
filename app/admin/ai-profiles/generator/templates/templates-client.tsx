@@ -105,27 +105,9 @@ export function TemplatesClient() {
   });
 
   const archiveMutation = useMutation({
-    mutationFn: (id: string) => aiProfileGenerator.archiveTemplate(id),
+    mutationFn: (id: string) => aiProfileGenerator.archiveGenerationTemplate(id),
     onSuccess: () => {
       toast.success('템플릿을 아카이브했습니다.');
-      qc.invalidateQueries({ queryKey: aiProfileGeneratorKeys.templates() });
-    },
-    onError: handleError,
-  });
-
-  const restoreMutation = useMutation({
-    mutationFn: (id: string) => aiProfileGenerator.restoreTemplate(id),
-    onSuccess: () => {
-      toast.success('템플릿을 복원했습니다.');
-      qc.invalidateQueries({ queryKey: aiProfileGeneratorKeys.templates() });
-    },
-    onError: handleError,
-  });
-
-  const duplicateMutation = useMutation({
-    mutationFn: (id: string) => aiProfileGenerator.duplicateTemplate(id),
-    onSuccess: () => {
-      toast.success('새 템플릿이 생성되었습니다.');
       qc.invalidateQueries({ queryKey: aiProfileGeneratorKeys.templates() });
     },
     onError: handleError,
@@ -150,28 +132,6 @@ export function TemplatesClient() {
       severity: 'warning',
     });
     if (ok) archiveMutation.mutate(template.id);
-  };
-
-  const handleRestore = async (template: AiProfileTemplate) => {
-    const ok = await confirm({
-      title: '템플릿 복원',
-      message: `"${template.name}" 템플릿을 복원하시겠습니까?`,
-      confirmText: '복원',
-      cancelText: '취소',
-      severity: 'info',
-    });
-    if (ok) restoreMutation.mutate(template.id);
-  };
-
-  const handleDuplicate = async (template: AiProfileTemplate) => {
-    const ok = await confirm({
-      title: '템플릿 복제',
-      message: `"${template.name}" 을 복제해 새 템플릿을 생성하시겠습니까?`,
-      confirmText: '복제',
-      cancelText: '취소',
-      severity: 'info',
-    });
-    if (ok) duplicateMutation.mutate(template.id);
   };
 
   const items = listQuery.data?.items ?? [];
@@ -245,8 +205,6 @@ export function TemplatesClient() {
         isLoading={listQuery.isLoading}
         onEdit={handleEdit}
         onArchive={handleArchive}
-        onRestore={handleRestore}
-        onDuplicate={handleDuplicate}
       />
 
       <PaginationFooter

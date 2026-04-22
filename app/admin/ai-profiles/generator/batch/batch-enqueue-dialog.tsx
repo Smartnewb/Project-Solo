@@ -1,12 +1,18 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
 import {
+  CONTENT_TIERS,
+  CONTENT_TIER_LABEL,
   DOMAIN_LABEL,
-  FULL_DOMAINS,
+  GENERATABLE_DOMAINS,
+  PHOTO_SLOTS,
+  PHOTO_SLOT_LABEL,
+  type AiProfileContentTier,
   type AiProfileDomain,
+  type PhotoSlot,
 } from '@/app/types/ai-profile-generator';
 import { useToast } from '@/shared/ui/admin/toast';
 import { Button } from '@/shared/ui/button';
@@ -29,49 +35,51 @@ import {
 } from '@/shared/ui/select';
 import { Switch } from '@/shared/ui/switch';
 import { Textarea } from '@/shared/ui/textarea';
-import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
 import { useAiProfileErrorHandler } from '../_shared-error';
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onEnqueued?: (jobId: string) => void;
 }
 
 const MIN_COUNT = 1;
-const MAX_COUNT = 50;
-const DEFAULT_COUNT = 10;
+const MAX_COUNT = 20;
+const DEFAULT_COUNT = 5;
 
-export function BatchEnqueueDialog({ open, onOpenChange }: Props) {
+export function BatchEnqueueDialog({ open, onOpenChange, onEnqueued }: Props) {
   const toast = useToast();
-  const qc = useQueryClient();
-  const handleError = useAiProfileErrorHandler(
-    aiProfileGeneratorKeys.batchJobs(),
-  );
+  const handleError = useAiProfileErrorHandler();
 
   const [templateId, setTemplateId] = useState<string>('');
+  const [promptVersionId, setPromptVersionId] = useState<string>('');
   const [count, setCount] = useState<number>(DEFAULT_COUNT);
-  const [seedHintsText, setSeedHintsText] = useState<string>('');
+  const [initialInstruction, setInitialInstruction] = useState<string>('');
+  const [contentTier, setContentTier] = useState<AiProfileContentTier>('family');
   const [selectedDomains, setSelectedDomains] = useState<AiProfileDomain[]>(
-    () => [...FULL_DOMAINS],
+    () => [...GENERATABLE_DOMAINS],
   );
-  const [autoGeneratePhotos, setAutoGeneratePhotos] = useState<boolean>(false);
+  const [includePhotos, setIncludePhotos] = useState<boolean>(false);
+  const [photoSlots, setPhotoSlots] = useState<PhotoSlot[]>(['representative']);
 
   useEffect(() => {
     if (open) {
       setTemplateId('');
+      setPromptVersionId('');
       setCount(DEFAULT_COUNT);
-      setSeedHintsText('');
-      setSelectedDomains([...FULL_DOMAINS]);
-      setAutoGeneratePhotos(false);
+      setInitialInstruction('');
+      setContentTier('family');
+      setSelectedDomains([...GENERATABLE_DOMAINS]);
+      setIncludePhotos(false);
+      setPhotoSlots(['representative']);
     }
   }, [open]);
 
   const templatesQuery = useQuery({
-    queryKey: aiProfileGeneratorKeys.templateList({ status: 'active' }),
+    queryKey: ['admin', 'ai-profile-generator', 'generation-templates', 'active'],
     queryFn: () =>
-      aiProfileGenerator.listTemplatesPaged({
-        status: 'active',
-        page: 1,
+      aiProfileGenerator.listGenerationTemplates({
+        isActive: true,
         limit: 100,
       }),
     enabled: open,
@@ -79,42 +87,35 @@ export function BatchEnqueueDialog({ open, onOpenChange }: Props) {
 
   const activeTemplates = templatesQuery.data?.items ?? [];
 
-  const seedHints = useMemo(() => {
-    const lines = seedHintsText
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0);
-    return lines;
-  }, [seedHintsText]);
-
-  const seedHintMismatch =
-    seedHints.length > 0 && seedHints.length !== count;
-
   const createMutation = useMutation({
     mutationFn: () =>
-      aiProfileGenerator.createBatchJob({
-        templateId,
+      aiProfileGenerator.batchGenerateDrafts({
         count,
-        seedHints: seedHints.length > 0 ? seedHints : undefined,
+        initialInstruction: initialInstruction.trim(),
+        contentTier,
+        templateId: templateId || undefined,
+        promptVersionId: promptVersionId || undefined,
         generateDomains:
-          selectedDomains.length === FULL_DOMAINS.length
+          selectedDomains.length === GENERATABLE_DOMAINS.length
             ? undefined
             : selectedDomains,
-        autoGeneratePhotos: autoGeneratePhotos || undefined,
+        includePhotos,
+        photoSlots: includePhotos ? photoSlots : undefined,
       }),
-    onSuccess: () => {
+    onSuccess: (result) => {
       toast.success('배치 생성 job을 등록했습니다.');
-      qc.invalidateQueries({ queryKey: aiProfileGeneratorKeys.batchJobs() });
+      onEnqueued?.(result.jobId);
       onOpenChange(false);
     },
     onError: handleError,
   });
 
   const canSubmit =
-    templateId.length > 0 &&
+    initialInstruction.trim().length > 0 &&
     count >= MIN_COUNT &&
     count <= MAX_COUNT &&
     selectedDomains.length > 0 &&
+    (!includePhotos || photoSlots.length > 0) &&
     !createMutation.isPending;
 
   const toggleDomain = (domain: AiProfileDomain) => {
@@ -125,76 +126,104 @@ export function BatchEnqueueDialog({ open, onOpenChange }: Props) {
     );
   };
 
+  const togglePhotoSlot = (slot: PhotoSlot) => {
+    setPhotoSlots((prev) =>
+      prev.includes(slot) ? prev.filter((s) => s !== slot) : [...prev, slot],
+    );
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>새 배치 생성</DialogTitle>
           <DialogDescription>
-            활성 템플릿을 선택해 여러 Draft를 한 번에 생성합니다.
+            지시문과 옵션을 설정해 여러 Draft를 한 번에 생성합니다.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="batch-template">템플릿</Label>
+            <Label htmlFor="batch-instruction">초기 지시문 (필수)</Label>
+            <Textarea
+              id="batch-instruction"
+              rows={4}
+              value={initialInstruction}
+              onChange={(event) => setInitialInstruction(event.target.value)}
+              placeholder="예) 서울권 대학생 여성 5명, MBTI ENFP 분위기"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="batch-count">
+                생성 수 ({MIN_COUNT}–{MAX_COUNT})
+              </Label>
+              <Input
+                id="batch-count"
+                type="number"
+                min={MIN_COUNT}
+                max={MAX_COUNT}
+                value={count}
+                onChange={(event) => {
+                  const next = Number(event.target.value);
+                  if (Number.isFinite(next)) setCount(next);
+                }}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="batch-content-tier">콘텐츠 등급</Label>
+              <Select
+                value={contentTier}
+                onValueChange={(value) =>
+                  setContentTier(value as AiProfileContentTier)
+                }
+              >
+                <SelectTrigger id="batch-content-tier">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CONTENT_TIERS.map((tier) => (
+                    <SelectItem key={tier} value={tier}>
+                      {CONTENT_TIER_LABEL[tier]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="batch-template">템플릿 (선택)</Label>
             <Select value={templateId} onValueChange={setTemplateId}>
               <SelectTrigger id="batch-template">
-                <SelectValue placeholder="활성 템플릿 선택" />
+                <SelectValue placeholder="템플릿 없이 생성" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="">(선택 안 함)</SelectItem>
                 {activeTemplates.map((tpl) => (
                   <SelectItem key={tpl.id} value={tpl.id}>
                     {tpl.name} (v{tpl.version})
                   </SelectItem>
                 ))}
-                {activeTemplates.length === 0 ? (
-                  <div className="px-2 py-1 text-xs text-slate-500">
-                    활성 템플릿이 없습니다.
-                  </div>
-                ) : null}
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="batch-count">생성 수 ({MIN_COUNT}–{MAX_COUNT})</Label>
+            <Label htmlFor="batch-prompt-version">프롬프트 버전 ID (선택)</Label>
             <Input
-              id="batch-count"
-              type="number"
-              min={MIN_COUNT}
-              max={MAX_COUNT}
-              value={count}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                if (Number.isFinite(next)) setCount(next);
-              }}
+              id="batch-prompt-version"
+              value={promptVersionId}
+              onChange={(event) => setPromptVersionId(event.target.value)}
+              placeholder="생략 시 기본 프롬프트 버전 사용"
             />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="batch-seed-hints">
-              Seed 힌트 (선택, 줄바꿈으로 구분)
-            </Label>
-            <Textarea
-              id="batch-seed-hints"
-              rows={4}
-              value={seedHintsText}
-              onChange={(event) => setSeedHintsText(event.target.value)}
-              placeholder={'예)\n서울 여대생, 20세, 영화 좋아함\n부산 남학생, 24세, 게임 좋아함'}
-            />
-            {seedHintMismatch ? (
-              <p className="text-xs text-amber-600">
-                Seed 힌트 줄 수({seedHints.length})가 생성 수({count})와 다릅니다.
-                부족한 쪽에 맞춰 생성됩니다.
-              </p>
-            ) : null}
           </div>
 
           <div className="space-y-2">
             <Label>도메인 선택</Label>
             <div className="grid grid-cols-2 gap-2 rounded-md border border-slate-200 p-3">
-              {FULL_DOMAINS.map((domain) => {
+              {GENERATABLE_DOMAINS.map((domain) => {
                 const checked = selectedDomains.includes(domain);
                 return (
                   <label
@@ -219,17 +248,40 @@ export function BatchEnqueueDialog({ open, onOpenChange }: Props) {
 
           <div className="flex items-center justify-between rounded-md border border-slate-200 p-3">
             <div>
-              <Label htmlFor="batch-auto-photo">사진 자동 생성</Label>
+              <Label htmlFor="batch-include-photos">사진 자동 생성</Label>
               <p className="text-xs text-slate-500">
-                Draft 생성 직후 대표 사진을 자동으로 생성합니다.
+                Draft 생성 직후 선택한 슬롯의 사진을 자동 생성합니다.
               </p>
             </div>
             <Switch
-              id="batch-auto-photo"
-              checked={autoGeneratePhotos}
-              onCheckedChange={setAutoGeneratePhotos}
+              id="batch-include-photos"
+              checked={includePhotos}
+              onCheckedChange={setIncludePhotos}
             />
           </div>
+
+          {includePhotos ? (
+            <div className="space-y-2">
+              <Label>사진 슬롯</Label>
+              <div className="grid grid-cols-3 gap-2 rounded-md border border-slate-200 p-3">
+                {PHOTO_SLOTS.map((slot) => {
+                  const checked = photoSlots.includes(slot);
+                  return (
+                    <label
+                      key={slot}
+                      className="flex items-center justify-between gap-2 text-xs text-slate-700"
+                    >
+                      <span>{PHOTO_SLOT_LABEL[slot]}</span>
+                      <Switch
+                        checked={checked}
+                        onCheckedChange={() => togglePhotoSlot(slot)}
+                      />
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <DialogFooter>
