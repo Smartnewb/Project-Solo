@@ -3,9 +3,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Lock, Unlock } from 'lucide-react';
 import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
-import type {
-  AiProfileDomain,
-  AiProfileDomainStatus,
+import {
+  DOMAIN_LABEL,
+  type AiProfileDomain,
+  type AiProfileDomainStatus,
 } from '@/app/types/ai-profile-generator';
 import { Button } from '@/shared/ui/button';
 import {
@@ -28,16 +29,8 @@ interface Props {
   version: number;
   locked: string[] | undefined;
   draftLockedFields: Record<string, string[] | undefined>;
+  readOnly?: boolean;
 }
-
-const DOMAIN_LABEL: Record<AiProfileDomain, string> = {
-  seed: '시드',
-  basic: '기본 정보',
-  personalityCore: '성격',
-  relationshipPsychology: '관계 심리',
-  voice: '말투',
-  chatBehavior: '대화 행동',
-};
 
 const DOMAIN_LOCK_FLAG = '__all__';
 
@@ -54,6 +47,7 @@ export function DomainCard({
   version,
   locked,
   draftLockedFields,
+  readOnly = false,
 }: Props) {
   const queryClient = useQueryClient();
   const handleError = useDraftErrorHandler(draftId);
@@ -145,39 +139,42 @@ export function DomainCard({
           <span>잠금</span>
           <Switch
             checked={lockedNow}
-            disabled={isBusy}
+            disabled={isBusy || readOnly}
             onCheckedChange={(checked) => lockMutation.mutate(checked)}
           />
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
-          {canGenerate ? (
-            <Button
-              size="sm"
-              onClick={() => generateMutation.mutate()}
-              disabled={isBusy || lockedNow}
-            >
-              {generateMutation.isPending ? '생성 중…' : '생성'}
-            </Button>
-          ) : null}
-          {canRegenerate ? (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => regenerateMutation.mutate()}
-              disabled={isBusy || lockedNow}
-            >
-              {regenerateMutation.isPending ? '재생성 중…' : '재생성'}
-            </Button>
-          ) : null}
-        </div>
+        {!readOnly ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {canGenerate ? (
+              <Button
+                size="sm"
+                onClick={() => generateMutation.mutate()}
+                disabled={isBusy || lockedNow}
+              >
+                {generateMutation.isPending ? '생성 중…' : '생성'}
+              </Button>
+            ) : null}
+            {canRegenerate ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => regenerateMutation.mutate()}
+                disabled={isBusy || lockedNow}
+              >
+                {regenerateMutation.isPending ? '재생성 중…' : '재생성'}
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
         <DomainJsonEditor
           value={payload}
           onSave={async (next) => {
             await saveMutation.mutateAsync(next);
           }}
-          disabled={isBusy || lockedNow}
+          disabled={isBusy || lockedNow || readOnly}
+          readOnly={readOnly}
           saving={saveMutation.isPending}
         />
       </CardContent>
