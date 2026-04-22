@@ -51,24 +51,40 @@ export function ValidationPanel({ validation }: Props) {
           </div>
         ) : (
           <ul className="space-y-1.5">
-            {warnings.map((warning, index) => (
-              <li
-                key={`${warning.domain}-${warning.code}-${index}`}
-                className={cn(
-                  'rounded-md border px-3 py-2 text-xs',
-                  SEVERITY_CLASS[warning.severity],
-                )}
-              >
-                <div className="flex items-center gap-1 font-medium">
-                  <AlertTriangle className="h-3 w-3" />
-                  <span>[{SEVERITY_LABEL[warning.severity]}]</span>
-                  <span className="font-mono">{warning.domain}</span>
-                  <span className="text-slate-500">·</span>
-                  <span className="font-mono">{warning.code}</span>
-                </div>
-                <p className="mt-1">{warning.message}</p>
-              </li>
-            ))}
+            {warnings.map((warning, index) => {
+              const severity = (warning.severity ?? 'low') as
+                | 'low'
+                | 'medium'
+                | 'high';
+              return (
+                <li
+                  key={`${String(warning.domain)}-${warning.code ?? warning.path ?? index}-${index}`}
+                  className={cn(
+                    'rounded-md border px-3 py-2 text-xs',
+                    SEVERITY_CLASS[severity],
+                  )}
+                >
+                  <div className="flex items-center gap-1 font-medium">
+                    <AlertTriangle className="h-3 w-3" />
+                    <span>[{SEVERITY_LABEL[severity]}]</span>
+                    <span className="font-mono">{String(warning.domain)}</span>
+                    {warning.path ? (
+                      <>
+                        <span className="text-slate-500">·</span>
+                        <span className="font-mono">{warning.path}</span>
+                      </>
+                    ) : null}
+                    {warning.code ? (
+                      <>
+                        <span className="text-slate-500">·</span>
+                        <span className="font-mono">{warning.code}</span>
+                      </>
+                    ) : null}
+                  </div>
+                  <p className="mt-1">{warning.message}</p>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

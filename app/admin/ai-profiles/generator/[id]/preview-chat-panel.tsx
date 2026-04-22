@@ -3,10 +3,25 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
-import type { PreviewChatTurn } from '@/app/types/ai-profile-generator';
+import {
+  CONTENT_TIERS,
+  CONTENT_TIER_LABEL,
+  RELATIONSHIP_STAGES,
+  RELATIONSHIP_STAGE_LABEL,
+  type AiProfileContentTier,
+  type AiProfileRelationshipStage,
+  type PreviewChatTurn,
+} from '@/app/types/ai-profile-generator';
 import { Alert, AlertDescription } from '@/shared/ui/alert';
 import { Button } from '@/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/shared/ui/select';
 import { Textarea } from '@/shared/ui/textarea';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
 import { useAiProfileErrorHandler } from '../_shared-error';
@@ -17,19 +32,37 @@ interface Props {
 }
 
 const MAX_USER_TURNS = 3;
+type Mode = 'single' | 'turns';
 
 export function PreviewChatPanel({ draftId, disabled = false }: Props) {
   const handleError = useAiProfileErrorHandler(
     aiProfileGeneratorKeys.draftDetail(draftId),
   );
+  const [mode, setMode] = useState<Mode>('turns');
   const [userMessages, setUserMessages] = useState<string[]>([]);
   const [turns, setTurns] = useState<PreviewChatTurn[]>([]);
   const [input, setInput] = useState('');
+  const [stage, setStage] =
+    useState<AiProfileRelationshipStage>('stranger');
+  const [tier, setTier] = useState<AiProfileContentTier | 'default'>('default');
   const [errorText, setErrorText] = useState<string | null>(null);
 
   const mutation = useMutation({
-    mutationFn: (messages: string[]) =>
-      aiProfileGenerator.previewChat(draftId, { userMessages: messages }),
+    mutationFn: (messages: string[]) => {
+      const contentTier = tier === 'default' ? undefined : tier;
+      if (mode === 'single') {
+        return aiProfileGenerator.previewChat(draftId, {
+          userMessage: messages[messages.length - 1],
+          relationshipStage: stage,
+          contentTier,
+        });
+      }
+      return aiProfileGenerator.previewChatTurns(draftId, {
+        userMessages: messages,
+        relationshipStage: stage,
+        contentTier,
+      });
+    },
     onSuccess: (data) => {
       setTurns(data.turns);
       setErrorText(null);
@@ -43,8 +76,9 @@ export function PreviewChatPanel({ draftId, disabled = false }: Props) {
   const send = () => {
     const trimmed = input.trim();
     if (!trimmed) return;
-    if (userMessages.length >= MAX_USER_TURNS) return;
-    const next = [...userMessages, trimmed];
+    const next =
+      mode === 'turns' ? [...userMessages, trimmed] : [trimmed];
+    if (mode === 'turns' && next.length > MAX_USER_TURNS) return;
     setUserMessages(next);
     setInput('');
     mutation.mutate(next);
@@ -57,30 +91,74 @@ export function PreviewChatPanel({ draftId, disabled = false }: Props) {
     setErrorText(null);
   };
 
-  const reachedLimit = userMessages.length >= MAX_USER_TURNS;
+  const reachedLimit =
+    mode === 'turns' && userMessages.length >= MAX_USER_TURNS;
   const inputDisabled = disabled || mutation.isPending || reachedLimit;
 
   return (
     <Card className="flex flex-col">
-      <CardHeader className="flex-row items-start justify-between space-y-0 pb-2">
-        <div className="space-y-1">
-          <CardTitle className="text-base">Preview Chat</CardTitle>
-          <p className="text-xs text-slate-500">
-            {disabled
-              ? '편집 가능한 Draft에서만 시뮬레이션할 수 있습니다.'
-              : '현재 draft 스냅샷으로 3턴까지 시뮬레이션합니다. 저장되지 않습니다.'}
-          </p>
+      <CardHeader className="space-y-2 pb-2">
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <CardTitle className="text-base">Preview Chat</CardTitle>
+            <p className="text-xs text-slate-500">
+              {disabled
+                ? '편집 가능한 Draft에서만 시뮬레이션할 수 있습니다.'
+                : '현재 Draft 스냅샷으로 시뮬레이션합니다. 저장되지 않습니다.'}
+            </p>
+          </div>
+          {!disabled ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={reset}
+              disabled={mutation.isPending}
+            >
+              초기화
+            </Button>
+          ) : null}
         </div>
-        {!disabled ? (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={reset}
-            disabled={mutation.isPending}
+        <div className="flex flex-wrap gap-2">
+          <Select value={mode} onValueChange={(v) => setMode(v as Mode)}>
+            <SelectTrigger className="h-7 w-32 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="turns">다중 턴</SelectItem>
+              <SelectItem value="single">단일 턴</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select
+            value={stage}
+            onValueChange={(v) =>
+              setStage(v as AiProfileRelationshipStage)
+            }
           >
-            초기화
-          </Button>
-        ) : null}
+            <SelectTrigger className="h-7 w-32 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {RELATIONSHIP_STAGES.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {RELATIONSHIP_STAGE_LABEL[s]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={tier} onValueChange={(v) => setTier(v as typeof tier)}>
+            <SelectTrigger className="h-7 w-36 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="default">기본 등급</SelectItem>
+              {CONTENT_TIERS.map((t) => (
+                <SelectItem key={t} value={t}>
+                  {CONTENT_TIER_LABEL[t]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex max-h-72 flex-col gap-2 overflow-y-auto rounded-md border border-slate-200 bg-slate-50 p-3">
