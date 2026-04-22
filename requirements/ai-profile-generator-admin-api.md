@@ -255,3 +255,78 @@ Response: updated `AiProfileDraft`
   "hint": "대학생 프리셋 참고"
 }
 ```
+
+## Phase 6 추정 Endpoint (구현 시 확정 필요)
+
+### Batch generation
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/admin/v2/ai-companions/batch-jobs` | 배치 job 리스트 |
+| GET | `/admin/v2/ai-companions/batch-jobs/:id` | 배치 job 상세 (생성된 draft IDs, 실패 이유 포함) |
+| POST | `/admin/v2/ai-companions/batch-jobs` | 새 배치 job enqueue |
+| POST | `/admin/v2/ai-companions/batch-jobs/:id/cancel` | 배치 job 취소 |
+
+#### Create body
+
+```
+{
+  templateId: string;
+  count: number;            // 1 ~ 50
+  seedHints?: string[];     // 각 draft에 차별화된 seed 텍스트 (count와 동일 길이 또는 undefined)
+  generateDomains?: AiProfileDomain[]; // 기본: 모두
+  autoGeneratePhotos?: boolean;
+}
+```
+
+#### Job response
+
+```
+{
+  id, templateId, templateVersion,
+  status: 'pending' | 'running' | 'completed' | 'cancelled' | 'failed',
+  requestedCount, completedCount, failedCount,
+  draftIds: string[],
+  failures: { index: number; reason: string }[],
+  createdByAdminUserId, createdAt, startedAt, finishedAt
+}
+```
+
+### Events dashboard
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/admin/v2/ai-companions/events/counts` | 이벤트별 일자 버킷 count (query: `days`, default 7) |
+
+Response:
+
+```
+{
+  days: 7,
+  series: [
+    { event: 'SERVER_AiProfile_Draft_Created', buckets: [{ date: '2026-04-16', count: 12 }, ...] },
+    ...
+  ]
+}
+```
+
+### Cleanup
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/admin/v2/ai-companions/cleanup/status` | 마지막 실행 상태 + archive 후보 수 |
+| POST | `/admin/v2/ai-companions/cleanup/run` | archive job 수동 실행 |
+
+Status response:
+
+```
+{
+  lastRunAt: string | null,
+  lastArchivedCount: number,
+  pendingCandidates: number,
+  archiveAfterDays: number,
+  batchLimit: number
+}
+```
+
+Run response: `{ archivedCount, skippedCount, runAt }`

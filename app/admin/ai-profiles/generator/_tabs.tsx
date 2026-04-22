@@ -8,6 +8,8 @@ const TABS = [
   { href: '/admin/ai-profiles/generator', label: 'Draft' },
   { href: '/admin/ai-profiles/generator/templates', label: '템플릿' },
   { href: '/admin/ai-profiles/generator/prompt-versions', label: '프롬프트 버전' },
+  { href: '/admin/ai-profiles/generator/batch', label: '배치' },
+  { href: '/admin/ai-profiles/generator/ops', label: '운영' },
 ];
 
 export function GeneratorTabs() {

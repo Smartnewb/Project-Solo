@@ -7,6 +7,7 @@ import type {
 } from '@/app/types/ghost-injection';
 import type {
 	AiProfileDraftListQuery,
+	BatchJobListQuery,
 	PromptVersionListQuery,
 	TemplateListQuery,
 } from '@/app/types/ai-profile-generator';
@@ -53,6 +54,15 @@ export const aiProfileGeneratorKeys = {
 		[...aiProfileGeneratorKeys.draftDetail(id), 'publish-dry-run', version] as const,
 	previewChat: (id: string) =>
 		[...aiProfileGeneratorKeys.draftDetail(id), 'preview-chat'] as const,
+	batchJobs: () => [...aiProfileGeneratorKeys.all, 'batch-jobs'] as const,
+	batchJobList: (query: BatchJobListQuery) =>
+		[...aiProfileGeneratorKeys.batchJobs(), 'list', query] as const,
+	batchJobDetail: (id: string) =>
+		[...aiProfileGeneratorKeys.batchJobs(), 'detail', id] as const,
+	eventCounts: (days: number) =>
+		[...aiProfileGeneratorKeys.all, 'event-counts', days] as const,
+	cleanupStatus: () =>
+		[...aiProfileGeneratorKeys.all, 'cleanup-status'] as const,
 };
 
 export const referencePoolKeys = {

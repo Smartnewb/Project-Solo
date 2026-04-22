@@ -118,6 +118,8 @@ export const NAV_CATEGORIES: NavCategory[] = [
       { href: '/admin/ai-profiles/generator', label: 'AI 프로필 생성기' },
       { href: '/admin/ai-profiles/generator/templates', label: '— 템플릿' },
       { href: '/admin/ai-profiles/generator/prompt-versions', label: '— 프롬프트 버전' },
+      { href: '/admin/ai-profiles/generator/batch', label: '— 배치' },
+      { href: '/admin/ai-profiles/generator/ops', label: '— 운영' },
       { href: '/admin/ai-profiles/ghosts', label: '가상 프로필' },
       { href: '/admin/ai-profiles/reference-pool', label: '레퍼런스 풀' },
       { href: '/admin/ai-profiles/candidates', label: '매칭 후보' },

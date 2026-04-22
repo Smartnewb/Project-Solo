@@ -428,3 +428,83 @@ export interface DomainBlueprint {
 }
 
 export type DomainBlueprints = Partial<Record<AiProfileDomain, DomainBlueprint>>;
+
+// ───────── Phase 6: batch + events + cleanup ─────────
+
+export type BatchJobStatus =
+  | 'pending'
+  | 'running'
+  | 'completed'
+  | 'cancelled'
+  | 'failed';
+
+export interface BatchJobFailure {
+  index: number;
+  reason: string;
+}
+
+export interface BatchJob {
+  id: string;
+  templateId: string;
+  templateVersion: number;
+  status: BatchJobStatus;
+  requestedCount: number;
+  completedCount: number;
+  failedCount: number;
+  draftIds: string[];
+  failures: BatchJobFailure[];
+  createdByAdminUserId: string;
+  createdAt: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+}
+
+export interface BatchJobListQuery {
+  status?: BatchJobStatus | 'all';
+  page?: number;
+  limit?: number;
+}
+
+export interface BatchJobListResponse {
+  items: BatchJob[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface CreateBatchJobBody {
+  templateId: string;
+  count: number;
+  seedHints?: string[];
+  generateDomains?: AiProfileDomain[];
+  autoGeneratePhotos?: boolean;
+}
+
+export interface EventBucket {
+  date: string;
+  count: number;
+}
+
+export interface EventSeries {
+  event: string;
+  buckets: EventBucket[];
+}
+
+export interface EventCountsResponse {
+  days: number;
+  series: EventSeries[];
+}
+
+export interface CleanupStatus {
+  lastRunAt: string | null;
+  lastArchivedCount: number;
+  pendingCandidates: number;
+  archiveAfterDays: number;
+  batchLimit: number;
+}
+
+export interface CleanupRunResponse {
+  archivedCount: number;
+  skippedCount: number;
+  runAt: string;
+}

@@ -13,9 +13,16 @@ import type {
   AiProfileTemplate,
   AiProfileTemplateListResponse,
   ApplyTemplateBody,
+  BatchJob,
+  BatchJobListQuery,
+  BatchJobListResponse,
+  CleanupRunResponse,
+  CleanupStatus,
+  CreateBatchJobBody,
   CreateDraftBody,
   CreatePromptVersionBody,
   CreateTemplateBody,
+  EventCountsResponse,
   GenerateDomainBody,
   GeneratePhotoBody,
   PatchDomainBody,
@@ -162,6 +169,23 @@ export const aiProfileGenerator = {
 
   archivePromptVersion: (id: string) =>
     adminPost<PromptVersion>(`${BASE}/prompt-versions/${id}/archive`),
+
+  // Batch
+  listBatchJobs: (query: BatchJobListQuery = {}) =>
+    adminGet<BatchJobListResponse>(`${BASE}/batch-jobs`, { ...query }),
+  getBatchJob: (id: string) => adminGet<BatchJob>(`${BASE}/batch-jobs/${id}`),
+  createBatchJob: (body: CreateBatchJobBody) =>
+    adminPost<BatchJob>(`${BASE}/batch-jobs`, body),
+  cancelBatchJob: (id: string) =>
+    adminPost<BatchJob>(`${BASE}/batch-jobs/${id}/cancel`),
+
+  // Events
+  getEventCounts: (days = 7) =>
+    adminGet<EventCountsResponse>(`${BASE}/events/counts`, { days }),
+
+  // Cleanup
+  getCleanupStatus: () => adminGet<CleanupStatus>(`${BASE}/cleanup/status`),
+  runCleanup: () => adminPost<CleanupRunResponse>(`${BASE}/cleanup/run`),
 };
 
 export type AiProfileGeneratorService = typeof aiProfileGenerator;
