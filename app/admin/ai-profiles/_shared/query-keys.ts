@@ -7,8 +7,8 @@ import type {
 } from '@/app/types/ghost-injection';
 import type {
 	AiProfileDraftListQuery,
-	BatchJobListQuery,
 	PromptVersionListQuery,
+	SourceDataQuery,
 	TemplateListQuery,
 } from '@/app/types/ai-profile-generator';
 
@@ -54,15 +54,20 @@ export const aiProfileGeneratorKeys = {
 		[...aiProfileGeneratorKeys.draftDetail(id), 'publish-dry-run', version] as const,
 	previewChat: (id: string) =>
 		[...aiProfileGeneratorKeys.draftDetail(id), 'preview-chat'] as const,
-	batchJobs: () => [...aiProfileGeneratorKeys.all, 'batch-jobs'] as const,
-	batchJobList: (query: BatchJobListQuery) =>
-		[...aiProfileGeneratorKeys.batchJobs(), 'list', query] as const,
-	batchJobDetail: (id: string) =>
-		[...aiProfileGeneratorKeys.batchJobs(), 'detail', id] as const,
-	eventCounts: (days: number) =>
-		[...aiProfileGeneratorKeys.all, 'event-counts', days] as const,
-	cleanupStatus: () =>
-		[...aiProfileGeneratorKeys.all, 'cleanup-status'] as const,
+	batchGeneration: () =>
+		[...aiProfileGeneratorKeys.all, 'batch-generate'] as const,
+	batchGenerationStatus: (jobId: string) =>
+		[...aiProfileGeneratorKeys.batchGeneration(), 'status', jobId] as const,
+	universities: (query: SourceDataQuery) =>
+		[...aiProfileGeneratorKeys.all, 'universities', query] as const,
+	departments: (universityId: string, query: SourceDataQuery) =>
+		[
+			...aiProfileGeneratorKeys.all,
+			'universities',
+			universityId,
+			'departments',
+			query,
+		] as const,
 };
 
 export const referencePoolKeys = {

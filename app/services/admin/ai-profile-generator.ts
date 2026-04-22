@@ -11,44 +11,71 @@ import type {
   AiProfileDraftListQuery,
   AiProfileDraftListResponse,
   AiProfileTemplate,
-  AiProfileTemplateListResponse,
-  ApplyTemplateBody,
-  BatchJob,
-  BatchJobListQuery,
-  BatchJobListResponse,
-  CleanupRunResponse,
-  CleanupStatus,
-  CreateBatchJobBody,
+  ApplyDomainInstructionBody,
+  ArchiveDraftBody,
+  BatchGenerateBody,
+  BatchGenerateEnqueueResponse,
+  BatchGenerateStatusResponse,
+  ClearSourceDataLockBody,
   CreateDraftBody,
   CreatePromptVersionBody,
   CreateTemplateBody,
-  EventCountsResponse,
+  DuplicateDraftBody,
   GenerateDomainBody,
   GeneratePhotoBody,
-  PatchDomainBody,
-  PatchDraftBody,
+  LockSourceDataBody,
+  PatchDomainFieldBody,
   PreviewChatBody,
   PreviewChatResponse,
+  PreviewChatTurnsBody,
   PromptVersion,
   PromptVersionListQuery,
   PromptVersionListResponse,
   PublishBody,
-  PublishDryRunBody,
   PublishDryRunResponse,
   PublishResponse,
-  RejectPhotoBody,
-  RetryPhotoBody,
-  SetRepresentativeImageBody,
+  RegenerateDomainFieldBody,
+  SaveCompanionAsTemplateBody,
+  SaveDraftAsTemplateBody,
+  SourceDataQuery,
+  SourceDepartment,
+  SourceUniversity,
+  SuggestSchoolMajorBody,
+  SuggestSchoolMajorResponse,
   TemplateListQuery,
   TemplateListResponse,
+  UpdateMediaBody,
   UpdatePromptVersionBody,
   UpdateTemplateBody,
-  UploadPhotoBody,
+  UploadMediaBody,
+  ValidateDraftBody,
+  ValidateDraftResponse,
+  CursorListResponse,
 } from '@/app/types/ai-profile-generator';
 
 const BASE = '/admin/v2/ai-companions';
 
 export const aiProfileGenerator = {
+  // ───────── Source data ─────────
+  listUniversities: (query: SourceDataQuery = {}) =>
+    adminGet<CursorListResponse<SourceUniversity>>(
+      `${BASE}/source-data/universities`,
+      { ...query },
+    ),
+
+  listDepartments: (universityId: string, query: SourceDataQuery = {}) =>
+    adminGet<CursorListResponse<SourceDepartment>>(
+      `${BASE}/source-data/universities/${universityId}/departments`,
+      { ...query },
+    ),
+
+  suggestSchoolMajor: (body: SuggestSchoolMajorBody) =>
+    adminPost<SuggestSchoolMajorResponse>(
+      `${BASE}/source-data/suggest-school-major`,
+      body,
+    ),
+
+  // ───────── Drafts ─────────
   listDrafts: (query: AiProfileDraftListQuery = {}) =>
     adminGet<AiProfileDraftListResponse>(`${BASE}/drafts`, { ...query }),
 
@@ -57,103 +84,141 @@ export const aiProfileGenerator = {
   createDraft: (body: CreateDraftBody) =>
     adminPost<AiProfileDraft>(`${BASE}/drafts`, body),
 
-  patchDraft: (id: string, body: PatchDraftBody) =>
-    adminPatch<AiProfileDraft>(`${BASE}/drafts/${id}`, body),
+  archiveDraft: (id: string, body: ArchiveDraftBody) =>
+    adminPost<AiProfileDraft>(`${BASE}/drafts/${id}/archive`, body),
 
-  deleteDraft: (id: string) => adminDelete<void>(`${BASE}/drafts/${id}`),
+  duplicateDraft: (id: string, body: DuplicateDraftBody) =>
+    adminPost<AiProfileDraft>(`${BASE}/drafts/${id}/duplicate`, body),
 
-  generateDomain: (id: string, domain: AiProfileDomain, body: GenerateDomainBody) =>
+  validateDraft: (id: string, body: ValidateDraftBody) =>
+    adminPost<ValidateDraftResponse>(`${BASE}/drafts/${id}/validate`, body),
+
+  lockSourceData: (id: string, body: LockSourceDataBody) =>
+    adminPost<AiProfileDraft>(`${BASE}/drafts/${id}/source-data/lock`, body),
+
+  clearSourceDataLock: (id: string, body: ClearSourceDataLockBody) =>
+    adminPost<AiProfileDraft>(
+      `${BASE}/drafts/${id}/source-data/clear-lock`,
+      body,
+    ),
+
+  updateMedia: (id: string, body: UpdateMediaBody) =>
+    adminPatch<AiProfileDraft>(`${BASE}/drafts/${id}/media`, body),
+
+  uploadMedia: (id: string, body: UploadMediaBody) => {
+    const fd = new FormData();
+    fd.append('image', body.file);
+    fd.append('expectedVersion', String(body.expectedVersion));
+    if (body.slot) {
+      fd.append('slot', body.slot);
+    }
+    if (body.prompt) {
+      fd.append('prompt', body.prompt);
+    }
+    if (body.tags) {
+      fd.append('tags', body.tags);
+    }
+    return adminUpload<AiProfileDraft>(
+      `${BASE}/drafts/${id}/media/upload`,
+      fd,
+    );
+  },
+
+  // ───────── Domain operations ─────────
+  generateDomain: (
+    id: string,
+    domain: AiProfileDomain,
+    body: GenerateDomainBody,
+  ) =>
     adminPost<AiProfileDraft>(
       `${BASE}/drafts/${id}/domains/${domain}/generate`,
       body,
     ),
 
-  regenerateDomain: (id: string, domain: AiProfileDomain, body: GenerateDomainBody) =>
-    adminPost<AiProfileDraft>(
-      `${BASE}/drafts/${id}/domains/${domain}/regenerate`,
-      body,
-    ),
-
-  patchDomain: (id: string, domain: AiProfileDomain, body: PatchDomainBody) =>
-    adminPatch<AiProfileDraft>(`${BASE}/drafts/${id}/domains/${domain}`, body),
-
-  listTemplates: () =>
-    adminGet<AiProfileTemplateListResponse>(`${BASE}/templates`),
-
-  applyTemplate: (id: string, body: ApplyTemplateBody) =>
-    adminPost<AiProfileDraft>(`${BASE}/drafts/${id}/apply-template`, body),
-
-  generatePhoto: (id: string, body: GeneratePhotoBody) =>
-    adminPost<AiProfileDraft>(`${BASE}/drafts/${id}/photos/generate`, body),
-
-  deletePhoto: (id: string, photoId: string) =>
-    adminDelete<AiProfileDraft>(`${BASE}/drafts/${id}/photos/${photoId}`),
-
-  uploadPhoto: (id: string, body: UploadPhotoBody) => {
-    const fd = new FormData();
-    fd.append('file', body.file);
-    fd.append('expectedVersion', String(body.expectedVersion));
-    if (body.setAsRepresentative) {
-      fd.append('setAsRepresentative', 'true');
-    }
-    return adminUpload<AiProfileDraft>(
-      `${BASE}/drafts/${id}/photos/upload`,
-      fd,
-    );
-  },
-
-  retryPhoto: (id: string, photoId: string, body: RetryPhotoBody) =>
-    adminPost<AiProfileDraft>(
-      `${BASE}/drafts/${id}/photos/${photoId}/retry`,
-      body,
-    ),
-
-  rejectPhoto: (id: string, photoId: string, body: RejectPhotoBody) =>
-    adminPost<AiProfileDraft>(
-      `${BASE}/drafts/${id}/photos/${photoId}/reject`,
-      body,
-    ),
-
-  setRepresentativeImage: (id: string, body: SetRepresentativeImageBody) =>
+  patchDomainField: (
+    id: string,
+    domain: AiProfileDomain,
+    body: PatchDomainFieldBody,
+  ) =>
     adminPatch<AiProfileDraft>(
-      `${BASE}/drafts/${id}/representative-image`,
+      `${BASE}/drafts/${id}/domains/${domain}/fields`,
       body,
     ),
 
-  publishDryRun: (id: string, body: PublishDryRunBody) =>
-    adminPost<PublishDryRunResponse>(`${BASE}/drafts/${id}/publish/dry-run`, body),
+  regenerateDomainField: (
+    id: string,
+    domain: AiProfileDomain,
+    body: RegenerateDomainFieldBody,
+  ) =>
+    adminPost<AiProfileDraft>(
+      `${BASE}/drafts/${id}/domains/${domain}/fields/regenerate`,
+      body,
+    ),
+
+  applyDomainInstruction: (
+    id: string,
+    domain: AiProfileDomain,
+    body: ApplyDomainInstructionBody,
+  ) =>
+    adminPost<AiProfileDraft>(
+      `${BASE}/drafts/${id}/domains/${domain}/apply-instruction`,
+      body,
+    ),
+
+  // ───────── Publish ─────────
+  publishDryRun: (id: string) =>
+    adminPost<PublishDryRunResponse>(`${BASE}/drafts/${id}/publish/dry-run`),
 
   publish: (id: string, body: PublishBody) =>
     adminPost<PublishResponse>(`${BASE}/drafts/${id}/publish`, body),
 
+  // ───────── Photos ─────────
+  generatePhoto: (id: string, body: GeneratePhotoBody) =>
+    adminPost<AiProfileDraft>(`${BASE}/drafts/${id}/photos/generate`, body),
+
+  // ───────── Preview chat ─────────
   previewChat: (id: string, body: PreviewChatBody) =>
     adminPost<PreviewChatResponse>(`${BASE}/drafts/${id}/preview-chat`, body),
 
-  // Template CRUD
-  listTemplatesPaged: (query: TemplateListQuery = {}) =>
-    adminGet<TemplateListResponse>(`${BASE}/templates`, { ...query }),
+  previewChatTurns: (id: string, body: PreviewChatTurnsBody) =>
+    adminPost<PreviewChatResponse>(
+      `${BASE}/drafts/${id}/preview-chat/turns`,
+      body,
+    ),
 
-  getTemplate: (id: string) =>
-    adminGet<AiProfileTemplate>(`${BASE}/templates/${id}`),
+  // ───────── Batch ─────────
+  batchGenerateDrafts: (body: BatchGenerateBody) =>
+    adminPost<BatchGenerateEnqueueResponse>(
+      `${BASE}/drafts/batch-generate`,
+      body,
+    ),
 
-  createTemplate: (body: CreateTemplateBody) =>
-    adminPost<AiProfileTemplate>(`${BASE}/templates`, body),
+  getBatchGenerationStatus: (jobId: string) =>
+    adminGet<BatchGenerateStatusResponse>(
+      `${BASE}/drafts/batch-generate/${jobId}`,
+    ),
 
-  updateTemplate: (id: string, body: UpdateTemplateBody) =>
-    adminPatch<AiProfileTemplate>(`${BASE}/templates/${id}`, body),
+  // ───────── Save as template ─────────
+  saveDraftAsTemplate: (id: string, body: SaveDraftAsTemplateBody) =>
+    adminPost<AiProfileTemplate>(
+      `${BASE}/drafts/${id}/save-as-template`,
+      body,
+    ),
 
-  archiveTemplate: (id: string) =>
-    adminPost<AiProfileTemplate>(`${BASE}/templates/${id}/archive`),
+  saveCompanionAsTemplate: (
+    companionId: string,
+    body: SaveCompanionAsTemplateBody,
+  ) =>
+    adminPost<AiProfileTemplate>(
+      `${BASE}/companions/${companionId}/save-as-template`,
+      body,
+    ),
 
-  restoreTemplate: (id: string) =>
-    adminPost<AiProfileTemplate>(`${BASE}/templates/${id}/restore`),
-
-  duplicateTemplate: (id: string) =>
-    adminPost<AiProfileTemplate>(`${BASE}/templates/${id}/duplicate`),
-
-  // Prompt Version CRUD
+  // ───────── Prompt Versions ─────────
   listPromptVersions: (query: PromptVersionListQuery = {}) =>
-    adminGet<PromptVersionListResponse>(`${BASE}/prompt-versions`, { ...query }),
+    adminGet<PromptVersionListResponse>(`${BASE}/prompt-versions`, {
+      ...query,
+    }),
 
   getPromptVersion: (id: string) =>
     adminGet<PromptVersion>(`${BASE}/prompt-versions/${id}`),
@@ -164,28 +229,29 @@ export const aiProfileGenerator = {
   updatePromptVersion: (id: string, body: UpdatePromptVersionBody) =>
     adminPatch<PromptVersion>(`${BASE}/prompt-versions/${id}`, body),
 
-  activatePromptVersion: (id: string) =>
-    adminPost<PromptVersion>(`${BASE}/prompt-versions/${id}/activate`),
-
   archivePromptVersion: (id: string) =>
-    adminPost<PromptVersion>(`${BASE}/prompt-versions/${id}/archive`),
+    adminDelete<void>(`${BASE}/prompt-versions/${id}`),
 
-  // Batch
-  listBatchJobs: (query: BatchJobListQuery = {}) =>
-    adminGet<BatchJobListResponse>(`${BASE}/batch-jobs`, { ...query }),
-  getBatchJob: (id: string) => adminGet<BatchJob>(`${BASE}/batch-jobs/${id}`),
-  createBatchJob: (body: CreateBatchJobBody) =>
-    adminPost<BatchJob>(`${BASE}/batch-jobs`, body),
-  cancelBatchJob: (id: string) =>
-    adminPost<BatchJob>(`${BASE}/batch-jobs/${id}/cancel`),
+  setDefaultPromptVersion: (id: string) =>
+    adminPost<PromptVersion>(`${BASE}/prompt-versions/${id}/default`),
 
-  // Events
-  getEventCounts: (days = 7) =>
-    adminGet<EventCountsResponse>(`${BASE}/events/counts`, { days }),
+  // ───────── Generation Templates ─────────
+  listGenerationTemplates: (query: TemplateListQuery = {}) =>
+    adminGet<TemplateListResponse>(`${BASE}/generation-templates`, {
+      ...query,
+    }),
 
-  // Cleanup
-  getCleanupStatus: () => adminGet<CleanupStatus>(`${BASE}/cleanup/status`),
-  runCleanup: () => adminPost<CleanupRunResponse>(`${BASE}/cleanup/run`),
+  getGenerationTemplate: (id: string) =>
+    adminGet<AiProfileTemplate>(`${BASE}/generation-templates/${id}`),
+
+  createGenerationTemplate: (body: CreateTemplateBody) =>
+    adminPost<AiProfileTemplate>(`${BASE}/generation-templates`, body),
+
+  updateGenerationTemplate: (id: string, body: UpdateTemplateBody) =>
+    adminPatch<AiProfileTemplate>(`${BASE}/generation-templates/${id}`, body),
+
+  archiveGenerationTemplate: (id: string) =>
+    adminDelete<void>(`${BASE}/generation-templates/${id}`),
 };
 
 export type AiProfileGeneratorService = typeof aiProfileGenerator;
