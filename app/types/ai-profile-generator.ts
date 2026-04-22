@@ -343,3 +343,19 @@ export interface PreviewChatResponse {
   turns: PreviewChatTurn[];
   tokensUsed?: number;
 }
+
+export interface UploadPhotoBody {
+  file: File;
+  expectedVersion: number;
+  setAsRepresentative?: boolean;
+}
+
+export interface RetryPhotoBody {
+  expectedVersion: number;
+  customPrompt?: string;
+}
+
+export interface RejectPhotoBody {
+  expectedVersion: number;
+  reason: string;
+}

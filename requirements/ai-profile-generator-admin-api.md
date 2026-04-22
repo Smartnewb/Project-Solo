@@ -186,3 +186,30 @@ Create:
 
 Update:
 `{ expectedVersion, name?, config?, description? }`
+
+## Phase 4 추정 Endpoint (구현 시 확정 필요)
+
+### Photo media upload + retry
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| POST | `/admin/v2/ai-companions/drafts/:id/photos/upload` | multipart/form-data — 관리자가 직접 이미지 업로드 |
+| POST | `/admin/v2/ai-companions/drafts/:id/photos/:photoId/retry` | blocked/failed photo 재생성 |
+| POST | `/admin/v2/ai-companions/drafts/:id/photos/:photoId/reject` | 수동 reject — moderationStatus=blocked 유지 + reason 기록 |
+
+### Upload body (multipart)
+
+Fields:
+- `file`: image file (required)
+- `expectedVersion`: number (required, text field)
+- `setAsRepresentative`: `'true' | 'false'` (optional)
+
+Response: updated `AiProfileDraft`
+
+### Retry body
+
+`{ expectedVersion, customPrompt?: string }`
+
+### Reject body
+
+`{ expectedVersion, reason: string }`

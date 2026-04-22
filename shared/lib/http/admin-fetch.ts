@@ -137,3 +137,27 @@ export function adminPatch<T>(path: string, body?: unknown): Promise<T> {
 export function adminDelete<T>(path: string, body?: unknown): Promise<T> {
   return request<T>('DELETE', path, { body });
 }
+
+export async function adminUpload<T>(
+  path: string,
+  formData: FormData,
+): Promise<T> {
+  const res = await fetch(buildAdminProxyUrl(path), {
+    method: 'POST',
+    body: formData,
+    // Do NOT set Content-Type — browser auto-sets with correct boundary
+  });
+
+  if (!res.ok) {
+    const body = await parseJsonBody<unknown>(res).catch(() => null);
+    throw new AdminApiError(
+      (body as { message?: string } | null)?.message ??
+        `Request failed: ${res.status}`,
+      res.status,
+      body,
+    );
+  }
+
+  if (res.status === 204) return undefined as T;
+  return parseJsonBody<T>(res);
+}

@@ -3,6 +3,7 @@ import {
   adminGet,
   adminPatch,
   adminPost,
+  adminUpload,
 } from '@/shared/lib/http/admin-fetch';
 import type {
   AiProfileDomain,
@@ -28,11 +29,14 @@ import type {
   PublishDryRunBody,
   PublishDryRunResponse,
   PublishResponse,
+  RejectPhotoBody,
+  RetryPhotoBody,
   SetRepresentativeImageBody,
   TemplateListQuery,
   TemplateListResponse,
   UpdatePromptVersionBody,
   UpdateTemplateBody,
+  UploadPhotoBody,
 } from '@/app/types/ai-profile-generator';
 
 const BASE = '/admin/v2/ai-companions';
@@ -77,6 +81,31 @@ export const aiProfileGenerator = {
 
   deletePhoto: (id: string, photoId: string) =>
     adminDelete<AiProfileDraft>(`${BASE}/drafts/${id}/photos/${photoId}`),
+
+  uploadPhoto: (id: string, body: UploadPhotoBody) => {
+    const fd = new FormData();
+    fd.append('file', body.file);
+    fd.append('expectedVersion', String(body.expectedVersion));
+    if (body.setAsRepresentative) {
+      fd.append('setAsRepresentative', 'true');
+    }
+    return adminUpload<AiProfileDraft>(
+      `${BASE}/drafts/${id}/photos/upload`,
+      fd,
+    );
+  },
+
+  retryPhoto: (id: string, photoId: string, body: RetryPhotoBody) =>
+    adminPost<AiProfileDraft>(
+      `${BASE}/drafts/${id}/photos/${photoId}/retry`,
+      body,
+    ),
+
+  rejectPhoto: (id: string, photoId: string, body: RejectPhotoBody) =>
+    adminPost<AiProfileDraft>(
+      `${BASE}/drafts/${id}/photos/${photoId}/reject`,
+      body,
+    ),
 
   setRepresentativeImage: (id: string, body: SetRepresentativeImageBody) =>
     adminPatch<AiProfileDraft>(
