@@ -1,0 +1,230 @@
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Trash2 } from 'lucide-react';
+import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
+import {
+  MVP_DOMAINS,
+  type AiProfileDomain,
+  type AiProfileDomainStatus,
+  type AiProfileDraftStatus,
+} from '@/app/types/ai-profile-generator';
+import { Alert, AlertDescription } from '@/shared/ui/alert';
+import { useToast } from '@/shared/ui/admin/toast';
+import { Badge } from '@/shared/ui/badge';
+import { Button } from '@/shared/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/shared/ui/dialog';
+import { AdminApiError } from '@/shared/lib/http/admin-fetch';
+import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
+import { DomainCard } from './domain-card';
+import { TemplateApplyMenu } from './template-apply-menu';
+import { useDraftErrorHandler } from './use-draft-mutation';
+import { ValidationPanel } from './validation-panel';
+
+interface Props {
+  draftId: string;
+}
+
+const STATUS_LABEL: Record<AiProfileDraftStatus, string> = {
+  draft: '초안',
+  generating: '생성 중',
+  failed: '실패',
+  published: '배포됨',
+  archived: '아카이브',
+};
+
+const STATUS_VARIANT: Record<
+  AiProfileDraftStatus,
+  'default' | 'secondary' | 'destructive' | 'outline'
+> = {
+  draft: 'secondary',
+  generating: 'default',
+  failed: 'destructive',
+  published: 'default',
+  archived: 'outline',
+};
+
+export function DraftEditorClient({ draftId }: Props) {
+  const router = useRouter();
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  const handleError = useDraftErrorHandler(draftId);
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const detailQuery = useQuery({
+    queryKey: aiProfileGeneratorKeys.draftDetail(draftId),
+    queryFn: () => aiProfileGenerator.getDraft(draftId),
+    retry: (failureCount, error) => {
+      if (error instanceof AdminApiError && error.status === 404) return false;
+      return failureCount < 2;
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => aiProfileGenerator.deleteDraft(draftId),
+    onSuccess: () => {
+      toast.success('Draft가 삭제되었습니다.');
+      queryClient.invalidateQueries({
+        queryKey: aiProfileGeneratorKeys.drafts(),
+      });
+      router.push('/admin/ai-profiles/generator');
+    },
+    onError: handleError,
+  });
+
+  if (detailQuery.isLoading) {
+    return (
+      <section className="space-y-4 px-6 py-8">
+        <div className="h-8 w-64 animate-pulse rounded bg-slate-200" />
+        <div className="grid gap-4 lg:grid-cols-4">
+          <div className="space-y-3 lg:col-span-3">
+            {[0, 1, 2, 3, 4, 5].map((index) => (
+              <div
+                key={index}
+                className="h-40 animate-pulse rounded-md bg-slate-100"
+              />
+            ))}
+          </div>
+          <div className="h-72 animate-pulse rounded-md bg-slate-100" />
+        </div>
+      </section>
+    );
+  }
+
+  if (detailQuery.isError) {
+    const err = detailQuery.error;
+    if (err instanceof AdminApiError && err.status === 404) {
+      return (
+        <section className="space-y-3 px-6 py-8">
+          <Alert>
+            <AlertDescription>
+              Draft를 찾을 수 없습니다.
+              <Link
+                href="/admin/ai-profiles/generator"
+                className="ml-2 underline"
+              >
+                목록으로
+              </Link>
+            </AlertDescription>
+          </Alert>
+        </section>
+      );
+    }
+    return (
+      <section className="space-y-3 px-6 py-8">
+        <Alert variant="destructive">
+          <AlertDescription>
+            Draft를 불러오지 못했습니다.
+            {err instanceof Error ? ` (${err.message})` : null}
+          </AlertDescription>
+        </Alert>
+      </section>
+    );
+  }
+
+  const draft = detailQuery.data;
+  if (!draft) return null;
+
+  return (
+    <section className="space-y-4 px-6 py-8">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-1">
+          <Link
+            href="/admin/ai-profiles/generator"
+            className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700"
+          >
+            <ArrowLeft className="h-3 w-3" /> 목록으로
+          </Link>
+          <h1 className="text-2xl font-semibold text-slate-900">
+            Draft 편집
+          </h1>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+            <span className="font-mono">{draft.id}</span>
+            <Badge variant={STATUS_VARIANT[draft.status]}>
+              {STATUS_LABEL[draft.status]}
+            </Badge>
+            <span>v{draft.version}</span>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <TemplateApplyMenu
+            draftId={draftId}
+            currentVersion={draft.version}
+          />
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setDeleteOpen(true)}
+            disabled={deleteMutation.isPending}
+          >
+            <Trash2 className="mr-1 h-4 w-4" /> 삭제
+          </Button>
+        </div>
+      </header>
+
+      <div className="grid gap-4 lg:grid-cols-4">
+        <div className="space-y-4 lg:col-span-3">
+          <div className="grid gap-4 md:grid-cols-2">
+            {MVP_DOMAINS.map((domain: AiProfileDomain) => {
+              const status: AiProfileDomainStatus =
+                draft.domainStatus?.[domain] ?? 'empty';
+              return (
+                <DomainCard
+                  key={domain}
+                  draftId={draftId}
+                  domain={domain}
+                  status={status}
+                  payload={draft.domains?.[domain] ?? null}
+                  version={draft.version}
+                  locked={draft.lockedFields?.[domain]}
+                  draftLockedFields={draft.lockedFields ?? {}}
+                />
+              );
+            })}
+          </div>
+        </div>
+        <div className="lg:col-span-1">
+          <ValidationPanel validation={draft.validation} />
+        </div>
+      </div>
+
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Draft 삭제</DialogTitle>
+            <DialogDescription>
+              이 Draft를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteOpen(false)}
+              disabled={deleteMutation.isPending}
+            >
+              취소
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteMutation.mutate()}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? '삭제 중…' : '삭제'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </section>
+  );
+}
