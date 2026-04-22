@@ -5,6 +5,7 @@ import type {
 	PhaseSchoolListQuery,
 	RealUserListQuery,
 } from '@/app/types/ghost-injection';
+import type { AiProfileDraftListQuery } from '@/app/types/ai-profile-generator';
 
 export const ghostInjectionKeys = {
 	all: ['admin', 'ghost-injection'] as const,
@@ -24,6 +25,16 @@ export const ghostInjectionKeys = {
 		[...ghostInjectionKeys.phaseSchools(), 'list', query] as const,
 
 	blacklist: () => [...ghostInjectionKeys.all, 'blacklist'] as const,
+};
+
+export const aiProfileGeneratorKeys = {
+	all: ['admin', 'ai-profile-generator'] as const,
+	drafts: () => [...aiProfileGeneratorKeys.all, 'drafts'] as const,
+	draftList: (query: AiProfileDraftListQuery) =>
+		[...aiProfileGeneratorKeys.drafts(), 'list', query] as const,
+	draftDetail: (id: string) =>
+		[...aiProfileGeneratorKeys.drafts(), 'detail', id] as const,
+	templates: () => [...aiProfileGeneratorKeys.all, 'templates'] as const,
 };
 
 export const referencePoolKeys = {

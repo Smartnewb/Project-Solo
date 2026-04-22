@@ -63,6 +63,7 @@ export type {
 } from './utm';
 export { ghostInjection } from './ghost-injection';
 export { ghostReferencePool } from './ghost-reference-pool';
+export { aiProfileGenerator } from './ai-profile-generator';
 export type { KeywordCategory, KeywordItem, KeywordsResponse } from './keywords';
 export type {
 	CareTarget,
@@ -151,6 +152,7 @@ import { keywords } from './keywords';
 import { utm } from './utm';
 import { ghostInjection } from './ghost-injection';
 import { ghostReferencePool } from './ghost-reference-pool';
+import { aiProfileGenerator } from './ai-profile-generator';
 
 const AdminService = {
 	stats,
@@ -194,6 +196,7 @@ const AdminService = {
 	utm,
 	ghostInjection,
 	ghostReferencePool,
+	aiProfileGenerator,
 };
 
 export default AdminService;

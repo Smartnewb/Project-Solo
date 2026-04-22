@@ -115,6 +115,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
     icon: '🤖',
     label: '가상 매칭',
     items: [
+      { href: '/admin/ai-profiles/generator', label: 'AI 프로필 생성기' },
       { href: '/admin/ai-profiles/ghosts', label: '가상 프로필' },
       { href: '/admin/ai-profiles/reference-pool', label: '레퍼런스 풀' },
       { href: '/admin/ai-profiles/candidates', label: '매칭 후보' },
