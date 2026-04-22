@@ -23,6 +23,7 @@ import {
 } from '@/shared/ui/select';
 import { aiProfileGeneratorKeys } from '../_shared/query-keys';
 import { DraftCreateDialog } from './draft-create-dialog';
+import { GeneratorTabs } from './_tabs';
 
 const DEFAULT_LIMIT = 20;
 
@@ -141,6 +142,7 @@ export function GeneratorListClient() {
 
   return (
     <section className="space-y-4 px-6 py-8">
+      <GeneratorTabs />
       <header className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">
