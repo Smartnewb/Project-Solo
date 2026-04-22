@@ -1,22 +1,16 @@
 'use client';
 
-import { ChevronDown } from 'lucide-react';
 import {
   DOMAIN_LABEL,
   FULL_DOMAINS,
   type AiProfileDomain,
   type DomainBlueprint,
 } from '@/app/types/ai-profile-generator';
-import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/shared/ui/collapsible';
 import { Label } from '@/shared/ui/label';
 import { Textarea } from '@/shared/ui/textarea';
 import { AdvancedJsonPanel } from '../_shared/advanced-json-panel';
+import { Section } from '../_shared/collapsible-section';
 import { asStringArray, pickExtra } from '../_shared/policy-utils';
 import { StringListInput } from '../_shared/string-list-input';
 
@@ -117,75 +111,60 @@ export function DomainBlueprintsFields({ value, onChange, disabled }: Props) {
       {FULL_DOMAINS.map((domain) => {
         const bp = known[domain] ?? { required: [], optional: [] };
         const configured = !isEmptyBlueprint(bp);
+        const title = configured
+          ? `${DOMAIN_LABEL[domain]} (필수 ${bp.required.length} · 선택 ${bp.optional.length})`
+          : `${DOMAIN_LABEL[domain]} · 미설정`;
         return (
-          <Collapsible
-            key={domain}
-            className="rounded-md border border-slate-200"
-          >
-            <CollapsibleTrigger className="flex w-full items-center justify-between px-3 py-2 text-left text-sm font-medium hover:bg-slate-50">
-              <span className="flex items-center gap-2">
-                <span>{DOMAIN_LABEL[domain]}</span>
-                {configured ? (
-                  <Badge variant="secondary" className="text-xs">
-                    필수 {bp.required.length} · 선택 {bp.optional.length}
-                  </Badge>
-                ) : (
-                  <span className="text-xs text-slate-400">미설정</span>
-                )}
-              </span>
-              <ChevronDown className="h-4 w-4 text-slate-500" />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-3 border-t border-slate-200 p-3">
-              <div className="space-y-1.5">
-                <Label>필수 필드</Label>
-                <StringListInput
-                  value={bp.required}
-                  onChange={(next) =>
-                    updateDomain(domain, { required: next })
-                  }
-                  placeholder="예: name"
-                  disabled={disabled}
-                />
+          <Section key={domain} title={title}>
+            <div className="space-y-1.5">
+              <Label>필수 필드</Label>
+              <StringListInput
+                value={bp.required}
+                onChange={(next) =>
+                  updateDomain(domain, { required: next })
+                }
+                placeholder="예: name"
+                disabled={disabled}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>선택 필드</Label>
+              <StringListInput
+                value={bp.optional}
+                onChange={(next) =>
+                  updateDomain(domain, { optional: next })
+                }
+                placeholder="예: hometown"
+                disabled={disabled}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>힌트</Label>
+              <Textarea
+                value={bp.hint ?? ''}
+                onChange={(event) =>
+                  updateDomain(domain, {
+                    hint: event.target.value || undefined,
+                  })
+                }
+                rows={3}
+                placeholder="이 도메인 생성 시 참고할 가이드"
+                disabled={disabled}
+              />
+            </div>
+            {configured && !disabled ? (
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => removeDomain(domain)}
+                >
+                  이 도메인 블루프린트 제거
+                </Button>
               </div>
-              <div className="space-y-1.5">
-                <Label>선택 필드</Label>
-                <StringListInput
-                  value={bp.optional}
-                  onChange={(next) =>
-                    updateDomain(domain, { optional: next })
-                  }
-                  placeholder="예: hometown"
-                  disabled={disabled}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>힌트</Label>
-                <Textarea
-                  value={bp.hint ?? ''}
-                  onChange={(event) =>
-                    updateDomain(domain, {
-                      hint: event.target.value || undefined,
-                    })
-                  }
-                  rows={3}
-                  placeholder="이 도메인 생성 시 참고할 가이드"
-                  disabled={disabled}
-                />
-              </div>
-              {configured && !disabled ? (
-                <div className="flex justify-end">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => removeDomain(domain)}
-                  >
-                    이 도메인 블루프린트 제거
-                  </Button>
-                </div>
-              ) : null}
-            </CollapsibleContent>
-          </Collapsible>
+            ) : null}
+          </Section>
         );
       })}
 
