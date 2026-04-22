@@ -50,7 +50,6 @@ export function PhotoActionMenu({
   const [dialogMode, setDialogMode] = useState<DialogMode>(null);
   const [customPrompt, setCustomPrompt] = useState('');
   const [rejectReason, setRejectReason] = useState('');
-  const [validationError, setValidationError] = useState<string | null>(null);
 
   const status = photo.moderationStatus;
   const canAct = status === 'blocked' || status === 'failed';
@@ -72,12 +71,7 @@ export function PhotoActionMenu({
       setDialogMode(null);
       setCustomPrompt('');
     },
-    onError: (error) => {
-      if (error instanceof Error && error.message) {
-        setValidationError(error.message);
-      }
-      handleError(error);
-    },
+    onError: handleError,
   });
 
   const rejectMutation = useMutation({
@@ -97,23 +91,16 @@ export function PhotoActionMenu({
       setDialogMode(null);
       setRejectReason('');
     },
-    onError: (error) => {
-      if (error instanceof Error && error.message) {
-        setValidationError(error.message);
-      }
-      handleError(error);
-    },
+    onError: handleError,
   });
 
   const openDialog = (mode: DialogMode) => {
-    setValidationError(null);
     setDialogMode(mode);
     setOpen(false);
   };
 
   const closeDialog = () => {
     setDialogMode(null);
-    setValidationError(null);
   };
 
   if (readOnly || !canAct) {
@@ -174,9 +161,6 @@ export function PhotoActionMenu({
               placeholder="기본 프롬프트 대신 사용할 지시문"
               disabled={retryMutation.isPending}
             />
-            {validationError ? (
-              <p className="text-sm text-rose-600">{validationError}</p>
-            ) : null}
           </div>
           <DialogFooter>
             <Button
@@ -187,10 +171,7 @@ export function PhotoActionMenu({
               취소
             </Button>
             <Button
-              onClick={() => {
-                setValidationError(null);
-                retryMutation.mutate();
-              }}
+              onClick={() => retryMutation.mutate()}
               disabled={retryMutation.isPending}
             >
               {retryMutation.isPending ? '요청 중…' : '재생성'}
@@ -222,9 +203,6 @@ export function PhotoActionMenu({
               placeholder="예: 얼굴 식별 불가, 부적절 콘텐츠"
               disabled={rejectMutation.isPending}
             />
-            {validationError ? (
-              <p className="text-sm text-rose-600">{validationError}</p>
-            ) : null}
           </div>
           <DialogFooter>
             <Button
@@ -236,10 +214,7 @@ export function PhotoActionMenu({
             </Button>
             <Button
               variant="destructive"
-              onClick={() => {
-                setValidationError(null);
-                rejectMutation.mutate();
-              }}
+              onClick={() => rejectMutation.mutate()}
               disabled={rejectMutation.isPending || !rejectReason.trim()}
             >
               {rejectMutation.isPending ? '처리 중…' : '거부 확정'}

@@ -32,7 +32,7 @@ export function AdvancedJsonPanel({
   const [draft, setDraft] = useState<string>(() => toText(value));
   const [error, setError] = useState<string | null>(null);
 
-  // value 외부 변경 시 draft 동기화 (사용자 편집 중이 아닐 때만 의미 있음)
+  // External updates clobber in-progress drafts; acceptable for now since parents memoize.
   useEffect(() => {
     setDraft(toText(value));
     setError(null);

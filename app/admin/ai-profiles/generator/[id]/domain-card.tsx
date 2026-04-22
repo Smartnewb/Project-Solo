@@ -111,12 +111,14 @@ export function DomainCard({
     onError: handleError,
   });
 
+  const mutations = [
+    generateMutation,
+    regenerateMutation,
+    saveMutation,
+    lockMutation,
+  ];
   const isBusy =
-    status === 'generating' ||
-    generateMutation.isPending ||
-    regenerateMutation.isPending ||
-    saveMutation.isPending ||
-    lockMutation.isPending;
+    status === 'generating' || mutations.some((m) => m.isPending);
 
   const canGenerate = status === 'empty';
   const canRegenerate =

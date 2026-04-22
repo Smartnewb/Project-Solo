@@ -29,6 +29,7 @@ import {
 } from '@/shared/ui/select';
 import { Textarea } from '@/shared/ui/textarea';
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
+import { emptyObjectToUndef } from '../_shared/policy-utils';
 import { useAiProfileErrorHandler } from '../_shared-error';
 import {
   TemplatePolicyFields,
@@ -125,30 +126,16 @@ export function TemplateFormDialog({ open, onOpenChange, template }: Props) {
         throw new Error('기본 지시문은 10자 이상이어야 합니다.');
       }
 
-      const domainInstructions =
-        Object.keys(form.policy.domainInstructions).length > 0
-          ? form.policy.domainInstructions
-          : undefined;
-      const randomizationPolicy =
-        Object.keys(form.policy.randomizationPolicy).length > 0
-          ? form.policy.randomizationPolicy
-          : undefined;
-      const safetyPolicy =
-        Object.keys(form.policy.safetyPolicy).length > 0
-          ? form.policy.safetyPolicy
-          : undefined;
-      const sourceDataPolicy =
-        Object.keys(form.policy.sourceDataPolicy).length > 0
-          ? form.policy.sourceDataPolicy
-          : undefined;
-      const imagePolicy =
-        Object.keys(form.policy.imagePolicy).length > 0
-          ? form.policy.imagePolicy
-          : undefined;
-      const domainBlueprints =
-        Object.keys(form.policy.domainBlueprints).length > 0
-          ? form.policy.domainBlueprints
-          : undefined;
+      const domainInstructions = emptyObjectToUndef(
+        form.policy.domainInstructions,
+      );
+      const randomizationPolicy = emptyObjectToUndef(
+        form.policy.randomizationPolicy,
+      );
+      const safetyPolicy = emptyObjectToUndef(form.policy.safetyPolicy);
+      const sourceDataPolicy = emptyObjectToUndef(form.policy.sourceDataPolicy);
+      const imagePolicy = emptyObjectToUndef(form.policy.imagePolicy);
+      const domainBlueprints = emptyObjectToUndef(form.policy.domainBlueprints);
 
       const createBody: CreateTemplateBody = {
         name,

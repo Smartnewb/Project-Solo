@@ -11,8 +11,6 @@ import {
   DOMAIN_GROUP_ORDER,
   DOMAIN_TO_GROUP,
   FULL_DOMAINS,
-  type AiProfileDomain,
-  type AiProfileDomainGroup,
   type AiProfileDomainStatus,
 } from '@/app/types/ai-profile-generator';
 import { Alert, AlertDescription } from '@/shared/ui/alert';
@@ -137,14 +135,6 @@ export function DraftEditorClient({ draftId }: Props) {
     draft.status === 'published' || draft.status === 'archived';
   const canPublish = draft.status === 'draft' || draft.status === 'failed';
 
-  const domainsByGroup = DOMAIN_GROUP_ORDER.reduce(
-    (acc, group) => {
-      acc[group] = FULL_DOMAINS.filter((d) => DOMAIN_TO_GROUP[d] === group);
-      return acc;
-    },
-    {} as Record<AiProfileDomainGroup, AiProfileDomain[]>,
-  );
-
   return (
     <section className="space-y-4 px-6 py-8">
       <header className="flex flex-wrap items-start justify-between gap-4">
@@ -201,8 +191,10 @@ export function DraftEditorClient({ draftId }: Props) {
       <div className="grid gap-4 lg:grid-cols-4">
         <div className="space-y-5 lg:col-span-3">
           {DOMAIN_GROUP_ORDER.map((group) => {
-            const domains = domainsByGroup[group];
-            if (!domains || domains.length === 0) return null;
+            const domains = FULL_DOMAINS.filter(
+              (d) => DOMAIN_TO_GROUP[d] === group,
+            );
+            if (domains.length === 0) return null;
             return (
               <DomainGroup key={group} label={DOMAIN_GROUP_LABEL[group]}>
                 <div className="grid gap-4 md:grid-cols-2">
