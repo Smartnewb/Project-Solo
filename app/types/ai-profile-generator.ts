@@ -359,3 +359,72 @@ export interface RejectPhotoBody {
   expectedVersion: number;
   reason: string;
 }
+
+// ───────── Phase 5: structured policy types ─────────
+
+export const CAMPUS_AREAS = [
+  'SEOUL',
+  'GYEONGGI',
+  'INCHEON',
+  'BUSAN',
+  'DAEGU',
+  'DAEJEON',
+  'GWANGJU',
+  'OTHER',
+] as const;
+export type CampusArea = (typeof CAMPUS_AREAS)[number];
+
+export const GENDER_PRESENTATIONS = ['female', 'male', 'any'] as const;
+export type GenderPresentation = (typeof GENDER_PRESENTATIONS)[number];
+
+export const FALLBACK_STRATEGIES = ['random', 'nearest', 'skip'] as const;
+export type FallbackStrategy = (typeof FALLBACK_STRATEGIES)[number];
+
+export interface SourceDataPolicyKnown {
+  universityIds?: string[];
+  departmentIds?: string[];
+  campusAreas?: CampusArea[];
+  ageRange?: { min?: number; max?: number };
+  genderPresentation?: GenderPresentation;
+  minReferenceCount?: number;
+  fallbackStrategy?: FallbackStrategy;
+}
+
+export const IMAGE_PROVIDERS = ['imagen', 'openai', 'auto'] as const;
+export type ImageProviderHint = (typeof IMAGE_PROVIDERS)[number];
+
+export const IMAGE_RESOLUTIONS = [
+  '1024x1024',
+  '768x1024',
+  '1024x768',
+  'custom',
+] as const;
+export type ImageResolution = (typeof IMAGE_RESOLUTIONS)[number];
+
+export const IMAGE_ASPECT_RATIOS = ['1:1', '3:4', '4:3', 'custom'] as const;
+export type ImageAspectRatio = (typeof IMAGE_ASPECT_RATIOS)[number];
+
+export const IMAGE_QUALITIES = ['low', 'medium', 'high'] as const;
+export type ImageQuality = (typeof IMAGE_QUALITIES)[number];
+
+export const MODERATION_STRICTNESS = ['low', 'medium', 'high', 'auto'] as const;
+export type ModerationStrictness = (typeof MODERATION_STRICTNESS)[number];
+
+export interface ImagePolicyKnown {
+  providerHint?: ImageProviderHint;
+  resolution?: ImageResolution;
+  aspectRatio?: ImageAspectRatio;
+  quality?: ImageQuality;
+  moderationStrictness?: ModerationStrictness;
+  negativePrompts?: string[];
+  requiredTags?: string[];
+  styleBias?: string;
+}
+
+export interface DomainBlueprint {
+  required: string[];
+  optional: string[];
+  hint?: string;
+}
+
+export type DomainBlueprints = Partial<Record<AiProfileDomain, DomainBlueprint>>;

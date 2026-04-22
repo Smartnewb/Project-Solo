@@ -213,3 +213,45 @@ Response: updated `AiProfileDraft`
 ### Reject body
 
 `{ expectedVersion, reason: string }`
+
+## Phase 5 Policy Schema (구조화 편집 대상 — 백엔드 확정 전 추정)
+
+### sourceDataPolicy
+
+| Key | Type | Description |
+| --- | --- | --- |
+| `universityIds` | `string[]` | 포함 학교 ID 필터 |
+| `departmentIds` | `string[]` | 포함 학과 ID 필터 |
+| `campusAreas` | `string[]` | 지역 (SEOUL, GYEONGGI, INCHEON 등) |
+| `ageRange.min` / `ageRange.max` | `number` | 나이 범위 |
+| `genderPresentation` | `'female' \| 'male' \| 'any'` | 성별 |
+| `minReferenceCount` | `number` | 풀 최소 참조 수 |
+| `fallbackStrategy` | `'random' \| 'nearest' \| 'skip'` | 풀 부족 시 대응 |
+
+미지의 키는 raw JSON으로 보존.
+
+### imagePolicy
+
+| Key | Type | Description |
+| --- | --- | --- |
+| `providerHint` | `'imagen' \| 'openai' \| 'auto'` | provider 힌트 |
+| `resolution` | `'1024x1024' \| '768x1024' \| '1024x768' \| 'custom'` | 해상도 |
+| `aspectRatio` | `'1:1' \| '3:4' \| '4:3' \| 'custom'` | 비율 |
+| `quality` | `'low' \| 'medium' \| 'high'` | 품질 |
+| `moderationStrictness` | `'low' \| 'medium' \| 'high' \| 'auto'` | moderation 엄격도 |
+| `negativePrompts` | `string[]` | 금지 표현 |
+| `requiredTags` | `string[]` | 필수 태그 |
+| `styleBias` | `string` | 스타일 힌트 |
+
+### domainBlueprints
+
+키 = `AiProfileDomain` (11종).
+값:
+
+```json
+{
+  "required": ["name", "age"],
+  "optional": ["hometown"],
+  "hint": "대학생 프리셋 참고"
+}
+```
