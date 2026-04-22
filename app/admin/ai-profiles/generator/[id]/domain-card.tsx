@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Pencil, RefreshCcw } from 'lucide-react';
 import { aiProfileGenerator } from '@/app/services/admin/ai-profile-generator';
 import {
   DOMAIN_LABEL,
@@ -17,6 +19,8 @@ import {
 import { aiProfileGeneratorKeys } from '../../_shared/query-keys';
 import { useAiProfileErrorHandler } from '../_shared-error';
 import { DomainStatusBadge } from './domain-status-badge';
+import { FieldEditDialog } from './field-edit-dialog';
+import { FieldRegenerateDialog } from './field-regenerate-dialog';
 
 interface Props {
   draftId: string;
@@ -25,13 +29,71 @@ interface Props {
   payload: unknown;
   version: number;
   readOnly?: boolean;
-  onOpenFieldEdit?: (domain: AiProfileDomain, path: string) => void;
-  onOpenFieldRegenerate?: (domain: AiProfileDomain, path: string) => void;
   onOpenInstruction?: (domain: AiProfileDomain) => void;
 }
 
-// TODO(phase7): replace with full field-tree + per-field action menu.
-// For now: read-only JSON view + domain-level generate/regenerate + instruction CTA.
+interface Leaf {
+  path: string; // full path including domain prefix
+  relativePath: string; // within-domain path
+  value: unknown;
+}
+
+const MAX_DEPTH = 5;
+
+function collectLeaves(
+  value: unknown,
+  prefix: string,
+  relativePrefix: string,
+  depth: number,
+  out: Leaf[],
+) {
+  if (depth > MAX_DEPTH) return;
+  if (value === null || value === undefined) {
+    out.push({ path: prefix, relativePath: relativePrefix, value });
+    return;
+  }
+  if (Array.isArray(value)) {
+    if (value.length === 0 || value.every((v) => typeof v !== 'object' || v === null)) {
+      out.push({ path: prefix, relativePath: relativePrefix, value });
+      return;
+    }
+    value.forEach((item, idx) => {
+      const nextRel = `${relativePrefix}[${idx}]`;
+      collectLeaves(item, `${prefix}[${idx}]`, nextRel, depth + 1, out);
+    });
+    return;
+  }
+  if (typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>);
+    if (entries.length === 0) {
+      out.push({ path: prefix, relativePath: relativePrefix, value });
+      return;
+    }
+    for (const [k, v] of entries) {
+      const nextRel = relativePrefix ? `${relativePrefix}.${k}` : k;
+      collectLeaves(v, `${prefix}.${k}`, nextRel, depth + 1, out);
+    }
+    return;
+  }
+  out.push({ path: prefix, relativePath: relativePrefix, value });
+}
+
+function previewValue(value: unknown): string {
+  if (value === null || value === undefined) return '—';
+  if (typeof value === 'string') {
+    return value.length > 60 ? `${value.slice(0, 60)}…` : value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  try {
+    const json = JSON.stringify(value);
+    return json.length > 60 ? `${json.slice(0, 60)}…` : json;
+  } catch {
+    return String(value);
+  }
+}
+
 export function DomainCard({
   draftId,
   domain,
@@ -61,8 +123,13 @@ export function DomainCard({
     onError: handleError,
   });
 
-  const isBusy = status === 'generating' || generateMutation.isPending;
+  const [editState, setEditState] = useState<{
+    path: string;
+    value: unknown;
+  } | null>(null);
+  const [regenState, setRegenState] = useState<{ path: string } | null>(null);
 
+  const isBusy = status === 'generating' || generateMutation.isPending;
   const canGenerate = status === 'empty';
   const canRegenerate =
     status === 'ready' ||
@@ -70,10 +137,10 @@ export function DomainCard({
     status === 'blocked' ||
     status === 'failed';
 
-  const jsonText =
-    payload == null
-      ? '(비어 있음)'
-      : JSON.stringify(payload, null, 2);
+  const leaves: Leaf[] = [];
+  if (payload !== null && payload !== undefined) {
+    collectLeaves(payload, domain, '', 0, leaves);
+  }
 
   return (
     <Card className="flex flex-col">
@@ -117,10 +184,85 @@ export function DomainCard({
             ) : null}
           </div>
         ) : null}
-        <pre className="max-h-64 overflow-auto rounded bg-slate-50 p-3 text-xs text-slate-700">
-          {jsonText}
-        </pre>
+
+        {leaves.length === 0 ? (
+          <p className="text-xs text-slate-500">(비어 있음)</p>
+        ) : (
+          <div className="max-h-72 overflow-y-auto rounded border border-slate-200 bg-slate-50 text-xs">
+            <ul className="divide-y divide-slate-100">
+              {leaves.map((leaf) => (
+                <li
+                  key={leaf.path}
+                  className="flex items-start gap-2 px-2 py-1.5"
+                >
+                  <div className="flex-1 space-y-0.5">
+                    <div className="font-mono text-[10px] text-slate-500">
+                      {leaf.relativePath || '(root)'}
+                    </div>
+                    <div className="truncate text-slate-800">
+                      {previewValue(leaf.value)}
+                    </div>
+                  </div>
+                  {!readOnly ? (
+                    <div className="flex shrink-0 gap-1">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditState({
+                            path: leaf.path,
+                            value: leaf.value,
+                          })
+                        }
+                        className="rounded p-1 text-slate-500 hover:bg-white hover:text-slate-800"
+                        aria-label="편집"
+                        disabled={isBusy}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRegenState({ path: leaf.path })}
+                        className="rounded p-1 text-slate-500 hover:bg-white hover:text-slate-800"
+                        aria-label="재생성"
+                        disabled={isBusy}
+                      >
+                        <RefreshCcw className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </CardContent>
+
+      {editState ? (
+        <FieldEditDialog
+          open={editState !== null}
+          onOpenChange={(open) => {
+            if (!open) setEditState(null);
+          }}
+          draftId={draftId}
+          version={version}
+          domain={domain}
+          initialPath={editState.path}
+          initialValue={editState.value}
+        />
+      ) : null}
+
+      {regenState ? (
+        <FieldRegenerateDialog
+          open={regenState !== null}
+          onOpenChange={(open) => {
+            if (!open) setRegenState(null);
+          }}
+          draftId={draftId}
+          version={version}
+          domain={domain}
+          initialPath={regenState.path}
+        />
+      ) : null}
     </Card>
   );
 }
