@@ -6,11 +6,18 @@ import { Loader2, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
 import { ghostInjection } from '@/app/services/admin/ghost-injection';
 import type { GhostDetail, ImageVendor, UpdateGhostFields } from '@/app/types/ghost-injection';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
-import { useConfirm } from '@/shared/ui/admin/confirm-dialog';
 import { useToast } from '@/shared/ui/admin/toast';
 import { Alert, AlertDescription } from '@/shared/ui/alert';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from '@/shared/ui/dialog';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
 import {
@@ -106,10 +113,10 @@ const PHOTO_SLOTS = [0, 1, 2];
 
 export function GhostDetailDrawer({ ghostAccountId, onClose }: GhostDetailDrawerProps) {
 	const toast = useToast();
-	const confirm = useConfirm();
 	const queryClient = useQueryClient();
 	const [form, setForm] = useState<FormState>(emptyForm);
 	const [deleteReason, setDeleteReason] = useState('');
+	const [confirmOpen, setConfirmOpen] = useState(false);
 
 	const detailQuery = useQuery({
 		queryKey: ghostInjectionKeys.ghostDetail(ghostAccountId ?? ''),
@@ -161,22 +168,11 @@ export function GhostDetailDrawer({ ghostAccountId, onClose }: GhostDetailDrawer
 		onSuccess: () => {
 			toast.success('가상 프로필이 삭제되었습니다.');
 			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.ghosts() });
+			setConfirmOpen(false);
 			onClose();
 		},
 		onError: (error) => toast.error(getAdminErrorMessage(error)),
 	});
-
-	const handleDelete = async () => {
-		const ok = await confirm({
-			title: '가상 프로필 영구 삭제',
-			message:
-				'삭제하면 복구할 수 없습니다. 이 ghost와 매칭된 실사용자에게는 탈퇴한 사용자로 표시됩니다.',
-			severity: 'error',
-			confirmText: '영구 삭제',
-		});
-		if (!ok) return;
-		deleteMutation.mutate();
-	};
 
 	return (
 		<Sheet open={Boolean(ghostAccountId)} onOpenChange={(open) => !open && onClose()}>
@@ -408,7 +404,7 @@ export function GhostDetailDrawer({ ghostAccountId, onClose }: GhostDetailDrawer
 									size="sm"
 									className="w-full"
 									disabled={!isReasonValid(deleteReason) || deleteMutation.isPending}
-									onClick={handleDelete}
+									onClick={() => setConfirmOpen(true)}
 								>
 									{deleteMutation.isPending ? (
 										<><Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> 삭제 중…</>
@@ -421,6 +417,45 @@ export function GhostDetailDrawer({ ghostAccountId, onClose }: GhostDetailDrawer
 					)}
 				</div>
 			</SheetContent>
+
+			<Dialog open={confirmOpen} onOpenChange={(open) => !deleteMutation.isPending && setConfirmOpen(open)}>
+				<DialogContent className="max-w-md">
+					<DialogHeader>
+						<DialogTitle className="flex items-center gap-2 text-red-700">
+							<Trash2 className="h-4 w-4" />
+							가상 프로필 영구 삭제
+						</DialogTitle>
+						<DialogDescription>
+							삭제하면 복구할 수 없습니다. 이 ghost와 매칭된 실사용자에게는 탈퇴한 사용자로 표시됩니다.
+						</DialogDescription>
+					</DialogHeader>
+					<Alert variant="destructive">
+						<AlertDescription className="text-xs">
+							사유: {deleteReason.trim()}
+						</AlertDescription>
+					</Alert>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => setConfirmOpen(false)}
+							disabled={deleteMutation.isPending}
+						>
+							취소
+						</Button>
+						<Button
+							variant="destructive"
+							onClick={() => deleteMutation.mutate()}
+							disabled={deleteMutation.isPending}
+						>
+							{deleteMutation.isPending ? (
+								<><Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> 삭제 중…</>
+							) : (
+								'영구 삭제'
+							)}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</Sheet>
 	);
 }
