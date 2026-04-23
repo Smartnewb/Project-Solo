@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronDown, ChevronUp, RefreshCw, Sparkles } from 'lucide-react';
+import { RefreshCw, Sparkles } from 'lucide-react';
 import { ghostInjection } from '@/app/services/admin/ghost-injection';
 import type { ImageVendor, PromptPreviewQuery } from '@/app/types/ghost-injection';
 import { Button } from '@/shared/ui/button';
@@ -14,6 +14,7 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from '@/shared/ui/dialog';
+import { Section } from '../generator/_shared/collapsible-section';
 
 interface GhostPromptPreviewModalProps {
 	age?: number;
@@ -23,21 +24,20 @@ interface GhostPromptPreviewModalProps {
 
 export function GhostPromptPreviewModal({ age, vendor, trigger }: GhostPromptPreviewModalProps) {
 	const [open, setOpen] = useState(false);
-	const [negativeOpen, setNegativeOpen] = useState(false);
-	const [fetchKey, setFetchKey] = useState(0);
 
-	const query: PromptPreviewQuery = {
+	const query = useMemo<PromptPreviewQuery>(() => ({
 		age: age && age >= 18 && age <= 40 ? age : undefined,
 		vendor: vendor ?? 'seedream',
 		count: 3,
 		mode: 'random',
-	};
+	}), [age, vendor]);
 
 	const previewQuery = useQuery({
-		queryKey: ['ghost-prompt-preview', query, fetchKey],
+		queryKey: ['ghost-prompt-preview', query],
 		queryFn: () => ghostInjection.promptPreview(query),
 		enabled: open,
 		staleTime: 0,
+		refetchOnWindowFocus: false,
 	});
 
 	const data = previewQuery.data;
@@ -86,7 +86,7 @@ export function GhostPromptPreviewModal({ age, vendor, trigger }: GhostPromptPre
 								<Button
 									variant="outline"
 									size="sm"
-									onClick={() => setFetchKey((k) => k + 1)}
+									onClick={() => previewQuery.refetch()}
 									disabled={previewQuery.isFetching}
 								>
 									<RefreshCw className={`mr-1 h-3.5 w-3.5 ${previewQuery.isFetching ? 'animate-spin' : ''}`} />
@@ -107,25 +107,9 @@ export function GhostPromptPreviewModal({ age, vendor, trigger }: GhostPromptPre
 							</ul>
 
 							{data.negativePrompt && (
-								<div className="rounded-md border border-dashed border-slate-200">
-									<button
-										type="button"
-										className="flex w-full items-center justify-between px-3 py-2 text-xs font-medium text-slate-600"
-										onClick={() => setNegativeOpen((prev) => !prev)}
-									>
-										네거티브 프롬프트 ({data.vendor})
-										{negativeOpen ? (
-											<ChevronUp className="h-3.5 w-3.5" />
-										) : (
-											<ChevronDown className="h-3.5 w-3.5" />
-										)}
-									</button>
-									{negativeOpen && (
-										<div className="border-t bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-500">
-											{data.negativePrompt}
-										</div>
-									)}
-								</div>
+								<Section title={`네거티브 프롬프트 (${data.vendor})`}>
+									<p className="text-xs leading-relaxed text-slate-500">{data.negativePrompt}</p>
+								</Section>
 							)}
 
 							<p className="text-[11px] text-slate-400">{data.note}</p>

@@ -27,6 +27,48 @@ interface GhostFiltersProps {
 
 const ALL = '__all__';
 
+type PhotoChipId = 'none' | 'partial' | 'full';
+
+const QUICK_CHIPS: { id: PhotoChipId; label: string; color: 'red' | 'amber' | 'green' }[] = [
+	{ id: 'none', label: '사진 없음', color: 'red' },
+	{ id: 'partial', label: '부분 실패 (1~2장)', color: 'amber' },
+	{ id: 'full', label: '정상 (3장)', color: 'green' },
+];
+
+const CHIP_COLOR: Record<'red' | 'amber' | 'green', { active: string; inactive: string }> = {
+	red: {
+		active: 'bg-red-100 border-red-400 text-red-700',
+		inactive: 'border-slate-200 text-slate-600 hover:border-red-300 hover:text-red-600',
+	},
+	amber: {
+		active: 'bg-amber-100 border-amber-400 text-amber-700',
+		inactive: 'border-slate-200 text-slate-600 hover:border-amber-300 hover:text-amber-600',
+	},
+	green: {
+		active: 'bg-green-100 border-green-400 text-green-700',
+		inactive: 'border-slate-200 text-slate-600 hover:border-green-300 hover:text-green-600',
+	},
+};
+
+const PHOTO_CHIP_QUERY: Record<PhotoChipId, Pick<GhostListQuery, 'minPhotoCount' | 'maxPhotoCount'>> = {
+	none:    { minPhotoCount: undefined, maxPhotoCount: 0 },
+	partial: { minPhotoCount: 1, maxPhotoCount: 2 },
+	full:    { minPhotoCount: 3, maxPhotoCount: undefined },
+};
+
+function derivePhotoQuickFilter(q: GhostListQuery): PhotoChipId | 'all' {
+	if (q.maxPhotoCount === 0) return 'none';
+	if (q.minPhotoCount === 1 && q.maxPhotoCount === 2) return 'partial';
+	if (q.minPhotoCount === 3) return 'full';
+	return 'all';
+}
+
+function derivePhotoSelectValue(q: GhostListQuery): string {
+	if (q.maxPhotoCount === 0) return 'none';
+	if (q.minPhotoCount !== undefined) return `min-${q.minPhotoCount}`;
+	return ALL;
+}
+
 export function GhostFilters({ query, onChange }: GhostFiltersProps) {
 	const [qInput, setQInput] = useState(query.q ?? '');
 	const [schoolSearch, setSchoolSearch] = useState('');
@@ -51,8 +93,25 @@ export function GhostFilters({ query, onChange }: GhostFiltersProps) {
 	});
 
 	const schoolItems = schoolsQuery.data?.items ?? [];
-
 	const selectedSchoolName = schoolItems.find((item) => item.id === query.schoolId)?.name;
+
+	const photoQuickFilter = derivePhotoQuickFilter(query);
+	const photoFilterValue = derivePhotoSelectValue(query);
+
+	const hasFilter = Boolean(
+		query.status ||
+			query.schoolId ||
+			query.q ||
+			query.minPhotoCount !== undefined ||
+			query.maxPhotoCount !== undefined,
+	);
+
+	const applyPhotoChip = (chipId: PhotoChipId | 'all') => {
+		const photoFields = chipId === 'all'
+			? { minPhotoCount: undefined, maxPhotoCount: undefined }
+			: PHOTO_CHIP_QUERY[chipId];
+		onChange({ ...query, ...photoFields, page: 1 });
+	};
 
 	const handleSearchSubmit = (event: React.FormEvent) => {
 		event.preventDefault();
@@ -65,61 +124,15 @@ export function GhostFilters({ query, onChange }: GhostFiltersProps) {
 		onChange({ page: 1, limit: query.limit });
 	};
 
-	const photoQuickFilter: string =
-		query.maxPhotoCount === 0
-			? 'none'
-			: query.minPhotoCount === 1 && query.maxPhotoCount === 2
-				? 'partial'
-				: query.minPhotoCount === 3
-					? 'full'
-					: 'all';
-
-	const photoFilterValue =
-		query.maxPhotoCount === 0
-			? 'none'
-			: query.minPhotoCount !== undefined
-				? `min-${query.minPhotoCount}`
-				: ALL;
-
-	const hasFilter = Boolean(
-		query.status ||
-			query.schoolId ||
-			query.q ||
-			query.minPhotoCount !== undefined ||
-			query.maxPhotoCount !== undefined,
-	);
-
-	const QUICK_CHIPS = [
-		{ id: 'none', label: '사진 없음', color: 'red' as const },
-		{ id: 'partial', label: '부분 실패 (1~2장)', color: 'amber' as const },
-		{ id: 'full', label: '정상 (3장)', color: 'green' as const },
-	] as const;
-
-	const applyQuickChip = (chipId: typeof QUICK_CHIPS[number]['id'] | 'all') => {
-		if (chipId === 'none') {
-			onChange({ ...query, minPhotoCount: undefined, maxPhotoCount: 0, page: 1 });
-		} else if (chipId === 'partial') {
-			onChange({ ...query, minPhotoCount: 1, maxPhotoCount: 2, page: 1 });
-		} else if (chipId === 'full') {
-			onChange({ ...query, minPhotoCount: 3, maxPhotoCount: undefined, page: 1 });
+	const handlePhotoSelectChange = (value: string) => {
+		if (value === ALL) {
+			applyPhotoChip('all');
+		} else if (value === 'none') {
+			applyPhotoChip('none');
 		} else {
-			onChange({ ...query, minPhotoCount: undefined, maxPhotoCount: undefined, page: 1 });
+			const min = Number(value.replace('min-', ''));
+			onChange({ ...query, minPhotoCount: min, maxPhotoCount: undefined, page: 1 });
 		}
-	};
-
-	const chipColorClass: Record<'red' | 'amber' | 'green', { active: string; inactive: string }> = {
-		red: {
-			active: 'bg-red-100 border-red-400 text-red-700',
-			inactive: 'border-slate-200 text-slate-600 hover:border-red-300 hover:text-red-600',
-		},
-		amber: {
-			active: 'bg-amber-100 border-amber-400 text-amber-700',
-			inactive: 'border-slate-200 text-slate-600 hover:border-amber-300 hover:text-amber-600',
-		},
-		green: {
-			active: 'bg-green-100 border-green-400 text-green-700',
-			inactive: 'border-slate-200 text-slate-600 hover:border-green-300 hover:text-green-600',
-		},
 	};
 
 	return (
@@ -128,12 +141,12 @@ export function GhostFilters({ query, onChange }: GhostFiltersProps) {
 				<span className="text-xs font-medium text-slate-500">빠른 필터:</span>
 				{QUICK_CHIPS.map((chip) => {
 					const isActive = photoQuickFilter === chip.id;
-					const colors = chipColorClass[chip.color];
+					const colors = CHIP_COLOR[chip.color];
 					return (
 						<button
 							key={chip.id}
 							type="button"
-							onClick={() => applyQuickChip(isActive ? 'all' : chip.id)}
+							onClick={() => applyPhotoChip(isActive ? 'all' : chip.id)}
 							className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors ${isActive ? colors.active : colors.inactive}`}
 						>
 							{chip.label}
@@ -143,7 +156,7 @@ export function GhostFilters({ query, onChange }: GhostFiltersProps) {
 				{photoQuickFilter !== 'all' && (
 					<button
 						type="button"
-						onClick={() => applyQuickChip('all')}
+						onClick={() => applyPhotoChip('all')}
 						className="text-xs text-slate-400 underline hover:text-slate-600"
 					>
 						해제
@@ -212,34 +225,7 @@ export function GhostFilters({ query, onChange }: GhostFiltersProps) {
 
 				<div className="space-y-1">
 					<Label className="text-xs">사진</Label>
-					<Select
-						value={photoFilterValue}
-						onValueChange={(value) => {
-							if (value === ALL) {
-								onChange({
-									...query,
-									minPhotoCount: undefined,
-									maxPhotoCount: undefined,
-									page: 1,
-								});
-							} else if (value === 'none') {
-								onChange({
-									...query,
-									minPhotoCount: undefined,
-									maxPhotoCount: 0,
-									page: 1,
-								});
-							} else {
-								const min = Number(value.replace('min-', ''));
-								onChange({
-									...query,
-									minPhotoCount: min,
-									maxPhotoCount: undefined,
-									page: 1,
-								});
-							}
-						}}
-					>
+					<Select value={photoFilterValue} onValueChange={handlePhotoSelectChange}>
 						<SelectTrigger className="h-9">
 							<SelectValue />
 						</SelectTrigger>

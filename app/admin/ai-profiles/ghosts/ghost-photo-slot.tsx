@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ImageOff, RefreshCw, Sparkles } from 'lucide-react';
 import { ghostInjection } from '@/app/services/admin/ghost-injection';
@@ -44,16 +44,16 @@ interface GhostPhotoSlotProps {
 	ghostAge?: number;
 }
 
+const VENDOR_SELECT_OPTIONS = vendorOptionsForSelect();
+
 export function GhostPhotoSlot({ ghostAccountId, slotIndex, photo, ghostAge }: GhostPhotoSlotProps) {
 	const toast = useToast();
 	const queryClient = useQueryClient();
 
-	// 교체 (Image ID 직접 입력)
 	const [replaceOpen, setReplaceOpen] = useState(false);
 	const [imageId, setImageId] = useState('');
 	const [replaceReason, setReplaceReason] = useState('');
 
-	// AI 단일 슬롯 재생성
 	const [regenOpen, setRegenOpen] = useState(false);
 	const [regenVendorId, setRegenVendorId] = useState(DEFAULT_VENDOR_ID);
 	const [regenPrompt, setRegenPrompt] = useState('');
@@ -63,6 +63,11 @@ export function GhostPhotoSlot({ ghostAccountId, slotIndex, photo, ghostAge }: G
 	const vendor: ImageVendor = findVendorOption(regenVendorId)?.value ?? 'seedream';
 	const canUseReference = vendorSupportsReference(vendor);
 
+	const invalidateGhostQueries = useCallback(() => {
+		queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.ghostDetail(ghostAccountId) });
+		queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.ghosts() });
+	}, [queryClient, ghostAccountId]);
+
 	const replaceMutation = useMutation({
 		mutationFn: () =>
 			ghostInjection.replaceGhostPhoto(ghostAccountId, slotIndex, {
@@ -71,8 +76,7 @@ export function GhostPhotoSlot({ ghostAccountId, slotIndex, photo, ghostAge }: G
 			}),
 		onSuccess: () => {
 			toast.success(`슬롯 ${slotIndex} 사진이 교체되었습니다.`);
-			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.ghostDetail(ghostAccountId) });
-			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.ghosts() });
+			invalidateGhostQueries();
 			setReplaceOpen(false);
 			setImageId('');
 			setReplaceReason('');
@@ -95,8 +99,7 @@ export function GhostPhotoSlot({ ghostAccountId, slotIndex, photo, ghostAge }: G
 		},
 		onSuccess: () => {
 			toast.success(`슬롯 ${slotIndex} AI 재생성이 완료되었습니다.`);
-			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.ghostDetail(ghostAccountId) });
-			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.ghosts() });
+			invalidateGhostQueries();
 			setRegenOpen(false);
 			setRegenPrompt('');
 			setRegenReason('');
@@ -128,7 +131,6 @@ export function GhostPhotoSlot({ ghostAccountId, slotIndex, photo, ghostAge }: G
 			</div>
 
 			<div className="flex gap-1">
-				{/* 교체 (Image ID) */}
 				<Popover open={replaceOpen} onOpenChange={setReplaceOpen}>
 					<PopoverTrigger asChild>
 						<Button variant="outline" size="sm" className="flex-1 text-xs">
@@ -164,7 +166,6 @@ export function GhostPhotoSlot({ ghostAccountId, slotIndex, photo, ghostAge }: G
 					</PopoverContent>
 				</Popover>
 
-				{/* AI 단일 슬롯 재생성 */}
 				<Button
 					variant="outline"
 					size="sm"
@@ -201,7 +202,7 @@ export function GhostPhotoSlot({ ghostAccountId, slotIndex, photo, ghostAge }: G
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
-									{vendorOptionsForSelect().map((opt) => (
+									{VENDOR_SELECT_OPTIONS.map((opt) => (
 										<SelectItem key={opt.id} value={opt.id}>
 											<span>{opt.label}</span>
 											<span className="ml-1.5 text-[10px] text-slate-400">{opt.pricePerImage}</span>
