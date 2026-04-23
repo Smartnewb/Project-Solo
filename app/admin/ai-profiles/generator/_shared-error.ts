@@ -22,6 +22,9 @@ export function useAiProfileErrorHandler(
       }
       return;
     }
+    if (error instanceof AdminApiError && error.status >= 500 && invalidateOnConflict) {
+      qc.invalidateQueries({ queryKey: invalidateOnConflict });
+    }
     toast.error(getAdminErrorMessage(error));
   };
 }

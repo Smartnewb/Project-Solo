@@ -1,10 +1,36 @@
 import {
-  adminDelete,
-  adminGet,
-  adminPatch,
-  adminPost,
-  adminUpload,
+  adminDelete as rawAdminDelete,
+  adminGet as rawAdminGet,
+  adminPatch as rawAdminPatch,
+  adminPost as rawAdminPost,
+  adminUpload as rawAdminUpload,
+  type AdminQueryParams,
 } from '@/shared/lib/http/admin-fetch';
+
+type Envelope<T> = { data: T } | T;
+
+function unwrap<T>(res: Envelope<T>): T {
+  if (res != null && typeof res === 'object' && 'data' in (res as object)) {
+    return (res as { data: T }).data;
+  }
+  return res as T;
+}
+
+async function adminGet<T>(path: string, params?: AdminQueryParams): Promise<T> {
+  return unwrap(await rawAdminGet<Envelope<T>>(path, params));
+}
+async function adminPost<T>(path: string, body?: unknown): Promise<T> {
+  return unwrap(await rawAdminPost<Envelope<T>>(path, body));
+}
+async function adminPatch<T>(path: string, body?: unknown): Promise<T> {
+  return unwrap(await rawAdminPatch<Envelope<T>>(path, body));
+}
+async function adminDelete<T>(path: string, body?: unknown): Promise<T> {
+  return unwrap(await rawAdminDelete<Envelope<T>>(path, body));
+}
+async function adminUpload<T>(path: string, fd: FormData): Promise<T> {
+  return unwrap(await rawAdminUpload<Envelope<T>>(path, fd));
+}
 import type {
   AiProfileDomain,
   AiProfileDraft,
@@ -54,6 +80,34 @@ import type {
 } from '@/app/types/ai-profile-generator';
 
 const BASE = '/admin/v2/ai-companions';
+
+interface BackendPreviewChatTurn {
+  index: number;
+  userMessage: string;
+  assistantMessage: string;
+}
+
+interface BackendPreviewChatResponse {
+  turns: BackendPreviewChatTurn[];
+  tokensInput?: number;
+  tokensOutput?: number;
+  model?: string;
+}
+
+function normalizePreviewChatResponse(
+  res: BackendPreviewChatResponse,
+): PreviewChatResponse {
+  const turns: PreviewChatResponse['turns'] = [];
+  for (const t of res.turns ?? []) {
+    turns.push({ role: 'user', content: t.userMessage });
+    turns.push({ role: 'assistant', content: t.assistantMessage });
+  }
+  return {
+    turns,
+    tokensUsed:
+      (res.tokensInput ?? 0) + (res.tokensOutput ?? 0) || undefined,
+  };
+}
 
 export const aiProfileGenerator = {
   // ───────── Source data ─────────
@@ -177,14 +231,21 @@ export const aiProfileGenerator = {
     adminPost<AiProfileDraft>(`${BASE}/drafts/${id}/photos/generate`, body),
 
   // ───────── Preview chat ─────────
-  previewChat: (id: string, body: PreviewChatBody) =>
-    adminPost<PreviewChatResponse>(`${BASE}/drafts/${id}/preview-chat`, body),
+  previewChat: async (id: string, body: PreviewChatBody) => {
+    const res = await adminPost<BackendPreviewChatResponse>(
+      `${BASE}/drafts/${id}/preview-chat`,
+      body,
+    );
+    return normalizePreviewChatResponse(res);
+  },
 
-  previewChatTurns: (id: string, body: PreviewChatTurnsBody) =>
-    adminPost<PreviewChatResponse>(
+  previewChatTurns: async (id: string, body: PreviewChatTurnsBody) => {
+    const res = await adminPost<BackendPreviewChatResponse>(
       `${BASE}/drafts/${id}/preview-chat/turns`,
       body,
-    ),
+    );
+    return normalizePreviewChatResponse(res);
+  },
 
   // ───────── Batch ─────────
   batchGenerateDrafts: (body: BatchGenerateBody) =>
