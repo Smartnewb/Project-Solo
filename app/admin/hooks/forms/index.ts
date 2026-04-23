@@ -13,3 +13,4 @@ export * from './schemas/report.schema';
 export * from './schemas/community.schema';
 export * from './schemas/ios-refund.schema';
 export * from './schemas/sometime-article.schema';
+export * from './schemas/longform.schema';

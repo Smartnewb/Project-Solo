@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, RefreshCw, Sparkles } from 'lucide-react';
+import { Loader2, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
 import { ghostInjection } from '@/app/services/admin/ghost-injection';
 import type { GhostDetail, ImageVendor, UpdateGhostFields } from '@/app/types/ghost-injection';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
+import { useConfirm } from '@/shared/ui/admin/confirm-dialog';
 import { useToast } from '@/shared/ui/admin/toast';
 import { Alert, AlertDescription } from '@/shared/ui/alert';
 import { Badge } from '@/shared/ui/badge';
@@ -100,12 +101,14 @@ function buildFieldsToUpdate(
 	return fields;
 }
 
-const PHOTO_SLOTS = [0, 1, 2, 3, 4, 5];
+const PHOTO_SLOTS = [0, 1, 2];
 
 export function GhostDetailDrawer({ ghostAccountId, onClose }: GhostDetailDrawerProps) {
 	const toast = useToast();
+	const confirm = useConfirm();
 	const queryClient = useQueryClient();
 	const [form, setForm] = useState<FormState>(emptyForm);
+	const [deleteReason, setDeleteReason] = useState('');
 
 	const detailQuery = useQuery({
 		queryKey: ghostInjectionKeys.ghostDetail(ghostAccountId ?? ''),
@@ -148,6 +151,31 @@ export function GhostDetailDrawer({ ghostAccountId, onClose }: GhostDetailDrawer
 
 	const canSubmit =
 		Object.keys(fieldsToUpdate).length > 0 && isReasonValid(form.reason) && !mutation.isPending;
+
+	const deleteMutation = useMutation({
+		mutationFn: () => {
+			if (!ghostAccountId) throw new Error('프로필 ID 없음');
+			return ghostInjection.deleteGhost(ghostAccountId, { reason: deleteReason.trim() });
+		},
+		onSuccess: () => {
+			toast.success('가상 프로필이 삭제되었습니다.');
+			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.ghosts() });
+			onClose();
+		},
+		onError: (error) => toast.error(getAdminErrorMessage(error)),
+	});
+
+	const handleDelete = async () => {
+		const ok = await confirm({
+			title: '가상 프로필 영구 삭제',
+			message:
+				'삭제하면 복구할 수 없습니다. 이 ghost와 매칭된 실사용자에게는 탈퇴한 사용자로 표시됩니다.',
+			severity: 'error',
+			confirmText: '영구 삭제',
+		});
+		if (!ok) return;
+		deleteMutation.mutate();
+	};
 
 	return (
 		<Sheet open={Boolean(ghostAccountId)} onOpenChange={(open) => !open && onClose()}>
@@ -357,6 +385,35 @@ export function GhostDetailDrawer({ ghostAccountId, onClose }: GhostDetailDrawer
 										))}
 									</ul>
 								)}
+							</section>
+
+							<section className="space-y-3 rounded-lg border border-red-200 bg-red-50 p-4">
+								<div className="flex items-center gap-2">
+									<Trash2 className="h-4 w-4 text-red-600" />
+									<h3 className="text-sm font-semibold text-red-700">위험 구역 — 계정 삭제</h3>
+								</div>
+								<p className="text-xs text-red-600">
+									삭제 후 복구 불가. 매칭된 실사용자 앱에서 상대방이 탈퇴한 것으로 표시됩니다.
+								</p>
+								<ReasonInput
+									value={deleteReason}
+									onChange={setDeleteReason}
+									minLength={10}
+									rows={2}
+								/>
+								<Button
+									variant="destructive"
+									size="sm"
+									className="w-full"
+									disabled={!isReasonValid(deleteReason) || deleteMutation.isPending}
+									onClick={handleDelete}
+								>
+									{deleteMutation.isPending ? (
+										<><Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> 삭제 중…</>
+									) : (
+										<><Trash2 className="mr-1 h-3.5 w-3.5" /> 가상 프로필 영구 삭제</>
+									)}
+								</Button>
 							</section>
 						</>
 					)}

@@ -19,6 +19,8 @@ export {
 	communityReviewArticles,
 	publicReviews,
 } from './content';
+export { notices } from './notices';
+export type { NoticeListParams } from './notices';
 export { reports, userReview, profileImages } from './moderation';
 export {
 	gems,
@@ -31,6 +33,18 @@ export {
 } from './revenue';
 export { revenueV2 } from './revenue-v2';
 export type { RevenueSummary, RevenueBreakdown, DailyRevenueTrend } from './revenue-v2';
+export { blacklist, usersStats } from './blacklist';
+export type {
+	BlacklistItem,
+	BlacklistHistoryEntry,
+	BlacklistRegisterRequest,
+	BlacklistReleaseRequest,
+	BlacklistRegisterResponse,
+	BlacklistReleaseResponse,
+	BlacklistListParams,
+	UsersStatsResponse,
+	PaginationMeta,
+} from './blacklist';
 export { fcmTokens, universities } from './system';
 export { featureFlags } from './feature-flags';
 export type { FeatureFlag } from './feature-flags';
@@ -49,6 +63,7 @@ export type {
 } from './utm';
 export { ghostInjection } from './ghost-injection';
 export { ghostReferencePool } from './ghost-reference-pool';
+export { aiProfileGenerator } from './ai-profile-generator';
 export type { KeywordCategory, KeywordItem, KeywordsResponse } from './keywords';
 export type {
 	CareTarget,
@@ -116,6 +131,7 @@ import {
 	communityReviewArticles,
 	publicReviews,
 } from './content';
+import { notices } from './notices';
 import { reports, userReview, profileImages } from './moderation';
 import {
 	gems,
@@ -136,6 +152,7 @@ import { keywords } from './keywords';
 import { utm } from './utm';
 import { ghostInjection } from './ghost-injection';
 import { ghostReferencePool } from './ghost-reference-pool';
+import { aiProfileGenerator } from './ai-profile-generator';
 
 const AdminService = {
 	stats,
@@ -160,6 +177,7 @@ const AdminService = {
 	appleRefund,
 	likes,
 	momentQuestions,
+	notices,
 	sometimeArticles,
 	userEngagement,
 	forceMatching,
@@ -178,6 +196,7 @@ const AdminService = {
 	utm,
 	ghostInjection,
 	ghostReferencePool,
+	aiProfileGenerator,
 };
 
 export default AdminService;

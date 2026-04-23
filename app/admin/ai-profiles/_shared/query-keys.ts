@@ -5,6 +5,12 @@ import type {
 	PhaseSchoolListQuery,
 	RealUserListQuery,
 } from '@/app/types/ghost-injection';
+import type {
+	AiProfileDraftListQuery,
+	PromptVersionListQuery,
+	SourceDataQuery,
+	TemplateListQuery,
+} from '@/app/types/ai-profile-generator';
 
 export const ghostInjectionKeys = {
 	all: ['admin', 'ghost-injection'] as const,
@@ -24,6 +30,44 @@ export const ghostInjectionKeys = {
 		[...ghostInjectionKeys.phaseSchools(), 'list', query] as const,
 
 	blacklist: () => [...ghostInjectionKeys.all, 'blacklist'] as const,
+};
+
+export const aiProfileGeneratorKeys = {
+	all: ['admin', 'ai-profile-generator'] as const,
+	drafts: () => [...aiProfileGeneratorKeys.all, 'drafts'] as const,
+	draftList: (query: AiProfileDraftListQuery) =>
+		[...aiProfileGeneratorKeys.drafts(), 'list', query] as const,
+	draftDetail: (id: string) =>
+		[...aiProfileGeneratorKeys.drafts(), 'detail', id] as const,
+	templates: () => [...aiProfileGeneratorKeys.all, 'templates'] as const,
+	templateList: (query: TemplateListQuery) =>
+		[...aiProfileGeneratorKeys.templates(), 'list', query] as const,
+	templateDetail: (id: string) =>
+		[...aiProfileGeneratorKeys.templates(), 'detail', id] as const,
+	promptVersions: () =>
+		[...aiProfileGeneratorKeys.all, 'prompt-versions'] as const,
+	promptVersionList: (query: PromptVersionListQuery) =>
+		[...aiProfileGeneratorKeys.promptVersions(), 'list', query] as const,
+	promptVersionDetail: (id: string) =>
+		[...aiProfileGeneratorKeys.promptVersions(), 'detail', id] as const,
+	publishDryRun: (id: string, version: number) =>
+		[...aiProfileGeneratorKeys.draftDetail(id), 'publish-dry-run', version] as const,
+	previewChat: (id: string) =>
+		[...aiProfileGeneratorKeys.draftDetail(id), 'preview-chat'] as const,
+	batchGeneration: () =>
+		[...aiProfileGeneratorKeys.all, 'batch-generate'] as const,
+	batchGenerationStatus: (jobId: string) =>
+		[...aiProfileGeneratorKeys.batchGeneration(), 'status', jobId] as const,
+	universities: (query: SourceDataQuery) =>
+		[...aiProfileGeneratorKeys.all, 'universities', query] as const,
+	departments: (universityId: string, query: SourceDataQuery) =>
+		[
+			...aiProfileGeneratorKeys.all,
+			'universities',
+			universityId,
+			'departments',
+			query,
+		] as const,
 };
 
 export const referencePoolKeys = {

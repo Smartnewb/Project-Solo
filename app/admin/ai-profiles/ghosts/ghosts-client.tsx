@@ -106,9 +106,9 @@ export function GhostsClient() {
 		<section className="space-y-4 px-6 py-8">
 			<header className="flex items-start justify-between gap-4">
 				<div>
-					<h1 className="text-2xl font-semibold text-slate-900">가상 프로필 관리</h1>
+					<h1 className="text-2xl font-semibold text-slate-900">가상 프로필 관리 (유저 위장)</h1>
 					<p className="mt-1 text-sm text-slate-500">
-						가상 프로필을 조회·생성·수정·비활성화합니다. 모든 변경은 감사 로그에 기록됩니다.
+						유저에게 <strong>실제 유저처럼</strong> 노출되는 가상 계정을 조회·생성·수정·비활성화합니다. AI 채팅용이 아님. 모든 변경은 감사 로그에 기록됩니다.
 					</p>
 				</div>
 				<div className="flex items-center gap-2">

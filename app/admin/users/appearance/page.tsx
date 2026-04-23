@@ -18,7 +18,6 @@ import AppearanceFilterPanel from "@/components/admin/appearance/AppearanceFilte
 import UnclassifiedUsersPanel from "@/components/admin/appearance/UnclassifiedUsersPanel";
 import DuplicatePhoneUsersPanel from "@/components/admin/appearance/DuplicatePhoneUsersPanel";
 import VerifiedUsersPanel from "@/components/admin/appearance/VerifiedUsersPanel";
-import BlacklistUsersPanel from "@/components/admin/appearance/BlacklistUsersPanel";
 import UniversityVerificationPendingPanel from "@/components/admin/appearance/UniversityVerificationPendingPanel";
 import { appearanceGradeEventBus } from "./event-bus";
 
@@ -131,7 +130,11 @@ function AppearanceGradePageContent() {
             />
           </Box>
         )}
-        {activeTab === 1 && <BlacklistUsersPanel />}
+        {activeTab === 1 && (
+          <Alert severity="info">
+            블랙리스트는 새로운 메뉴 <a href="/admin/blacklist">/admin/blacklist</a>에서 관리합니다.
+          </Alert>
+        )}
         {activeTab === 2 && <UnclassifiedUsersPanel />}
         {activeTab === 3 && <DuplicatePhoneUsersPanel />}
         {activeTab === 4 && <VerifiedUsersPanel />}

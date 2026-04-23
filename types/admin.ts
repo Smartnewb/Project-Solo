@@ -30,11 +30,14 @@ export interface CardSection {
   imageUrl?: string;
 }
 
-export type CardNewsLayoutMode = 'article' | 'image_only';
+export type CardNewsLayoutMode = 'article' | 'image_only' | 'longform';
+export const CARD_NEWS_LAYOUT_MODES: CardNewsLayoutMode[] = ['article', 'image_only', 'longform'];
+export type CardNewsTrack = 'cards' | 'longform';
 
 export interface AdminCardNewsItem {
   id: string;
   title: string;
+  subtitle?: string;
   description?: string;
   postType: string;
   category: Category;
@@ -42,6 +45,8 @@ export interface AdminCardNewsItem {
   layoutMode: CardNewsLayoutMode;
   hasReward: boolean;
   sections?: CardSection[];
+  body?: string;
+  readTimeMinutes?: number;
   readCount: number;
   pushNotificationTitle?: string;
   pushNotificationMessage?: string;
@@ -60,6 +65,7 @@ export interface AdminCardNewsListResponse {
 
 export interface CreateCardNewsRequest {
   title: string;
+  subtitle?: string;
   description?: string;
   categoryCode: string;
   backgroundImage?: {
@@ -69,18 +75,20 @@ export interface CreateCardNewsRequest {
   };
   layoutMode?: CardNewsLayoutMode;
   hasReward: boolean;
-  sections: Array<{
+  sections?: Array<{
     order: number;
     title: string;
     content: string;
     imageUrl?: string;
   }>;
+  body?: string;
   pushNotificationTitle?: string;
   pushNotificationMessage?: string;
 }
 
 export interface UpdateCardNewsRequest {
   title?: string;
+  subtitle?: string;
   description?: string;
   backgroundImage?: {
     type: 'PRESET' | 'CUSTOM';
@@ -95,6 +103,7 @@ export interface UpdateCardNewsRequest {
     content: string;
     imageUrl?: string;
   }>;
+  body?: string;
   pushNotificationTitle?: string;
   pushNotificationMessage?: string;
 }
@@ -857,4 +866,65 @@ export interface UpdateSometimeArticleRequest {
   author?: SometimeArticleAuthor;
   seo?: SometimeArticleSEO;
   publishedAt?: string;
+}
+
+// ==================== Unified Content (Notices) ====================
+
+export type ContentStatus = 'draft' | 'published' | 'archived';
+export type NoticePriority = 'high' | 'normal';
+export type NoticeCategoryCode = 'notice';
+export type ContentCategoryCode =
+  | 'relationship'
+  | 'dating'
+  | 'psychology'
+  | 'essay'
+  | 'qna'
+  | 'event';
+
+export interface AdminNoticeItem {
+  id: string;
+  title: string;
+  subtitle?: string;
+  categoryCode: NoticeCategoryCode;
+  content: string;
+  priority: NoticePriority;
+  expiresAt?: string | null;
+  url?: string | null;
+  hasReward: boolean;
+  pushEnabled: boolean;
+  pushTitle?: string | null;
+  pushMessage?: string | null;
+  status: ContentStatus;
+  publishedAt?: string | null;
+  pushSentAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminNoticeListResponse {
+  items: AdminNoticeItem[];
+  meta: { page: number; limit: number; totalItems: number; totalPages: number };
+}
+
+export interface CreateNoticeRequest
+  extends Omit<
+    AdminNoticeItem,
+    'id' | 'status' | 'publishedAt' | 'pushSentAt' | 'createdAt' | 'updatedAt'
+  > {}
+export interface UpdateNoticeRequest extends Partial<AdminNoticeItem> {}
+
+export interface PublishNoticeRequest {
+  pushEnabled?: boolean;
+  pushTitle?: string;
+  pushMessage?: string;
+}
+
+export interface PushResendNoticeRequest {
+  pushTitle: string;
+  pushMessage: string;
+}
+
+export interface PublishNoticeResponse {
+  success: boolean;
+  sentCount?: number;
 }

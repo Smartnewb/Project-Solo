@@ -34,7 +34,9 @@ import {
   TextField,
   FormControl,
   InputLabel,
-  Select
+  Select,
+  Tabs,
+  Tab
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import InstagramIcon from '@mui/icons-material/Instagram';
@@ -52,7 +54,12 @@ import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
 import DiamondIcon from '@mui/icons-material/Diamond';
 import LockResetIcon from '@mui/icons-material/LockReset';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import AdminService from '@/app/services/admin';
+import AdminService, { blacklist as blacklistApi } from '@/app/services/admin';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ShieldBan, RotateCcw } from 'lucide-react';
+import { BlacklistRegisterModal } from '@/app/admin/blacklist/components/BlacklistRegisterModal';
+import { BlacklistReleaseDialog } from '@/app/admin/blacklist/components/BlacklistReleaseDialog';
+import { BlacklistHistoryTimeline } from '@/app/admin/blacklist/components/BlacklistHistoryTimeline';
 import { formatDateWithoutTimezoneConversion, formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
 
 // 관리 기능 모달 컴포넌트들
@@ -251,7 +258,29 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
   // 회원 탈퇴 관련 상태
   const [sendEmailOnDelete, setSendEmailOnDelete] = useState(false);
-  const [addToBlacklist, setAddToBlacklist] = useState(false);
+
+  // 블랙리스트 관련 상태
+  const [blacklistRegisterModalOpen, setBlacklistRegisterModalOpen] = useState(false);
+  const [blacklistReleaseDialogOpen, setBlacklistReleaseDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'profile' | 'blacklist'>('profile');
+  const queryClient = useQueryClient();
+
+  const blacklistHistoryQuery = useQuery({
+    queryKey: ['blacklist-history', userId],
+    queryFn: () => blacklistApi.getHistory(userId as string),
+    enabled: !!userId && open,
+    staleTime: 60_000,
+  });
+
+  const blacklistHistory = blacklistHistoryQuery.data?.data?.history ?? [];
+  const activeBlacklistEntry = blacklistHistory.find((h) => h.releasedAt === null);
+  const isBlacklisted = !!activeBlacklistEntry;
+
+  const handleBlacklistSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ['blacklist-history', userId] });
+    queryClient.invalidateQueries({ queryKey: ['blacklist'] });
+    if (onRefresh) onRefresh();
+  };
 
   // 재매칭 티켓 관련 상태
   const [ticketInfo, setTicketInfo] = useState<any>(null);
@@ -611,7 +640,6 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     handleCloseMenu();
     setDeleteConfirmModalOpen(true);
     setSendEmailOnDelete(true);
-    setAddToBlacklist(false); // 기본값 false로 설정
   };
 
   // 실제 회원 탈퇴 처리
@@ -623,12 +651,11 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setActionError(null);
       setDeleteConfirmModalOpen(false);
 
-      await AdminService.userAppearance.deleteUser(userId, sendEmailOnDelete, addToBlacklist);
+      await AdminService.userAppearance.deleteUser(userId, sendEmailOnDelete, false);
 
       const successMessages = [];
       successMessages.push('회원이 성공적으로 탈퇴되었습니다.');
       if (sendEmailOnDelete) successMessages.push('이메일 발송됨');
-      if (addToBlacklist) successMessages.push('블랙리스트 추가됨');
 
       setActionSuccess(successMessages.join(' / '));
       if (onRefresh) onRefresh();
@@ -762,7 +789,33 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
         <Typography variant="h6" component="div">
           사용자 상세 정보
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* 블랙리스트 액션 버튼 */}
+          {!loading && userDetail && userId && (
+            isBlacklisted ? (
+              <Button
+                variant="outlined"
+                color="primary"
+                size="small"
+                startIcon={<RotateCcw size={16} />}
+                onClick={() => setBlacklistReleaseDialogOpen(true)}
+                disabled={actionLoading}
+              >
+                블랙리스트 해제
+              </Button>
+            ) : (
+              <Button
+                variant="outlined"
+                color="error"
+                size="small"
+                startIcon={<ShieldBan size={16} />}
+                onClick={() => setBlacklistRegisterModalOpen(true)}
+                disabled={actionLoading}
+              >
+                블랙리스트 등록
+              </Button>
+            )
+          )}
           {/* 관리 메뉴 버튼 */}
           {!loading && userDetail && (
             <Tooltip title="관리 메뉴">
@@ -855,6 +908,16 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           <ListItemText primary="승인 취소" primaryTypographyProps={{ color: 'warning.main' }} />
         </MenuItem>
       </Menu>
+      {!loading && !error && userDetail && (
+        <Tabs
+          value={activeTab}
+          onChange={(_, v) => setActiveTab(v)}
+          sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}
+        >
+          <Tab value="profile" label="기본 정보" />
+          <Tab value="blacklist" label="블랙리스트 이력" />
+        </Tabs>
+      )}
       <DialogContent sx={{ p: 3 }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
@@ -868,6 +931,13 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
             <Typography>사용자 정보를 찾을 수 없습니다.</Typography>
           </Box>
+        ) : activeTab === 'blacklist' ? (
+          userId ? (
+            <BlacklistHistoryTimeline
+              userId={userId}
+              onRelease={() => setBlacklistReleaseDialogOpen(true)}
+            />
+          ) : null
         ) : (
           <Grid container spacing={3}>
             {/* 프로필 이미지 섹션 */}
@@ -1738,16 +1808,6 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
             }
             label="탈퇴 처리 시 사용자에게 이메일 발송"
           />
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={addToBlacklist}
-                onChange={(e) => setAddToBlacklist(e.target.checked)}
-                color="primary"
-              />
-            }
-            label="블랙리스트에 추가"
-          />
         </DialogContent>
         <DialogActions>
           <Button
@@ -2114,6 +2174,36 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* 블랙리스트 등록 모달 */}
+      {userId && userDetail && (
+        <BlacklistRegisterModal
+          open={blacklistRegisterModalOpen}
+          onClose={() => setBlacklistRegisterModalOpen(false)}
+          user={{
+            id: userId,
+            name: userDetail.name,
+            phoneNumber: userDetail.phoneNumber,
+            age: userDetail.age,
+            gender: userDetail.gender,
+            universityName: userDetail.universityDetails?.name ?? userDetail.university,
+          }}
+          onSuccess={handleBlacklistSuccess}
+        />
+      )}
+
+      {/* 블랙리스트 해제 다이얼로그 */}
+      {userId && userDetail && (
+        <BlacklistReleaseDialog
+          open={blacklistReleaseDialogOpen}
+          onClose={() => setBlacklistReleaseDialogOpen(false)}
+          userId={userId}
+          userName={userDetail.name}
+          currentReason={activeBlacklistEntry?.reason ?? null}
+          blacklistedAt={activeBlacklistEntry?.blacklistedAt ?? null}
+          onSuccess={handleBlacklistSuccess}
+        />
+      )}
 
     </Dialog>
   );
