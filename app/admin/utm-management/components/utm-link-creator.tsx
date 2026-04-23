@@ -27,6 +27,8 @@ import type { UtmLink } from '@/app/services/admin';
 import { useToast } from '@/shared/ui/admin/toast';
 import QRCode from 'qrcode';
 
+type DestinationType = 'web' | 'appstore_ios' | 'appstore_android';
+
 const CHANNEL_PRESETS = [
   { label: '에브리타임', source: 'everytime', medium: 'community' },
   { label: '오프라인 포스터', source: 'poster', medium: 'offline' },
@@ -51,7 +53,7 @@ export default function UtmLinkCreator({ onCreated }: UtmLinkCreatorProps) {
   const [medium, setMedium] = useState(CHANNEL_PRESETS[0].medium);
   const [campaign, setCampaign] = useState('');
   const [content, setContent] = useState('');
-  const [destinationType, setDestinationType] = useState('web');
+  const [destinationType, setDestinationType] = useState<DestinationType>('web');
   const [memo, setMemo] = useState('');
   const [name, setName] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -216,11 +218,11 @@ export default function UtmLinkCreator({ onCreated }: UtmLinkCreatorProps) {
           <RadioGroup
             row
             value={destinationType}
-            onChange={(e) => setDestinationType(e.target.value)}
+            onChange={(e) => setDestinationType(e.target.value as DestinationType)}
           >
             <FormControlLabel value="web" control={<Radio size="small" />} label="웹" />
-            <FormControlLabel value="ios" control={<Radio size="small" />} label="iOS" />
-            <FormControlLabel value="android" control={<Radio size="small" />} label="Android" />
+            <FormControlLabel value="appstore_ios" control={<Radio size="small" />} label="iOS" />
+            <FormControlLabel value="appstore_android" control={<Radio size="small" />} label="Android" />
           </RadioGroup>
         </Box>
 
@@ -252,7 +254,7 @@ export default function UtmLinkCreator({ onCreated }: UtmLinkCreatorProps) {
           {createdLink && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               <Box>
-                <Typography variant="caption" color="textSecondary">전체 URL</Typography>
+                <Typography variant="caption" color="textSecondary">최종 도착 URL (클릭 추적 없음)</Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
                   <TextField
                     value={createdLink.destinationUrl}
@@ -262,7 +264,7 @@ export default function UtmLinkCreator({ onCreated }: UtmLinkCreatorProps) {
                   />
                   <IconButton
                     size="small"
-                    onClick={() => copyToClipboard(createdLink.destinationUrl, '전체 URL')}
+                    onClick={() => copyToClipboard(createdLink.destinationUrl, '최종 도착 URL')}
                   >
                     <ContentCopyIcon fontSize="small" />
                   </IconButton>
@@ -271,7 +273,7 @@ export default function UtmLinkCreator({ onCreated }: UtmLinkCreatorProps) {
 
               {createdLink.shortUrl && (
                 <Box>
-                  <Typography variant="caption" color="textSecondary">단축 URL</Typography>
+                  <Typography variant="caption" color="textSecondary">추적 URL</Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
                     <TextField
                       value={createdLink.shortUrl}
@@ -281,7 +283,7 @@ export default function UtmLinkCreator({ onCreated }: UtmLinkCreatorProps) {
                     />
                     <IconButton
                       size="small"
-                      onClick={() => copyToClipboard(createdLink.shortUrl!, '단축 URL')}
+                      onClick={() => copyToClipboard(createdLink.shortUrl!, '추적 URL')}
                     >
                       <ContentCopyIcon fontSize="small" />
                     </IconButton>

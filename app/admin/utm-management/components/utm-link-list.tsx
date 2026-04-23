@@ -230,19 +230,19 @@ export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
                       </TableCell>
                       <TableCell align="center">
                         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 0.5 }}>
-                          <Tooltip title="전체 URL 복사">
+                          <Tooltip title="최종 도착 URL 복사 (클릭 추적 없음)">
                             <IconButton
                               size="small"
-                              onClick={() => copyToClipboard(link.destinationUrl, '전체 URL')}
+                              onClick={() => copyToClipboard(link.destinationUrl, '최종 도착 URL')}
                             >
                               <ContentCopyIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
                           {link.shortUrl && (
-                            <Tooltip title="단축 URL 복사">
+                            <Tooltip title="추적 URL 복사">
                               <IconButton
                                 size="small"
-                                onClick={() => copyToClipboard(link.shortUrl!, '단축 URL')}
+                                onClick={() => copyToClipboard(link.shortUrl!, '추적 URL')}
                               >
                                 <LinkIcon fontSize="small" />
                               </IconButton>
