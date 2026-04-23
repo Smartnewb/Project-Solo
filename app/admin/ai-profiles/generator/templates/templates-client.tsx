@@ -96,9 +96,8 @@ export function TemplatesClient() {
 
   useEffect(() => {
     if (!listQuery.data) return;
-    setAccumulated((prev) =>
-      cursor ? [...prev, ...listQuery.data.items] : listQuery.data.items,
-    );
+    const items = listQuery.data.items ?? [];
+    setAccumulated((prev) => (cursor ? [...prev, ...items] : items));
   }, [listQuery.data, cursor]);
 
   const archiveMutation = useMutation({

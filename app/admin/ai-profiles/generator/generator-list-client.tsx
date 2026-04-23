@@ -105,10 +105,10 @@ export function GeneratorListClient() {
       <header className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">
-            AI 프로필 생성기
+            AI 인연 프로필 생성기
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            AI Companion draft를 생성·수정하고 도메인별로 생성/재생성합니다.
+            유저에게 <strong>AI 인연</strong>으로 소개되어 매칭·채팅에 쓰이는 Companion 프로필을 생성·수정합니다.
           </p>
         </div>
         <div className="flex items-center gap-2">

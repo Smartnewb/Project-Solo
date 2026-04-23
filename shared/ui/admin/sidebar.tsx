@@ -115,11 +115,11 @@ export const NAV_CATEGORIES: NavCategory[] = [
     icon: '🤖',
     label: '가상 매칭',
     items: [
-      { href: '/admin/ai-profiles/generator', label: 'AI 프로필 생성기' },
+      { href: '/admin/ai-profiles/generator', label: 'AI 인연 프로필 (채팅)' },
       { href: '/admin/ai-profiles/generator/templates', label: '— 템플릿' },
       { href: '/admin/ai-profiles/generator/prompt-versions', label: '— 프롬프트 버전' },
       { href: '/admin/ai-profiles/generator/batch', label: '— 배치' },
-      { href: '/admin/ai-profiles/ghosts', label: '가상 프로필' },
+      { href: '/admin/ai-profiles/ghosts', label: '가상 프로필 (유저 위장)' },
       { href: '/admin/ai-profiles/reference-pool', label: '레퍼런스 풀' },
       { href: '/admin/ai-profiles/candidates', label: '매칭 후보' },
       { href: '/admin/ai-profiles/policy', label: '노출 정책' },
