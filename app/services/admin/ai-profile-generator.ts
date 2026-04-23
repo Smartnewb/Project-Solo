@@ -87,20 +87,37 @@ interface BackendPreviewChatTurn {
   assistantMessage: string;
 }
 
-interface BackendPreviewChatResponse {
+interface BackendPreviewChatResponseTurns {
   turns: BackendPreviewChatTurn[];
   tokensInput?: number;
   tokensOutput?: number;
   model?: string;
 }
 
+interface BackendPreviewChatResponseSingle {
+  userMessage: string;
+  assistantMessage: string;
+  tokensInput?: number;
+  tokensOutput?: number;
+  model?: string;
+}
+
+type BackendPreviewChatResponse =
+  | BackendPreviewChatResponseTurns
+  | BackendPreviewChatResponseSingle;
+
 function normalizePreviewChatResponse(
   res: BackendPreviewChatResponse,
 ): PreviewChatResponse {
   const turns: PreviewChatResponse['turns'] = [];
-  for (const t of res.turns ?? []) {
-    turns.push({ role: 'user', content: t.userMessage });
-    turns.push({ role: 'assistant', content: t.assistantMessage });
+  if ('turns' in res && Array.isArray(res.turns)) {
+    for (const t of res.turns) {
+      turns.push({ role: 'user', content: t.userMessage });
+      turns.push({ role: 'assistant', content: t.assistantMessage });
+    }
+  } else if ('userMessage' in res) {
+    turns.push({ role: 'user', content: res.userMessage });
+    turns.push({ role: 'assistant', content: res.assistantMessage });
   }
   return {
     turns,

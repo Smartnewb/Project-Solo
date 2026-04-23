@@ -388,8 +388,10 @@ export interface PublishBody {
 }
 
 export interface PublishResponse {
+  draftId: string;
   companionId: string;
-  draft: AiProfileDraft;
+  warnings: AiProfileValidationWarning[];
+  version: number;
 }
 
 export interface PreviewChatBody {
@@ -603,13 +605,30 @@ export interface BatchGenerateEnqueueResponse {
   status: 'queued';
 }
 
+export interface BatchCreatedDraft {
+  index: number;
+  draftId: string;
+  version: number;
+  generatedDomains: AiProfileDomain[];
+  photoGenerated: boolean;
+  warnings: unknown[];
+}
+
+export interface BatchFailure {
+  index: number;
+  draftId?: string;
+  domain?: AiProfileDomain | 'photo';
+  reason: string;
+}
+
 export interface BatchGenerateStatusResponse {
   jobId: string;
   state: BatchJobState;
   progress: number;
   returnValue?: {
-    createdDraftIds: string[];
-    failures: { index: number; reason: string }[];
+    requestedCount: number;
+    created: BatchCreatedDraft[];
+    failed: BatchFailure[];
   };
   failedReason?: string;
 }

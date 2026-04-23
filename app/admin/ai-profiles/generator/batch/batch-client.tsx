@@ -51,8 +51,8 @@ export function BatchClient() {
   });
 
   const status = statusQuery.data ?? null;
-  const createdDraftIds = status?.returnValue?.createdDraftIds ?? [];
-  const failures = status?.returnValue?.failures ?? [];
+  const created = status?.returnValue?.created ?? [];
+  const failed = status?.returnValue?.failed ?? [];
 
   return (
     <section className="space-y-4 px-6 py-8">
@@ -131,19 +131,19 @@ export function BatchClient() {
                 </Alert>
               ) : null}
 
-              {createdDraftIds.length > 0 ? (
+              {created.length > 0 ? (
                 <div>
                   <div className="mb-2 text-xs font-semibold text-slate-700">
-                    생성된 Draft ({createdDraftIds.length})
+                    생성된 Draft ({created.length})
                   </div>
                   <ul className="space-y-1 text-xs">
-                    {createdDraftIds.map((draftId) => (
-                      <li key={draftId}>
+                    {created.map((c) => (
+                      <li key={c.draftId}>
                         <Link
-                          href={`/admin/ai-profiles/generator/${draftId}`}
+                          href={`/admin/ai-profiles/generator/${c.draftId}`}
                           className="text-sky-700 hover:underline"
                         >
-                          {shortId(draftId)}
+                          {shortId(c.draftId)}
                         </Link>
                       </li>
                     ))}
@@ -151,15 +151,15 @@ export function BatchClient() {
                 </div>
               ) : null}
 
-              {failures.length > 0 ? (
+              {failed.length > 0 ? (
                 <div>
                   <div className="mb-2 text-xs font-semibold text-rose-700">
-                    실패 ({failures.length})
+                    실패 ({failed.length})
                   </div>
                   <ul className="space-y-1 text-xs text-rose-700">
-                    {failures.map((failure) => (
-                      <li key={failure.index}>
-                        #{failure.index + 1} — {failure.reason}
+                    {failed.map((f) => (
+                      <li key={f.index}>
+                        #{f.index + 1} — {f.reason}
                       </li>
                     ))}
                   </ul>
