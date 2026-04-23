@@ -351,6 +351,7 @@ export function GhostDetailDrawer({ ghostAccountId, onClose }: GhostDetailDrawer
 												ghostAccountId={detail.ghostAccountId}
 												slotIndex={slotIndex}
 												photo={photo}
+												ghostAge={detail.age}
 											/>
 										);
 									})}

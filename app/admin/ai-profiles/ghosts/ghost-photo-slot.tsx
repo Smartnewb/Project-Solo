@@ -2,52 +2,114 @@
 
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ImageOff, RefreshCw } from 'lucide-react';
+import { ImageOff, RefreshCw, Sparkles } from 'lucide-react';
 import { ghostInjection } from '@/app/services/admin/ghost-injection';
-import type { GhostPhotoItem } from '@/app/types/ghost-injection';
+import type { GhostPhotoItem, ImageVendor } from '@/app/types/ghost-injection';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
 import { useToast } from '@/shared/ui/admin/toast';
 import { Button } from '@/shared/ui/button';
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from '@/shared/ui/dialog';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/shared/ui/select';
+import { Textarea } from '@/shared/ui/textarea';
+import {
+	DEFAULT_VENDOR_ID,
+	findVendorOption,
+	vendorOptionsForSelect,
+	vendorSupportsReference,
+} from '../_shared/ghost-vendor-options';
 import { ReasonInput, isReasonValid } from '../_shared/reason-input';
 import { ghostInjectionKeys } from '../_shared/query-keys';
+import { GhostPromptPreviewModal } from './ghost-prompt-preview-modal';
 
 interface GhostPhotoSlotProps {
 	ghostAccountId: string;
 	slotIndex: number;
 	photo?: GhostPhotoItem;
+	ghostAge?: number;
 }
 
-export function GhostPhotoSlot({ ghostAccountId, slotIndex, photo }: GhostPhotoSlotProps) {
+export function GhostPhotoSlot({ ghostAccountId, slotIndex, photo, ghostAge }: GhostPhotoSlotProps) {
 	const toast = useToast();
 	const queryClient = useQueryClient();
-	const [open, setOpen] = useState(false);
-	const [imageId, setImageId] = useState('');
-	const [reason, setReason] = useState('');
 
-	const mutation = useMutation({
+	// 교체 (Image ID 직접 입력)
+	const [replaceOpen, setReplaceOpen] = useState(false);
+	const [imageId, setImageId] = useState('');
+	const [replaceReason, setReplaceReason] = useState('');
+
+	// AI 단일 슬롯 재생성
+	const [regenOpen, setRegenOpen] = useState(false);
+	const [regenVendorId, setRegenVendorId] = useState(DEFAULT_VENDOR_ID);
+	const [regenPrompt, setRegenPrompt] = useState('');
+	const [regenReason, setRegenReason] = useState('');
+	const [regenRefs, setRegenRefs] = useState('');
+
+	const vendor: ImageVendor = findVendorOption(regenVendorId)?.value ?? 'seedream';
+	const canUseReference = vendorSupportsReference(vendor);
+
+	const replaceMutation = useMutation({
 		mutationFn: () =>
 			ghostInjection.replaceGhostPhoto(ghostAccountId, slotIndex, {
 				newImageId: imageId.trim(),
-				reason: reason.trim(),
+				reason: replaceReason.trim(),
 			}),
 		onSuccess: () => {
 			toast.success(`슬롯 ${slotIndex} 사진이 교체되었습니다.`);
-			queryClient.invalidateQueries({
-				queryKey: ghostInjectionKeys.ghostDetail(ghostAccountId),
-			});
+			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.ghostDetail(ghostAccountId) });
 			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.ghosts() });
-			setOpen(false);
+			setReplaceOpen(false);
 			setImageId('');
-			setReason('');
+			setReplaceReason('');
 		},
 		onError: (error) => toast.error(getAdminErrorMessage(error)),
 	});
 
-	const canSubmit =
-		imageId.trim().length > 0 && isReasonValid(reason) && !mutation.isPending;
+	const regenMutation = useMutation({
+		mutationFn: () => {
+			const refUrls = regenRefs
+				.split('\n')
+				.map((line) => line.trim())
+				.filter(Boolean);
+			return ghostInjection.regenerateSingleSlot(ghostAccountId, slotIndex, {
+				reason: regenReason.trim(),
+				prompt: regenPrompt.trim() || undefined,
+				vendor,
+				referencePhotoUrls: canUseReference && refUrls.length > 0 ? refUrls : undefined,
+			});
+		},
+		onSuccess: () => {
+			toast.success(`슬롯 ${slotIndex} AI 재생성이 완료되었습니다.`);
+			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.ghostDetail(ghostAccountId) });
+			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.ghosts() });
+			setRegenOpen(false);
+			setRegenPrompt('');
+			setRegenReason('');
+			setRegenRefs('');
+		},
+		onError: (error) =>
+			toast.error(`사진 생성에 실패했습니다. 기존 슬롯은 유지됩니다. (${getAdminErrorMessage(error)})`),
+	});
+
+	const canReplace =
+		imageId.trim().length > 0 && isReasonValid(replaceReason) && !replaceMutation.isPending;
+
+	const canRegen = isReasonValid(regenReason) && !regenMutation.isPending;
 
 	return (
 		<div className="space-y-2">
@@ -65,40 +127,138 @@ export function GhostPhotoSlot({ ghostAccountId, slotIndex, photo }: GhostPhotoS
 				</div>
 			</div>
 
-			<Popover open={open} onOpenChange={setOpen}>
-				<PopoverTrigger asChild>
-					<Button variant="outline" size="sm" className="w-full text-xs">
-						<RefreshCw className="mr-1 h-3 w-3" /> 교체
-					</Button>
-				</PopoverTrigger>
-				<PopoverContent className="w-80" align="start">
-					<div className="space-y-3">
-						<div>
-							<Label className="text-xs">새 Image ID</Label>
-							<Input
-								value={imageId}
-								onChange={(event) => setImageId(event.target.value)}
-								placeholder="이미지 UUID 입력"
-								className="h-8"
+			<div className="flex gap-1">
+				{/* 교체 (Image ID) */}
+				<Popover open={replaceOpen} onOpenChange={setReplaceOpen}>
+					<PopoverTrigger asChild>
+						<Button variant="outline" size="sm" className="flex-1 text-xs">
+							<RefreshCw className="mr-1 h-3 w-3" /> 교체
+						</Button>
+					</PopoverTrigger>
+					<PopoverContent className="w-80" align="start">
+						<div className="space-y-3">
+							<div>
+								<Label className="text-xs">새 Image ID</Label>
+								<Input
+									value={imageId}
+									onChange={(event) => setImageId(event.target.value)}
+									placeholder="이미지 UUID 입력"
+									className="h-8"
+								/>
+							</div>
+							<ReasonInput value={replaceReason} onChange={setReplaceReason} minLength={10} rows={2} />
+							<div className="flex justify-end gap-2">
+								<Button
+									variant="outline"
+									size="sm"
+									onClick={() => setReplaceOpen(false)}
+									disabled={replaceMutation.isPending}
+								>
+									취소
+								</Button>
+								<Button size="sm" onClick={() => replaceMutation.mutate()} disabled={!canReplace}>
+									{replaceMutation.isPending ? '교체 중…' : '교체'}
+								</Button>
+							</div>
+						</div>
+					</PopoverContent>
+				</Popover>
+
+				{/* AI 단일 슬롯 재생성 */}
+				<Button
+					variant="outline"
+					size="sm"
+					className="flex-1 border-violet-200 text-xs text-violet-700 hover:bg-violet-50"
+					onClick={() => setRegenOpen(true)}
+				>
+					<Sparkles className="mr-1 h-3 w-3" /> AI
+				</Button>
+			</div>
+
+			<Dialog open={regenOpen} onOpenChange={setRegenOpen}>
+				<DialogContent className="max-w-lg">
+					<DialogHeader>
+						<DialogTitle className="flex items-center gap-2">
+							<Sparkles className="h-4 w-4 text-violet-500" />
+							슬롯 {slotIndex} — AI 재생성
+						</DialogTitle>
+						<DialogDescription>
+							AI로 이 슬롯 사진만 새로 생성합니다. 실패해도 기존 사진은 보존됩니다.
+						</DialogDescription>
+					</DialogHeader>
+
+					<div className="space-y-4">
+						<div className="space-y-1">
+							<Label className="text-xs">벤더</Label>
+							<Select
+								value={regenVendorId}
+								onValueChange={(v) => {
+									setRegenVendorId(v);
+									setRegenRefs('');
+								}}
+							>
+								<SelectTrigger className="h-8 text-xs">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									{vendorOptionsForSelect().map((opt) => (
+										<SelectItem key={opt.id} value={opt.id}>
+											<span>{opt.label}</span>
+											<span className="ml-1.5 text-[10px] text-slate-400">{opt.pricePerImage}</span>
+										</SelectItem>
+									))}
+								</SelectContent>
+							</Select>
+						</div>
+
+						<div className="space-y-1">
+							<div className="flex items-center justify-between">
+								<Label className="text-xs">프롬프트 (선택)</Label>
+								<GhostPromptPreviewModal age={ghostAge} vendor={vendor} />
+							</div>
+							<Textarea
+								value={regenPrompt}
+								onChange={(e) => setRegenPrompt(e.target.value)}
+								placeholder="비워두면 프로필 기반 기본 프롬프트 사용"
+								rows={2}
+								className="text-xs"
 							/>
 						</div>
-						<ReasonInput value={reason} onChange={setReason} minLength={10} rows={2} />
-						<div className="flex justify-end gap-2">
-							<Button
-								variant="outline"
-								size="sm"
-								onClick={() => setOpen(false)}
-								disabled={mutation.isPending}
-							>
-								취소
-							</Button>
-							<Button size="sm" onClick={() => mutation.mutate()} disabled={!canSubmit}>
-								{mutation.isPending ? '교체 중…' : '교체'}
-							</Button>
-						</div>
+
+						{canUseReference && (
+							<div className="space-y-1">
+								<Label className="text-xs">레퍼런스 URL (선택, 줄바꿈으로 구분)</Label>
+								<Textarea
+									value={regenRefs}
+									onChange={(e) => setRegenRefs(e.target.value)}
+									placeholder="https://..."
+									rows={2}
+									className="text-xs"
+								/>
+							</div>
+						)}
+
+						<ReasonInput value={regenReason} onChange={setRegenReason} minLength={10} rows={2} />
 					</div>
-				</PopoverContent>
-			</Popover>
+
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => setRegenOpen(false)}
+							disabled={regenMutation.isPending}
+						>
+							취소
+						</Button>
+						<Button
+							onClick={() => regenMutation.mutate()}
+							disabled={!canRegen}
+							className="bg-violet-600 hover:bg-violet-700"
+						>
+							{regenMutation.isPending ? '생성 중…' : 'AI 재생성'}
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

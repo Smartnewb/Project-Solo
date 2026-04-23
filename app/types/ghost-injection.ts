@@ -161,6 +161,7 @@ export interface GhostListQuery {
 	rank?: GhostRank[];
 	ageBucket?: AgeBucket;
 	minPhotoCount?: number;
+	maxPhotoCount?: number;
 	excludeAlreadyImported?: boolean;
 	/** photoUrls/importedPhotoUrls 응답 포함 여부 */
 	includePhotos?: boolean;
@@ -252,6 +253,34 @@ export interface RegeneratePhotosBody {
 export interface RegeneratePhotosResult {
 	ghostAccountId: string;
 	photos: GhostPhotoItem[];
+}
+
+export interface RegenerateSingleSlotBody {
+	prompt?: string;
+	referencePhotoUrls?: string[];
+	vendor?: ImageVendor;
+	reason: string;
+}
+
+export interface RegenerateSingleSlotResponse {
+	ghostAccountId: string;
+	slotIndex: number;
+	imageId: string;
+	url: string;
+}
+
+export interface PromptPreviewQuery {
+	age?: number;
+	vendor?: ImageVendor;
+	count?: number;
+	mode?: 'random' | 'pool';
+}
+
+export interface PromptPreviewResponse {
+	vendor: ImageVendor;
+	negativePrompt: string;
+	variants: string[];
+	note: string;
 }
 
 export interface ToggleGhostStatusBody {

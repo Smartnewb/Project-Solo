@@ -51,6 +51,7 @@ import { VendorRadioGroup } from '../_shared/vendor-radio-group';
 
 const BATCH_EDIT_REASON = '일괄 생성 후 어드민 수정';
 const PHOTO_REGEN_REASON = '사진 재생성';
+const BATCH_RETRY_REASON = '배치 실패 항목 재시도';
 
 interface GhostBatchCreateDialogProps {
 	open: boolean;
@@ -269,6 +270,42 @@ function ResultPhase({
 	onClose: () => void;
 	onReset: () => void;
 }) {
+	const toast = useToast();
+	const queryClient = useQueryClient();
+	const [remainingFailed, setRemainingFailed] = useState<BatchCreateResultItem[]>(failedItems);
+
+	useEffect(() => {
+		setRemainingFailed(failedItems);
+	}, [failedItems]);
+
+	const retryMutation = useMutation({
+		mutationFn: () => {
+			if (remainingFailed.length === 0) throw new Error('재시도할 항목이 없습니다.');
+			return ghostInjection.createBatch({
+				count: remainingFailed.length,
+				reason: BATCH_RETRY_REASON,
+				vendor: result.vendor,
+			});
+		},
+		onSuccess: (data) => {
+			if (!data) return;
+			const usedVendorId =
+				GHOST_VENDOR_OPTIONS.find((o) => o.value === data.vendor && !o.disabled)?.id ??
+				DEFAULT_VENDOR_ID;
+			const newCards = data.results
+				.filter((r) => r.status === 'success')
+				.map((r) => toEditableCard(r, usedVendorId));
+			setCards((prev) => [...prev, ...newCards]);
+			setRemainingFailed(data.results.filter((r) => r.status === 'failed'));
+			toast.success(
+				`재시도 완료: 성공 ${data.success}개${data.failed > 0 ? ` / 실패 ${data.failed}개` : ''}`,
+			);
+			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.ghosts() });
+			queryClient.invalidateQueries({ queryKey: ghostInjectionKeys.status() });
+		},
+		onError: (error) => toast.error(getAdminErrorMessage(error)),
+	});
+
 	return (
 		<div className="flex flex-1 flex-col overflow-hidden">
 			<div className="border-b px-6 py-4">
@@ -291,9 +328,30 @@ function ResultPhase({
 					'overflow-y-auto p-4 transition-all',
 					expandedIdx !== null ? 'w-1/2 border-r' : 'w-full',
 				)}>
-					{failedItems.length > 0 && (
+					{remainingFailed.length > 0 && (
 						<div className="mb-4 space-y-1.5">
-							{failedItems.map((item, idx) => (
+							<div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-3 py-2">
+								<div className="flex items-center gap-2 text-xs text-red-700">
+									<XCircle className="h-4 w-4 shrink-0" />
+									<span className="font-medium">
+										실패 {remainingFailed.length}개
+									</span>
+								</div>
+								<Button
+									size="sm"
+									variant="outline"
+									className="h-7 border-red-300 text-xs text-red-700 hover:bg-red-100"
+									disabled={retryMutation.isPending}
+									onClick={() => retryMutation.mutate()}
+								>
+									{retryMutation.isPending ? (
+										<><Loader2 className="mr-1 h-3 w-3 animate-spin" /> 재시도 중…</>
+									) : (
+										<><RefreshCw className="mr-1 h-3 w-3" /> 실패 {remainingFailed.length}개 재시도</>
+									)}
+								</Button>
+							</div>
+							{remainingFailed.map((item, idx) => (
 								<div key={`fail-${idx}`} className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
 									<XCircle className="h-4 w-4 shrink-0" />
 									<span>{item.error ?? '생성 실패'}</span>

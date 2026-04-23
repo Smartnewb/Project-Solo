@@ -24,6 +24,10 @@ import type {
 	GhostListQuery,
 	PhaseSchoolItem,
 	PhaseSchoolListQuery,
+	PromptPreviewQuery,
+	PromptPreviewResponse,
+	RegenerateSingleSlotBody,
+	RegenerateSingleSlotResponse,
 	RemoveBlacklistBody,
 	ReplaceGhostPhotoBody,
 	RollbackBody,
@@ -80,6 +84,12 @@ export const ghostInjection = {
 
 	regeneratePhotos: (ghostAccountId: string, body: RegeneratePhotosBody) =>
 		adminPost<RegeneratePhotosResult>(`${BASE}/${ghostAccountId}/regenerate-photos`, body),
+
+	regenerateSingleSlot: (ghostAccountId: string, slotIndex: number, body: RegenerateSingleSlotBody) =>
+		adminPost<RegenerateSingleSlotResponse>(`${BASE}/${ghostAccountId}/photo/${slotIndex}/regenerate`, body),
+
+	promptPreview: (query: PromptPreviewQuery = {}) =>
+		adminGet<PromptPreviewResponse>(`${BASE}/prompt-preview`, { ...query }),
 
 	toggleGhostStatus: (ghostAccountId: string, body: ToggleGhostStatusBody) =>
 		adminPatch(`${BASE}/${ghostAccountId}/status`, body),
