@@ -1,17 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { ghostInjection } from '@/app/services/admin/ghost-injection';
 import type {
-	CandidateListItem,
 	CandidateListQuery,
 	GhostCandidateStatus,
 } from '@/app/types/ghost-injection';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
 import { Alert, AlertDescription } from '@/shared/ui/alert';
 import { Button } from '@/shared/ui/button';
+import { isCheckable } from '../_shared/candidate-utils';
 import { Pager } from '../_shared/pager';
 import { ghostInjectionKeys } from '../_shared/query-keys';
 import { CandidateActionDialog, type CandidateAction } from './candidate-action-dialog';
@@ -60,10 +60,6 @@ function serializeQuery(query: CandidateListQuery): string {
 	return params.toString();
 }
 
-function isCheckable(item: CandidateListItem): boolean {
-	return item.status === 'PENDING' || item.status === 'QUEUED';
-}
-
 export function CandidatesClient() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
@@ -74,6 +70,7 @@ export function CandidatesClient() {
 		open: false,
 		action: 'approve',
 	});
+	const isFirstRender = useRef(true);
 
 	useEffect(() => {
 		const nextQs = serializeQuery(query);
@@ -83,6 +80,10 @@ export function CandidatesClient() {
 	}, [query, router, searchParams]);
 
 	useEffect(() => {
+		if (isFirstRender.current) {
+			isFirstRender.current = false;
+			return;
+		}
 		setSelectedIds(new Set());
 	}, [query]);
 
@@ -98,6 +99,8 @@ export function CandidatesClient() {
 	const limit = query.limit ?? DEFAULT_LIMIT;
 	const totalPages = Math.max(1, Math.ceil(total / limit));
 	const selectedCount = selectedIds.size;
+
+	const selectedIdsArray = useMemo(() => Array.from(selectedIds), [selectedIds]);
 
 	const handleToggleOne = (candidateId: string) => {
 		setSelectedIds((prev) => {
@@ -195,7 +198,7 @@ export function CandidatesClient() {
 			<CandidateActionDialog
 				open={actionDialog.open}
 				action={actionDialog.action}
-				candidateIds={Array.from(selectedIds)}
+				candidateIds={selectedIdsArray}
 				onClose={closeActionDialog}
 			/>
 		</section>

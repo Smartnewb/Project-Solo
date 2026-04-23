@@ -50,11 +50,7 @@ export function CandidateGenerateDialog() {
 
 	const mutation = useMutation({
 		mutationFn: (vars: { weekYear: string; dryRun: boolean; reason: string }) =>
-			ghostInjection.generateWeekly({
-				weekYear: vars.weekYear,
-				dryRun: vars.dryRun,
-				reason: vars.reason,
-			}),
+			ghostInjection.generateWeekly(vars),
 		onSuccess: (result, vars) => {
 			if (vars.dryRun) {
 				setDryRunCount(result.count);

@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { ImageOff } from 'lucide-react';
 import type { CandidateListItem } from '@/app/types/ghost-injection';
 import {
@@ -10,6 +11,8 @@ import {
 	TableHeader,
 	TableRow,
 } from '@/shared/ui/table';
+import { formatDate } from '../_shared/format';
+import { isCheckable } from '../_shared/candidate-utils';
 import { CandidateStatusBadge } from './candidate-status-badge';
 
 interface CandidateTableViewProps {
@@ -20,19 +23,6 @@ interface CandidateTableViewProps {
 	onToggleAll: (checked: boolean) => void;
 }
 
-function formatDate(value: string | null): string {
-	if (!value) return '—';
-	try {
-		return new Date(value).toLocaleString('ko-KR');
-	} catch {
-		return value;
-	}
-}
-
-function isCheckable(item: CandidateListItem): boolean {
-	return item.status === 'PENDING' || item.status === 'QUEUED';
-}
-
 export function CandidateTableView({
 	items,
 	isLoading,
@@ -40,13 +30,12 @@ export function CandidateTableView({
 	onToggleOne,
 	onToggleAll,
 }: CandidateTableViewProps) {
-	const checkableItems = items.filter(isCheckable);
-	const allChecked =
-		checkableItems.length > 0 &&
-		checkableItems.every((item) => selectedIds.has(item.candidateId));
-	const someChecked =
-		!allChecked &&
-		checkableItems.some((item) => selectedIds.has(item.candidateId));
+	const { checkableItems, allChecked, someChecked } = useMemo(() => {
+		const checkable = items.filter(isCheckable);
+		const all = checkable.length > 0 && checkable.every((item) => selectedIds.has(item.candidateId));
+		const some = !all && checkable.some((item) => selectedIds.has(item.candidateId));
+		return { checkableItems: checkable, allChecked: all, someChecked: some };
+	}, [items, selectedIds]);
 
 	return (
 		<div className="rounded-md border bg-white">
