@@ -48,6 +48,7 @@ import { RankBadge } from '../_shared/rank-badge';
 import { ReasonInput, isReasonValid } from '../_shared/reason-input';
 import { ghostInjectionKeys } from '../_shared/query-keys';
 import { VendorRadioGroup } from '../_shared/vendor-radio-group';
+import { GhostPromptPreviewModal } from './ghost-prompt-preview-modal';
 
 const BATCH_EDIT_REASON = '일괄 생성 후 어드민 수정';
 const PHOTO_REGEN_REASON = '사진 재생성';
@@ -643,7 +644,18 @@ function EditPanel({ card, cardIdx, totalCards, updateCard, setCards, onNavigate
 						</div>
 
 						<div className="space-y-1">
-							<Label className="text-[11px] font-semibold text-slate-600">프롬프트 (선택)</Label>
+							<div className="flex items-center justify-between">
+								<Label className="text-[11px] font-semibold text-slate-600">프롬프트 (선택)</Label>
+								<GhostPromptPreviewModal
+									age={item.age}
+									vendor={regenVendor}
+									trigger={
+										<Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] text-slate-500">
+											프롬프트 미리보기
+										</Button>
+									}
+								/>
+							</div>
 							<Textarea
 								value={card.photoRegen.prompt}
 								onChange={(e) => setRegenPrompt(e.target.value)}

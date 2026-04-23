@@ -40,6 +40,7 @@ import {
 import { ReasonInput, isReasonValid } from '../_shared/reason-input';
 import { ghostInjectionKeys } from '../_shared/query-keys';
 import { GhostPhotoSlot } from './ghost-photo-slot';
+import { GhostPromptPreviewModal } from './ghost-prompt-preview-modal';
 import { GhostStatusBadge } from './ghost-status-badge';
 
 const PHOTO_REGEN_REASON = '사진 재생성';
@@ -523,7 +524,18 @@ function PhotoRegenerationSection({ detail }: { detail: GhostDetail }) {
 				)}
 
 				<div className="space-y-1">
-					<Label className="text-xs">프롬프트 (선택)</Label>
+					<div className="flex items-center justify-between">
+						<Label className="text-xs">프롬프트 (선택)</Label>
+						<GhostPromptPreviewModal
+							age={detail.age}
+							vendor={vendor}
+							trigger={
+								<Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] text-slate-500">
+									프롬프트 미리보기
+								</Button>
+							}
+						/>
+					</div>
 					<Textarea
 						value={prompt}
 						onChange={(e) => setPrompt(e.target.value)}
