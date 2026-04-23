@@ -84,6 +84,9 @@ export const ghostInjection = {
 	toggleGhostStatus: (ghostAccountId: string, body: ToggleGhostStatusBody) =>
 		adminPatch(`${BASE}/${ghostAccountId}/status`, body),
 
+	deleteGhost: (ghostAccountId: string, body: { reason: string }) =>
+		adminDelete(`${BASE}/ghosts/${ghostAccountId}`, body),
+
 	bulkInactivateSchool: (schoolId: string, body: BulkInactivateBody) =>
 		adminPost(`${BASE}/bulk-inactivate/school/${schoolId}`, body),
 
