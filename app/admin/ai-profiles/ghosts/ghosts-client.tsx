@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
@@ -14,9 +14,11 @@ import { Button } from '@/shared/ui/button';
 import { ghostInjectionKeys } from '../_shared/query-keys';
 import { GhostBatchCreateDialog } from './ghost-batch-create-dialog';
 import { GhostBulkActions } from './ghost-bulk-actions';
+import { GhostBulkDeleteDialog } from './ghost-bulk-delete-dialog';
 import { GhostCardView } from './ghost-card-view';
 import { GhostDetailDrawer } from './ghost-detail-drawer';
 import { GhostFilters } from './ghost-filters';
+import { GhostSelectionBar } from './ghost-selection-bar';
 import { GhostStatusDialog } from './ghost-status-dialog';
 import { GhostTableView } from './ghost-table-view';
 import { GhostViewToggle, type GhostView } from './ghost-view-toggle';
@@ -71,6 +73,8 @@ export function GhostsClient() {
 	const [createOpen, setCreateOpen] = useState(false);
 	const [selectedGhostId, setSelectedGhostId] = useState<string | null>(null);
 	const [statusTarget, setStatusTarget] = useState<GhostListItem | null>(null);
+	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+	const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
 	useEffect(() => {
 		const nextQs = serializeQuery(query, view);
@@ -101,6 +105,44 @@ export function GhostsClient() {
 		if (!query.schoolId) return undefined;
 		return items.find((item) => item.university?.id === query.schoolId)?.university?.name;
 	}, [items, query.schoolId]);
+
+	const selectedItems = useMemo(
+		() => items.filter((item) => selectedIds.has(item.ghostAccountId)),
+		[items, selectedIds],
+	);
+
+	const toggleSelect = useCallback((id: string) => {
+		setSelectedIds((prev) => {
+			const next = new Set(prev);
+			if (next.has(id)) next.delete(id);
+			else next.add(id);
+			return next;
+		});
+	}, []);
+
+	const toggleSelectAll = useCallback(() => {
+		setSelectedIds((prev) => {
+			const allOnPage = items.every((item) => prev.has(item.ghostAccountId));
+			if (allOnPage) {
+				const next = new Set(prev);
+				items.forEach((item) => next.delete(item.ghostAccountId));
+				return next;
+			}
+			const next = new Set(prev);
+			items.forEach((item) => next.add(item.ghostAccountId));
+			return next;
+		});
+	}, [items]);
+
+	const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
+
+	const handleBulkDeleteComplete = useCallback((succeededIds: string[]) => {
+		setSelectedIds((prev) => {
+			const next = new Set(prev);
+			succeededIds.forEach((id) => next.delete(id));
+			return next;
+		});
+	}, []);
 
 	return (
 		<section className="space-y-4 px-6 py-8">
@@ -138,12 +180,21 @@ export function GhostsClient() {
 				</Alert>
 			) : null}
 
+			<GhostSelectionBar
+				count={selectedIds.size}
+				onClear={clearSelection}
+				onBulkDelete={() => setBulkDeleteOpen(true)}
+			/>
+
 			{view === 'table' ? (
 				<GhostTableView
 					items={items}
 					isLoading={listQuery.isLoading}
 					onRowClick={(ghost) => setSelectedGhostId(ghost.ghostAccountId)}
 					onToggleStatus={setStatusTarget}
+					selectedIds={selectedIds}
+					onToggleSelect={toggleSelect}
+					onToggleSelectAll={toggleSelectAll}
 				/>
 			) : (
 				<GhostCardView
@@ -151,6 +202,8 @@ export function GhostsClient() {
 					isLoading={listQuery.isLoading}
 					onCardClick={(ghost) => setSelectedGhostId(ghost.ghostAccountId)}
 					onToggleStatus={setStatusTarget}
+					selectedIds={selectedIds}
+					onToggleSelect={toggleSelect}
 				/>
 			)}
 
@@ -188,6 +241,12 @@ export function GhostsClient() {
 				onClose={() => setSelectedGhostId(null)}
 			/>
 			<GhostStatusDialog ghost={statusTarget} onClose={() => setStatusTarget(null)} />
+			<GhostBulkDeleteDialog
+				open={bulkDeleteOpen}
+				onOpenChange={setBulkDeleteOpen}
+				selected={selectedItems}
+				onComplete={handleBulkDeleteComplete}
+			/>
 		</section>
 	);
 }
