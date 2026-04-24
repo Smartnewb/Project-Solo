@@ -215,7 +215,7 @@ export interface BatchCreateResultItem {
 	name: string;
 	age: number;
 	mbti: string;
-	rank: GhostRank;
+	rank: UserRank;
 	introduction: string | null;
 	university: { id: string; name: string } | null;
 	department: { id: string; name: string } | null;
@@ -463,7 +463,7 @@ export interface PromoteFromGhostResult {
 
 // ─── Real User Import (F5) ──────────────────────────────
 
-export type UserRank = 'S' | 'A' | 'B' | 'C';
+export type UserRank = 'S' | 'A' | 'B' | 'C' | 'UNKNOWN';
 
 export interface RealUserPhotoItem {
 	imageId: string;
@@ -563,7 +563,7 @@ export interface BatchPreviewItem {
 		name: string;
 		age: number;
 		mbti: string;
-		rank: 'S' | 'A' | 'B' | 'C' | null;
+		rank: UserRank;
 		introduction: string;
 		keywords: string[];
 	};
