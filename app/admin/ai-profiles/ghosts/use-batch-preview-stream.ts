@@ -11,6 +11,7 @@ export interface PreviewStreamState {
 	itemsReady: Record<string, BatchPreviewItem>;
 	isComplete: boolean;
 	error: string | null;
+	errorRetryable: boolean;
 	elapsedMs: number | null;
 }
 
@@ -21,6 +22,7 @@ const initial: PreviewStreamState = {
 	itemsReady: {},
 	isComplete: false,
 	error: null,
+	errorRetryable: false,
 	elapsedMs: null,
 };
 
@@ -61,6 +63,8 @@ export function useBatchPreviewStream(previewId: string | null) {
 					setState((s) => ({
 						...s,
 						itemsReady: { ...s.itemsReady, [data.item.itemId]: data.item },
+						completed: data.completed ?? s.completed,
+						total: data.total ?? s.total,
 					}));
 				}
 			} catch {
@@ -81,12 +85,15 @@ export function useBatchPreviewStream(previewId: string | null) {
 
 		es.addEventListener('error', (ev) => {
 			let msg = 'SSE connection error';
+			let retryable = true;
 			try {
-				msg = JSON.parse((ev as MessageEvent).data)?.message ?? msg;
+				const data = JSON.parse((ev as MessageEvent).data);
+				msg = data?.message ?? msg;
+				retryable = data?.retryable ?? true;
 			} catch {
-				/* network error event has no data */
+				/* network error event has no data — treat as retryable */
 			}
-			setState((s) => ({ ...s, error: msg, isComplete: true }));
+			setState((s) => ({ ...s, error: msg, errorRetryable: retryable, isComplete: true }));
 			es.close();
 		});
 

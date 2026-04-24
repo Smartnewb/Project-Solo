@@ -11,7 +11,7 @@ import type {
 	ImageVendor,
 	PatchBatchPreviewItemBody,
 } from '@/app/types/ghost-injection';
-import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
+import { AdminApiError, getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
 import { useToast } from '@/shared/ui/admin/toast';
 import { Badge } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
@@ -120,6 +120,11 @@ export function GhostBatchPreviewDialog({
 				body,
 			);
 		},
+		retry: (failureCount, error) => {
+			if (failureCount >= 1) return false;
+			return error instanceof AdminApiError && error.status === 409;
+		},
+		retryDelay: 5000,
 		onMutate: ({ itemId, body }) => {
 			setPendingItemId(itemId);
 			setPendingAction(body.action);
@@ -183,6 +188,29 @@ export function GhostBatchPreviewDialog({
 		},
 		onError: (error) => toast.error(getAdminErrorMessage(error)),
 	});
+
+	const handleRestartPreview = () => {
+		if (!previewRoot) return;
+		ghostInjection.deleteBatchPreview(previewRoot.previewId).catch(() => undefined);
+		setPreviewRoot(null);
+		setSelectedIds(new Set());
+		setPhase('setup');
+	};
+
+	useEffect(() => {
+		if (!previewRoot) return;
+		const expiresAtMs = new Date(previewRoot.expiresAt).getTime();
+		if (Number.isNaN(expiresAtMs)) return;
+		const check = () => {
+			if (Date.now() >= expiresAtMs && phase === 'review') {
+				toast.error('미리보기가 만료되었습니다.');
+				onOpenChange(false);
+			}
+		};
+		check();
+		const id = window.setInterval(check, 1000);
+		return () => window.clearInterval(id);
+	}, [previewRoot, phase, toast, onOpenChange]);
 
 	const itemsList: BatchPreviewItem[] = useMemo(() => {
 		if (!previewRoot) return [];
@@ -316,6 +344,7 @@ export function GhostBatchPreviewDialog({
 								{!stream.isComplete && !stream.error ? (
 									<Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />
 								) : null}
+								<ExpiryCountdown expiresAt={previewRoot.expiresAt} />
 							</div>
 							<p className="mt-1 text-sm text-slate-500">
 								프롬프트를 수정하거나 개별 항목을 재생성할 수 있습니다. 선택한
@@ -351,8 +380,18 @@ export function GhostBatchPreviewDialog({
 								</div>
 							) : null}
 							{stream.error ? (
-								<div className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-									{stream.error}
+								<div className="mt-3 flex items-center justify-between gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+									<span className="truncate">{stream.error}</span>
+									{stream.errorRetryable ? (
+										<Button
+											size="sm"
+											variant="outline"
+											className="h-7 border-red-300 text-red-700 hover:bg-red-100"
+											onClick={handleRestartPreview}
+										>
+											다시 시작
+										</Button>
+									) : null}
 								</div>
 							) : null}
 						</div>
@@ -603,5 +642,42 @@ function SetupPhase({
 				</div>
 			</div>
 		</div>
+	);
+}
+
+function ExpiryCountdown({ expiresAt }: { expiresAt: string }) {
+	const [remainingMs, setRemainingMs] = useState(() =>
+		Math.max(0, new Date(expiresAt).getTime() - Date.now()),
+	);
+
+	useEffect(() => {
+		const target = new Date(expiresAt).getTime();
+		const id = window.setInterval(() => {
+			setRemainingMs(Math.max(0, target - Date.now()));
+		}, 1000);
+		return () => window.clearInterval(id);
+	}, [expiresAt]);
+
+	const totalSec = Math.floor(remainingMs / 1000);
+	const mm = String(Math.floor(totalSec / 60)).padStart(2, '0');
+	const ss = String(totalSec % 60).padStart(2, '0');
+
+	const tone =
+		totalSec <= 60
+			? 'border-red-300 bg-red-50 text-red-700'
+			: totalSec <= 180
+				? 'border-amber-300 bg-amber-50 text-amber-700'
+				: 'border-slate-200 bg-white text-slate-600';
+
+	return (
+		<span
+			className={cn(
+				'rounded-md border px-2 py-0.5 text-xs tabular-nums',
+				tone,
+			)}
+			title="미리보기 만료까지 남은 시간"
+		>
+			만료 {mm}:{ss}
+		</span>
 	);
 }
