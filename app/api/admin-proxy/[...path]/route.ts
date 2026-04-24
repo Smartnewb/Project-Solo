@@ -156,8 +156,6 @@ async function proxyRequest(request: NextRequest, { params }: { params: { path: 
 		}
 	}
 
-	const responseBody = await backendRes.arrayBuffer();
-
 	const responseHeaders = new Headers();
 	backendRes.headers.forEach((value, key) => {
 		const lower = key.toLowerCase();
@@ -165,6 +163,19 @@ async function proxyRequest(request: NextRequest, { params }: { params: { path: 
 		responseHeaders.set(key, value);
 	});
 
+	const backendContentType = backendRes.headers.get('content-type') ?? '';
+	const isStream = backendContentType.includes('text/event-stream');
+
+	if (isStream && backendRes.body) {
+		responseHeaders.set('cache-control', 'no-cache, no-transform');
+		responseHeaders.set('x-accel-buffering', 'no');
+		return new NextResponse(backendRes.body, {
+			status: backendRes.status,
+			headers: responseHeaders,
+		});
+	}
+
+	const responseBody = await backendRes.arrayBuffer();
 	const resBody = backendRes.status === 204 ? null : responseBody;
 
 	return new NextResponse(resBody, {

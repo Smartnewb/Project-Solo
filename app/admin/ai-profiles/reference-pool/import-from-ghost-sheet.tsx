@@ -85,7 +85,7 @@ export function ImportFromGhostSheet({ open, onOpenChange }: ImportFromGhostShee
 	});
 
 	const items = listQuery.data?.items ?? [];
-	const total = listQuery.data?.total ?? 0;
+	const total = listQuery.data?.meta?.totalItems ?? 0;
 	const totalPages = Math.max(1, Math.ceil(total / PAGE_LIMIT));
 
 	const importMutation = useMutation({

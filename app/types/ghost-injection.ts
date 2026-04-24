@@ -215,7 +215,7 @@ export interface BatchCreateResultItem {
 	name: string;
 	age: number;
 	mbti: string;
-	rank: GhostRank;
+	rank: UserRank;
 	introduction: string | null;
 	university: { id: string; name: string } | null;
 	department: { id: string; name: string } | null;
@@ -463,7 +463,7 @@ export interface PromoteFromGhostResult {
 
 // ─── Real User Import (F5) ──────────────────────────────
 
-export type UserRank = 'S' | 'A' | 'B' | 'C';
+export type UserRank = 'S' | 'A' | 'B' | 'C' | 'UNKNOWN';
 
 export interface RealUserPhotoItem {
 	imageId: string;
@@ -541,4 +541,69 @@ export interface BackfillProfilesResult {
 		status: 'updated' | 'failed';
 		error?: string;
 	}>;
+}
+
+// ─── Batch preview (sequential prompt flow) ──────────────
+
+export interface BatchPreviewSlotPrompt {
+	slotIndex: 0 | 1 | 2;
+	prompt: string;
+	negativePrompt?: string;
+	referenceUrls?: string[];
+	generationContext: {
+		personaDescriptor: string;
+		sceneDescriptor: string;
+		priorSlotSummaries: string[];
+	};
+}
+
+export interface BatchPreviewItem {
+	itemId: string;
+	profile: {
+		name: string;
+		age: number;
+		mbti: string;
+		rank: UserRank;
+		introduction: string;
+		keywords: string[];
+	};
+	university: { id: string; name: string };
+	department: { id: string; name: string };
+	archetype: { id: string | null; name: string | null; traits: string[] };
+	slotPrompts: BatchPreviewSlotPrompt[];
+}
+
+export interface BatchPreviewRoot {
+	previewId: string;
+	actorUserId: string;
+	schemaContext: 'kr' | 'jp';
+	vendor: ImageVendor;
+	count: number;
+	createdAt: string;
+	expiresAt: string;
+	items: Record<string, BatchPreviewItem>;
+}
+
+export interface CreateBatchPreviewBody {
+	count: number;
+	vendor?: ImageVendor;
+	ageHint?: { min: number; max: number };
+	dryRun?: boolean;
+}
+
+export type PatchBatchPreviewItemBody =
+	| {
+			action: 'edit';
+			slotPrompts: Array<{
+				slotIndex: 0 | 1 | 2;
+				prompt: string;
+				negativePrompt?: string;
+			}>;
+	  }
+	| { action: 'regenerate'; preserveProfile?: boolean };
+
+export interface ConfirmBatchPreviewBody {
+	itemIds: string[];
+	reason: string;
+	concurrency?: number;
 }

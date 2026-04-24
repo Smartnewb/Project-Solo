@@ -12,7 +12,7 @@ import type {
 import { Alert, AlertDescription } from '@/shared/ui/alert';
 import { Button } from '@/shared/ui/button';
 import { ghostInjectionKeys } from '../_shared/query-keys';
-import { GhostBatchCreateDialog } from './ghost-batch-create-dialog';
+import { GhostBatchPreviewDialog } from './ghost-batch-preview-dialog';
 import { GhostBulkActions } from './ghost-bulk-actions';
 import { GhostBulkDeleteDialog } from './ghost-bulk-delete-dialog';
 import { GhostCardView } from './ghost-card-view';
@@ -234,7 +234,7 @@ export function GhostsClient() {
 				</div>
 			</div>
 
-			<GhostBatchCreateDialog open={createOpen} onOpenChange={setCreateOpen} />
+			<GhostBatchPreviewDialog open={createOpen} onOpenChange={setCreateOpen} />
 			<GhostDetailDrawer
 				key={selectedGhostId ?? 'closed'}
 				ghostAccountId={selectedGhostId}
