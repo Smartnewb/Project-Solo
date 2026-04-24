@@ -37,21 +37,12 @@ export const GHOST_VENDOR_OPTIONS: VendorOption[] = [
 		badges: ['중간 단가'],
 	},
 	{
-		id: 'openai-1',
+		id: 'openai',
 		value: 'openai',
-		label: 'OpenAI gpt-image-1',
+		label: 'OpenAI gpt-image-2',
 		subtitle: '자연어 이해 우수',
 		pricePerImage: '~$0.04',
 		badges: ['고가'],
-	},
-	{
-		id: 'openai-2',
-		value: 'openai',
-		label: 'OpenAI gpt-image-2',
-		subtitle: '출시 예정',
-		pricePerImage: '~$0.10 (예상)',
-		badges: ['출시 전'],
-		disabled: true,
 	},
 ];
 
