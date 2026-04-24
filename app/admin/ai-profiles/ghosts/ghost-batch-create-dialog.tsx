@@ -59,7 +59,7 @@ interface GhostBatchCreateDialogProps {
 	onOpenChange: (open: boolean) => void;
 }
 
-interface EditableCard {
+export interface EditableCard {
 	item: BatchCreateResultItem;
 	nameEdit: string;
 	ageEdit: string;
@@ -74,7 +74,7 @@ interface EditableCard {
 	isSaved: boolean;
 }
 
-function toEditableCard(item: BatchCreateResultItem, defaultVendorId: string): EditableCard {
+export function toEditableCard(item: BatchCreateResultItem, defaultVendorId: string): EditableCard {
 	return {
 		item,
 		nameEdit: item.name,
@@ -258,7 +258,7 @@ function FormPhase({
 	);
 }
 
-function ResultPhase({
+export function ResultPhase({
 	result, cards, failedItems, expandedIdx, setExpandedIdx, updateCard, setCards, onClose, onReset,
 }: {
 	result: BatchCreateResult;
