@@ -58,9 +58,18 @@ function makeBackendResponse(body: unknown, status = 200, headers: Record<string
   return {
     ok: status >= 200 && status < 300,
     status,
+    body: headersMap.get('content-type')?.includes('text/event-stream')
+      ? new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode('event: complete\ndata: {}\n\n'));
+            controller.close();
+          },
+        })
+      : null,
     arrayBuffer: () => Promise.resolve(Buffer.from(JSON.stringify(body))),
     headers: {
       forEach: (cb: (value: string, key: string) => void) => headersMap.forEach(cb),
+      get: (key: string) => headersMap.get(key.toLowerCase()) ?? null,
     },
   };
 }
@@ -283,6 +292,34 @@ describe('admin-proxy route handlers', () => {
       const res = await GET(req, makeParams(['admin', 'reports', 'export']));
 
       expect(res.headers.get('content-disposition')).toBe('attachment; filename="report.csv"');
+    });
+
+    it('passes SSE responses through without buffering', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      mockFetch.mockResolvedValueOnce(
+        makeBackendResponse(null, 200, { 'content-type': 'text/event-stream' }),
+      );
+
+      const req = createRequest(
+        'admin/ghost-injection/batch-preview/preview-1/stream',
+      );
+      const res = await GET(
+        req,
+        makeParams([
+          'admin',
+          'ghost-injection',
+          'batch-preview',
+          'preview-1',
+          'stream',
+        ]),
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.body).toBeTruthy();
+      expect(res.headers.get('cache-control')).toBe('no-cache, no-transform');
+      expect(res.headers.get('x-accel-buffering')).toBe('no');
     });
   });
 });

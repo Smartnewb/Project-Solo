@@ -17,7 +17,7 @@ describe('useSessionPolling', () => {
   });
 
   it('counts only waiting_admin as waiting and treats bot_handling as handling', async () => {
-    mockedSupportChatService.getSessions.mockImplementation(async ({ status = 'waiting_admin' }) => {
+    mockedSupportChatService.getSessions.mockImplementation(async ({ status = 'waiting_admin' } = {}) => {
       if (status === 'waiting_admin') {
         return {
           sessions: [

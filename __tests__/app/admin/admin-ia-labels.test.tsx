@@ -9,11 +9,14 @@ import { AdminSidebar } from '@/shared/ui/admin/sidebar';
 
 jest.mock('next/link', () => ({
   __esModule: true,
-  default: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => (
-    <a href={href} {...props}>
+  default: React.forwardRef<
+    HTMLAnchorElement,
+    { href: string; children: React.ReactNode }
+  >(({ href, children, ...props }, ref) => (
+    <a ref={ref} href={href} {...props}>
       {children}
     </a>
-  ),
+  )),
 }));
 
 jest.mock('next/navigation', () => ({
@@ -65,6 +68,12 @@ describe('admin IA labels', () => {
       buckets: {
         approval: { total: 2, items: [] },
         judgment: { total: 3, items: [] },
+        done: { total: 19, items: [] },
+      },
+      doneBreakdown: {
+        profile_report: 10,
+        community_report: 5,
+        support_chat: 4,
       },
       generatedAt: '2026-04-15T10:01:00.000Z',
       warnings: [],

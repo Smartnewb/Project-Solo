@@ -1,5 +1,8 @@
 describe('shared/auth/session-config', () => {
   const ORIGINAL_ENV = process.env;
+  const setNodeEnv = (value: string) => {
+    (process.env as Record<string, string | undefined>).NODE_ENV = value;
+  };
 
   beforeEach(() => {
     jest.resetModules();
@@ -50,7 +53,7 @@ describe('shared/auth/session-config', () => {
 
     it('returns development fallback secret when ADMIN_SESSION_SECRET is not set in non-production', async () => {
       delete process.env.ADMIN_SESSION_SECRET;
-      process.env.NODE_ENV = 'test';
+      setNodeEnv('test');
       const { sessionOptions } = await import('@/shared/auth/session-config');
       expect(sessionOptions.password).toBe('DEVELOPMENT_SECRET_MUST_BE_32_CHARS_LONG!!');
     });
@@ -63,13 +66,13 @@ describe('shared/auth/session-config', () => {
 
     it('throws when ADMIN_SESSION_SECRET is missing in production', async () => {
       delete process.env.ADMIN_SESSION_SECRET;
-      process.env.NODE_ENV = 'production';
+      setNodeEnv('production');
       const { sessionOptions } = await import('@/shared/auth/session-config');
       expect(() => sessionOptions.password).toThrow('ADMIN_SESSION_SECRET must be set in production');
     });
 
     it('sets secure to false in non-production', async () => {
-      process.env.NODE_ENV = 'test';
+      setNodeEnv('test');
       const { sessionOptions } = await import('@/shared/auth/session-config');
       expect(sessionOptions.cookieOptions?.secure).toBe(false);
     });
