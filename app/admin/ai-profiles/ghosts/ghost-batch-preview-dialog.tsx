@@ -34,6 +34,13 @@ import {
 	type EditableCard,
 } from './ghost-batch-create-dialog';
 import { GhostPreviewCard } from './ghost-preview-card';
+import { useBatchPreviewStream } from './use-batch-preview-stream';
+
+const STAGE_LABELS: Record<'profile' | 'persona' | 'slot-prompt', string> = {
+	profile: '프로필 생성',
+	persona: '페르소나 생성',
+	'slot-prompt': '슬롯 프롬프트 생성',
+};
 
 type Phase = 'setup' | 'review' | 'confirming' | 'result';
 
@@ -89,11 +96,14 @@ export function GhostBatchPreviewDialog({
 		},
 		onSuccess: (data) => {
 			setPreviewRoot(data);
+			// items may be empty on skeleton — selection will be recomputed as items stream in
 			setSelectedIds(new Set(Object.keys(data.items)));
 			setPhase('review');
 		},
 		onError: (error) => toast.error(getAdminErrorMessage(error)),
 	});
+
+	const stream = useBatchPreviewStream(previewRoot?.previewId ?? null);
 
 	const patchMutation = useMutation({
 		mutationFn: ({
@@ -176,8 +186,36 @@ export function GhostBatchPreviewDialog({
 
 	const itemsList: BatchPreviewItem[] = useMemo(() => {
 		if (!previewRoot) return [];
-		return Object.values(previewRoot.items);
-	}, [previewRoot]);
+		const merged: Record<string, BatchPreviewItem> = {
+			...previewRoot.items,
+			...stream.itemsReady,
+		};
+		return Object.values(merged);
+	}, [previewRoot, stream.itemsReady]);
+
+	// Auto-select items as they stream in (default to selected, matching prior UX)
+	useEffect(() => {
+		const ids = Object.keys(stream.itemsReady);
+		if (ids.length === 0) return;
+		setSelectedIds((prev) => {
+			const next = new Set(prev);
+			let changed = false;
+			for (const id of ids) {
+				if (!next.has(id)) {
+					next.add(id);
+					changed = true;
+				}
+			}
+			return changed ? next : prev;
+		});
+	}, [stream.itemsReady]);
+
+	// Surface stream error once
+	useEffect(() => {
+		if (stream.error) {
+			toast.error(stream.error);
+		}
+	}, [stream.error, toast]);
 
 	const allSelected =
 		itemsList.length > 0 && selectedIds.size === itemsList.length;
@@ -227,7 +265,11 @@ export function GhostBatchPreviewDialog({
 		deleteMutation.isPending;
 
 	const canStartConfirm =
-		selectedIds.size > 0 && isReasonValid(reason) && !isBusy;
+		selectedIds.size > 0 &&
+		isReasonValid(reason) &&
+		!isBusy &&
+		stream.isComplete &&
+		!stream.error;
 
 	const handleStartConfirm = () => {
 		setPhase('confirming');
@@ -267,13 +309,52 @@ export function GhostBatchPreviewDialog({
 									{previewRoot.vendor}
 								</Badge>
 								<Badge variant="secondary" className="text-xs">
-									총 {itemsList.length}개
+									{stream.isComplete
+										? `총 ${itemsList.length}개`
+										: `${stream.completed}/${stream.total || count} 생성 중`}
 								</Badge>
+								{!stream.isComplete && !stream.error ? (
+									<Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />
+								) : null}
 							</div>
 							<p className="mt-1 text-sm text-slate-500">
 								프롬프트를 수정하거나 개별 항목을 재생성할 수 있습니다. 선택한
 								항목만 실제 프로필로 생성됩니다.
 							</p>
+							{!stream.isComplete && !stream.error ? (
+								<div className="mt-3 space-y-1">
+									<div className="flex items-center justify-between text-xs text-slate-500">
+										<span>
+											{stream.stage ? STAGE_LABELS[stream.stage] : '준비 중'}
+										</span>
+										<span className="tabular-nums">
+											{stream.completed}/{stream.total || count}
+										</span>
+									</div>
+									<div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+										<div
+											className="h-full rounded-full bg-slate-900 transition-[width] duration-300"
+											style={{
+												width: `${
+													stream.total > 0
+														? Math.min(
+																100,
+																Math.round(
+																	(stream.completed / stream.total) * 100,
+																),
+															)
+														: 0
+												}%`,
+											}}
+										/>
+									</div>
+								</div>
+							) : null}
+							{stream.error ? (
+								<div className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+									{stream.error}
+								</div>
+							) : null}
 						</div>
 
 						<div className="border-b bg-slate-50 px-6 py-3">
@@ -306,27 +387,38 @@ export function GhostBatchPreviewDialog({
 						</div>
 
 						<div className="flex-1 overflow-y-auto px-6 py-4">
-							<div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-								{itemsList.map((item) => (
-									<GhostPreviewCard
-										key={item.itemId}
-										item={item}
-										selected={selectedIds.has(item.itemId)}
-										onToggleSelect={() => handleToggleSelect(item.itemId)}
-										onEditSlot={(slotIndex, nextPrompt) =>
-											handleEditSlot(item.itemId, slotIndex, nextPrompt)
-										}
-										onRegenerate={() => handleRegenerateItem(item.itemId)}
-										isSaving={
-											pendingItemId === item.itemId && pendingAction === 'edit'
-										}
-										isRegenerating={
-											pendingItemId === item.itemId &&
-											pendingAction === 'regenerate'
-										}
-									/>
-								))}
-							</div>
+							{itemsList.length === 0 && !stream.error ? (
+								<div className="flex h-full flex-col items-center justify-center gap-3 py-12 text-slate-500">
+									<Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+									<p className="text-sm">
+										{stream.total > 0
+											? `0/${stream.total} 생성 중…`
+											: '미리보기를 준비 중입니다…'}
+									</p>
+								</div>
+							) : (
+								<div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+									{itemsList.map((item) => (
+										<GhostPreviewCard
+											key={item.itemId}
+											item={item}
+											selected={selectedIds.has(item.itemId)}
+											onToggleSelect={() => handleToggleSelect(item.itemId)}
+											onEditSlot={(slotIndex, nextPrompt) =>
+												handleEditSlot(item.itemId, slotIndex, nextPrompt)
+											}
+											onRegenerate={() => handleRegenerateItem(item.itemId)}
+											isSaving={
+												pendingItemId === item.itemId && pendingAction === 'edit'
+											}
+											isRegenerating={
+												pendingItemId === item.itemId &&
+												pendingAction === 'regenerate'
+											}
+										/>
+									))}
+								</div>
+							)}
 						</div>
 
 						<div className="space-y-3 border-t px-6 py-4">
