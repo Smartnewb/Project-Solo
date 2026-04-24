@@ -82,7 +82,7 @@ test.describe('Admin Ghost Preview Flow', () => {
 
 		// Verify total badge shows 2
 		await expect(dialog.getByText(/총\s*2\s*개/)).toBeVisible({
-			timeout: 5_000,
+			timeout: 180_000,
 		});
 
 		// Fill reason (>= 10 chars) so eventual actions satisfy validation

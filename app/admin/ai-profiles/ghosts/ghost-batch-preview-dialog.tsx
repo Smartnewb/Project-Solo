@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckSquare, Loader2, Minus, Plus, Square, Trash2 } from 'lucide-react';
 import { ghostInjection } from '@/app/services/admin/ghost-injection';
@@ -71,6 +71,7 @@ export function GhostBatchPreviewDialog({
 	);
 	const [resultCards, setResultCards] = useState<EditableCard[]>([]);
 	const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+	const lastStreamErrorRef = useRef<string | null>(null);
 
 	useEffect(() => {
 		if (open) {
@@ -85,6 +86,7 @@ export function GhostBatchPreviewDialog({
 			setConfirmResult(null);
 			setResultCards([]);
 			setExpandedIdx(null);
+			lastStreamErrorRef.current = null;
 		}
 	}, [open]);
 
@@ -240,9 +242,13 @@ export function GhostBatchPreviewDialog({
 
 	// Surface stream error once
 	useEffect(() => {
-		if (stream.error) {
-			toast.error(stream.error);
+		if (!stream.error) {
+			lastStreamErrorRef.current = null;
+			return;
 		}
+		if (lastStreamErrorRef.current === stream.error) return;
+		lastStreamErrorRef.current = stream.error;
+		toast.error(stream.error);
 	}, [stream.error, toast]);
 
 	const allSelected =
