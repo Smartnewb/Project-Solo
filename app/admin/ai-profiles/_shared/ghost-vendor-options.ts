@@ -14,18 +14,18 @@ export interface VendorOption {
 	supportsReference?: boolean;
 }
 
-export const DEFAULT_VENDOR: ImageVendor = 'seedream';
-export const DEFAULT_VENDOR_ID = 'seedream';
+export const DEFAULT_VENDOR: ImageVendor = 'openai';
+export const DEFAULT_VENDOR_ID = 'openai';
 
 export const GHOST_VENDOR_OPTIONS: VendorOption[] = [
 	{
 		id: 'seedream',
 		value: 'seedream',
 		label: 'Seedream 4.5',
-		subtitle: '권장 · 한국 인물 특화',
+		subtitle: '일시 중지 · BytePlus 계정 제한 해제 필요',
 		pricePerImage: '~$0.005',
 		badges: ['저렴', 'img2img'],
-		recommended: true,
+		disabled: true,
 		supportsReference: true,
 	},
 	{
@@ -40,9 +40,10 @@ export const GHOST_VENDOR_OPTIONS: VendorOption[] = [
 		id: 'openai',
 		value: 'openai',
 		label: 'OpenAI gpt-image-2',
-		subtitle: '자연어 이해 우수',
+		subtitle: '운영 기본 · 실제 생성 검증 완료',
 		pricePerImage: '~$0.04',
 		badges: ['고가'],
+		recommended: true,
 	},
 ];
 
