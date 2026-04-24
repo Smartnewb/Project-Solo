@@ -94,7 +94,7 @@ export function CandidatesClient() {
 	});
 
 	const items = listQuery.data?.items ?? [];
-	const total = listQuery.data?.total ?? 0;
+	const total = listQuery.data?.meta?.totalItems ?? 0;
 	const page = query.page ?? 1;
 	const limit = query.limit ?? DEFAULT_LIMIT;
 	const totalPages = Math.max(1, Math.ceil(total / limit));

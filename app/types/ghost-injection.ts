@@ -184,11 +184,17 @@ export interface PhaseSchoolListQuery {
 
 // ─── Generic paginated response ──────────────────────────
 
+export interface GhostInjectionPaginationMeta {
+	currentPage: number;
+	itemsPerPage: number;
+	totalItems: number;
+	hasNextPage: boolean;
+	hasPreviousPage: boolean;
+}
+
 export interface GhostInjectionPaginated<T> {
 	items: T[];
-	total: number;
-	page: number;
-	limit: number;
+	meta: GhostInjectionPaginationMeta;
 }
 
 // ─── Mutation bodies ─────────────────────────────────────
