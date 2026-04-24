@@ -41,6 +41,11 @@ import type {
 	BackfillProfilesResult,
 	RegeneratePhotosBody,
 	RegeneratePhotosResult,
+	BatchPreviewRoot,
+	BatchPreviewItem,
+	CreateBatchPreviewBody,
+	PatchBatchPreviewItemBody,
+	ConfirmBatchPreviewBody,
 } from '@/app/types/ghost-injection';
 
 const BASE = '/admin/ghost-injection';
@@ -132,6 +137,32 @@ export const ghostInjection = {
 	// ─── 백필 ──────────────────────────────────────────────
 	backfillProfiles: (body: BackfillProfilesBody) =>
 		adminPost<BackfillProfilesResult>(`${BASE}/backfill-profiles`, body),
+
+	// ─── Batch preview (sequential prompt) ────────────────
+	createBatchPreview: (body: CreateBatchPreviewBody) =>
+		adminPost<BatchPreviewRoot>(`${BASE}/batch-preview`, body),
+
+	getBatchPreview: (previewId: string) =>
+		adminGet<BatchPreviewRoot>(`${BASE}/batch-preview/${previewId}`),
+
+	patchBatchPreviewItem: (
+		previewId: string,
+		itemId: string,
+		body: PatchBatchPreviewItemBody,
+	) =>
+		adminPatch<BatchPreviewItem>(
+			`${BASE}/batch-preview/${previewId}/items/${itemId}`,
+			body,
+		),
+
+	confirmBatchPreview: (previewId: string, body: ConfirmBatchPreviewBody) =>
+		adminPost<BatchCreateResult>(
+			`${BASE}/batch-preview/${previewId}/confirm`,
+			body,
+		),
+
+	deleteBatchPreview: (previewId: string) =>
+		adminDelete<void>(`${BASE}/batch-preview/${previewId}`),
 };
 
 export type GhostInjectionService = typeof ghostInjection;
