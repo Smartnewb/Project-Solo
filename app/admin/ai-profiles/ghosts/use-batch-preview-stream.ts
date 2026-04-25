@@ -7,7 +7,7 @@ export interface PreviewStreamState {
 	isConnected: boolean;
 	completed: number;
 	total: number;
-	stage?: 'profile' | 'persona' | 'slot-prompt';
+	stage?: 'profile' | 'persona' | 'slot-prompt' | 'attach';
 	itemsReady: Record<string, BatchPreviewItem>;
 	isComplete: boolean;
 	error: string | null;

@@ -20,6 +20,7 @@ interface GhostPreviewCardProps {
 	onToggleSelect: () => void;
 	onEditSlot: (slotIndex: 0 | 1 | 2, nextPrompt: string) => void;
 	onRegenerate: () => void;
+	onReplacePhoto?: (slotIndex: 0 | 1 | 2, newPhotoId: string) => void;
 	isSaving?: boolean;
 	isRegenerating?: boolean;
 }
