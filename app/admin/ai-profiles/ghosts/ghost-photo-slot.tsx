@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ImageOff, RefreshCw, Sparkles } from 'lucide-react';
+import { ImageOff, Maximize2, RefreshCw, Sparkles } from 'lucide-react';
 import { ghostInjection } from '@/app/services/admin/ghost-injection';
 import type { GhostPhotoItem, ImageVendor } from '@/app/types/ghost-injection';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
@@ -51,6 +51,7 @@ export function GhostPhotoSlot({ ghostAccountId, slotIndex, photo, ghostAge }: G
 	const queryClient = useQueryClient();
 
 	const [replaceOpen, setReplaceOpen] = useState(false);
+	const [previewOpen, setPreviewOpen] = useState(false);
 	const [imageId, setImageId] = useState('');
 	const [replaceReason, setReplaceReason] = useState('');
 
@@ -116,10 +117,22 @@ export function GhostPhotoSlot({ ghostAccountId, slotIndex, photo, ghostAge }: G
 
 	return (
 		<div className="space-y-2">
-			<div className="relative aspect-square overflow-hidden rounded-md border bg-slate-100">
+			<div className="group relative aspect-square overflow-hidden rounded-md border bg-slate-100">
 				{photo ? (
-					// eslint-disable-next-line @next/next/no-img-element
-					<img src={photo.url} alt={`슬롯 ${slotIndex}`} className="h-full w-full object-cover" />
+					<button
+						type="button"
+						className="block h-full w-full cursor-zoom-in focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
+						onClick={() => setPreviewOpen(true)}
+						aria-label={`슬롯 ${slotIndex} 사진 크게 보기`}
+					>
+						{/* eslint-disable-next-line @next/next/no-img-element */}
+						<img src={photo.url} alt={`슬롯 ${slotIndex}`} className="h-full w-full object-cover" />
+						<span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition group-hover:bg-black/20 group-hover:opacity-100 group-focus-within:bg-black/20 group-focus-within:opacity-100">
+							<span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-slate-900 shadow">
+								<Maximize2 className="h-4 w-4" />
+							</span>
+						</span>
+					</button>
 				) : (
 					<div className="flex h-full w-full items-center justify-center text-slate-400">
 						<ImageOff className="h-6 w-6" />
@@ -175,6 +188,25 @@ export function GhostPhotoSlot({ ghostAccountId, slotIndex, photo, ghostAge }: G
 					<Sparkles className="mr-1 h-3 w-3" /> AI
 				</Button>
 			</div>
+
+			<Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+				<DialogContent className="max-w-5xl border-0 bg-transparent p-0 shadow-none [&>button]:rounded-full [&>button]:bg-white/90 [&>button]:p-1 [&>button]:text-slate-900">
+					<DialogHeader className="sr-only">
+						<DialogTitle>슬롯 {slotIndex} 사진 크게 보기</DialogTitle>
+						<DialogDescription>선택한 사진 슬롯의 원본 비율 확대 보기입니다.</DialogDescription>
+					</DialogHeader>
+					{photo && (
+						<div className="flex max-h-[88vh] items-center justify-center rounded-md bg-black/90 p-2">
+							{/* eslint-disable-next-line @next/next/no-img-element */}
+							<img
+								src={photo.url}
+								alt={`슬롯 ${slotIndex} 확대 이미지`}
+								className="max-h-[84vh] max-w-full rounded object-contain"
+							/>
+						</div>
+					)}
+				</DialogContent>
+			</Dialog>
 
 			<Dialog open={regenOpen} onOpenChange={setRegenOpen}>
 				<DialogContent className="max-w-lg">
