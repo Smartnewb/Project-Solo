@@ -35,6 +35,28 @@ const INITIAL: GhostBatchSetupState = {
 	poolFilter: { sortBy: 'usage_asc' },
 };
 
+const SLOT_PHOTO_LIMIT = 3;
+
+function asTuple(ids: string[]): ReferenceMatch['photoIds'] {
+	return ids as unknown as ReferenceMatch['photoIds'];
+}
+
+function pickNextActiveSlot(
+	matches: Map<number, ReferenceMatch>,
+	count: number,
+	currentIdx: number,
+	currentPhotos: string[],
+): number {
+	if (currentPhotos.length < SLOT_PHOTO_LIMIT) return currentIdx;
+	for (let i = 1; i <= count; i += 1) {
+		const candidate = (currentIdx + i) % count;
+		if (candidate === currentIdx) break;
+		const len = matches.get(candidate)?.photoIds.length ?? 0;
+		if (len < SLOT_PHOTO_LIMIT) return candidate;
+	}
+	return currentIdx;
+}
+
 export function useGhostBatchSetup() {
 	const [state, setState] = useState<GhostBatchSetupState>(INITIAL);
 
@@ -48,6 +70,7 @@ export function useGhostBatchSetup() {
 
 	const setCount = useCallback((next: number) => {
 		setState((s) => {
+			if (next === s.count) return s;
 			const trimmed = new Map(s.matches);
 			for (const idx of [...trimmed.keys()]) {
 				if (idx >= next) trimmed.delete(idx);
@@ -62,59 +85,39 @@ export function useGhostBatchSetup() {
 	}, []);
 
 	const setImageSource = useCallback((next: ImageSource) => {
-		setState((s) => ({ ...s, imageSource: next }));
+		setState((s) => (s.imageSource === next ? s : { ...s, imageSource: next }));
 	}, []);
 
 	const setAgeBucket = useCallback((next: AgeBucket | null) => {
-		setState((s) => ({ ...s, ageBucket: next }));
+		setState((s) => (s.ageBucket === next ? s : { ...s, ageBucket: next }));
 	}, []);
 
 	const setVendor = useCallback((next: ImageVendor | null) => {
-		setState((s) => ({ ...s, vendor: next }));
+		setState((s) => (s.vendor === next ? s : { ...s, vendor: next }));
 	}, []);
 
 	const setActiveSlot = useCallback((idx: number) => {
-		setState((s) => ({
-			...s,
-			activeSlotIndex: Math.min(Math.max(0, idx), s.count - 1),
-		}));
+		setState((s) => {
+			const clamped = Math.min(Math.max(0, idx), Math.max(0, s.count - 1));
+			return clamped === s.activeSlotIndex ? s : { ...s, activeSlotIndex: clamped };
+		});
 	}, []);
 
 	const addPhotoToActiveSlot = useCallback((photoId: string) => {
 		setState((s) => {
 			if (s.imageSource !== 'reference-pool') return s;
 			const idx = s.activeSlotIndex;
-			const current = s.matches.get(idx);
-			const photoIds = current?.photoIds ?? ([] as string[]);
-			if (photoIds.includes(photoId)) return s;
+			const current = s.matches.get(idx)?.photoIds ?? [];
+			if (current.length >= SLOT_PHOTO_LIMIT) return s;
 
-			const flatUsed = new Set<string>();
-			for (const m of s.matches.values()) for (const id of m.photoIds) flatUsed.add(id);
-			if (flatUsed.has(photoId)) return s;
-
-			if (photoIds.length >= 3) return s;
-			const nextPhotos = [...photoIds, photoId] as string[];
-
-			let nextActive = idx;
-			if (nextPhotos.length === 3) {
-				for (let i = 0; i < s.count; i += 1) {
-					const candidate = (idx + 1 + i) % s.count;
-					const m =
-						candidate === idx
-							? { itemIndex: idx, photoIds: nextPhotos as ReferenceMatch['photoIds'] }
-							: s.matches.get(candidate);
-					if (!m || m.photoIds.length < 3) {
-						nextActive = candidate;
-						break;
-					}
-				}
+			for (const m of s.matches.values()) {
+				if (m.photoIds.includes(photoId)) return s;
 			}
 
+			const nextPhotos = [...current, photoId];
 			const nextMatches = new Map(s.matches);
-			nextMatches.set(idx, {
-				itemIndex: idx,
-				photoIds: nextPhotos as ReferenceMatch['photoIds'],
-			} as ReferenceMatch);
+			nextMatches.set(idx, { itemIndex: idx, photoIds: asTuple(nextPhotos) });
+			const nextActive = pickNextActiveSlot(nextMatches, s.count, idx, nextPhotos);
 			return { ...s, matches: nextMatches, activeSlotIndex: nextActive };
 		});
 	}, []);
@@ -122,21 +125,19 @@ export function useGhostBatchSetup() {
 	const removePhotoFromSlot = useCallback((slotIdx: number, position: 0 | 1 | 2) => {
 		setState((s) => {
 			const current = s.matches.get(slotIdx);
-			if (!current) return s;
+			if (!current || position >= current.photoIds.length) return s;
 			const photos = [...current.photoIds];
 			photos.splice(position, 1);
 			const nextMatches = new Map(s.matches);
 			if (photos.length === 0) nextMatches.delete(slotIdx);
 			else
-				nextMatches.set(slotIdx, {
-					itemIndex: slotIdx,
-					photoIds: photos as unknown as ReferenceMatch['photoIds'],
-				});
+				nextMatches.set(slotIdx, { itemIndex: slotIdx, photoIds: asTuple(photos) });
 			return { ...s, matches: nextMatches };
 		});
 	}, []);
 
-	const replaceMatches = useCallback((next: ReferenceMatch[]) => {
+	const mergeMatches = useCallback((next: ReferenceMatch[]) => {
+		if (next.length === 0) return;
 		setState((s) => {
 			const nextMatches = new Map(s.matches);
 			for (const m of next) nextMatches.set(m.itemIndex, m);
@@ -145,20 +146,24 @@ export function useGhostBatchSetup() {
 	}, []);
 
 	const resetMatches = useCallback(() => {
-		setState((s) => ({ ...s, matches: new Map(), activeSlotIndex: 0 }));
+		setState((s) =>
+			s.matches.size === 0 && s.activeSlotIndex === 0
+				? s
+				: { ...s, matches: new Map(), activeSlotIndex: 0 },
+		);
 	}, []);
 
 	const setPoolFilter = useCallback((next: PoolFilterState) => {
-		setState((s) => ({ ...s, poolFilter: next }));
+		setState((s) => (s.poolFilter === next ? s : { ...s, poolFilter: next }));
 	}, []);
 
 	const isReady = useMemo(() => {
 		if (state.imageSource === 'generate') return Boolean(state.vendor);
 		if (state.matches.size !== state.count) return false;
 		const flat = [...state.matches.values()].flatMap((m) => m.photoIds);
-		if (flat.length !== state.count * 3) return false;
-		if (new Set(flat).size !== flat.length) return false;
-		return [...state.matches.values()].every((m) => m.photoIds.length === 3);
+		const expected = state.count * SLOT_PHOTO_LIMIT;
+		if (flat.length !== expected) return false;
+		return new Set(flat).size === flat.length;
 	}, [state.imageSource, state.vendor, state.matches, state.count]);
 
 	const reset = useCallback(() => setState(INITIAL), []);
@@ -174,9 +179,11 @@ export function useGhostBatchSetup() {
 		setActiveSlot,
 		addPhotoToActiveSlot,
 		removePhotoFromSlot,
-		replaceMatches,
+		mergeMatches,
 		resetMatches,
 		setPoolFilter,
 		reset,
 	};
 }
+
+export type UseGhostBatchSetup = ReturnType<typeof useGhostBatchSetup>;

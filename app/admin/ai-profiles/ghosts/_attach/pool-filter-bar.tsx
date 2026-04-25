@@ -8,6 +8,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/shared/ui/select';
+import { ALL_FACET_VALUE } from '../../_shared/age-bucket-select';
 import type { ReferencePoolFacets } from '@/app/types/ghost-injection';
 import type { PoolFilterState } from './use-ghost-batch-setup';
 
@@ -90,14 +91,14 @@ interface FacetSelectProps {
 function FacetSelect({ placeholder, value, options, onChange }: FacetSelectProps) {
 	return (
 		<Select
-			value={value ?? '__all__'}
-			onValueChange={(v) => onChange(v === '__all__' ? undefined : v)}
+			value={value ?? ALL_FACET_VALUE}
+			onValueChange={(v) => onChange(v === ALL_FACET_VALUE ? undefined : v)}
 		>
 			<SelectTrigger className="h-8 w-32 text-xs">
 				<SelectValue placeholder={placeholder} />
 			</SelectTrigger>
 			<SelectContent>
-				<SelectItem value="__all__">전체</SelectItem>
+				<SelectItem value={ALL_FACET_VALUE}>전체</SelectItem>
 				{options.map((opt) => (
 					<SelectItem key={opt.value} value={opt.value}>
 						{opt.value} ({opt.count})

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { aiProfileReferences } from '@/app/services/admin/ai-profile-references';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
@@ -25,7 +25,7 @@ interface AttachSetupPanelProps {
 	onPickPhoto: (photo: ReferencePhotoListItem) => void;
 	onActivate: (idx: number) => void;
 	onRemovePhoto: (slotIdx: number, pos: 0 | 1 | 2) => void;
-	onReplaceMatches: (next: ReferenceMatch[]) => void;
+	onMergeMatches: (next: ReferenceMatch[]) => void;
 	onResetAll: () => void;
 }
 
@@ -40,7 +40,7 @@ export function AttachSetupPanel({
 	onPickPhoto,
 	onActivate,
 	onRemovePhoto,
-	onReplaceMatches,
+	onMergeMatches,
 	onResetAll,
 }: AttachSetupPanelProps) {
 	const toast = useToast();
@@ -72,7 +72,7 @@ export function AttachSetupPanel({
 				},
 			}),
 		onSuccess: (data) => {
-			onReplaceMatches(data.matches);
+			onMergeMatches(data.matches);
 			if (data.warnings.length > 0) {
 				toast.info(data.warnings.join(', '));
 			}
@@ -82,15 +82,17 @@ export function AttachSetupPanel({
 	});
 
 	const handleAutoFillSlot = (idx: number) => {
+		if (autoMatchMutation.isPending) return;
 		setAutoMatchingSlot(idx);
 		autoMatchMutation.mutate({ targetSlots: [idx] });
 	};
 
 	const handleAutoFillAll = () => {
+		if (autoMatchMutation.isPending) return;
 		autoMatchMutation.mutate({});
 	};
 
-	const slotEnabled = useMemo(() => count > 0, [count]);
+	const slotEnabled = count > 0;
 
 	return (
 		<div className="grid h-full grid-cols-[1fr_minmax(360px,420px)]">

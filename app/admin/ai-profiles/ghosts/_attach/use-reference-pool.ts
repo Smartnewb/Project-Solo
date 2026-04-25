@@ -1,6 +1,7 @@
 'use client';
 
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
+import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import { aiProfileReferences } from '@/app/services/admin/ai-profile-references';
 import { attachPoolKeys } from '../../_shared/query-keys';
 import type {
@@ -19,17 +20,13 @@ export interface UseReferencePoolFilter {
 
 export function useReferencePool(
 	filter: UseReferencePoolFilter,
-	excludeIds: string[],
+	excludeIds: ReadonlySet<string> | readonly string[],
 	enabled = true,
 ) {
-	const sortedExclude = [...excludeIds].sort();
-	const queryFilter: Record<string, unknown> = {
-		...filter,
-		excludeKey: sortedExclude.join(','),
-	};
+	const sortedExclude = useMemo(() => [...excludeIds].sort(), [excludeIds]);
 
 	return useInfiniteQuery({
-		queryKey: attachPoolKeys.list(queryFilter),
+		queryKey: attachPoolKeys.list({ ...filter }),
 		enabled,
 		initialPageParam: undefined as string | undefined,
 		queryFn: async ({ pageParam }) => {
@@ -44,6 +41,8 @@ export function useReferencePool(
 		},
 		getNextPageParam: (last: ListReferencePhotosResponse) =>
 			last.meta.nextCursor ?? undefined,
-		staleTime: 10_000,
+		staleTime: 60_000,
+		gcTime: 600_000,
+		placeholderData: keepPreviousData,
 	});
 }

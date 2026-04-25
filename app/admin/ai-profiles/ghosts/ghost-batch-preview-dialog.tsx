@@ -22,7 +22,7 @@ import { Dialog, DialogContent } from '@/shared/ui/dialog';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
 import { cn } from '@/shared/utils';
-import { AgeBucketSelect } from '../_shared/age-bucket-select';
+import { AgeBucketSelect, ageBucketToHint } from '../_shared/age-bucket-select';
 import {
 	DEFAULT_VENDOR,
 	DEFAULT_VENDOR_ID,
@@ -49,12 +49,18 @@ const STAGE_LABELS: Record<'profile' | 'persona' | 'slot-prompt' | 'attach', str
 	attach: '사진 매칭',
 };
 
-function ageBucketToHint(bucket: AgeBucket | null) {
-	if (!bucket) return undefined;
-	const [min, max] = bucket.split('-').map(Number);
-	if (!Number.isFinite(min) || !Number.isFinite(max)) return undefined;
-	return { min, max };
-}
+const IMAGE_SOURCE_OPTIONS: ReadonlyArray<{
+	value: ImageSource;
+	title: string;
+	subtitle: string;
+}> = [
+	{ value: 'generate', title: 'AI 생성', subtitle: 'Seedream / gpt-image-2' },
+	{
+		value: 'reference-pool',
+		title: '참조 풀에서 선택',
+		subtitle: '기존 사진 부착 · ~3초',
+	},
+];
 
 type Phase = 'setup' | 'review' | 'confirming' | 'result';
 
@@ -132,7 +138,6 @@ export function GhostBatchPreviewDialog({
 		onSuccess: (data) => {
 			setPreviewRoot(data);
 			setPreviewImageSource(setupState.imageSource);
-			// items may be empty on skeleton — selection will be recomputed as items stream in
 			setSelectedIds(new Set(Object.keys(data.items)));
 			setPhase('review');
 		},
@@ -257,7 +262,6 @@ export function GhostBatchPreviewDialog({
 		return Object.values(merged);
 	}, [previewRoot, stream.itemsReady]);
 
-	// Auto-select items as they stream in (default to selected, matching prior UX)
 	useEffect(() => {
 		const ids = Object.keys(stream.itemsReady);
 		if (ids.length === 0) return;
@@ -274,7 +278,6 @@ export function GhostBatchPreviewDialog({
 		});
 	}, [stream.itemsReady]);
 
-	// Surface stream error once
 	useEffect(() => {
 		if (!stream.error) {
 			lastStreamErrorRef.current = null;
@@ -646,30 +649,28 @@ function SetupPhase({
 		<div className="space-y-1">
 			<Label className="text-sm font-semibold text-slate-800">이미지 소스 *</Label>
 			<div className="flex gap-3">
-				<label className="flex flex-1 cursor-pointer items-center gap-2 rounded-md border p-3">
-					<input
-						type="radio"
-						name="image-source"
-						checked={imageSource === 'generate'}
-						onChange={() => setImageSource('generate')}
-					/>
-					<div>
-						<p className="text-sm font-medium">AI 생성</p>
-						<p className="text-xs text-slate-500">Seedream / gpt-image-2</p>
-					</div>
-				</label>
-				<label className="flex flex-1 cursor-pointer items-center gap-2 rounded-md border p-3">
-					<input
-						type="radio"
-						name="image-source"
-						checked={imageSource === 'reference-pool'}
-						onChange={() => setImageSource('reference-pool')}
-					/>
-					<div>
-						<p className="text-sm font-medium">참조 풀에서 선택</p>
-						<p className="text-xs text-slate-500">기존 사진 부착 · ~3초</p>
-					</div>
-				</label>
+				{IMAGE_SOURCE_OPTIONS.map((opt) => (
+					<label
+						key={opt.value}
+						className={cn(
+							'flex flex-1 cursor-pointer items-center gap-2 rounded-md border p-3 transition',
+							imageSource === opt.value
+								? 'border-slate-900 bg-slate-50'
+								: 'border-slate-200 hover:border-slate-400',
+						)}
+					>
+						<input
+							type="radio"
+							name="image-source"
+							checked={imageSource === opt.value}
+							onChange={() => setImageSource(opt.value)}
+						/>
+						<div>
+							<p className="text-sm font-medium">{opt.title}</p>
+							<p className="text-xs text-slate-500">{opt.subtitle}</p>
+						</div>
+					</label>
+				))}
 			</div>
 		</div>
 	);
@@ -753,7 +754,7 @@ function SetupPhase({
 							onPickPhoto={(photo) => setup.addPhotoToActiveSlot(photo.id)}
 							onActivate={setup.setActiveSlot}
 							onRemovePhoto={setup.removePhotoFromSlot}
-							onReplaceMatches={setup.replaceMatches}
+							onMergeMatches={setup.mergeMatches}
 							onResetAll={setup.resetMatches}
 						/>
 					</div>
