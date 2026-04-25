@@ -249,6 +249,10 @@ export interface ReplaceGhostPhotoBody {
 	reason: string;
 }
 
+export interface RemoveGhostPhotoBody {
+	reason: string;
+}
+
 export interface RegeneratePhotosBody {
 	prompt?: string;
 	referencePhotoUrls?: string[];

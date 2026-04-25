@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ImageOff, Maximize2, RefreshCw, Sparkles } from 'lucide-react';
+import { ImageOff, Maximize2, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
 import { ghostInjection } from '@/app/services/admin/ghost-injection';
 import type { GhostPhotoItem, ImageVendor } from '@/app/types/ghost-injection';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
@@ -55,6 +55,9 @@ export function GhostPhotoSlot({ ghostAccountId, slotIndex, photo, ghostAge }: G
 	const [imageId, setImageId] = useState('');
 	const [replaceReason, setReplaceReason] = useState('');
 
+	const [removeOpen, setRemoveOpen] = useState(false);
+	const [removeReason, setRemoveReason] = useState('');
+
 	const [regenOpen, setRegenOpen] = useState(false);
 	const [regenVendorId, setRegenVendorId] = useState(DEFAULT_VENDOR_ID);
 	const [regenPrompt, setRegenPrompt] = useState('');
@@ -81,6 +84,20 @@ export function GhostPhotoSlot({ ghostAccountId, slotIndex, photo, ghostAge }: G
 			setReplaceOpen(false);
 			setImageId('');
 			setReplaceReason('');
+		},
+		onError: (error) => toast.error(getAdminErrorMessage(error)),
+	});
+
+	const removeMutation = useMutation({
+		mutationFn: () =>
+			ghostInjection.removeGhostPhoto(ghostAccountId, slotIndex, {
+				reason: removeReason.trim(),
+			}),
+		onSuccess: () => {
+			toast.success(`슬롯 ${slotIndex} 사진이 제거되었습니다.`);
+			invalidateGhostQueries();
+			setRemoveOpen(false);
+			setRemoveReason('');
 		},
 		onError: (error) => toast.error(getAdminErrorMessage(error)),
 	});
@@ -112,6 +129,8 @@ export function GhostPhotoSlot({ ghostAccountId, slotIndex, photo, ghostAge }: G
 
 	const canReplace =
 		imageId.trim().length > 0 && isReasonValid(replaceReason) && !replaceMutation.isPending;
+
+	const canRemove = Boolean(photo) && isReasonValid(removeReason) && !removeMutation.isPending;
 
 	const canRegen = isReasonValid(regenReason) && !regenMutation.isPending;
 
@@ -187,6 +206,17 @@ export function GhostPhotoSlot({ ghostAccountId, slotIndex, photo, ghostAge }: G
 				>
 					<Sparkles className="mr-1 h-3 w-3" /> AI
 				</Button>
+
+				<Button
+					variant="outline"
+					size="sm"
+					className="border-red-200 px-2 text-xs text-red-700 hover:bg-red-50"
+					onClick={() => setRemoveOpen(true)}
+					disabled={!photo}
+					aria-label={`슬롯 ${slotIndex} 사진 제거`}
+				>
+					<Trash2 className="h-3 w-3" />
+				</Button>
 			</div>
 
 			<Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
@@ -205,6 +235,39 @@ export function GhostPhotoSlot({ ghostAccountId, slotIndex, photo, ghostAge }: G
 							/>
 						</div>
 					)}
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={removeOpen} onOpenChange={(open) => !removeMutation.isPending && setRemoveOpen(open)}>
+				<DialogContent className="max-w-md">
+					<DialogHeader>
+						<DialogTitle className="flex items-center gap-2 text-red-700">
+							<Trash2 className="h-4 w-4" />
+							슬롯 {slotIndex} 사진 제거
+						</DialogTitle>
+						<DialogDescription>
+							이 슬롯 사진만 제거합니다. 마지막 남은 사진은 서버에서 제거가 차단됩니다.
+						</DialogDescription>
+					</DialogHeader>
+
+					<ReasonInput value={removeReason} onChange={setRemoveReason} minLength={10} rows={3} />
+
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => setRemoveOpen(false)}
+							disabled={removeMutation.isPending}
+						>
+							취소
+						</Button>
+						<Button
+							variant="destructive"
+							onClick={() => removeMutation.mutate()}
+							disabled={!canRemove}
+						>
+							{removeMutation.isPending ? '제거 중…' : '사진 제거'}
+						</Button>
+					</DialogFooter>
 				</DialogContent>
 			</Dialog>
 

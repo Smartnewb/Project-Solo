@@ -354,7 +354,7 @@ export function GhostDetailDrawer({ ghostAccountId, onClose }: GhostDetailDrawer
 									})}
 								</div>
 								<p className="text-xs text-slate-500">
-									현재 {detail.photos.length}개 슬롯 사용 중. 슬롯 단위로 이미지 ID를 입력하여 교체합니다.
+									현재 {detail.photos.length}개 슬롯 사용 중. 슬롯 단위로 교체, AI 재생성, 제거가 가능합니다.
 								</p>
 							</section>
 

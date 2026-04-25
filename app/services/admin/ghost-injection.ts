@@ -30,6 +30,7 @@ import type {
 	RegenerateSingleSlotResponse,
 	RemoveBlacklistBody,
 	ReplaceGhostPhotoBody,
+	RemoveGhostPhotoBody,
 	RollbackBody,
 	SetCooldownBody,
 	SetFeatureFlagBody,
@@ -86,6 +87,12 @@ export const ghostInjection = {
 		slotIndex: number,
 		body: ReplaceGhostPhotoBody,
 	) => adminPut(`${BASE}/${ghostAccountId}/photo/${slotIndex}`, body),
+
+	removeGhostPhoto: (
+		ghostAccountId: string,
+		slotIndex: number,
+		body: RemoveGhostPhotoBody,
+	) => adminDelete(`${BASE}/${ghostAccountId}/photo/${slotIndex}`, body),
 
 	regeneratePhotos: (ghostAccountId: string, body: RegeneratePhotosBody) =>
 		adminPost<RegeneratePhotosResult>(`${BASE}/${ghostAccountId}/regenerate-photos`, body),
