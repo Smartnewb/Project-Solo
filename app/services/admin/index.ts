@@ -64,6 +64,7 @@ export type {
 export { ghostInjection } from './ghost-injection';
 export { ghostReferencePool } from './ghost-reference-pool';
 export { aiProfileGenerator } from './ai-profile-generator';
+export { aiProfileReferences } from './ai-profile-references';
 export type { KeywordCategory, KeywordItem, KeywordsResponse } from './keywords';
 export type {
 	CareTarget,

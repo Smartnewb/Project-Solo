@@ -78,3 +78,11 @@ export const referencePoolKeys = {
 	realUsers: (query: RealUserListQuery) =>
 		[...referencePoolKeys.all, 'real-users', query] as const,
 };
+
+export const attachPoolKeys = {
+	all: ['admin', 'attach-pool'] as const,
+	list: (filter: Record<string, unknown>) =>
+		[...attachPoolKeys.all, 'list', filter] as const,
+	autoMatch: (key: Record<string, unknown>) =>
+		[...attachPoolKeys.all, 'auto-match', key] as const,
+};

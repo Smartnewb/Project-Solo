@@ -590,9 +590,11 @@ export interface BatchPreviewRoot {
 
 export interface CreateBatchPreviewBody {
 	count: number;
-	vendor?: ImageVendor;
 	ageHint?: { min: number; max: number };
 	dryRun?: boolean;
+	imageSource?: ImageSource;
+	vendor?: ImageVendor;
+	referenceMatches?: ReferenceMatch[];
 }
 
 export type PatchBatchPreviewItemBody =
@@ -604,10 +606,83 @@ export type PatchBatchPreviewItemBody =
 				negativePrompt?: string;
 			}>;
 	  }
-	| { action: 'regenerate'; preserveProfile?: boolean };
+	| { action: 'regenerate'; preserveProfile?: boolean }
+	| {
+			action: 'replace-photo';
+			slotIndex: 0 | 1 | 2;
+			newPhotoId: string;
+	  };
 
 export interface ConfirmBatchPreviewBody {
 	itemIds: string[];
 	reason: string;
 	concurrency?: number;
+}
+
+// ─── Reference-Pool Attach (Option C) ────────────────────
+
+export type ImageSource = 'generate' | 'reference-pool';
+
+export interface ReferenceMatch {
+	itemIndex: number;
+	photoIds: [string, string, string];
+}
+
+export interface ReferencePoolFacetEntry {
+	value: string;
+	count: number;
+}
+
+export interface ReferencePoolFacets {
+	ageBuckets: ReferencePoolFacetEntry[];
+	moods: ReferencePoolFacetEntry[];
+	settings: ReferencePoolFacetEntry[];
+	styles: ReferencePoolFacetEntry[];
+}
+
+export interface ReferencePhotoListItem {
+	id: string;
+	s3Url: string;
+	thumbnailUrl: string;
+	ageBucket: AgeBucket;
+	tags: GhostReferenceImageTags | null;
+	usageCount: number;
+	lockedBy: { adminId: string; until: string } | null;
+	source: 'ghost' | 'user' | 'generated' | 'unknown';
+}
+
+export interface ListReferencePhotosQuery {
+	ageBucket?: AgeBucket;
+	isActive?: boolean;
+	tagMood?: string;
+	tagSetting?: string;
+	tagStyle?: string;
+	excludeIds?: string[];
+	sortBy?: 'usage_asc' | 'curated_desc';
+	limit?: number;
+	cursor?: string;
+}
+
+export interface ListReferencePhotosResponse {
+	items: ReferencePhotoListItem[];
+	meta: {
+		totalItems: number;
+		hasNext: boolean;
+		nextCursor: string | null;
+	};
+	facets: ReferencePoolFacets;
+}
+
+export interface AutoMatchReferenceBody {
+	count: number;
+	ageBucket?: AgeBucket;
+	tagFilter?: { mood?: string; setting?: string; style?: string };
+	excludePhotoIds?: string[];
+	cohesion?: 'strict' | 'loose';
+	targetSlots?: number[];
+}
+
+export interface AutoMatchReferenceResponse {
+	matches: ReferenceMatch[];
+	warnings: string[];
 }

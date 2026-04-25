@@ -10,9 +10,19 @@ import {
 	SelectValue,
 } from '@/shared/ui/select';
 
-const ALL = '__all__';
+export const ALL_FACET_VALUE = '__all__';
+const ALL = ALL_FACET_VALUE;
 
 export const AGE_BUCKETS: AgeBucket[] = ['20-22', '23-25', '26-28'];
+
+export function ageBucketToHint(
+	bucket: AgeBucket | null | undefined,
+): { min: number; max: number } | undefined {
+	if (!bucket) return undefined;
+	const [min, max] = bucket.split('-').map(Number);
+	if (!Number.isFinite(min) || !Number.isFinite(max)) return undefined;
+	return { min, max };
+}
 
 interface AgeBucketSelectProps {
 	value: AgeBucket | undefined;

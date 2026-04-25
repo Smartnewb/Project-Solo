@@ -5,11 +5,14 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckSquare, Loader2, Minus, Plus, Square, Trash2 } from 'lucide-react';
 import { ghostInjection } from '@/app/services/admin/ghost-injection';
 import type {
+	AgeBucket,
 	BatchCreateResult,
 	BatchPreviewItem,
 	BatchPreviewRoot,
+	ImageSource,
 	ImageVendor,
 	PatchBatchPreviewItemBody,
+	ReferenceMatch,
 } from '@/app/types/ghost-injection';
 import { AdminApiError, getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
 import { useToast } from '@/shared/ui/admin/toast';
@@ -19,6 +22,7 @@ import { Dialog, DialogContent } from '@/shared/ui/dialog';
 import { Input } from '@/shared/ui/input';
 import { Label } from '@/shared/ui/label';
 import { cn } from '@/shared/utils';
+import { AgeBucketSelect, ageBucketToHint } from '../_shared/age-bucket-select';
 import {
 	DEFAULT_VENDOR,
 	DEFAULT_VENDOR_ID,
@@ -28,6 +32,8 @@ import {
 import { ghostInjectionKeys } from '../_shared/query-keys';
 import { ReasonInput, isReasonValid } from '../_shared/reason-input';
 import { VendorRadioGroup } from '../_shared/vendor-radio-group';
+import { AttachSetupPanel } from './_attach/attach-setup-panel';
+import { useGhostBatchSetup } from './_attach/use-ghost-batch-setup';
 import {
 	ResultPhase,
 	toEditableCard,
@@ -36,11 +42,25 @@ import {
 import { GhostPreviewCard } from './ghost-preview-card';
 import { useBatchPreviewStream } from './use-batch-preview-stream';
 
-const STAGE_LABELS: Record<'profile' | 'persona' | 'slot-prompt', string> = {
+const STAGE_LABELS: Record<'profile' | 'persona' | 'slot-prompt' | 'attach', string> = {
 	profile: '프로필 생성',
 	persona: '페르소나 생성',
 	'slot-prompt': '슬롯 프롬프트 생성',
+	attach: '사진 매칭',
 };
+
+const IMAGE_SOURCE_OPTIONS: ReadonlyArray<{
+	value: ImageSource;
+	title: string;
+	subtitle: string;
+}> = [
+	{ value: 'generate', title: 'AI 생성', subtitle: 'Seedream / gpt-image-2' },
+	{
+		value: 'reference-pool',
+		title: '참조 풀에서 선택',
+		subtitle: '기존 사진 부착 · ~3초',
+	},
+];
 
 type Phase = 'setup' | 'review' | 'confirming' | 'result';
 
@@ -56,16 +76,19 @@ export function GhostBatchPreviewDialog({
 	const toast = useToast();
 	const queryClient = useQueryClient();
 
+	const setup = useGhostBatchSetup();
+	const { state: setupState, isReady: setupReady, usedPhotoIds } = setup;
+
 	const [phase, setPhase] = useState<Phase>('setup');
-	const [count, setCount] = useState(1);
 	const [vendorId, setVendorId] = useState(DEFAULT_VENDOR_ID);
 	const [reason, setReason] = useState('');
 	const [previewRoot, setPreviewRoot] = useState<BatchPreviewRoot | null>(null);
+	const [previewImageSource, setPreviewImageSource] = useState<ImageSource>('generate');
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 	const [pendingItemId, setPendingItemId] = useState<string | null>(null);
-	const [pendingAction, setPendingAction] = useState<'edit' | 'regenerate' | null>(
-		null,
-	);
+	const [pendingAction, setPendingAction] = useState<
+		'edit' | 'regenerate' | 'replace-photo' | null
+	>(null);
 	const [confirmResult, setConfirmResult] = useState<BatchCreateResult | null>(
 		null,
 	);
@@ -76,10 +99,11 @@ export function GhostBatchPreviewDialog({
 	useEffect(() => {
 		if (open) {
 			setPhase('setup');
-			setCount(1);
+			setup.reset();
 			setVendorId(DEFAULT_VENDOR_ID);
 			setReason('');
 			setPreviewRoot(null);
+			setPreviewImageSource('generate');
 			setSelectedIds(new Set());
 			setPendingItemId(null);
 			setPendingAction(null);
@@ -88,17 +112,32 @@ export function GhostBatchPreviewDialog({
 			setExpandedIdx(null);
 			lastStreamErrorRef.current = null;
 		}
-	}, [open]);
+	}, [open, setup.reset]);
 
 	const createMutation = useMutation({
 		mutationFn: () => {
+			const ageHint = ageBucketToHint(setupState.ageBucket);
+			if (setupState.imageSource === 'reference-pool') {
+				const matches = Array.from(setupState.matches.values()) as ReferenceMatch[];
+				return ghostInjection.createBatchPreview({
+					count: setupState.count,
+					imageSource: 'reference-pool',
+					referenceMatches: matches,
+					ageHint,
+				});
+			}
 			const vendor: ImageVendor =
 				findVendorOption(vendorId)?.value ?? DEFAULT_VENDOR;
-			return ghostInjection.createBatchPreview({ count, vendor });
+			return ghostInjection.createBatchPreview({
+				count: setupState.count,
+				imageSource: 'generate',
+				vendor,
+				ageHint,
+			});
 		},
 		onSuccess: (data) => {
 			setPreviewRoot(data);
-			// items may be empty on skeleton — selection will be recomputed as items stream in
+			setPreviewImageSource(setupState.imageSource);
 			setSelectedIds(new Set(Object.keys(data.items)));
 			setPhase('review');
 		},
@@ -223,7 +262,6 @@ export function GhostBatchPreviewDialog({
 		return Object.values(merged);
 	}, [previewRoot, stream.itemsReady]);
 
-	// Auto-select items as they stream in (default to selected, matching prior UX)
 	useEffect(() => {
 		const ids = Object.keys(stream.itemsReady);
 		if (ids.length === 0) return;
@@ -240,7 +278,6 @@ export function GhostBatchPreviewDialog({
 		});
 	}, [stream.itemsReady]);
 
-	// Surface stream error once
 	useEffect(() => {
 		if (!stream.error) {
 			lastStreamErrorRef.current = null;
@@ -292,6 +329,17 @@ export function GhostBatchPreviewDialog({
 		});
 	};
 
+	const handleReplacePhoto = (
+		itemId: string,
+		slotIndex: 0 | 1 | 2,
+		newPhotoId: string,
+	) => {
+		patchMutation.mutate({
+			itemId,
+			body: { action: 'replace-photo', slotIndex, newPhotoId },
+		});
+	};
+
 	const isBusy =
 		createMutation.isPending ||
 		patchMutation.isPending ||
@@ -322,10 +370,18 @@ export function GhostBatchPreviewDialog({
 			<DialogContent className="flex h-[92vh] max-w-7xl flex-col p-0">
 				{phase === 'setup' ? (
 					<SetupPhase
-						count={count}
-						setCount={setCount}
+						count={setupState.count}
+						setCount={setup.setCount}
 						vendorId={vendorId}
 						setVendorId={setVendorId}
+						imageSource={setupState.imageSource}
+						setImageSource={setup.setImageSource}
+						ageBucket={setupState.ageBucket}
+						setAgeBucket={setup.setAgeBucket}
+						setupReady={setupReady}
+						setupState={setupState}
+						setup={setup}
+						usedPhotoIds={usedPhotoIds}
 						isPending={createMutation.isPending}
 						onCancel={() => onOpenChange(false)}
 						onSubmit={() => createMutation.mutate()}
@@ -345,7 +401,7 @@ export function GhostBatchPreviewDialog({
 								<Badge variant="secondary" className="text-xs">
 									{stream.isComplete
 										? `총 ${itemsList.length}개`
-										: `${stream.completed}/${stream.total || count} 생성 중`}
+										: `${stream.completed}/${stream.total || setupState.count} 생성 중`}
 								</Badge>
 								{!stream.isComplete && !stream.error ? (
 									<Loader2 className="h-3.5 w-3.5 animate-spin text-slate-400" />
@@ -363,7 +419,7 @@ export function GhostBatchPreviewDialog({
 											{stream.stage ? STAGE_LABELS[stream.stage] : '준비 중'}
 										</span>
 										<span className="tabular-nums">
-											{stream.completed}/{stream.total || count}
+											{stream.completed}/{stream.total || setupState.count}
 										</span>
 									</div>
 									<div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
@@ -453,6 +509,12 @@ export function GhostBatchPreviewDialog({
 												handleEditSlot(item.itemId, slotIndex, nextPrompt)
 											}
 											onRegenerate={() => handleRegenerateItem(item.itemId)}
+											onReplacePhoto={
+												previewImageSource === 'reference-pool'
+													? (slotIndex, newPhotoId) =>
+															handleReplacePhoto(item.itemId, slotIndex, newPhotoId)
+													: undefined
+											}
 											isSaving={
 												pendingItemId === item.itemId && pendingAction === 'edit'
 											}
@@ -533,8 +595,10 @@ export function GhostBatchPreviewDialog({
 							setResultCards([]);
 							setExpandedIdx(null);
 							setPreviewRoot(null);
+							setPreviewImageSource('generate');
 							setSelectedIds(new Set());
 							setReason('');
+							setup.reset();
 						}}
 					/>
 				) : null}
@@ -548,6 +612,14 @@ interface SetupPhaseProps {
 	setCount: (next: number) => void;
 	vendorId: string;
 	setVendorId: (next: string) => void;
+	imageSource: ImageSource;
+	setImageSource: (next: ImageSource) => void;
+	ageBucket: AgeBucket | null;
+	setAgeBucket: (next: AgeBucket | null) => void;
+	setupReady: boolean;
+	setupState: ReturnType<typeof useGhostBatchSetup>['state'];
+	setup: ReturnType<typeof useGhostBatchSetup>;
+	usedPhotoIds: Set<string>;
 	isPending: boolean;
 	onCancel: () => void;
 	onSubmit: () => void;
@@ -558,11 +630,97 @@ function SetupPhase({
 	setCount,
 	vendorId,
 	setVendorId,
+	imageSource,
+	setImageSource,
+	ageBucket,
+	setAgeBucket,
+	setupReady,
+	setupState,
+	setup,
+	usedPhotoIds,
 	isPending,
 	onCancel,
 	onSubmit,
 }: SetupPhaseProps) {
-	const canSubmit = count >= 1 && count <= 50 && !isPending;
+	const canSubmit = count >= 1 && count <= 50 && !isPending && setupReady;
+	const isPool = imageSource === 'reference-pool';
+
+	const sourceRadios = (
+		<div className="space-y-1">
+			<Label className="text-sm font-semibold text-slate-800">이미지 소스 *</Label>
+			<div className="flex gap-3">
+				{IMAGE_SOURCE_OPTIONS.map((opt) => (
+					<label
+						key={opt.value}
+						className={cn(
+							'flex flex-1 cursor-pointer items-center gap-2 rounded-md border p-3 transition',
+							imageSource === opt.value
+								? 'border-slate-900 bg-slate-50'
+								: 'border-slate-200 hover:border-slate-400',
+						)}
+					>
+						<input
+							type="radio"
+							name="image-source"
+							checked={imageSource === opt.value}
+							onChange={() => setImageSource(opt.value)}
+						/>
+						<div>
+							<p className="text-sm font-medium">{opt.title}</p>
+							<p className="text-xs text-slate-500">{opt.subtitle}</p>
+						</div>
+					</label>
+				))}
+			</div>
+		</div>
+	);
+
+	const countControl = (
+		<div className="space-y-1">
+			<Label className="text-sm font-semibold text-slate-800">생성 수량 *</Label>
+			<div className="flex items-center gap-2">
+				<Button
+					variant="outline"
+					size="icon"
+					className="h-9 w-9"
+					disabled={count <= 1}
+					onClick={() => setCount(Math.max(1, count - 1))}
+				>
+					<Minus className="h-3 w-3" />
+				</Button>
+				<Input
+					type="number"
+					min={1}
+					max={50}
+					value={count}
+					onChange={(event) => {
+						const value = Number(event.target.value);
+						if (Number.isFinite(value) && value >= 1 && value <= 50) {
+							setCount(value);
+						}
+					}}
+					className={cn('h-9 w-20 text-center tabular-nums')}
+				/>
+				<Button
+					variant="outline"
+					size="icon"
+					className="h-9 w-9"
+					disabled={count >= 50}
+					onClick={() => setCount(Math.min(50, count + 1))}
+				>
+					<Plus className="h-3 w-3" />
+				</Button>
+				<span className="text-xs text-slate-500">최대 50개</span>
+			</div>
+		</div>
+	);
+
+	const ageBucketControl = (
+		<AgeBucketSelect
+			value={ageBucket ?? undefined}
+			onChange={(v) => setAgeBucket(v ?? null)}
+		/>
+	);
 
 	return (
 		<div className="flex flex-1 flex-col overflow-hidden">
@@ -575,61 +733,54 @@ function SetupPhase({
 				</p>
 			</div>
 
-			<div className="flex-1 overflow-y-auto px-6 py-6">
-				<div className="mx-auto max-w-3xl space-y-6">
-					<div className="space-y-1">
-						<Label className="text-sm font-semibold text-slate-800">
-							생성 수량 *
-						</Label>
-						<div className="flex items-center gap-2">
-							<Button
-								variant="outline"
-								size="icon"
-								className="h-9 w-9"
-								disabled={count <= 1}
-								onClick={() => setCount(Math.max(1, count - 1))}
-							>
-								<Minus className="h-3 w-3" />
-							</Button>
-							<Input
-								type="number"
-								min={1}
-								max={50}
-								value={count}
-								onChange={(event) => {
-									const value = Number(event.target.value);
-									if (Number.isFinite(value) && value >= 1 && value <= 50) {
-										setCount(value);
-									}
-								}}
-								className={cn('h-9 w-20 text-center tabular-nums')}
-							/>
-							<Button
-								variant="outline"
-								size="icon"
-								className="h-9 w-9"
-								disabled={count >= 50}
-								onClick={() => setCount(Math.min(50, count + 1))}
-							>
-								<Plus className="h-3 w-3" />
-							</Button>
-							<span className="text-xs text-slate-500">최대 50개</span>
+			{isPool ? (
+				<>
+					<div className="border-b px-6 py-4">
+						<div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+							{countControl}
+							{ageBucketControl}
+							{sourceRadios}
 						</div>
 					</div>
-
-					<div className="border-t pt-5">
-						<VendorRadioGroup
-							selectedId={vendorId}
-							onChange={setVendorId}
-							columns={2}
+					<div className="flex-1 overflow-hidden">
+						<AttachSetupPanel
+							count={setupState.count}
+							ageBucket={setupState.ageBucket}
+							matches={setupState.matches}
+							usedPhotoIds={usedPhotoIds}
+							activeSlotIndex={setupState.activeSlotIndex}
+							poolFilter={setupState.poolFilter}
+							onPoolFilterChange={setup.setPoolFilter}
+							onPickPhoto={(photo) => setup.addPhotoToActiveSlot(photo.id)}
+							onActivate={setup.setActiveSlot}
+							onRemovePhoto={setup.removePhotoFromSlot}
+							onMergeMatches={setup.mergeMatches}
+							onResetAll={setup.resetMatches}
 						/>
 					</div>
+				</>
+			) : (
+				<div className="flex-1 overflow-y-auto px-6 py-6">
+					<div className="mx-auto max-w-3xl space-y-6">
+						{countControl}
+						{ageBucketControl}
+						{sourceRadios}
+						<div className="border-t pt-5">
+							<VendorRadioGroup
+								selectedId={vendorId}
+								onChange={setVendorId}
+								columns={2}
+							/>
+						</div>
+					</div>
 				</div>
-			</div>
+			)}
 
 			<div className="flex items-center justify-between border-t px-6 py-4">
 				<p className="text-xs text-slate-500">
-					AI가 {count}개의 프로필과 각 슬롯의 이미지 프롬프트를 생성합니다.
+					{isPool
+						? `참조 풀에서 ${count}개 슬롯에 사진을 부착합니다.`
+						: `AI가 ${count}개의 프로필과 각 슬롯의 이미지 프롬프트를 생성합니다.`}
 				</p>
 				<div className="flex items-center gap-2">
 					<Button variant="outline" onClick={onCancel}>
