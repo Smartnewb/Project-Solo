@@ -9,10 +9,12 @@ import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
 import { useToast } from '@/shared/ui/admin/toast';
 import { Button } from '@/shared/ui/button';
 import { cn } from '@/shared/utils';
+import {
+	ACCEPT_IMAGE_ATTR,
+	MAX_IMAGE_MB,
+	validateImageFile,
+} from '@/app/admin/ai-profiles/_shared/image-upload-constants';
 import type { UploadedPhotoLocal } from './use-ghost-batch-setup';
-
-const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 
 interface UploadZoneProps {
 	uploaded: UploadedPhotoLocal[];
@@ -58,12 +60,13 @@ export function UploadZone({
 		const validated: File[] = [];
 		const rejected: string[] = [];
 		for (const f of all) {
-			if (!ALLOWED_MIME.has(f.type)) {
-				rejected.push(`${f.name}: 지원하지 않는 형식`);
+			const error = validateImageFile(f);
+			if (error?.kind === 'mime') {
+				rejected.push(`${error.filename}: 지원하지 않는 형식`);
 				continue;
 			}
-			if (f.size > MAX_BYTES) {
-				rejected.push(`${f.name}: 10MB 초과`);
+			if (error?.kind === 'size') {
+				rejected.push(`${error.filename}: ${MAX_IMAGE_MB}MB 초과`);
 				continue;
 			}
 			validated.push(f);
@@ -154,7 +157,7 @@ export function UploadZone({
 					id={inputId}
 					type="file"
 					multiple
-					accept="image/jpeg,image/png,image/webp"
+					accept={ACCEPT_IMAGE_ATTR}
 					hidden
 					onChange={(e) => {
 						handleFiles(e.target.files);
@@ -175,7 +178,7 @@ export function UploadZone({
 								: '필요한 장수를 모두 업로드했습니다'}
 						</p>
 						<p className="text-xs text-slate-500">
-							JPEG · PNG · WebP · 10MB 이하 · 더 필요한 장수 {Math.max(0, remainingNeeded)}장
+							JPEG · PNG · WebP · {MAX_IMAGE_MB}MB 이하 · 더 필요한 장수 {Math.max(0, remainingNeeded)}장
 						</p>
 					</>
 				)}

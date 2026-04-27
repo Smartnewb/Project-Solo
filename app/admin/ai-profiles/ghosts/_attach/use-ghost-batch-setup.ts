@@ -8,7 +8,7 @@ import type {
 	ReferenceMatch,
 } from '@/app/types/ghost-injection';
 
-export type GhostBatchMode = 'generate' | 'reference-pool' | 'manual-upload';
+export type GhostBatchMode = ImageSource;
 
 export interface UploadedPhotoLocal {
 	s3Url: string;
@@ -28,7 +28,6 @@ export interface GhostBatchSetupState {
 	mode: GhostBatchMode | null;
 	count: number;
 	ageBucket: AgeBucket | null;
-	imageSource: ImageSource;
 	vendor: ImageVendor | null;
 	matches: Map<number, ReferenceMatch>;
 	activeSlotIndex: number;
@@ -42,7 +41,6 @@ const INITIAL: GhostBatchSetupState = {
 	mode: null,
 	count: 1,
 	ageBucket: null,
-	imageSource: 'generate',
 	vendor: 'seedream',
 	matches: new Map(),
 	activeSlotIndex: 0,
@@ -51,7 +49,7 @@ const INITIAL: GhostBatchSetupState = {
 	uploadAssignments: new Map(),
 };
 
-const SLOT_PHOTO_LIMIT = 3;
+export const SLOT_PHOTO_LIMIT = 3;
 
 function asTuple(ids: string[]): ReferenceMatch['photoIds'] {
 	return ids as unknown as ReferenceMatch['photoIds'];
@@ -117,13 +115,6 @@ export function useGhostBatchSetup() {
 		});
 	}, []);
 
-	const setImageSource = useCallback((next: ImageSource) => {
-		setState((s) => {
-			if (s.imageSource === next && s.mode === next) return s;
-			return { ...s, imageSource: next, mode: next as GhostBatchMode };
-		});
-	}, []);
-
 	const setMode = useCallback((next: GhostBatchMode | null) => {
 		setState((s) => {
 			if (s.mode === next) return s;
@@ -132,7 +123,6 @@ export function useGhostBatchSetup() {
 			return {
 				...s,
 				mode: next,
-				imageSource: (next ?? 'generate') as ImageSource,
 				vendor: isolatedVendor,
 			};
 		});
@@ -167,7 +157,7 @@ export function useGhostBatchSetup() {
 
 	const addPhotoToActiveSlot = useCallback((photoId: string) => {
 		setState((s) => {
-			if (s.imageSource !== 'reference-pool') return s;
+			if (s.mode !== 'reference-pool') return s;
 			const idx = s.activeSlotIndex;
 			const current = s.matches.get(idx)?.photoIds ?? [];
 			if (current.length >= SLOT_PHOTO_LIMIT) return s;
@@ -320,11 +310,11 @@ export function useGhostBatchSetup() {
 
 	return {
 		state,
+		imageSource: (state.mode ?? 'generate') as ImageSource,
 		usedPhotoIds,
 		usedUploadUrls,
 		isReady,
 		setCount,
-		setImageSource,
 		setMode,
 		goToStep1,
 		goToStep2,

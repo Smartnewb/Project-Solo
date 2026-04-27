@@ -75,7 +75,7 @@ export function GhostBatchPreviewDialog({
 	const queryClient = useQueryClient();
 
 	const setup = useGhostBatchSetup();
-	const { state: setupState, isReady: setupReady, usedPhotoIds } = setup;
+	const { state: setupState, usedPhotoIds } = setup;
 
 	const [phase, setPhase] = useState<Phase>('setup');
 	const [vendorId, setVendorId] = useState(DEFAULT_VENDOR_ID);
@@ -146,9 +146,7 @@ export function GhostBatchPreviewDialog({
 		},
 		onSuccess: (data) => {
 			setPreviewRoot(data);
-			setPreviewImageSource(
-				(setupState.mode ?? setupState.imageSource) as ImageSource,
-			);
+			setPreviewImageSource(setupState.mode ?? 'generate');
 			setSelectedIds(new Set(Object.keys(data.items)));
 			setPhase('review');
 		},
@@ -383,7 +381,6 @@ export function GhostBatchPreviewDialog({
 					<SetupPhase
 						vendorId={vendorId}
 						setVendorId={setVendorId}
-						setupReady={setupReady}
 						setupState={setupState}
 						setup={setup}
 						usedPhotoIds={usedPhotoIds}
@@ -617,7 +614,6 @@ export function GhostBatchPreviewDialog({
 interface SetupPhaseProps {
 	vendorId: string;
 	setVendorId: (next: string) => void;
-	setupReady: boolean;
 	setupState: ReturnType<typeof useGhostBatchSetup>['state'];
 	setup: ReturnType<typeof useGhostBatchSetup>;
 	usedPhotoIds: Set<string>;
@@ -629,7 +625,6 @@ interface SetupPhaseProps {
 function SetupPhase({
 	vendorId,
 	setVendorId,
-	setupReady,
 	setupState,
 	setup,
 	usedPhotoIds,
@@ -638,6 +633,7 @@ function SetupPhase({
 	onSubmit,
 }: SetupPhaseProps) {
 	const { count, mode, step, ageBucket } = setupState;
+	const setupReady = setup.isReady;
 	const canSubmit = count >= 1 && count <= 50 && !isPending && setupReady;
 
 	const countControl = (
