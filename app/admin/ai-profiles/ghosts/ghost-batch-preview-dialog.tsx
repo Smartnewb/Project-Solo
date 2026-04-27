@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
 	ArrowLeft,
@@ -44,7 +44,10 @@ import { AttachSetupPanel } from './_attach/attach-setup-panel';
 import { ModeSelectStep } from './_attach/mode-select-step';
 import { UploadSlotGrid } from './_attach/upload-slot-grid';
 import { UploadZone } from './_attach/upload-zone';
-import { useGhostBatchSetup } from './_attach/use-ghost-batch-setup';
+import {
+	SLOT_PHOTO_LIMIT,
+	useGhostBatchSetup,
+} from './_attach/use-ghost-batch-setup';
 import {
 	ResultPhase,
 	toEditableCard,
@@ -58,6 +61,12 @@ const STAGE_LABELS: Record<'profile' | 'persona' | 'slot-prompt' | 'attach', str
 	persona: '페르소나 생성',
 	'slot-prompt': '슬롯 프롬프트 생성',
 	attach: '사진 매칭',
+};
+
+const FOOTER_TEXT_BY_MODE: Record<ImageSource, (count: number) => string> = {
+	generate: (n) => `AI가 ${n}개의 프로필과 각 슬롯의 이미지 프롬프트를 생성합니다.`,
+	'reference-pool': (n) => `참조 풀에서 ${n}개 슬롯에 사진을 부착합니다.`,
+	'manual-upload': (n) => `업로드한 이미지를 ${n}개 페르소나에 매핑합니다.`,
 };
 
 type Phase = 'setup' | 'review' | 'confirming' | 'result';
@@ -300,14 +309,14 @@ export function GhostBatchPreviewDialog({
 	const allSelected =
 		itemsList.length > 0 && selectedIds.size === itemsList.length;
 
-	const handleToggleSelect = (itemId: string) => {
+	const handleToggleSelect = useCallback((itemId: string) => {
 		setSelectedIds((prev) => {
 			const next = new Set(prev);
 			if (next.has(itemId)) next.delete(itemId);
 			else next.add(itemId);
 			return next;
 		});
-	};
+	}, []);
 
 	const handleToggleSelectAll = () => {
 		if (allSelected) {
@@ -317,37 +326,38 @@ export function GhostBatchPreviewDialog({
 		}
 	};
 
-	const handleEditSlot = (
-		itemId: string,
-		slotIndex: 0 | 1 | 2,
-		nextPrompt: string,
-	) => {
-		patchMutation.mutate({
-			itemId,
-			body: {
-				action: 'edit',
-				slotPrompts: [{ slotIndex, prompt: nextPrompt }],
-			},
-		});
-	};
+	const handleEditSlot = useCallback(
+		(itemId: string, slotIndex: 0 | 1 | 2, nextPrompt: string) => {
+			patchMutation.mutate({
+				itemId,
+				body: {
+					action: 'edit',
+					slotPrompts: [{ slotIndex, prompt: nextPrompt }],
+				},
+			});
+		},
+		[patchMutation],
+	);
 
-	const handleRegenerateItem = (itemId: string) => {
-		patchMutation.mutate({
-			itemId,
-			body: { action: 'regenerate', preserveProfile: true },
-		});
-	};
+	const handleRegenerateItem = useCallback(
+		(itemId: string) => {
+			patchMutation.mutate({
+				itemId,
+				body: { action: 'regenerate', preserveProfile: true },
+			});
+		},
+		[patchMutation],
+	);
 
-	const handleReplacePhoto = (
-		itemId: string,
-		slotIndex: 0 | 1 | 2,
-		newPhotoId: string,
-	) => {
-		patchMutation.mutate({
-			itemId,
-			body: { action: 'replace-photo', slotIndex, newPhotoId },
-		});
-	};
+	const handleReplacePhoto = useCallback(
+		(itemId: string, slotIndex: 0 | 1 | 2, newPhotoId: string) => {
+			patchMutation.mutate({
+				itemId,
+				body: { action: 'replace-photo', slotIndex, newPhotoId },
+			});
+		},
+		[patchMutation],
+	);
 
 	const isBusy =
 		createMutation.isPending ||
@@ -724,7 +734,73 @@ function SetupPhase({
 						/>
 					</div>
 				</div>
-			) : mode === 'reference-pool' ? (
+			) : (
+				<Step2Body
+					mode={mode as ImageSource}
+					setupState={setupState}
+					setup={setup}
+					usedPhotoIds={usedPhotoIds}
+					vendorId={vendorId}
+					setVendorId={setVendorId}
+					countControl={countControl}
+					ageBucketControl={ageBucketControl}
+				/>
+			)}
+
+			<div className="flex items-center justify-between border-t px-6 py-4">
+				<p className="text-xs text-slate-500">
+					{isStep1
+						? '방식을 선택하면 다음 단계로 이동합니다.'
+						: mode
+							? FOOTER_TEXT_BY_MODE[mode](count)
+							: ''}
+				</p>
+				<div className="flex items-center gap-2">
+					<Button variant="outline" onClick={onCancel}>
+						취소
+					</Button>
+					{!isStep1 ? (
+						<Button onClick={onSubmit} disabled={!canSubmit}>
+							{isPending ? (
+								<>
+									<Loader2 className="mr-1 h-4 w-4 animate-spin" />
+									생성 중…
+								</>
+							) : (
+								`${count}개 미리보기 생성`
+							)}
+						</Button>
+					) : null}
+				</div>
+			</div>
+		</div>
+	);
+}
+
+interface Step2BodyProps {
+	mode: ImageSource;
+	setupState: ReturnType<typeof useGhostBatchSetup>['state'];
+	setup: ReturnType<typeof useGhostBatchSetup>;
+	usedPhotoIds: Set<string>;
+	vendorId: string;
+	setVendorId: (next: string) => void;
+	countControl: React.ReactNode;
+	ageBucketControl: React.ReactNode;
+}
+
+function Step2Body({
+	mode,
+	setupState,
+	setup,
+	usedPhotoIds,
+	vendorId,
+	setVendorId,
+	countControl,
+	ageBucketControl,
+}: Step2BodyProps) {
+	switch (mode) {
+		case 'reference-pool':
+			return (
 				<>
 					<div className="border-b px-6 py-4">
 						<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -749,7 +825,9 @@ function SetupPhase({
 						/>
 					</div>
 				</>
-			) : mode === 'manual-upload' ? (
+			);
+		case 'manual-upload':
+			return (
 				<div className="flex-1 overflow-y-auto px-6 py-6">
 					<div className="mx-auto max-w-4xl space-y-6">
 						<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -761,9 +839,9 @@ function SetupPhase({
 								uploaded={setupState.uploaded}
 								remainingNeeded={Math.max(
 									0,
-									setupState.count * 3 - setupState.uploaded.length,
+									setupState.count * SLOT_PHOTO_LIMIT - setupState.uploaded.length,
 								)}
-								totalNeeded={setupState.count * 3}
+								totalNeeded={setupState.count * SLOT_PHOTO_LIMIT}
 								onUploadComplete={setup.addUploads}
 								onRemove={setup.removeUpload}
 								onClearAll={setup.clearUploads}
@@ -774,6 +852,7 @@ function SetupPhase({
 								count={setupState.count}
 								uploaded={setupState.uploaded}
 								assignments={setupState.uploadAssignments}
+								usedUrls={setup.usedUploadUrls}
 								onAssign={setup.assignToSlot}
 								onClearAssignment={setup.clearAssignment}
 								onAutoDistribute={setup.autoDistribute}
@@ -781,7 +860,10 @@ function SetupPhase({
 						</div>
 					</div>
 				</div>
-			) : (
+			);
+		case 'generate':
+		default:
+			return (
 				<div className="flex-1 overflow-y-auto px-6 py-6">
 					<div className="mx-auto max-w-3xl space-y-6">
 						{countControl}
@@ -795,38 +877,8 @@ function SetupPhase({
 						</div>
 					</div>
 				</div>
-			)}
-
-			<div className="flex items-center justify-between border-t px-6 py-4">
-				<p className="text-xs text-slate-500">
-					{isStep1
-						? '방식을 선택하면 다음 단계로 이동합니다.'
-						: mode === 'reference-pool'
-							? `참조 풀에서 ${count}개 슬롯에 사진을 부착합니다.`
-							: mode === 'manual-upload'
-								? `업로드한 이미지를 ${count}개 페르소나에 매핑합니다.`
-								: `AI가 ${count}개의 프로필과 각 슬롯의 이미지 프롬프트를 생성합니다.`}
-				</p>
-				<div className="flex items-center gap-2">
-					<Button variant="outline" onClick={onCancel}>
-						취소
-					</Button>
-					{!isStep1 ? (
-						<Button onClick={onSubmit} disabled={!canSubmit}>
-							{isPending ? (
-								<>
-									<Loader2 className="mr-1 h-4 w-4 animate-spin" />
-									생성 중…
-								</>
-							) : (
-								`${count}개 미리보기 생성`
-							)}
-						</Button>
-					) : null}
-				</div>
-			</div>
-		</div>
-	);
+			);
+	}
 }
 
 function ExpiryCountdown({ expiresAt }: { expiresAt: string }) {

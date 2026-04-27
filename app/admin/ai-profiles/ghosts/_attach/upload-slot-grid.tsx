@@ -6,12 +6,13 @@ import { Plus, Wand2, X } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover';
 import { cn } from '@/shared/utils';
-import type { UploadedPhotoLocal } from './use-ghost-batch-setup';
+import { SLOT_PHOTO_LIMIT, type UploadedPhotoLocal } from './use-ghost-batch-setup';
 
 interface UploadSlotGridProps {
 	count: number;
 	uploaded: UploadedPhotoLocal[];
 	assignments: Map<number, [string, string, string]>;
+	usedUrls: Set<string>;
 	onAssign: (itemIndex: number, s3Urls: [string, string, string]) => void;
 	onClearAssignment: (itemIndex: number) => void;
 	onAutoDistribute: () => void;
@@ -21,27 +22,26 @@ export function UploadSlotGrid({
 	count,
 	uploaded,
 	assignments,
+	usedUrls,
 	onAssign,
 	onClearAssignment,
 	onAutoDistribute,
 }: UploadSlotGridProps) {
-	const usedUrls = useMemo(() => {
-		const set = new Set<string>();
-		for (const urls of assignments.values()) {
-			for (const u of urls) set.add(u);
-		}
-		return set;
-	}, [assignments]);
+	const photoMap = useMemo(() => {
+		const m = new Map<string, UploadedPhotoLocal>();
+		for (const u of uploaded) m.set(u.s3Url, u);
+		return m;
+	}, [uploaded]);
 
 	const filledRows = useMemo(() => {
 		let n = 0;
 		for (let i = 0; i < count; i += 1) {
-			if (assignments.get(i)?.length === 3) n += 1;
+			if (assignments.get(i)?.length === SLOT_PHOTO_LIMIT) n += 1;
 		}
 		return n;
 	}, [assignments, count]);
 
-	const canAutoDistribute = uploaded.length >= count * 3;
+	const canAutoDistribute = uploaded.length >= count * SLOT_PHOTO_LIMIT;
 
 	return (
 		<div className="space-y-3">
@@ -73,6 +73,7 @@ export function UploadSlotGrid({
 						key={itemIndex}
 						itemIndex={itemIndex}
 						uploaded={uploaded}
+						photoMap={photoMap}
 						usedUrls={usedUrls}
 						assignment={assignments.get(itemIndex) ?? null}
 						onAssign={onAssign}
@@ -87,6 +88,7 @@ export function UploadSlotGrid({
 interface SlotRowProps {
 	itemIndex: number;
 	uploaded: UploadedPhotoLocal[];
+	photoMap: Map<string, UploadedPhotoLocal>;
 	usedUrls: Set<string>;
 	assignment: [string, string, string] | null;
 	onAssign: (itemIndex: number, s3Urls: [string, string, string]) => void;
@@ -96,6 +98,7 @@ interface SlotRowProps {
 function SlotRow({
 	itemIndex,
 	uploaded,
+	photoMap,
 	usedUrls,
 	assignment,
 	onAssign,
@@ -103,12 +106,6 @@ function SlotRow({
 }: SlotRowProps) {
 	const [draftPickIndex, setDraftPickIndex] = useState<number | null>(null);
 	const [draftSelected, setDraftSelected] = useState<string[]>([]);
-
-	const photoMap = useMemo(() => {
-		const m = new Map<string, UploadedPhotoLocal>();
-		for (const u of uploaded) m.set(u.s3Url, u);
-		return m;
-	}, [uploaded]);
 
 	const startPicker = (slotPos: number) => {
 		const current = assignment ?? ['', '', ''];
@@ -140,11 +137,10 @@ function SlotRow({
 	};
 
 	const slots = assignment ?? draftSelected;
-	const displaySlots: (string | null)[] = [
-		slots[0] || null,
-		slots[1] || null,
-		slots[2] || null,
-	];
+	const displaySlots: (string | null)[] = Array.from(
+		{ length: SLOT_PHOTO_LIMIT },
+		(_, i) => slots[i] ?? null,
+	);
 
 	return (
 		<div className="flex items-stretch gap-3 rounded-md border border-slate-200 bg-white p-3">
