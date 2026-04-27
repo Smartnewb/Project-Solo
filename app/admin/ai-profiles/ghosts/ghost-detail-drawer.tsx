@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
+import { Eye, Loader2, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
 import { ghostInjection } from '@/app/services/admin/ghost-injection';
 import type { GhostDetail, ImageVendor, UpdateGhostFields } from '@/app/types/ghost-injection';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
@@ -46,6 +46,7 @@ import {
 } from '../_shared/ghost-vendor-options';
 import { ReasonInput, isReasonValid } from '../_shared/reason-input';
 import { ghostInjectionKeys } from '../_shared/query-keys';
+import { GhostMobilePreviewModal } from './_preview/ghost-mobile-preview-modal';
 import { GhostPhotoSlot } from './ghost-photo-slot';
 import { GhostPromptPreviewModal } from './ghost-prompt-preview-modal';
 import { GhostStatusBadge } from './ghost-status-badge';
@@ -117,6 +118,7 @@ export function GhostDetailDrawer({ ghostAccountId, onClose }: GhostDetailDrawer
 	const [form, setForm] = useState<FormState>(emptyForm);
 	const [deleteReason, setDeleteReason] = useState('');
 	const [confirmOpen, setConfirmOpen] = useState(false);
+	const [previewOpen, setPreviewOpen] = useState(false);
 
 	const detailQuery = useQuery({
 		queryKey: ghostInjectionKeys.ghostDetail(ghostAccountId ?? ''),
@@ -197,6 +199,15 @@ export function GhostDetailDrawer({ ghostAccountId, onClose }: GhostDetailDrawer
 								<div className="flex items-center gap-2">
 									<h3 className="text-sm font-semibold text-slate-900">프로필 요약</h3>
 									<GhostStatusBadge status={detail.status} isExhausted={detail.isExhausted} />
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={() => setPreviewOpen(true)}
+										className="ml-auto gap-1.5"
+									>
+										<Eye className="h-3.5 w-3.5" />
+										매칭 시 노출 미리보기
+									</Button>
 								</div>
 								<div className="grid grid-cols-2 gap-2 rounded-md border bg-slate-50 p-3 text-xs">
 									<div>
@@ -456,6 +467,11 @@ export function GhostDetailDrawer({ ghostAccountId, onClose }: GhostDetailDrawer
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
+			<GhostMobilePreviewModal
+				ghostAccountId={ghostAccountId}
+				open={previewOpen}
+				onOpenChange={setPreviewOpen}
+			/>
 		</Sheet>
 	);
 }
