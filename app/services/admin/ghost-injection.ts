@@ -49,6 +49,7 @@ import type {
 	PatchBatchPreviewItemBody,
 	ConfirmBatchPreviewBody,
 	UploadPhotosResponse,
+	GhostProfilePreviewResponse,
 } from '@/app/types/ghost-injection';
 
 const BASE = '/admin/ghost-injection';
@@ -59,6 +60,9 @@ export const ghostInjection = {
 
 	getGhost: (ghostAccountId: string) =>
 		adminGet<GhostDetail>(`${BASE}/ghosts/${ghostAccountId}`),
+
+	getProfilePreview: (ghostAccountId: string) =>
+		adminGet<GhostProfilePreviewResponse>(`${BASE}/ghosts/${ghostAccountId}/profile-preview`),
 
 	listCandidates: (query: CandidateListQuery = {}) =>
 		adminGet<GhostInjectionPaginated<CandidateListItem>>(
