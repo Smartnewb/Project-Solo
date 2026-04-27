@@ -26,8 +26,8 @@ export const contentKeys = {
   backgroundPresets: () => [...contentKeys.all, 'background-presets'] as const,
   backgroundPresetsActive: () => [...contentKeys.backgroundPresets(), 'active'] as const,
   cardNews: () => [...contentKeys.all, 'card-news'] as const,
-  cardNewsList: (page: number, limit: number, track?: CardNewsTrack) =>
-    [...contentKeys.cardNews(), 'list', { page, limit, track }] as const,
+  cardNewsList: (page: number, limit: number, track?: CardNewsTrack, categoryCode?: string) =>
+    [...contentKeys.cardNews(), 'list', { page, limit, track, categoryCode }] as const,
   cardNewsDetail: (id: string) => [...contentKeys.cardNews(), 'detail', id] as const,
   cardNewsCategories: () => [...contentKeys.cardNews(), 'categories'] as const,
   banners: () => [...contentKeys.all, 'banners'] as const,
@@ -112,6 +112,7 @@ export interface UseCardNewsListParams {
   page?: number;
   limit?: number;
   track?: CardNewsTrack;
+  categoryCode?: string;
 }
 
 export function useCardNewsList(
@@ -125,13 +126,19 @@ export function useCardNewsList(
   const page = params.page ?? 1;
   const resolvedLimit = params.limit ?? 20;
   const track = params.track;
+  const categoryCode = params.categoryCode;
   return useQuery({
-    queryKey: contentKeys.cardNewsList(page, resolvedLimit, track),
-    queryFn: () => AdminService.cardNews.getList(page, resolvedLimit, track),
+    queryKey: contentKeys.cardNewsList(page, resolvedLimit, track, categoryCode),
+    queryFn: () =>
+      AdminService.cardNews.getList({ page, limit: resolvedLimit, track, categoryCode }),
   });
 }
 
-export function useLongformList(params?: { page?: number; limit?: number }) {
+export function useLongformList(params?: {
+  page?: number;
+  limit?: number;
+  categoryCode?: string;
+}) {
   return useCardNewsList({ ...params, track: 'longform' });
 }
 

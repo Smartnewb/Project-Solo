@@ -148,19 +148,25 @@ export const cardNews = {
 	},
 
 	getList: async (
-		page: number = 1,
-		limit: number = 20,
-		track?: CardNewsTrack,
+		params: {
+			page?: number;
+			limit?: number;
+			track?: CardNewsTrack;
+			categoryCode?: string;
+		} = {},
 	): Promise<AdminCardNewsListResponse> => {
 		try {
-			const params: Record<string, string> = {
+			const page = params.page ?? 1;
+			const limit = params.limit ?? 20;
+			const query: Record<string, string> = {
 				page: String(page),
 				limit: String(limit),
 			};
-			if (track) params.track = track;
+			if (params.track) query.track = params.track;
+			if (params.categoryCode) query.categoryCode = params.categoryCode;
 			const res = await adminGet<{ data: AdminCardNewsItem[]; meta: { total: number; page: number; limit: number } }>(
 				'/admin/v2/content/card-news',
-				params,
+				query,
 			);
 			return {
 				items: res.data,

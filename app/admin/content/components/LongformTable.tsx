@@ -47,19 +47,22 @@ export function LongformTable() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [publishItem, setPublishItem] = useState<{ id: string; title: string } | null>(null);
 
+  const categoryParam =
+    category && category !== LEGACY_CATEGORY_SENTINEL ? category : undefined;
+
   const { data, isLoading } = useLongformList({
     page: page + 1,
     limit: rowsPerPage,
+    ...(categoryParam ? { categoryCode: categoryParam } : {}),
   });
   const deleteCardNews = useDeleteCardNews();
 
   const items = data?.items || [];
 
   const filtered = useMemo(() => {
+    if (category === LEGACY_CATEGORY_SENTINEL) return [];
     return items.filter((it) => {
       if (search && !it.title.toLowerCase().includes(search.toLowerCase())) return false;
-      if (category === LEGACY_CATEGORY_SENTINEL) return false;
-      if (category && it.category?.code !== category) return false;
       if (status) {
         const s = deriveStatus(it);
         if (s !== status) return false;

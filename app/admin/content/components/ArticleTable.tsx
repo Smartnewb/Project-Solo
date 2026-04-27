@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import {
+  Alert,
   Box,
   Typography,
   Paper,
@@ -112,6 +113,12 @@ export function ArticleTable() {
           setPage(0);
         }}
       />
+
+      {category === LEGACY_CATEGORY_SENTINEL && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          레거시 카테고리는 현재 페이지 기준으로만 필터링됩니다.
+        </Alert>
+      )}
 
       <TableContainer component={Paper}>
         <Table>
