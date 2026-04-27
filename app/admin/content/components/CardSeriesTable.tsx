@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Typography,
@@ -23,7 +23,9 @@ import type { AdminCardNewsItem, ContentStatus } from '@/types/admin';
 import {
   useCardNewsList,
   useDeleteCardNews,
+  useUrlState,
 } from '@/app/admin/hooks';
+import { useDebounce } from '@/shared/hooks/use-debounce';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
 import { formatDateTimeKR } from '@/app/utils/formatters';
@@ -44,11 +46,22 @@ export function CardSeriesTable() {
   const toast = useToast();
   const confirmAction = useConfirm();
 
-  const [category, setCategory] = useState('');
-  const [status, setStatus] = useState('');
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const { get, getNumber, setMany } = useUrlState();
+  const category = get('cat');
+  const status = get('status');
+  const search = get('q');
+  const page = getNumber('p', 0);
+  const rowsPerPage = getNumber('rpp', 10);
+
+  const [searchInput, setSearchInput] = useState(search);
+  const debouncedSearch = useDebounce(searchInput, 300);
+  useEffect(() => {
+    if (debouncedSearch !== search) {
+      setMany({ q: debouncedSearch || null, p: 0 });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]);
+
   const [publishItem, setPublishItem] = useState<{ id: string; title: string } | null>(null);
 
   const categoryParam =
@@ -107,12 +120,16 @@ export function CardSeriesTable() {
       <ContentFilters
         category={category}
         status={status}
-        search={search}
+        search={searchInput}
         onChange={(next) => {
-          if (next.category !== undefined) setCategory(next.category);
-          if (next.status !== undefined) setStatus(next.status);
-          if (next.search !== undefined) setSearch(next.search);
-          setPage(0);
+          if (next.search !== undefined) {
+            setSearchInput(next.search);
+            return;
+          }
+          const update: Record<string, string | null> = { p: '0' };
+          if (next.category !== undefined) update.cat = next.category || null;
+          if (next.status !== undefined) update.status = next.status || null;
+          setMany(update);
         }}
       />
 
@@ -203,12 +220,11 @@ export function CardSeriesTable() {
           component="div"
           count={data?.total || 0}
           page={page}
-          onPageChange={(_, newPage) => setPage(newPage)}
+          onPageChange={(_, newPage) => setMany({ p: newPage })}
           rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={(e) => {
-            setRowsPerPage(parseInt(e.target.value, 10));
-            setPage(0);
-          }}
+          onRowsPerPageChange={(e) =>
+            setMany({ rpp: parseInt(e.target.value, 10), p: 0 })
+          }
           rowsPerPageOptions={[5, 10, 25, 50]}
           labelRowsPerPage="페이지당 행 수"
         />

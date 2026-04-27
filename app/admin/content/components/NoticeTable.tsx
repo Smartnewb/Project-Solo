@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Box,
   Typography,
@@ -28,6 +28,7 @@ import {
   useNoticeList,
   useDeleteNotice,
   useArchiveNotice,
+  useUrlState,
 } from '@/app/admin/hooks';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
@@ -52,10 +53,21 @@ export function NoticeTable() {
   const toast = useToast();
   const confirmAction = useConfirm();
 
-  const [status, setStatus] = useState('');
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const { get, getNumber, setMany } = useUrlState();
+  const status = get('status');
+  const search = get('q');
+  const page = getNumber('p', 0);
+  const rowsPerPage = getNumber('rpp', 10);
+
+  const [searchInput, setSearchInput] = useState(search);
+  const debouncedSearch = useDebounce(searchInput, 300);
+  useEffect(() => {
+    if (debouncedSearch !== search) {
+      setMany({ q: debouncedSearch || null, p: 0 });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]);
+
   const [publishItem, setPublishItem] = useState<{ id: string; title: string } | null>(null);
   const [resendItem, setResendItem] = useState<{
     id: string;
@@ -63,8 +75,6 @@ export function NoticeTable() {
     pushTitle?: string | null;
     pushMessage?: string | null;
   } | null>(null);
-
-  const debouncedSearch = useDebounce(search, 300);
 
   const { data, isLoading } = useNoticeList({
     page: page + 1,
@@ -124,11 +134,15 @@ export function NoticeTable() {
       <ContentFilters
         category=""
         status={status}
-        search={search}
+        search={searchInput}
         onChange={(next) => {
-          if (next.status !== undefined) setStatus(next.status);
-          if (next.search !== undefined) setSearch(next.search);
-          setPage(0);
+          if (next.search !== undefined) {
+            setSearchInput(next.search);
+            return;
+          }
+          const update: Record<string, string | null> = { p: '0' };
+          if (next.status !== undefined) update.status = next.status || null;
+          setMany(update);
         }}
         hideCategory
       />
@@ -258,12 +272,11 @@ export function NoticeTable() {
           component="div"
           count={data?.meta?.totalItems || 0}
           page={page}
-          onPageChange={(_, newPage) => setPage(newPage)}
+          onPageChange={(_, newPage) => setMany({ p: newPage })}
           rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={(e) => {
-            setRowsPerPage(parseInt(e.target.value, 10));
-            setPage(0);
-          }}
+          onRowsPerPageChange={(e) =>
+            setMany({ rpp: parseInt(e.target.value, 10), p: 0 })
+          }
           rowsPerPageOptions={[5, 10, 25, 50]}
           labelRowsPerPage="페이지당 행 수"
         />
