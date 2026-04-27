@@ -31,6 +31,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import SendIcon from '@mui/icons-material/Send';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useAdminForm } from '@/app/admin/hooks/forms';
+import { useUnsavedGuard } from '@/app/admin/hooks/use-unsaved-guard';
 import {
   longformFormSchema,
   type LongformFormData,
@@ -129,16 +130,7 @@ export function LongformForm({ mode, id }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => {
-      if (isDirty && !isSubmitting) {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-    window.addEventListener('beforeunload', handler);
-    return () => window.removeEventListener('beforeunload', handler);
-  }, [isDirty, isSubmitting]);
+  useUnsavedGuard(isDirty, isSubmitting);
 
   useEffect(() => {
     const bodyBytes = new Blob([watchedBody ?? '']).size;

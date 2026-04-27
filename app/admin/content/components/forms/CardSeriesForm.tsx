@@ -31,6 +31,7 @@ import AddIcon from '@mui/icons-material/Add';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useAdminForm } from '@/app/admin/hooks/forms';
+import { useUnsavedGuard } from '@/app/admin/hooks/use-unsaved-guard';
 import { cardNewsFormSchema, type CardNewsFormData } from '@/app/admin/hooks/forms/schemas/card-news.schema';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
@@ -48,7 +49,7 @@ export function CardSeriesForm({ mode, id }: Props) {
   const confirmAction = useConfirm();
   const isEdit = mode === 'edit';
 
-  const { control, watch, reset, handleFormSubmit, formState: { isSubmitting } } =
+  const { control, watch, reset, handleFormSubmit, formState: { isSubmitting, isDirty } } =
     useAdminForm<CardNewsFormData>({
       schema: cardNewsFormSchema,
       defaultValues: {
@@ -62,6 +63,8 @@ export function CardSeriesForm({ mode, id }: Props) {
         sections: [{ order: 0, title: '', content: '', imageUrl: undefined }],
       },
     });
+
+  useUnsavedGuard(isDirty, isSubmitting);
 
   const { fields, append, remove, update, move } = useFieldArray({ control, name: 'sections' });
 

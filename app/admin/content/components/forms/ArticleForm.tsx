@@ -28,6 +28,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useAdminForm } from '@/app/admin/hooks/forms';
+import { useUnsavedGuard } from '@/app/admin/hooks/use-unsaved-guard';
 import {
   sometimeArticleSchema,
   type SometimeArticleFormValues,
@@ -72,7 +73,7 @@ export function ArticleForm({ mode, id }: Props) {
     setValue,
     reset,
     handleFormSubmit,
-    formState: { isSubmitting, errors },
+    formState: { isSubmitting, isDirty, errors },
   } = useAdminForm<SometimeArticleFormValues>({
     schema: sometimeArticleSchema,
     defaultValues: {
@@ -95,6 +96,8 @@ export function ArticleForm({ mode, id }: Props) {
       keywords: '',
     },
   });
+
+  useUnsavedGuard(isDirty, isSubmitting);
 
   const title = watch('title');
   const slug = watch('slug');

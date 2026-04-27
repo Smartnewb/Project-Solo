@@ -23,6 +23,7 @@ import { useRouter } from 'next/navigation';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useAdminForm } from '@/app/admin/hooks/forms';
+import { useUnsavedGuard } from '@/app/admin/hooks/use-unsaved-guard';
 import {
   noticeFormSchema,
   type NoticeFormData,
@@ -53,7 +54,7 @@ export function NoticeForm({ mode, id }: Props) {
     watch,
     reset,
     handleFormSubmit,
-    formState: { isSubmitting },
+    formState: { isSubmitting, isDirty },
   } = useAdminForm<NoticeFormData>({
     schema: noticeFormSchema,
     defaultValues: {
@@ -70,6 +71,8 @@ export function NoticeForm({ mode, id }: Props) {
       pushMessage: '',
     },
   });
+
+  useUnsavedGuard(isDirty, isSubmitting);
 
   const pushEnabled = watch('pushEnabled');
 
