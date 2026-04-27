@@ -17,6 +17,9 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditIcon from '@mui/icons-material/Edit';
 import type { BackgroundPreset } from '@/types/admin';
+import { useToast } from '@/shared/ui/admin/toast/toast-context';
+
+const MAX_BG_SIZE_MB = 10;
 
 interface BackgroundSelectorProps {
   presets: BackgroundPreset[];
@@ -50,6 +53,7 @@ export default function BackgroundSelector({
   const [isDragOver, setIsDragOver] = useState(false);
   const [hoveredPresetId, setHoveredPresetId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const toast = useToast();
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     onBackgroundTypeChange(newValue === 0 ? 'PRESET' : 'CUSTOM');
@@ -73,28 +77,29 @@ export default function BackgroundSelector({
     setIsDragOver(false);
 
     const file = e.dataTransfer.files[0];
-    if (file && file.type.match(/^image\/(jpeg|png)$/)) {
-      if (file.size <= 5 * 1024 * 1024) {
-        onCustomUpload(file);
-      } else {
-        alert('파일 크기는 5MB 이하여야 합니다.');
-      }
-    } else {
-      alert('JPG 또는 PNG 파일만 업로드 가능합니다.');
+    if (!file) return;
+    if (!file.type.match(/^image\/(jpeg|png)$/)) {
+      toast.error('JPG 또는 PNG 파일만 업로드 가능합니다.');
+      return;
     }
-  }, [onCustomUpload]);
+    if (file.size > MAX_BG_SIZE_MB * 1024 * 1024) {
+      toast.error(`파일 크기는 ${MAX_BG_SIZE_MB}MB 이하여야 합니다.`);
+      return;
+    }
+    onCustomUpload(file);
+  }, [onCustomUpload, toast]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (!file.type.match(/^image\/(jpeg|png)$/)) {
-      alert('JPG 또는 PNG 파일만 업로드 가능합니다.');
+      toast.error('JPG 또는 PNG 파일만 업로드 가능합니다.');
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert('파일 크기는 5MB 이하여야 합니다.');
+    if (file.size > MAX_BG_SIZE_MB * 1024 * 1024) {
+      toast.error(`파일 크기는 ${MAX_BG_SIZE_MB}MB 이하여야 합니다.`);
       return;
     }
 
@@ -437,7 +442,7 @@ export default function BackgroundSelector({
                     이미지를 드래그하거나 클릭하여 업로드
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    JPG, PNG (최대 5MB) | 권장 비율 4:5
+                    JPG, PNG (최대 10MB) | 권장 비율 4:5
                   </Typography>
                 </>
               )}
