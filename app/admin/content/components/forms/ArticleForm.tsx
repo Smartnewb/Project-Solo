@@ -356,7 +356,7 @@ export function ArticleForm({ mode, id }: Props) {
                       {option.label}
                     </MenuItem>
                   ))}
-                  {categoryIsLegacy && currentCategory && (
+                  {isEdit && categoryIsLegacy && currentCategory && (
                     <MenuItem value={currentCategory}>
                       {LEGACY_CATEGORY_LABELS[currentCategory] || currentCategory} (레거시)
                     </MenuItem>
