@@ -55,16 +55,24 @@ export function UploadSlotGrid({
 						/{count} 페르소나에 사진이 매핑되었습니다.
 					</p>
 				</div>
-				<Button
-					type="button"
-					size="sm"
-					variant="outline"
-					onClick={onAutoDistribute}
-					disabled={!canAutoDistribute}
-				>
-					<Wand2 className="mr-1 h-3.5 w-3.5" />
-					자동 분배
-				</Button>
+				<div className="flex items-center gap-2">
+					{!canAutoDistribute ? (
+						<span className="text-[11px] text-slate-500">
+							자동 분배에는 {count * SLOT_PHOTO_LIMIT}장 필요 ({uploaded.length}/
+							{count * SLOT_PHOTO_LIMIT})
+						</span>
+					) : null}
+					<Button
+						type="button"
+						size="sm"
+						variant="outline"
+						onClick={onAutoDistribute}
+						disabled={!canAutoDistribute}
+					>
+						<Wand2 className="mr-1 h-3.5 w-3.5" />
+						자동 분배
+					</Button>
+				</div>
 			</div>
 
 			<div className="space-y-2">

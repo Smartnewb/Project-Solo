@@ -41,6 +41,7 @@ import { ghostInjectionKeys } from '../_shared/query-keys';
 import { ReasonInput, isReasonValid } from '../_shared/reason-input';
 import { VendorRadioGroup } from '../_shared/vendor-radio-group';
 import { AttachSetupPanel } from './_attach/attach-setup-panel';
+import { ManualUploadStepper, type StepStatus } from './_attach/manual-upload-stepper';
 import { ModeSelectStep } from './_attach/mode-select-step';
 import { UploadSlotGrid } from './_attach/upload-slot-grid';
 import { UploadZone } from './_attach/upload-zone';
@@ -851,10 +852,30 @@ function Step2Body({
 					</div>
 				</>
 			);
-		case 'manual-upload':
+		case 'manual-upload': {
+			const totalNeeded = setupState.count * SLOT_PHOTO_LIMIT;
+			const uploadedCount = setupState.uploaded.length;
+			const assignmentsFull =
+				setupState.uploadAssignments.size === setupState.count;
+			const uploadStatus: StepStatus =
+				uploadedCount === 0
+					? 'active'
+					: uploadedCount >= totalNeeded
+						? 'done'
+						: 'active';
+			const assignStatus: StepStatus =
+				uploadedCount < totalNeeded
+					? 'pending'
+					: assignmentsFull
+						? 'done'
+						: 'active';
 			return (
 				<div className="flex-1 overflow-y-auto px-6 py-6">
 					<div className="mx-auto max-w-4xl space-y-6">
+						<ManualUploadStepper
+							uploadStatus={uploadStatus}
+							assignStatus={assignStatus}
+						/>
 						<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 							{countControl}
 							{ageBucketControl}
@@ -864,9 +885,9 @@ function Step2Body({
 								uploaded={setupState.uploaded}
 								remainingNeeded={Math.max(
 									0,
-									setupState.count * SLOT_PHOTO_LIMIT - setupState.uploaded.length,
+									totalNeeded - uploadedCount,
 								)}
-								totalNeeded={setupState.count * SLOT_PHOTO_LIMIT}
+								totalNeeded={totalNeeded}
 								onUploadComplete={setup.addUploads}
 								onRemove={setup.removeUpload}
 								onClearAll={setup.clearUploads}
@@ -887,6 +908,7 @@ function Step2Body({
 					</div>
 				</div>
 			);
+		}
 		case 'generate':
 		default:
 			return (
