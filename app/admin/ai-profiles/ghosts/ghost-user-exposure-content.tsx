@@ -97,17 +97,15 @@ function ExposureRow({
 						<ExternalLink className="h-3.5 w-3.5" />
 					</a>
 				)}
-				{item.ghostAccountId && (
-					<Button
-						variant="ghost"
-						size="sm"
-						className="h-7 w-7 p-0"
-						onClick={() => onGhostSelect(item.ghostAccountId as string)}
-						title="Ghost 상세 보기"
-					>
-						<ExternalLink className="h-3.5 w-3.5" />
-					</Button>
-				)}
+				<Button
+					variant="ghost"
+					size="sm"
+					className="h-7 w-7 p-0"
+					onClick={() => onGhostSelect(item.ghostAccountId)}
+					title="Ghost 상세 보기"
+				>
+					<ExternalLink className="h-3.5 w-3.5" />
+				</Button>
 			</div>
 		</div>
 	);
@@ -122,19 +120,16 @@ export function GhostUserExposureContent({
 	userId,
 	onGhostSelect,
 }: GhostUserExposureContentProps) {
-	const [query, setQuery] = useState<UserGhostExposureQuery>({ page: 1, limit: DEFAULT_LIMIT });
+	const [query, setQuery] = useState<UserGhostExposureQuery>({ page: 1 });
 
 	const { data, isLoading, isError, error } = useQuery({
 		queryKey: ghostInjectionKeys.userExposures(userId, query),
 		queryFn: () =>
-			ghostInjection.getUserExposures(userId, {
-				...query,
-				limit: Math.min(query.limit ?? DEFAULT_LIMIT, 100),
-			}),
+			ghostInjection.getUserExposures(userId, { ...query, limit: DEFAULT_LIMIT }),
 		enabled: Boolean(userId),
 	});
 
-	const totalPages = data ? Math.ceil(data.total / (query.limit ?? DEFAULT_LIMIT)) : 0;
+	const totalPages = data ? Math.ceil(data.total / DEFAULT_LIMIT) : 0;
 
 	const byPathEntries = data?.summary
 		? (Object.entries(data.summary.byPath) as [UserGhostExposurePath, number][]).filter(
@@ -269,10 +264,10 @@ export function GhostUserExposureContent({
 						: '데이터를 불러오지 못했습니다.'}
 				</p>
 			)}
-			{data && data.items.length === 0 && (
+			{data?.items.length === 0 && (
 				<p className="text-sm text-gray-400 text-center py-8">노출 이력이 없습니다.</p>
 			)}
-			{data && data.items.length > 0 && (
+			{!!data?.items.length && (
 				<div className="space-y-2">
 					{data.items.map((item) => (
 						<ExposureRow key={item.id} item={item} onGhostSelect={onGhostSelect} />
@@ -285,7 +280,7 @@ export function GhostUserExposureContent({
 					<Button
 						variant="outline"
 						size="sm"
-						disabled={!data || (query.page ?? 1) <= 1}
+						disabled={(query.page ?? 1) <= 1}
 						onClick={() => setQuery((prev) => ({ ...prev, page: (prev.page ?? 1) - 1 }))}
 					>
 						<ChevronLeft className="h-4 w-4" />
@@ -296,7 +291,7 @@ export function GhostUserExposureContent({
 					<Button
 						variant="outline"
 						size="sm"
-						disabled={!data || (query.page ?? 1) >= totalPages}
+						disabled={(query.page ?? 1) >= totalPages}
 						onClick={() => setQuery((prev) => ({ ...prev, page: (prev.page ?? 1) + 1 }))}
 					>
 						<ChevronRight className="h-4 w-4" />

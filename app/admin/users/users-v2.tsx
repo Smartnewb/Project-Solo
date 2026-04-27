@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { adminGet } from '@/shared/lib/http/admin-fetch';
 import { formatDateWithoutTimezoneConversion, formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
@@ -697,13 +698,13 @@ function UsersV2Content() {
                   >
                     Ghost 노출 이력
                   </button>
-                  <a
+                  <Link
                     href={`/admin/ai-profiles/ghosts/users/${selectedUser.userId}?userName=${encodeURIComponent(selectedUser.name)}`}
                     className="text-xs px-3 py-1.5 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors"
                     title="전체 화면으로 열기"
                   >
                     전체 화면
-                  </a>
+                  </Link>
                   <button
                     onClick={handleCloseDetails}
                     className="text-gray-500 hover:text-gray-700 p-2"
