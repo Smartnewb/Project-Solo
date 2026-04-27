@@ -258,6 +258,13 @@ export function ArticleForm({ mode, id }: Props) {
       }
       router.push('/admin/content?tab=article');
     } catch (err: unknown) {
+      const status =
+        (err as { response?: { status?: number }; status?: number })?.response?.status ??
+        (err as { status?: number })?.status;
+      if (status === 409) {
+        toast.error('이미 사용 중인 슬러그입니다. 다른 값을 입력해주세요.');
+        return;
+      }
       toast.error(getApiErrorMessage(err, '저장에 실패했습니다.'));
     }
   });
