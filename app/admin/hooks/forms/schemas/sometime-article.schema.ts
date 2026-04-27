@@ -31,6 +31,7 @@ export const sometimeArticleSchema = z.object({
     .max(160, '메타 설명은 최대 160자까지 입력 가능합니다.'),
   ogImage: z.string(),
   keywords: z.string(),
+  scheduledAt: z.string(),
 });
 
 export type SometimeArticleFormValues = z.infer<typeof sometimeArticleSchema>;

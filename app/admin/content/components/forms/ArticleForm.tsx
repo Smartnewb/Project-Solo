@@ -27,6 +27,9 @@ import type { CreateSometimeArticleRequest, UpdateSometimeArticleRequest } from 
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useAdminForm } from '@/app/admin/hooks/forms';
 import { useUnsavedGuard } from '@/app/admin/hooks/use-unsaved-guard';
 import {
@@ -94,6 +97,7 @@ export function ArticleForm({ mode, id }: Props) {
       metaDescription: '',
       ogImage: '',
       keywords: '',
+      scheduledAt: '',
     },
   });
 
@@ -107,6 +111,7 @@ export function ArticleForm({ mode, id }: Props) {
   const authorAvatar = watch('authorAvatar');
   const ogImage = watch('ogImage');
   const currentCategory = watch('category');
+  const watchedStatus = watch('status');
 
   useEffect(() => {
     if (isEdit && id) {
@@ -131,6 +136,10 @@ export function ArticleForm({ mode, id }: Props) {
             metaDescription: detail.seo?.metaDescription || '',
             ogImage: detail.seo?.ogImage || '',
             keywords: detail.seo?.keywords?.join(', ') || '',
+            scheduledAt:
+              detail.status === 'scheduled' && detail.publishedAt
+                ? detail.publishedAt
+                : '',
           });
         } catch (err: unknown) {
           toast.error(getApiErrorMessage(err, '아티클 로드 실패'));
@@ -159,6 +168,10 @@ export function ArticleForm({ mode, id }: Props) {
   };
 
   const onSubmit = handleFormSubmit(async (data) => {
+    if (data.status === 'scheduled' && !data.scheduledAt) {
+      toast.error('예약 발행 시각을 입력해주세요.');
+      return;
+    }
     const baseSeo =
       data.metaTitle.trim() ||
       data.metaDescription.trim() ||
@@ -204,7 +217,11 @@ export function ArticleForm({ mode, id }: Props) {
             coverImage: { type: 'image', url: data.coverImageUrl.trim() },
           }),
           ...(baseSeo ? { seo: baseSeo } : {}),
-          ...(data.status === 'published' && { publishedAt: new Date().toISOString() }),
+          ...(data.status === 'published'
+            ? { publishedAt: new Date().toISOString() }
+            : data.status === 'scheduled' && data.scheduledAt
+            ? { publishedAt: data.scheduledAt }
+            : {}),
         };
         await AdminService.sometimeArticles.update(id, updatePayload);
         toast.success('아티클이 수정되었습니다.');
@@ -230,7 +247,11 @@ export function ArticleForm({ mode, id }: Props) {
             coverImage: { type: 'image', url: data.coverImageUrl.trim() },
           }),
           ...(baseSeo ? { seo: baseSeo } : {}),
-          ...(data.status === 'published' && { publishedAt: new Date().toISOString() }),
+          ...(data.status === 'published'
+            ? { publishedAt: new Date().toISOString() }
+            : data.status === 'scheduled' && data.scheduledAt
+            ? { publishedAt: data.scheduledAt }
+            : {}),
         };
         await AdminService.sometimeArticles.create(createPayload);
         toast.success('아티클이 생성되었습니다.');
@@ -246,6 +267,7 @@ export function ArticleForm({ mode, id }: Props) {
   );
 
   return (
+    <LocalizationProvider dateAdapter={AdapterDateFns}>
     <Box sx={{ p: 3, maxWidth: 1200, mx: 'auto' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
         <Button startIcon={<ArrowBackIcon />} onClick={handleCancel} sx={{ mr: 2 }}>
@@ -354,6 +376,29 @@ export function ArticleForm({ mode, id }: Props) {
             )}
           />
         </Box>
+
+        {watchedStatus === 'scheduled' && (
+          <Controller
+            name="scheduledAt"
+            control={control}
+            render={({ field, fieldState }) => (
+              <DateTimePicker
+                label="예약 발행 시각"
+                value={field.value ? new Date(field.value) : null}
+                onChange={(date) => field.onChange(date ? date.toISOString() : '')}
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    sx: { mb: 2 },
+                    helperText: fieldState.error?.message ?? '미래 시각으로 설정해주세요.',
+                    error: !!fieldState.error,
+                    required: true,
+                  },
+                }}
+              />
+            )}
+          />
+        )}
       </Paper>
 
       <Paper sx={{ p: 3, mb: 3 }}>
@@ -567,5 +612,6 @@ export function ArticleForm({ mode, id }: Props) {
         </Button>
       </Box>
     </Box>
+    </LocalizationProvider>
   );
 }
