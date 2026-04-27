@@ -65,12 +65,13 @@ const TYPE_COLORS: Record<UnifiedRow['type'], 'primary' | 'secondary' | 'info' |
   notice: 'error',
 };
 
+const PAGE_INCREMENT = 20;
+
 export function AllContentTable() {
   const router = useRouter();
   const toast = useToast();
   const confirmAction = useConfirm();
 
-  const PAGE_INCREMENT = 20;
   const [pageSize, setPageSize] = useState(PAGE_INCREMENT);
 
   const { data: cardsData, isLoading: cardsLoading } = useCardNewsList(1, pageSize);
@@ -125,7 +126,7 @@ export function AllContentTable() {
 
   const isLoading = cardsLoading || articlesLoading || noticesLoading;
 
-  const visible = useMemo(() => merged.slice(0, pageSize), [merged, pageSize]);
+  const visible = merged.slice(0, pageSize);
   const hasMore =
     (cardsData?.total ?? 0) > pageSize ||
     (articlesData?.meta?.totalItems ?? 0) > pageSize ||
