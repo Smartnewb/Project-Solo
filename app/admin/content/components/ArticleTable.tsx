@@ -33,6 +33,7 @@ import { StatusBadge } from './StatusBadge';
 import { CategoryBadge } from './CategoryBadge';
 import { ContentFilters } from './ContentFilters';
 import { PublishDialog } from './PublishDialog';
+import { ExternalPageButton } from './seo/ExternalPageButton';
 import { LEGACY_CATEGORY_SENTINEL, NEW_CATEGORY_CODES } from '../constants';
 
 function mapArticleStatusToContentStatus(s: string): ContentStatus {
@@ -183,6 +184,9 @@ export function ArticleTable() {
                           >
                             <PublishIcon fontSize="small" />
                           </IconButton>
+                        )}
+                        {derived === 'published' && item.slug && (
+                          <ExternalPageButton kind="blog" slugOrId={item.slug} />
                         )}
                         <IconButton
                           size="small"

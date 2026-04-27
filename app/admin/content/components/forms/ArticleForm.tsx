@@ -22,6 +22,7 @@ import { useRouter } from 'next/navigation';
 import AdminService from '@/app/services/admin';
 import ImageUploader from '../article/ImageUploader';
 import MarkdownEditor from '../article/MarkdownEditor';
+import { OgPreviewCard } from '../seo/OgPreviewCard';
 import type { CreateSometimeArticleRequest, UpdateSometimeArticleRequest } from '@/types/admin';
 import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -480,6 +481,15 @@ export function ArticleForm({ mode, id }: Props) {
           </Box>
         </Box>
       </Paper>
+
+      {isEdit && slug && (
+        <Box sx={{ mb: 3 }}>
+          <OgPreviewCard
+            path={`/blog/${slug}`}
+            webUrl={AdminService.seo.getWebPageUrl('blog', slug)}
+          />
+        </Box>
+      )}
 
       <Accordion sx={{ mb: 3 }}>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>

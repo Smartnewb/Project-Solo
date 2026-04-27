@@ -21,6 +21,8 @@ export {
 } from './content';
 export { notices } from './notices';
 export type { NoticeListParams } from './notices';
+export { seo } from './seo';
+export type { PageMeta, SitemapKind } from './seo';
 export { reports, userReview, profileImages } from './moderation';
 export {
 	gems,
@@ -133,6 +135,7 @@ import {
 	publicReviews,
 } from './content';
 import { notices } from './notices';
+import { seo } from './seo';
 import { reports, userReview, profileImages } from './moderation';
 import {
 	gems,
@@ -198,6 +201,7 @@ const AdminService = {
 	ghostInjection,
 	ghostReferencePool,
 	aiProfileGenerator,
+	seo,
 };
 
 export default AdminService;

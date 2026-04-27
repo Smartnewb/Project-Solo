@@ -95,6 +95,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
       { href: '/admin/push-notifications/catalog', label: '알림 구조도' },
       { href: '/admin/fcm-tokens', label: 'FCM 토큰 현황' },
       { href: '/admin/content', label: '운영 콘텐츠 관리' },
+      { href: '/admin/seo', label: 'SEO 상태' },
       { href: '/admin/banners', label: '배너 관리' },
       { href: '/admin/utm-management', label: 'UTM 추적' },
     ],

@@ -29,6 +29,7 @@ import { StatusBadge } from './StatusBadge';
 import { CategoryBadge } from './CategoryBadge';
 import { ContentFilters } from './ContentFilters';
 import { PublishDialog } from './PublishDialog';
+import { ExternalPageButton } from './seo/ExternalPageButton';
 import { LEGACY_CATEGORY_SENTINEL } from '../constants';
 
 function deriveStatus(item: AdminCardNewsItem): ContentStatus {
@@ -180,6 +181,9 @@ export function LongformTable() {
                           >
                             <SendIcon fontSize="small" />
                           </IconButton>
+                        )}
+                        {derived === 'published' && (
+                          <ExternalPageButton kind="card-news" slugOrId={item.id} />
                         )}
                         <IconButton
                           size="small"

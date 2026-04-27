@@ -25,6 +25,7 @@ import LongformPreview from '../card-series/LongformPreview';
 import MarkdownEditor from '../article/MarkdownEditor';
 import PresetUploadModal from '../card-series/PresetUploadModal';
 import PresetEditModal from '../card-series/PresetEditModal';
+import { OgPreviewCard } from '../seo/OgPreviewCard';
 import type { BackgroundPreset, CreateCardNewsRequest } from '@/types/admin';
 import SaveIcon from '@mui/icons-material/Save';
 import SendIcon from '@mui/icons-material/Send';
@@ -634,6 +635,14 @@ export function LongformForm({ mode, id }: Props) {
             body={watchedBody}
             readTimeMinutes={readTimeMinutes}
           />
+          {isEdit && id && isPublished && (
+            <Box sx={{ mt: 2 }}>
+              <OgPreviewCard
+                path={`/card-news/${id}`}
+                webUrl={AdminService.seo.getWebPageUrl('card-news', id)}
+              />
+            </Box>
+          )}
         </Box>
       </Box>
 
