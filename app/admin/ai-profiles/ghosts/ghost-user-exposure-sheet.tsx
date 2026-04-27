@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { AdminApiError } from '@/shared/lib/http/admin-fetch';
 import { ghostInjection } from '@/app/services/admin/ghost-injection';
+import { formatDateTimeKR } from '@/app/utils/formatters';
 import type {
 	UserGhostExposureActionType,
 	UserGhostExposureItem,
@@ -30,20 +31,16 @@ import {
 } from '@/shared/ui/sheet';
 import { ghostInjectionKeys } from '../_shared/query-keys';
 
+const DEFAULT_LIMIT = 20;
+
+const GHOST_NOT_TRACKABLE = 'Ghost user is not trackable';
+
 const PATH_LABELS: Record<UserGhostExposurePath, string> = {
 	v4_fallback: 'V4 폴백',
 	proactive_fill: '선제 채우기',
 	scheduled_fill: '스케줄 채우기',
 	like_cron: '좋아요 크론',
 };
-
-function formatDate(iso: string): string {
-	try {
-		return new Date(iso).toLocaleString('ko-KR');
-	} catch {
-		return iso;
-	}
-}
 
 function SummaryCard({ label, value }: { label: string; value: string | number }) {
 	return (
@@ -91,7 +88,7 @@ function ExposureRow({
 						</Badge>
 					)}
 				</div>
-				<p className="text-xs text-gray-400 mt-0.5">{formatDate(item.createdAt)}</p>
+				<p className="text-xs text-gray-400 mt-0.5">{formatDateTimeKR(item.createdAt)}</p>
 			</div>
 
 			<div className="flex items-center gap-1 flex-shrink-0">
@@ -135,19 +132,26 @@ export function GhostUserExposureSheet({
 	onClose,
 	onGhostSelect,
 }: GhostUserExposureSheetProps) {
-	const [query, setQuery] = useState<UserGhostExposureQuery>({ page: 1, limit: 20 });
+	const [query, setQuery] = useState<UserGhostExposureQuery>({ page: 1, limit: DEFAULT_LIMIT });
 
 	const { data, isLoading, isError, error } = useQuery({
 		queryKey: ghostInjectionKeys.userExposures(userId ?? '', query),
 		queryFn: () =>
 			ghostInjection.getUserExposures(userId as string, {
 				...query,
-				limit: Math.min(query.limit ?? 20, 100),
+				limit: Math.min(query.limit ?? DEFAULT_LIMIT, 100),
 			}),
 		enabled: Boolean(userId),
 	});
 
-	const totalPages = data ? Math.ceil(data.total / (query.limit ?? 20)) : 0;
+	const totalPages = data ? Math.ceil(data.total / (query.limit ?? DEFAULT_LIMIT)) : 0;
+
+	const byPathEntries = data?.summary
+		? (Object.entries(data.summary.byPath) as [UserGhostExposurePath, number][]).filter(
+				([, count]) => count > 0,
+			)
+		: [];
+	const byPathMax = byPathEntries.length > 0 ? Math.max(...byPathEntries.map(([, c]) => c)) : 1;
 
 	function setFilter(patch: Partial<UserGhostExposureQuery>) {
 		setQuery((prev) => ({ ...prev, ...patch, page: 1 }));
@@ -171,7 +175,6 @@ export function GhostUserExposureSheet({
 				</SheetHeader>
 
 				<div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-					{/* Summary */}
 					{data?.summary && (
 						<>
 							<div className="grid grid-cols-2 gap-2">
@@ -187,38 +190,36 @@ export function GhostUserExposureSheet({
 								/>
 								<SummaryCard
 									label="마지막 노출"
-									value={data.summary.lastExposedAt ? formatDate(data.summary.lastExposedAt) : '없음'}
+									value={
+										data.summary.lastExposedAt
+											? formatDateTimeKR(data.summary.lastExposedAt)
+											: '없음'
+									}
 								/>
 							</div>
 
-							{Object.keys(data.summary.byPath).length > 0 && (
+							{byPathEntries.length > 0 && (
 								<div className="rounded-lg border bg-white p-3">
 									<p className="text-xs text-gray-500 mb-2">경로별 분포</p>
 									<div className="space-y-1.5">
-										{(() => {
-											const max = Math.max(...(Object.values(data.summary.byPath) as number[]));
-											return (Object.entries(data.summary.byPath) as [UserGhostExposurePath, number][])
-												.filter(([, count]) => count > 0)
-												.map(([path, count]) => (
-													<div key={path} className="flex items-center gap-2 text-xs">
-														<span className="text-gray-600 w-24 shrink-0">{PATH_LABELS[path]}</span>
-														<div className="flex-1 bg-gray-100 rounded-full h-1.5 overflow-hidden">
-															<div
-																className="bg-blue-500 h-full rounded-full"
-																style={{ width: `${Math.round((count / max) * 100)}%` }}
-															/>
-														</div>
-														<span className="font-medium w-4 text-right">{count}</span>
-													</div>
-												));
-										})()}
+										{byPathEntries.map(([path, count]) => (
+											<div key={path} className="flex items-center gap-2 text-xs">
+												<span className="text-gray-600 w-24 shrink-0">{PATH_LABELS[path]}</span>
+												<div className="flex-1 bg-gray-100 rounded-full h-1.5 overflow-hidden">
+													<div
+														className="bg-blue-500 h-full rounded-full"
+														style={{ width: `${Math.round((count / byPathMax) * 100)}%` }}
+													/>
+												</div>
+												<span className="font-medium w-4 text-right">{count}</span>
+											</div>
+										))}
 									</div>
 								</div>
 							)}
 						</>
 					)}
 
-					{/* 필터 */}
 					<div className="flex flex-wrap gap-2">
 						<div className="w-36">
 							<Select
@@ -285,13 +286,12 @@ export function GhostUserExposureSheet({
 						</div>
 					</div>
 
-					{/* 리스트 */}
 					{isLoading && (
 						<p className="text-sm text-gray-500 text-center py-8">불러오는 중...</p>
 					)}
 					{isError && (
 						<p className="text-sm text-red-500 text-center py-8">
-							{error instanceof AdminApiError && error.message.includes('Ghost user is not trackable')
+							{error instanceof AdminApiError && error.message.includes(GHOST_NOT_TRACKABLE)
 								? 'AI 합성 유저는 조회할 수 없습니다. 실제 유저 ID를 입력해 주세요.'
 								: '데이터를 불러오지 못했습니다.'}
 						</p>
@@ -307,7 +307,6 @@ export function GhostUserExposureSheet({
 						</div>
 					)}
 
-					{/* 페이지네이션 */}
 					{totalPages > 1 && (
 						<div className="flex items-center justify-center gap-2 pt-2">
 							<Button
