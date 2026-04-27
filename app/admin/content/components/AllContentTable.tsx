@@ -98,7 +98,7 @@ export function AllContentTable() {
         type: cardType,
         title: c.title,
         categoryCode: c.category?.code || 'unknown',
-        status: c.pushSentAt ? 'published' : 'draft',
+        status: c.publishedAt ? 'published' : 'draft',
         createdAt: c.createdAt,
       });
     });

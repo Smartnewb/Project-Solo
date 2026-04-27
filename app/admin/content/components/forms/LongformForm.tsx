@@ -194,15 +194,13 @@ export function LongformForm({ mode, id }: Props) {
         });
 
         if (detail.backgroundImage) {
-          if (detail.backgroundImage.presetName) {
+          const bg = detail.backgroundImage;
+          if (bg.type === 'PRESET' && bg.preset) {
             setBackgroundType('PRESET');
-            const preset = presets.find(
-              (p: BackgroundPreset) => p.displayName === detail.backgroundImage?.presetName,
-            );
-            if (preset) setSelectedPresetId(preset.id);
-          } else {
+            setSelectedPresetId(bg.preset.id);
+          } else if (bg.type === 'CUSTOM') {
             setBackgroundType('CUSTOM');
-            setCustomBackgroundUrl(detail.backgroundImage.url || '');
+            setCustomBackgroundUrl(bg.customUrl || '');
           }
         }
       } else {

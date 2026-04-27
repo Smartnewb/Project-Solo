@@ -134,15 +134,13 @@ export function CardSeriesForm({ mode, id }: Props) {
           sections: cardNewsData.sections ?? [],
         });
         if (cardNewsData.backgroundImage) {
-          if (cardNewsData.backgroundImage.presetName) {
+          const bg = cardNewsData.backgroundImage;
+          if (bg.type === 'PRESET' && bg.preset) {
             setBackgroundType('PRESET');
-            const preset = presets.find(
-              (p: BackgroundPreset) => p.displayName === cardNewsData.backgroundImage?.presetName,
-            );
-            if (preset) setSelectedPresetId(preset.id);
-          } else {
+            setSelectedPresetId(bg.preset.id);
+          } else if (bg.type === 'CUSTOM') {
             setBackgroundType('CUSTOM');
-            setCustomBackgroundUrl(cardNewsData.backgroundImage.url || '');
+            setCustomBackgroundUrl(bg.customUrl || '');
           }
         }
       } else {

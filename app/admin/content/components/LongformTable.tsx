@@ -32,7 +32,7 @@ import { PublishDialog } from './PublishDialog';
 import { LEGACY_CATEGORY_SENTINEL } from '../constants';
 
 function deriveStatus(item: AdminCardNewsItem): ContentStatus {
-  return item.pushSentAt ? 'published' : 'draft';
+  return item.publishedAt ? 'published' : 'draft';
 }
 
 export function LongformTable() {
