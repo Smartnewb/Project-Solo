@@ -4,6 +4,7 @@ import {
 	adminPatch,
 	adminPost,
 	adminPut,
+	adminUpload,
 } from '@/shared/lib/http/admin-fetch';
 import type {
 	AddBlacklistBody,
@@ -47,6 +48,7 @@ import type {
 	CreateBatchPreviewBody,
 	PatchBatchPreviewItemBody,
 	ConfirmBatchPreviewBody,
+	UploadPhotosResponse,
 } from '@/app/types/ghost-injection';
 
 const BASE = '/admin/ghost-injection';
@@ -78,6 +80,12 @@ export const ghostInjection = {
 
 	createBatch: (body: CreateBatchGhostBody) =>
 		adminPost<BatchCreateResult>(`${BASE}/create-batch`, body),
+
+	uploadPhotos: (files: File[]) => {
+		const formData = new FormData();
+		for (const f of files) formData.append('files', f);
+		return adminUpload<UploadPhotosResponse>(`${BASE}/upload-photos`, formData);
+	},
 
 	updateGhost: (ghostAccountId: string, body: UpdateGhostBody) =>
 		adminPatch(`${BASE}/${ghostAccountId}`, body),
