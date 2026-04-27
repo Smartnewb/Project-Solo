@@ -20,7 +20,7 @@ import {
 } from '@/app/admin/hooks';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import { getApiErrorMessage } from '@/app/utils/errors';
-import type { ContentType } from '../constants';
+import { CONTENT_TYPE_LABELS, type ContentType } from '../constants';
 
 export type PublishDialogType = ContentType;
 
@@ -34,7 +34,8 @@ interface Props {
 
 export function PublishDialog({ open, onClose, type, item, onPublished }: Props) {
   const toast = useToast();
-  const [pushEnabled, setPushEnabled] = useState(true);
+  const supportsPush = type !== 'article';
+  const [pushEnabled, setPushEnabled] = useState(supportsPush);
   const [pushTitle, setPushTitle] = useState('');
   const [pushMessage, setPushMessage] = useState('');
 
@@ -44,18 +45,17 @@ export function PublishDialog({ open, onClose, type, item, onPublished }: Props)
 
   useEffect(() => {
     if (open) {
-      setPushEnabled(type !== 'article');
+      setPushEnabled(supportsPush);
       setPushTitle('');
       setPushMessage('');
     }
-  }, [open, item?.id, type]);
+  }, [open, item?.id, supportsPush]);
 
   const isPending =
     publishCardNews.isPending || updateArticle.isPending || publishNotice.isPending;
 
   const validate = () => {
-    if (type === 'article') return true;
-    if (!pushEnabled) return true;
+    if (!supportsPush || !pushEnabled) return true;
     if (!pushMessage.trim()) {
       toast.error('푸시 알림 메시지를 입력해주세요.');
       return false;
@@ -128,14 +128,7 @@ export function PublishDialog({ open, onClose, type, item, onPublished }: Props)
     }
   };
 
-  const typeLabel =
-    type === 'card-series'
-      ? '카드시리즈'
-      : type === 'longform'
-      ? '롱폼 아티클'
-      : type === 'article'
-      ? '아티클'
-      : '공지';
+  const typeLabel = CONTENT_TYPE_LABELS[type];
 
   return (
     <Dialog open={open && !!item} onClose={onClose} maxWidth="sm" fullWidth>
@@ -152,7 +145,7 @@ export function PublishDialog({ open, onClose, type, item, onPublished }: Props)
           </Box>
         )}
 
-        {type === 'article' ? (
+        {!supportsPush ? (
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
             아티클은 발행 시 푸시 알림이 발송되지 않습니다.
           </Typography>
@@ -206,9 +199,7 @@ export function PublishDialog({ open, onClose, type, item, onPublished }: Props)
           onClick={handleConfirm}
           color="primary"
           variant="contained"
-          disabled={
-            isPending || (type !== 'article' && pushEnabled && !pushMessage.trim())
-          }
+          disabled={isPending || (supportsPush && pushEnabled && !pushMessage.trim())}
         >
           {isPending ? '발행 중...' : '발행'}
         </Button>

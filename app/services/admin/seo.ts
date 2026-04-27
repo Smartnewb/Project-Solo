@@ -1,4 +1,4 @@
-import { adminGet } from '@/shared/lib/http/admin-fetch';
+import { adminGet, buildAdminProxyUrl } from '@/shared/lib/http/admin-fetch';
 
 export interface PageMeta {
 	title: string;
@@ -24,7 +24,7 @@ export const seo = {
 	},
 
 	fetchSitemapLocCount: async (url: string): Promise<number> => {
-		const res = await fetch(`/api/admin-proxy${url}`);
+		const res = await fetch(buildAdminProxyUrl(url));
 		if (!res.ok) throw new Error(`sitemap fetch failed: ${res.status}`);
 		const xml = await res.text();
 		return (xml.match(/<loc>/g) ?? []).length;

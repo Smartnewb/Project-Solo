@@ -1,7 +1,16 @@
 'use client';
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useDebounce } from '@/shared/hooks/use-debounce';
+
+export const CONTENT_URL_KEYS = {
+  category: 'cat',
+  status: 'status',
+  search: 'q',
+  page: 'p',
+  rowsPerPage: 'rpp',
+} as const;
 
 export function useUrlState() {
   const router = useRouter();
@@ -36,4 +45,32 @@ export function useUrlState() {
   );
 
   return { get, getNumber, setMany };
+}
+
+type SetManyFn = (next: Record<string, string | number | null | undefined>) => void;
+
+export function useDebouncedUrlSearch(
+  urlValue: string,
+  setMany: SetManyFn,
+  key: string = CONTENT_URL_KEYS.search,
+  delay: number = 300,
+) {
+  const [input, setInput] = useState(urlValue);
+  const debounced = useDebounce(input, delay);
+
+  useEffect(() => {
+    if (urlValue !== input && urlValue !== debounced) {
+      setInput(urlValue);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlValue]);
+
+  useEffect(() => {
+    if (debounced !== urlValue) {
+      setMany({ [key]: debounced || null, [CONTENT_URL_KEYS.page]: 0 });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debounced]);
+
+  return [input, setInput] as const;
 }

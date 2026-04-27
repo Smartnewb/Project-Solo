@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Alert,
   Box,
@@ -26,7 +26,10 @@ import {
   useDeleteSometimeArticle,
   useUrlState,
 } from '@/app/admin/hooks';
-import { useDebounce } from '@/shared/hooks/use-debounce';
+import {
+  CONTENT_URL_KEYS,
+  useDebouncedUrlSearch,
+} from '@/app/admin/hooks/use-url-state';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
 import { formatDateTimeKR } from '@/app/utils/formatters';
@@ -50,20 +53,13 @@ export function ArticleTable() {
   const confirmAction = useConfirm();
 
   const { get, getNumber, setMany } = useUrlState();
-  const category = get('cat');
-  const status = get('status');
-  const search = get('q');
-  const page = getNumber('p', 0);
-  const rowsPerPage = getNumber('rpp', 10);
+  const category = get(CONTENT_URL_KEYS.category);
+  const status = get(CONTENT_URL_KEYS.status);
+  const search = get(CONTENT_URL_KEYS.search);
+  const page = getNumber(CONTENT_URL_KEYS.page, 0);
+  const rowsPerPage = getNumber(CONTENT_URL_KEYS.rowsPerPage, 10);
 
-  const [searchInput, setSearchInput] = useState(search);
-  const debouncedSearch = useDebounce(searchInput, 300);
-  useEffect(() => {
-    if (debouncedSearch !== search) {
-      setMany({ q: debouncedSearch || null, p: 0 });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch]);
+  const [searchInput, setSearchInput] = useDebouncedUrlSearch(search, setMany);
 
   const [publishItem, setPublishItem] = useState<{ id: string; title: string } | null>(null);
 
@@ -80,13 +76,15 @@ export function ArticleTable() {
   const deleteArticle = useDeleteSometimeArticle();
   const items = data?.items || [];
 
-  const filtered = items.filter((it) => {
-    if (search && !it.title.toLowerCase().includes(search.toLowerCase())) return false;
-    if (category === LEGACY_CATEGORY_SENTINEL) {
-      return !NEW_CATEGORY_CODES.includes(it.category as string);
-    }
-    return true;
-  });
+  const filtered = useMemo(() => {
+    return items.filter((it) => {
+      if (search && !it.title.toLowerCase().includes(search.toLowerCase())) return false;
+      if (category === LEGACY_CATEGORY_SENTINEL) {
+        return !NEW_CATEGORY_CODES.includes(it.category as string);
+      }
+      return true;
+    });
+  }, [items, search, category]);
 
   const handleEdit = (id: string) => {
     router.push(`/admin/content/article/edit/${id}`);
@@ -125,9 +123,13 @@ export function ArticleTable() {
             setSearchInput(next.search);
             return;
           }
-          const update: Record<string, string | null> = { p: '0' };
-          if (next.category !== undefined) update.cat = next.category || null;
-          if (next.status !== undefined) update.status = next.status || null;
+          const update: Record<string, string | null> = {
+            [CONTENT_URL_KEYS.page]: '0',
+          };
+          if (next.category !== undefined)
+            update[CONTENT_URL_KEYS.category] = next.category || null;
+          if (next.status !== undefined)
+            update[CONTENT_URL_KEYS.status] = next.status || null;
           setMany(update);
         }}
       />

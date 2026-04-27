@@ -10,7 +10,7 @@ import { CardSeriesTable } from './components/CardSeriesTable';
 import { LongformTable } from './components/LongformTable';
 import { ArticleTable } from './components/ArticleTable';
 import { NoticeTable } from './components/NoticeTable';
-import type { ContentType } from './constants';
+import { CONTENT_TYPE_LABELS, type ContentType } from './constants';
 
 type TabValue = 'all' | ContentType;
 
@@ -30,15 +30,7 @@ function ContentPageInner() {
   };
 
   const tabCreateLabel =
-    currentTab === 'card-series'
-      ? '카드시리즈'
-      : currentTab === 'longform'
-      ? '롱폼'
-      : currentTab === 'article'
-      ? '아티클'
-      : currentTab === 'notice'
-      ? '공지'
-      : '';
+    currentTab === 'all' ? '' : CONTENT_TYPE_LABELS[currentTab];
 
   return (
     <Box sx={{ p: 3 }}>

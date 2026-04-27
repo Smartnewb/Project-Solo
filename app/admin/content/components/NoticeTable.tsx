@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   Box,
   Typography,
@@ -30,6 +30,10 @@ import {
   useArchiveNotice,
   useUrlState,
 } from '@/app/admin/hooks';
+import {
+  CONTENT_URL_KEYS,
+  useDebouncedUrlSearch,
+} from '@/app/admin/hooks/use-url-state';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
 import { getApiErrorMessage } from '@/app/utils/errors';
@@ -54,19 +58,12 @@ export function NoticeTable() {
   const confirmAction = useConfirm();
 
   const { get, getNumber, setMany } = useUrlState();
-  const status = get('status');
-  const search = get('q');
-  const page = getNumber('p', 0);
-  const rowsPerPage = getNumber('rpp', 10);
+  const status = get(CONTENT_URL_KEYS.status);
+  const search = get(CONTENT_URL_KEYS.search);
+  const page = getNumber(CONTENT_URL_KEYS.page, 0);
+  const rowsPerPage = getNumber(CONTENT_URL_KEYS.rowsPerPage, 10);
 
-  const [searchInput, setSearchInput] = useState(search);
-  const debouncedSearch = useDebounce(searchInput, 300);
-  useEffect(() => {
-    if (debouncedSearch !== search) {
-      setMany({ q: debouncedSearch || null, p: 0 });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch]);
+  const [searchInput, setSearchInput] = useDebouncedUrlSearch(search, setMany);
 
   const [publishItem, setPublishItem] = useState<{ id: string; title: string } | null>(null);
   const [resendItem, setResendItem] = useState<{
@@ -80,7 +77,7 @@ export function NoticeTable() {
     page: page + 1,
     limit: rowsPerPage,
     ...(status ? { status } : {}),
-    ...(debouncedSearch ? { search: debouncedSearch } : {}),
+    ...(search ? { search } : {}),
   });
 
   const deleteNotice = useDeleteNotice();
@@ -140,8 +137,11 @@ export function NoticeTable() {
             setSearchInput(next.search);
             return;
           }
-          const update: Record<string, string | null> = { p: '0' };
-          if (next.status !== undefined) update.status = next.status || null;
+          const update: Record<string, string | null> = {
+            [CONTENT_URL_KEYS.page]: '0',
+          };
+          if (next.status !== undefined)
+            update[CONTENT_URL_KEYS.status] = next.status || null;
           setMany(update);
         }}
         hideCategory

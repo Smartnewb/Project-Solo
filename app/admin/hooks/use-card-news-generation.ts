@@ -16,12 +16,17 @@ export function useQueueStats(refetchMs = 5000) {
   });
 }
 
+const TERMINAL_JOB_STATES = new Set(['completed', 'failed']);
+
 export function useJobStatus(jobId: string | null, refetchMs = 2000) {
   return useQuery({
     queryKey: generationKeys.job(jobId ?? ''),
     queryFn: () => AdminService.cardNewsGeneration.status(jobId!),
     enabled: !!jobId,
-    refetchInterval: refetchMs,
+    refetchInterval: (q) => {
+      const state = q.state.data?.state;
+      return state && TERMINAL_JOB_STATES.has(state) ? false : refetchMs;
+    },
   });
 }
 

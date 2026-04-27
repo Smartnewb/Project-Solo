@@ -1,6 +1,13 @@
 export const CONTENT_TYPES = ['card-series', 'longform', 'article', 'notice'] as const;
 export type ContentType = (typeof CONTENT_TYPES)[number];
 
+export const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
+  'card-series': '카드시리즈',
+  longform: '롱폼 아티클',
+  article: '아티클',
+  notice: '공지사항',
+};
+
 export const NEW_CATEGORY_OPTIONS = [
   { code: 'relationship', label: '연애' },
   { code: 'dating', label: '데이트' },
