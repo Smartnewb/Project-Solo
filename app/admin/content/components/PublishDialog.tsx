@@ -44,16 +44,17 @@ export function PublishDialog({ open, onClose, type, item, onPublished }: Props)
 
   useEffect(() => {
     if (open) {
-      setPushEnabled(true);
+      setPushEnabled(type !== 'article');
       setPushTitle('');
       setPushMessage('');
     }
-  }, [open, item?.id]);
+  }, [open, item?.id, type]);
 
   const isPending =
     publishCardNews.isPending || updateArticle.isPending || publishNotice.isPending;
 
   const validate = () => {
+    if (type === 'article') return true;
     if (!pushEnabled) return true;
     if (!pushMessage.trim()) {
       toast.error('푸시 알림 메시지를 입력해주세요.');
@@ -151,41 +152,49 @@ export function PublishDialog({ open, onClose, type, item, onPublished }: Props)
           </Box>
         )}
 
-        <FormControlLabel
-          control={
-            <Switch
-              checked={pushEnabled}
-              onChange={(e) => setPushEnabled(e.target.checked)}
-            />
-          }
-          label="푸시 알림 함께 발송"
-          sx={{ mb: 1 }}
-        />
-
-        {pushEnabled && (
+        {type === 'article' ? (
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            아티클은 발행 시 푸시 알림이 발송되지 않습니다.
+          </Typography>
+        ) : (
           <>
-            <TextField
-              fullWidth
-              size="small"
-              label="푸시 알림 제목 (선택)"
-              value={pushTitle}
-              onChange={(e) => setPushTitle(e.target.value)}
-              inputProps={{ maxLength: 50 }}
-              helperText={`${pushTitle.length}/50자 | 비워두면 콘텐츠 제목이 사용됩니다.`}
-              sx={{ mb: 2 }}
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={pushEnabled}
+                  onChange={(e) => setPushEnabled(e.target.checked)}
+                />
+              }
+              label="푸시 알림 함께 발송"
+              sx={{ mb: 1 }}
             />
-            <TextField
-              fullWidth
-              size="small"
-              label="푸시 알림 메시지"
-              value={pushMessage}
-              onChange={(e) => setPushMessage(e.target.value)}
-              inputProps={{ maxLength: 100 }}
-              helperText={`${pushMessage.length}/100자 | 필수 항목입니다.`}
-              multiline
-              rows={2}
-              error={!pushMessage.trim()}
-            />
+
+            {pushEnabled && (
+              <>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="푸시 알림 제목 (선택)"
+                  value={pushTitle}
+                  onChange={(e) => setPushTitle(e.target.value)}
+                  inputProps={{ maxLength: 50 }}
+                  helperText={`${pushTitle.length}/50자 | 비워두면 콘텐츠 제목이 사용됩니다.`}
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="푸시 알림 메시지"
+                  value={pushMessage}
+                  onChange={(e) => setPushMessage(e.target.value)}
+                  inputProps={{ maxLength: 100 }}
+                  helperText={`${pushMessage.length}/100자 | 필수 항목입니다.`}
+                  multiline
+                  rows={2}
+                  error={!pushMessage.trim()}
+                />
+              </>
+            )}
           </>
         )}
       </DialogContent>
@@ -197,7 +206,9 @@ export function PublishDialog({ open, onClose, type, item, onPublished }: Props)
           onClick={handleConfirm}
           color="primary"
           variant="contained"
-          disabled={isPending || (pushEnabled && !pushMessage.trim())}
+          disabled={
+            isPending || (type !== 'article' && pushEnabled && !pushMessage.trim())
+          }
         >
           {isPending ? '발행 중...' : '발행'}
         </Button>
