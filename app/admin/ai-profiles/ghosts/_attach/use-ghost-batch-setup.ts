@@ -8,6 +8,14 @@ import type {
 	ReferenceMatch,
 } from '@/app/types/ghost-injection';
 
+export type GhostBatchMode = ImageSource;
+
+export interface UploadedPhotoLocal {
+	s3Url: string;
+	filename: string;
+	sizeBytes: number;
+}
+
 export interface PoolFilterState {
 	tagMood?: string;
 	tagSetting?: string;
@@ -16,26 +24,32 @@ export interface PoolFilterState {
 }
 
 export interface GhostBatchSetupState {
+	step: 1 | 2;
+	mode: GhostBatchMode | null;
 	count: number;
 	ageBucket: AgeBucket | null;
-	imageSource: ImageSource;
 	vendor: ImageVendor | null;
 	matches: Map<number, ReferenceMatch>;
 	activeSlotIndex: number;
 	poolFilter: PoolFilterState;
+	uploaded: UploadedPhotoLocal[];
+	uploadAssignments: Map<number, [string, string, string]>;
 }
 
 const INITIAL: GhostBatchSetupState = {
+	step: 1,
+	mode: null,
 	count: 1,
 	ageBucket: null,
-	imageSource: 'generate',
 	vendor: 'seedream',
 	matches: new Map(),
 	activeSlotIndex: 0,
 	poolFilter: { sortBy: 'usage_asc' },
+	uploaded: [],
+	uploadAssignments: new Map(),
 };
 
-const SLOT_PHOTO_LIMIT = 3;
+export const SLOT_PHOTO_LIMIT = 3;
 
 function asTuple(ids: string[]): ReferenceMatch['photoIds'] {
 	return ids as unknown as ReferenceMatch['photoIds'];
@@ -68,6 +82,14 @@ export function useGhostBatchSetup() {
 		return set;
 	}, [state.matches]);
 
+	const usedUploadUrls = useMemo(() => {
+		const set = new Set<string>();
+		for (const urls of state.uploadAssignments.values()) {
+			for (const url of urls) set.add(url);
+		}
+		return set;
+	}, [state.uploadAssignments]);
+
 	const setCount = useCallback((next: number) => {
 		setState((s) => {
 			if (next === s.count) return s;
@@ -75,17 +97,43 @@ export function useGhostBatchSetup() {
 			for (const idx of [...trimmed.keys()]) {
 				if (idx >= next) trimmed.delete(idx);
 			}
+			const trimmedUploads = new Map(s.uploadAssignments);
+			for (const idx of [...trimmedUploads.keys()]) {
+				if (idx >= next) trimmedUploads.delete(idx);
+			}
 			return {
 				...s,
 				count: next,
 				matches: trimmed,
+				uploadAssignments: trimmedUploads,
 				activeSlotIndex: Math.min(s.activeSlotIndex, Math.max(0, next - 1)),
 			};
 		});
 	}, []);
 
-	const setImageSource = useCallback((next: ImageSource) => {
-		setState((s) => (s.imageSource === next ? s : { ...s, imageSource: next }));
+	const setMode = useCallback((next: GhostBatchMode | null) => {
+		setState((s) => {
+			if (s.mode === next) return s;
+			const isolatedVendor =
+				next === 'generate' ? (s.vendor ?? 'seedream') : s.vendor;
+			return {
+				...s,
+				mode: next,
+				vendor: isolatedVendor,
+			};
+		});
+	}, []);
+
+	const goToStep2 = useCallback(() => {
+		setState((s) => {
+			if (s.mode === null) return s;
+			if (s.step === 2) return s;
+			return { ...s, step: 2 };
+		});
+	}, []);
+
+	const goToStep1 = useCallback(() => {
+		setState((s) => (s.step === 1 ? s : { ...s, step: 1 }));
 	}, []);
 
 	const setAgeBucket = useCallback((next: AgeBucket | null) => {
@@ -105,7 +153,7 @@ export function useGhostBatchSetup() {
 
 	const addPhotoToActiveSlot = useCallback((photoId: string) => {
 		setState((s) => {
-			if (s.imageSource !== 'reference-pool') return s;
+			if (s.mode !== 'reference-pool') return s;
 			const idx = s.activeSlotIndex;
 			const current = s.matches.get(idx)?.photoIds ?? [];
 			if (current.length >= SLOT_PHOTO_LIMIT) return s;
@@ -157,23 +205,115 @@ export function useGhostBatchSetup() {
 		setState((s) => (s.poolFilter === next ? s : { ...s, poolFilter: next }));
 	}, []);
 
+	const addUploads = useCallback((items: UploadedPhotoLocal[]) => {
+		if (items.length === 0) return;
+		setState((s) => {
+			const seen = new Set(s.uploaded.map((u) => u.s3Url));
+			const fresh = items.filter((it) => !seen.has(it.s3Url));
+			if (fresh.length === 0) return s;
+			return { ...s, uploaded: [...s.uploaded, ...fresh] };
+		});
+	}, []);
+
+	const removeUpload = useCallback((s3Url: string) => {
+		setState((s) => {
+			if (!s.uploaded.some((u) => u.s3Url === s3Url)) return s;
+			const nextUploaded = s.uploaded.filter((u) => u.s3Url !== s3Url);
+			const nextAssignments = new Map(s.uploadAssignments);
+			for (const [idx, urls] of [...nextAssignments.entries()]) {
+				if (urls.includes(s3Url)) nextAssignments.delete(idx);
+			}
+			return { ...s, uploaded: nextUploaded, uploadAssignments: nextAssignments };
+		});
+	}, []);
+
+	const assignToSlot = useCallback(
+		(itemIndex: number, s3Urls: [string, string, string]) => {
+			setState((s) => {
+				if (itemIndex < 0 || itemIndex >= s.count) return s;
+				const uploadedSet = new Set(s.uploaded.map((u) => u.s3Url));
+				if (!s3Urls.every((u) => uploadedSet.has(u))) return s;
+				const usedElsewhere = new Set<string>();
+				for (const [idx, urls] of s.uploadAssignments.entries()) {
+					if (idx === itemIndex) continue;
+					for (const u of urls) usedElsewhere.add(u);
+				}
+				if (s3Urls.some((u) => usedElsewhere.has(u))) return s;
+				if (new Set(s3Urls).size !== 3) return s;
+				const next = new Map(s.uploadAssignments);
+				next.set(itemIndex, s3Urls);
+				return { ...s, uploadAssignments: next };
+			});
+		},
+		[],
+	);
+
+	const clearAssignment = useCallback((itemIndex: number) => {
+		setState((s) => {
+			if (!s.uploadAssignments.has(itemIndex)) return s;
+			const next = new Map(s.uploadAssignments);
+			next.delete(itemIndex);
+			return { ...s, uploadAssignments: next };
+		});
+	}, []);
+
+	const autoDistribute = useCallback(() => {
+		setState((s) => {
+			const next = new Map<number, [string, string, string]>();
+			const urls = s.uploaded.map((u) => u.s3Url);
+			for (let i = 0; i < s.count; i += 1) {
+				const slice = urls.slice(i * SLOT_PHOTO_LIMIT, i * SLOT_PHOTO_LIMIT + SLOT_PHOTO_LIMIT);
+				if (slice.length !== SLOT_PHOTO_LIMIT) break;
+				next.set(i, [slice[0], slice[1], slice[2]]);
+			}
+			return { ...s, uploadAssignments: next };
+		});
+	}, []);
+
+	const clearUploads = useCallback(() => {
+		setState((s) => {
+			if (s.uploaded.length === 0 && s.uploadAssignments.size === 0) return s;
+			return { ...s, uploaded: [], uploadAssignments: new Map() };
+		});
+	}, []);
+
 	const isReady = useMemo(() => {
-		if (state.imageSource === 'generate') return Boolean(state.vendor);
-		if (state.matches.size !== state.count) return false;
-		const flat = [...state.matches.values()].flatMap((m) => m.photoIds);
-		const expected = state.count * SLOT_PHOTO_LIMIT;
-		if (flat.length !== expected) return false;
+		if (state.mode === null) return false;
+		if (state.step !== 2) return false;
+		if (state.mode === 'generate') return Boolean(state.vendor);
+		if (state.mode === 'reference-pool') {
+			if (state.matches.size !== state.count) return false;
+			const flat = [...state.matches.values()].flatMap((m) => m.photoIds);
+			const expected = state.count * SLOT_PHOTO_LIMIT;
+			if (flat.length !== expected) return false;
+			return new Set(flat).size === flat.length;
+		}
+		// manual-upload
+		if (state.uploadAssignments.size !== state.count) return false;
+		const flat = [...state.uploadAssignments.values()].flat();
+		if (flat.length !== state.count * SLOT_PHOTO_LIMIT) return false;
 		return new Set(flat).size === flat.length;
-	}, [state.imageSource, state.vendor, state.matches, state.count]);
+	}, [
+		state.mode,
+		state.step,
+		state.vendor,
+		state.matches,
+		state.count,
+		state.uploadAssignments,
+	]);
 
 	const reset = useCallback(() => setState(INITIAL), []);
 
 	return {
 		state,
+		imageSource: (state.mode ?? 'generate') as ImageSource,
 		usedPhotoIds,
+		usedUploadUrls,
 		isReady,
 		setCount,
-		setImageSource,
+		setMode,
+		goToStep1,
+		goToStep2,
 		setAgeBucket,
 		setVendor,
 		setActiveSlot,
@@ -182,6 +322,12 @@ export function useGhostBatchSetup() {
 		mergeMatches,
 		resetMatches,
 		setPoolFilter,
+		addUploads,
+		removeUpload,
+		assignToSlot,
+		clearAssignment,
+		autoDistribute,
+		clearUploads,
 		reset,
 	};
 }

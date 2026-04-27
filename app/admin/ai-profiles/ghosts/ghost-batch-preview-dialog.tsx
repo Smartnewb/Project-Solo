@@ -1,11 +1,18 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { CheckSquare, Loader2, Minus, Plus, Square, Trash2 } from 'lucide-react';
+import {
+	ArrowLeft,
+	CheckSquare,
+	Loader2,
+	Minus,
+	Plus,
+	Square,
+	Trash2,
+} from 'lucide-react';
 import { ghostInjection } from '@/app/services/admin/ghost-injection';
 import type {
-	AgeBucket,
 	BatchCreateResult,
 	BatchPreviewItem,
 	BatchPreviewRoot,
@@ -13,6 +20,7 @@ import type {
 	ImageVendor,
 	PatchBatchPreviewItemBody,
 	ReferenceMatch,
+	UploadedPhotoMatch,
 } from '@/app/types/ghost-injection';
 import { AdminApiError, getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
 import { useToast } from '@/shared/ui/admin/toast';
@@ -33,7 +41,13 @@ import { ghostInjectionKeys } from '../_shared/query-keys';
 import { ReasonInput, isReasonValid } from '../_shared/reason-input';
 import { VendorRadioGroup } from '../_shared/vendor-radio-group';
 import { AttachSetupPanel } from './_attach/attach-setup-panel';
-import { useGhostBatchSetup } from './_attach/use-ghost-batch-setup';
+import { ModeSelectStep } from './_attach/mode-select-step';
+import { UploadSlotGrid } from './_attach/upload-slot-grid';
+import { UploadZone } from './_attach/upload-zone';
+import {
+	SLOT_PHOTO_LIMIT,
+	useGhostBatchSetup,
+} from './_attach/use-ghost-batch-setup';
 import {
 	ResultPhase,
 	toEditableCard,
@@ -49,18 +63,11 @@ const STAGE_LABELS: Record<'profile' | 'persona' | 'slot-prompt' | 'attach', str
 	attach: '사진 매칭',
 };
 
-const IMAGE_SOURCE_OPTIONS: ReadonlyArray<{
-	value: ImageSource;
-	title: string;
-	subtitle: string;
-}> = [
-	{ value: 'generate', title: 'AI 생성', subtitle: 'Seedream / gpt-image-2' },
-	{
-		value: 'reference-pool',
-		title: '참조 풀에서 선택',
-		subtitle: '기존 사진 부착 · ~3초',
-	},
-];
+const FOOTER_TEXT_BY_MODE: Record<ImageSource, (count: number) => string> = {
+	generate: (n) => `AI가 ${n}개의 프로필과 각 슬롯의 이미지 프롬프트를 생성합니다.`,
+	'reference-pool': (n) => `참조 풀에서 ${n}개 슬롯에 사진을 부착합니다.`,
+	'manual-upload': (n) => `업로드한 이미지를 ${n}개 페르소나에 매핑합니다.`,
+};
 
 type Phase = 'setup' | 'review' | 'confirming' | 'result';
 
@@ -77,7 +84,7 @@ export function GhostBatchPreviewDialog({
 	const queryClient = useQueryClient();
 
 	const setup = useGhostBatchSetup();
-	const { state: setupState, isReady: setupReady, usedPhotoIds } = setup;
+	const { state: setupState, usedPhotoIds } = setup;
 
 	const [phase, setPhase] = useState<Phase>('setup');
 	const [vendorId, setVendorId] = useState(DEFAULT_VENDOR_ID);
@@ -117,12 +124,23 @@ export function GhostBatchPreviewDialog({
 	const createMutation = useMutation({
 		mutationFn: () => {
 			const ageHint = ageBucketToHint(setupState.ageBucket);
-			if (setupState.imageSource === 'reference-pool') {
+			if (setupState.mode === 'reference-pool') {
 				const matches = Array.from(setupState.matches.values()) as ReferenceMatch[];
 				return ghostInjection.createBatchPreview({
 					count: setupState.count,
 					imageSource: 'reference-pool',
 					referenceMatches: matches,
+					ageHint,
+				});
+			}
+			if (setupState.mode === 'manual-upload') {
+				const uploadedPhotos: UploadedPhotoMatch[] = Array.from(
+					setupState.uploadAssignments.entries(),
+				).map(([itemIndex, s3Urls]) => ({ itemIndex, s3Urls }));
+				return ghostInjection.createBatchPreview({
+					count: setupState.count,
+					imageSource: 'manual-upload',
+					uploadedPhotos,
 					ageHint,
 				});
 			}
@@ -137,7 +155,7 @@ export function GhostBatchPreviewDialog({
 		},
 		onSuccess: (data) => {
 			setPreviewRoot(data);
-			setPreviewImageSource(setupState.imageSource);
+			setPreviewImageSource(setupState.mode ?? 'generate');
 			setSelectedIds(new Set(Object.keys(data.items)));
 			setPhase('review');
 		},
@@ -291,14 +309,14 @@ export function GhostBatchPreviewDialog({
 	const allSelected =
 		itemsList.length > 0 && selectedIds.size === itemsList.length;
 
-	const handleToggleSelect = (itemId: string) => {
+	const handleToggleSelect = useCallback((itemId: string) => {
 		setSelectedIds((prev) => {
 			const next = new Set(prev);
 			if (next.has(itemId)) next.delete(itemId);
 			else next.add(itemId);
 			return next;
 		});
-	};
+	}, []);
 
 	const handleToggleSelectAll = () => {
 		if (allSelected) {
@@ -308,37 +326,38 @@ export function GhostBatchPreviewDialog({
 		}
 	};
 
-	const handleEditSlot = (
-		itemId: string,
-		slotIndex: 0 | 1 | 2,
-		nextPrompt: string,
-	) => {
-		patchMutation.mutate({
-			itemId,
-			body: {
-				action: 'edit',
-				slotPrompts: [{ slotIndex, prompt: nextPrompt }],
-			},
-		});
-	};
+	const handleEditSlot = useCallback(
+		(itemId: string, slotIndex: 0 | 1 | 2, nextPrompt: string) => {
+			patchMutation.mutate({
+				itemId,
+				body: {
+					action: 'edit',
+					slotPrompts: [{ slotIndex, prompt: nextPrompt }],
+				},
+			});
+		},
+		[patchMutation],
+	);
 
-	const handleRegenerateItem = (itemId: string) => {
-		patchMutation.mutate({
-			itemId,
-			body: { action: 'regenerate', preserveProfile: true },
-		});
-	};
+	const handleRegenerateItem = useCallback(
+		(itemId: string) => {
+			patchMutation.mutate({
+				itemId,
+				body: { action: 'regenerate', preserveProfile: true },
+			});
+		},
+		[patchMutation],
+	);
 
-	const handleReplacePhoto = (
-		itemId: string,
-		slotIndex: 0 | 1 | 2,
-		newPhotoId: string,
-	) => {
-		patchMutation.mutate({
-			itemId,
-			body: { action: 'replace-photo', slotIndex, newPhotoId },
-		});
-	};
+	const handleReplacePhoto = useCallback(
+		(itemId: string, slotIndex: 0 | 1 | 2, newPhotoId: string) => {
+			patchMutation.mutate({
+				itemId,
+				body: { action: 'replace-photo', slotIndex, newPhotoId },
+			});
+		},
+		[patchMutation],
+	);
 
 	const isBusy =
 		createMutation.isPending ||
@@ -370,15 +389,8 @@ export function GhostBatchPreviewDialog({
 			<DialogContent className="flex h-[92vh] max-w-7xl flex-col p-0">
 				{phase === 'setup' ? (
 					<SetupPhase
-						count={setupState.count}
-						setCount={setup.setCount}
 						vendorId={vendorId}
 						setVendorId={setVendorId}
-						imageSource={setupState.imageSource}
-						setImageSource={setup.setImageSource}
-						ageBucket={setupState.ageBucket}
-						setAgeBucket={setup.setAgeBucket}
-						setupReady={setupReady}
 						setupState={setupState}
 						setup={setup}
 						usedPhotoIds={usedPhotoIds}
@@ -580,6 +592,7 @@ export function GhostBatchPreviewDialog({
 						failedItems={failedItems}
 						expandedIdx={expandedIdx}
 						setExpandedIdx={setExpandedIdx}
+						imageSource={previewImageSource}
 						updateCard={(idx, patch) =>
 							setResultCards((prev) => {
 								const next = [...prev];
@@ -608,15 +621,8 @@ export function GhostBatchPreviewDialog({
 }
 
 interface SetupPhaseProps {
-	count: number;
-	setCount: (next: number) => void;
 	vendorId: string;
 	setVendorId: (next: string) => void;
-	imageSource: ImageSource;
-	setImageSource: (next: ImageSource) => void;
-	ageBucket: AgeBucket | null;
-	setAgeBucket: (next: AgeBucket | null) => void;
-	setupReady: boolean;
 	setupState: ReturnType<typeof useGhostBatchSetup>['state'];
 	setup: ReturnType<typeof useGhostBatchSetup>;
 	usedPhotoIds: Set<string>;
@@ -626,15 +632,8 @@ interface SetupPhaseProps {
 }
 
 function SetupPhase({
-	count,
-	setCount,
 	vendorId,
 	setVendorId,
-	imageSource,
-	setImageSource,
-	ageBucket,
-	setAgeBucket,
-	setupReady,
 	setupState,
 	setup,
 	usedPhotoIds,
@@ -642,38 +641,9 @@ function SetupPhase({
 	onCancel,
 	onSubmit,
 }: SetupPhaseProps) {
+	const { count, mode, step, ageBucket } = setupState;
+	const setupReady = setup.isReady;
 	const canSubmit = count >= 1 && count <= 50 && !isPending && setupReady;
-	const isPool = imageSource === 'reference-pool';
-
-	const sourceRadios = (
-		<div className="space-y-1">
-			<Label className="text-sm font-semibold text-slate-800">이미지 소스 *</Label>
-			<div className="flex gap-3">
-				{IMAGE_SOURCE_OPTIONS.map((opt) => (
-					<label
-						key={opt.value}
-						className={cn(
-							'flex flex-1 cursor-pointer items-center gap-2 rounded-md border p-3 transition',
-							imageSource === opt.value
-								? 'border-slate-900 bg-slate-50'
-								: 'border-slate-200 hover:border-slate-400',
-						)}
-					>
-						<input
-							type="radio"
-							name="image-source"
-							checked={imageSource === opt.value}
-							onChange={() => setImageSource(opt.value)}
-						/>
-						<div>
-							<p className="text-sm font-medium">{opt.title}</p>
-							<p className="text-xs text-slate-500">{opt.subtitle}</p>
-						</div>
-					</label>
-				))}
-			</div>
-		</div>
-	);
 
 	const countControl = (
 		<div className="space-y-1">
@@ -684,7 +654,7 @@ function SetupPhase({
 					size="icon"
 					className="h-9 w-9"
 					disabled={count <= 1}
-					onClick={() => setCount(Math.max(1, count - 1))}
+					onClick={() => setup.setCount(Math.max(1, count - 1))}
 				>
 					<Minus className="h-3 w-3" />
 				</Button>
@@ -696,7 +666,7 @@ function SetupPhase({
 					onChange={(event) => {
 						const value = Number(event.target.value);
 						if (Number.isFinite(value) && value >= 1 && value <= 50) {
-							setCount(value);
+							setup.setCount(value);
 						}
 					}}
 					className={cn('h-9 w-20 text-center tabular-nums')}
@@ -706,7 +676,7 @@ function SetupPhase({
 					size="icon"
 					className="h-9 w-9"
 					disabled={count >= 50}
-					onClick={() => setCount(Math.min(50, count + 1))}
+					onClick={() => setup.setCount(Math.min(50, count + 1))}
 				>
 					<Plus className="h-3 w-3" />
 				</Button>
@@ -718,28 +688,123 @@ function SetupPhase({
 	const ageBucketControl = (
 		<AgeBucketSelect
 			value={ageBucket ?? undefined}
-			onChange={(v) => setAgeBucket(v ?? null)}
+			onChange={(v) => setup.setAgeBucket(v ?? null)}
 		/>
 	);
+
+	const isStep1 = step === 1 || mode === null;
 
 	return (
 		<div className="flex flex-1 flex-col overflow-hidden">
 			<div className="border-b px-6 py-4">
-				<h2 className="text-lg font-semibold text-slate-900">
-					가상 프로필 미리보기 생성
-				</h2>
+				<div className="flex items-center gap-2">
+					{!isStep1 ? (
+						<Button
+							size="sm"
+							variant="ghost"
+							className="h-7 px-2 text-slate-600"
+							onClick={() => setup.goToStep1()}
+							disabled={isPending}
+						>
+							<ArrowLeft className="mr-1 h-3.5 w-3.5" />
+							모드 변경
+						</Button>
+					) : null}
+					<h2 className="text-lg font-semibold text-slate-900">
+						가상 프로필 미리보기 생성
+					</h2>
+				</div>
 				<p className="mt-1 text-sm text-slate-500">
-					프롬프트 검토 후 선택한 항목만 실제 프로필로 생성합니다.
+					{isStep1
+						? '먼저 생성 방식을 선택하세요. 다음 단계에서 세부 옵션을 설정합니다.'
+						: '프롬프트 검토 후 선택한 항목만 실제 프로필로 생성합니다.'}
 				</p>
 			</div>
 
-			{isPool ? (
+			{isStep1 ? (
+				<div className="flex-1 overflow-y-auto px-6 py-6">
+					<div className="mx-auto max-w-4xl">
+						<ModeSelectStep
+							selected={mode}
+							onSelect={(next) => {
+								setup.setMode(next);
+								setup.goToStep2();
+							}}
+						/>
+					</div>
+				</div>
+			) : (
+				<Step2Body
+					mode={mode as ImageSource}
+					setupState={setupState}
+					setup={setup}
+					usedPhotoIds={usedPhotoIds}
+					vendorId={vendorId}
+					setVendorId={setVendorId}
+					countControl={countControl}
+					ageBucketControl={ageBucketControl}
+				/>
+			)}
+
+			<div className="flex items-center justify-between border-t px-6 py-4">
+				<p className="text-xs text-slate-500">
+					{isStep1
+						? '방식을 선택하면 다음 단계로 이동합니다.'
+						: mode
+							? FOOTER_TEXT_BY_MODE[mode](count)
+							: ''}
+				</p>
+				<div className="flex items-center gap-2">
+					<Button variant="outline" onClick={onCancel}>
+						취소
+					</Button>
+					{!isStep1 ? (
+						<Button onClick={onSubmit} disabled={!canSubmit}>
+							{isPending ? (
+								<>
+									<Loader2 className="mr-1 h-4 w-4 animate-spin" />
+									생성 중…
+								</>
+							) : (
+								`${count}개 미리보기 생성`
+							)}
+						</Button>
+					) : null}
+				</div>
+			</div>
+		</div>
+	);
+}
+
+interface Step2BodyProps {
+	mode: ImageSource;
+	setupState: ReturnType<typeof useGhostBatchSetup>['state'];
+	setup: ReturnType<typeof useGhostBatchSetup>;
+	usedPhotoIds: Set<string>;
+	vendorId: string;
+	setVendorId: (next: string) => void;
+	countControl: React.ReactNode;
+	ageBucketControl: React.ReactNode;
+}
+
+function Step2Body({
+	mode,
+	setupState,
+	setup,
+	usedPhotoIds,
+	vendorId,
+	setVendorId,
+	countControl,
+	ageBucketControl,
+}: Step2BodyProps) {
+	switch (mode) {
+		case 'reference-pool':
+			return (
 				<>
 					<div className="border-b px-6 py-4">
-						<div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+						<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 							{countControl}
 							{ageBucketControl}
-							{sourceRadios}
 						</div>
 					</div>
 					<div className="flex-1 overflow-hidden">
@@ -759,12 +824,49 @@ function SetupPhase({
 						/>
 					</div>
 				</>
-			) : (
+			);
+		case 'manual-upload':
+			return (
+				<div className="flex-1 overflow-y-auto px-6 py-6">
+					<div className="mx-auto max-w-4xl space-y-6">
+						<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+							{countControl}
+							{ageBucketControl}
+						</div>
+						<div className="border-t pt-5">
+							<UploadZone
+								uploaded={setupState.uploaded}
+								remainingNeeded={Math.max(
+									0,
+									setupState.count * SLOT_PHOTO_LIMIT - setupState.uploaded.length,
+								)}
+								totalNeeded={setupState.count * SLOT_PHOTO_LIMIT}
+								onUploadComplete={setup.addUploads}
+								onRemove={setup.removeUpload}
+								onClearAll={setup.clearUploads}
+							/>
+						</div>
+						<div className="border-t pt-5">
+							<UploadSlotGrid
+								count={setupState.count}
+								uploaded={setupState.uploaded}
+								assignments={setupState.uploadAssignments}
+								usedUrls={setup.usedUploadUrls}
+								onAssign={setup.assignToSlot}
+								onClearAssignment={setup.clearAssignment}
+								onAutoDistribute={setup.autoDistribute}
+							/>
+						</div>
+					</div>
+				</div>
+			);
+		case 'generate':
+		default:
+			return (
 				<div className="flex-1 overflow-y-auto px-6 py-6">
 					<div className="mx-auto max-w-3xl space-y-6">
 						{countControl}
 						{ageBucketControl}
-						{sourceRadios}
 						<div className="border-t pt-5">
 							<VendorRadioGroup
 								selectedId={vendorId}
@@ -774,32 +876,8 @@ function SetupPhase({
 						</div>
 					</div>
 				</div>
-			)}
-
-			<div className="flex items-center justify-between border-t px-6 py-4">
-				<p className="text-xs text-slate-500">
-					{isPool
-						? `참조 풀에서 ${count}개 슬롯에 사진을 부착합니다.`
-						: `AI가 ${count}개의 프로필과 각 슬롯의 이미지 프롬프트를 생성합니다.`}
-				</p>
-				<div className="flex items-center gap-2">
-					<Button variant="outline" onClick={onCancel}>
-						취소
-					</Button>
-					<Button onClick={onSubmit} disabled={!canSubmit}>
-						{isPending ? (
-							<>
-								<Loader2 className="mr-1 h-4 w-4 animate-spin" />
-								생성 중…
-							</>
-						) : (
-							`${count}개 미리보기 생성`
-						)}
-					</Button>
-				</div>
-			</div>
-		</div>
-	);
+			);
+	}
 }
 
 function ExpiryCountdown({ expiresAt }: { expiresAt: string }) {

@@ -586,6 +586,7 @@ export interface BatchPreviewRoot {
 	createdAt: string;
 	expiresAt: string;
 	items: Record<string, BatchPreviewItem>;
+	uploadedPhotos?: UploadedPhotoMatch[];
 }
 
 export interface CreateBatchPreviewBody {
@@ -595,6 +596,7 @@ export interface CreateBatchPreviewBody {
 	imageSource?: ImageSource;
 	vendor?: ImageVendor;
 	referenceMatches?: ReferenceMatch[];
+	uploadedPhotos?: UploadedPhotoMatch[];
 }
 
 export type PatchBatchPreviewItemBody =
@@ -610,7 +612,8 @@ export type PatchBatchPreviewItemBody =
 	| {
 			action: 'replace-photo';
 			slotIndex: 0 | 1 | 2;
-			newPhotoId: string;
+			newPhotoId?: string;
+			newS3Url?: string;
 	  };
 
 export interface ConfirmBatchPreviewBody {
@@ -621,11 +624,26 @@ export interface ConfirmBatchPreviewBody {
 
 // ─── Reference-Pool Attach (Option C) ────────────────────
 
-export type ImageSource = 'generate' | 'reference-pool';
+export type ImageSource = 'generate' | 'reference-pool' | 'manual-upload';
 
 export interface ReferenceMatch {
 	itemIndex: number;
 	photoIds: [string, string, string];
+}
+
+export interface UploadedPhotoMatch {
+	itemIndex: number;
+	s3Urls: [string, string, string];
+}
+
+export interface UploadedPhotoResult {
+	s3Url: string;
+	filename: string;
+	sizeBytes: number;
+}
+
+export interface UploadPhotosResponse {
+	uploads: UploadedPhotoResult[];
 }
 
 export interface ReferencePoolFacetEntry {
