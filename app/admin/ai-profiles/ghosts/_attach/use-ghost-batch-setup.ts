@@ -55,10 +55,6 @@ function asTuple(ids: string[]): ReferenceMatch['photoIds'] {
 	return ids as unknown as ReferenceMatch['photoIds'];
 }
 
-function asUploadTuple(urls: string[]): [string, string, string] {
-	return urls as unknown as [string, string, string];
-}
-
 function pickNextActiveSlot(
 	matches: Map<number, ReferenceMatch>,
 	count: number,
@@ -266,9 +262,9 @@ export function useGhostBatchSetup() {
 			const next = new Map<number, [string, string, string]>();
 			const urls = s.uploaded.map((u) => u.s3Url);
 			for (let i = 0; i < s.count; i += 1) {
-				const slice = urls.slice(i * 3, i * 3 + 3);
-				if (slice.length !== 3) break;
-				next.set(i, asUploadTuple(slice));
+				const slice = urls.slice(i * SLOT_PHOTO_LIMIT, i * SLOT_PHOTO_LIMIT + SLOT_PHOTO_LIMIT);
+				if (slice.length !== SLOT_PHOTO_LIMIT) break;
+				next.set(i, [slice[0], slice[1], slice[2]]);
 			}
 			return { ...s, uploadAssignments: next };
 		});

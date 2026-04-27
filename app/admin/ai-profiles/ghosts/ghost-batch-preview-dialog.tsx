@@ -527,7 +527,6 @@ export function GhostBatchPreviewDialog({
 															handleReplacePhoto(item.itemId, slotIndex, newPhotoId)
 													: undefined
 											}
-											/* manual-upload: re-uploading slots not supported in MVP */
 											isSaving={
 												pendingItemId === item.itemId && pendingAction === 'edit'
 											}
