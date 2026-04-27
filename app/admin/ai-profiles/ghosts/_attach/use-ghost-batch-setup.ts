@@ -90,26 +90,51 @@ export function useGhostBatchSetup() {
 		return set;
 	}, [state.uploadAssignments]);
 
-	const setCount = useCallback((next: number) => {
-		setState((s) => {
-			if (next === s.count) return s;
-			const trimmed = new Map(s.matches);
-			for (const idx of [...trimmed.keys()]) {
-				if (idx >= next) trimmed.delete(idx);
-			}
-			const trimmedUploads = new Map(s.uploadAssignments);
-			for (const idx of [...trimmedUploads.keys()]) {
-				if (idx >= next) trimmedUploads.delete(idx);
-			}
-			return {
-				...s,
-				count: next,
-				matches: trimmed,
-				uploadAssignments: trimmedUploads,
-				activeSlotIndex: Math.min(s.activeSlotIndex, Math.max(0, next - 1)),
-			};
-		});
-	}, []);
+	const setCount = useCallback(
+		(
+			next: number,
+			onTrim?: (info: {
+				lostMatchIndices: number[];
+				lostUploadIndices: number[];
+			}) => void,
+		) => {
+			setState((s) => {
+				if (next === s.count) return s;
+				const lostMatchIndices: number[] = [];
+				const lostUploadIndices: number[] = [];
+				const trimmed = new Map(s.matches);
+				for (const idx of [...trimmed.keys()]) {
+					if (idx >= next) {
+						lostMatchIndices.push(idx);
+						trimmed.delete(idx);
+					}
+				}
+				const trimmedUploads = new Map(s.uploadAssignments);
+				for (const idx of [...trimmedUploads.keys()]) {
+					if (idx >= next) {
+						lostUploadIndices.push(idx);
+						trimmedUploads.delete(idx);
+					}
+				}
+				if (
+					onTrim &&
+					(lostMatchIndices.length > 0 || lostUploadIndices.length > 0)
+				) {
+					queueMicrotask(() =>
+						onTrim({ lostMatchIndices, lostUploadIndices }),
+					);
+				}
+				return {
+					...s,
+					count: next,
+					matches: trimmed,
+					uploadAssignments: trimmedUploads,
+					activeSlotIndex: Math.min(s.activeSlotIndex, Math.max(0, next - 1)),
+				};
+			});
+		},
+		[],
+	);
 
 	const setMode = useCallback((next: GhostBatchMode | null) => {
 		setState((s) => {

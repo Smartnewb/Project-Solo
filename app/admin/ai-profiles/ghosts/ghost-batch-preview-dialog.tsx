@@ -101,6 +101,7 @@ export function GhostBatchPreviewDialog({
 	);
 	const [resultCards, setResultCards] = useState<EditableCard[]>([]);
 	const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+	const [isUploading, setIsUploading] = useState(false);
 	const lastStreamErrorRef = useRef<string | null>(null);
 
 	useEffect(() => {
@@ -117,6 +118,7 @@ export function GhostBatchPreviewDialog({
 			setConfirmResult(null);
 			setResultCards([]);
 			setExpandedIdx(null);
+			setIsUploading(false);
 			lastStreamErrorRef.current = null;
 		}
 	}, [open, setup.reset]);
@@ -363,7 +365,8 @@ export function GhostBatchPreviewDialog({
 		createMutation.isPending ||
 		patchMutation.isPending ||
 		confirmMutation.isPending ||
-		deleteMutation.isPending;
+		deleteMutation.isPending ||
+		isUploading;
 
 	const canStartConfirm =
 		selectedIds.size > 0 &&
@@ -395,6 +398,7 @@ export function GhostBatchPreviewDialog({
 						setup={setup}
 						usedPhotoIds={usedPhotoIds}
 						isPending={createMutation.isPending}
+						onUploadPendingChange={setIsUploading}
 						onCancel={() => onOpenChange(false)}
 						onSubmit={() => createMutation.mutate()}
 					/>
@@ -627,6 +631,7 @@ interface SetupPhaseProps {
 	setup: ReturnType<typeof useGhostBatchSetup>;
 	usedPhotoIds: Set<string>;
 	isPending: boolean;
+	onUploadPendingChange: (pending: boolean) => void;
 	onCancel: () => void;
 	onSubmit: () => void;
 }
@@ -638,12 +643,30 @@ function SetupPhase({
 	setup,
 	usedPhotoIds,
 	isPending,
+	onUploadPendingChange,
 	onCancel,
 	onSubmit,
 }: SetupPhaseProps) {
+	const toast = useToast();
 	const { count, mode, step, ageBucket } = setupState;
 	const setupReady = setup.isReady;
 	const canSubmit = count >= 1 && count <= 50 && !isPending && setupReady;
+
+	const wrappedSetCount = useCallback(
+		(next: number) => {
+			setup.setCount(next, ({ lostMatchIndices, lostUploadIndices }) => {
+				const lost = [
+					...new Set([...lostUploadIndices, ...lostMatchIndices]),
+				].sort((a, b) => a - b);
+				if (lost.length > 0) {
+					toast.warning(
+						`페르소나 ${lost.map((i) => i + 1).join(', ')}의 사진 매핑이 해제되었습니다.`,
+					);
+				}
+			});
+		},
+		[setup, toast],
+	);
 
 	const countControl = (
 		<div className="space-y-1">
@@ -654,7 +677,7 @@ function SetupPhase({
 					size="icon"
 					className="h-9 w-9"
 					disabled={count <= 1}
-					onClick={() => setup.setCount(Math.max(1, count - 1))}
+					onClick={() => wrappedSetCount(Math.max(1, count - 1))}
 				>
 					<Minus className="h-3 w-3" />
 				</Button>
@@ -666,7 +689,7 @@ function SetupPhase({
 					onChange={(event) => {
 						const value = Number(event.target.value);
 						if (Number.isFinite(value) && value >= 1 && value <= 50) {
-							setup.setCount(value);
+							wrappedSetCount(value);
 						}
 					}}
 					className={cn('h-9 w-20 text-center tabular-nums')}
@@ -676,7 +699,7 @@ function SetupPhase({
 					size="icon"
 					className="h-9 w-9"
 					disabled={count >= 50}
-					onClick={() => setup.setCount(Math.min(50, count + 1))}
+					onClick={() => wrappedSetCount(Math.min(50, count + 1))}
 				>
 					<Plus className="h-3 w-3" />
 				</Button>
@@ -743,6 +766,7 @@ function SetupPhase({
 					setVendorId={setVendorId}
 					countControl={countControl}
 					ageBucketControl={ageBucketControl}
+					onUploadPendingChange={onUploadPendingChange}
 				/>
 			)}
 
@@ -785,6 +809,7 @@ interface Step2BodyProps {
 	setVendorId: (next: string) => void;
 	countControl: React.ReactNode;
 	ageBucketControl: React.ReactNode;
+	onUploadPendingChange: (pending: boolean) => void;
 }
 
 function Step2Body({
@@ -796,6 +821,7 @@ function Step2Body({
 	setVendorId,
 	countControl,
 	ageBucketControl,
+	onUploadPendingChange,
 }: Step2BodyProps) {
 	switch (mode) {
 		case 'reference-pool':
@@ -844,6 +870,7 @@ function Step2Body({
 								onUploadComplete={setup.addUploads}
 								onRemove={setup.removeUpload}
 								onClearAll={setup.clearUploads}
+								onPendingChange={onUploadPendingChange}
 							/>
 						</div>
 						<div className="border-t pt-5">

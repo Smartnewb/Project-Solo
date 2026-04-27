@@ -197,9 +197,27 @@ function SlotRow({
 								</button>
 							</PopoverTrigger>
 							<PopoverContent className="w-80 p-3" align="start">
-								<p className="mb-2 text-xs font-semibold text-slate-700">
-									페르소나 {itemIndex + 1} · 슬롯 {pos + 1} 사진 선택
+								<p className="mb-2 flex items-center justify-between text-xs">
+									<span className="font-semibold text-slate-700">
+										페르소나 {itemIndex + 1} · 슬롯 {pos + 1} 사진 선택
+									</span>
+									<span
+										className={cn(
+											'tabular-nums',
+											draftSelected.filter(Boolean).length === SLOT_PHOTO_LIMIT
+												? 'text-emerald-600'
+												: 'text-amber-600',
+										)}
+									>
+										{draftSelected.filter(Boolean).length}/{SLOT_PHOTO_LIMIT}
+									</span>
 								</p>
+								{draftSelected.filter(Boolean).length > 0 &&
+								draftSelected.filter(Boolean).length < SLOT_PHOTO_LIMIT ? (
+									<p className="mb-2 text-[11px] text-amber-600">
+										3장을 모두 선택해야 저장됩니다. 닫으면 선택이 해제됩니다.
+									</p>
+								) : null}
 								{uploaded.length === 0 ? (
 									<p className="py-4 text-center text-xs text-slate-500">
 										먼저 사진을 업로드하세요.
