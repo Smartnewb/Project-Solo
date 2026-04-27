@@ -16,7 +16,7 @@ import {
 	XCircle,
 } from 'lucide-react';
 import { ghostInjection } from '@/app/services/admin/ghost-injection';
-import type { BatchCreateResult, BatchCreateResultItem, ImageVendor } from '@/app/types/ghost-injection';
+import type { BatchCreateResult, BatchCreateResultItem, ImageSource, ImageVendor } from '@/app/types/ghost-injection';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
 import { useToast } from '@/shared/ui/admin/toast';
 import { Badge } from '@/shared/ui/badge';
@@ -259,7 +259,7 @@ function FormPhase({
 }
 
 export function ResultPhase({
-	result, cards, failedItems, expandedIdx, setExpandedIdx, updateCard, setCards, onClose, onReset,
+	result, cards, failedItems, expandedIdx, setExpandedIdx, updateCard, setCards, onClose, onReset, imageSource,
 }: {
 	result: BatchCreateResult;
 	cards: EditableCard[];
@@ -270,6 +270,7 @@ export function ResultPhase({
 	setCards: React.Dispatch<React.SetStateAction<EditableCard[]>>;
 	onClose: () => void;
 	onReset: () => void;
+	imageSource?: ImageSource;
 }) {
 	const toast = useToast();
 	const queryClient = useQueryClient();
@@ -388,6 +389,7 @@ export function ResultPhase({
 							if (next >= 0 && next < cards.length) setExpandedIdx(next);
 						}}
 						onClose={() => setExpandedIdx(null)}
+						imageSource={imageSource}
 					/>
 				)}
 			</div>
@@ -464,7 +466,7 @@ function ProfileCard({ card, isExpanded, onClick }: {
 	);
 }
 
-function EditPanel({ card, cardIdx, totalCards, updateCard, setCards, onNavigate, onClose }: {
+function EditPanel({ card, cardIdx, totalCards, updateCard, setCards, onNavigate, onClose, imageSource }: {
 	card: EditableCard;
 	cardIdx: number;
 	totalCards: number;
@@ -472,6 +474,7 @@ function EditPanel({ card, cardIdx, totalCards, updateCard, setCards, onNavigate
 	setCards: React.Dispatch<React.SetStateAction<EditableCard[]>>;
 	onNavigate: (dir: -1 | 1) => void;
 	onClose: () => void;
+	imageSource?: ImageSource;
 }) {
 	const toast = useToast();
 	const queryClient = useQueryClient();
@@ -610,80 +613,86 @@ function EditPanel({ card, cardIdx, totalCards, updateCard, setCards, onNavigate
 						)}
 					</div>
 
-					<div className="space-y-3 rounded-lg border border-blue-200 bg-blue-50/50 p-3">
-						<div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-							<Sparkles className="h-3.5 w-3.5 text-blue-500" />
-							<span>사진 재생성</span>
-							{canUseReference && card.photoRegen.selectedRefs.size > 0 && (
-								<Badge variant="secondary" className="text-[10px]">
-									레퍼런스 {card.photoRegen.selectedRefs.size}장 선택
-								</Badge>
-							)}
+					{imageSource === 'manual-upload' ? (
+						<div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500">
+							외부 업로드 이미지입니다. 사진 재생성은 지원되지 않습니다. 사진을 변경하려면 미리보기 단계로 돌아가 다시 업로드하세요.
 						</div>
+					) : (
+						<div className="space-y-3 rounded-lg border border-blue-200 bg-blue-50/50 p-3">
+							<div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+								<Sparkles className="h-3.5 w-3.5 text-blue-500" />
+								<span>사진 재생성</span>
+								{canUseReference && card.photoRegen.selectedRefs.size > 0 && (
+									<Badge variant="secondary" className="text-[10px]">
+										레퍼런스 {card.photoRegen.selectedRefs.size}장 선택
+									</Badge>
+								)}
+							</div>
 
-						<div className="space-y-1">
-							<Label className="text-[11px] font-semibold text-slate-600">이미지 모델</Label>
-							<Select value={card.photoRegen.vendorId} onValueChange={setRegenVendorId}>
-								<SelectTrigger className="h-9 text-xs">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									{vendorOptionsForSelect().map((option) => (
-										<SelectItem key={option.id} value={option.id}>
-											<div className="flex items-center gap-1.5">
-												<span className="font-medium">{option.label}</span>
-												<span className="text-[10px] text-slate-400">{option.pricePerImage}</span>
-												{option.supportsReference && (
-													<span className="text-[10px] text-blue-600">img2img</span>
-												)}
-											</div>
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
+							<div className="space-y-1">
+								<Label className="text-[11px] font-semibold text-slate-600">이미지 모델</Label>
+								<Select value={card.photoRegen.vendorId} onValueChange={setRegenVendorId}>
+									<SelectTrigger className="h-9 text-xs">
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										{vendorOptionsForSelect().map((option) => (
+											<SelectItem key={option.id} value={option.id}>
+												<div className="flex items-center gap-1.5">
+													<span className="font-medium">{option.label}</span>
+													<span className="text-[10px] text-slate-400">{option.pricePerImage}</span>
+													{option.supportsReference && (
+														<span className="text-[10px] text-blue-600">img2img</span>
+													)}
+												</div>
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
 
-						<div className="space-y-1">
-							<div className="flex items-center justify-between">
-								<Label className="text-[11px] font-semibold text-slate-600">프롬프트 (선택)</Label>
-								<GhostPromptPreviewModal
-									age={item.age}
-									vendor={regenVendor}
-									trigger={
-										<Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] text-slate-500">
-											프롬프트 미리보기
-										</Button>
-									}
+							<div className="space-y-1">
+								<div className="flex items-center justify-between">
+									<Label className="text-[11px] font-semibold text-slate-600">프롬프트 (선택)</Label>
+									<GhostPromptPreviewModal
+										age={item.age}
+										vendor={regenVendor}
+										trigger={
+											<Button variant="ghost" size="sm" className="h-6 px-2 text-[10px] text-slate-500">
+												프롬프트 미리보기
+											</Button>
+										}
+									/>
+								</div>
+								<Textarea
+									value={card.photoRegen.prompt}
+									onChange={(e) => setRegenPrompt(e.target.value)}
+									placeholder="예: 자연스러운 셀카, 밝은 조명. 비워두면 기본 프롬프트가 사용됩니다."
+									rows={2}
+									className="text-xs"
 								/>
 							</div>
-							<Textarea
-								value={card.photoRegen.prompt}
-								onChange={(e) => setRegenPrompt(e.target.value)}
-								placeholder="예: 자연스러운 셀카, 밝은 조명. 비워두면 기본 프롬프트가 사용됩니다."
-								rows={2}
-								className="text-xs"
-							/>
+
+							<p className="text-[11px] text-slate-500">
+								{canUseReference
+									? '위 사진을 클릭하면 레퍼런스로 선택됩니다. 선택된 사진의 분위기/스타일을 참고하여 재생성합니다.'
+									: `${findVendorOption(card.photoRegen.vendorId)?.label ?? '이 모델'}은 레퍼런스 이미지(img2img)를 지원하지 않습니다.`}
+							</p>
+
+							<Button
+								size="sm"
+								className="w-full"
+								disabled={regenMutation.isPending || !ghostAccountId}
+								onClick={() => regenMutation.mutate()}
+							>
+								{regenMutation.isPending ? (
+									<><Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> 재생성 중…</>
+								) : (
+									<><RefreshCw className="mr-1 h-3.5 w-3.5" /> 사진 재생성</>
+								)}
+							</Button>
 						</div>
-
-						<p className="text-[11px] text-slate-500">
-							{canUseReference
-								? '위 사진을 클릭하면 레퍼런스로 선택됩니다. 선택된 사진의 분위기/스타일을 참고하여 재생성합니다.'
-								: `${findVendorOption(card.photoRegen.vendorId)?.label ?? '이 모델'}은 레퍼런스 이미지(img2img)를 지원하지 않습니다.`}
-						</p>
-
-						<Button
-							size="sm"
-							className="w-full"
-							disabled={regenMutation.isPending || !ghostAccountId}
-							onClick={() => regenMutation.mutate()}
-						>
-							{regenMutation.isPending ? (
-								<><Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> 재생성 중…</>
-							) : (
-								<><RefreshCw className="mr-1 h-3.5 w-3.5" /> 사진 재생성</>
-							)}
-						</Button>
-					</div>
+					)}
 				</section>
 
 				<section className="space-y-3">

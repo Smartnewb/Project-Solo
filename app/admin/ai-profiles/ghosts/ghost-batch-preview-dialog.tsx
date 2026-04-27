@@ -586,6 +586,7 @@ export function GhostBatchPreviewDialog({
 						failedItems={failedItems}
 						expandedIdx={expandedIdx}
 						setExpandedIdx={setExpandedIdx}
+						imageSource={previewImageSource}
 						updateCard={(idx, patch) =>
 							setResultCards((prev) => {
 								const next = [...prev];
