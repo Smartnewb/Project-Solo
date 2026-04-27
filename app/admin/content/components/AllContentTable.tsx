@@ -70,19 +70,17 @@ export function AllContentTable() {
   const toast = useToast();
   const confirmAction = useConfirm();
 
-  const [cardsPage, setCardsPage] = useState(1);
-  const [articlesPage, setArticlesPage] = useState(1);
-  const [noticesPage, setNoticesPage] = useState(1);
-  const LIMIT = 20;
+  const PAGE_INCREMENT = 20;
+  const [pageSize, setPageSize] = useState(PAGE_INCREMENT);
 
-  const { data: cardsData, isLoading: cardsLoading } = useCardNewsList(cardsPage, LIMIT);
+  const { data: cardsData, isLoading: cardsLoading } = useCardNewsList(1, pageSize);
   const { data: articlesData, isLoading: articlesLoading } = useSometimeArticleList({
-    page: articlesPage,
-    limit: LIMIT,
+    page: 1,
+    limit: pageSize,
   });
   const { data: noticesData, isLoading: noticesLoading } = useNoticeList({
-    page: noticesPage,
-    limit: LIMIT,
+    page: 1,
+    limit: pageSize,
   });
 
   const deleteCardNews = useDeleteCardNews();
@@ -127,6 +125,13 @@ export function AllContentTable() {
 
   const isLoading = cardsLoading || articlesLoading || noticesLoading;
 
+  const visible = useMemo(() => merged.slice(0, pageSize), [merged, pageSize]);
+  const hasMore =
+    (cardsData?.total ?? 0) > pageSize ||
+    (articlesData?.meta?.totalItems ?? 0) > pageSize ||
+    (noticesData?.meta?.totalItems ?? 0) > pageSize ||
+    merged.length > pageSize;
+
   const handleEdit = (row: UnifiedRow) => {
     router.push(`/admin/content/${row.type}/edit/${row.id}`);
   };
@@ -156,10 +161,6 @@ export function AllContentTable() {
     );
   }
 
-  const hasMoreCards = (cardsData?.total ?? 0) > cardsPage * LIMIT;
-  const hasMoreArticles = (articlesData?.meta?.totalItems ?? 0) > articlesPage * LIMIT;
-  const hasMoreNotices = (noticesData?.meta?.totalItems ?? 0) > noticesPage * LIMIT;
-
   return (
     <Box>
       <TableContainer component={Paper}>
@@ -175,7 +176,7 @@ export function AllContentTable() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {merged.length === 0 ? (
+            {visible.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} align="center">
                   <Typography color="text.secondary" sx={{ py: 4 }}>
@@ -184,7 +185,7 @@ export function AllContentTable() {
                 </TableCell>
               </TableRow>
             ) : (
-              merged.map((row) => (
+              visible.map((row) => (
                 <TableRow key={`${row.type}-${row.id}`} hover>
                   <TableCell align="center">
                     <Chip
@@ -235,31 +236,15 @@ export function AllContentTable() {
         </Table>
       </TableContainer>
 
-      {(hasMoreCards || hasMoreArticles || hasMoreNotices) && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2, gap: 1 }}>
-          {hasMoreCards && (
-            <Button size="small" variant="outlined" onClick={() => setCardsPage((p) => p + 1)}>
-              카드시리즈 다음 페이지
-            </Button>
-          )}
-          {hasMoreArticles && (
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => setArticlesPage((p) => p + 1)}
-            >
-              아티클 다음 페이지
-            </Button>
-          )}
-          {hasMoreNotices && (
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => setNoticesPage((p) => p + 1)}
-            >
-              공지 다음 페이지
-            </Button>
-          )}
+      {hasMore && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => setPageSize((p) => p + PAGE_INCREMENT)}
+          >
+            더 보기 (+{PAGE_INCREMENT})
+          </Button>
         </Box>
       )}
     </Box>
