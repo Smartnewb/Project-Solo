@@ -412,9 +412,18 @@ export function GhostBatchPreviewDialog({
 								<h2 className="text-lg font-semibold text-slate-900">
 									프로필 미리보기 검토
 								</h2>
-								<Badge variant="outline" className="text-xs">
-									{previewRoot.vendor}
-								</Badge>
+								{previewImageSource === 'manual-upload' ? (
+									<Badge
+										variant="secondary"
+										className="border-blue-200 bg-blue-50 text-blue-700"
+									>
+										외부 업로드
+									</Badge>
+								) : (
+									<Badge variant="outline" className="text-xs">
+										{previewRoot.vendor}
+									</Badge>
+								)}
 								<Badge variant="secondary" className="text-xs">
 									{stream.isComplete
 										? `총 ${itemsList.length}개`

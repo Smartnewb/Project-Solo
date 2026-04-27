@@ -62,7 +62,7 @@ export function ModeSelectStep({ selected, onSelect }: ModeSelectStepProps) {
 						type="button"
 						onClick={() => onSelect(option.value)}
 						className={cn(
-							'flex h-full flex-col items-start gap-3 rounded-lg border p-4 text-left transition',
+							'flex h-full flex-col items-start gap-3 rounded-lg border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2',
 							isActive
 								? 'border-slate-900 bg-slate-50 ring-2 ring-slate-200'
 								: 'border-slate-200 bg-white hover:border-slate-400 hover:bg-slate-50/40',

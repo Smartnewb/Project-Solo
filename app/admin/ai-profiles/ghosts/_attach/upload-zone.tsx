@@ -165,8 +165,10 @@ export function UploadZone({
 				onDrop={handleDrop}
 				role="button"
 				tabIndex={0}
+				aria-label="이미지 업로드 영역. 클릭 또는 파일 드래그"
+				aria-disabled={remainingNeeded <= 0 || mutation.isPending}
 				className={cn(
-					'flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-6 py-8 text-center transition',
+					'flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-6 py-8 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2',
 					remainingNeeded <= 0
 						? 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400'
 						: isDragOver

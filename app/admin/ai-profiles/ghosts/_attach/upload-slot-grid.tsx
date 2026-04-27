@@ -68,6 +68,7 @@ export function UploadSlotGrid({
 						variant="outline"
 						onClick={onAutoDistribute}
 						disabled={!canAutoDistribute}
+						className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
 					>
 						<Wand2 className="mr-1 h-3.5 w-3.5" />
 						자동 분배
@@ -176,7 +177,7 @@ function SlotRow({
 									type="button"
 									onClick={() => startPicker(pos)}
 									className={cn(
-										'relative flex aspect-[3/4] w-full items-center justify-center overflow-hidden rounded border text-xs transition',
+										'relative flex aspect-[3/4] w-full items-center justify-center overflow-hidden rounded border text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2',
 										photo
 											? 'border-slate-300'
 											: 'border-dashed border-slate-300 bg-slate-50 text-slate-400 hover:border-slate-500 hover:bg-slate-100',
@@ -243,8 +244,13 @@ function SlotRow({
 													type="button"
 													disabled={disabled}
 													onClick={() => pickPhoto(item.s3Url, pos)}
+													aria-label={
+														inOtherRow
+															? '다른 페르소나에 이미 할당된 사진'
+															: item.filename
+													}
 													className={cn(
-														'relative aspect-square overflow-hidden rounded border transition',
+														'relative aspect-square overflow-hidden rounded border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2',
 														disabled
 															? 'cursor-not-allowed border-slate-200 opacity-30'
 															: 'border-slate-300 hover:border-slate-900',
