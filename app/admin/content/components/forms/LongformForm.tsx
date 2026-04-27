@@ -32,6 +32,7 @@ import SendIcon from '@mui/icons-material/Send';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useAdminForm } from '@/app/admin/hooks/forms';
 import { useUnsavedGuard } from '@/app/admin/hooks/use-unsaved-guard';
+import { useCardNewsCategories } from '@/app/admin/hooks';
 import {
   longformFormSchema,
   type LongformFormData,
@@ -112,13 +113,22 @@ export function LongformForm({ mode, id }: Props) {
     [watchedBody],
   );
 
+  const { data: serverCategories } = useCardNewsCategories();
+
   const categoryOptions = useMemo(() => {
-    const base = NEW_CATEGORY_OPTIONS.map((c) => ({ code: c.code, label: c.label }));
+    const fromServer = (serverCategories ?? []).map((c) => ({
+      code: c.code,
+      label: c.displayName,
+    }));
+    const base =
+      fromServer.length > 0
+        ? fromServer
+        : NEW_CATEGORY_OPTIONS.map((c) => ({ code: c.code, label: c.label }));
     if (extraCategoryOption && !base.find((b) => b.code === extraCategoryOption.code)) {
       return [...base, extraCategoryOption];
     }
     return base;
-  }, [extraCategoryOption]);
+  }, [serverCategories, extraCategoryOption]);
 
   const categoryLabel = useMemo(() => {
     const found = categoryOptions.find((c) => c.code === watchedCategoryCode);

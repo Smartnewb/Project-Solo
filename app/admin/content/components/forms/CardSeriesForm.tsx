@@ -32,6 +32,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useAdminForm } from '@/app/admin/hooks/forms';
 import { useUnsavedGuard } from '@/app/admin/hooks/use-unsaved-guard';
+import { useCardNewsCategories } from '@/app/admin/hooks';
 import { cardNewsFormSchema, type CardNewsFormData } from '@/app/admin/hooks/forms/schemas/card-news.schema';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
@@ -65,6 +66,17 @@ export function CardSeriesForm({ mode, id }: Props) {
     });
 
   useUnsavedGuard(isDirty, isSubmitting);
+
+  const { data: serverCategories } = useCardNewsCategories();
+  const categoryOptions = useMemo(() => {
+    const fromServer = (serverCategories ?? []).map((c) => ({
+      code: c.code,
+      label: c.displayName,
+    }));
+    return fromServer.length > 0
+      ? fromServer
+      : NEW_CATEGORY_OPTIONS.map((c) => ({ code: c.code, label: c.label }));
+  }, [serverCategories]);
 
   const { fields, append, remove, update, move } = useFieldArray({ control, name: 'sections' });
 
@@ -361,7 +373,7 @@ export function CardSeriesForm({ mode, id }: Props) {
                   <FormControl fullWidth sx={{ mb: 2 }} required error={!!fieldState.error}>
                     <InputLabel>카테고리</InputLabel>
                     <Select {...field} label="카테고리">
-                      {NEW_CATEGORY_OPTIONS.map((c) => (
+                      {categoryOptions.map((c) => (
                         <MenuItem key={c.code} value={c.code}>
                           {c.label}
                         </MenuItem>
