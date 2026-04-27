@@ -41,6 +41,7 @@ import { ghostInjectionKeys } from '../_shared/query-keys';
 import { ReasonInput, isReasonValid } from '../_shared/reason-input';
 import { VendorRadioGroup } from '../_shared/vendor-radio-group';
 import { AttachSetupPanel } from './_attach/attach-setup-panel';
+import { ManualUploadStepper, type StepStatus } from './_attach/manual-upload-stepper';
 import { ModeSelectStep } from './_attach/mode-select-step';
 import { UploadSlotGrid } from './_attach/upload-slot-grid';
 import { UploadZone } from './_attach/upload-zone';
@@ -101,6 +102,7 @@ export function GhostBatchPreviewDialog({
 	);
 	const [resultCards, setResultCards] = useState<EditableCard[]>([]);
 	const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+	const [isUploading, setIsUploading] = useState(false);
 	const lastStreamErrorRef = useRef<string | null>(null);
 
 	useEffect(() => {
@@ -117,6 +119,7 @@ export function GhostBatchPreviewDialog({
 			setConfirmResult(null);
 			setResultCards([]);
 			setExpandedIdx(null);
+			setIsUploading(false);
 			lastStreamErrorRef.current = null;
 		}
 	}, [open, setup.reset]);
@@ -363,7 +366,8 @@ export function GhostBatchPreviewDialog({
 		createMutation.isPending ||
 		patchMutation.isPending ||
 		confirmMutation.isPending ||
-		deleteMutation.isPending;
+		deleteMutation.isPending ||
+		isUploading;
 
 	const canStartConfirm =
 		selectedIds.size > 0 &&
@@ -395,6 +399,7 @@ export function GhostBatchPreviewDialog({
 						setup={setup}
 						usedPhotoIds={usedPhotoIds}
 						isPending={createMutation.isPending}
+						onUploadPendingChange={setIsUploading}
 						onCancel={() => onOpenChange(false)}
 						onSubmit={() => createMutation.mutate()}
 					/>
@@ -407,9 +412,18 @@ export function GhostBatchPreviewDialog({
 								<h2 className="text-lg font-semibold text-slate-900">
 									프로필 미리보기 검토
 								</h2>
-								<Badge variant="outline" className="text-xs">
-									{previewRoot.vendor}
-								</Badge>
+								{previewImageSource === 'manual-upload' ? (
+									<Badge
+										variant="secondary"
+										className="border-blue-200 bg-blue-50 text-blue-700"
+									>
+										외부 업로드
+									</Badge>
+								) : (
+									<Badge variant="outline" className="text-xs">
+										{previewRoot.vendor}
+									</Badge>
+								)}
 								<Badge variant="secondary" className="text-xs">
 									{stream.isComplete
 										? `총 ${itemsList.length}개`
@@ -627,6 +641,7 @@ interface SetupPhaseProps {
 	setup: ReturnType<typeof useGhostBatchSetup>;
 	usedPhotoIds: Set<string>;
 	isPending: boolean;
+	onUploadPendingChange: (pending: boolean) => void;
 	onCancel: () => void;
 	onSubmit: () => void;
 }
@@ -638,12 +653,30 @@ function SetupPhase({
 	setup,
 	usedPhotoIds,
 	isPending,
+	onUploadPendingChange,
 	onCancel,
 	onSubmit,
 }: SetupPhaseProps) {
+	const toast = useToast();
 	const { count, mode, step, ageBucket } = setupState;
 	const setupReady = setup.isReady;
 	const canSubmit = count >= 1 && count <= 50 && !isPending && setupReady;
+
+	const wrappedSetCount = useCallback(
+		(next: number) => {
+			setup.setCount(next, ({ lostMatchIndices, lostUploadIndices }) => {
+				const lost = [
+					...new Set([...lostUploadIndices, ...lostMatchIndices]),
+				].sort((a, b) => a - b);
+				if (lost.length > 0) {
+					toast.warning(
+						`페르소나 ${lost.map((i) => i + 1).join(', ')}의 사진 매핑이 해제되었습니다.`,
+					);
+				}
+			});
+		},
+		[setup, toast],
+	);
 
 	const countControl = (
 		<div className="space-y-1">
@@ -654,7 +687,7 @@ function SetupPhase({
 					size="icon"
 					className="h-9 w-9"
 					disabled={count <= 1}
-					onClick={() => setup.setCount(Math.max(1, count - 1))}
+					onClick={() => wrappedSetCount(Math.max(1, count - 1))}
 				>
 					<Minus className="h-3 w-3" />
 				</Button>
@@ -666,7 +699,7 @@ function SetupPhase({
 					onChange={(event) => {
 						const value = Number(event.target.value);
 						if (Number.isFinite(value) && value >= 1 && value <= 50) {
-							setup.setCount(value);
+							wrappedSetCount(value);
 						}
 					}}
 					className={cn('h-9 w-20 text-center tabular-nums')}
@@ -676,7 +709,7 @@ function SetupPhase({
 					size="icon"
 					className="h-9 w-9"
 					disabled={count >= 50}
-					onClick={() => setup.setCount(Math.min(50, count + 1))}
+					onClick={() => wrappedSetCount(Math.min(50, count + 1))}
 				>
 					<Plus className="h-3 w-3" />
 				</Button>
@@ -743,6 +776,7 @@ function SetupPhase({
 					setVendorId={setVendorId}
 					countControl={countControl}
 					ageBucketControl={ageBucketControl}
+					onUploadPendingChange={onUploadPendingChange}
 				/>
 			)}
 
@@ -785,6 +819,7 @@ interface Step2BodyProps {
 	setVendorId: (next: string) => void;
 	countControl: React.ReactNode;
 	ageBucketControl: React.ReactNode;
+	onUploadPendingChange: (pending: boolean) => void;
 }
 
 function Step2Body({
@@ -796,6 +831,7 @@ function Step2Body({
 	setVendorId,
 	countControl,
 	ageBucketControl,
+	onUploadPendingChange,
 }: Step2BodyProps) {
 	switch (mode) {
 		case 'reference-pool':
@@ -825,10 +861,30 @@ function Step2Body({
 					</div>
 				</>
 			);
-		case 'manual-upload':
+		case 'manual-upload': {
+			const totalNeeded = setupState.count * SLOT_PHOTO_LIMIT;
+			const uploadedCount = setupState.uploaded.length;
+			const assignmentsFull =
+				setupState.uploadAssignments.size === setupState.count;
+			const uploadStatus: StepStatus =
+				uploadedCount === 0
+					? 'active'
+					: uploadedCount >= totalNeeded
+						? 'done'
+						: 'active';
+			const assignStatus: StepStatus =
+				uploadedCount < totalNeeded
+					? 'pending'
+					: assignmentsFull
+						? 'done'
+						: 'active';
 			return (
 				<div className="flex-1 overflow-y-auto px-6 py-6">
 					<div className="mx-auto max-w-4xl space-y-6">
+						<ManualUploadStepper
+							uploadStatus={uploadStatus}
+							assignStatus={assignStatus}
+						/>
 						<div className="grid grid-cols-1 gap-4 md:grid-cols-2">
 							{countControl}
 							{ageBucketControl}
@@ -838,12 +894,13 @@ function Step2Body({
 								uploaded={setupState.uploaded}
 								remainingNeeded={Math.max(
 									0,
-									setupState.count * SLOT_PHOTO_LIMIT - setupState.uploaded.length,
+									totalNeeded - uploadedCount,
 								)}
-								totalNeeded={setupState.count * SLOT_PHOTO_LIMIT}
+								totalNeeded={totalNeeded}
 								onUploadComplete={setup.addUploads}
 								onRemove={setup.removeUpload}
 								onClearAll={setup.clearUploads}
+								onPendingChange={onUploadPendingChange}
 							/>
 						</div>
 						<div className="border-t pt-5">
@@ -860,6 +917,7 @@ function Step2Body({
 					</div>
 				</div>
 			);
+		}
 		case 'generate':
 		default:
 			return (

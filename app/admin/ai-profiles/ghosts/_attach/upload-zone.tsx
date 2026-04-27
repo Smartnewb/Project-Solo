@@ -1,11 +1,11 @@
 'use client';
 
 import Image from 'next/image';
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Loader2, Trash2, Upload, X } from 'lucide-react';
 import { ghostInjection } from '@/app/services/admin/ghost-injection';
-import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
+import { AdminApiError, getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
 import { useToast } from '@/shared/ui/admin/toast';
 import { Button } from '@/shared/ui/button';
 import { cn } from '@/shared/utils';
@@ -23,6 +23,7 @@ interface UploadZoneProps {
 	onUploadComplete: (results: UploadedPhotoLocal[]) => void;
 	onRemove: (s3Url: string) => void;
 	onClearAll: () => void;
+	onPendingChange?: (pending: boolean) => void;
 }
 
 export function UploadZone({
@@ -32,6 +33,7 @@ export function UploadZone({
 	onUploadComplete,
 	onRemove,
 	onClearAll,
+	onPendingChange,
 }: UploadZoneProps) {
 	const toast = useToast();
 	const inputId = useId();
@@ -49,8 +51,28 @@ export function UploadZone({
 			onUploadComplete(results);
 			toast.success(`${results.length}장 업로드 완료`);
 		},
-		onError: (error) => toast.error(getAdminErrorMessage(error)),
+		onError: (error) => {
+			if (error instanceof AdminApiError && error.status === 422) {
+				const body = error.body as
+					| { errorCode?: string; details?: { filename?: string; index?: number } }
+					| null;
+				if (
+					body?.errorCode === 'manual-upload:no-face-detected' &&
+					body.details?.filename
+				) {
+					toast.error(
+						`얼굴을 인식할 수 없는 사진이 있습니다: ${body.details.filename}`,
+					);
+					return;
+				}
+			}
+			toast.error(getAdminErrorMessage(error));
+		},
 	});
+
+	useEffect(() => {
+		onPendingChange?.(mutation.isPending);
+	}, [mutation.isPending, onPendingChange]);
 
 	const handleFiles = (selected: FileList | File[] | null) => {
 		if (!selected) return;
@@ -143,8 +165,10 @@ export function UploadZone({
 				onDrop={handleDrop}
 				role="button"
 				tabIndex={0}
+				aria-label="이미지 업로드 영역. 클릭 또는 파일 드래그"
+				aria-disabled={remainingNeeded <= 0 || mutation.isPending}
 				className={cn(
-					'flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-6 py-8 text-center transition',
+					'flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-6 py-8 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2',
 					remainingNeeded <= 0
 						? 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400'
 						: isDragOver

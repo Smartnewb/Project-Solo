@@ -55,16 +55,25 @@ export function UploadSlotGrid({
 						/{count} 페르소나에 사진이 매핑되었습니다.
 					</p>
 				</div>
-				<Button
-					type="button"
-					size="sm"
-					variant="outline"
-					onClick={onAutoDistribute}
-					disabled={!canAutoDistribute}
-				>
-					<Wand2 className="mr-1 h-3.5 w-3.5" />
-					자동 분배
-				</Button>
+				<div className="flex items-center gap-2">
+					{!canAutoDistribute ? (
+						<span className="text-[11px] text-slate-500">
+							자동 분배에는 {count * SLOT_PHOTO_LIMIT}장 필요 ({uploaded.length}/
+							{count * SLOT_PHOTO_LIMIT})
+						</span>
+					) : null}
+					<Button
+						type="button"
+						size="sm"
+						variant="outline"
+						onClick={onAutoDistribute}
+						disabled={!canAutoDistribute}
+						className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
+					>
+						<Wand2 className="mr-1 h-3.5 w-3.5" />
+						자동 분배
+					</Button>
+				</div>
 			</div>
 
 			<div className="space-y-2">
@@ -168,7 +177,7 @@ function SlotRow({
 									type="button"
 									onClick={() => startPicker(pos)}
 									className={cn(
-										'relative flex aspect-[3/4] w-full items-center justify-center overflow-hidden rounded border text-xs transition',
+										'relative flex aspect-[3/4] w-full items-center justify-center overflow-hidden rounded border text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2',
 										photo
 											? 'border-slate-300'
 											: 'border-dashed border-slate-300 bg-slate-50 text-slate-400 hover:border-slate-500 hover:bg-slate-100',
@@ -197,9 +206,27 @@ function SlotRow({
 								</button>
 							</PopoverTrigger>
 							<PopoverContent className="w-80 p-3" align="start">
-								<p className="mb-2 text-xs font-semibold text-slate-700">
-									페르소나 {itemIndex + 1} · 슬롯 {pos + 1} 사진 선택
+								<p className="mb-2 flex items-center justify-between text-xs">
+									<span className="font-semibold text-slate-700">
+										페르소나 {itemIndex + 1} · 슬롯 {pos + 1} 사진 선택
+									</span>
+									<span
+										className={cn(
+											'tabular-nums',
+											draftSelected.filter(Boolean).length === SLOT_PHOTO_LIMIT
+												? 'text-emerald-600'
+												: 'text-amber-600',
+										)}
+									>
+										{draftSelected.filter(Boolean).length}/{SLOT_PHOTO_LIMIT}
+									</span>
 								</p>
+								{draftSelected.filter(Boolean).length > 0 &&
+								draftSelected.filter(Boolean).length < SLOT_PHOTO_LIMIT ? (
+									<p className="mb-2 text-[11px] text-amber-600">
+										3장을 모두 선택해야 저장됩니다. 닫으면 선택이 해제됩니다.
+									</p>
+								) : null}
 								{uploaded.length === 0 ? (
 									<p className="py-4 text-center text-xs text-slate-500">
 										먼저 사진을 업로드하세요.
@@ -217,8 +244,13 @@ function SlotRow({
 													type="button"
 													disabled={disabled}
 													onClick={() => pickPhoto(item.s3Url, pos)}
+													aria-label={
+														inOtherRow
+															? '다른 페르소나에 이미 할당된 사진'
+															: item.filename
+													}
 													className={cn(
-														'relative aspect-square overflow-hidden rounded border transition',
+														'relative aspect-square overflow-hidden rounded border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2',
 														disabled
 															? 'cursor-not-allowed border-slate-200 opacity-30'
 															: 'border-slate-300 hover:border-slate-900',
