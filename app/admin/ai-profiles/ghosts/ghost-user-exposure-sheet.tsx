@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { AdminApiError } from '@/shared/lib/http/admin-fetch';
 import { ghostInjection } from '@/app/services/admin/ghost-injection';
 import type {
 	UserGhostExposureActionType,
@@ -62,24 +63,22 @@ function ExposureRow({
 }) {
 	const isExposed = item.actionType === 'GHOST_EXPOSED';
 	return (
-		<div
-			className="flex items-center gap-3 rounded-lg border bg-white p-3 hover:bg-gray-50 transition-colors"
-		>
+		<div className="flex items-center gap-3 rounded-lg border bg-white p-3 hover:bg-gray-50 transition-colors">
 			{item.ghostPrimaryPhotoUrl ? (
 				<img
 					src={item.ghostPrimaryPhotoUrl}
-					alt={item.ghostName}
+					alt={item.ghostName ?? ''}
 					className="h-10 w-10 rounded-full object-cover flex-shrink-0"
 				/>
 			) : (
 				<div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 text-gray-500 text-sm font-medium">
-					{item.ghostName.charAt(0)}
+					{item.ghostName?.charAt(0) ?? '?'}
 				</div>
 			)}
 
 			<div className="flex-1 min-w-0">
 				<div className="flex items-center gap-2">
-					<span className="font-medium text-sm text-gray-900 truncate">{item.ghostName}</span>
+					<span className="font-medium text-sm text-gray-900 truncate">{item.ghostName ?? '—'}</span>
 					<Badge
 						variant={isExposed ? 'outline' : 'default'}
 						className={isExposed ? 'text-blue-700 border-blue-300 bg-blue-50' : 'bg-green-600'}
@@ -95,15 +94,30 @@ function ExposureRow({
 				<p className="text-xs text-gray-400 mt-0.5">{formatDate(item.createdAt)}</p>
 			</div>
 
-			<Button
-				variant="ghost"
-				size="sm"
-				className="flex-shrink-0 h-7 w-7 p-0"
-				onClick={() => onGhostClick(item.ghostAccountId)}
-				title="Ghost 상세 보기"
-			>
-				<ExternalLink className="h-3.5 w-3.5" />
-			</Button>
+			<div className="flex items-center gap-1 flex-shrink-0">
+				{item.connectionId && (
+					<a
+						href={`/admin/matching-management?connectionId=${item.connectionId}`}
+						target="_blank"
+						rel="noreferrer"
+						className="h-7 w-7 flex items-center justify-center rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+						title="매칭 상세 보기"
+					>
+						<ExternalLink className="h-3.5 w-3.5" />
+					</a>
+				)}
+				{item.ghostAccountId && (
+					<Button
+						variant="ghost"
+						size="sm"
+						className="h-7 w-7 p-0"
+						onClick={() => onGhostClick(item.ghostAccountId as string)}
+						title="Ghost 상세 보기"
+					>
+						<ExternalLink className="h-3.5 w-3.5" />
+					</Button>
+				)}
+			</div>
 		</div>
 	);
 }
@@ -123,9 +137,13 @@ export function GhostUserExposureSheet({
 }: GhostUserExposureSheetProps) {
 	const [query, setQuery] = useState<UserGhostExposureQuery>({ page: 1, limit: 20 });
 
-	const { data, isLoading, isError } = useQuery({
+	const { data, isLoading, isError, error } = useQuery({
 		queryKey: ghostInjectionKeys.userExposures(userId ?? '', query),
-		queryFn: () => ghostInjection.getUserExposures(userId as string, query),
+		queryFn: () =>
+			ghostInjection.getUserExposures(userId as string, {
+				...query,
+				limit: Math.min(query.limit ?? 20, 100),
+			}),
 		enabled: Boolean(userId),
 	});
 
@@ -155,27 +173,49 @@ export function GhostUserExposureSheet({
 				<div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
 					{/* Summary */}
 					{data?.summary && (
-						<div className="grid grid-cols-2 gap-2">
-							<SummaryCard label="총 노출" value={data.summary.totalExposures} />
-							<SummaryCard label="수락" value={data.summary.totalAccepted} />
-							<SummaryCard
-								label="마지막 노출"
-								value={data.summary.lastExposedAt ? formatDate(data.summary.lastExposedAt) : '없음'}
-							/>
-							<div className="rounded-lg border bg-white p-3">
-								<p className="text-xs text-gray-500 mb-1">경로별</p>
-								<div className="space-y-0.5">
-									{(Object.entries(data.summary.byPath) as [UserGhostExposurePath, number][])
-										.filter(([, count]) => count > 0)
-										.map(([path, count]) => (
-											<div key={path} className="flex justify-between text-xs">
-												<span className="text-gray-600">{PATH_LABELS[path]}</span>
-												<span className="font-medium">{count}</span>
-											</div>
-										))}
-								</div>
+						<>
+							<div className="grid grid-cols-2 gap-2">
+								<SummaryCard label="총 노출" value={data.summary.totalExposures} />
+								<SummaryCard label="수락" value={data.summary.totalAccepted} />
+								<SummaryCard
+									label="전환율"
+									value={
+										data.summary.totalExposures > 0
+											? `${((data.summary.totalAccepted / data.summary.totalExposures) * 100).toFixed(1)}%`
+											: '—'
+									}
+								/>
+								<SummaryCard
+									label="마지막 노출"
+									value={data.summary.lastExposedAt ? formatDate(data.summary.lastExposedAt) : '없음'}
+								/>
 							</div>
-						</div>
+
+							{Object.keys(data.summary.byPath).length > 0 && (
+								<div className="rounded-lg border bg-white p-3">
+									<p className="text-xs text-gray-500 mb-2">경로별 분포</p>
+									<div className="space-y-1.5">
+										{(() => {
+											const max = Math.max(...(Object.values(data.summary.byPath) as number[]));
+											return (Object.entries(data.summary.byPath) as [UserGhostExposurePath, number][])
+												.filter(([, count]) => count > 0)
+												.map(([path, count]) => (
+													<div key={path} className="flex items-center gap-2 text-xs">
+														<span className="text-gray-600 w-24 shrink-0">{PATH_LABELS[path]}</span>
+														<div className="flex-1 bg-gray-100 rounded-full h-1.5 overflow-hidden">
+															<div
+																className="bg-blue-500 h-full rounded-full"
+																style={{ width: `${Math.round((count / max) * 100)}%` }}
+															/>
+														</div>
+														<span className="font-medium w-4 text-right">{count}</span>
+													</div>
+												));
+										})()}
+									</div>
+								</div>
+							)}
+						</>
 					)}
 
 					{/* 필터 */}
@@ -251,7 +291,9 @@ export function GhostUserExposureSheet({
 					)}
 					{isError && (
 						<p className="text-sm text-red-500 text-center py-8">
-							데이터를 불러오지 못했습니다.
+							{error instanceof AdminApiError && error.message.includes('Ghost user is not trackable')
+								? 'AI 합성 유저는 조회할 수 없습니다. 실제 유저 ID를 입력해 주세요.'
+								: '데이터를 불러오지 못했습니다.'}
 						</p>
 					)}
 					{data && data.items.length === 0 && (
