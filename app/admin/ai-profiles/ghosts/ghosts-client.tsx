@@ -71,7 +71,9 @@ export function GhostsClient() {
 		return 'table';
 	});
 	const [createOpen, setCreateOpen] = useState(false);
-	const [selectedGhostId, setSelectedGhostId] = useState<string | null>(null);
+	const [selectedGhostId, setSelectedGhostId] = useState<string | null>(
+		() => searchParams.get('ghostAccountId'),
+	);
 	const [statusTarget, setStatusTarget] = useState<GhostListItem | null>(null);
 	const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 	const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);

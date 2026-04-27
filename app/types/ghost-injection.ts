@@ -704,3 +704,117 @@ export interface AutoMatchReferenceResponse {
 	matches: ReferenceMatch[];
 	warnings: string[];
 }
+
+// ─── Ghost Profile Preview ──────────────────────────────
+
+export interface GhostProfileImage {
+	id: string;
+	order: number;
+	slotIndex: number;
+	isMain: boolean;
+	url: string;
+	imageUrl?: string;
+	thumbnailUrl?: string;
+	reviewStatus?: string;
+}
+
+export interface GhostUniversityDetail {
+	name: string | null;
+	authentication: boolean;
+	department: string | null;
+	grade: string | null;
+	studentNumber: string | null;
+	code: string | null;
+	region: string | null;
+	isVerified?: boolean;
+}
+
+export interface GhostPreferenceOption {
+	id: string;
+	displayName: string;
+	imageUrl?: string | null;
+	key?: string;
+}
+
+export interface GhostPreferenceTypeGroup {
+	typeName: string;
+	typeKey?: string;
+	selectedOptions: GhostPreferenceOption[];
+}
+
+export interface GhostProfilePreviewResponse {
+	id: string;
+	name: string;
+	age: number;
+	gender: 'MALE' | 'FEMALE';
+	mbti: string | null;
+	rank: GhostRank | null;
+	profileImages: GhostProfileImage[];
+	universityDetails: GhostUniversityDetail | null;
+	preferences: GhostPreferenceTypeGroup[];
+	characteristics: GhostPreferenceTypeGroup[];
+	additionalPreferences: { goodMbti: string; badMbti: string } | null;
+	introductions: string[];
+	introduction: string | null;
+	keywords: string[] | null;
+	idealTypeResult: { name: string; tags: string[] } | null;
+	updatedAt: string | null;
+	deletedAt: string | null;
+	// 미리보기 전용 — 항상 null/false/0
+	connectionId: null;
+	matchScore: null;
+	v4Compatibility: null;
+	matchLikeId: null;
+	isLikeSended: 0;
+	isFirstView: false;
+	canLetter: false;
+	skippedPhotoCount: 0;
+	external: null;
+}
+
+// ─── User Ghost Exposure ─────────────────────────────────
+
+export type UserGhostExposurePath =
+	| 'v4_fallback'
+	| 'proactive_fill'
+	| 'scheduled_fill'
+	| 'like_cron';
+
+export type UserGhostExposureActionType = 'GHOST_EXPOSED' | 'GHOST_ACCEPTED';
+
+export interface UserGhostExposureQuery {
+	path?: UserGhostExposurePath;
+	actionType?: UserGhostExposureActionType;
+	from?: string;
+	to?: string;
+	page?: number;
+	limit?: number;
+}
+
+export interface UserGhostExposureSummary {
+	totalExposures: number;
+	totalAccepted: number;
+	lastExposedAt: string | null;
+	byPath: Record<UserGhostExposurePath, number>;
+}
+
+export interface UserGhostExposureItem {
+	id: string;
+	actionType: UserGhostExposureActionType;
+	ghostAccountId: string;
+	ghostName: string;
+	ghostPrimaryPhotoUrl: string | null;
+	path: UserGhostExposurePath | null;
+	schoolId: string | null;
+	connectionId: string | null;
+	createdAt: string;
+}
+
+export interface UserGhostExposureResponse {
+	userId: string;
+	summary: UserGhostExposureSummary;
+	items: UserGhostExposureItem[];
+	page: number;
+	limit: number;
+	total: number;
+}

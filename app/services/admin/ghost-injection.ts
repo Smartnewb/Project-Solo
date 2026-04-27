@@ -49,6 +49,9 @@ import type {
 	PatchBatchPreviewItemBody,
 	ConfirmBatchPreviewBody,
 	UploadPhotosResponse,
+	GhostProfilePreviewResponse,
+	UserGhostExposureQuery,
+	UserGhostExposureResponse,
 } from '@/app/types/ghost-injection';
 
 const BASE = '/admin/ghost-injection';
@@ -59,6 +62,9 @@ export const ghostInjection = {
 
 	getGhost: (ghostAccountId: string) =>
 		adminGet<GhostDetail>(`${BASE}/ghosts/${ghostAccountId}`),
+
+	getProfilePreview: (ghostAccountId: string) =>
+		adminGet<GhostProfilePreviewResponse>(`${BASE}/ghosts/${ghostAccountId}/profile-preview`),
 
 	listCandidates: (query: CandidateListQuery = {}) =>
 		adminGet<GhostInjectionPaginated<CandidateListItem>>(
@@ -178,6 +184,10 @@ export const ghostInjection = {
 
 	deleteBatchPreview: (previewId: string) =>
 		adminDelete<void>(`${BASE}/batch-preview/${previewId}`),
+
+	// ─── 유저별 Ghost 노출 이력 ────────────────────────────
+	getUserExposures: (userId: string, query: UserGhostExposureQuery = {}) =>
+		adminGet<UserGhostExposureResponse>(`${BASE}/users/${userId}/exposures`, { ...query }),
 };
 
 export type GhostInjectionService = typeof ghostInjection;
