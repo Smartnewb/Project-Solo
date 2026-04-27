@@ -43,6 +43,7 @@ export interface GhostListItem {
 	photoUrls?: string[];
 	/** 임포트 모달용 — 이미 풀에 임포트된 사진 URL 집합 */
 	importedPhotoUrls?: string[];
+	lastExposedAt: string | null;
 	createdAt: string;
 	updatedAt: string;
 }
@@ -814,6 +815,38 @@ export interface UserGhostExposureResponse {
 	userId: string;
 	summary: UserGhostExposureSummary;
 	items: UserGhostExposureItem[];
+	page: number;
+	limit: number;
+	total: number;
+}
+
+// ─── Ghost Exposure (Ghost 기준) ──────────────────────
+
+export interface GhostExposureQuery {
+	path?: UserGhostExposurePath;
+	actionType?: UserGhostExposureActionType;
+	from?: string;
+	to?: string;
+	page?: number;
+	limit?: number;
+}
+
+export interface GhostExposureItem {
+	id: string;
+	actionType: UserGhostExposureActionType;
+	userId: string;
+	userName: string | null;
+	userPhotoUrl: string | null;
+	path: UserGhostExposurePath | null;
+	schoolId: string | null;
+	connectionId: string | null;
+	createdAt: string;
+}
+
+export interface GhostExposureResponse {
+	ghostAccountId: string;
+	summary: UserGhostExposureSummary;
+	items: GhostExposureItem[];
 	page: number;
 	limit: number;
 	total: number;

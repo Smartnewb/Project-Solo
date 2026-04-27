@@ -52,6 +52,8 @@ import type {
 	GhostProfilePreviewResponse,
 	UserGhostExposureQuery,
 	UserGhostExposureResponse,
+	GhostExposureQuery,
+	GhostExposureResponse,
 } from '@/app/types/ghost-injection';
 
 const BASE = '/admin/ghost-injection';
@@ -188,6 +190,10 @@ export const ghostInjection = {
 	// ─── 유저별 Ghost 노출 이력 ────────────────────────────
 	getUserExposures: (userId: string, query: UserGhostExposureQuery = {}) =>
 		adminGet<UserGhostExposureResponse>(`${BASE}/users/${userId}/exposures`, { ...query }),
+
+	// ─── Ghost별 노출 이력 ───────────────────────────────
+	getGhostExposures: (ghostAccountId: string, query: GhostExposureQuery = {}) =>
+		adminGet<GhostExposureResponse>(`${BASE}/ghosts/${ghostAccountId}/exposures`, { ...query }),
 };
 
 export type GhostInjectionService = typeof ghostInjection;

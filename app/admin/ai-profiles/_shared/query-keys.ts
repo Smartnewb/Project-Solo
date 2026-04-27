@@ -1,5 +1,6 @@
 import type {
 	CandidateListQuery,
+	GhostExposureQuery,
 	GhostListQuery,
 	ListReferencePoolQuery,
 	PhaseSchoolListQuery,
@@ -36,6 +37,9 @@ export const ghostInjectionKeys = {
 
 	userExposures: (userId: string, query: UserGhostExposureQuery) =>
 		[...ghostInjectionKeys.all, 'user-exposures', userId, query] as const,
+
+	ghostExposures: (ghostAccountId: string, query: GhostExposureQuery) =>
+		[...ghostInjectionKeys.all, 'ghost-exposures', ghostAccountId, query] as const,
 };
 
 export const aiProfileGeneratorKeys = {
