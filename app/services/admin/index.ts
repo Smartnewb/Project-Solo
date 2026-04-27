@@ -23,6 +23,8 @@ export { notices } from './notices';
 export type { NoticeListParams } from './notices';
 export { seo } from './seo';
 export type { PageMeta, SitemapKind } from './seo';
+export { cardNewsGeneration } from './card-news-generation';
+export type { CardNewsTopic, QueueStats, JobStatus } from './card-news-generation';
 export { reports, userReview, profileImages } from './moderation';
 export {
 	gems,
@@ -136,6 +138,7 @@ import {
 } from './content';
 import { notices } from './notices';
 import { seo } from './seo';
+import { cardNewsGeneration } from './card-news-generation';
 import { reports, userReview, profileImages } from './moderation';
 import {
 	gems,
@@ -202,6 +205,7 @@ const AdminService = {
 	ghostReferencePool,
 	aiProfileGenerator,
 	seo,
+	cardNewsGeneration,
 };
 
 export default AdminService;

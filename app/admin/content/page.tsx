@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Box, Tabs, Tab, Typography, Button, Menu, MenuItem, CircularProgress } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { Suspense, useState } from 'react';
 import { AllContentTable } from './components/AllContentTable';
 import { CardSeriesTable } from './components/CardSeriesTable';
@@ -52,6 +53,14 @@ function ContentPageInner() {
         <Typography variant="h5" fontWeight="bold">
           운영 콘텐츠 관리
         </Typography>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+        <Button
+          variant="outlined"
+          startIcon={<AutoAwesomeIcon />}
+          onClick={() => router.push('/admin/content/auto-generate')}
+        >
+          자동 생성
+        </Button>
         {currentTab === 'all' ? (
           <>
             <Button
@@ -81,6 +90,7 @@ function ContentPageInner() {
             {tabCreateLabel} 작성
           </Button>
         )}
+        </Box>
       </Box>
 
       <Tabs value={currentTab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
