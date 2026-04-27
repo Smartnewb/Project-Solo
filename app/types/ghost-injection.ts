@@ -771,3 +771,50 @@ export interface GhostProfilePreviewResponse {
 	skippedPhotoCount: 0;
 	external: null;
 }
+
+// ─── User Ghost Exposure ─────────────────────────────────
+
+export type UserGhostExposurePath =
+	| 'v4_fallback'
+	| 'proactive_fill'
+	| 'scheduled_fill'
+	| 'like_cron';
+
+export type UserGhostExposureActionType = 'GHOST_EXPOSED' | 'GHOST_ACCEPTED';
+
+export interface UserGhostExposureQuery {
+	path?: UserGhostExposurePath;
+	actionType?: UserGhostExposureActionType;
+	from?: string;
+	to?: string;
+	page?: number;
+	limit?: number;
+}
+
+export interface UserGhostExposureSummary {
+	totalExposures: number;
+	totalAccepted: number;
+	lastExposedAt: string | null;
+	byPath: Record<UserGhostExposurePath, number>;
+}
+
+export interface UserGhostExposureItem {
+	id: string;
+	actionType: UserGhostExposureActionType;
+	ghostAccountId: string;
+	ghostName: string;
+	ghostPrimaryPhotoUrl: string | null;
+	path: UserGhostExposurePath | null;
+	schoolId: string | null;
+	connectionId: string | null;
+	createdAt: string;
+}
+
+export interface UserGhostExposureResponse {
+	userId: string;
+	summary: UserGhostExposureSummary;
+	items: UserGhostExposureItem[];
+	page: number;
+	limit: number;
+	total: number;
+}

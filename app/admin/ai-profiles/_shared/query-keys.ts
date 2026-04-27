@@ -4,6 +4,7 @@ import type {
 	ListReferencePoolQuery,
 	PhaseSchoolListQuery,
 	RealUserListQuery,
+	UserGhostExposureQuery,
 } from '@/app/types/ghost-injection';
 import type {
 	AiProfileDraftListQuery,
@@ -32,6 +33,9 @@ export const ghostInjectionKeys = {
 		[...ghostInjectionKeys.phaseSchools(), 'list', query] as const,
 
 	blacklist: () => [...ghostInjectionKeys.all, 'blacklist'] as const,
+
+	userExposures: (userId: string, query: UserGhostExposureQuery) =>
+		[...ghostInjectionKeys.all, 'user-exposures', userId, query] as const,
 };
 
 export const aiProfileGeneratorKeys = {
