@@ -6,6 +6,7 @@ import { ko } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Users } from 'lucide-react';
 import { User, UserSearchResponse } from '../types';
 import { smsService } from '@/app/services/sms';
+import { universities as universitiesService } from '@/app/services/admin/system';
 import { safeFormat } from '@/app/utils/formatters';
 import { Search } from 'lucide-react';
 import { Calendar } from '@/shared/ui/calendar';
@@ -43,6 +44,11 @@ export function RecipientSelector({ onRecipientsChange }: RecipientSelectorProps
 
     // NOTE: 사용자 정의 확인 필요
     const [gender, setGender] = useState<'ALL' | 'FEMALE' | 'MALE' | 'CUSTOM'>('ALL');
+    const [selectedRegion, setSelectedRegion] = useState<string>('');
+    const [selectedUniversityId, setSelectedUniversityId] = useState<string>('');
+    const [regionList, setRegionList] = useState<Array<{ code: string; name: string }>>([]);
+    const [universityList, setUniversityList] = useState<Array<{ id: string; name: string }>>([]);
+    const [universityLoading, setUniversityLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState<string>('');
     const [searchResults, setSearchResults] = useState<User[]>([]);
     const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
@@ -152,6 +158,8 @@ export function RecipientSelector({ onRecipientsChange }: RecipientSelectorProps
         try {
             const response = await smsService.searchUser({
                 search: searchTerm || undefined,
+                universityId: selectedUniversityId || undefined,
+                regionCode: selectedRegion || undefined,
             });
 
             const filteredResults = response.users.filter(
@@ -268,7 +276,37 @@ export function RecipientSelector({ onRecipientsChange }: RecipientSelectorProps
         handleSearch();
     }, []);
 
-    // === 활동일 기준 필터링 === 
+    // 지역 목록 초기 로드
+    useEffect(() => {
+        universitiesService.meta.getRegions().then((regions: any[]) => {
+            setRegionList(regions.map((r: any) => ({
+                code: r.code,
+                name: r.nameLocal ?? r.name ?? r.code,
+            })));
+        }).catch(console.error);
+    }, []);
+
+    // 지역 변경 시 대학 목록 로드
+    useEffect(() => {
+        setSelectedUniversityId('');
+        setUniversityList([]);
+        if (!selectedRegion) return;
+        setUniversityLoading(true);
+        universitiesService.getList({ region: selectedRegion, limit: 200, isActive: true })
+            .then((res: any) => {
+                const items = res?.items ?? [];
+                setUniversityList(items.map((u: any) => ({ id: u.id, name: u.name })));
+            })
+            .catch(console.error)
+            .finally(() => setUniversityLoading(false));
+    }, [selectedRegion]);
+
+    // 지역/학교 변경 시 자동 재검색
+    useEffect(() => {
+        handleSearch();
+    }, [selectedRegion, selectedUniversityId]);
+
+    // === 활동일 기준 필터링 ===
     useEffect(() => {
         if (recentActivity !== 'all') {
             handleSearch();
@@ -382,6 +420,39 @@ export function RecipientSelector({ onRecipientsChange }: RecipientSelectorProps
                         ))}
                     </div>
                 </div>
+
+                {/* MARK: - 지역 필터 */}
+                <div className='mb-4'>
+                    <label className='block text-sm font-medium text-[#111827] mb-2'>지역</label>
+                    <select
+                        value={selectedRegion}
+                        onChange={(e) => setSelectedRegion(e.target.value)}
+                        className='w-full px-3 py-2 border border-[#D1D5DB] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#885BEB] bg-white'
+                    >
+                        <option value=''>전체 지역</option>
+                        {regionList.map((r) => (
+                            <option key={r.code} value={r.code}>{r.name}</option>
+                        ))}
+                    </select>
+                </div>
+
+                {/* MARK: - 학교 필터 */}
+                {selectedRegion && (
+                    <div className='mb-4'>
+                        <label className='block text-sm font-medium text-[#111827] mb-2'>학교</label>
+                        <select
+                            value={selectedUniversityId}
+                            onChange={(e) => setSelectedUniversityId(e.target.value)}
+                            disabled={universityLoading}
+                            className='w-full px-3 py-2 border border-[#D1D5DB] rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-[#885BEB] bg-white disabled:opacity-50'
+                        >
+                            <option value=''>전체 학교</option>
+                            {universityList.map((u) => (
+                                <option key={u.id} value={u.id}>{u.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
 
                 {/* MARK: - 사용자 검색 */}
                 <div className='mb-4'>

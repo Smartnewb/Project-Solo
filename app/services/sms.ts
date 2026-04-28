@@ -109,12 +109,16 @@ export const smsService = {
         search?: string;
         page?: number;
         limit?: number;
+        universityId?: string;
+        regionCode?: string;
     }): Promise<UserSearchResponse> {
         try {
             const stringParams: Record<string, string> = {};
             if (params.search) stringParams.search = params.search;
             if (params.page != null) stringParams.page = String(params.page);
             if (params.limit != null) stringParams.limit = String(params.limit);
+            if (params.universityId) stringParams.universityId = params.universityId;
+            if (params.regionCode) stringParams.regionCode = params.regionCode;
 
             // 백엔드 응답: { data: rows[], meta: { page, limit } }
             const res = await adminGet<{ data: Array<{ id: string; name: string | null; phoneNumber: string; status: string; gender: string | null }>; meta: { page: number; limit: number } }>(SMS_ENDPOINTS.USER_SEARCH, stringParams);
