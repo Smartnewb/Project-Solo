@@ -11,13 +11,19 @@ interface MessageComposerProps {
     templateTitle?: string;
     templateContent?: string;
     onSendComplete?: () => void;
+    onMessageChange?: (message: string) => void;
 
 }
 
 // MARK: - 메인 컴포넌트
-export function MessageComposer({ recipients, templateId, templateTitle, templateContent, onSendComplete }: MessageComposerProps) {
+export function MessageComposer({ recipients, templateId, templateTitle, templateContent, onSendComplete, onMessageChange }: MessageComposerProps) {
     // === 상태관리 ===
     const [message, setMessage] = useState<string>('');
+
+    // 외부에 메시지 변경 노티 (필터 기반 발송 흐름과 동기화)
+    useEffect(() => {
+        onMessageChange?.(message);
+    }, [message, onMessageChange]);
     const [loading, setLoading] = useState(false);
     const [scheduledAt, setScheduledAt] = useState<string>('');
     const [scheduledAtOpen, setScheduledAtOpen] = useState<boolean>(false);
