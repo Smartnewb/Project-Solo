@@ -103,12 +103,18 @@ async function callBackend(
 	token: string,
 	meta: AdminSessionMeta | null,
 	contentType: string | null,
+	extraHeaders?: Record<string, string>,
 ): Promise<Response> {
 	const headers: Record<string, string> = {
 		Authorization: `Bearer ${token}`,
 	};
 	if (contentType) headers['Content-Type'] = contentType;
 	if (meta?.selectedCountry) headers['x-country'] = meta.selectedCountry;
+	if (extraHeaders) {
+		for (const [key, value] of Object.entries(extraHeaders)) {
+			headers[key] = value;
+		}
+	}
 
 	return fetch(url, { method, headers, body });
 }
@@ -134,13 +140,24 @@ async function proxyRequest(request: NextRequest, { params }: { params: { path: 
 	});
 
 	const contentType = request.headers.get('content-type');
+	const idempotencyKey = request.headers.get('idempotency-key');
+	const extraHeaders: Record<string, string> = {};
+	if (idempotencyKey) extraHeaders['idempotency-key'] = idempotencyKey;
 
 	let body: BodyInit | null = null;
 	if (request.method !== 'GET' && request.method !== 'HEAD') {
 		body = await request.arrayBuffer();
 	}
 
-	let backendRes = await callBackend(url.toString(), request.method, body, token, meta, contentType);
+	let backendRes = await callBackend(
+		url.toString(),
+		request.method,
+		body,
+		token,
+		meta,
+		contentType,
+		extraHeaders,
+	);
 
 	if (backendRes.status === 401 && targetPath !== 'auth/refresh') {
 		const newToken = await refreshAccessToken(meta);
@@ -152,6 +169,7 @@ async function proxyRequest(request: NextRequest, { params }: { params: { path: 
 				newToken,
 				meta,
 				contentType,
+				extraHeaders,
 			);
 		}
 	}

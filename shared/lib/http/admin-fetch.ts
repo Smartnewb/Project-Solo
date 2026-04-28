@@ -52,7 +52,11 @@ export type AdminQueryParams = Record<string, AdminQueryValue>;
 async function request<T>(
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   path: string,
-  options?: { body?: unknown; params?: AdminQueryParams },
+  options?: {
+    body?: unknown;
+    params?: AdminQueryParams;
+    headers?: Record<string, string>;
+  },
 ): Promise<T> {
   let url = `${PROXY_BASE}${path}`;
 
@@ -70,11 +74,14 @@ async function request<T>(
     if (qs) url += `?${qs}`;
   }
 
+  const baseHeaders: Record<string, string> = options?.body
+    ? { 'Content-Type': 'application/json' }
+    : {};
+  const headers = { ...baseHeaders, ...(options?.headers ?? {}) };
+
   const res = await fetch(url, {
     method,
-    headers: options?.body
-      ? { 'Content-Type': 'application/json' }
-      : undefined,
+    headers: Object.keys(headers).length ? headers : undefined,
     body: options?.body ? JSON.stringify(options.body) : undefined,
   });
 
@@ -122,8 +129,12 @@ export function adminGet<T>(
   return request<T>('GET', path, { params });
 }
 
-export function adminPost<T>(path: string, body?: unknown): Promise<T> {
-  return request<T>('POST', path, { body });
+export function adminPost<T>(
+  path: string,
+  body?: unknown,
+  options?: { headers?: Record<string, string> },
+): Promise<T> {
+  return request<T>('POST', path, { body, headers: options?.headers });
 }
 
 export function adminPut<T>(path: string, body?: unknown): Promise<T> {

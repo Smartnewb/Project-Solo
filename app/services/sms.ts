@@ -18,8 +18,61 @@ const SMS_ENDPOINTS = {
     HISTORY: '/admin/v2/sms/histories',
     HISTORY_BY_ID: (id: string) =>  `/admin/v2/sms/histories/${id}`,
     SEND_MESSAGE: '/admin/v2/sms/send-bulk',
-    USER_SEARCH: '/admin/v2/sms/users/search'
+    USER_SEARCH: '/admin/v2/sms/users/search',
+    RECIPIENTS_COUNT: '/admin/v2/sms/recipients/count',
+    RECIPIENTS_PREVIEW: '/admin/v2/sms/recipients/preview',
+    SEND_BY_FILTER: '/admin/v2/sms/send-by-filter',
+    JOB_STATUS: (jobId: string) => `/admin/v2/sms/jobs/${jobId}`,
 } as const;
+
+// MARK: - 필터 기반 발송 타입
+export interface RecipientFilter {
+    universityIds?: string[];
+    regionCodes?: string[];
+    gender?: 'MALE' | 'FEMALE';
+    excludeUserIds?: string[];
+}
+
+export interface RecipientCount {
+    totalMatched: number;
+    smsConsented: number;
+    validPhone: number;
+    estimatedCost: { sms: number; lms: number };
+}
+
+export interface RecipientPreview {
+    items: Array<{
+        id: string;
+        phoneNumber: string;
+        name: string | null;
+        gender: string | null;
+        universityName: string | null;
+        region: string | null;
+    }>;
+}
+
+export interface BulkSendRequest {
+    filter: RecipientFilter;
+    message: string;
+    type: 'SMS' | 'LMS';
+}
+
+export interface BulkSendResponse {
+    jobId: string;
+    status: 'QUEUED';
+    expectedCount: number;
+}
+
+export interface JobStatus {
+    jobId: string;
+    status: 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+    totalCount: number;
+    sentCount: number;
+    failedCount: number;
+    progress: number;
+    startedAt?: string;
+    completedAt?: string;
+}
 
 // MARK: - 로컬스토리지 헬퍼 함수
 class LocalStorageHelper {
@@ -166,7 +219,47 @@ export const smsService = {
         } catch(error) {
             throw new SmsApiError(`발송 내역 상세 조회 실패 (${id})`, error);
         }
-    }
+    },
+
+    async countRecipients(filter: RecipientFilter): Promise<RecipientCount> {
+        try {
+            const res = await adminPost<{ data: RecipientCount }>(SMS_ENDPOINTS.RECIPIENTS_COUNT, { filter });
+            return res.data;
+        } catch (error) {
+            throw new SmsApiError('대상자 카운트 조회 실패', error);
+        }
+    },
+
+    async previewRecipients(filter: RecipientFilter, limit = 20): Promise<RecipientPreview> {
+        try {
+            const res = await adminPost<{ data: RecipientPreview }>(SMS_ENDPOINTS.RECIPIENTS_PREVIEW, { filter, limit });
+            return res.data;
+        } catch (error) {
+            throw new SmsApiError('대상자 미리보기 조회 실패', error);
+        }
+    },
+
+    async sendByFilter(req: BulkSendRequest, idempotencyKey: string): Promise<BulkSendResponse> {
+        try {
+            const res = await adminPost<{ data: BulkSendResponse }>(
+                SMS_ENDPOINTS.SEND_BY_FILTER,
+                req,
+                { headers: { 'Idempotency-Key': idempotencyKey } },
+            );
+            return res.data;
+        } catch (error) {
+            throw new SmsApiError('필터 기반 SMS 발송 실패', error);
+        }
+    },
+
+    async getJobStatus(jobId: string): Promise<JobStatus> {
+        try {
+            const res = await adminGet<{ data: JobStatus }>(SMS_ENDPOINTS.JOB_STATUS(jobId));
+            return res.data;
+        } catch (error) {
+            throw new SmsApiError(`작업 상태 조회 실패 (${jobId})`, error);
+        }
+    },
 };
 
 
