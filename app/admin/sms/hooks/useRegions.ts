@@ -35,7 +35,7 @@ export const useUniversitiesByRegions = (regionCodes: string[]) => {
 		queryFn: async () => {
 			const results = (await Promise.all(
 				regionCodes.map((code) =>
-					universitiesService.getList({ region: code, limit: 200, isActive: true }),
+					universitiesService.getList({ region: code, limit: 100, isActive: true }),
 				),
 			)) as UniversityListResponse[];
 			const all = results.flatMap((r) => r?.items ?? []);
