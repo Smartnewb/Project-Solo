@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Box, Tabs, Tab, Typography, Button, Menu, MenuItem, CircularProgress } from '@mui/material';
+import { Box, Tabs, Tab, Typography, Button, CircularProgress } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { Suspense, useState } from 'react';
@@ -10,6 +10,7 @@ import { CardSeriesTable } from './components/CardSeriesTable';
 import { LongformTable } from './components/LongformTable';
 import { ArticleTable } from './components/ArticleTable';
 import { NoticeTable } from './components/NoticeTable';
+import { ContentTypeSelectModal } from './components/ContentTypeSelectModal';
 import { CONTENT_TYPE_LABELS, type ContentType } from './constants';
 
 type TabValue = 'all' | ContentType;
@@ -18,14 +19,14 @@ function ContentPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentTab = ((searchParams.get('tab') as TabValue) || 'all') as TabValue;
-  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const setTab = (tab: TabValue) => {
     router.replace(`/admin/content?tab=${tab}`);
   };
 
   const handleCreate = (type: ContentType) => {
-    setAnchorEl(null);
+    setModalOpen(false);
     router.push(`/admin/content/${type}/create`);
   };
 
@@ -58,20 +59,15 @@ function ContentPageInner() {
             <Button
               variant="contained"
               startIcon={<AddIcon />}
-              onClick={(e) => setAnchorEl(e.currentTarget)}
+              onClick={() => setModalOpen(true)}
             >
               새 콘텐츠
             </Button>
-            <Menu
-              anchorEl={anchorEl}
-              open={!!anchorEl}
-              onClose={() => setAnchorEl(null)}
-            >
-              <MenuItem onClick={() => handleCreate('card-series')}>카드시리즈</MenuItem>
-              <MenuItem onClick={() => handleCreate('longform')}>롱폼 아티클</MenuItem>
-              <MenuItem onClick={() => handleCreate('article')}>아티클</MenuItem>
-              <MenuItem onClick={() => handleCreate('notice')}>공지사항</MenuItem>
-            </Menu>
+            <ContentTypeSelectModal
+              open={modalOpen}
+              onClose={() => setModalOpen(false)}
+              onSelect={handleCreate}
+            />
           </>
         ) : (
           <Button
