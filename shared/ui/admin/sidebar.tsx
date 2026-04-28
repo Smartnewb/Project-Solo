@@ -137,6 +137,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
       { href: '/admin/version-management', label: '버전 관리' },
       { href: '/admin/feature-flags', label: 'Feature Flags' },
       { href: '/admin/lab', label: '실험실' },
+      { href: '/admin/app-preview', label: '앱 UI 시연' },
     ],
   },
 ];
