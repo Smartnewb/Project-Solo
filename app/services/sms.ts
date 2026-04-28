@@ -116,8 +116,18 @@ export const smsService = {
             if (params.page != null) stringParams.page = String(params.page);
             if (params.limit != null) stringParams.limit = String(params.limit);
 
-            const res = await adminGet<{ data: UserSearchResponse }>(SMS_ENDPOINTS.USER_SEARCH, stringParams);
-            return res.data ?? { users: [], meta: { totalCount: 0 } };
+            // 백엔드 응답: { data: rows[], meta: { page, limit } }
+            const res = await adminGet<{ data: Array<{ id: string; name: string | null; phoneNumber: string; status: string; gender: string | null }>; meta: { page: number; limit: number } }>(SMS_ENDPOINTS.USER_SEARCH, stringParams);
+            const rows = res.data ?? [];
+            return {
+                users: rows.map(u => ({
+                    userId: u.id,
+                    name: u.name ?? '',
+                    phoneNumber: u.phoneNumber,
+                    gender: (u.gender as User['gender']) ?? 'ALL',
+                })),
+                meta: { totalCount: rows.length },
+            };
         } catch (error) {
             throw new SmsApiError('사용자 검색 실패', error);
         }

@@ -150,24 +150,22 @@ export function RecipientSelector({ onRecipientsChange }: RecipientSelectorProps
         setLoading(true);
 
         try {
-            // API 호출 - 백엔드는 search/page/limit만 지원
             const response = await smsService.searchUser({
                 search: searchTerm || undefined,
             });
 
-            // 백엔드 응답: { data: rows, meta: { page, limit } }
-            const users = (response as any).data ?? (response as any).users ?? [];
-
-            // users 배열에서 필터링 (백엔드는 id를 반환, 프론트 타입은 userId)
-            const mappedUsers = (users as any[]).map(u => ({ ...u, userId: u.userId ?? u.id }));
-            const filteredResults = (mappedUsers as User[]).filter(
+            const filteredResults = response.users.filter(
                 user => !selectedUsers.find(selected => selected.userId === user.userId)
             );
 
             setSearchResults(filteredResults);
             setTotalCount(filteredResults.length);
 
-        } catch { } finally {
+        } catch (error) {
+            console.error('사용자 검색 실패:', error);
+            setSearchResults([]);
+            setTotalCount(0);
+        } finally {
             setLoading(false);
         }
     };
