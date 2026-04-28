@@ -68,6 +68,7 @@ export type {
 export { ghostInjection } from './ghost-injection';
 export { ghostReferencePool } from './ghost-reference-pool';
 export { aiProfileGenerator } from './ai-profile-generator';
+export { promotions } from './promotions';
 export { aiProfileReferences } from './ai-profile-references';
 export type { KeywordCategory, KeywordItem, KeywordsResponse } from './keywords';
 export type {
@@ -160,6 +161,7 @@ import { utm } from './utm';
 import { ghostInjection } from './ghost-injection';
 import { ghostReferencePool } from './ghost-reference-pool';
 import { aiProfileGenerator } from './ai-profile-generator';
+import { promotions } from './promotions';
 
 const AdminService = {
 	stats,
@@ -204,6 +206,7 @@ const AdminService = {
 	ghostInjection,
 	ghostReferencePool,
 	aiProfileGenerator,
+	promotions,
 	seo,
 	cardNewsGeneration,
 };

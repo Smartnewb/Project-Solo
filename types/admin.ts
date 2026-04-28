@@ -197,6 +197,53 @@ export interface DeletedFemalesListResponse {
   };
 }
 
+// ==================== Promotions ====================
+export interface Promotion {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  badge: string | null;
+  imageUrl: string;
+  backgroundColor: string;
+  targetGemProductId: string;
+  discountRate: number;
+  startsAt: string;
+  expiresAt: string;
+  sortOrder: number;
+  isActive: boolean;
+  ctaText: string;
+  targetFirstPurchaseOnly: boolean;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
+export interface PromotionImageUploadResponse {
+  imageUrl: string;
+  s3Key: string;
+  mime: string;
+  sizeBytes: number;
+}
+
+export interface CreatePromotionRequest {
+  title: string;
+  subtitle?: string;
+  badge?: string;
+  imageUrl: string;
+  backgroundColor: string;
+  targetGemProductId: string;
+  discountRate: number;
+  startsAt: string;
+  expiresAt: string;
+  sortOrder?: number;
+  isActive?: boolean;
+  ctaText?: string;
+  targetFirstPurchaseOnly?: boolean;
+}
+
+export type UpdatePromotionRequest = Partial<CreatePromotionRequest>;
+
 export interface RestoreFemaleResponse {
   id: string;
   email: string;
