@@ -3,7 +3,6 @@
 
 import { useMemo, useState } from 'react';
 import type { RecipientCount, RecipientFilter, SmsJobType } from '@/app/services/sms';
-import { smsService } from '@/app/services/sms';
 import { useBulkSendMutation, useJobStatus } from './hooks/useBulkSendJob';
 import { useRecipientCount } from './hooks/useRecipientCount';
 import { useRegions, useUniversitiesByRegions } from './hooks/useRegions';
@@ -62,7 +61,7 @@ function SmspageContent() {
 		setIdempotencyKey(null);
 	};
 
-	const handleOpenConfirm = async () => {
+	const handleOpenConfirm = () => {
 		if (!message.trim()) {
 			alert('메시지를 입력하세요.');
 			return;
@@ -71,14 +70,13 @@ function SmspageContent() {
 			alert('발송 대상이 없습니다. 조건을 확인하세요.');
 			return;
 		}
-		try {
-			const count = await smsService.countRecipients(effectiveFilter);
-			setConfirmCount(count);
-			setIdempotencyKey(crypto.randomUUID());
-			setShowConfirm(true);
-		} catch (e) {
-			alert('대상자 카운트 조회 실패');
+		if (!effectiveCount) {
+			alert('대상자 카운트 조회 중입니다. 잠시 후 다시 시도하세요.');
+			return;
 		}
+		setConfirmCount(effectiveCount);
+		setIdempotencyKey(crypto.randomUUID());
+		setShowConfirm(true);
 	};
 
 	const handleCloseConfirm = () => {
@@ -136,7 +134,6 @@ function SmspageContent() {
 						onMessageChange={setMessage}
 					/>
 
-					{/* 필터 기반 발송 액션 */}
 					<div className='border border-[#D1D5DB] bg-white rounded-lg p-4 sm:p-6'>
 						<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
 							<div className='flex items-center gap-2'>

@@ -37,11 +37,18 @@ export interface RecipientFilter {
     userIds?: string[];
 }
 
+export const EXCLUSION_REASON = {
+    NO_CONSENT: 'NO_CONSENT',
+    NO_PHONE: 'NO_PHONE',
+    BOTH: 'BOTH',
+} as const;
+export type ExclusionReason = (typeof EXCLUSION_REASON)[keyof typeof EXCLUSION_REASON];
+
 export interface ExcludedUser {
     userId: string;
     name: string | null;
     phoneNumber: string | null;
-    reason: 'NO_CONSENT' | 'NO_PHONE' | 'BOTH';
+    reason: ExclusionReason;
 }
 
 export interface RecipientCount {

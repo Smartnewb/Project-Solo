@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   TextField,
   Box,
@@ -28,31 +28,100 @@ export function UserSearchSelector({ selectedUserIds, onSelectionChange, disable
   const [query, setQuery] = useState('');
   const { data, isLoading, isError } = useUserSearch(query);
 
-  // Cache so chips keep their label after query changes
-  const cacheRef = useRef<Map<string, UserSearchItem>>(new Map());
-
-  if (data?.data) {
-    for (const item of data.data) {
-      cacheRef.current.set(item.id, item);
-    }
-  }
+  // 칩 라벨용 캐시는 선택된 ID 집합에만 묶여 있어 무한 증가하지 않는다.
+  const [labels, setLabels] = useState<Map<string, UserSearchItem>>(new Map());
 
   const selectedSet = useMemo(() => new Set(selectedUserIds), [selectedUserIds]);
 
-  const toggle = (id: string) => {
-    if (selectedSet.has(id)) {
-      onSelectionChange(selectedUserIds.filter((x) => x !== id));
-    } else {
-      onSelectionChange([...selectedUserIds, id]);
-    }
+  const select = (item: UserSearchItem) => {
+    onSelectionChange([...selectedUserIds, item.id]);
+    setLabels((prev) => new Map(prev).set(item.id, item));
   };
 
-  const removeChip = (id: string) => {
+  const unselect = (id: string) => {
     onSelectionChange(selectedUserIds.filter((x) => x !== id));
+    setLabels((prev) => {
+      const next = new Map(prev);
+      next.delete(id);
+      return next;
+    });
+  };
+
+  const toggle = (item: UserSearchItem) => {
+    if (selectedSet.has(item.id)) unselect(item.id);
+    else select(item);
   };
 
   const trimmed = query.trim();
-  const showHelper = trimmed.length < 2;
+  const viewState: 'helper' | 'loading' | 'error' | 'empty' | 'list' =
+    trimmed.length < 2
+      ? 'helper'
+      : isLoading
+        ? 'loading'
+        : isError
+          ? 'error'
+          : !data || data.data.length === 0
+            ? 'empty'
+            : 'list';
+
+  function renderResults() {
+    if (viewState === 'helper') {
+      return (
+        <Typography variant="body2" color="text.secondary">
+          이름 또는 휴대폰 2자 이상 입력하세요
+        </Typography>
+      );
+    }
+    if (viewState === 'loading') {
+      return (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+          <CircularProgress size={20} />
+        </Box>
+      );
+    }
+    if (viewState === 'error') {
+      return (
+        <Typography variant="body2" color="error">
+          검색 중 오류가 발생했습니다
+        </Typography>
+      );
+    }
+    if (viewState === 'empty') {
+      return (
+        <Typography variant="body2" color="text.secondary">
+          검색 결과 없음
+        </Typography>
+      );
+    }
+    return (
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell padding="checkbox">선택</TableCell>
+            <TableCell>이름</TableCell>
+            <TableCell>휴대폰</TableCell>
+            <TableCell>성별</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {data!.data.map((item) => (
+            <TableRow key={item.id} hover>
+              <TableCell padding="checkbox">
+                <Checkbox
+                  checked={selectedSet.has(item.id)}
+                  onChange={() => toggle(item)}
+                  disabled={disabled}
+                />
+              </TableCell>
+              <TableCell>{item.name ?? '-'}</TableCell>
+              <TableCell>{item.phoneNumber ?? '-'}</TableCell>
+              <TableCell>{item.gender ?? '-'}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    );
+  }
 
   return (
     <Stack spacing={2}>
@@ -68,12 +137,12 @@ export function UserSearchSelector({ selectedUserIds, onSelectionChange, disable
       {selectedUserIds.length > 0 && (
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
           {selectedUserIds.map((id) => {
-            const cached = cacheRef.current.get(id);
+            const cached = labels.get(id);
             return (
               <Chip
                 key={id}
                 label={cached?.name ?? cached?.phoneNumber ?? id}
-                onDelete={disabled ? undefined : () => removeChip(id)}
+                onDelete={disabled ? undefined : () => unselect(id)}
                 size="small"
               />
             );
@@ -81,61 +150,7 @@ export function UserSearchSelector({ selectedUserIds, onSelectionChange, disable
         </Box>
       )}
 
-      {showHelper && (
-        <Typography variant="body2" color="text.secondary">
-          이름 또는 휴대폰 2자 이상 입력하세요
-        </Typography>
-      )}
-
-      {!showHelper && isLoading && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
-          <CircularProgress size={20} />
-        </Box>
-      )}
-
-      {!showHelper && isError && (
-        <Typography variant="body2" color="error">
-          검색 중 오류가 발생했습니다
-        </Typography>
-      )}
-
-      {!showHelper && !isLoading && data && data.data.length === 0 && (
-        <Typography variant="body2" color="text.secondary">
-          검색 결과 없음
-        </Typography>
-      )}
-
-      {!showHelper && !isLoading && data && data.data.length > 0 && (
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell padding="checkbox">선택</TableCell>
-              <TableCell>이름</TableCell>
-              <TableCell>휴대폰</TableCell>
-              <TableCell>성별</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {data.data.map((item) => {
-              const checked = selectedSet.has(item.id);
-              return (
-                <TableRow key={item.id} hover>
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      checked={checked}
-                      onChange={() => toggle(item.id)}
-                      disabled={disabled}
-                    />
-                  </TableCell>
-                  <TableCell>{item.name ?? '-'}</TableCell>
-                  <TableCell>{item.phoneNumber ?? '-'}</TableCell>
-                  <TableCell>{item.gender ?? '-'}</TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      )}
+      {renderResults()}
     </Stack>
   );
 }
