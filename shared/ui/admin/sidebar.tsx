@@ -84,6 +84,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
       { href: '/admin/gems', label: '구슬 관리' },
       { href: '/admin/gems/pricing', label: '구슬 가격표' },
       { href: '/admin/promotions', label: '프로모션 관리' },
+      { href: '/admin/iap-catalog', label: 'IAP 카탈로그' },
       { href: '/admin/ios-refund', label: 'iOS 환불 관리' },
     ],
   },

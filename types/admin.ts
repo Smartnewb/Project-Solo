@@ -198,6 +198,13 @@ export interface DeletedFemalesListResponse {
 }
 
 // ==================== Promotions ====================
+export interface ApplePriceInfo {
+  price: number;
+  currency: string;
+  displayPrice: string;
+  storefront: string;
+}
+
 export interface Promotion {
   id: string;
   title: string;
@@ -205,7 +212,12 @@ export interface Promotion {
   badge: string | null;
   imageUrl: string;
   backgroundColor: string;
-  targetGemProductId: string;
+  targetGemProductId: string | null;
+  originGemProductId?: string | null;
+  saleGemProductId?: string | null;
+  targetAppleSku?: string | null;
+  applePrice?: ApplePriceInfo | null;
+  derivedDiscountRate?: number;
   discountRate: number;
   startsAt: string;
   expiresAt: string;
@@ -232,8 +244,10 @@ export interface CreatePromotionRequest {
   badge?: string;
   imageUrl: string;
   backgroundColor: string;
-  targetGemProductId: string;
-  discountRate: number;
+  targetGemProductId?: string;
+  originGemProductId?: string;
+  saleGemProductId?: string;
+  discountRate?: number;
   startsAt: string;
   expiresAt: string;
   sortOrder?: number;
@@ -243,6 +257,41 @@ export interface CreatePromotionRequest {
 }
 
 export type UpdatePromotionRequest = Partial<CreatePromotionRequest>;
+
+// ==================== Gem Products ====================
+export interface AdminGemProduct {
+  id: string;
+  productName: string;
+  gemAmount: number;
+  bonusGems: number;
+  totalGems: number;
+  price: number;
+  currency: string;
+  discountRate?: number;
+  sortOrder: number;
+  appleSku: string | null;
+  applePrice: ApplePriceInfo | null;
+}
+
+// ==================== Apple IAP Catalog ====================
+export type AppleIapPriceSource = 'connect_api' | 'app_observed' | 'manual';
+
+export interface AppleIapPricePoint {
+  sku: string;
+  storefront: string;
+  price: number;
+  currency: string;
+  displayPrice: string;
+  source: AppleIapPriceSource;
+  syncedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SyncApplePricesResponse {
+  synced: number;
+  failed: string[];
+}
 
 export interface RestoreFemaleResponse {
   id: string;

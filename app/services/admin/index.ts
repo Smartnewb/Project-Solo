@@ -69,6 +69,8 @@ export { ghostInjection } from './ghost-injection';
 export { ghostReferencePool } from './ghost-reference-pool';
 export { aiProfileGenerator } from './ai-profile-generator';
 export { promotions } from './promotions';
+export { gemProducts } from './gem-products';
+export { iapCatalog } from './iap-catalog';
 export { aiProfileReferences } from './ai-profile-references';
 export type { KeywordCategory, KeywordItem, KeywordsResponse } from './keywords';
 export type {
@@ -162,6 +164,8 @@ import { ghostInjection } from './ghost-injection';
 import { ghostReferencePool } from './ghost-reference-pool';
 import { aiProfileGenerator } from './ai-profile-generator';
 import { promotions } from './promotions';
+import { gemProducts } from './gem-products';
+import { iapCatalog } from './iap-catalog';
 
 const AdminService = {
 	stats,
@@ -207,6 +211,8 @@ const AdminService = {
 	ghostReferencePool,
 	aiProfileGenerator,
 	promotions,
+	gemProducts,
+	iapCatalog,
 	seo,
 	cardNewsGeneration,
 };

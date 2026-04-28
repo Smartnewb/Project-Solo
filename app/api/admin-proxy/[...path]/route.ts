@@ -31,6 +31,8 @@ const ALLOWED_PATH_PREFIXES = [
 	'matching/',
 	'support-chat/',
 	'v4/admin/',
+	'v1/admin/',
+	'v1/gem/',
 	'utm/',
 	'go/',
 ];

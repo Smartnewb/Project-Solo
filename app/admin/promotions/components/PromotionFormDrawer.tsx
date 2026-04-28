@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Sheet,
   SheetContent,
@@ -16,6 +17,11 @@ import {
   CircularProgress,
   Typography,
   Divider,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
+  FormHelperText,
 } from '@mui/material';
 import { PromotionImageUpload } from './PromotionImageUpload';
 import {
@@ -23,7 +29,12 @@ import {
   useDeletePromotionImage,
 } from '@/app/admin/hooks';
 import { useToast } from '@/shared/ui/admin/toast';
-import type { Promotion, CreatePromotionRequest } from '@/types/admin';
+import AdminService from '@/app/services/admin';
+import type {
+  Promotion,
+  CreatePromotionRequest,
+  AdminGemProduct,
+} from '@/types/admin';
 
 interface PromotionFormDrawerProps {
   open: boolean;
@@ -38,8 +49,8 @@ const DEFAULT_FORM = {
   badge: '',
   imageUrl: '',
   backgroundColor: '#FFFFFF',
-  targetGemProductId: '',
-  discountRate: 0,
+  originGemProductId: '',
+  saleGemProductId: '',
   startsAt: '',
   expiresAt: '',
   sortOrder: 0,
@@ -47,6 +58,12 @@ const DEFAULT_FORM = {
   targetFirstPurchaseOnly: false,
   isActive: true,
 };
+
+function formatProductLabel(p: AdminGemProduct): string {
+  const sku = p.appleSku ? ` · ${p.appleSku}` : '';
+  const display = p.applePrice?.displayPrice ?? `${p.price.toLocaleString()} ${p.currency}`;
+  return `${p.productName} (${p.totalGems}구슬, ${display})${sku}`;
+}
 
 export function PromotionFormDrawer({
   open,
@@ -64,6 +81,21 @@ export function PromotionFormDrawer({
   const uploadMutation = useUploadPromotionImage();
   const deleteImageMutation = useDeletePromotionImage();
 
+  const productListQuery = useQuery({
+    queryKey: ['admin', 'gem-products', 'list'],
+    queryFn: () => AdminService.gemProducts.getList(),
+    enabled: open,
+  });
+
+  const products = useMemo(
+    () => productListQuery.data ?? [],
+    [productListQuery.data],
+  );
+  const productMap = useMemo(
+    () => new Map(products.map((p) => [p.id, p])),
+    [products],
+  );
+
   useEffect(() => {
     if (open && editPromotion) {
       setForm({
@@ -72,8 +104,9 @@ export function PromotionFormDrawer({
         badge: editPromotion.badge ?? '',
         imageUrl: editPromotion.imageUrl,
         backgroundColor: editPromotion.backgroundColor,
-        targetGemProductId: editPromotion.targetGemProductId,
-        discountRate: editPromotion.discountRate,
+        originGemProductId: editPromotion.originGemProductId ?? '',
+        saleGemProductId:
+          editPromotion.saleGemProductId ?? editPromotion.targetGemProductId ?? '',
         startsAt: editPromotion.startsAt.slice(0, 16),
         expiresAt: editPromotion.expiresAt.slice(0, 16),
         sortOrder: editPromotion.sortOrder,
@@ -107,14 +140,37 @@ export function PromotionFormDrawer({
     if (!form.title.trim()) errs.title = '제목을 입력하세요.';
     if (!form.imageUrl) errs.imageUrl = '이미지를 업로드하세요.';
     if (!form.backgroundColor) errs.backgroundColor = '배경색을 선택하세요.';
-    if (!form.targetGemProductId.trim()) errs.targetGemProductId = '구슬 상품 ID를 입력하세요.';
-    if (form.discountRate < 0 || form.discountRate > 100) errs.discountRate = '0~100 사이 값을 입력하세요.';
+    if (!form.saleGemProductId)
+      errs.saleGemProductId = '할인 상품(SKU)을 선택하세요.';
+    if (!form.originGemProductId)
+      errs.originGemProductId = '원가 상품(SKU)을 선택하세요.';
+    if (
+      form.originGemProductId &&
+      form.saleGemProductId &&
+      form.originGemProductId === form.saleGemProductId
+    ) {
+      errs.saleGemProductId = '원가 상품과 할인 상품은 달라야 합니다.';
+    }
     if (!form.startsAt) errs.startsAt = '시작일을 입력하세요.';
     if (!form.expiresAt) errs.expiresAt = '종료일을 입력하세요.';
     if (form.startsAt && form.expiresAt && form.expiresAt <= form.startsAt)
       errs.expiresAt = '종료일은 시작일 이후여야 합니다.';
     return errs;
   };
+
+  const origin = form.originGemProductId
+    ? productMap.get(form.originGemProductId)
+    : undefined;
+  const sale = form.saleGemProductId
+    ? productMap.get(form.saleGemProductId)
+    : undefined;
+
+  const originPrice = origin?.applePrice?.price ?? origin?.price ?? 0;
+  const salePrice = sale?.applePrice?.price ?? sale?.price ?? 0;
+  const derivedDiscountRate =
+    origin && sale && originPrice > 0 && salePrice >= 0 && originPrice > salePrice
+      ? Number((((originPrice - salePrice) / originPrice) * 100).toFixed(1))
+      : null;
 
   const handleSubmit = async () => {
     const errs = validate();
@@ -130,8 +186,10 @@ export function PromotionFormDrawer({
         badge: form.badge || undefined,
         imageUrl: form.imageUrl,
         backgroundColor: form.backgroundColor,
-        targetGemProductId: form.targetGemProductId,
-        discountRate: form.discountRate,
+        originGemProductId: form.originGemProductId || undefined,
+        saleGemProductId: form.saleGemProductId || undefined,
+        // Keep targetGemProductId for backwards compat with older API field
+        targetGemProductId: form.saleGemProductId || undefined,
         startsAt: new Date(form.startsAt).toISOString(),
         expiresAt: new Date(form.expiresAt).toISOString(),
         sortOrder: form.sortOrder,
@@ -152,6 +210,9 @@ export function PromotionFormDrawer({
 
   const set = (field: string, value: unknown) =>
     setForm((prev) => ({ ...prev, [field]: value }));
+
+  const productsLoading = productListQuery.isLoading;
+  const productsError = productListQuery.isError;
 
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
@@ -230,27 +291,91 @@ export function PromotionFormDrawer({
             />
           </Box>
 
-          <TextField
-            label="구슬 상품 ID *"
-            value={form.targetGemProductId}
-            onChange={(e) => set('targetGemProductId', e.target.value)}
-            error={!!errors.targetGemProductId}
-            helperText={errors.targetGemProductId}
-            size="small"
-            fullWidth
-          />
+          <Divider />
 
-          <TextField
-            label="할인율 (%) *"
-            type="number"
-            value={form.discountRate}
-            onChange={(e) => set('discountRate', Number(e.target.value))}
-            inputProps={{ min: 0, max: 100 }}
-            error={!!errors.discountRate}
-            helperText={errors.discountRate}
-            size="small"
-            fullWidth
-          />
+          <Typography variant="subtitle2" color="text.secondary">
+            구슬 SKU 페어
+          </Typography>
+
+          {productsError && (
+            <Typography variant="caption" color="error">
+              구슬 상품 목록을 불러오지 못했습니다.
+            </Typography>
+          )}
+
+          <FormControl size="small" fullWidth error={!!errors.originGemProductId}>
+            <InputLabel id="origin-gem-product-label">원가 상품 *</InputLabel>
+            <Select
+              labelId="origin-gem-product-label"
+              label="원가 상품 *"
+              value={form.originGemProductId}
+              onChange={(e) => set('originGemProductId', e.target.value)}
+              disabled={productsLoading}
+            >
+              <MenuItem value="">
+                <em>선택하세요</em>
+              </MenuItem>
+              {products.map((p) => (
+                <MenuItem key={p.id} value={p.id}>
+                  {formatProductLabel(p)}
+                </MenuItem>
+              ))}
+            </Select>
+            {errors.originGemProductId && (
+              <FormHelperText>{errors.originGemProductId}</FormHelperText>
+            )}
+          </FormControl>
+
+          <FormControl size="small" fullWidth error={!!errors.saleGemProductId}>
+            <InputLabel id="sale-gem-product-label">할인 상품 *</InputLabel>
+            <Select
+              labelId="sale-gem-product-label"
+              label="할인 상품 *"
+              value={form.saleGemProductId}
+              onChange={(e) => set('saleGemProductId', e.target.value)}
+              disabled={productsLoading}
+            >
+              <MenuItem value="">
+                <em>선택하세요</em>
+              </MenuItem>
+              {products.map((p) => (
+                <MenuItem key={p.id} value={p.id}>
+                  {formatProductLabel(p)}
+                </MenuItem>
+              ))}
+            </Select>
+            {errors.saleGemProductId && (
+              <FormHelperText>{errors.saleGemProductId}</FormHelperText>
+            )}
+          </FormControl>
+
+          <Box
+            sx={{
+              p: 1.5,
+              borderRadius: 1,
+              bgcolor: 'grey.50',
+              border: '1px solid',
+              borderColor: 'grey.200',
+            }}
+          >
+            <Typography variant="caption" color="text.secondary" display="block">
+              파생 할인율 (자동 계산)
+            </Typography>
+            <Typography variant="body2" fontWeight={600}>
+              {derivedDiscountRate !== null
+                ? `${derivedDiscountRate}%`
+                : '— (원가/할인 상품을 모두 선택하세요)'}
+            </Typography>
+            {origin && sale && (
+              <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                원가 {origin.applePrice?.displayPrice ?? `${origin.price.toLocaleString()} ${origin.currency}`}
+                {' → '}
+                할인가 {sale.applePrice?.displayPrice ?? `${sale.price.toLocaleString()} ${sale.currency}`}
+              </Typography>
+            )}
+          </Box>
+
+          <Divider />
 
           <TextField
             label="시작일 *"
