@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/shared/ui/button';
-import { GhostUserExposureContent } from '../ghost-user-exposure-content';
+import { GhostUserExposureContent } from '../../ghost-user-exposure-content';
 
 interface UserExposureClientProps {
 	userId: string;
