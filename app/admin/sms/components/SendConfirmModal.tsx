@@ -47,6 +47,7 @@ export function SendConfirmModal({
 	onClose,
 	onConfirm,
 }: Props) {
+	const isUserIdsMode = !!filter.userIds?.length;
 	const selectedRegionNames =
 		(filter.regionCodes ?? [])
 			.map((c) => regions.find((r) => r.code === c)?.name ?? c)
@@ -56,6 +57,7 @@ export function SendConfirmModal({
 			.map((id) => universities.find((u) => u.id === id)?.name ?? id)
 			.join(', ') || '전체';
 	const cost = count ? (type === 'LMS' ? count.estimatedCost.lms : count.estimatedCost.sms) : 0;
+	const excludedCount = count?.excludedUsers?.length ?? 0;
 
 	return (
 		<Dialog open={open} onClose={onClose} maxWidth='sm' fullWidth>
@@ -66,11 +68,21 @@ export function SendConfirmModal({
 						<Typography variant='subtitle2' className='text-gray-500 mb-1'>
 							발송 조건
 						</Typography>
-						<Box className='space-y-1 text-sm'>
-							<div>학교: {selectedUnivNames}</div>
-							<div>지역: {selectedRegionNames}</div>
-							<div>성별: {filter.gender ?? '전체'}</div>
-						</Box>
+						{isUserIdsMode ? (
+							<Box className='space-y-1 text-sm'>
+								<div>선택한 사용자: {filter.userIds!.length.toLocaleString()}명</div>
+								<div>
+									발송 가능: {count?.validPhone.toLocaleString() ?? 0}명 / 제외:{' '}
+									{excludedCount.toLocaleString()}명
+								</div>
+							</Box>
+						) : (
+							<Box className='space-y-1 text-sm'>
+								<div>학교: {selectedUnivNames}</div>
+								<div>지역: {selectedRegionNames}</div>
+								<div>성별: {filter.gender ?? '전체'}</div>
+							</Box>
+						)}
 					</div>
 
 					<Divider />

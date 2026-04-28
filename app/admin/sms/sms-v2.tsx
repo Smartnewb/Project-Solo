@@ -1,13 +1,17 @@
 // TITLE: - sms 관리 페이지
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { RecipientCount, RecipientFilter, SmsJobType } from '@/app/services/sms';
 import { smsService } from '@/app/services/sms';
 import { useBulkSendMutation, useJobStatus } from './hooks/useBulkSendJob';
+import { useRecipientCount } from './hooks/useRecipientCount';
 import { useRegions, useUniversitiesByRegions } from './hooks/useRegions';
 import { MessageComposer } from './components/MessageComposer';
 import { RecipientSelector } from './components/RecipientSelector';
+import { RecipientModeToggle, RecipientMode } from './components/RecipientModeToggle';
+import { UserSearchSelector } from './components/UserSearchSelector';
+import { ExcludedUsersCard } from './components/ExcludedUsersCard';
 import { SendConfirmModal } from './components/SendConfirmModal';
 import { SmsHistoryTable } from './components/SmsHistoryTable';
 import { TemplateManager } from './components/TemplateManager';
@@ -24,6 +28,8 @@ function SmspageContent() {
 	const [activeJobId, setActiveJobId] = useState<string | null>(null);
 	const [confirmCount, setConfirmCount] = useState<RecipientCount | null>(null);
 	const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null);
+	const [mode, setMode] = useState<RecipientMode>('filter');
+	const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
 
 	const { data: regionLookup = [] } = useRegions();
 	const { data: universityLookup = [] } = useUniversitiesByRegions(
@@ -32,10 +38,28 @@ function SmspageContent() {
 
 	const sendMutation = useBulkSendMutation();
 	const jobStatus = useJobStatus(activeJobId);
+	const isSending = sendMutation.isPending;
+
+	const effectiveFilter: RecipientFilter = useMemo(
+		() => (mode === 'userIds' ? { userIds: selectedUserIds } : currentFilter),
+		[mode, selectedUserIds, currentFilter],
+	);
+
+	const effectiveCountEnabled =
+		mode === 'userIds' ? selectedUserIds.length > 0 : true;
+	const { data: effectiveCount } = useRecipientCount(effectiveFilter, effectiveCountEnabled);
+
+	const effectiveValidCount =
+		mode === 'userIds' ? effectiveCount?.validPhone ?? 0 : currentValidCount;
 
 	const handleFilterChange = (filter: RecipientFilter, validCount: number) => {
 		setCurrentFilter(filter);
 		setCurrentValidCount(validCount);
+	};
+
+	const handleModeChange = (next: RecipientMode) => {
+		setMode(next);
+		setIdempotencyKey(null);
 	};
 
 	const handleOpenConfirm = async () => {
@@ -43,12 +67,12 @@ function SmspageContent() {
 			alert('메시지를 입력하세요.');
 			return;
 		}
-		if (currentValidCount <= 0) {
-			alert('발송 대상이 없습니다. 필터 조건을 확인하세요.');
+		if (effectiveValidCount <= 0) {
+			alert('발송 대상이 없습니다. 조건을 확인하세요.');
 			return;
 		}
 		try {
-			const count = await smsService.countRecipients(currentFilter);
+			const count = await smsService.countRecipients(effectiveFilter);
 			setConfirmCount(count);
 			setIdempotencyKey(crypto.randomUUID());
 			setShowConfirm(true);
@@ -66,7 +90,7 @@ function SmspageContent() {
 		if (!idempotencyKey) return;
 		try {
 			const res = await sendMutation.mutateAsync({
-				req: { filter: currentFilter, message, type: smsType },
+				req: { filter: effectiveFilter, message, type: smsType },
 				idempotencyKey,
 			});
 			setActiveJobId(res.jobId);
@@ -84,7 +108,23 @@ function SmspageContent() {
 		<div className='bg-[#F9FAFB] min-h-screen px-4 sm:px-6 md:px-8 lg:px-20 xl:px-25'>
 			<div className='grid grid-cols-1 md:grid-cols-8 lg:grid-cols-10 gap-6'>
 				<div className='lg:col-span-3'>
-					<RecipientSelector onFilterChange={handleFilterChange} />
+					<RecipientModeToggle
+						mode={mode}
+						onChange={handleModeChange}
+						disabled={isSending}
+					/>
+					{mode === 'filter' ? (
+						<RecipientSelector onFilterChange={handleFilterChange} />
+					) : (
+						<UserSearchSelector
+							selectedUserIds={selectedUserIds}
+							onSelectionChange={setSelectedUserIds}
+							disabled={isSending}
+						/>
+					)}
+					{mode === 'userIds' && (
+						<ExcludedUsersCard excluded={effectiveCount?.excludedUsers ?? []} />
+					)}
 				</div>
 
 				<div className='lg:col-span-7 space-y-6'>
@@ -113,10 +153,15 @@ function SmspageContent() {
 							<button
 								type='button'
 								onClick={handleOpenConfirm}
-								disabled={!currentValidCount || !message.trim() || sendMutation.isPending}
+								disabled={
+									!effectiveValidCount ||
+									!message.trim() ||
+									isSending ||
+									(mode === 'userIds' && selectedUserIds.length === 0)
+								}
 								className='px-4 py-2 rounded-md bg-[#885AEB] text-white text-sm font-medium disabled:opacity-50'
 							>
-								필터 발송하기 ({currentValidCount}명)
+								발송하기 ({effectiveValidCount}명)
 							</button>
 						</div>
 
@@ -149,13 +194,13 @@ function SmspageContent() {
 
 			<SendConfirmModal
 				open={showConfirm}
-				filter={currentFilter}
+				filter={effectiveFilter}
 				count={confirmCount}
 				message={message}
 				type={smsType}
 				regions={regionLookup}
 				universities={universityLookup}
-				loading={sendMutation.isPending}
+				loading={isSending}
 				onClose={handleCloseConfirm}
 				onConfirm={handleConfirm}
 			/>
