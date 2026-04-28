@@ -26,6 +26,9 @@ const SMS_ENDPOINTS = {
 } as const;
 
 // MARK: - 필터 기반 발송 타입
+export type SmsJobStatus = 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+export type SmsJobType = 'SMS' | 'LMS';
+
 export interface RecipientFilter {
     universityIds?: string[];
     regionCodes?: string[];
@@ -54,18 +57,18 @@ export interface RecipientPreview {
 export interface BulkSendRequest {
     filter: RecipientFilter;
     message: string;
-    type: 'SMS' | 'LMS';
+    type: SmsJobType;
 }
 
 export interface BulkSendResponse {
     jobId: string;
-    status: 'QUEUED';
+    status: Extract<SmsJobStatus, 'QUEUED'>;
     expectedCount: number;
 }
 
 export interface JobStatus {
     jobId: string;
-    status: 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+    status: SmsJobStatus;
     totalCount: number;
     sentCount: number;
     failedCount: number;

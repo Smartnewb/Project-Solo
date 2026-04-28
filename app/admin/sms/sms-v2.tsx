@@ -1,11 +1,11 @@
 // TITLE: - sms 관리 페이지
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import type { RecipientCount, RecipientFilter } from '@/app/services/sms';
+import { useState } from 'react';
+import type { RecipientCount, RecipientFilter, SmsJobType } from '@/app/services/sms';
 import { smsService } from '@/app/services/sms';
-import { universities as universitiesService } from '@/app/services/admin/system';
 import { useBulkSendMutation, useJobStatus } from './hooks/useBulkSendJob';
+import { useRegions, useUniversitiesByRegions } from './hooks/useRegions';
 import { MessageComposer } from './components/MessageComposer';
 import { RecipientSelector } from './components/RecipientSelector';
 import { SendConfirmModal } from './components/SendConfirmModal';
@@ -13,78 +13,25 @@ import { SmsHistoryTable } from './components/SmsHistoryTable';
 import { TemplateManager } from './components/TemplateManager';
 import { SmsTemplate } from './types';
 
-interface RegionLookup {
-	code: string;
-	name: string;
-}
-interface UniversityLookup {
-	id: string;
-	name: string;
-}
-
-function generateIdempotencyKey(): string {
-	if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-		return crypto.randomUUID();
-	}
-	return `sms-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
-
 function SmspageContent() {
 	// === 상태관리 ===
 	const [selectedTemplate, setSelectedTemplate] = useState<SmsTemplate | null>(null);
 	const [currentFilter, setCurrentFilter] = useState<RecipientFilter>({});
 	const [currentValidCount, setCurrentValidCount] = useState(0);
 	const [message, setMessage] = useState<string>('');
-	const [smsType, setSmsType] = useState<'SMS' | 'LMS'>('SMS');
+	const [smsType, setSmsType] = useState<SmsJobType>('SMS');
 	const [showConfirm, setShowConfirm] = useState(false);
 	const [activeJobId, setActiveJobId] = useState<string | null>(null);
 	const [confirmCount, setConfirmCount] = useState<RecipientCount | null>(null);
-	const [regionLookup, setRegionLookup] = useState<RegionLookup[]>([]);
-	const [universityLookup, setUniversityLookup] = useState<UniversityLookup[]>([]);
+	const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null);
 
-	const idempotencyKey = useMemo(
-		() => generateIdempotencyKey(),
-		// 필터/메시지 변경 시 새 키
-		[currentFilter, message, smsType],
+	const { data: regionLookup = [] } = useRegions();
+	const { data: universityLookup = [] } = useUniversitiesByRegions(
+		currentFilter.regionCodes ?? [],
 	);
 
 	const sendMutation = useBulkSendMutation();
 	const jobStatus = useJobStatus(activeJobId);
-
-	// 지역/학교 lookup (확인 모달에서 라벨 표시)
-	useEffect(() => {
-		universitiesService.meta
-			.getRegions()
-			.then((regions: any[]) =>
-				setRegionLookup(
-					regions.map((r) => ({
-						code: r.code,
-						name: r.nameLocal ?? r.name ?? r.code,
-					})),
-				),
-			)
-			.catch(() => setRegionLookup([]));
-	}, []);
-
-	useEffect(() => {
-		const codes = currentFilter.regionCodes ?? [];
-		if (!codes.length) {
-			setUniversityLookup([]);
-			return;
-		}
-		Promise.all(
-			codes.map((code) =>
-				universitiesService.getList({ region: code, limit: 200, isActive: true } as any),
-			),
-		)
-			.then((results: any[]) => {
-				const all = results.flatMap((r) => r?.items ?? []);
-				setUniversityLookup(
-					all.map((u: any) => ({ id: u.id, name: u.name })),
-				);
-			})
-			.catch(() => setUniversityLookup([]));
-	}, [currentFilter.regionCodes]);
 
 	const handleFilterChange = (filter: RecipientFilter, validCount: number) => {
 		setCurrentFilter(filter);
@@ -103,13 +50,20 @@ function SmspageContent() {
 		try {
 			const count = await smsService.countRecipients(currentFilter);
 			setConfirmCount(count);
+			setIdempotencyKey(crypto.randomUUID());
 			setShowConfirm(true);
 		} catch (e) {
 			alert('대상자 카운트 조회 실패');
 		}
 	};
 
+	const handleCloseConfirm = () => {
+		setShowConfirm(false);
+		setIdempotencyKey(null);
+	};
+
 	const handleConfirm = async () => {
+		if (!idempotencyKey) return;
 		try {
 			const res = await sendMutation.mutateAsync({
 				req: { filter: currentFilter, message, type: smsType },
@@ -117,8 +71,10 @@ function SmspageContent() {
 			});
 			setActiveJobId(res.jobId);
 			setShowConfirm(false);
+			setIdempotencyKey(null);
 			alert(`발송 시작 (jobId: ${res.jobId}, 대상 ${res.expectedCount}명)`);
 		} catch (e: any) {
+			setIdempotencyKey(null);
 			alert(e?.message ?? '발송 실패');
 		}
 	};
@@ -147,7 +103,7 @@ function SmspageContent() {
 								<label className='text-sm text-[#374151]'>발송 유형</label>
 								<select
 									value={smsType}
-									onChange={(e) => setSmsType(e.target.value as 'SMS' | 'LMS')}
+									onChange={(e) => setSmsType(e.target.value as SmsJobType)}
 									className='border border-[#D1D5DB] rounded-md px-3 py-2 text-sm'
 								>
 									<option value='SMS'>SMS</option>
@@ -200,7 +156,7 @@ function SmspageContent() {
 				regions={regionLookup}
 				universities={universityLookup}
 				loading={sendMutation.isPending}
-				onClose={() => setShowConfirm(false)}
+				onClose={handleCloseConfirm}
 				onConfirm={handleConfirm}
 			/>
 		</div>

@@ -1,21 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Autocomplete, Box, Chip, TextField, Typography } from '@mui/material';
-import { universities as universitiesService } from '@/app/services/admin/system';
 import type { RecipientFilter } from '@/app/services/sms';
 import { useRecipientCount } from '../hooks/useRecipientCount';
 import { useRecipientFilter } from '../hooks/useRecipientFilter';
-
-interface UniversityOption {
-	id: string;
-	name: string;
-	region?: string;
-}
-interface RegionOption {
-	code: string;
-	name: string;
-}
+import { useRegions, useUniversitiesByRegions } from '../hooks/useRegions';
 
 interface Props {
 	onFilterChange: (filter: RecipientFilter, validCount: number) => void;
@@ -23,8 +13,8 @@ interface Props {
 
 export function RecipientSelector({ onFilterChange }: Props) {
 	const { filter, debouncedFilter, update } = useRecipientFilter();
-	const [regionList, setRegionList] = useState<RegionOption[]>([]);
-	const [universityList, setUniversityList] = useState<UniversityOption[]>([]);
+	const { data: regionList = [] } = useRegions();
+	const { data: universityList = [] } = useUniversitiesByRegions(filter.regionCodes ?? []);
 
 	const hasFilter = !!(
 		filter.universityIds?.length ||
@@ -33,43 +23,6 @@ export function RecipientSelector({ onFilterChange }: Props) {
 	);
 	const { data: count, isLoading } = useRecipientCount(debouncedFilter, hasFilter);
 
-	// 지역 목록 로드 (mount)
-	useEffect(() => {
-		universitiesService.meta
-			.getRegions()
-			.then((regions: any[]) =>
-				setRegionList(
-					regions.map((r) => ({
-						code: r.code,
-						name: r.nameLocal ?? r.name ?? r.code,
-					})),
-				),
-			)
-			.catch(() => setRegionList([]));
-	}, []);
-
-	// 선택된 지역의 대학 목록 로드
-	useEffect(() => {
-		const codes = filter.regionCodes ?? [];
-		if (!codes.length) {
-			setUniversityList([]);
-			return;
-		}
-		Promise.all(
-			codes.map((code) =>
-				universitiesService.getList({ region: code, limit: 200, isActive: true } as any),
-			),
-		)
-			.then((results: any[]) => {
-				const all = results.flatMap((r) => r?.items ?? []);
-				setUniversityList(
-					all.map((u: any) => ({ id: u.id, name: u.name, region: u.region })),
-				);
-			})
-			.catch(() => setUniversityList([]));
-	}, [filter.regionCodes]);
-
-	// 카운트 변경 시 부모에 통지
 	useEffect(() => {
 		const validCount = count?.validPhone ?? 0;
 		onFilterChange(debouncedFilter, validCount);

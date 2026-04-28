@@ -16,10 +16,9 @@ export function useJobStatus(jobId: string | null) {
 		queryFn: () => smsService.getJobStatus(jobId!),
 		enabled: !!jobId,
 		refetchInterval: (query) => {
-			const data = query.state.data;
-			if (!data) return 2000;
-			if (data.status === 'COMPLETED' || data.status === 'FAILED') return false;
-			return 2000;
+			const status = query.state.data?.status;
+			return status === 'COMPLETED' || status === 'FAILED' ? false : 2000;
 		},
+		refetchIntervalInBackground: false,
 	});
 }
