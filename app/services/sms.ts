@@ -34,6 +34,14 @@ export interface RecipientFilter {
     regionCodes?: string[];
     gender?: 'MALE' | 'FEMALE';
     excludeUserIds?: string[];
+    userIds?: string[];
+}
+
+export interface ExcludedUser {
+    userId: string;
+    name: string | null;
+    phoneNumber: string | null;
+    reason: 'NO_CONSENT' | 'NO_PHONE' | 'BOTH';
 }
 
 export interface RecipientCount {
@@ -41,6 +49,26 @@ export interface RecipientCount {
     smsConsented: number;
     validPhone: number;
     estimatedCost: { sms: number; lms: number };
+    excludedUsers?: ExcludedUser[];
+}
+
+export interface UserSearchItem {
+    id: string;
+    name: string | null;
+    phoneNumber: string | null;
+    gender: 'MALE' | 'FEMALE' | null;
+}
+
+export async function searchUsersByQuery(
+    search: string,
+    page = 1,
+    limit = 20,
+): Promise<{ data: UserSearchItem[]; meta: { page: number; limit: number } }> {
+    return adminGet(SMS_ENDPOINTS.USER_SEARCH, {
+        search,
+        page: String(page),
+        limit: String(limit),
+    });
 }
 
 export interface RecipientPreview {
