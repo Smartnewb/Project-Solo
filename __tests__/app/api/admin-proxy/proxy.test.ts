@@ -321,5 +321,22 @@ describe('admin-proxy route handlers', () => {
       expect(res.headers.get('cache-control')).toBe('no-cache, no-transform');
       expect(res.headers.get('x-accel-buffering')).toBe('no');
     });
+
+    it('passes Ghost Chat SSE responses through admin proxy', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      mockFetch.mockResolvedValueOnce(
+        makeBackendResponse(null, 200, { 'content-type': 'text/event-stream' }),
+      );
+
+      const req = createRequest('admin/ghost-chat/events');
+      const res = await GET(req, makeParams(['admin', 'ghost-chat', 'events']));
+
+      expect(res.status).toBe(200);
+      expect(res.body).toBeTruthy();
+      expect(res.headers.get('cache-control')).toBe('no-cache, no-transform');
+      expect(res.headers.get('x-accel-buffering')).toBe('no');
+    });
   });
 });
