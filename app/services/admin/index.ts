@@ -66,6 +66,7 @@ export type {
 	UtmCampaignRow,
 } from './utm';
 export { ghostInjection } from './ghost-injection';
+export { ghostChat } from './ghost-chat';
 export { ghostReferencePool } from './ghost-reference-pool';
 export { aiProfileGenerator } from './ai-profile-generator';
 export { promotions } from './promotions';
@@ -161,6 +162,7 @@ import { care } from './care';
 import { keywords } from './keywords';
 import { utm } from './utm';
 import { ghostInjection } from './ghost-injection';
+import { ghostChat } from './ghost-chat';
 import { ghostReferencePool } from './ghost-reference-pool';
 import { aiProfileGenerator } from './ai-profile-generator';
 import { promotions } from './promotions';
@@ -208,6 +210,7 @@ const AdminService = {
 	revenueV2,
 	utm,
 	ghostInjection,
+	ghostChat,
 	ghostReferencePool,
 	aiProfileGenerator,
 	promotions,

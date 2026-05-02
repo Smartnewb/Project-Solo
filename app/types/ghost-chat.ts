@@ -1,0 +1,77 @@
+export type GhostChatSessionState = 'PENDING' | 'ACTIVE' | 'IDLE' | 'CLOSED';
+
+export interface GhostChatSession {
+	id: string;
+	ghostAccountId: string;
+	ghostUserId: string;
+	targetUserId: string;
+	matchId: string;
+	chatRoomId: string;
+	state: GhostChatSessionState;
+	assignedAdminId: string | null;
+	assignedAt: string | null;
+	firstUserMessageAt: string | null;
+	lastUserMessageAt: string | null;
+	lastAdminMessageAt: string | null;
+	userMessageCount: number;
+	adminMessageCount: number;
+	closedAt: string | null;
+	closedReason: string | null;
+	createdAt: string;
+	updatedAt: string;
+	deletedAt: string | null;
+}
+
+export interface GhostChatOkResponse {
+	ok: true;
+}
+
+export interface SendGhostMessageRequest {
+	content: string;
+}
+
+export type GhostChatEventType = 'new_session' | 'new_message' | 'session_closed';
+
+export interface GhostChatNewSessionEventData {
+	sessionId: string;
+	ghostAccountId: string;
+	targetUserId: string;
+	chatRoomId: string;
+	createdAt: string;
+}
+
+export interface GhostChatEvent<T = unknown> {
+	type: GhostChatEventType;
+	data: T;
+}
+
+export type GhostChatConnectionState =
+	| 'connecting'
+	| 'connected'
+	| 'reconnecting'
+	| 'closed'
+	| 'error';
+
+export const GHOST_CHAT_STATE_LABELS: Record<GhostChatSessionState, string> = {
+	PENDING: '대기 중',
+	ACTIVE: '진행 중',
+	IDLE: '응답 없음',
+	CLOSED: '종료됨',
+};
+
+export type GhostChatMessageSender = 'TARGET_USER' | 'GHOST';
+
+export interface GhostChatTimelineMessage {
+	id: string;
+	senderType: GhostChatMessageSender;
+	content: string;
+	createdAt: string;
+	adminId?: string;
+}
+
+export interface GhostChatPersonaContext {
+	ghostName?: string;
+	toneGuide?: string;
+	safetyNotes?: string[];
+	targetSummary?: string;
+}
