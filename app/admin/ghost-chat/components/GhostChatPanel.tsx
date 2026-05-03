@@ -68,6 +68,13 @@ function buildTimeline(session: GhostChatSession) {
 	].filter((item) => item.at);
 }
 
+function getComposerBlockedReason(session: GhostChatSession) {
+	if (session.state === 'PENDING') return '먼저 세션을 본인에게 배정해야 메시지를 보낼 수 있습니다.';
+	if (session.state === 'IDLE') return '응답 없음 상태입니다. 세션을 새로고침한 뒤 전송 여부를 확인하세요.';
+	if (session.state === 'CLOSED') return '종료된 세션에는 메시지를 보낼 수 없습니다.';
+	return null;
+}
+
 export default function GhostChatPanel({
 	session,
 	loading,
@@ -84,6 +91,7 @@ export default function GhostChatPanel({
 	const timeline = useMemo(() => (session ? buildTimeline(session) : []), [session]);
 	const canSend = Boolean(session && session.state === 'ACTIVE' && draft.trim() && !actionLoading);
 	const canClose = Boolean(session && session.state !== 'CLOSED' && !actionLoading);
+	const composerBlockedReason = session ? getComposerBlockedReason(session) : null;
 
 	const sendDraft = async () => {
 		if (!session) return;
@@ -108,6 +116,16 @@ export default function GhostChatPanel({
 	const handleClose = () => {
 		if (!session) return;
 		setConfirmMode('close');
+	};
+
+	const handleAssign = async () => {
+		if (!session) return;
+		try {
+			setLocalError(null);
+			await onAssign(session.id);
+		} catch (err) {
+			setLocalError(err instanceof Error ? err.message : 'Ghost Chat 세션 배정에 실패했습니다.');
+		}
 	};
 
 	const handleConfirm = async () => {
@@ -178,7 +196,7 @@ export default function GhostChatPanel({
 							size="small"
 							variant="contained"
 							disabled={actionLoading}
-							onClick={() => onAssign(session.id)}
+							onClick={handleAssign}
 						>
 							내가 배정받기
 						</Button>
@@ -232,6 +250,15 @@ export default function GhostChatPanel({
 
 			<Divider />
 			<Box sx={{ p: 2 }}>
+				<Alert severity="warning" sx={{ mb: 1.5 }}>
+					최근 메시지 본문은 아직 표시되지 않습니다. 메시지 히스토리 API 연결 전까지는 우측 컨텍스트와
+					메시지 시각 정보를 확인한 뒤 전송하세요.
+				</Alert>
+				{composerBlockedReason && (
+					<Alert severity="info" sx={{ mb: 1.5 }}>
+						{composerBlockedReason}
+					</Alert>
+				)}
 				<TextField
 					label="Ghost persona로 전송"
 					value={draft}
@@ -241,7 +268,7 @@ export default function GhostChatPanel({
 					minRows={2}
 					maxRows={5}
 					disabled={!session || session.state !== 'ACTIVE' || actionLoading}
-					placeholder={session.state === 'ACTIVE' ? 'Ghost 명의로 보낼 메시지 입력' : 'ACTIVE 세션에서만 전송할 수 있습니다.'}
+					placeholder={session.state === 'ACTIVE' ? 'Ghost 명의로 보낼 메시지 입력' : composerBlockedReason ?? 'ACTIVE 세션에서만 전송할 수 있습니다.'}
 					onKeyDown={(event) => {
 						if (event.key === 'Enter' && !event.shiftKey) {
 							event.preventDefault();

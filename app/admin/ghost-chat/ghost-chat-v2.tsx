@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
 	Alert,
@@ -16,6 +16,7 @@ import GhostChatStatusBar from './components/GhostChatStatusBar';
 import GhostContextPanel from './components/GhostContextPanel';
 import GhostSessionQueue from './components/GhostSessionQueue';
 import { useGhostChatSessions } from './hooks/useGhostChatSessions';
+import { useAdminSession } from '@/shared/contexts/admin-session-context';
 
 type GhostQueueTab = 'pending' | 'mine' | 'all';
 type GhostMobileView = 'list' | 'chat' | 'context';
@@ -26,6 +27,7 @@ function GhostChatV2Content() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const sessionFromUrl = searchParams?.get('session') ?? null;
+	const { session: adminSession } = useAdminSession();
 
 	const [selectedSessionId, setSelectedSessionId] = useState<string | null>(sessionFromUrl);
 	const [activeTab, setActiveTab] = useState<GhostQueueTab>('pending');
@@ -33,6 +35,7 @@ function GhostChatV2Content() {
 		isMobile && sessionFromUrl ? 'chat' : 'list',
 	);
 	const [snackbarOpen, setSnackbarOpen] = useState(false);
+	const initializedSessionFromUrlRef = useRef<string | null>(null);
 
 	const {
 		sessions,
@@ -47,18 +50,29 @@ function GhostChatV2Content() {
 		assignSession,
 		sendMessage,
 		closeSession,
+		clearSelectedSession,
 		events,
 	} = useGhostChatSessions();
 
 	useEffect(() => {
-		if (sessionFromUrl && sessionFromUrl !== selectedSessionId) {
-			setSelectedSessionId(sessionFromUrl);
-			void selectSession(sessionFromUrl);
-			if (isMobile) {
-				setMobileView('chat');
-			}
+		if (!sessionFromUrl) {
+			initializedSessionFromUrlRef.current = null;
+			return;
 		}
-	}, [isMobile, selectSession, selectedSessionId, sessionFromUrl]);
+
+		if (initializedSessionFromUrlRef.current !== sessionFromUrl) {
+			initializedSessionFromUrlRef.current = sessionFromUrl;
+			setSelectedSessionId(sessionFromUrl);
+			void selectSession(sessionFromUrl).catch(() => {
+				setSelectedSessionId(null);
+				router.replace('/admin/ghost-chat', { scroll: false });
+			});
+		}
+
+		if (isMobile) {
+			setMobileView('chat');
+		}
+	}, [isMobile, router, selectSession, sessionFromUrl]);
 
 	useEffect(() => {
 		if (newSessionIds.size > 0) {
@@ -69,7 +83,10 @@ function GhostChatV2Content() {
 	const handleSelectSession = useCallback(
 		(id: string) => {
 			setSelectedSessionId(id);
-			void selectSession(id);
+			void selectSession(id).catch(() => {
+				setSelectedSessionId(null);
+				router.replace('/admin/ghost-chat', { scroll: false });
+			});
 			router.replace('/admin/ghost-chat?session=' + encodeURIComponent(id), { scroll: false });
 			if (isMobile) {
 				setMobileView('chat');
@@ -78,11 +95,25 @@ function GhostChatV2Content() {
 		[isMobile, router, selectSession],
 	);
 
+	const handleAssignSession = useCallback(
+		async (id: string) => {
+			await assignSession(id);
+			setSelectedSessionId(id);
+			await selectSession(id);
+			router.replace('/admin/ghost-chat?session=' + encodeURIComponent(id), { scroll: false });
+			if (isMobile) {
+				setMobileView('chat');
+			}
+		},
+		[assignSession, isMobile, router, selectSession],
+	);
+
 	const handleMobileBack = useCallback(() => {
 		setMobileView('list');
 		setSelectedSessionId(null);
+		clearSelectedSession();
 		router.replace('/admin/ghost-chat', { scroll: false });
-	}, [router]);
+	}, [clearSelectedSession, router]);
 
 	const actionLoading = Boolean(actionLoadingId);
 
@@ -107,8 +138,10 @@ function GhostChatV2Content() {
 			activeTab={activeTab}
 			onTabChange={setActiveTab}
 			onSelectSession={handleSelectSession}
-			onAssignSession={assignSession}
-			currentAdminId={null}
+			onAssignSession={(id) => {
+				void handleAssignSession(id);
+			}}
+			currentAdminId={adminSession?.user.id ?? null}
 			assigningSessionId={actionLoadingId}
 		/>
 	);
@@ -118,7 +151,7 @@ function GhostChatV2Content() {
 			session={selectedSession}
 			loading={loading}
 			actionLoading={actionLoading}
-			onAssign={assignSession}
+			onAssign={handleAssignSession}
 			onSendMessage={sendMessage}
 			onClose={closeSession}
 			onBack={isMobile ? handleMobileBack : undefined}

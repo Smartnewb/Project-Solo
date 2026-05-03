@@ -24,7 +24,7 @@ interface GhostSessionQueueProps {
 	activeTab: GhostQueueTab;
 	onTabChange: (tab: GhostQueueTab) => void;
 	onSelectSession: (id: string) => void;
-	onAssignSession: (id: string) => void;
+	onAssignSession: (id: string) => void | Promise<void>;
 	currentAdminId?: string | null;
 	assigningSessionId?: string | null;
 }
@@ -147,7 +147,7 @@ function GhostSessionCard({
 					onClick={(event) => {
 						event.stopPropagation();
 						if (canAssign) {
-							onAssign();
+							void onAssign();
 							return;
 						}
 						onSelect();
@@ -176,7 +176,7 @@ export default function GhostSessionQueue({
 		const filtered = sessions.filter((session) => {
 			if (activeTab === 'pending') return session.state === 'PENDING';
 			if (activeTab === 'mine') {
-				if (!currentAdminId) return session.state === 'ACTIVE' && Boolean(session.assignedAdminId);
+				if (!currentAdminId) return false;
 				return session.state === 'ACTIVE' && session.assignedAdminId === currentAdminId;
 			}
 			return true;
@@ -232,7 +232,11 @@ export default function GhostSessionQueue({
 						}}
 					>
 						<InboxIcon sx={{ fontSize: 42, opacity: 0.45 }} />
-						<Typography variant="body2">표시할 Ghost Chat 세션이 없습니다.</Typography>
+						<Typography variant="body2">
+							{activeTab === 'mine' && !currentAdminId
+								? '관리자 세션 정보를 불러오는 중입니다.'
+								: '표시할 Ghost Chat 세션이 없습니다.'}
+						</Typography>
 					</Box>
 				) : (
 					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
