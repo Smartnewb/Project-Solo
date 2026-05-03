@@ -1,4 +1,4 @@
-import { adminGet, adminPost, adminPatch, adminDelete } from '@/shared/lib/http/admin-fetch';
+import { adminGet, adminPost, adminPatch, adminDelete, adminUpload } from '@/shared/lib/http/admin-fetch';
 
 export const KEYWORD_CATEGORIES = {
 	HOBBY: '취미',
@@ -69,6 +69,17 @@ export const keywords = {
 		const encoded = encodeURIComponent(keyword);
 		const res = await adminDelete<{ data: { deletedCount: number } }>(
 			`/admin/v2/keywords/${encoded}`,
+		);
+		return res.data;
+	},
+
+	uploadIcon: async (normalizedKeyword: string, file: File): Promise<{ iconUrl: string }> => {
+		const fd = new FormData();
+		fd.append('file', file);
+		fd.append('normalizedKeyword', normalizedKeyword);
+		const res = await adminUpload<{ data: { iconUrl: string } }>(
+			'/admin/v2/keywords/icon/upload',
+			fd,
 		);
 		return res.data;
 	},

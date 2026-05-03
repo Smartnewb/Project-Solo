@@ -31,6 +31,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CircularProgress from '@mui/material/CircularProgress';
 import Tooltip from '@mui/material/Tooltip';
 import AdminService from '@/app/services/admin';
@@ -73,6 +74,8 @@ function KeywordsContent() {
 	const toast = useToast();
 	const editInputRef = useRef<HTMLInputElement>(null);
 	const [generatingIcon, setGeneratingIcon] = useState<string | undefined>();
+	const [uploadingIcon, setUploadingIcon] = useState<string | undefined>();
+	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	// 프롬프트 다이얼로그 상태
 	const [promptDialog, setPromptDialog] = useState<{ open: boolean; item: KeywordItem | null }>({
@@ -179,6 +182,29 @@ function KeywordsContent() {
 			toast.error(err.response?.data?.message || '저장에 실패했습니다.');
 		} finally {
 			setSaving(false);
+		}
+	};
+
+	const handleIconFileUpload = async (
+		normalizedKeyword: string,
+		file: File,
+	) => {
+		try {
+			setUploadingIcon(normalizedKeyword);
+			const result = await AdminService.keywords.uploadIcon(normalizedKeyword, file);
+			setItems((prev) =>
+				prev.map((item) =>
+					item.normalizedKeyword === normalizedKeyword
+						? { ...item, iconUrl: result.iconUrl }
+						: item,
+				),
+			);
+			toast.success('아이콘이 업로드되었습니다.');
+			cancelEdit();
+		} catch (err: any) {
+			toast.error(err.response?.data?.message || '업로드에 실패했습니다.');
+		} finally {
+			setUploadingIcon(undefined);
 		}
 	};
 
@@ -364,6 +390,32 @@ function KeywordsContent() {
 															<IconButton size="small" onClick={cancelEdit}>
 																<CloseIcon sx={{ fontSize: 16 }} />
 															</IconButton>
+															<input
+																type="file"
+																accept="image/jpeg,image/png,image/webp"
+																style={{ display: 'none' }}
+																ref={fileInputRef}
+																onChange={(e) => {
+																	const file = e.target.files?.[0];
+																	if (!file || !editMode) return;
+																	handleIconFileUpload(editMode.keyword, file);
+																	e.currentTarget.value = '';
+																}}
+															/>
+															<Tooltip title="파일에서 업로드" arrow>
+																<IconButton
+																	size="small"
+																	onClick={() => fileInputRef.current?.click()}
+																	disabled={uploadingIcon === editMode?.keyword}
+																	sx={{ p: 0.25 }}
+																>
+																	{uploadingIcon === editMode?.keyword ? (
+																		<CircularProgress size={14} />
+																	) : (
+																		<CloudUploadIcon sx={{ fontSize: 16, color: '#2563eb' }} />
+																	)}
+																</IconButton>
+															</Tooltip>
 														</Box>
 													) : (
 														<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
