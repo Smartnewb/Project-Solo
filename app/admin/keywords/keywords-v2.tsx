@@ -40,6 +40,12 @@ import {
 	type KeywordItem,
 	type KeywordCategory,
 } from '@/app/services/admin/keywords';
+import {
+	ACCEPT_IMAGE_ATTR,
+	MAX_IMAGE_MB,
+	validateImageFile,
+} from '@/app/admin/ai-profiles/_shared/image-upload-constants';
+import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog';
 import { useToast } from '@/shared/ui/admin/toast';
 
@@ -74,7 +80,7 @@ function KeywordsContent() {
 	const toast = useToast();
 	const editInputRef = useRef<HTMLInputElement>(null);
 	const [generatingIcon, setGeneratingIcon] = useState<string | undefined>();
-	const [uploadingIcon, setUploadingIcon] = useState<string | undefined>();
+	const [isUploading, setIsUploading] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	// 프롬프트 다이얼로그 상태
@@ -189,8 +195,17 @@ function KeywordsContent() {
 		normalizedKeyword: string,
 		file: File,
 	) => {
+		const validationError = validateImageFile(file);
+		if (validationError) {
+			toast.error(
+				validationError.kind === 'mime'
+					? '지원하지 않는 파일 형식입니다 (JPG, PNG, WebP만 가능)'
+					: `파일이 너무 큽니다 (최대 ${MAX_IMAGE_MB}MB)`,
+			);
+			return;
+		}
 		try {
-			setUploadingIcon(normalizedKeyword);
+			setIsUploading(true);
 			const result = await AdminService.keywords.uploadIcon(normalizedKeyword, file);
 			setItems((prev) =>
 				prev.map((item) =>
@@ -202,9 +217,9 @@ function KeywordsContent() {
 			toast.success('아이콘이 업로드되었습니다.');
 			cancelEdit();
 		} catch (err: any) {
-			toast.error(err.response?.data?.message || '업로드에 실패했습니다.');
+			toast.error(getAdminErrorMessage(err, '업로드에 실패했습니다.'));
 		} finally {
-			setUploadingIcon(undefined);
+			setIsUploading(false);
 		}
 	};
 
@@ -392,7 +407,7 @@ function KeywordsContent() {
 															</IconButton>
 															<input
 																type="file"
-																accept="image/jpeg,image/png,image/webp"
+																accept={ACCEPT_IMAGE_ATTR}
 																style={{ display: 'none' }}
 																ref={fileInputRef}
 																onChange={(e) => {
@@ -406,10 +421,10 @@ function KeywordsContent() {
 																<IconButton
 																	size="small"
 																	onClick={() => fileInputRef.current?.click()}
-																	disabled={uploadingIcon === editMode?.keyword}
+																	disabled={isUploading}
 																	sx={{ p: 0.25 }}
 																>
-																	{uploadingIcon === editMode?.keyword ? (
+																	{isUploading ? (
 																		<CircularProgress size={14} />
 																	) : (
 																		<CloudUploadIcon sx={{ fontSize: 16, color: '#2563eb' }} />
