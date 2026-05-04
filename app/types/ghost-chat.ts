@@ -59,14 +59,31 @@ export const GHOST_CHAT_STATE_LABELS: Record<GhostChatSessionState, string> = {
 	CLOSED: '종료됨',
 };
 
-export type GhostChatMessageSender = 'TARGET_USER' | 'GHOST';
+export type GhostChatMessageSender = 'TARGET_USER' | 'GHOST' | 'SYSTEM';
+export type GhostChatMessageType = 'text' | 'image' | 'emoji' | 'voice';
 
 export interface GhostChatTimelineMessage {
 	id: string;
+	chatRoomId: string;
 	senderType: GhostChatMessageSender;
-	content: string;
+	senderId: string;
+	content: string | null;
+	messageType: GhostChatMessageType;
+	mediaUrl: string | null;
+	audioDuration: number | null;
 	createdAt: string;
-	adminId?: string;
+	contentLanguage: string | null;
+	contentTranslated: string | null;
+	translatedLanguage: string | null;
+	translationStatus: string | null;
+	translationErrorCode: string | null;
+	translatedAt: string | null;
+}
+
+export interface GhostChatMessagesResponse {
+	messages: GhostChatTimelineMessage[];
+	nextCursor: string | null;
+	hasMore: boolean;
 }
 
 export interface GhostChatPersonaContext {

@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ghostChat } from '@/app/services/admin/ghost-chat';
-import type { GhostChatEvent, GhostChatSession } from '@/app/types/ghost-chat';
+import type {
+	GhostChatEvent,
+	GhostChatSession,
+	GhostChatTimelineMessage,
+} from '@/app/types/ghost-chat';
 import { AdminApiError } from '@/shared/lib/http/admin-fetch';
 import { useGhostChatEvents } from './useGhostChatEvents';
 
@@ -54,7 +58,9 @@ function getGhostChatErrorMessage(err: unknown, fallback: string): string {
 export function useGhostChatSessions() {
 	const [sessions, setSessions] = useState<GhostChatSession[]>([]);
 	const [selectedSession, setSelectedSession] = useState<GhostChatSession | null>(null);
+	const [selectedMessages, setSelectedMessages] = useState<GhostChatTimelineMessage[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [messagesLoading, setMessagesLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [newSessionIds, setNewSessionIds] = useState<Set<string>>(new Set());
 	const [unreadMap, setUnreadMap] = useState<Record<string, number>>({});
@@ -91,12 +97,29 @@ export function useGhostChatSessions() {
 		return nextSession;
 	}, []);
 
+	const refreshSelectedMessages = useCallback(async (id: string) => {
+		setMessagesLoading(true);
+		setSelectedMessages([]);
+		try {
+			const response = await ghostChat.getMessages(id, { limit: 50 });
+			setSelectedMessages(response.messages);
+			return response.messages;
+		} catch (err) {
+			setSelectedMessages([]);
+			setError(getGhostChatErrorMessage(err, 'Ghost Chat 메시지를 불러오지 못했습니다.'));
+			return [];
+		} finally {
+			setMessagesLoading(false);
+		}
+	}, []);
+
 	const selectSession = useCallback(
 		async (id: string) => {
 			setActionLoadingId(id);
 			try {
 				setError(null);
 				const nextSession = await refreshSelectedSession(id);
+				await refreshSelectedMessages(id);
 				setNewSessionIds((current) => {
 					const next = new Set(current);
 					next.delete(id);
@@ -118,7 +141,7 @@ export function useGhostChatSessions() {
 				setActionLoadingId(null);
 			}
 		},
-		[refreshSelectedSession, refreshSessions],
+		[refreshSelectedMessages, refreshSelectedSession, refreshSessions],
 	);
 
 	const assignSession = useCallback(
@@ -130,19 +153,20 @@ export function useGhostChatSessions() {
 				const nextSession = await ghostChat.getSession(id);
 				if (selectedSessionIdRef.current === id) {
 					setSelectedSession(nextSession);
+					await refreshSelectedMessages(id);
 				}
-					await refreshSessions();
-				} catch (err) {
-					setError(getGhostChatErrorMessage(err, 'Ghost Chat 세션 배정에 실패했습니다.'));
-					if (err instanceof AdminApiError && (err.status === 404 || err.status === 409)) {
-						await refreshSessions({ preserveError: true });
-					}
-					throw err;
-				} finally {
-					setActionLoadingId(null);
+				await refreshSessions();
+			} catch (err) {
+				setError(getGhostChatErrorMessage(err, 'Ghost Chat 세션 배정에 실패했습니다.'));
+				if (err instanceof AdminApiError && (err.status === 404 || err.status === 409)) {
+					await refreshSessions({ preserveError: true });
+				}
+				throw err;
+			} finally {
+				setActionLoadingId(null);
 			}
 		},
-		[refreshSessions],
+		[refreshSelectedMessages, refreshSessions],
 	);
 
 	const sendMessage = useCallback(
@@ -159,6 +183,7 @@ export function useGhostChatSessions() {
 				const nextSession = await ghostChat.getSession(id);
 				if (selectedSessionIdRef.current === id) {
 					setSelectedSession(nextSession);
+					await refreshSelectedMessages(id);
 				}
 				await refreshSessions();
 			} catch (err) {
@@ -172,7 +197,7 @@ export function useGhostChatSessions() {
 				setActionLoadingId(null);
 			}
 		},
-		[refreshSessions],
+		[refreshSelectedMessages, refreshSessions],
 	);
 
 	const closeSession = useCallback(
@@ -184,6 +209,7 @@ export function useGhostChatSessions() {
 				await refreshSessions();
 				if (selectedSessionIdRef.current === id) {
 					await refreshSelectedSession(id);
+					await refreshSelectedMessages(id);
 				}
 			} catch (err) {
 				setError(getGhostChatErrorMessage(err, 'Ghost Chat 세션 종료에 실패했습니다.'));
@@ -196,11 +222,12 @@ export function useGhostChatSessions() {
 				setActionLoadingId(null);
 			}
 		},
-		[refreshSelectedSession, refreshSessions],
+		[refreshSelectedMessages, refreshSelectedSession, refreshSessions],
 	);
 
 	const clearSelectedSession = useCallback(() => {
 		setSelectedSession(null);
+		setSelectedMessages([]);
 		selectedSessionIdRef.current = null;
 	}, []);
 
@@ -243,6 +270,7 @@ export function useGhostChatSessions() {
 				}
 				if (sessionId && selectedSessionIdRef.current === sessionId) {
 					void refreshSelectedSession(sessionId);
+					void refreshSelectedMessages(sessionId);
 				}
 				void refreshSessions();
 				return;
@@ -252,10 +280,11 @@ export function useGhostChatSessions() {
 				void refreshSessions();
 				if (sessionId && selectedSessionIdRef.current === sessionId) {
 					void refreshSelectedSession(sessionId);
+					void refreshSelectedMessages(sessionId);
 				}
 			}
 		},
-		[refreshSelectedSession, refreshSessions],
+		[refreshSelectedMessages, refreshSelectedSession, refreshSessions],
 	);
 
 	const events = useGhostChatEvents({
@@ -272,7 +301,9 @@ export function useGhostChatSessions() {
 	return {
 		sessions,
 		selectedSession,
+		selectedMessages,
 		loading,
+		messagesLoading,
 		error: error ?? events.error,
 		newSessionIds,
 		unreadMap,

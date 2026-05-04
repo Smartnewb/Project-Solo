@@ -40,7 +40,9 @@ function GhostChatV2Content() {
 	const {
 		sessions,
 		selectedSession,
+		selectedMessages,
 		loading,
+		messagesLoading,
 		error,
 		newSessionIds,
 		unreadMap,
@@ -149,7 +151,9 @@ function GhostChatV2Content() {
 	const chat = (
 		<GhostChatPanel
 			session={selectedSession}
+			messages={selectedMessages}
 			loading={loading}
+			messagesLoading={messagesLoading}
 			actionLoading={actionLoading}
 			onAssign={handleAssignSession}
 			onSendMessage={sendMessage}

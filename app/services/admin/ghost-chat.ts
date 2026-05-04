@@ -1,5 +1,6 @@
 import { adminGet, adminPost, buildAdminProxyUrl } from '@/shared/lib/http/admin-fetch';
 import type {
+	GhostChatMessagesResponse,
 	GhostChatOkResponse,
 	GhostChatSession,
 	SendGhostMessageRequest,
@@ -10,6 +11,8 @@ const BASE = '/admin/ghost-chat';
 export const ghostChat = {
 	listSessions: () => adminGet<GhostChatSession[]>(`${BASE}/sessions`),
 	getSession: (id: string) => adminGet<GhostChatSession>(`${BASE}/sessions/${id}`),
+	getMessages: (id: string, query?: { limit?: number; cursor?: string }) =>
+		adminGet<GhostChatMessagesResponse>(`${BASE}/sessions/${id}/messages`, query),
 	assignSession: (id: string) =>
 		adminPost<GhostChatOkResponse>(`${BASE}/sessions/${id}/assign`),
 	sendMessage: (id: string, body: SendGhostMessageRequest) =>

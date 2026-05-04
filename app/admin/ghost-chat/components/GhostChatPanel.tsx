@@ -20,13 +20,15 @@ import {
 	Close as CloseIcon,
 	Send as SendIcon,
 } from '@mui/icons-material';
-import type { GhostChatSession } from '@/app/types/ghost-chat';
+import type { GhostChatSession, GhostChatTimelineMessage } from '@/app/types/ghost-chat';
 import { GHOST_CHAT_STATE_LABELS } from '@/app/types/ghost-chat';
 import GhostChatConfirmDialog from './GhostChatConfirmDialog';
 
 interface GhostChatPanelProps {
 	session: GhostChatSession | null;
+	messages: GhostChatTimelineMessage[];
 	loading: boolean;
+	messagesLoading: boolean;
 	actionLoading: boolean;
 	onAssign: (id: string) => Promise<void> | void;
 	onSendMessage: (id: string, content: string) => Promise<void>;
@@ -68,6 +70,12 @@ function buildTimeline(session: GhostChatSession) {
 	].filter((item) => item.at);
 }
 
+const senderLabels: Record<GhostChatTimelineMessage['senderType'], string> = {
+	TARGET_USER: '상대 유저',
+	GHOST: 'Ghost',
+	SYSTEM: '시스템',
+};
+
 function getComposerBlockedReason(session: GhostChatSession) {
 	if (session.state === 'PENDING') return '먼저 세션을 본인에게 배정해야 메시지를 보낼 수 있습니다.';
 	if (session.state === 'IDLE') return '응답 없음 상태입니다. 세션을 새로고침한 뒤 전송 여부를 확인하세요.';
@@ -77,7 +85,9 @@ function getComposerBlockedReason(session: GhostChatSession) {
 
 export default function GhostChatPanel({
 	session,
+	messages,
 	loading,
+	messagesLoading,
 	actionLoading,
 	onAssign,
 	onSendMessage,
@@ -215,17 +225,66 @@ export default function GhostChatPanel({
 			</Box>
 
 			<Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', p: 2, bgcolor: 'grey.50' }}>
-				<Alert severity="info" sx={{ mb: 2 }}>
-					메시지 히스토리 API가 연결되면 실제 대화가 이 영역에 표시됩니다.
-				</Alert>
 				{localError && (
 					<Alert severity="error" sx={{ mb: 2 }} onClose={() => setLocalError(null)}>
 						{localError}
 					</Alert>
 				)}
+				{messagesLoading && (
+					<Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+						<CircularProgress size={22} />
+					</Box>
+				)}
 				<List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-					{timeline.map((item) => (
-						<ListItem key={`${item.label}-${item.at}`} disablePadding>
+					{messages.map((message) => {
+						const isGhost = message.senderType === 'GHOST';
+						const isSystem = message.senderType === 'SYSTEM';
+						const body =
+							message.content?.trim() ||
+							(message.mediaUrl ? `[${message.messageType}] ${message.mediaUrl}` : null) ||
+							`[${message.messageType}]`;
+
+						return (
+							<ListItem
+								key={message.id}
+								disablePadding
+								sx={{
+									justifyContent: isSystem ? 'center' : isGhost ? 'flex-end' : 'flex-start',
+								}}
+							>
+								<Paper
+									elevation={0}
+									sx={{
+										p: 1.25,
+										maxWidth: isSystem ? '92%' : '78%',
+										minWidth: 160,
+										border: 1,
+										borderColor: isGhost ? 'primary.light' : 'divider',
+										borderRadius: 2,
+										bgcolor: isSystem
+											? 'grey.100'
+											: isGhost
+												? 'rgba(25, 118, 210, 0.08)'
+												: 'background.paper',
+									}}
+								>
+									<Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1, mb: 0.5 }}>
+										<Typography variant="caption" sx={{ fontWeight: 700 }}>
+											{senderLabels[message.senderType]}
+										</Typography>
+										<Typography variant="caption" color="text.secondary">
+											{formatTime(message.createdAt)}
+										</Typography>
+									</Box>
+									<Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+										{body}
+									</Typography>
+								</Paper>
+							</ListItem>
+						);
+					})}
+					{!messagesLoading && messages.length === 0 && (
+						<ListItem disablePadding>
 							<Paper
 								elevation={0}
 								sx={{
@@ -237,23 +296,19 @@ export default function GhostChatPanel({
 								}}
 							>
 								<Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-									{item.label}
+									아직 표시할 메시지가 없습니다.
 								</Typography>
 								<Typography variant="caption" color="text.secondary">
-									{formatTime(item.at)}
+									세션 이벤트 {timeline.length}건
 								</Typography>
 							</Paper>
 						</ListItem>
-					))}
+					)}
 				</List>
 			</Box>
 
 			<Divider />
 			<Box sx={{ p: 2 }}>
-				<Alert severity="warning" sx={{ mb: 1.5 }}>
-					최근 메시지 본문은 아직 표시되지 않습니다. 메시지 히스토리 API 연결 전까지는 우측 컨텍스트와
-					메시지 시각 정보를 확인한 뒤 전송하세요.
-				</Alert>
 				{composerBlockedReason && (
 					<Alert severity="info" sx={{ mb: 1.5 }}>
 						{composerBlockedReason}
