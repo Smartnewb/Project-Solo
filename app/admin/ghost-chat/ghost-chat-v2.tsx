@@ -219,7 +219,7 @@ function GhostChatV2Content() {
 						bgcolor: 'background.paper',
 					}}
 				>
-					<Box sx={{ width: 380, minWidth: 380 }}>{queue}</Box>
+					<Box sx={{ width: 430, minWidth: 430 }}>{queue}</Box>
 					<Box sx={{ flex: 1, minWidth: 0 }}>{chat}</Box>
 					<Box sx={{ width: 360, minWidth: 360 }}>{context}</Box>
 				</Box>
