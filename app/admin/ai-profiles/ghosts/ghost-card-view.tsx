@@ -42,7 +42,7 @@ export function GhostCardView({
 	}
 
 	return (
-		<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+		<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
 			{items.map((item) => {
 				const isSelected = selectedIds.has(item.ghostAccountId);
 				return (
@@ -51,7 +51,7 @@ export function GhostCardView({
 						className={`cursor-pointer overflow-hidden transition-shadow hover:shadow-md ${isSelected ? 'ring-2 ring-slate-900' : ''}`}
 						onClick={() => onCardClick(item)}
 					>
-						<div className="relative aspect-[3/4] bg-slate-100">
+						<div className="relative aspect-[4/5] bg-slate-100">
 							{item.primaryPhotoUrl ? (
 								// eslint-disable-next-line @next/next/no-img-element
 								<img
@@ -61,11 +61,11 @@ export function GhostCardView({
 								/>
 							) : (
 								<div className="flex h-full w-full items-center justify-center text-slate-400">
-									<ImageOff className="h-10 w-10" />
+									<ImageOff className="h-7 w-7" />
 								</div>
 							)}
 							<label
-								className="absolute left-2 top-2 flex h-6 w-6 cursor-pointer items-center justify-center rounded bg-white/90 shadow-sm"
+								className="absolute left-1.5 top-1.5 flex h-5 w-5 cursor-pointer items-center justify-center rounded bg-white/90 shadow-sm"
 								onClick={(event) => event.stopPropagation()}
 							>
 								<input
@@ -73,23 +73,23 @@ export function GhostCardView({
 									aria-label={`${item.name} 선택`}
 									checked={isSelected}
 									onChange={() => onToggleSelect(item.ghostAccountId)}
-									className="h-4 w-4 cursor-pointer rounded border-slate-300 accent-slate-900"
+									className="h-3.5 w-3.5 cursor-pointer rounded border-slate-300 accent-slate-900"
 								/>
 							</label>
 							<GhostStatusBadge
 								status={item.status}
 								isExhausted={item.isExhausted}
-								className="absolute right-2 top-2"
+								className="absolute right-1.5 top-1.5 text-[10px]"
 							/>
 							{item.photoCount > 1 ? (
-								<Badge variant="secondary" className="absolute right-2 bottom-2">
+								<Badge variant="secondary" className="absolute bottom-1.5 right-1.5 px-1.5 py-0 text-[10px]">
 									{item.photoCount} 사진
 								</Badge>
 							) : null}
 						</div>
-						<CardContent className="space-y-2 p-3">
-							<div className="flex items-baseline justify-between">
-								<div className="font-semibold text-slate-900">{item.name}</div>
+						<CardContent className="space-y-1.5 p-2">
+							<div className="flex items-baseline justify-between gap-2">
+								<div className="truncate text-sm font-semibold text-slate-900">{item.name}</div>
 								<div className="text-xs text-slate-500">만 {item.age}세</div>
 							</div>
 							<div className="flex items-center gap-1.5 text-xs text-slate-500">
@@ -105,7 +105,7 @@ export function GhostCardView({
 							<Button
 								variant="outline"
 								size="sm"
-								className="w-full"
+								className="h-7 w-full px-2 text-[11px]"
 								onClick={(event) => {
 									event.stopPropagation();
 									onToggleStatus(item);
