@@ -14,7 +14,7 @@ import { Inbox as InboxIcon } from '@mui/icons-material';
 import type { GhostChatSession } from '@/app/types/ghost-chat';
 import { GHOST_CHAT_STATE_LABELS } from '@/app/types/ghost-chat';
 
-type GhostQueueTab = 'pending' | 'mine' | 'all';
+type GhostQueueTab = 'queue' | 'mine';
 
 interface GhostSessionQueueProps {
 	sessions: GhostChatSession[];
@@ -174,7 +174,6 @@ export default function GhostSessionQueue({
 }: GhostSessionQueueProps) {
 	const filteredSessions = useMemo(() => {
 		const filtered = sessions.filter((session) => {
-			if (activeTab === 'pending') return session.state === 'PENDING';
 			if (activeTab === 'mine') {
 				if (!currentAdminId) return false;
 				return session.state === 'ACTIVE' && session.assignedAdminId === currentAdminId;
@@ -197,8 +196,8 @@ export default function GhostSessionQueue({
 			<Box sx={{ p: 1.5, borderBottom: 1, borderColor: 'divider' }}>
 				<ButtonGroup size="small" fullWidth>
 					<Button
-						variant={activeTab === 'pending' ? 'contained' : 'outlined'}
-						onClick={() => onTabChange('pending')}
+						variant={activeTab === 'queue' ? 'contained' : 'outlined'}
+						onClick={() => onTabChange('queue')}
 					>
 						대기
 					</Button>
@@ -207,12 +206,6 @@ export default function GhostSessionQueue({
 						onClick={() => onTabChange('mine')}
 					>
 						내 담당
-					</Button>
-					<Button
-						variant={activeTab === 'all' ? 'contained' : 'outlined'}
-						onClick={() => onTabChange('all')}
-					>
-						전체
 					</Button>
 				</ButtonGroup>
 			</Box>

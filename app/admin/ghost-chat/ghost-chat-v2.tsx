@@ -18,7 +18,7 @@ import GhostSessionQueue from './components/GhostSessionQueue';
 import { useGhostChatSessions } from './hooks/useGhostChatSessions';
 import { useAdminSession } from '@/shared/contexts/admin-session-context';
 
-type GhostQueueTab = 'pending' | 'mine' | 'all';
+type GhostQueueTab = 'queue' | 'mine';
 type GhostMobileView = 'list' | 'chat' | 'context';
 
 function GhostChatV2Content() {
@@ -30,7 +30,7 @@ function GhostChatV2Content() {
 	const { session: adminSession } = useAdminSession();
 
 	const [selectedSessionId, setSelectedSessionId] = useState<string | null>(sessionFromUrl);
-	const [activeTab, setActiveTab] = useState<GhostQueueTab>('pending');
+	const [activeTab, setActiveTab] = useState<GhostQueueTab>('queue');
 	const [mobileView, setMobileView] = useState<GhostMobileView>(() =>
 		isMobile && sessionFromUrl ? 'chat' : 'list',
 	);
