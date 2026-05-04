@@ -24,6 +24,29 @@ export type { NoticeListParams } from './notices';
 export { seo } from './seo';
 export type { PageMeta, SitemapKind } from './seo';
 export { cardNewsGeneration } from './card-news-generation';
+export { campaigns, reviewQueue, metrics, personas, communitySettings } from './community-automation';
+export type {
+	Campaign,
+	CampaignStatus,
+	DagTemplateId,
+	CreateCampaignBody,
+	ListCampaignsQuery,
+	TriggerDagRunBody,
+	Content,
+	ContentStatus,
+	BulkApplyBody,
+	BulkApplyResult,
+	MetricsSummary,
+	QueueDepth,
+	DailyStat,
+	GhostPersonaInfo,
+	PersonaDiversityReport,
+	CommunityTraits,
+	CommunitySettings,
+	KillSwitchStatus,
+	ReactionSpeed,
+	ActivityCurve,
+} from './community-automation';
 export type { CardNewsTopic, QueueStats, JobStatus } from './card-news-generation';
 export { reports, userReview, profileImages } from './moderation';
 export {
@@ -168,6 +191,7 @@ import { aiProfileGenerator } from './ai-profile-generator';
 import { promotions } from './promotions';
 import { gemProducts } from './gem-products';
 import { iapCatalog } from './iap-catalog';
+import { campaigns, reviewQueue, metrics, personas, communitySettings } from './community-automation';
 
 const AdminService = {
 	stats,
@@ -218,6 +242,11 @@ const AdminService = {
 	iapCatalog,
 	seo,
 	cardNewsGeneration,
+	campaigns,
+	reviewQueue,
+	metrics,
+	personas,
+	communitySettings,
 };
 
 export default AdminService;
