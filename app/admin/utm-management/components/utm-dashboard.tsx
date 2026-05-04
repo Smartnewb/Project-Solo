@@ -25,7 +25,13 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import { BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import AdminService from '@/app/services/admin';
-import type { UtmDashboardSummary, UtmFunnelStep, UtmChannelRow, UtmCampaignRow } from '@/app/services/admin';
+import type {
+  UtmAttributionHealth,
+  UtmDashboardSummary,
+  UtmFunnelStep,
+  UtmChannelRow,
+  UtmCampaignRow,
+} from '@/app/services/admin';
 
 type DatePreset = '오늘' | '7일' | '30일' | '이번달';
 
@@ -64,6 +70,7 @@ export default function UtmDashboard() {
   const [campaignFilter, setCampaignFilter] = useState('');
 
   const [summary, setSummary] = useState<UtmDashboardSummary | null>(null);
+  const [attributionHealth, setAttributionHealth] = useState<UtmAttributionHealth | null>(null);
   const [funnel, setFunnel] = useState<UtmFunnelStep[]>([]);
   const [channels, setChannels] = useState<UtmChannelRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,14 +88,16 @@ export default function UtmDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const [summaryData, funnelData, channelsData] = await Promise.all([
+      const [summaryData, funnelData, channelsData, attributionHealthData] = await Promise.all([
         AdminService.utm.getSummary(startDate, endDate, channelFilter || undefined, campaignFilter || undefined),
         AdminService.utm.getFunnel(startDate, endDate, channelFilter || undefined, campaignFilter || undefined),
         AdminService.utm.getChannels(startDate, endDate),
+        AdminService.utm.getAttributionHealth(startDate, endDate),
       ]);
       setSummary(summaryData);
       setFunnel(funnelData);
       setChannels(channelsData);
+      setAttributionHealth(attributionHealthData);
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || '데이터를 불러오지 못했습니다.');
     } finally {
@@ -230,6 +239,35 @@ export default function UtmDashboard() {
         </Box>
       )}
 
+      <Paper variant="outlined" sx={{ p: 2.5, borderColor: '#dbeafe', backgroundColor: '#eff6ff' }}>
+        <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>
+          SMA-2080 iOS 앱설치 캠페인 측정 체크
+        </Typography>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 2 }}>
+          <Box>
+            <Typography variant="caption" color="textSecondary">1차 신뢰 소스</Typography>
+            <Typography variant="body2" fontWeight={600}>Meta CAPI + Mixpanel</Typography>
+            <Typography variant="caption" color="textSecondary">
+              CAPI 성공률 {attributionHealth?.metaCapi.successRate ?? 0}% · sent {attributionHealth?.metaCapi.sent ?? 0} / total {attributionHealth?.metaCapi.total ?? 0}
+            </Typography>
+          </Box>
+          <Box>
+            <Typography variant="caption" color="textSecondary">보조 검증 소스</Typography>
+            <Typography variant="body2" fontWeight={600}>GA4/Firebase · {attributionHealth?.ga4Firebase.trustTier ?? 'secondary'}</Typography>
+            <Typography variant="caption" color="textSecondary">
+              상태: {attributionHealth?.ga4Firebase.status ?? 'native_restore_attempted'}
+            </Typography>
+          </Box>
+          <Box>
+            <Typography variant="caption" color="textSecondary">링크 품질</Typography>
+            <Typography variant="body2" fontWeight={600}>attribution_id coverage {attributionHealth?.linkage?.attributionIdCoverageRate ?? 0}%</Typography>
+            <Typography variant="caption" color="textSecondary">
+              event_id coverage {attributionHealth?.dedup.eventIdCoverageRate ?? 0}% · linked {attributionHealth?.linkage?.linkedConversions ?? 0} / {attributionHealth?.linkage?.totalConversions ?? 0}
+            </Typography>
+          </Box>
+        </Box>
+      </Paper>
+
       {/* Funnel chart */}
       {funnel.length > 0 && (
         <Paper variant="outlined" sx={{ p: 3 }}>
@@ -338,6 +376,8 @@ export default function UtmDashboard() {
                     onToggle={() => handleExpandRow(row.source)}
                     campaignRows={expandedSource === row.source ? campaignRows : []}
                     campaignLoading={expandedSource === row.source && campaignLoading}
+                    startDate={startDate}
+                    endDate={endDate}
                   />
                 ))}
               </TableBody>
@@ -355,9 +395,11 @@ interface ChannelRowProps {
   onToggle: () => void;
   campaignRows: UtmCampaignRow[];
   campaignLoading: boolean;
+  startDate: string;
+  endDate: string;
 }
 
-function ChannelRow({ row, isExpanded, onToggle, campaignRows, campaignLoading }: ChannelRowProps) {
+function ChannelRow({ row, isExpanded, onToggle, campaignRows, campaignLoading, startDate, endDate }: ChannelRowProps) {
   return (
     <>
       <TableRow hover>
@@ -391,22 +433,98 @@ function ChannelRow({ row, isExpanded, onToggle, campaignRows, campaignLoading }
                       <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem' }}>캠페인</TableCell>
                       <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem' }} align="right">클릭</TableCell>
                       <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem' }} align="right">가입</TableCell>
+                      <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem' }} align="right">가입률</TableCell>
                       <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem' }} align="right">구매</TableCell>
+                      <TableCell sx={{ fontWeight: 600, fontSize: '0.75rem' }} align="right">구매율</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {campaignRows.map((cr) => (
-                      <TableRow key={cr.campaign}>
-                        <TableCell>
-                          <Typography variant="body2">{cr.campaign}</Typography>
-                        </TableCell>
-                        <TableCell align="right">{cr.clicks.toLocaleString()}</TableCell>
-                        <TableCell align="right">{cr.signups.toLocaleString()}</TableCell>
-                        <TableCell align="right">{cr.purchases.toLocaleString()}</TableCell>
-                      </TableRow>
+                      <CampaignRow
+                        key={cr.campaign}
+                        row={cr}
+                        source={row.source}
+                        startDate={startDate}
+                        endDate={endDate}
+                      />
                     ))}
                   </TableBody>
                 </Table>
+              )}
+            </Box>
+          </Collapse>
+        </TableCell>
+      </TableRow>
+    </>
+  );
+}
+
+function CampaignRow({
+  row,
+  source,
+  startDate,
+  endDate,
+}: {
+  row: UtmCampaignRow;
+  source: string;
+  startDate: string;
+  endDate: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [contents, setContents] = useState<UtmCampaignRow[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const toggle = async () => {
+    if (expanded) {
+      setExpanded(false);
+      return;
+    }
+    setExpanded(true);
+    setLoading(true);
+    try {
+      const data = await AdminService.utm.getContents(source, row.campaign, startDate, endDate);
+      setContents(data);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <TableRow hover>
+        <TableCell>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <IconButton size="small" onClick={toggle}>
+              {expanded ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+            </IconButton>
+            <Typography variant="body2">{row.campaign}</Typography>
+          </Box>
+        </TableCell>
+        <TableCell align="right">{row.clicks.toLocaleString()}</TableCell>
+        <TableCell align="right">{row.signups.toLocaleString()}</TableCell>
+        <TableCell align="right">{(row.signupRate ?? 0).toFixed(1)}%</TableCell>
+        <TableCell align="right">{row.purchases.toLocaleString()}</TableCell>
+        <TableCell align="right">{(row.purchaseRate ?? 0).toFixed(1)}%</TableCell>
+      </TableRow>
+      <TableRow>
+        <TableCell colSpan={6} sx={{ py: 0, borderBottom: expanded ? undefined : 'none' }}>
+          <Collapse in={expanded} timeout="auto" unmountOnExit>
+            <Box sx={{ py: 1, pl: 5 }}>
+              {loading ? (
+                <CircularProgress size={18} />
+              ) : contents.length === 0 ? (
+                <Typography variant="caption" color="textSecondary">utm_content 데이터 없음</Typography>
+              ) : (
+                contents.map((content) => (
+                  <Box key={content.content ?? content.campaign} sx={{ display: 'grid', gridTemplateColumns: '1fr repeat(5, 80px)', gap: 1, py: 0.5 }}>
+                    <Typography variant="caption">{content.content ?? content.campaign}</Typography>
+                    <Typography variant="caption" align="right">{content.clicks.toLocaleString()}</Typography>
+                    <Typography variant="caption" align="right">{content.signups.toLocaleString()}</Typography>
+                    <Typography variant="caption" align="right">{(content.signupRate ?? 0).toFixed(1)}%</Typography>
+                    <Typography variant="caption" align="right">{content.purchases.toLocaleString()}</Typography>
+                    <Typography variant="caption" align="right">{(content.purchaseRate ?? 0).toFixed(1)}%</Typography>
+                  </Box>
+                ))
               )}
             </Box>
           </Collapse>

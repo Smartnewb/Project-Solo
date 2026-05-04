@@ -15,6 +15,12 @@ export interface UtmLink {
 	createdAt: string;
 	clickCount?: number;
 	signupCount?: number;
+	externalSource?: string | null;
+	externalId?: string | null;
+	adAccountId?: string | null;
+	campaignId?: string | null;
+	adsetId?: string | null;
+	adId?: string | null;
 }
 
 export interface UtmDashboardSummary {
@@ -42,9 +48,40 @@ export interface UtmChannelRow {
 
 export interface UtmCampaignRow {
 	campaign: string;
+	content?: string;
 	clicks: number;
 	signups: number;
 	purchases: number;
+	signupRate?: number;
+	purchaseRate?: number;
+}
+
+export interface UtmAttributionHealth {
+	metaCapi: {
+		total: number;
+		sent: number;
+		failed: number;
+		pending: number;
+		skipped: number;
+		successRate: number;
+	};
+	dedup: {
+		eligibleEvents: number;
+		totalAttributionRows: number;
+		eventIdCoverageRate: number;
+	};
+	linkage: {
+		totalConversions: number;
+		linkedConversions: number;
+		attributionIdCoverageRate: number;
+	};
+	ga4Firebase: {
+		trustTier: string;
+		status: string;
+	};
+	skan: {
+		reportingDelayHours: string;
+	};
 }
 
 export const utm = {
@@ -100,7 +137,20 @@ export const utm = {
 	},
 
 	getCampaigns: async (source: string, startDate: string, endDate: string) => {
-		const result = await adminGet<{ data: UtmCampaignRow[] }>(`/admin/v2/utm/dashboard/campaigns/${source}`, { startDate, endDate });
+		const result = await adminGet<{ data: UtmCampaignRow[] }>(`/admin/v2/utm/dashboard/campaigns/${encodeURIComponent(source)}`, { startDate, endDate });
+		return result.data;
+	},
+
+	getContents: async (source: string, campaign: string, startDate: string, endDate: string) => {
+		const result = await adminGet<{ data: UtmCampaignRow[] }>(
+			`/admin/v2/utm/dashboard/campaigns/${encodeURIComponent(source)}/${encodeURIComponent(campaign)}/contents`,
+			{ startDate, endDate },
+		);
+		return result.data;
+	},
+
+	getAttributionHealth: async (startDate: string, endDate: string) => {
+		const result = await adminGet<{ data: UtmAttributionHealth }>('/admin/v2/utm/dashboard/attribution-health', { startDate, endDate });
 		return result.data;
 	},
 };

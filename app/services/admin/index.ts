@@ -87,6 +87,7 @@ export type {
 	UtmFunnelStep,
 	UtmChannelRow,
 	UtmCampaignRow,
+	UtmAttributionHealth,
 } from './utm';
 export { ghostInjection } from './ghost-injection';
 export { ghostChat } from './ghost-chat';
