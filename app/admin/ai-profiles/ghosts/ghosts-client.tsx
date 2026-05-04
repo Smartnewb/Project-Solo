@@ -1,9 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
+import { Loader2, Plus } from 'lucide-react';
 import { ghostInjection } from '@/app/services/admin/ghost-injection';
 import type {
 	GhostListItem,
@@ -28,13 +28,11 @@ const VIEW_STORAGE_KEY = 'ghost-view';
 
 function parseQueryFromURL(params: URLSearchParams): GhostListQuery {
 	const status = params.get('status');
-	const page = Number(params.get('page'));
 	const limit = Number(params.get('limit'));
 	return {
 		status: status === 'ACTIVE' || status === 'INACTIVE' ? status : undefined,
 		schoolId: params.get('schoolId') ?? undefined,
 		q: params.get('q') ?? undefined,
-		page: Number.isFinite(page) && page > 0 ? page : 1,
 		limit: Number.isFinite(limit) && limit > 0 ? limit : DEFAULT_LIMIT,
 	};
 }
@@ -50,7 +48,6 @@ function serializeQuery(query: GhostListQuery, view: GhostView): string {
 	if (query.status) params.set('status', query.status);
 	if (query.schoolId) params.set('schoolId', query.schoolId);
 	if (query.q) params.set('q', query.q);
-	if (query.page && query.page > 1) params.set('page', String(query.page));
 	if (query.limit && query.limit !== DEFAULT_LIMIT) params.set('limit', String(query.limit));
 	params.set('view', view);
 	return params.toString();
@@ -91,17 +88,44 @@ export function GhostsClient() {
 		}
 	}, [view]);
 
-	const listQuery = useQuery({
+	const listQuery = useInfiniteQuery({
 		queryKey: ghostInjectionKeys.ghostList(query),
-		queryFn: () => ghostInjection.listGhosts(query),
+		initialPageParam: 1,
+		queryFn: ({ pageParam }) => ghostInjection.listGhosts({ ...query, page: pageParam }),
+		getNextPageParam: (lastPage) =>
+			lastPage.meta.hasNextPage ? lastPage.meta.currentPage + 1 : undefined,
 		placeholderData: keepPreviousData,
 	});
 
-	const items = listQuery.data?.items ?? [];
-	const total = listQuery.data?.meta?.totalItems ?? 0;
-	const page = query.page ?? 1;
-	const limit = query.limit ?? DEFAULT_LIMIT;
-	const totalPages = Math.max(1, Math.ceil(total / limit));
+	const pages = listQuery.data?.pages;
+	const items = useMemo(() => pages?.flatMap((page) => page.items) ?? [], [pages]);
+	const total = pages?.[0]?.meta?.totalItems ?? 0;
+	const sentinelRef = useRef<HTMLDivElement | null>(null);
+	const fetchNextRef = useRef(listQuery.fetchNextPage);
+	const hasNextRef = useRef(listQuery.hasNextPage);
+	const isFetchingNextRef = useRef(listQuery.isFetchingNextPage);
+	fetchNextRef.current = listQuery.fetchNextPage;
+	hasNextRef.current = listQuery.hasNextPage;
+	isFetchingNextRef.current = listQuery.isFetchingNextPage;
+
+	useEffect(() => {
+		const el = sentinelRef.current;
+		if (!el) return;
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				for (const entry of entries) {
+					if (entry.isIntersecting && hasNextRef.current && !isFetchingNextRef.current) {
+						fetchNextRef.current();
+					}
+				}
+			},
+			{ rootMargin: '480px 0px' },
+		);
+
+		observer.observe(el);
+		return () => observer.disconnect();
+	}, []);
 
 	const selectedSchoolLabel = useMemo(() => {
 		if (!query.schoolId) return undefined;
@@ -202,6 +226,7 @@ export function GhostsClient() {
 				<GhostCardView
 					items={items}
 					isLoading={listQuery.isLoading}
+					isFetchingNextPage={listQuery.isFetchingNextPage}
 					onCardClick={(ghost) => setSelectedGhostId(ghost.ghostAccountId)}
 					onToggleStatus={setStatusTarget}
 					selectedIds={selectedIds}
@@ -209,31 +234,23 @@ export function GhostsClient() {
 				/>
 			)}
 
-			<div className="flex items-center justify-between text-xs text-slate-500">
-				<div>
-					전체 <span className="font-semibold text-slate-800">{total}</span>명 · Page {page} /{' '}
-					{totalPages}
-				</div>
-				<div className="flex items-center gap-1">
-					<Button
-						variant="outline"
-						size="sm"
-						disabled={page <= 1 || listQuery.isFetching}
-						onClick={() => setQuery((prev) => ({ ...prev, page: Math.max(1, (prev.page ?? 1) - 1) }))}
-					>
-						<ChevronLeft className="h-4 w-4" /> 이전
-					</Button>
-					<Button
-						variant="outline"
-						size="sm"
-						disabled={page >= totalPages || listQuery.isFetching}
-						onClick={() =>
-							setQuery((prev) => ({ ...prev, page: Math.min(totalPages, (prev.page ?? 1) + 1) }))
-						}
-					>
-						다음 <ChevronRight className="h-4 w-4" />
-					</Button>
-				</div>
+			<div ref={sentinelRef} className="h-8" />
+
+			<div className="flex items-center justify-center text-xs text-slate-500">
+				{listQuery.isFetchingNextPage ? (
+					<div className="flex items-center gap-2">
+						<Loader2 className="h-4 w-4 animate-spin" />
+						<span>추가 프로필을 불러오는 중…</span>
+					</div>
+				) : listQuery.hasNextPage ? (
+					<span>
+						{items.length}/{total}명 표시 중
+					</span>
+				) : total > 0 ? (
+					<span>
+						전체 <span className="font-semibold text-slate-800">{total}</span>명 표시 완료
+					</span>
+				) : null}
 			</div>
 
 			<GhostBatchPreviewDialog open={createOpen} onOpenChange={setCreateOpen} />
