@@ -2,8 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import FlagOutlinedIcon from '@mui/icons-material/FlagOutlined';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import {
 	Alert,
+	Avatar,
 	Box,
 	Button,
 	Chip,
@@ -16,14 +21,7 @@ import {
 	Paper,
 	Select,
 	Stack,
-	Table,
-	TableBody,
-	TableCell,
-	TableContainer,
-	TableHead,
-	TableRow,
 	TextField,
-	Tooltip,
 	Typography,
 } from '@mui/material';
 import type {
@@ -73,6 +71,10 @@ function preview(text: string, length = 90) {
 function formatDate(value: string | null) {
 	if (!value) return '-';
 	return new Date(value).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+function formatCount(value: number) {
+	return new Intl.NumberFormat('ko-KR').format(value);
 }
 
 export default function TargetPostsPage() {
@@ -294,65 +296,195 @@ export default function TargetPostsPage() {
 					<CircularProgress />
 				</Box>
 			) : (
-				<TableContainer component={Paper}>
-					<Table size="small">
-						<TableHead>
-							<TableRow>
-								<TableCell>게시글</TableCell>
-								<TableCell>작성자 클러스터</TableCell>
-								<TableCell>반응</TableCell>
-								<TableCell>자동화</TableCell>
-								<TableCell>작성일</TableCell>
-								<TableCell align="right">액션</TableCell>
-							</TableRow>
-						</TableHead>
-						<TableBody>
-							{items.length === 0 ? (
-								<TableRow>
-									<TableCell colSpan={6} align="center">대상 게시글 없음</TableCell>
-								</TableRow>
-							) : items.map((item) => {
-								const status = item.automationStatus ?? 'none';
-								return (
-									<TableRow key={item.id} hover>
-										<TableCell sx={{ maxWidth: 460 }}>
-											<Typography variant="body2" fontWeight={600} noWrap>{item.title}</Typography>
-											<Tooltip title={item.content}>
-												<Typography variant="caption" color="text.secondary">
-													{preview(item.content)}
+				<Stack spacing={1.5}>
+					{items.length === 0 ? (
+						<Paper
+							variant="outlined"
+							sx={{
+								p: 4,
+								textAlign: 'center',
+								borderRadius: '16px',
+								borderColor: '#E5E8EB',
+								bgcolor: '#FFFFFF',
+							}}
+						>
+							<Typography variant="body2" color="text.secondary">대상 게시글 없음</Typography>
+						</Paper>
+					) : items.map((item) => {
+						const status = item.automationStatus ?? 'none';
+						return (
+							<Paper
+								key={item.id}
+								variant="outlined"
+								sx={{
+									p: { xs: 2, md: '15px 17px' },
+									borderRadius: '16px',
+									borderColor: '#E5E8EB',
+									bgcolor: '#FFFFFF',
+									boxShadow: '0 1px 4px rgba(0, 0, 0, 0.08)',
+								}}
+							>
+								<Stack spacing={1.5}>
+									<Stack
+										direction={{ xs: 'column', sm: 'row' }}
+										spacing={1.5}
+										justifyContent="space-between"
+										alignItems={{ xs: 'stretch', sm: 'flex-start' }}
+									>
+										<Stack direction="row" spacing={1.2} sx={{ minWidth: 0, flex: 1 }}>
+											<Avatar
+												sx={{
+													width: 42,
+													height: 42,
+													bgcolor: '#F2EDFF',
+													color: '#7A4AE2',
+													fontWeight: 700,
+													fontSize: 14,
+												}}
+											>
+												{(item.authorName ?? item.authorId ?? '익').slice(0, 1)}
+											</Avatar>
+											<Box sx={{ minWidth: 0, flex: 1 }}>
+												<Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+													<Chip
+														size="small"
+														label={categories.find((category) => category.id === item.categoryId)?.label ?? item.categoryName ?? '커뮤니티'}
+														sx={{
+															height: 24,
+															borderRadius: '9999px',
+															bgcolor: '#F7F3FF',
+															color: '#7A4AE2',
+															fontWeight: 700,
+															border: '1px solid #E2D5FF',
+														}}
+													/>
+													<Chip label={STATUS_LABEL[status]} color={STATUS_COLOR[status]} size="small" sx={{ height: 24 }} />
+													<Typography variant="caption" color="text.secondary">
+														{formatDate(item.createdAt)}
+													</Typography>
+												</Stack>
+												<Typography
+													variant="h6"
+													fontWeight={800}
+													sx={{
+														mt: 0.8,
+														lineHeight: 1.35,
+														fontSize: 18,
+														color: '#191F28',
+														wordBreak: 'break-word',
+													}}
+												>
+													{item.title || '제목 없음'}
 												</Typography>
-											</Tooltip>
-										</TableCell>
-										<TableCell>
-											<Typography variant="body2">{item.authorRegionCluster ?? '-'}</Typography>
-											<Typography variant="caption" color="text.secondary">{item.authorRegion ?? '-'}</Typography>
-										</TableCell>
-										<TableCell>
-											<Typography variant="body2">
-												댓글 {item.commentCount} | 좋아요 {item.likeCount}
+												<Typography
+													variant="body2"
+													sx={{
+														mt: 0.6,
+														color: '#4E5968',
+														lineHeight: 1.6,
+														display: '-webkit-box',
+														WebkitLineClamp: 2,
+														WebkitBoxOrient: 'vertical',
+														overflow: 'hidden',
+													}}
+												>
+													{preview(item.content, 150)}
+												</Typography>
+											</Box>
+										</Stack>
+										<Button
+											variant="contained"
+											onClick={() => openDetail(item.id)}
+											sx={{
+												minHeight: 40,
+												borderRadius: '9999px',
+												bgcolor: '#7A4AE2',
+												boxShadow: 'none',
+												fontWeight: 700,
+												px: 2.5,
+												'&:hover': { bgcolor: '#6B3FD4', boxShadow: 'none' },
+											}}
+										>
+											작업
+										</Button>
+									</Stack>
+
+									<Box sx={{ height: 1, bgcolor: '#E7E9EC' }} />
+
+									<Stack
+										direction={{ xs: 'column', md: 'row' }}
+										spacing={1.2}
+										justifyContent="space-between"
+										alignItems={{ md: 'center' }}
+									>
+										<Stack direction="row" spacing={0.8} flexWrap="wrap" useFlexGap>
+											<Chip
+												icon={<ChatBubbleOutlineIcon />}
+												label={`댓글 ${formatCount(item.commentCount)}`}
+												size="small"
+												variant="outlined"
+												sx={{ borderRadius: '9999px', borderColor: '#E4E2E2' }}
+											/>
+											<Chip
+												icon={<FavoriteBorderIcon />}
+												label={`좋아요 ${formatCount(item.likeCount)}`}
+												size="small"
+												variant="outlined"
+												sx={{ borderRadius: '9999px', borderColor: '#E4E2E2' }}
+											/>
+											<Chip
+												icon={<VisibilityOutlinedIcon />}
+												label={`조회 ${formatCount(item.readCount)}`}
+												size="small"
+												variant="outlined"
+												sx={{ borderRadius: '9999px', borderColor: '#E4E2E2' }}
+											/>
+											<Chip
+												icon={<FlagOutlinedIcon />}
+												label={`신고 ${formatCount(item.reportCount)}`}
+												size="small"
+												color={item.reportCount > 0 ? 'error' : 'default'}
+												variant="outlined"
+												sx={{ borderRadius: '9999px', borderColor: item.reportCount > 0 ? undefined : '#E4E2E2' }}
+											/>
+										</Stack>
+										<Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+											<Typography variant="caption" color="text.secondary">
+												작성자 {item.authorRegionCluster ?? 'cluster 없음'}
 											</Typography>
 											<Typography variant="caption" color="text.secondary">
-												조회 {item.readCount} | 신고 {item.reportCount}
+												{item.authorRegion ?? '지역 없음'}
 											</Typography>
-										</TableCell>
-										<TableCell>
-											<Chip label={STATUS_LABEL[status]} color={STATUS_COLOR[status]} size="small" />
-											<Typography variant="caption" color="text.secondary" display="block">
-												누적 {item.automationCount}
-											</Typography>
-										</TableCell>
-										<TableCell>{formatDate(item.createdAt)}</TableCell>
-										<TableCell align="right">
-											<Button size="small" variant="contained" onClick={() => openDetail(item.id)}>
-												작업
-											</Button>
-										</TableCell>
-									</TableRow>
-								);
-							})}
-						</TableBody>
-					</Table>
-					<Box display="flex" justifyContent="flex-end" alignItems="center" gap={1} p={1.5}>
+											<Chip
+												size="small"
+												label={`자동화 누적 ${formatCount(item.automationCount)}`}
+												sx={{
+													height: 24,
+													borderRadius: '9999px',
+													bgcolor: '#F8F9FA',
+													color: '#4E5968',
+													border: '1px solid #E5E8EB',
+												}}
+											/>
+										</Stack>
+									</Stack>
+								</Stack>
+							</Paper>
+						);
+					})}
+					<Paper
+						variant="outlined"
+						sx={{
+							display: 'flex',
+							justifyContent: 'flex-end',
+							alignItems: 'center',
+							gap: 1,
+							p: 1.5,
+							borderRadius: '16px',
+							borderColor: '#E5E8EB',
+							bgcolor: '#FFFFFF',
+						}}
+					>
 						<Typography variant="body2" color="text.secondary">{pageLabel}</Typography>
 						<Button
 							size="small"
@@ -368,8 +500,8 @@ export default function TargetPostsPage() {
 						>
 							다음
 						</Button>
-					</Box>
-				</TableContainer>
+					</Paper>
+				</Stack>
 			)}
 
 			<Drawer anchor="right" open={Boolean(selected) || detailLoading} onClose={() => setSelected(null)}>

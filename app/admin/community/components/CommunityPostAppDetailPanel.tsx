@@ -168,22 +168,24 @@ export function CommunityPostAppDetailPanel({
 				sx={{
 					borderRadius: 4,
 					overflow: 'hidden',
-					bgcolor: '#f8fafc',
+					bgcolor: '#FFFFFF',
+					borderColor: '#E5E8EB',
+					boxShadow: '0 1px 4px rgba(0, 0, 0, 0.08)',
 					maxWidth: 390,
 					mx: { xs: 'auto', md: 0 },
 					width: '100%',
 				}}
 			>
-				<Box sx={{ bgcolor: '#111827', color: 'white', px: 2, py: 1.2 }}>
-					<Typography variant="subtitle2" fontWeight={700}>커뮤니티</Typography>
+				<Box sx={{ bgcolor: '#FFFFFF', color: '#191F28', px: 2, py: 1.4, borderBottom: '1px solid #E7E9EC' }}>
+					<Typography variant="subtitle2" fontWeight={800}>커뮤니티</Typography>
 				</Box>
-				<Box sx={{ p: 2, bgcolor: 'white' }}>
+				<Box sx={{ p: 2, background: 'linear-gradient(to bottom, #FFFFFF, #F5F1FF)' }}>
 					<Stack direction="row" spacing={1.2} alignItems="center">
-						<Avatar sx={{ width: 36, height: 36 }}>
+						<Avatar sx={{ width: 36, height: 36, bgcolor: '#F2EDFF', color: '#7A4AE2', fontWeight: 700 }}>
 							{(post.authorName ?? post.nickname ?? '익').slice(0, 1)}
 						</Avatar>
 						<Box sx={{ minWidth: 0, flex: 1 }}>
-							<Typography variant="body2" fontWeight={700} noWrap>
+							<Typography variant="body2" fontWeight={700} color="#191F28" noWrap>
 								{post.nickname ?? post.authorName ?? '익명'}
 							</Typography>
 							<Typography variant="caption" color="text.secondary" noWrap>
@@ -191,17 +193,17 @@ export function CommunityPostAppDetailPanel({
 							</Typography>
 						</Box>
 					</Stack>
-					<Typography variant="h6" fontWeight={800} sx={{ mt: 2, lineHeight: 1.35 }}>
+					<Typography variant="h6" fontWeight={800} sx={{ mt: 2, lineHeight: 1.35, color: '#191F28' }}>
 						{post.title ?? '제목 없음'}
 					</Typography>
-					<Typography variant="body2" sx={{ mt: 1.2, whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
+					<Typography variant="body2" sx={{ mt: 1.2, whiteSpace: 'pre-wrap', lineHeight: 1.7, color: '#4E5968' }}>
 						{post.content}
 					</Typography>
 					<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 2 }}>
-						<Chip size="small" label={`좋아요 ${formatCount(post.likeCount)}`} />
-						<Chip size="small" label={`댓글 ${formatCount(post.commentCount ?? sortedComments.length)}`} />
-						<Chip size="small" label={`조회 ${formatCount(post.readCount)}`} />
-						<Chip size="small" label={`신고 ${formatCount(post.reportCount)}`} color={post.reportCount ? 'error' : 'default'} />
+						<Chip size="small" label={`좋아요 ${formatCount(post.likeCount)}`} variant="outlined" sx={{ borderRadius: '9999px', bgcolor: '#FFFFFF', borderColor: '#E4E2E2' }} />
+						<Chip size="small" label={`댓글 ${formatCount(post.commentCount ?? sortedComments.length)}`} variant="outlined" sx={{ borderRadius: '9999px', bgcolor: '#FFFFFF', borderColor: '#E4E2E2' }} />
+						<Chip size="small" label={`조회 ${formatCount(post.readCount)}`} variant="outlined" sx={{ borderRadius: '9999px', bgcolor: '#FFFFFF', borderColor: '#E4E2E2' }} />
+						<Chip size="small" label={`신고 ${formatCount(post.reportCount)}`} color={post.reportCount ? 'error' : 'default'} variant="outlined" sx={{ borderRadius: '9999px', bgcolor: '#FFFFFF' }} />
 					</Stack>
 					{(blinded || deleted) && (
 						<Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
@@ -211,8 +213,8 @@ export function CommunityPostAppDetailPanel({
 					)}
 				</Box>
 				<Divider />
-				<Box sx={{ p: 2, maxHeight: 420, overflow: 'auto' }}>
-					<Typography variant="subtitle2" fontWeight={800} sx={{ mb: 1.5 }}>
+				<Box sx={{ p: 2, maxHeight: 420, overflow: 'auto', bgcolor: '#FFFFFF' }}>
+					<Typography variant="subtitle2" fontWeight={800} sx={{ mb: 1.5, color: '#191F28' }}>
 						댓글 {sortedComments.length}
 					</Typography>
 					<Stack spacing={1.2}>
@@ -225,7 +227,7 @@ export function CommunityPostAppDetailPanel({
 								return (
 									<Box key={comment.id} sx={{ ml: isReply ? 3 : 0 }}>
 										<Stack direction="row" spacing={1} alignItems="flex-start">
-											<Avatar sx={{ width: 28, height: 28, fontSize: 12 }}>
+											<Avatar sx={{ width: 28, height: 28, fontSize: 12, bgcolor: '#F2EDFF', color: '#7A4AE2', fontWeight: 700 }}>
 												{getCommentAuthor(comment).slice(0, 1)}
 											</Avatar>
 											<Box sx={{ minWidth: 0, flex: 1 }}>
@@ -260,10 +262,10 @@ export function CommunityPostAppDetailPanel({
 			</Paper>
 
 			<Stack spacing={2}>
-				<Paper variant="outlined" sx={{ p: 2 }}>
+				<Paper variant="outlined" sx={{ p: 2, borderRadius: '16px', borderColor: '#E5E8EB', bgcolor: '#FFFFFF' }}>
 					<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} justifyContent="space-between">
 						<Box>
-							<Typography variant="subtitle1" fontWeight={800}>고스트 실시간 댓글</Typography>
+							<Typography variant="subtitle1" fontWeight={800} color="#191F28">고스트 실시간 댓글</Typography>
 							<Typography variant="caption" color="text.secondary">
 								ACTIVE 후보 {ghostCandidateCount ?? ghostCandidates.length}명
 							</Typography>
@@ -273,6 +275,13 @@ export function CommunityPostAppDetailPanel({
 							exclusive
 							value={mode}
 							onChange={(_, value) => value && setMode(value)}
+							sx={{
+								'& .MuiToggleButton-root.Mui-selected': {
+									bgcolor: '#F7F3FF',
+									color: '#7A4AE2',
+									fontWeight: 700,
+								},
+							}}
 						>
 							<ToggleButton value="auto">자동 선택</ToggleButton>
 							<ToggleButton value="manual">직접 선택</ToggleButton>
@@ -316,6 +325,13 @@ export function CommunityPostAppDetailPanel({
 							startIcon={submitting ? <CircularProgress size={16} color="inherit" /> : <SendIcon />}
 							disabled={!canSubmit || submitting}
 							onClick={submit}
+							sx={{
+								borderRadius: '9999px',
+								bgcolor: '#7A4AE2',
+								boxShadow: 'none',
+								fontWeight: 700,
+								'&:hover': { bgcolor: '#6B3FD4', boxShadow: 'none' },
+							}}
 						>
 							{submitLabel}
 						</Button>
