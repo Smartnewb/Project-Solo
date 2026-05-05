@@ -7,10 +7,64 @@ const BASE = '/admin/v2/community-automation';
 export type CampaignStatus = 'draft' | 'active' | 'paused' | 'archived';
 export type DagTemplateId = 'post' | 'auto_comment' | 'target_comment' | 'reply';
 
+interface CommunityCategoryResponse {
+	id?: string;
+	code: string;
+	displayName: string;
+}
+
+export enum CommunityAutomationCategory {
+	NOTICE = 'notice',
+	GENERAL = 'general',
+	REVIEW = 'review',
+	LOVE_CONCERNS = 'love-concerns',
+}
+
+export interface CommunityAutomationCategoryOption {
+	id?: string;
+	value: CommunityAutomationCategory;
+	label: string;
+}
+
+export const COMMUNITY_AUTOMATION_CATEGORY_OPTIONS: CommunityAutomationCategoryOption[] = [
+	{ value: CommunityAutomationCategory.NOTICE, label: '공지' },
+	{ value: CommunityAutomationCategory.GENERAL, label: '실시간' },
+	{ value: CommunityAutomationCategory.REVIEW, label: '리뷰' },
+	{ value: CommunityAutomationCategory.LOVE_CONCERNS, label: '연애상담' },
+] as const satisfies CommunityAutomationCategoryOption[];
+
+export function isCommunityAutomationCategory(value: string): value is CommunityAutomationCategory {
+	return (Object.values(CommunityAutomationCategory) as string[]).includes(value);
+}
+
+export function getCommunityAutomationCategoryLabel(
+	category: string,
+	options: CommunityAutomationCategoryOption[] = COMMUNITY_AUTOMATION_CATEGORY_OPTIONS,
+): string {
+	return options.find((option) => option.value === category)?.label
+		?? COMMUNITY_AUTOMATION_CATEGORY_OPTIONS.find((option) => option.value === category)?.label
+		?? category;
+}
+
+function normalizeCommunityCategoryOptions(categories: CommunityCategoryResponse[]): CommunityAutomationCategoryOption[] {
+	const order = new Map(COMMUNITY_AUTOMATION_CATEGORY_OPTIONS.map((option, index) => [option.value, index]));
+	const options = categories
+		.filter((category) => isCommunityAutomationCategory(category.code))
+		.map((category) => ({
+			id: category.id,
+			value: category.code,
+			label: category.displayName,
+		}));
+
+	if (options.length === 0) return COMMUNITY_AUTOMATION_CATEGORY_OPTIONS;
+
+	return options.sort((a, b) => (order.get(a.value) ?? 99) - (order.get(b.value) ?? 99));
+}
+
 export interface Campaign {
 	id: string;
 	name: string;
-	category: string;
+	category: CommunityAutomationCategory;
 	status: CampaignStatus;
 	startAt: string | null;
 	endAt: string | null;
@@ -23,7 +77,7 @@ export interface Campaign {
 
 export interface CreateCampaignBody {
 	name: string;
-	category: string;
+	category: CommunityAutomationCategory;
 	dagTemplateId?: DagTemplateId;
 	startAt?: string;
 	endAt?: string;
@@ -167,6 +221,14 @@ export interface KillSwitchStatus {
 // ==================== Campaigns ====================
 
 export const campaigns = {
+	categoryOptions: async (): Promise<CommunityAutomationCategoryOption[]> => {
+		const result = await adminGet<{ data: CommunityCategoryResponse[] | { categories: CommunityCategoryResponse[] } }>(
+			'/admin/v2/community/categories',
+		);
+		const categories = Array.isArray(result.data) ? result.data : (result.data?.categories ?? []);
+		return normalizeCommunityCategoryOptions(categories);
+	},
+
 	list: async (query?: ListCampaignsQuery): Promise<Campaign[]> => {
 		const params: Record<string, string> = {};
 		if (query?.status) params.status = query.status;
