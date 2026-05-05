@@ -1,4 +1,4 @@
-import { adminGet, adminPatch, adminDelete, adminRequest } from '@/shared/lib/http/admin-fetch';
+import { adminGet, adminPatch, adminDelete, adminPost, adminRequest } from '@/shared/lib/http/admin-fetch';
 
 export interface Author {
 	id: string;
@@ -31,6 +31,8 @@ export interface Comment {
 	id: string;
 	articleId: string;
 	userId: string;
+	authorId?: string;
+	authorName?: string | null;
 	nickname: string;
 	email?: string;
 	content: string;
@@ -42,6 +44,7 @@ export interface Comment {
 	blindReason?: string;
 	isDeleted: boolean;
 	isEdited: boolean;
+	parentId?: string | null;
 	createdAt: Date;
 	updatedAt: Date;
 }
@@ -85,6 +88,32 @@ export interface PaginatedResponse<T> {
 export interface ArticleDetail extends Article {
 	comments: Comment[];
 	reports: Report[];
+	ghostCandidates?: GhostCandidate[];
+	ghostCandidateCount?: number;
+}
+
+export interface GhostCandidate {
+	id?: string;
+	ghostAccountId: string;
+	ghostUserId: string;
+	name: string | null;
+	region: string | null;
+	regionCluster: string | null;
+	recentCommentCount?: number;
+	hasArticleComment?: boolean;
+}
+
+export interface GhostCommentBody {
+	content: string;
+	ghostAccountId?: string;
+}
+
+export interface GhostCommentResult {
+	comment: Comment;
+	ghost: GhostCandidate;
+	selectionMode: 'auto' | 'manual';
+	ghostCandidateCount: number;
+	warning?: string;
 }
 
 export interface Category {
@@ -154,32 +183,18 @@ const communityService = {
 	},
 
 	getArticleDetail: async (id: string): Promise<ArticleDetail> => {
-		const endDate = new Date();
-		const startDate = new Date();
-		startDate.setDate(endDate.getDate() - 30);
+		const detailRes = await adminGet<{ data: any }>(`/admin/v2/community/posts/${id}`);
+		const detail = detailRes.data;
+		if (!detail) throw new Error('게시글을 찾을 수 없습니다.');
 
-		const articlesRes = await adminGet<{ data: any[]; meta: any }>('/admin/v2/community/posts', {
-			startDate: startDate.toISOString().split('T')[0],
-			endDate: endDate.toISOString().split('T')[0],
-			page: '1',
-			limit: '1000',
-		});
-
-		const article = (articlesRes?.data ?? []).find((item: any) => item.id === id);
-		if (!article) {
-			throw new Error('게시글을 찾을 수 없습니다.');
-		}
-
-		const commentsRes = await adminGet<{ data: any[] }>('/admin/v2/community/comments', {
-			articleId: id,
-			article_id: id,
-		});
-
-		const normalized = normalizeArticle(article);
+		const normalized = normalizeArticle(detail);
 		const articleDetail: ArticleDetail = {
 			...normalized,
-			comments: commentsRes?.data ?? [],
+			content: detail.content ?? normalized.content,
+			comments: detail.comments ?? [],
 			reports: [],
+			ghostCandidates: detail.ghostCandidates ?? [],
+			ghostCandidateCount: detail.ghostCandidateCount ?? detail.ghostCandidates?.length ?? 0,
 		};
 
 		return articleDetail;
@@ -251,6 +266,17 @@ const communityService = {
 
 	deleteComment: async (id: string): Promise<any> => {
 		return adminDelete(`/admin/v2/community/comments/${id}`);
+	},
+
+	createGhostComment: async (
+		articleId: string,
+		body: GhostCommentBody,
+	): Promise<GhostCommentResult> => {
+		const result = await adminPost<{ data: GhostCommentResult }>(
+			`/admin/v2/community/posts/${articleId}/ghost-comments`,
+			body,
+		);
+		return result.data;
 	},
 
 	getCommunityReports: async (

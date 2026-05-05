@@ -34,11 +34,13 @@ import type {
 	TargetPostListQuery,
 	TargetPostSummary,
 } from '@/app/services/admin/community-automation';
+import type { GhostCommentBody } from '@/app/services/community';
 import {
 	campaigns as campaignsApi,
 	COMMUNITY_AUTOMATION_CATEGORY_OPTIONS,
 	targetPosts as targetPostsApi,
 } from '@/app/services/admin/community-automation';
+import { CommunityPostAppDetailPanel } from '@/app/admin/community/components/CommunityPostAppDetailPanel';
 
 const STATUS_LABEL: Record<ContentStatus | 'none', string> = {
 	none: '미생성',
@@ -188,6 +190,32 @@ export default function TargetPostsPage() {
 		} finally {
 			setActionLoading(false);
 		}
+	}
+
+	async function createLiveGhostComment(articleId: string, body: GhostCommentBody) {
+		const result = await targetPostsApi.createLiveGhostComment(articleId, body);
+		const liveComment = {
+			id: result.comment.id,
+			articleId,
+			parentId: result.comment.parentId ?? null,
+			authorId: result.comment.authorId ?? result.comment.userId,
+			authorName: result.comment.authorName ?? result.comment.nickname ?? null,
+			content: result.comment.content,
+			createdAt: String(result.comment.createdAt),
+		};
+		setSelected((prev) => {
+			if (!prev || prev.post.id !== articleId) return prev;
+			return {
+				...prev,
+				post: {
+					...prev.post,
+					commentCount: prev.post.commentCount + 1,
+				},
+				comments: [...prev.comments, liveComment],
+			};
+		});
+		await load();
+		return result;
 	}
 
 	return (
@@ -345,41 +373,30 @@ export default function TargetPostsPage() {
 			)}
 
 			<Drawer anchor="right" open={Boolean(selected) || detailLoading} onClose={() => setSelected(null)}>
-				<Box sx={{ width: { xs: '100vw', sm: 560 }, p: 3 }}>
+				<Box sx={{ width: { xs: '100vw', lg: 1040 }, p: 3 }}>
 					{detailLoading || !selected ? (
 						<Box display="flex" justifyContent="center" py={8}>
 							<CircularProgress />
 						</Box>
 					) : (
 						<Stack spacing={2}>
-							<Box>
-								<Typography variant="h6" fontWeight={700}>{selected.post.title}</Typography>
-								<Typography variant="caption" color="text.secondary">
-									{selected.post.authorName ?? selected.post.authorId} | {selected.post.authorRegionCluster ?? 'cluster 없음'}
-								</Typography>
-							</Box>
-							<Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{selected.post.content}</Typography>
 							<Alert severity={ghostBlocked ? 'warning' : 'info'}>
 								{ghostBlocked
 									? '같은 REGION_CLUSTER ghost 후보 없음'
 									: `같은 cluster ACTIVE ghost ${selected.ghostCandidateCount}명`}
 							</Alert>
-							<Divider />
-							<Box>
-								<Typography variant="subtitle2" mb={1}>기존 댓글</Typography>
-								<Stack spacing={1} sx={{ maxHeight: 180, overflow: 'auto' }}>
-									{selected.comments.length === 0 ? (
-										<Typography variant="body2" color="text.secondary">댓글 없음</Typography>
-									) : selected.comments.map((comment) => (
-										<Paper key={comment.id} variant="outlined" sx={{ p: 1 }}>
-											<Typography variant="body2">{comment.content}</Typography>
-											<Typography variant="caption" color="text.secondary">
-												{comment.authorName ?? comment.authorId} | {formatDate(comment.createdAt)}
-											</Typography>
-										</Paper>
-									))}
-								</Stack>
-							</Box>
+							<CommunityPostAppDetailPanel
+								post={{
+									...selected.post,
+									categoryName: categories.find((category) => category.id === selected.post.categoryId)?.label ?? selected.post.categoryName,
+								}}
+								comments={selected.comments}
+								ghostCandidates={selected.ghostCandidates}
+								ghostCandidateCount={selected.ghostCandidateCount}
+								submitLabel="지금 고스트 댓글 달기"
+								onSubmitGhostComment={createLiveGhostComment}
+								onReload={refreshDetail}
+							/>
 							<Divider />
 							<Stack spacing={1.5}>
 								<Typography variant="subtitle2">LLM 댓글 후보 3개 생성</Typography>

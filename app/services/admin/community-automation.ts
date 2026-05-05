@@ -1,4 +1,5 @@
 import { adminGet, adminPost, adminPut, adminPatch, adminDelete } from '@/shared/lib/http/admin-fetch';
+import type { GhostCommentBody, GhostCommentResult } from '@/app/services/community';
 
 const BASE = '/admin/v2/community-automation';
 
@@ -268,10 +269,13 @@ export interface TargetPostComment {
 
 export interface TargetPostGhostCandidate {
 	id: string;
+	ghostAccountId?: string;
 	ghostUserId: string;
 	name: string | null;
 	region: string | null;
 	regionCluster: string | null;
+	recentCommentCount?: number;
+	hasArticleComment?: boolean;
 }
 
 export interface TargetPostDetail {
@@ -422,6 +426,17 @@ export const targetPosts = {
 	createManualComment: async (articleId: string, body: CreateManualCommentBody): Promise<TargetPostDraftResult> => {
 		const result = await adminPost<{ data: TargetPostDraftResult }>(
 			`${BASE}/target-posts/${articleId}/manual-comments`,
+			body,
+		);
+		return result.data;
+	},
+
+	createLiveGhostComment: async (
+		articleId: string,
+		body: GhostCommentBody,
+	): Promise<GhostCommentResult> => {
+		const result = await adminPost<{ data: GhostCommentResult }>(
+			`${BASE}/target-posts/${articleId}/live-comments`,
 			body,
 		);
 		return result.data;

@@ -53,10 +53,12 @@ import AdminService from '@/app/services/admin';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
 import communityService, { Category } from '@/app/services/community';
+import type { GhostCommentBody } from '@/app/services/community';
 import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
 import { useAdminForm } from '@/app/admin/hooks/forms';
 import { articleBlindSchema, ArticleBlindFormValues } from '@/app/admin/hooks/forms/schemas/community.schema';
 import { safeToLocaleString, safeToLocaleDateString } from '@/app/utils/formatters';
+import { CommunityPostAppDetailPanel } from './components/CommunityPostAppDetailPanel';
 
 // 게시글 목록 컴포넌트
 function ArticleList() {
@@ -250,15 +252,7 @@ function ArticleList() {
 	const handleViewDetail = async (id: string) => {
 		try {
 			setActionLoading(true);
-
-			// 현재 목록에서 해당 ID의 게시글 찾기
-			const selectedArticle = articles.find((article) => article.id === id);
-			if (!selectedArticle) {
-				throw new Error('게시글을 찾을 수 없습니다.');
-			}
-
-			// 게시글 ID를 이용해 댓글 정보 가져오기
-			const commentsResponse = await communityService.getComments(id);
+			const detail = await communityService.getArticleDetail(id);
 			let articleReports: any[] = [];
 
 			try {
@@ -269,34 +263,7 @@ function ArticleList() {
 
 			;
 
-			const commentsWithAuthor =
-				commentsResponse?.items?.map((comment: any) => {
-					;
-					return {
-						...comment,
-						author: {
-							id: comment.author_id ?? comment.userId ?? '',
-							name: comment.author_name ?? comment.author?.name ?? comment.nickname ?? '익명',
-						},
-					};
-				}) ?? [];
-
-			// 게시글 상세 정보 구성
-			const articleDetail = {
-				...selectedArticle,
-				commentCount: commentsResponse?.meta?.totalItems ?? selectedArticle.commentCount ?? commentsWithAuthor.length,
-				likeCount: selectedArticle.likeCount ?? 0,
-				author: {
-					id: selectedArticle.author?.id ?? selectedArticle.userId ?? '',
-					name: selectedArticle.author?.name ?? selectedArticle.nickname ?? '익명',
-				},
-				comments: commentsWithAuthor,
-				reports: articleReports,
-			};
-
-			;
-
-			setSelectedArticleDetail(articleDetail);
+			setSelectedArticleDetail({ ...detail, reports: articleReports });
 			setDetailDialogOpen(true);
 		} catch (error) {
 			setError('게시글 상세 정보를 불러오는 중 오류가 발생했습니다.');
@@ -309,6 +276,29 @@ function ArticleList() {
 	const handleCloseDetailDialog = () => {
 		setDetailDialogOpen(false);
 		setSelectedArticleDetail(null);
+	};
+
+	const refreshSelectedArticleDetail = async () => {
+		if (!selectedArticleDetail?.id) return;
+		const detail = await communityService.getArticleDetail(selectedArticleDetail.id);
+		setSelectedArticleDetail((prev: any) => ({
+			...detail,
+			reports: prev?.reports ?? [],
+		}));
+	};
+
+	const handleCreateGhostComment = async (articleId: string, body: GhostCommentBody) => {
+		const result = await communityService.createGhostComment(articleId, body);
+		setSelectedArticleDetail((prev: any) => {
+			if (!prev || prev.id !== articleId) return prev;
+			return {
+				...prev,
+				comments: [...(prev.comments ?? []), result.comment],
+				commentCount: (prev.commentCount ?? prev.comments?.length ?? 0) + 1,
+			};
+		});
+		await fetchArticles();
+		return result;
 	};
 
 	// 성공 메시지 초기화
@@ -716,213 +706,23 @@ function ArticleList() {
 			</Dialog>
 
 			{/* 게시글 상세 다이얼로그 */}
-			<Dialog open={detailDialogOpen} onClose={handleCloseDetailDialog} maxWidth="md" fullWidth>
+			<Dialog open={detailDialogOpen} onClose={handleCloseDetailDialog} maxWidth="lg" fullWidth>
 				<DialogTitle>게시글 상세 정보</DialogTitle>
 				<DialogContent>
 					{selectedArticleDetail && (
-						<Box sx={{ mt: 1 }}>
-							<Typography variant="subtitle1">작성자 정보</Typography>
-							<Typography
-								variant="body2"
-								sx={{
-									color: 'primary.main',
-									textDecoration: 'underline',
-									cursor: 'pointer',
-									display: 'inline',
-								}}
-								onClick={() => {
-									const uid = selectedArticleDetail.author?.id ?? selectedArticleDetail.userId;
-									if (uid) {
-										setSelectedUserId(uid);
-										setUserModalOpen(true);
-									}
-								}}
-							>
-								{selectedArticleDetail.author?.name ?? selectedArticleDetail.nickname ?? '익명'}
-								{selectedArticleDetail.anonymous ? ` (${selectedArticleDetail.anonymous})` : ''}
-							</Typography>
-							<Typography variant="caption" display="block">
-								ID: {selectedArticleDetail.author?.id ?? selectedArticleDetail.userId}
-							</Typography>
-							<Typography variant="caption" display="block" sx={{ mb: 2 }}>
-								작성일: {safeToLocaleString(selectedArticleDetail.createdAt)}
-								{selectedArticleDetail.isEdited && ' (수정됨)'}
-							</Typography>
-
-							<Typography variant="subtitle1">게시글 제목</Typography>
-							<Paper variant="outlined" sx={{ p: 2, mb: 2, bgcolor: 'background.default' }}>
-								<Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-									{selectedArticleDetail.title ?? '제목 없음'}
-								</Typography>
-							</Paper>
-
-							<Typography variant="subtitle1">게시글 내용</Typography>
-							<Paper variant="outlined" sx={{ p: 2, mb: 2, bgcolor: 'background.default' }}>
-								<Typography variant="body1">
-									{selectedArticleDetail.emoji} {selectedArticleDetail.content}
-								</Typography>
-							</Paper>
-
-							<Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-								<Chip
-									icon={<CommentIcon />}
-									label={`댓글 ${selectedArticleDetail.commentCount}개`}
-									variant="outlined"
-								/>
-								<Chip
-									icon={<FavoriteIcon />}
-									label={`좋아요 ${selectedArticleDetail.likeCount ?? 0}개`}
-									variant="outlined"
-									color="primary"
-								/>
-								{selectedArticleDetail.reportCount > 0 && (
-									<Chip
-										icon={<ReportIcon />}
-										label={`신고 ${selectedArticleDetail.reportCount}건`}
-										color="error"
-										variant="outlined"
-									/>
-								)}
-								{(selectedArticleDetail.isBlinded || (selectedArticleDetail as any).blindedAt) && (
-									<Chip icon={<VisibilityOffIcon />} label="블라인드" color="warning" />
-								)}
-							</Box>
-
-							{(selectedArticleDetail.isBlinded || (selectedArticleDetail as any).blindedAt) && (
-								<Alert severity="warning" sx={{ mb: 2 }}>
-									<Typography variant="subtitle2">블라인드 사유</Typography>
-									<Typography variant="body2">
-										{selectedArticleDetail.blindReason ?? '사유가 지정되지 않았습니다.'}
-									</Typography>
-								</Alert>
-							)}
-
-							{/* 댓글 목록 */}
-							<Typography variant="subtitle1" sx={{ mt: 2 }}>
-								댓글 목록
-							</Typography>
-							<Paper variant="outlined" sx={{ mb: 2 }}>
-								{selectedArticleDetail.comments && selectedArticleDetail.comments.length > 0 ? (
-									selectedArticleDetail.comments.map((comment: any) => (
-										<Box
-											key={comment.id}
-											sx={{
-												p: 1.5,
-												borderBottom: '1px solid',
-												borderColor: 'divider',
-												'&:last-child': { borderBottom: 'none' },
-											}}
-										>
-											<Box
-												sx={{
-													display: 'flex',
-													justifyContent: 'space-between',
-													alignItems: 'center',
-												}}
-											>
-												<Box>
-													<Typography variant="body2" sx={{ fontWeight: 500 }}>
-														{comment.isAnonymous
-															? '익명'
-															: (comment.author?.name ?? comment.author_name ?? comment.nickname)}
-													</Typography>
-													<Typography variant="caption" color="text.secondary">
-														ID: {comment.author?.id ?? comment.author_id ?? comment.userId}
-													</Typography>
-												</Box>
-												<Typography variant="caption">
-													{safeToLocaleString(comment.createdAt)}
-												</Typography>
-											</Box>
-											<Typography
-												variant="body2"
-												sx={{
-													mt: 0.5,
-													textDecoration: comment.isBlinded ? 'line-through' : 'none',
-													color: comment.isBlinded ? 'text.disabled' : 'text.primary',
-												}}
-											>
-												{comment.emoji} {comment.content}
-											</Typography>
-											{comment.isBlinded && (
-												<Typography variant="caption" color="error">
-													(블라인드 처리됨: {comment.blindReason ?? '사유 없음'})
-												</Typography>
-											)}
-										</Box>
-									))
-								) : (
-									<Box sx={{ p: 2, textAlign: 'center' }}>
-										<Typography variant="body2" color="text.secondary">
-											댓글이 없습니다.
-										</Typography>
-									</Box>
-								)}
-							</Paper>
-
-							{selectedArticleDetail.reports && selectedArticleDetail.reports.length > 0 && (
-								<>
-									<Typography variant="subtitle1" sx={{ mt: 2 }}>
-										신고 내역
-									</Typography>
-									<Paper variant="outlined" sx={{ mb: 2 }}>
-										{selectedArticleDetail.reports.map((report: any) => (
-											<Box
-												key={report.id}
-												sx={{
-													p: 1.5,
-													borderBottom: '1px solid',
-													borderColor: 'divider',
-													'&:last-child': { borderBottom: 'none' },
-												}}
-											>
-												<Box
-													sx={{
-														display: 'flex',
-														justifyContent: 'space-between',
-														alignItems: 'center',
-													}}
-												>
-													<Typography variant="body2" sx={{ fontWeight: 500 }}>
-														신고자: {report.reporterNickname}
-													</Typography>
-													<Typography variant="caption">
-														{safeToLocaleString(report.createdAt)}
-													</Typography>
-												</Box>
-												<Typography variant="body2" sx={{ mt: 0.5 }}>
-													사유: {report.reason}
-												</Typography>
-												{report.description && (
-													<Typography variant="body2" sx={{ mt: 0.5 }}>
-														설명: {report.description}
-													</Typography>
-												)}
-												<Box sx={{ mt: 1 }}>
-													<Chip
-														size="small"
-														label={
-															report.status === 'pending'
-																? '처리 대기'
-																: report.result === 'accepted'
-																	? '수락됨'
-																	: '거절됨'
-														}
-														color={
-															report.status === 'pending'
-																? 'warning'
-																: report.result === 'accepted'
-																	? 'success'
-																	: 'error'
-														}
-													/>
-												</Box>
-											</Box>
-										))}
-									</Paper>
-								</>
-							)}
-						</Box>
+						<CommunityPostAppDetailPanel
+							post={{
+								...selectedArticleDetail,
+								authorId: selectedArticleDetail.author?.id ?? selectedArticleDetail.userId,
+								authorName: selectedArticleDetail.author?.name,
+								nickname: selectedArticleDetail.anonymous ?? selectedArticleDetail.nickname,
+							}}
+							comments={selectedArticleDetail.comments ?? []}
+							ghostCandidates={selectedArticleDetail.ghostCandidates ?? []}
+							ghostCandidateCount={selectedArticleDetail.ghostCandidateCount}
+							onSubmitGhostComment={handleCreateGhostComment}
+							onReload={refreshSelectedArticleDetail}
+						/>
 					)}
 				</DialogContent>
 				<DialogActions>
