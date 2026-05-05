@@ -96,6 +96,23 @@ function isExcludedCategory(category: CommunityAutomationCategoryOption) {
 	return EXCLUDED_CATEGORY_TOKENS.some((token) => normalized.includes(token));
 }
 
+function getStatusAccent(status: ContentStatus | 'none') {
+	switch (status) {
+		case 'pending_review':
+			return '#FFB02E';
+		case 'published':
+			return '#22C55E';
+		case 'rejected':
+		case 'quality_failed':
+			return '#FF6B6B';
+		case 'scheduled':
+		case 'approved':
+			return '#7A4AE2';
+		default:
+			return '#D0D5DD';
+	}
+}
+
 export default function TargetPostsPage() {
 	const router = useRouter();
 	const [loading, setLoading] = useState(true);
@@ -357,164 +374,214 @@ export default function TargetPostsPage() {
 									<Paper
 										key={item.id}
 										variant="outlined"
+										role="button"
+										tabIndex={0}
+										aria-label={`${item.title || '제목 없음'} 작업 열기`}
+										onClick={() => openDetail(item.id)}
+										onKeyDown={(event) => {
+											if (event.key === 'Enter' || event.key === ' ') {
+												event.preventDefault();
+												openDetail(item.id);
+											}
+										}}
 										sx={{
-											p: 1.7,
 											borderRadius: '16px',
 											borderColor: '#E5E8EB',
 											bgcolor: '#FFFFFF',
-											boxShadow: '0 1px 4px rgba(0, 0, 0, 0.08)',
+											boxShadow: '0 1px 4px rgba(25, 31, 40, 0.06)',
+											cursor: 'pointer',
 											minWidth: 0,
 											height: '100%',
 											display: 'flex',
 											flexDirection: 'column',
+											overflow: 'hidden',
+											transition: 'border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease',
+											'&:hover': {
+												borderColor: '#C7B7F4',
+												boxShadow: '0 8px 24px rgba(25, 31, 40, 0.10)',
+												transform: 'translateY(-2px)',
+											},
+											'&:focus-visible': {
+												outline: '3px solid #E2D5FF',
+												outlineOffset: 2,
+											},
 										}}
 									>
-										<Stack spacing={1.2} sx={{ flex: 1, minHeight: 0 }}>
+										<Box sx={{ height: 4, bgcolor: getStatusAccent(status) }} />
+										<Stack spacing={1.2} sx={{ p: 1.6, flex: 1, minHeight: 0 }}>
+											<Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+												<Chip
+													size="small"
+													label={visibleCategories.find((category) => category.id === item.categoryId)?.label ?? item.categoryName ?? '커뮤니티'}
+													sx={{
+														height: 24,
+														maxWidth: '68%',
+														borderRadius: '9999px',
+														bgcolor: '#F7F3FF',
+														color: '#7A4AE2',
+														fontWeight: 700,
+														border: '1px solid #E2D5FF',
+														'& .MuiChip-label': {
+															overflow: 'hidden',
+															textOverflow: 'ellipsis',
+														},
+													}}
+												/>
+												<Chip
+													label={STATUS_LABEL[status]}
+													color={STATUS_COLOR[status]}
+													size="small"
+													sx={{ height: 24, flexShrink: 0 }}
+												/>
+											</Stack>
+
 											<Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
 												<Avatar
 													sx={{
-														width: 36,
-														height: 36,
-														bgcolor: '#F2EDFF',
-														color: '#7A4AE2',
-														fontWeight: 700,
-														fontSize: 13,
+														width: 34,
+														height: 34,
+														bgcolor: '#F8F9FA',
+														color: '#49386E',
+														border: '1px solid #E5E8EB',
+														fontWeight: 800,
+														fontSize: 12,
 														flexShrink: 0,
 													}}
 												>
 													{(item.authorName ?? item.authorId ?? '익').slice(0, 1)}
 												</Avatar>
 												<Box sx={{ minWidth: 0, flex: 1 }}>
-													<Typography variant="body2" fontWeight={700} color="#191F28" noWrap>
+													<Typography variant="body2" fontWeight={800} color="#191F28" noWrap>
 														{item.authorName ?? item.authorId}
 													</Typography>
 													<Typography variant="caption" color="text.secondary" noWrap display="block">
-														{formatDate(item.createdAt)}
+														{item.authorRegionCluster ?? 'cluster 없음'} · {formatDate(item.createdAt)}
 													</Typography>
 												</Box>
 											</Stack>
 
-											<Stack direction="row" spacing={0.7} alignItems="center" flexWrap="wrap" useFlexGap>
-												<Chip
-													size="small"
-													label={visibleCategories.find((category) => category.id === item.categoryId)?.label ?? item.categoryName ?? '커뮤니티'}
+											<Box sx={{ minHeight: 128 }}>
+												<Typography
+													variant="subtitle1"
+													fontWeight={800}
 													sx={{
-														height: 23,
-														borderRadius: '9999px',
-														bgcolor: '#F7F3FF',
-														color: '#7A4AE2',
-														fontWeight: 700,
-														border: '1px solid #E2D5FF',
+														lineHeight: 1.35,
+														fontSize: 16,
+														color: '#191F28',
+														wordBreak: 'break-word',
+														display: '-webkit-box',
+														WebkitLineClamp: 2,
+														WebkitBoxOrient: 'vertical',
+														overflow: 'hidden',
 													}}
-												/>
-												<Chip label={STATUS_LABEL[status]} color={STATUS_COLOR[status]} size="small" sx={{ height: 23 }} />
-											</Stack>
+												>
+													{item.title || '제목 없음'}
+												</Typography>
+												<Typography
+													variant="body2"
+													sx={{
+														mt: 0.8,
+														color: '#4E5968',
+														lineHeight: 1.55,
+														display: '-webkit-box',
+														WebkitLineClamp: 4,
+														WebkitBoxOrient: 'vertical',
+														overflow: 'hidden',
+													}}
+												>
+													{preview(item.content, 180)}
+												</Typography>
+											</Box>
 
-											<Typography
-												variant="subtitle1"
-												fontWeight={800}
-												sx={{
-													lineHeight: 1.35,
-													fontSize: 16,
-													color: '#191F28',
-													wordBreak: 'break-word',
-													display: '-webkit-box',
-													WebkitLineClamp: 2,
-													WebkitBoxOrient: 'vertical',
-													overflow: 'hidden',
-												}}
-											>
-												{item.title || '제목 없음'}
-											</Typography>
-
-											<Typography
-												variant="body2"
-												sx={{
-													color: '#4E5968',
-													lineHeight: 1.55,
-													display: '-webkit-box',
-													WebkitLineClamp: 4,
-													WebkitBoxOrient: 'vertical',
-													overflow: 'hidden',
-													minHeight: 86,
-												}}
-											>
-												{preview(item.content, 180)}
-											</Typography>
-
-											<Stack direction="row" spacing={0.6} flexWrap="wrap" useFlexGap>
-												<Chip
-													icon={<ChatBubbleOutlineIcon />}
-													label={formatCount(item.commentCount)}
-													size="small"
-													variant="outlined"
-													sx={{ borderRadius: '9999px', borderColor: '#E4E2E2', height: 26 }}
-												/>
-												<Chip
-													icon={<FavoriteBorderIcon />}
-													label={formatCount(item.likeCount)}
-													size="small"
-													variant="outlined"
-													sx={{ borderRadius: '9999px', borderColor: '#E4E2E2', height: 26 }}
-												/>
-												<Chip
-													icon={<VisibilityOutlinedIcon />}
-													label={formatCount(item.readCount)}
-													size="small"
-													variant="outlined"
-													sx={{ borderRadius: '9999px', borderColor: '#E4E2E2', height: 26 }}
-												/>
-												{item.reportCount > 0 && (
-													<Chip
-														icon={<FlagOutlinedIcon />}
-														label={formatCount(item.reportCount)}
-														size="small"
-														color="error"
-														variant="outlined"
-														sx={{ borderRadius: '9999px', height: 26 }}
-													/>
-												)}
-											</Stack>
+											{item.latestComment && (
+												<Box
+													sx={{
+														p: 1,
+														borderRadius: '12px',
+														bgcolor: '#F8F9FA',
+														border: '1px solid #E7E9EC',
+														minHeight: 48,
+													}}
+												>
+													<Typography variant="caption" color="text.secondary" display="block" noWrap>
+														최근 댓글
+													</Typography>
+													<Typography
+														variant="caption"
+														color="#4E5968"
+														sx={{
+															display: '-webkit-box',
+															WebkitLineClamp: 2,
+															WebkitBoxOrient: 'vertical',
+															overflow: 'hidden',
+															lineHeight: 1.35,
+														}}
+													>
+														{item.latestComment}
+													</Typography>
+												</Box>
+											)}
 
 											<Box sx={{ flex: 1 }} />
 
-											<Stack spacing={0.7}>
-												<Stack direction="row" spacing={0.7} flexWrap="wrap" useFlexGap>
-													<Typography variant="caption" color="text.secondary">
-														{item.authorRegionCluster ?? 'cluster 없음'}
-													</Typography>
-													<Typography variant="caption" color="text.secondary">
-														{item.authorRegion ?? '지역 없음'}
-													</Typography>
-												</Stack>
-												<Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+											<Stack spacing={1}>
+												<Box
+													sx={{
+														display: 'grid',
+														gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+														border: '1px solid #E7E9EC',
+														borderRadius: '12px',
+														overflow: 'hidden',
+													}}
+												>
+													{[
+														{ icon: <ChatBubbleOutlineIcon fontSize="small" />, value: item.commentCount },
+														{ icon: <FavoriteBorderIcon fontSize="small" />, value: item.likeCount },
+														{ icon: <VisibilityOutlinedIcon fontSize="small" />, value: item.readCount },
+													].map((metric, index) => (
+														<Stack
+															key={index}
+															direction="row"
+															spacing={0.4}
+															alignItems="center"
+															justifyContent="center"
+															sx={{
+																minWidth: 0,
+																height: 34,
+																color: '#4E5968',
+																borderLeft: index === 0 ? 'none' : '1px solid #E7E9EC',
+															}}
+														>
+															{metric.icon}
+															<Typography variant="caption" fontWeight={700} noWrap>
+																{formatCount(metric.value)}
+															</Typography>
+														</Stack>
+													))}
+												</Box>
+
+												<Stack direction="row" spacing={0.7} alignItems="center" justifyContent="space-between">
 													<Chip
 														size="small"
 														label={`자동화 ${formatCount(item.automationCount)}`}
 														sx={{
 															height: 24,
 															borderRadius: '9999px',
-															bgcolor: '#F8F9FA',
+															bgcolor: '#FFFFFF',
 															color: '#4E5968',
 															border: '1px solid #E5E8EB',
 														}}
 													/>
-													<Button
-														variant="contained"
-														size="small"
-														onClick={() => openDetail(item.id)}
-														sx={{
-															minHeight: 34,
-															borderRadius: '9999px',
-															bgcolor: '#7A4AE2',
-															boxShadow: 'none',
-															fontWeight: 700,
-															px: 1.8,
-															'&:hover': { bgcolor: '#6B3FD4', boxShadow: 'none' },
-														}}
-													>
-														작업
-													</Button>
+													{item.reportCount > 0 && (
+														<Chip
+															icon={<FlagOutlinedIcon />}
+															label={`신고 ${formatCount(item.reportCount)}`}
+															size="small"
+															color="error"
+															variant="outlined"
+															sx={{ borderRadius: '9999px', height: 24 }}
+														/>
+													)}
 												</Stack>
 											</Stack>
 										</Stack>
