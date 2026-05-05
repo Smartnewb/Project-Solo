@@ -24,7 +24,7 @@ export type { NoticeListParams } from './notices';
 export { seo } from './seo';
 export type { PageMeta, SitemapKind } from './seo';
 export { cardNewsGeneration } from './card-news-generation';
-export { campaigns, reviewQueue, metrics, personas, communitySettings } from './community-automation';
+export { campaigns, reviewQueue, metrics, personas, communitySettings, targetPosts } from './community-automation';
 export type {
 	Campaign,
 	CampaignStatus,
@@ -46,6 +46,15 @@ export type {
 	KillSwitchStatus,
 	ReactionSpeed,
 	ActivityCurve,
+	TargetPostListQuery,
+	TargetPostSummary,
+	TargetPostDetail,
+	TargetPostComment,
+	TargetPostGhostCandidate,
+	TargetPostListResponse,
+	CreateLlmDraftBody,
+	CreateManualCommentBody,
+	TargetPostDraftResult,
 } from './community-automation';
 export type { CardNewsTopic, QueueStats, JobStatus } from './card-news-generation';
 export { reports, userReview, profileImages } from './moderation';
@@ -192,7 +201,7 @@ import { aiProfileGenerator } from './ai-profile-generator';
 import { promotions } from './promotions';
 import { gemProducts } from './gem-products';
 import { iapCatalog } from './iap-catalog';
-import { campaigns, reviewQueue, metrics, personas, communitySettings } from './community-automation';
+import { campaigns, reviewQueue, metrics, personas, communitySettings, targetPosts } from './community-automation';
 
 const AdminService = {
 	stats,
@@ -248,6 +257,7 @@ const AdminService = {
 	metrics,
 	personas,
 	communitySettings,
+	targetPosts,
 };
 
 export default AdminService;

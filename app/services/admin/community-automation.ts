@@ -48,11 +48,11 @@ export function getCommunityAutomationCategoryLabel(
 
 function normalizeCommunityCategoryOptions(categories: CommunityCategoryResponse[]): CommunityAutomationCategoryOption[] {
 	const order = new Map(COMMUNITY_AUTOMATION_CATEGORY_OPTIONS.map((option, index) => [option.value, index]));
-	const options = categories
+	const options: CommunityAutomationCategoryOption[] = categories
 		.filter((category) => isCommunityAutomationCategory(category.code))
 		.map((category) => ({
 			id: category.id,
-			value: category.code,
+			value: category.code as CommunityAutomationCategory,
 			label: category.displayName,
 		}));
 
@@ -119,6 +119,8 @@ export interface Content {
 	commentId: string | null;
 	targetType: 'POST' | 'COMMENT' | 'REPLY' | null;
 	targetParentId: string | null;
+	targetArticleId: string | null;
+	targetCommentId: string | null;
 	status: ContentStatus;
 	generatedText: string | null;
 	finalText: string | null;
@@ -218,6 +220,101 @@ export interface KillSwitchStatus {
 	killed: boolean;
 }
 
+export type TargetPostAutomationStatus = 'none' | 'pending_review' | 'scheduled' | 'published' | 'withdrawn';
+
+export interface TargetPostListQuery {
+	page?: number;
+	limit?: number;
+	categoryId?: string;
+	regionCluster?: string;
+	automationStatus?: TargetPostAutomationStatus;
+	search?: string;
+	sort?: 'createdAt' | 'commentCount' | 'likeCount' | 'readCount' | 'automationUpdatedAt';
+	order?: 'asc' | 'desc';
+}
+
+export interface TargetPostSummary {
+	id: string;
+	title: string;
+	content: string;
+	categoryId: string;
+	categoryName: string | null;
+	authorId: string;
+	authorName: string | null;
+	authorRegion: string | null;
+	authorRegionCluster: string | null;
+	commentCount: number;
+	likeCount: number;
+	readCount: number;
+	reportCount: number;
+	latestComment: string | null;
+	latestCommentAt: string | null;
+	automationStatus: ContentStatus | null;
+	automationCount: number;
+	automationUpdatedAt: string | null;
+	createdAt: string;
+	updatedAt: string | null;
+}
+
+export interface TargetPostComment {
+	id: string;
+	articleId: string;
+	parentId: string | null;
+	authorId: string;
+	authorName: string | null;
+	content: string;
+	createdAt: string;
+}
+
+export interface TargetPostGhostCandidate {
+	id: string;
+	ghostUserId: string;
+	name: string | null;
+	region: string | null;
+	regionCluster: string | null;
+}
+
+export interface TargetPostDetail {
+	post: TargetPostSummary;
+	comments: TargetPostComment[];
+	automationHistory: Content[];
+	ghostCandidates: TargetPostGhostCandidate[];
+	ghostCandidateCount: number;
+	defaults: {
+		defaultRegionCluster: string | null;
+		defaultPublishMode: 'review_queue';
+	};
+}
+
+export interface TargetPostListResponse {
+	items: TargetPostSummary[];
+	total: number;
+	page: number;
+	limit: number;
+}
+
+export interface CreateLlmDraftBody {
+	count?: number;
+	tone?: string;
+	instruction?: string;
+	regionCluster?: string;
+	ghostAccountId?: string;
+	parentCommentId?: string;
+}
+
+export interface CreateManualCommentBody {
+	text: string;
+	regionCluster?: string;
+	ghostAccountId?: string;
+	parentCommentId?: string;
+}
+
+export interface TargetPostDraftResult {
+	items?: Content[];
+	item?: Content;
+	ghostCandidateCount: number;
+}
+
 // ==================== Campaigns ====================
 
 export const campaigns = {
@@ -296,6 +393,37 @@ export const reviewQueue = {
 
 	bulk: async (body: BulkApplyBody): Promise<BulkApplyResult> => {
 		const result = await adminPost<{ data: BulkApplyResult }>(`${BASE}/review-queue/bulk`, body);
+		return result.data;
+	},
+};
+
+// ==================== Target Posts ====================
+
+export const targetPosts = {
+	list: async (query?: TargetPostListQuery): Promise<TargetPostListResponse> => {
+		const params: Record<string, string | number | undefined> = query ? { ...query } : {};
+		const result = await adminGet<{ data: TargetPostListResponse }>(`${BASE}/target-posts`, params);
+		return result.data;
+	},
+
+	get: async (articleId: string): Promise<TargetPostDetail> => {
+		const result = await adminGet<{ data: TargetPostDetail }>(`${BASE}/target-posts/${articleId}`);
+		return result.data;
+	},
+
+	createLlmDraft: async (articleId: string, body: CreateLlmDraftBody): Promise<TargetPostDraftResult> => {
+		const result = await adminPost<{ data: TargetPostDraftResult }>(
+			`${BASE}/target-posts/${articleId}/comment-drafts`,
+			body,
+		);
+		return result.data;
+	},
+
+	createManualComment: async (articleId: string, body: CreateManualCommentBody): Promise<TargetPostDraftResult> => {
+		const result = await adminPost<{ data: TargetPostDraftResult }>(
+			`${BASE}/target-posts/${articleId}/manual-comments`,
+			body,
+		);
 		return result.data;
 	},
 };
