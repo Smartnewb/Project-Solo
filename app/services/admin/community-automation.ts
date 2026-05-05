@@ -278,6 +278,30 @@ export interface TargetPostGhostCandidate {
 	hasArticleComment?: boolean;
 }
 
+export type ScheduledCommentStatus = 'scheduled' | 'published' | 'quality_failed' | 'withdrawn';
+export type ScheduledCommentHealthFlag = 'due_soon' | 'delayed' | 'revalidation_failed';
+
+export interface ScheduledCommentTimelineItem {
+	contentId: string;
+	articleId: string;
+	ghostAccountId: string | null;
+	ghostName: string | null;
+	ghostUserId: string | null;
+	content: string;
+	status: ScheduledCommentStatus;
+	scheduledAt: string | null;
+	publishedAt: string | null;
+	commentId: string | null;
+	rejectionReason: string | null;
+	createdAt: string;
+	updatedAt: string | null;
+	healthFlags: ScheduledCommentHealthFlag[];
+}
+
+export interface ScheduledCommentTimelineResponse {
+	items: ScheduledCommentTimelineItem[];
+}
+
 export interface TargetPostDetail {
 	post: TargetPostSummary;
 	comments: TargetPostComment[];
@@ -440,6 +464,35 @@ export const targetPosts = {
 			body,
 		);
 		return result.data;
+	},
+
+	listScheduledComments: async (articleId: string): Promise<ScheduledCommentTimelineItem[]> => {
+		const result = await adminGet<{ data: ScheduledCommentTimelineResponse }>(
+			`${BASE}/target-posts/${articleId}/scheduled-comments`,
+		);
+		return result.data.items;
+	},
+
+	cancelScheduledComment: async (
+		articleId: string,
+		contentId: string,
+	): Promise<ScheduledCommentTimelineItem[]> => {
+		const result = await adminPatch<{ data: ScheduledCommentTimelineResponse }>(
+			`${BASE}/target-posts/${articleId}/scheduled-comments/${contentId}/cancel`,
+		);
+		return result.data.items;
+	},
+
+	rescheduleScheduledComment: async (
+		articleId: string,
+		contentId: string,
+		body: { delayMinutes: number },
+	): Promise<ScheduledCommentTimelineItem[]> => {
+		const result = await adminPatch<{ data: ScheduledCommentTimelineResponse }>(
+			`${BASE}/target-posts/${articleId}/scheduled-comments/${contentId}/reschedule`,
+			body,
+		);
+		return result.data.items;
 	},
 };
 

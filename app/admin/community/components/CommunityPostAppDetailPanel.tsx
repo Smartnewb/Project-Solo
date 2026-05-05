@@ -15,12 +15,15 @@ import {
 	Paper,
 	Select,
 	Stack,
+	Tab,
+	Tabs,
 	TextField,
 	ToggleButton,
 	ToggleButtonGroup,
 	Typography,
 } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
+import type { ScheduledCommentTimelineItem } from '@/app/services/admin/community-automation';
 import type { GhostCommentBody, GhostCommentResult } from '@/app/services/community';
 import { safeToLocaleString } from '@/app/utils/formatters';
 
@@ -79,6 +82,11 @@ interface CommunityPostAppDetailPanelProps {
 	submitLabel?: string;
 	onSubmitGhostComment: (articleId: string, body: GhostCommentBody) => Promise<GhostCommentResult>;
 	onReload?: () => Promise<void>;
+	scheduledComments?: ScheduledCommentTimelineItem[];
+	scheduledCommentsLoading?: boolean;
+	onReloadScheduledComments?: () => Promise<void>;
+	onCancelScheduledComment?: (contentId: string) => Promise<void>;
+	onRescheduleScheduledComment?: (contentId: string, delayMinutes: number) => Promise<void>;
 }
 
 function getGhostAccountId(candidate: GhostCandidateLike) {
@@ -93,6 +101,19 @@ function formatCount(value: number | undefined) {
 	return new Intl.NumberFormat('ko-KR').format(value ?? 0);
 }
 
+const SCHEDULED_COMMENT_STATUS_LABEL: Record<ScheduledCommentTimelineItem['status'], string> = {
+	scheduled: '예약됨',
+	published: '발화됨',
+	quality_failed: '실패',
+	withdrawn: '취소됨',
+};
+
+const SCHEDULED_COMMENT_HEALTH_LABEL: Record<ScheduledCommentTimelineItem['healthFlags'][number], string> = {
+	due_soon: '5분 이내',
+	delayed: '지연됨',
+	revalidation_failed: '재검증 실패',
+};
+
 export function CommunityPostAppDetailPanel({
 	post,
 	comments,
@@ -101,14 +122,22 @@ export function CommunityPostAppDetailPanel({
 	submitLabel = '지금 고스트 댓글 달기',
 	onSubmitGhostComment,
 	onReload,
+	scheduledComments = [],
+	scheduledCommentsLoading = false,
+	onReloadScheduledComments,
+	onCancelScheduledComment,
+	onRescheduleScheduledComment,
 }: CommunityPostAppDetailPanelProps) {
 	const [localComments, setLocalComments] = useState<CommentLike[]>(comments);
+	const [operationTab, setOperationTab] = useState<'compose' | 'timeline'>('compose');
 	const [mode, setMode] = useState<'auto' | 'manual'>('auto');
 	const [deliveryMode, setDeliveryMode] = useState<'now' | 'delay'>('now');
 	const [delayMinutes, setDelayMinutes] = useState(30);
+	const [timelineDelayMinutesById, setTimelineDelayMinutesById] = useState<Record<string, number>>({});
 	const [selectedGhostId, setSelectedGhostId] = useState('');
 	const [content, setContent] = useState('');
 	const [submitting, setSubmitting] = useState(false);
+	const [timelineActionId, setTimelineActionId] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState<string | null>(null);
 
@@ -129,6 +158,7 @@ export function CommunityPostAppDetailPanel({
 	const blinded = Boolean(post.isBlinded || post.blindedAt);
 	const deleted = Boolean(post.isDeleted || post.deletedAt);
 	const canSubmit = content.trim().length > 0 && (mode === 'auto' || selectedGhostId);
+	const timelineEnabled = Boolean(onReloadScheduledComments || onCancelScheduledComment || onRescheduleScheduledComment);
 
 	async function submit() {
 		if (!canSubmit) return;
@@ -150,6 +180,8 @@ export function CommunityPostAppDetailPanel({
 				setSuccess(
 					`${ghostLabel} 계정으로 ${result.scheduledComment.delayMinutes}분 후 댓글 발송을 예약했습니다.`,
 				);
+				await onReloadScheduledComments?.();
+				setOperationTab('timeline');
 			} else {
 				setSuccess(
 					result.selectionMode === 'manual'
@@ -170,6 +202,37 @@ export function CommunityPostAppDetailPanel({
 			setError(e instanceof Error ? e.message : '댓글 작성에 실패했습니다.');
 		} finally {
 			setSubmitting(false);
+		}
+	}
+
+	async function cancelScheduledComment(contentId: string) {
+		if (!onCancelScheduledComment) return;
+		setTimelineActionId(contentId);
+		setError(null);
+		setSuccess(null);
+		try {
+			await onCancelScheduledComment(contentId);
+			setSuccess('예약 댓글을 취소했습니다.');
+		} catch (e: unknown) {
+			setError(e instanceof Error ? e.message : '예약 댓글 취소에 실패했습니다.');
+		} finally {
+			setTimelineActionId(null);
+		}
+	}
+
+	async function rescheduleScheduledComment(contentId: string) {
+		if (!onRescheduleScheduledComment) return;
+		const nextDelayMinutes = timelineDelayMinutesById[contentId] ?? 30;
+		setTimelineActionId(contentId);
+		setError(null);
+		setSuccess(null);
+		try {
+			await onRescheduleScheduledComment(contentId, nextDelayMinutes);
+			setSuccess(`${nextDelayMinutes}분 후 발송으로 변경했습니다.`);
+		} catch (e: unknown) {
+			setError(e instanceof Error ? e.message : '예약 댓글 시간 변경에 실패했습니다.');
+		} finally {
+			setTimelineActionId(null);
 		}
 	}
 
@@ -275,6 +338,19 @@ export function CommunityPostAppDetailPanel({
 
 			<Stack spacing={2}>
 				<Paper variant="outlined" sx={{ p: 2, borderRadius: '16px', borderColor: '#E5E8EB', bgcolor: '#FFFFFF' }}>
+					{timelineEnabled && (
+						<Tabs
+							value={operationTab}
+							onChange={(_, value) => setOperationTab(value)}
+							sx={{ minHeight: 40, mb: 2, borderBottom: '1px solid #E7E9EC' }}
+						>
+							<Tab value="compose" label="댓글 작성" sx={{ minHeight: 40, fontWeight: 700 }} />
+							<Tab value="timeline" label="예약 타임라인" sx={{ minHeight: 40, fontWeight: 700 }} />
+						</Tabs>
+					)}
+
+					{operationTab === 'compose' && (
+						<>
 					<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} justifyContent="space-between">
 						<Box>
 							<Typography variant="subtitle1" fontWeight={800} color="#191F28">고스트 실시간 댓글</Typography>
@@ -386,6 +462,131 @@ export function CommunityPostAppDetailPanel({
 							{deliveryMode === 'delay' ? '예약 시점에 선택된 고스트로 발송' : '최상위 댓글만 작성'}
 						</Typography>
 					</Stack>
+						</>
+					)}
+					{operationTab === 'timeline' && timelineEnabled && (
+						<Stack spacing={1.3}>
+							<Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+								<Box>
+									<Typography variant="subtitle1" fontWeight={800} color="#191F28">
+										예약 타임라인
+									</Typography>
+									<Typography variant="caption" color="text.secondary">
+										DB 상태 기준으로 예약/발화/취소 이력을 표시합니다.
+									</Typography>
+								</Box>
+								<Button
+									size="small"
+									variant="outlined"
+									disabled={scheduledCommentsLoading}
+									onClick={() => onReloadScheduledComments?.()}
+								>
+									새로고침
+								</Button>
+							</Stack>
+							{scheduledCommentsLoading ? (
+								<Box display="flex" justifyContent="center" py={4}>
+									<CircularProgress size={24} />
+								</Box>
+							) : scheduledComments.length === 0 ? (
+								<Paper variant="outlined" sx={{ p: 3, textAlign: 'center', borderColor: '#E5E8EB', bgcolor: '#F8F9FA' }}>
+									<Typography variant="body2" color="text.secondary">
+										예약된 댓글이 없습니다.
+									</Typography>
+								</Paper>
+							) : (
+								scheduledComments.map((item) => {
+									const isScheduled = item.status === 'scheduled';
+									const itemDelayMinutes = timelineDelayMinutesById[item.contentId] ?? 30;
+									const actionLoading = timelineActionId === item.contentId;
+									return (
+										<Paper key={item.contentId} variant="outlined" sx={{ p: 1.5, borderColor: '#E5E8EB', bgcolor: '#FFFFFF' }}>
+											<Stack spacing={1}>
+												<Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
+													<Box sx={{ minWidth: 0 }}>
+														<Typography variant="body2" fontWeight={700} sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+															{item.content}
+														</Typography>
+														<Typography variant="caption" color="text.secondary" noWrap display="block">
+															{item.ghostName ?? item.ghostUserId ?? item.ghostAccountId ?? 'ghost 미지정'}
+														</Typography>
+													</Box>
+													<Chip size="small" label={SCHEDULED_COMMENT_STATUS_LABEL[item.status]} color={item.status === 'published' ? 'success' : item.status === 'quality_failed' ? 'error' : 'default'} />
+												</Stack>
+												<Stack direction="row" spacing={0.7} flexWrap="wrap" useFlexGap>
+													<Typography variant="caption" color="text.secondary">
+														예약 {item.scheduledAt ? safeToLocaleString(item.scheduledAt) : '-'}
+													</Typography>
+													<Typography variant="caption" color="text.secondary">
+														발화 {item.publishedAt ? safeToLocaleString(item.publishedAt) : '-'}
+													</Typography>
+													{item.rejectionReason && (
+														<Typography variant="caption" color="error">
+															{item.rejectionReason}
+														</Typography>
+													)}
+												</Stack>
+												{item.healthFlags.length > 0 && (
+													<Stack direction="row" spacing={0.7} flexWrap="wrap" useFlexGap>
+														{item.healthFlags.map((flag) => (
+															<Chip
+																key={flag}
+																size="small"
+																color={flag === 'delayed' || flag === 'revalidation_failed' ? 'error' : 'warning'}
+																label={SCHEDULED_COMMENT_HEALTH_LABEL[flag]}
+																sx={{ height: 22 }}
+															/>
+														))}
+													</Stack>
+												)}
+												{isScheduled && (
+													<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
+														<Button
+															size="small"
+															color="error"
+															variant="outlined"
+															disabled={actionLoading}
+															onClick={() => cancelScheduledComment(item.contentId)}
+														>
+															취소
+														</Button>
+														<FormControl size="small" sx={{ minWidth: 130 }}>
+															<InputLabel>변경 시간</InputLabel>
+															<Select
+																label="변경 시간"
+																value={itemDelayMinutes}
+																onChange={(event) =>
+																	setTimelineDelayMinutesById((prev) => ({
+																		...prev,
+																		[item.contentId]: Number(event.target.value),
+																	}))
+																}
+															>
+																{Array.from({ length: 36 }, (_, index) => (index + 1) * 5).map((minutes) => (
+																	<MenuItem key={minutes} value={minutes}>
+																		{minutes}분 후
+																	</MenuItem>
+																))}
+															</Select>
+														</FormControl>
+														<Button
+															size="small"
+															variant="contained"
+															disabled={actionLoading}
+															onClick={() => rescheduleScheduledComment(item.contentId)}
+															sx={{ boxShadow: 'none' }}
+														>
+															시간 변경
+														</Button>
+													</Stack>
+												)}
+											</Stack>
+										</Paper>
+									);
+								})
+							)}
+						</Stack>
+					)}
 					{error && <Alert severity="error" sx={{ mt: 2 }} onClose={() => setError(null)}>{error}</Alert>}
 					{success && <Alert severity="success" sx={{ mt: 2 }} onClose={() => setSuccess(null)}>{success}</Alert>}
 				</Paper>

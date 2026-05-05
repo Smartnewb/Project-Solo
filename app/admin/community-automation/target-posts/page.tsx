@@ -28,6 +28,7 @@ import type {
 	CommunityAutomationCategoryOption,
 	Content,
 	ContentStatus,
+	ScheduledCommentTimelineItem,
 	TargetPostDetail,
 	TargetPostListQuery,
 	TargetPostSummary,
@@ -125,6 +126,8 @@ export default function TargetPostsPage() {
 	const [categories, setCategories] = useState<CommunityAutomationCategoryOption[]>(COMMUNITY_AUTOMATION_CATEGORY_OPTIONS);
 	const [query, setQuery] = useState<TargetPostListQuery>({ page: 1, limit: 20, sort: 'createdAt', order: 'desc' });
 	const [selected, setSelected] = useState<TargetPostDetail | null>(null);
+	const [scheduledComments, setScheduledComments] = useState<ScheduledCommentTimelineItem[]>([]);
+	const [scheduledCommentsLoading, setScheduledCommentsLoading] = useState(false);
 	const [tone, setTone] = useState('자연스러운 대학생 말투');
 	const [instruction, setInstruction] = useState('');
 	const [manualText, setManualText] = useState('');
@@ -156,6 +159,22 @@ export default function TargetPostsPage() {
 	const ghostBlocked = selected ? selected.ghostCandidateCount === 0 : false;
 	const regionCluster = selected?.defaults.defaultRegionCluster ?? '';
 
+	const loadScheduledComments = useCallback(
+		async (articleId = selectedPost?.id) => {
+			if (!articleId) return;
+			setScheduledCommentsLoading(true);
+			try {
+				const items = await targetPostsApi.listScheduledComments(articleId);
+				setScheduledComments(items);
+			} catch (e: unknown) {
+				setError(e instanceof Error ? e.message : '예약 댓글 타임라인을 불러오지 못했습니다.');
+			} finally {
+				setScheduledCommentsLoading(false);
+			}
+		},
+		[selectedPost?.id],
+	);
+
 	const pageLabel = useMemo(() => {
 		const page = query.page ?? 1;
 		const limit = query.limit ?? 20;
@@ -177,6 +196,7 @@ export default function TargetPostsPage() {
 		try {
 			const detail = await targetPostsApi.get(articleId);
 			setSelected(detail);
+			await loadScheduledComments(articleId);
 		} catch (e: unknown) {
 			setError(e instanceof Error ? e.message : '상세를 불러오지 못했습니다.');
 		} finally {
@@ -188,6 +208,7 @@ export default function TargetPostsPage() {
 		if (!selectedPost) return;
 		const detail = await targetPostsApi.get(selectedPost.id);
 		setSelected(detail);
+		await loadScheduledComments(selectedPost.id);
 	}
 
 	async function createLlmDrafts() {
@@ -238,6 +259,7 @@ export default function TargetPostsPage() {
 	async function createLiveGhostComment(articleId: string, body: GhostCommentBody) {
 		const result = await targetPostsApi.createLiveGhostComment(articleId, body);
 		if (!result.comment) {
+			await loadScheduledComments(articleId);
 			await load();
 			return result;
 		}
@@ -263,6 +285,22 @@ export default function TargetPostsPage() {
 		});
 		await load();
 		return result;
+	}
+
+	async function cancelScheduledComment(contentId: string) {
+		if (!selectedPost) return;
+		const items = await targetPostsApi.cancelScheduledComment(selectedPost.id, contentId);
+		setScheduledComments(items);
+		await refreshDetail();
+		await load();
+	}
+
+	async function rescheduleScheduledComment(contentId: string, delayMinutes: number) {
+		if (!selectedPost) return;
+		const items = await targetPostsApi.rescheduleScheduledComment(selectedPost.id, contentId, { delayMinutes });
+		setScheduledComments(items);
+		await refreshDetail();
+		await load();
 	}
 
 	return (
@@ -626,7 +664,14 @@ export default function TargetPostsPage() {
 				</Stack>
 			)}
 
-			<Drawer anchor="right" open={Boolean(selected) || detailLoading} onClose={() => setSelected(null)}>
+			<Drawer
+				anchor="right"
+				open={Boolean(selected) || detailLoading}
+				onClose={() => {
+					setSelected(null);
+					setScheduledComments([]);
+				}}
+			>
 				<Box sx={{ width: { xs: '100vw', lg: 1040 }, p: 3 }}>
 					{detailLoading || !selected ? (
 						<Box display="flex" justifyContent="center" py={8}>
@@ -650,6 +695,11 @@ export default function TargetPostsPage() {
 								submitLabel="지금 고스트 댓글 달기"
 								onSubmitGhostComment={createLiveGhostComment}
 								onReload={refreshDetail}
+								scheduledComments={scheduledComments}
+								scheduledCommentsLoading={scheduledCommentsLoading}
+								onReloadScheduledComments={() => loadScheduledComments(selected.post.id)}
+								onCancelScheduledComment={cancelScheduledComment}
+								onRescheduleScheduledComment={rescheduleScheduledComment}
 							/>
 							<Divider />
 							<Stack spacing={1.5}>
