@@ -237,6 +237,10 @@ export default function TargetPostsPage() {
 
 	async function createLiveGhostComment(articleId: string, body: GhostCommentBody) {
 		const result = await targetPostsApi.createLiveGhostComment(articleId, body);
+		if (!result.comment) {
+			await load();
+			return result;
+		}
 		const liveComment = {
 			id: result.comment.id,
 			articleId,

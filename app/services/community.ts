@@ -106,10 +106,19 @@ export interface GhostCandidate {
 export interface GhostCommentBody {
 	content: string;
 	ghostAccountId?: string;
+	delayMinutes?: number;
 }
 
 export interface GhostCommentResult {
-	comment: Comment;
+	comment?: Comment;
+	scheduledComment?: {
+		contentId: string;
+		articleId: string;
+		content: string;
+		delayMinutes: number;
+		scheduledAt: string | Date;
+		status: 'scheduled';
+	};
 	ghost: GhostCandidate;
 	selectionMode: 'auto' | 'manual';
 	ghostCandidateCount: number;

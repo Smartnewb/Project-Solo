@@ -104,6 +104,8 @@ export function CommunityPostAppDetailPanel({
 }: CommunityPostAppDetailPanelProps) {
 	const [localComments, setLocalComments] = useState<CommentLike[]>(comments);
 	const [mode, setMode] = useState<'auto' | 'manual'>('auto');
+	const [deliveryMode, setDeliveryMode] = useState<'now' | 'delay'>('now');
+	const [delayMinutes, setDelayMinutes] = useState(30);
 	const [selectedGhostId, setSelectedGhostId] = useState('');
 	const [content, setContent] = useState('');
 	const [submitting, setSubmitting] = useState(false);
@@ -137,14 +139,24 @@ export function CommunityPostAppDetailPanel({
 			const result = await onSubmitGhostComment(post.id, {
 				content: content.trim(),
 				ghostAccountId: mode === 'manual' ? selectedGhostId : undefined,
+				delayMinutes: deliveryMode === 'delay' ? delayMinutes : undefined,
 			});
-			setLocalComments((prev) => [...prev, result.comment]);
+			if (result.comment) {
+				setLocalComments((prev) => [...prev, result.comment as CommentLike]);
+			}
 			setContent('');
-			setSuccess(
-				result.selectionMode === 'manual'
-					? `${result.ghost.name ?? result.ghost.ghostUserId} 계정으로 댓글을 작성했습니다.`
-					: `${result.ghost.name ?? result.ghost.ghostUserId} 계정이 자동 선택되었습니다.`,
-			);
+			const ghostLabel = result.ghost.name ?? result.ghost.ghostUserId;
+			if (result.scheduledComment) {
+				setSuccess(
+					`${ghostLabel} 계정으로 ${result.scheduledComment.delayMinutes}분 후 댓글 발송을 예약했습니다.`,
+				);
+			} else {
+				setSuccess(
+					result.selectionMode === 'manual'
+						? `${ghostLabel} 계정으로 댓글을 작성했습니다.`
+						: `${ghostLabel} 계정이 자동 선택되었습니다.`,
+				);
+			}
 			try {
 				await onReload?.();
 			} catch (reloadError) {
@@ -288,6 +300,41 @@ export function CommunityPostAppDetailPanel({
 						</ToggleButtonGroup>
 					</Stack>
 
+					<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
+						<ToggleButtonGroup
+							size="small"
+							exclusive
+							value={deliveryMode}
+							onChange={(_, value) => value && setDeliveryMode(value)}
+							sx={{
+								'& .MuiToggleButton-root.Mui-selected': {
+									bgcolor: '#F7F3FF',
+									color: '#7A4AE2',
+									fontWeight: 700,
+								},
+							}}
+						>
+							<ToggleButton value="now">즉시 발송</ToggleButton>
+							<ToggleButton value="delay">지연 발송</ToggleButton>
+						</ToggleButtonGroup>
+						{deliveryMode === 'delay' && (
+							<FormControl size="small" sx={{ minWidth: 150 }}>
+								<InputLabel>발송 지연</InputLabel>
+								<Select
+									label="발송 지연"
+									value={delayMinutes}
+									onChange={(event) => setDelayMinutes(Number(event.target.value))}
+								>
+									{Array.from({ length: 36 }, (_, index) => (index + 1) * 5).map((minutes) => (
+										<MenuItem key={minutes} value={minutes}>
+											{minutes}분 후
+										</MenuItem>
+									))}
+								</Select>
+							</FormControl>
+						)}
+					</Stack>
+
 					{mode === 'manual' && (
 						<FormControl fullWidth size="small" sx={{ mt: 2 }}>
 							<InputLabel>고스트 계정</InputLabel>
@@ -333,10 +380,10 @@ export function CommunityPostAppDetailPanel({
 								'&:hover': { bgcolor: '#6B3FD4', boxShadow: 'none' },
 							}}
 						>
-							{submitLabel}
+							{deliveryMode === 'delay' ? `${delayMinutes}분 후 발송 예약` : submitLabel}
 						</Button>
 						<Typography variant="caption" color="text.secondary">
-							최상위 댓글만 작성
+							{deliveryMode === 'delay' ? '예약 시점에 선택된 고스트로 발송' : '최상위 댓글만 작성'}
 						</Typography>
 					</Stack>
 					{error && <Alert severity="error" sx={{ mt: 2 }} onClose={() => setError(null)}>{error}</Alert>}

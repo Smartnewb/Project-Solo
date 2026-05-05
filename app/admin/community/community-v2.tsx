@@ -289,6 +289,10 @@ function ArticleList() {
 
 	const handleCreateGhostComment = async (articleId: string, body: GhostCommentBody) => {
 		const result = await communityService.createGhostComment(articleId, body);
+		if (!result.comment) {
+			await fetchArticles();
+			return result;
+		}
 		setSelectedArticleDetail((prev: any) => {
 			if (!prev || prev.id !== articleId) return prev;
 			return {
