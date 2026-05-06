@@ -116,7 +116,7 @@ class ChatService {
 		try {
 			const page = params.page || 1;
 			const limit = params.limit || 20;
-			const response = await axiosServer.get<{ data: ChatRoom[] }>('/admin/v2/chat/rooms', {
+			const response = await axiosServer.get<{ data: ChatRoom[]; meta: { total: number; page: number; limit: number; totalPages: number } }>('/admin/v2/chat/rooms', {
 				params: {
 					startDate: params.startDate,
 					endDate: params.endDate,
@@ -126,13 +126,13 @@ class ChatService {
 					limit,
 				},
 			});
-			const items = response.data.data;
+			const { data: chatRooms, meta } = response.data;
 			return {
-				chatRooms: items,
-				total: items.length,
-				page,
-				limit,
-				totalPages: Math.ceil(items.length / limit) || 1,
+				chatRooms,
+				total: meta.total,
+				page: meta.page,
+				limit: meta.limit,
+				totalPages: meta.totalPages,
 				appliedStartDate: params.startDate ?? null,
 				appliedEndDate: params.endDate ?? null,
 			};
@@ -166,13 +166,14 @@ class ChatService {
 					preset: params.preset,
 				},
 			});
+			const stats = response.data.data as Record<string, unknown>;
 			return {
-				summary: response.data.data,
-				hourlyDistribution: [],
-				dailyTrend: [],
-				messageLengthDistribution: [],
-				startDate: params.startDate ?? '',
-				endDate: params.endDate ?? '',
+				summary: stats.summary as ChatStatsSummary,
+				hourlyDistribution: (stats.hourlyDistribution as unknown[]) ?? [],
+				dailyTrend: (stats.dailyTrend as unknown[]) ?? [],
+				messageLengthDistribution: (stats.messageLengthDistribution as unknown[]) ?? [],
+				startDate: (stats.startDate as string) ?? '',
+				endDate: (stats.endDate as string) ?? '',
 			};
 		} catch (error: any) {
 			console.error('채팅 통계 조회 실패:', error);

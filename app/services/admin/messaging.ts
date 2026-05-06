@@ -78,15 +78,19 @@ export const aiChat = {
 			});
 
 			const response = await axiosServer.get(`/admin/v2/ai-chat/sessions?${queryParams.toString()}`);
-			// V2 ADAPTER: v2 returns { data: AiChatSessionItem[] }, adapt to v1 shape { items, pagination }
-			const items = response.data.data ?? [];
+			// V2 ADAPTER: v2 returns { data: { sessions, total, page, limit } }, adapt to v1 shape { items, pagination }
+			const inner = response.data.data as { sessions?: unknown[]; total?: number; page?: number; limit?: number };
+			const sessions = inner.sessions ?? [];
+			const total = inner.total ?? sessions.length;
+			const page = inner.page ?? params.page ?? 1;
+			const limit = inner.limit ?? params.limit ?? 20;
 			return {
-				items,
+				items: sessions,
 				pagination: {
-					page: params.page ?? 1,
-					limit: params.limit ?? 20,
-					total: items.length,
-					hasMore: false,
+					page,
+					limit,
+					total,
+					hasMore: page * limit < total,
 				},
 			};
 		} catch (error) {
@@ -98,12 +102,13 @@ export const aiChat = {
 	getMessages: async (sessionId: string) => {
 		try {
 			const response = await axiosServer.get(`/admin/v2/ai-chat/sessions/${sessionId}/messages`);
-			// V2 ADAPTER: v2 returns { data: AiChatMessageItem[] }, adapt to v1 shape { messages, sessionId, userId }
-			const messages = response.data.data ?? [];
+			// V2 ADAPTER: v2 returns { data: { items, totalCount } }, adapt to v1 shape { messages, sessionId, userId }
+			const inner = response.data.data as { items?: unknown[]; totalCount?: number };
+			const messages = inner.items ?? [];
 			return {
 				messages,
 				sessionId,
-				userId: messages[0]?.userId ?? null,
+				userId: null,
 			};
 		} catch (error) {
 			throw error;
