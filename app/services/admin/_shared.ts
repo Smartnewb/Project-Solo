@@ -12,8 +12,10 @@ export interface GenderStatItem {
 }
 
 export interface UnknownBreakdown {
-	neverClassified: number;
-	inactiveReset: number;
+	neverClassified?: number;
+	inactiveReset?: number;
+	blindApproved?: number;
+	gradeRequired?: number;
 }
 
 export interface FormattedData {

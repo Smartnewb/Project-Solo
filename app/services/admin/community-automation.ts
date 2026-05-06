@@ -222,6 +222,7 @@ export interface KillSwitchStatus {
 }
 
 export type TargetPostAutomationStatus = 'none' | 'pending_review' | 'scheduled' | 'published' | 'withdrawn';
+export type TargetPostOpsQueue = 'needs_comment' | 'warming_up' | 'risk' | 'neglected' | 'ghost_touched';
 
 export interface TargetPostListQuery {
 	page?: number;
@@ -229,8 +230,9 @@ export interface TargetPostListQuery {
 	categoryId?: string;
 	regionCluster?: string;
 	automationStatus?: TargetPostAutomationStatus;
+	opsQueue?: TargetPostOpsQueue;
 	search?: string;
-	sort?: 'createdAt' | 'commentCount' | 'likeCount' | 'readCount' | 'automationUpdatedAt';
+	sort?: 'createdAt' | 'commentCount' | 'likeCount' | 'readCount' | 'automationUpdatedAt' | 'urgencyScore';
 	order?: 'asc' | 'desc';
 }
 
@@ -248,11 +250,25 @@ export interface TargetPostSummary {
 	likeCount: number;
 	readCount: number;
 	reportCount: number;
+	isBlinded?: boolean;
+	blindedAt?: string | null;
 	latestComment: string | null;
 	latestCommentAt: string | null;
 	automationStatus: ContentStatus | null;
 	automationCount: number;
 	automationUpdatedAt: string | null;
+	automationSummary?: {
+		pendingReview: number;
+		scheduled: number;
+		published: number;
+		failed: number;
+		withdrawn: number;
+	};
+	opsQueues?: TargetPostOpsQueue[];
+	primaryOpsQueue?: TargetPostOpsQueue | null;
+	opsReason?: string | null;
+	recommendedAction?: string | null;
+	urgencyScore?: number;
 	createdAt: string;
 	updatedAt: string | null;
 }
@@ -302,6 +318,34 @@ export interface ScheduledCommentTimelineResponse {
 	items: ScheduledCommentTimelineItem[];
 }
 
+export type LiveCommentSuggestionTone = 'empathetic' | 'question' | 'mood_shift';
+
+export interface LiveCommentSuggestion {
+	tone: LiveCommentSuggestionTone;
+	content: string;
+	reason: string;
+	quality: {
+		verdict: 'pass' | 'weak' | 'fail';
+		scores: {
+			naturalness: number;
+			relevance: number;
+			operatorLikeRisk: number;
+			safetyRisk: number;
+		};
+	};
+}
+
+export interface LiveCommentSuggestionResponse {
+	suggestions: LiveCommentSuggestion[];
+	meta?: {
+		model: string;
+		judgeModel: string;
+		fewShotCount: number;
+		regenerated: boolean;
+		safetyNotes: string[];
+	};
+}
+
 export interface TargetPostDetail {
 	post: TargetPostSummary;
 	comments: TargetPostComment[];
@@ -319,6 +363,7 @@ export interface TargetPostListResponse {
 	total: number;
 	page: number;
 	limit: number;
+	opsQueueCounts?: Record<TargetPostOpsQueue, number>;
 }
 
 export interface CreateLlmDraftBody {
@@ -462,6 +507,14 @@ export const targetPosts = {
 		const result = await adminPost<{ data: GhostCommentResult }>(
 			`${BASE}/target-posts/${articleId}/live-comments`,
 			body,
+		);
+		return result.data;
+	},
+
+	listLiveCommentSuggestions: async (articleId: string): Promise<LiveCommentSuggestionResponse> => {
+		const result = await adminPost<{ data: LiveCommentSuggestionResponse }>(
+			`${BASE}/target-posts/${articleId}/live-comment-suggestions`,
+			{},
 		);
 		return result.data;
 	},

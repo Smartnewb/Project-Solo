@@ -48,6 +48,10 @@ export interface PendingImage {
   imageOrder: number;
   slotIndex: number; // 0: 대표사진, 1-2: 서브사진
   isMain: boolean;
+  canApprove?: boolean;
+  canReject?: boolean;
+  isRepresentativeReplacement?: boolean;
+  reviewPurpose?: string | null;
 }
 
 export interface CurrentProfileImage {
@@ -105,6 +109,10 @@ export interface PendingUser {
   profileUsing?: CurrentProfileImage[];
   createdAt: string;
   rank?: "S" | "A" | "B" | "C" | "UNKNOWN";
+  blindMatchingApprovedAt?: string | null;
+  approvedPhotoCount?: number;
+  hasApprovedPhoto?: boolean;
+  approvalMode?: "PHOTO_APPROVED" | "BLIND_APPROVED" | "GRADE_REQUIRED" | string;
 
   // 선택적 필드
   email?: string;
@@ -289,6 +297,19 @@ function ProfileReviewV2Content() {
       // 응답 데이터 정규화 (V2 API 호환성)
       const normalizedUsers: PendingUser[] = response.data.map((user: any) => {
         const reviewContextSource = user.reviewContext || user.context || null;
+        const approvedImgs = (user.approvedImages || user.approvedImageUrls || []);
+        const profileUsing = Array.isArray(approvedImgs)
+          ? approvedImgs.map((img: any) => typeof img === 'string'
+            ? { id: '', imageUrl: img, imageOrder: 0, slotIndex: 0, isMain: false, approvedAt: '' }
+            : {
+                id: img.imageId ?? img.id ?? '',
+                imageUrl: img.url ?? img.imageUrl ?? '',
+                imageOrder: img.slotIndex ?? 0,
+                slotIndex: img.slotIndex ?? 0,
+                isMain: img.isMain ?? false,
+                approvedAt: img.approvedAt ?? '',
+              })
+          : [];
         // V2: pendingImages[].url, approvedImages[].url / V1: approvedImageUrls[], pendingImages[].imageUrl
         const pendingImgs = (user.pendingImages || []).map((img: any) => ({
           id: img.imageId ?? img.id,
@@ -296,8 +317,18 @@ function ProfileReviewV2Content() {
           imageOrder: img.slotIndex ?? img.imageOrder ?? 0,
           slotIndex: img.slotIndex ?? 0,
           isMain: img.isMain ?? false,
+          canApprove: img.canApprove,
+          canReject: img.canReject,
+          isRepresentativeReplacement:
+            img.isRepresentativeReplacement ??
+            img.isMainReplacement ??
+            ((
+              img.reviewPurpose === 'REPRESENTATIVE_REPLACEMENT' ||
+              img.reviewPurpose === 'MAIN_IMAGE_REPLACEMENT' ||
+              img.reviewPurpose === 'REPRESENTATIVE_IMAGE_REPLACEMENT'
+            ) || ((img.slotIndex ?? 0) === 0 && profileUsing.some((current) => current.slotIndex === 0))),
+          reviewPurpose: img.reviewPurpose ?? null,
         }));
-        const approvedImgs = (user.approvedImages || user.approvedImageUrls || []);
         const allImageUrls = [
           ...(Array.isArray(approvedImgs) ? approvedImgs.map((img: any) => typeof img === 'string' ? img : img.url ?? img.imageUrl) : []),
           ...pendingImgs.map((img: any) => img.imageUrl),
@@ -312,7 +343,14 @@ function ProfileReviewV2Content() {
           pendingImages: pendingImgs,
           profileImages: pendingImgs,
           profileImageUrls: allImageUrls,
-          profileUsing: Array.isArray(approvedImgs) ? approvedImgs.map((img: any) => typeof img === 'string' ? { id: '', imageUrl: img, imageOrder: 0, slotIndex: 0, isMain: false } : { id: img.imageId ?? img.id ?? '', imageUrl: img.url ?? img.imageUrl ?? '', imageOrder: img.slotIndex ?? 0, slotIndex: img.slotIndex ?? 0, isMain: img.isMain ?? false, approvedAt: '' }) : [],
+          profileUsing,
+          blindMatchingApprovedAt: user.blindMatchingApprovedAt ?? user.blind_matching_approved_at ?? null,
+          approvedPhotoCount: Number(user.approvedPhotoCount ?? user.approved_photo_count ?? profileUsing.length ?? 0),
+          hasApprovedPhoto:
+            user.hasApprovedPhoto ??
+            user.has_approved_photo ??
+            profileUsing.length > 0,
+          approvalMode: user.approvalMode ?? user.approval_mode,
           universityName: user.universityName ?? user.university ?? undefined,
           // 기본값 설정
           preferences: user.preferences || [],

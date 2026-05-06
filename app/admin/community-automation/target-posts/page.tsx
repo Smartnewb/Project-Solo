@@ -11,6 +11,7 @@ import {
 	Avatar,
 	Box,
 	Button,
+	Checkbox,
 	Chip,
 	CircularProgress,
 	Divider,
@@ -21,6 +22,8 @@ import {
 	Paper,
 	Select,
 	Stack,
+	Tab,
+	Tabs,
 	TextField,
 	Typography,
 } from '@mui/material';
@@ -31,9 +34,11 @@ import type {
 	ScheduledCommentTimelineItem,
 	TargetPostDetail,
 	TargetPostListQuery,
+	TargetPostOpsQueue,
 	TargetPostSummary,
 } from '@/app/services/admin/community-automation';
 import type { GhostCommentBody } from '@/app/services/community';
+import communityService from '@/app/services/community';
 import {
 	campaigns as campaignsApi,
 	COMMUNITY_AUTOMATION_CATEGORY_OPTIONS,
@@ -63,6 +68,23 @@ const STATUS_COLOR: Record<ContentStatus | 'none', 'default' | 'warning' | 'succ
 	rejected: 'error',
 	quality_failed: 'error',
 	withdrawn: 'default',
+};
+
+const OPS_QUEUE_TABS: Array<{ value: TargetPostOpsQueue | 'all'; label: string }> = [
+	{ value: 'all', label: '전체' },
+	{ value: 'risk', label: '위험' },
+	{ value: 'ghost_touched', label: '고스트 개입됨' },
+	{ value: 'warming_up', label: '불씨 있음' },
+	{ value: 'needs_comment', label: '댓글 유도 필요' },
+	{ value: 'neglected', label: '방치됨' },
+];
+
+const OPS_QUEUE_LABEL: Record<TargetPostOpsQueue, string> = {
+	needs_comment: '댓글 유도 필요',
+	warming_up: '불씨 있음',
+	risk: '위험',
+	neglected: '방치됨',
+	ghost_touched: '고스트 개입됨',
 };
 
 const EXCLUDED_CATEGORY_TOKENS = [
@@ -114,6 +136,23 @@ function getStatusAccent(status: ContentStatus | 'none') {
 	}
 }
 
+function getOpsQueueColor(queue: TargetPostOpsQueue | null | undefined) {
+	switch (queue) {
+		case 'risk':
+			return { bg: '#FFF1F0', fg: '#B42318', border: '#FDA29B' };
+		case 'ghost_touched':
+			return { bg: '#F4F3FF', fg: '#5925DC', border: '#D9D6FE' };
+		case 'warming_up':
+			return { bg: '#ECFDF3', fg: '#027A48', border: '#ABEFC6' };
+		case 'needs_comment':
+			return { bg: '#EFF8FF', fg: '#175CD3', border: '#B2DDFF' };
+		case 'neglected':
+			return { bg: '#FFFAEB', fg: '#B54708', border: '#FEDF89' };
+		default:
+			return { bg: '#F8F9FA', fg: '#4E5968', border: '#E5E8EB' };
+	}
+}
+
 export default function TargetPostsPage() {
 	const router = useRouter();
 	const [loading, setLoading] = useState(true);
@@ -123,9 +162,12 @@ export default function TargetPostsPage() {
 	const [success, setSuccess] = useState<string | null>(null);
 	const [items, setItems] = useState<TargetPostSummary[]>([]);
 	const [total, setTotal] = useState(0);
+	const [opsQueueCounts, setOpsQueueCounts] = useState<Partial<Record<TargetPostOpsQueue, number>>>({});
 	const [categories, setCategories] = useState<CommunityAutomationCategoryOption[]>(COMMUNITY_AUTOMATION_CATEGORY_OPTIONS);
-	const [query, setQuery] = useState<TargetPostListQuery>({ page: 1, limit: 20, sort: 'createdAt', order: 'desc' });
+	const [query, setQuery] = useState<TargetPostListQuery>({ page: 1, limit: 20, sort: 'urgencyScore', order: 'desc' });
 	const [selected, setSelected] = useState<TargetPostDetail | null>(null);
+	const [selectedIds, setSelectedIds] = useState<string[]>([]);
+	const [moveCategoryId, setMoveCategoryId] = useState('');
 	const [scheduledComments, setScheduledComments] = useState<ScheduledCommentTimelineItem[]>([]);
 	const [scheduledCommentsLoading, setScheduledCommentsLoading] = useState(false);
 	const [tone, setTone] = useState('자연스러운 대학생 말투');
@@ -143,6 +185,7 @@ export default function TargetPostsPage() {
 			]);
 			setItems(result.items);
 			setTotal(result.total);
+			setOpsQueueCounts(result.opsQueueCounts ?? {});
 			setCategories(categoryOptions);
 		} catch (e: unknown) {
 			setError(e instanceof Error ? e.message : '목록을 불러오지 못했습니다.');
@@ -154,6 +197,20 @@ export default function TargetPostsPage() {
 	useEffect(() => {
 		load();
 	}, [load]);
+
+	useEffect(() => {
+		setSelectedIds([]);
+	}, [
+		query.automationStatus,
+		query.categoryId,
+		query.limit,
+		query.opsQueue,
+		query.order,
+		query.page,
+		query.regionCluster,
+		query.search,
+		query.sort,
+	]);
 
 	const selectedPost = selected?.post ?? null;
 	const ghostBlocked = selected ? selected.ghostCandidateCount === 0 : false;
@@ -187,6 +244,92 @@ export default function TargetPostsPage() {
 		() => categories.filter((category) => !isExcludedCategory(category)),
 		[categories],
 	);
+	const visibleIds = useMemo(() => items.map((item) => item.id), [items]);
+	const visibleIdSet = useMemo(() => new Set(visibleIds), [visibleIds]);
+	const visibleSelectedIds = useMemo(
+		() => selectedIds.filter((id) => visibleIdSet.has(id)),
+		[selectedIds, visibleIdSet],
+	);
+	const selectedCount = visibleSelectedIds.length;
+	const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
+
+	function toggleSelected(id: string) {
+		setSelectedIds((prev) => (prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]));
+	}
+
+	function toggleAllVisible() {
+		setSelectedIds((prev) => {
+			if (allVisibleSelected) {
+				return prev.filter((id) => !visibleIds.includes(id));
+			}
+			return Array.from(new Set([...prev, ...visibleIds]));
+		});
+	}
+
+	async function applyPostVisibility(ids: string[], isBlinded: boolean) {
+		if (ids.length === 0) return;
+		setActionLoading(true);
+		setError(null);
+		setSuccess(null);
+		try {
+			await Promise.all(ids.map((id) => communityService.blindArticle(id, isBlinded)));
+			setSelectedIds((prev) => prev.filter((id) => !ids.includes(id)));
+			setSuccess(`${ids.length}개 게시글을 ${isBlinded ? '가리기' : '가리기 해제'} 처리했습니다.`);
+			if (selectedPost && ids.includes(selectedPost.id)) {
+				await refreshDetail();
+			}
+			await load();
+		} catch (e: unknown) {
+			setError(e instanceof Error ? e.message : '게시글 상태 변경 실패');
+		} finally {
+			setActionLoading(false);
+		}
+	}
+
+	async function deletePosts(ids: string[]) {
+		if (ids.length === 0) return;
+		const confirmed = window.confirm(`${ids.length}개 게시글을 제거하시겠습니까? 이 작업은 되돌릴 수 없습니다.`);
+		if (!confirmed) return;
+		setActionLoading(true);
+		setError(null);
+		setSuccess(null);
+		try {
+			await Promise.all(ids.map((id) => communityService.deleteArticle(id)));
+			setSelectedIds((prev) => prev.filter((id) => !ids.includes(id)));
+			if (selectedPost && ids.includes(selectedPost.id)) {
+				setSelected(null);
+				setScheduledComments([]);
+			}
+			setSuccess(`${ids.length}개 게시글을 제거했습니다.`);
+			await load();
+		} catch (e: unknown) {
+			setError(e instanceof Error ? e.message : '게시글 제거 실패');
+		} finally {
+			setActionLoading(false);
+		}
+	}
+
+	async function movePostsToCategory(ids: string[], categoryId: string) {
+		if (ids.length === 0 || !categoryId) return;
+		setActionLoading(true);
+		setError(null);
+		setSuccess(null);
+		try {
+			await Promise.all(ids.map((id) => communityService.moveArticleCategory(id, categoryId)));
+			setSelectedIds((prev) => prev.filter((id) => !ids.includes(id)));
+			const categoryLabel = visibleCategories.find((category) => category.id === categoryId)?.label ?? '선택한 카테고리';
+			setSuccess(`${ids.length}개 게시글을 ${categoryLabel}(으)로 이동했습니다.`);
+			setMoveCategoryId('');
+			if (selectedPost && ids.includes(selectedPost.id)) {
+				await refreshDetail();
+			}
+			await load();
+		} catch (e: unknown) {
+			setError(e instanceof Error ? e.message : '게시글 카테고리 이동 실패');
+		} finally {
+			setActionLoading(false);
+		}
+	}
 
 	async function openDetail(articleId: string) {
 		setDetailLoading(true);
@@ -303,8 +446,42 @@ export default function TargetPostsPage() {
 		await load();
 	}
 
+	async function loadLiveCommentSuggestions() {
+		if (!selectedPost) return [];
+		const result = await targetPostsApi.listLiveCommentSuggestions(selectedPost.id);
+		return result.suggestions;
+	}
+
 	return (
 		<Box>
+			<Paper sx={{ p: 1, mb: 2 }}>
+				<Tabs
+					value={query.opsQueue ?? 'all'}
+					onChange={(_, value: TargetPostOpsQueue | 'all') =>
+						setQuery((prev) => ({
+							...prev,
+							page: 1,
+							opsQueue: value === 'all' ? undefined : value,
+							sort: 'urgencyScore',
+							order: 'desc',
+						}))
+					}
+					variant="scrollable"
+					scrollButtons="auto"
+				>
+					{OPS_QUEUE_TABS.map((tab) => {
+						const count = tab.value === 'all' ? total : opsQueueCounts[tab.value] ?? 0;
+						return (
+							<Tab
+								key={tab.value}
+								value={tab.value}
+								label={`${tab.label} ${formatCount(count)}`}
+								sx={{ minHeight: 44, fontWeight: 800 }}
+							/>
+						);
+					})}
+				</Tabs>
+			</Paper>
 			<Paper sx={{ p: 2, mb: 2 }}>
 				<Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} alignItems={{ md: 'center' }}>
 					<FormControl size="small" sx={{ minWidth: 160 }}>
@@ -363,11 +540,72 @@ export default function TargetPostsPage() {
 							<MenuItem value="likeCount">좋아요</MenuItem>
 							<MenuItem value="readCount">조회</MenuItem>
 							<MenuItem value="automationUpdatedAt">자동화 최신</MenuItem>
+							<MenuItem value="urgencyScore">운영 우선순위</MenuItem>
 						</Select>
 					</FormControl>
 					<Button variant="outlined" onClick={load} disabled={loading}>
 						새로고침
 					</Button>
+				</Stack>
+			</Paper>
+
+			<Paper
+				variant="outlined"
+				sx={{
+					p: 1.5,
+					mb: 2,
+					borderRadius: '16px',
+					borderColor: '#E5E8EB',
+					bgcolor: '#FFFFFF',
+				}}
+			>
+				<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }} justifyContent="space-between">
+					<Stack direction="row" spacing={1} alignItems="center">
+						<Checkbox
+							size="small"
+							checked={allVisibleSelected}
+							indeterminate={selectedCount > 0 && !allVisibleSelected}
+							onChange={toggleAllVisible}
+							inputProps={{ 'aria-label': '현재 페이지 게시글 전체 선택' }}
+						/>
+						<Typography variant="body2" color="text.secondary">
+							선택 {formatCount(selectedCount)}개
+						</Typography>
+					</Stack>
+					<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+						<FormControl size="small" sx={{ minWidth: 160 }}>
+							<InputLabel>이동할 카테고리</InputLabel>
+							<Select
+								value={moveCategoryId}
+								label="이동할 카테고리"
+								onChange={(event) => setMoveCategoryId(event.target.value)}
+							>
+								<MenuItem value="">선택</MenuItem>
+								{visibleCategories.map((category) => (
+									<MenuItem key={category.id ?? category.value} value={category.id ?? ''}>
+										{category.label}
+									</MenuItem>
+								))}
+							</Select>
+						</FormControl>
+						<Button
+							size="small"
+							variant="outlined"
+							disabled={actionLoading || selectedCount === 0 || !moveCategoryId}
+							onClick={() => movePostsToCategory(visibleSelectedIds, moveCategoryId)}
+						>
+							카테고리 이동
+						</Button>
+						<Button size="small" variant="outlined" disabled={actionLoading || selectedCount === 0} onClick={() => applyPostVisibility(visibleSelectedIds, true)}>
+							선택 가리기
+						</Button>
+						<Button size="small" variant="outlined" disabled={actionLoading || selectedCount === 0} onClick={() => applyPostVisibility(visibleSelectedIds, false)}>
+							가리기 해제
+						</Button>
+						<Button size="small" color="error" variant="outlined" disabled={actionLoading || selectedCount === 0} onClick={() => deletePosts(visibleSelectedIds)}>
+							선택 제거
+						</Button>
+					</Stack>
 				</Stack>
 			</Paper>
 
@@ -412,6 +650,9 @@ export default function TargetPostsPage() {
 						>
 							{items.map((item) => {
 								const status = item.automationStatus ?? 'none';
+								const isBlinded = Boolean(item.isBlinded || item.blindedAt);
+								const opsQueue = item.primaryOpsQueue ?? item.opsQueues?.[0] ?? null;
+								const opsColor = getOpsQueueColor(opsQueue);
 								return (
 									<Paper
 										key={item.id}
@@ -448,10 +689,19 @@ export default function TargetPostsPage() {
 												outlineOffset: 2,
 											},
 										}}
-									>
-										<Box sx={{ height: 4, bgcolor: getStatusAccent(status) }} />
+										>
+											<Box sx={{ height: 4, bgcolor: isBlinded ? '#FF6B6B' : getStatusAccent(status) }} />
 										<Stack spacing={1.2} sx={{ p: 1.6, flex: 1, minHeight: 0 }}>
 											<Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+												<Checkbox
+													size="small"
+													checked={selectedIds.includes(item.id)}
+													onClick={(event) => event.stopPropagation()}
+													onKeyDown={(event) => event.stopPropagation()}
+													onChange={() => toggleSelected(item.id)}
+													inputProps={{ 'aria-label': `${item.title || '제목 없음'} 선택` }}
+													sx={{ p: 0.2, mr: -0.5 }}
+												/>
 												<Chip
 													size="small"
 													label={visibleCategories.find((category) => category.id === item.categoryId)?.label ?? item.categoryName ?? '커뮤니티'}
@@ -476,6 +726,57 @@ export default function TargetPostsPage() {
 													sx={{ height: 24, flexShrink: 0 }}
 												/>
 											</Stack>
+											{opsQueue && (
+												<Stack spacing={0.6}>
+													<Stack direction="row" spacing={0.7} alignItems="center" flexWrap="wrap" useFlexGap>
+														<Chip
+															size="small"
+															label={OPS_QUEUE_LABEL[opsQueue]}
+															sx={{
+																height: 24,
+																borderRadius: '9999px',
+																bgcolor: opsColor.bg,
+																color: opsColor.fg,
+																border: `1px solid ${opsColor.border}`,
+																fontWeight: 800,
+															}}
+														/>
+														{typeof item.urgencyScore === 'number' && (
+															<Chip
+																size="small"
+																label={`우선 ${formatCount(item.urgencyScore)}`}
+																sx={{
+																	height: 24,
+																	borderRadius: '9999px',
+																	bgcolor: '#FFFFFF',
+																	color: '#4E5968',
+																	border: '1px solid #E5E8EB',
+																}}
+															/>
+														)}
+													</Stack>
+													{item.opsReason && (
+														<Typography
+															variant="caption"
+															sx={{
+																color: '#4E5968',
+																lineHeight: 1.35,
+																display: '-webkit-box',
+																WebkitLineClamp: 2,
+																WebkitBoxOrient: 'vertical',
+																overflow: 'hidden',
+															}}
+														>
+															{item.opsReason}
+														</Typography>
+													)}
+												</Stack>
+											)}
+											{isBlinded && (
+												<Alert severity="warning" sx={{ py: 0, '& .MuiAlert-message': { py: 0.5 } }}>
+													<Typography variant="caption">가려진 게시글</Typography>
+												</Alert>
+											)}
 
 											<Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
 												<Avatar
@@ -614,6 +915,15 @@ export default function TargetPostsPage() {
 															border: '1px solid #E5E8EB',
 														}}
 													/>
+													{item.automationSummary?.failed ? (
+														<Chip
+															size="small"
+															label={`실패 ${formatCount(item.automationSummary.failed)}`}
+															color="error"
+															variant="outlined"
+															sx={{ borderRadius: '9999px', height: 24 }}
+														/>
+													) : null}
 													{item.reportCount > 0 && (
 														<Chip
 															icon={<FlagOutlinedIcon />}
@@ -625,6 +935,23 @@ export default function TargetPostsPage() {
 														/>
 													)}
 												</Stack>
+												{item.recommendedAction && (
+													<Box
+														sx={{
+															p: 1,
+															borderRadius: '12px',
+															bgcolor: opsQueue === 'risk' ? '#FFF1F0' : '#F8F9FA',
+															border: `1px solid ${opsColor.border}`,
+														}}
+													>
+														<Typography variant="caption" color="text.secondary" display="block">
+															추천 액션
+														</Typography>
+														<Typography variant="caption" fontWeight={800} sx={{ color: opsColor.fg }}>
+															{item.recommendedAction}
+														</Typography>
+													</Box>
+												)}
 											</Stack>
 										</Stack>
 									</Paper>
@@ -700,7 +1027,29 @@ export default function TargetPostsPage() {
 								onReloadScheduledComments={() => loadScheduledComments(selected.post.id)}
 								onCancelScheduledComment={cancelScheduledComment}
 								onRescheduleScheduledComment={rescheduleScheduledComment}
+								onLoadLiveCommentSuggestions={loadLiveCommentSuggestions}
 							/>
+							<Paper variant="outlined" sx={{ p: 2, borderRadius: '16px', borderColor: '#E5E8EB' }}>
+								<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }} justifyContent="space-between">
+									<Box>
+										<Typography variant="subtitle2" fontWeight={800}>게시글 제어</Typography>
+										<Typography variant="body2" color="text.secondary">
+											현재 게시글을 커뮤니티 노출에서 가리거나 제거합니다.
+										</Typography>
+									</Box>
+									<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+										<Button variant="outlined" disabled={actionLoading} onClick={() => applyPostVisibility([selected.post.id], true)}>
+											가리기
+										</Button>
+										<Button variant="outlined" disabled={actionLoading} onClick={() => applyPostVisibility([selected.post.id], false)}>
+											가리기 해제
+										</Button>
+										<Button color="error" variant="outlined" disabled={actionLoading} onClick={() => deletePosts([selected.post.id])}>
+											제거
+										</Button>
+									</Stack>
+								</Stack>
+							</Paper>
 							<Divider />
 							<Stack spacing={1.5}>
 								<Typography variant="subtitle2">LLM 댓글 후보 3개 생성</Typography>

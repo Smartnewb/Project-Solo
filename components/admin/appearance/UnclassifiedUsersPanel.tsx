@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -16,14 +16,14 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  FormControl,
-  InputLabel,
-  Select,
   MenuItem,
   Pagination,
-  IconButton,
   Menu,
-  Link
+  Link,
+  Tabs,
+  Tab,
+  Stack,
+  alpha,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import InstagramIcon from '@mui/icons-material/Instagram';
@@ -32,7 +32,9 @@ import AdminService from '@/app/services/admin';
 import {
   UserProfileWithAppearance,
   AppearanceGrade,
-  Gender
+  Gender,
+  isBlindApprovedUser,
+  isGradeRequiredUser,
 } from '@/app/admin/users/appearance/types';
 import UserDetailModal, { UserDetail } from './UserDetailModal';
 import RegionFilter, { useRegionFilter } from '@/components/admin/common/RegionFilter';
@@ -82,12 +84,22 @@ const getRegionLabel = (region?: string) => {
   return region ? regionMap[region] || region : '-';
 };
 
+const hasApprovalContractFields = (user: UserProfileWithAppearance) =>
+  user.approvalMode !== undefined ||
+  user.blindMatchingApprovedAt !== undefined ||
+  user.hasApprovedPhoto !== undefined ||
+  user.approvedPhotoCount !== undefined;
+
+const isGradeRequiredCohortUser = (user: UserProfileWithAppearance) =>
+  isGradeRequiredUser(user) ||
+  (user.appearanceGrade === 'UNKNOWN' && !isBlindApprovedUser(user) && !hasApprovalContractFields(user));
+
 export default function UnclassifiedUsersPanel() {
   const [users, setUsers] = useState<UserProfileWithAppearance[]>([]);
+  const [activeCohort, setActiveCohort] = useState<'GRADE_REQUIRED' | 'BLIND_APPROVED'>('GRADE_REQUIRED');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [pageSize] = useState(12);
 
   // 지역 필터 훅 사용
@@ -107,16 +119,44 @@ export default function UnclassifiedUsersPanel() {
   const [loadingUserDetail, setLoadingUserDetail] = useState(false);
   const [userDetailError, setUserDetailError] = useState<string | null>(null);
 
+  const gradeRequiredUsers = useMemo(() => users.filter(isGradeRequiredCohortUser), [users]);
+
+  const blindApprovedUsers = useMemo(() => users.filter(isBlindApprovedUser), [users]);
+
+  const cohortUsers = activeCohort === 'BLIND_APPROVED' ? blindApprovedUsers : gradeRequiredUsers;
+  const totalPages = Math.max(1, Math.ceil(cohortUsers.length / pageSize));
+  const visibleUsers = cohortUsers.slice((page - 1) * pageSize, page * pageSize);
+
+  const gradeRequiredCount = gradeRequiredUsers.length;
+  const blindApprovedCount = blindApprovedUsers.length;
+
   // 미분류 사용자 목록 조회
   const fetchUnclassifiedUsers = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await AdminService.userAppearance.getUnclassifiedUsers(page, pageSize, getRegionParam());
+      const firstPage = await AdminService.userAppearance.getUnclassifiedUsers(1, pageSize, getRegionParam());
+      const meta = firstPage.meta ?? {};
+      const totalPagesFromMeta = Number(meta.totalPages ?? 1);
+      const itemsPerPageFromMeta = Number(meta.itemsPerPage ?? pageSize);
+      const totalItems = Number(
+        meta.totalItems ??
+        meta.total ??
+        (totalPagesFromMeta > 1 ? totalPagesFromMeta * itemsPerPageFromMeta : undefined) ??
+        firstPage.data.length,
+      );
 
-      setUsers(response.data);
-      setTotalPages(response.meta?.totalPages ?? 1);
+      if (totalItems > firstPage.data.length) {
+        const fullResponse = await AdminService.userAppearance.getUnclassifiedUsers(
+          1,
+          Math.max(totalItems, pageSize),
+          getRegionParam(),
+        );
+        setUsers(fullResponse.data);
+      } else {
+        setUsers(firstPage.data);
+      }
     } catch (err: any) {
       console.error('미분류 사용자 목록 조회 중 오류:', err);
       setError(err.message ?? '미분류 사용자 목록을 불러오는 중 오류가 발생했습니다.');
@@ -125,10 +165,16 @@ export default function UnclassifiedUsersPanel() {
     }
   };
 
-  // 페이지 및 지역 변경 시 데이터 조회
   useEffect(() => {
+    setPage(1);
     fetchUnclassifiedUsers();
-  }, [page, region]);
+  }, [region]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   // 페이지 변경 핸들러
   const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
@@ -231,7 +277,12 @@ export default function UnclassifiedUsersPanel() {
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h6">미분류 사용자</Typography>
+        <Box>
+          <Typography variant="h6">미분류 사용자</Typography>
+          <Typography variant="body2" color="text.secondary">
+            UNKNOWN 사용자를 등급 정리 대상과 블라인드 승인 대상으로 분리합니다.
+          </Typography>
+        </Box>
         <Button
           variant="outlined"
           color="primary"
@@ -252,6 +303,19 @@ export default function UnclassifiedUsersPanel() {
         />
       </Box>
 
+      <Tabs
+        value={activeCohort}
+        onChange={(_, value) => {
+          setActiveCohort(value);
+          setPage(1);
+        }}
+        aria-label="미분류 사용자 승인 유형"
+        sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}
+      >
+        <Tab value="GRADE_REQUIRED" label={`등급 정리 필요 (${gradeRequiredCount})`} />
+        <Tab value="BLIND_APPROVED" label={`블라인드 승인 (${blindApprovedCount})`} />
+      </Tabs>
+
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
@@ -262,14 +326,20 @@ export default function UnclassifiedUsersPanel() {
         <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
           <CircularProgress />
         </Box>
-      ) : users.length === 0 ? (
+      ) : visibleUsers.length === 0 ? (
         <Alert severity="info">
-          미분류 사용자가 없습니다.
+          {activeCohort === 'GRADE_REQUIRED'
+            ? '등급 정리 필요 사용자가 없습니다.'
+            : '블라인드 승인 사용자가 없습니다.'}
         </Alert>
       ) : (
         <>
           <Grid container spacing={2}>
-            {users.map((user) => (
+            {visibleUsers.map((user) => {
+              const approvedPhotoCount = Number(user.approvedPhotoCount ?? 0);
+              const isBlindApproved = isBlindApprovedUser(user);
+
+              return (
               <Grid item xs={12} sm={6} md={4} lg={3} key={user.userId}>
                 <Card>
                   <CardContent>
@@ -298,6 +368,27 @@ export default function UnclassifiedUsersPanel() {
                       <Typography variant="body2" color="textSecondary" gutterBottom>
                         {user.age}세 / {GENDER_LABELS[user.gender]}
                       </Typography>
+
+                      <Stack direction="row" spacing={0.75} justifyContent="center" flexWrap="wrap" useFlexGap sx={{ mb: 1 }}>
+                        <Chip
+                          label={isBlindApproved ? '블라인드 승인' : '등급 필요'}
+                          size="small"
+                          sx={{
+                            bgcolor: isBlindApproved ? alpha('#2563EB', 0.1) : alpha('#D97706', 0.12),
+                            color: isBlindApproved ? '#2563EB' : '#D97706',
+                            fontWeight: 700,
+                          }}
+                        />
+                        <Chip
+                          label={`승인 사진 ${approvedPhotoCount}장`}
+                          size="small"
+                          sx={{
+                            bgcolor: alpha('#059669', 0.1),
+                            color: '#059669',
+                            fontWeight: 700,
+                          }}
+                        />
+                      </Stack>
 
                       {/* 프로필 정보 입력 여부 */}
                       <Chip
@@ -373,7 +464,8 @@ export default function UnclassifiedUsersPanel() {
                   </CardContent>
                 </Card>
               </Grid>
-            ))}
+              );
+            })}
           </Grid>
 
           <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>

@@ -23,7 +23,10 @@ import {
 	Typography,
 } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
-import type { ScheduledCommentTimelineItem } from '@/app/services/admin/community-automation';
+import type {
+	LiveCommentSuggestion,
+	ScheduledCommentTimelineItem,
+} from '@/app/services/admin/community-automation';
 import type { GhostCommentBody, GhostCommentResult } from '@/app/services/community';
 import { safeToLocaleString } from '@/app/utils/formatters';
 
@@ -87,6 +90,7 @@ interface CommunityPostAppDetailPanelProps {
 	onReloadScheduledComments?: () => Promise<void>;
 	onCancelScheduledComment?: (contentId: string) => Promise<void>;
 	onRescheduleScheduledComment?: (contentId: string, delayMinutes: number) => Promise<void>;
+	onLoadLiveCommentSuggestions?: () => Promise<LiveCommentSuggestion[]>;
 }
 
 function getGhostAccountId(candidate: GhostCandidateLike) {
@@ -114,6 +118,12 @@ const SCHEDULED_COMMENT_HEALTH_LABEL: Record<ScheduledCommentTimelineItem['healt
 	revalidation_failed: '재검증 실패',
 };
 
+const LIVE_COMMENT_TONE_LABEL: Record<LiveCommentSuggestion['tone'], string> = {
+	empathetic: '공감형',
+	question: '질문형',
+	mood_shift: '분위기 전환형',
+};
+
 export function CommunityPostAppDetailPanel({
 	post,
 	comments,
@@ -127,6 +137,7 @@ export function CommunityPostAppDetailPanel({
 	onReloadScheduledComments,
 	onCancelScheduledComment,
 	onRescheduleScheduledComment,
+	onLoadLiveCommentSuggestions,
 }: CommunityPostAppDetailPanelProps) {
 	const [localComments, setLocalComments] = useState<CommentLike[]>(comments);
 	const [operationTab, setOperationTab] = useState<'compose' | 'timeline'>('compose');
@@ -136,7 +147,10 @@ export function CommunityPostAppDetailPanel({
 	const [timelineDelayMinutesById, setTimelineDelayMinutesById] = useState<Record<string, number>>({});
 	const [selectedGhostId, setSelectedGhostId] = useState('');
 	const [content, setContent] = useState('');
+	const [suggestions, setSuggestions] = useState<LiveCommentSuggestion[]>([]);
 	const [submitting, setSubmitting] = useState(false);
+	const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+	const [suggestionActionKey, setSuggestionActionKey] = useState<string | null>(null);
 	const [timelineActionId, setTimelineActionId] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState<string | null>(null);
@@ -158,18 +172,22 @@ export function CommunityPostAppDetailPanel({
 	const blinded = Boolean(post.isBlinded || post.blindedAt);
 	const deleted = Boolean(post.isDeleted || post.deletedAt);
 	const canSubmit = content.trim().length > 0 && (mode === 'auto' || selectedGhostId);
+	const canSubmitSuggestion = mode === 'auto' || selectedGhostId;
 	const timelineEnabled = Boolean(onReloadScheduledComments || onCancelScheduledComment || onRescheduleScheduledComment);
 
-	async function submit() {
-		if (!canSubmit) return;
+	async function submit(options?: { contentOverride?: string; delayMinutesOverride?: number }) {
+		const nextContent = options?.contentOverride?.trim() ?? content.trim();
+		const nextDelayMinutes = options?.delayMinutesOverride;
+		if (!nextContent || (mode === 'manual' && !selectedGhostId)) return;
 		setSubmitting(true);
 		setError(null);
 		setSuccess(null);
 		try {
 			const result = await onSubmitGhostComment(post.id, {
-				content: content.trim(),
+				content: nextContent,
 				ghostAccountId: mode === 'manual' ? selectedGhostId : undefined,
-				delayMinutes: deliveryMode === 'delay' ? delayMinutes : undefined,
+				delayMinutes:
+					nextDelayMinutes ?? (deliveryMode === 'delay' ? delayMinutes : undefined),
 			});
 			if (result.comment) {
 				setLocalComments((prev) => [...prev, result.comment as CommentLike]);
@@ -202,6 +220,32 @@ export function CommunityPostAppDetailPanel({
 			setError(e instanceof Error ? e.message : '댓글 작성에 실패했습니다.');
 		} finally {
 			setSubmitting(false);
+		}
+	}
+
+	async function loadLiveCommentSuggestions() {
+		if (!onLoadLiveCommentSuggestions) return;
+		setSuggestionsLoading(true);
+		setError(null);
+		setSuccess(null);
+		try {
+			const items = await onLoadLiveCommentSuggestions();
+			setSuggestions(items);
+			setSuccess('댓글 후보 3개를 추천했습니다.');
+		} catch (e: unknown) {
+			setError(e instanceof Error ? e.message : '댓글 후보 추천에 실패했습니다.');
+		} finally {
+			setSuggestionsLoading(false);
+		}
+	}
+
+	async function submitSuggestion(suggestion: LiveCommentSuggestion, delayMinutesOverride?: number) {
+		const actionKey = `${suggestion.tone}:${delayMinutesOverride ?? 'now'}`;
+		setSuggestionActionKey(actionKey);
+		try {
+			await submit({ contentOverride: suggestion.content, delayMinutesOverride });
+		} finally {
+			setSuggestionActionKey(null);
 		}
 	}
 
@@ -433,6 +477,92 @@ export function CommunityPostAppDetailPanel({
 						</FormControl>
 					)}
 
+					{onLoadLiveCommentSuggestions && (
+						<Box sx={{ mt: 2 }}>
+							<Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+								<Typography variant="subtitle2" fontWeight={800} color="#191F28">
+									댓글 후보
+								</Typography>
+								<Button
+									size="small"
+									variant="outlined"
+									disabled={suggestionsLoading}
+									onClick={loadLiveCommentSuggestions}
+								>
+									{suggestionsLoading ? <CircularProgress size={14} /> : '댓글 후보 3개 추천'}
+								</Button>
+							</Stack>
+							{suggestions.length > 0 && (
+								<Stack spacing={1} sx={{ mt: 1 }}>
+									{suggestions.map((suggestion) => {
+										const nowKey = `${suggestion.tone}:now`;
+										const delay15Key = `${suggestion.tone}:15`;
+										const delay30Key = `${suggestion.tone}:30`;
+										return (
+											<Paper
+												key={suggestion.tone}
+												variant="outlined"
+												sx={{ p: 1.3, borderColor: '#E5E8EB', bgcolor: '#FBFCFD' }}
+											>
+												<Stack spacing={1}>
+													<Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+														<Chip
+															size="small"
+															label={LIVE_COMMENT_TONE_LABEL[suggestion.tone]}
+															sx={{ height: 22, fontWeight: 700, bgcolor: '#F7F3FF', color: '#7A4AE2' }}
+														/>
+														<Typography variant="caption" color="text.secondary">
+															{suggestion.reason}
+														</Typography>
+													</Stack>
+													<Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+														{suggestion.content}
+													</Typography>
+													<Stack direction="row" spacing={0.7} flexWrap="wrap" useFlexGap>
+														<Button
+															size="small"
+															variant="contained"
+															disabled={!canSubmitSuggestion || Boolean(suggestionActionKey)}
+															onClick={() => submitSuggestion(suggestion)}
+															sx={{ boxShadow: 'none' }}
+														>
+															{suggestionActionKey === nowKey ? <CircularProgress size={14} color="inherit" /> : '즉시 발송'}
+														</Button>
+														<Button
+															size="small"
+															variant="outlined"
+															disabled={!canSubmitSuggestion || Boolean(suggestionActionKey)}
+															onClick={() => submitSuggestion(suggestion, 15)}
+														>
+															{suggestionActionKey === delay15Key ? <CircularProgress size={14} /> : '15분 후'}
+														</Button>
+														<Button
+															size="small"
+															variant="outlined"
+															disabled={!canSubmitSuggestion || Boolean(suggestionActionKey)}
+															onClick={() => submitSuggestion(suggestion, 30)}
+														>
+															{suggestionActionKey === delay30Key ? <CircularProgress size={14} /> : '30분 후'}
+														</Button>
+														<Button
+															size="small"
+															color="inherit"
+															onClick={() => {
+																setContent(suggestion.content);
+																setDeliveryMode('now');
+															}}
+														>
+															직접 수정
+														</Button>
+													</Stack>
+												</Stack>
+											</Paper>
+										);
+									})}
+								</Stack>
+							)}
+						</Box>
+					)}
 					<TextField
 						fullWidth
 						multiline
@@ -447,7 +577,7 @@ export function CommunityPostAppDetailPanel({
 							variant="contained"
 							startIcon={submitting ? <CircularProgress size={16} color="inherit" /> : <SendIcon />}
 							disabled={!canSubmit || submitting}
-							onClick={submit}
+							onClick={() => submit()}
 							sx={{
 								borderRadius: '9999px',
 								bgcolor: '#7A4AE2',

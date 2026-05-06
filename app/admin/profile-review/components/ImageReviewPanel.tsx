@@ -15,7 +15,7 @@ import {
   Link,
   Tooltip,
 } from "@mui/material";
-import { PendingUser } from "../page";
+import { PendingImage, PendingUser } from "../page";
 import CloseIcon from "@mui/icons-material/Close";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
@@ -141,6 +141,17 @@ export default function ImageReviewPanel({
     );
   }
 
+  const pendingImagesForReview: PendingImage[] =
+    user.pendingImages && user.pendingImages.length > 0
+      ? user.pendingImages
+      : (user.profileImages || []).map((img, index) => ({
+          id: img.id,
+          imageUrl: img.imageUrl,
+          imageOrder: img.imageOrder,
+          slotIndex: (img as any).slotIndex ?? img.imageOrder ?? index,
+          isMain: img.isMain,
+        }));
+
   const handleApprove = () => {
     onApprove(user.id || user.userId);
   };
@@ -161,16 +172,26 @@ export default function ImageReviewPanel({
 
   const handleApproveImage = async (imageId: string) => {
     try {
-      const targetImage = (user.pendingImages || user.profileImages || []).find(
+      const targetImage = pendingImagesForReview.find(
         (img) => img.id === imageId,
       );
       const isMainProfile = targetImage?.slotIndex === 0;
+      const targetPair = slotPairs.find(([slotIndex]) => slotIndex === targetImage?.slotIndex)?.[1];
+      const isRepresentativeReplacement =
+        isMainProfile &&
+        Boolean(targetPair?.current) &&
+        (Boolean(user.isApproved || user.approved) || Boolean(targetImage?.isRepresentativeReplacement));
 
-      if (isMainProfile) {
+      if (isMainProfile && !isRepresentativeReplacement) {
+        toast.info("대표사진 신규 심사는 상단 회원 승인 흐름에서 처리합니다.");
+        return;
+      }
+
+      if (isRepresentativeReplacement) {
         const confirmed = await confirmAction({
           message:
-            '대표 프로필을 승인하시겠습니까?\n대표 프로필 승인 시 회원 상태가 "승인됨"으로 자동 변경되며, 회원이 서비스를 정상적으로 이용할 수 있게 됩니다.',
-          confirmText: "승인",
+            "대표사진 교체를 승인하시겠습니까?\n회원 승인 상태는 유지되고 대표사진만 새 이미지로 교체됩니다.",
+          confirmText: "교체 승인",
           severity: "info",
         });
         if (!confirmed) return;
@@ -180,8 +201,8 @@ export default function ImageReviewPanel({
       await AdminService.profileImages.approveIndividualImage(imageId);
       onImageApproved(imageId);
 
-      if (isMainProfile) {
-        toast.success('대표 프로필이 승인되었습니다. 회원 상태가 "승인됨"으로 변경되었습니다.');
+      if (isRepresentativeReplacement) {
+        toast.success("대표사진 교체가 승인되었습니다.");
       }
     } catch (error: any) {
       if (error.response?.status === 400 && error.response?.data?.message === "심사 대기 중인 이미지가 아닙니다.") {
@@ -210,16 +231,26 @@ export default function ImageReviewPanel({
       return;
     }
 
-    const targetImage = (user.pendingImages || user.profileImages || []).find(
+    const targetImage = pendingImagesForReview.find(
       (img) => img.id === selectedImageId,
     );
     const isMainProfile = targetImage?.slotIndex === 0;
+    const targetPair = slotPairs.find(([slotIndex]) => slotIndex === targetImage?.slotIndex)?.[1];
+    const isRepresentativeReplacement =
+      isMainProfile &&
+      Boolean(targetPair?.current) &&
+      (Boolean(user.isApproved || user.approved) || Boolean(targetImage?.isRepresentativeReplacement));
 
-    if (isMainProfile) {
+    if (isMainProfile && !isRepresentativeReplacement) {
+      toast.info("대표사진 신규 심사는 상단 회원 반려 흐름에서 처리합니다.");
+      return;
+    }
+
+    if (isRepresentativeReplacement) {
       const confirmed = await confirmAction({
         message:
-          `⚠️ 대표 프로필을 거절하시겠습니까?\n대표 프로필 거절 시 회원 상태가 "거절됨"으로 변경되며, 회원이 서비스를 이용할 수 없게 됩니다.\n거절 사유: ${imageRejectionReason}`,
-        confirmText: "거절",
+          `대표사진 교체를 거절하시겠습니까?\n회원 승인 상태는 유지되고 기존 대표사진이 유지됩니다.\n거절 사유: ${imageRejectionReason}`,
+        confirmText: "교체 거절",
         severity: "error",
       });
       if (!confirmed) return;
@@ -237,8 +268,8 @@ export default function ImageReviewPanel({
       setImageRejectionReason("");
       onImageRejected(rejectedImageId);
 
-      if (isMainProfile) {
-        toast.success('대표 프로필이 거절되었습니다. 회원 상태가 "거절됨"으로 변경되었습니다.');
+      if (isRepresentativeReplacement) {
+        toast.success("대표사진 교체가 거절되었습니다.");
       }
     } catch (error: any) {
       if (error.response?.status === 400 && error.response?.data?.message === "심사 대기 중인 이미지가 아닙니다.") {
@@ -265,6 +296,12 @@ export default function ImageReviewPanel({
   };
 
   const rankSelected = currentRank !== "UNKNOWN";
+  const slotPairs = Array.from(
+    mapImagesBySlot(
+      user.profileUsing,
+      pendingImagesForReview,
+    ),
+  ).sort(([a], [b]) => a - b);
 
   return (
     <Paper sx={{ p: 3, display: "flex", flexDirection: "column" }}>
@@ -350,6 +387,20 @@ export default function ImageReviewPanel({
         </Box>
       </Box>
 
+      <Box
+        sx={{
+          mb: 2,
+          p: 1.5,
+          borderRadius: 2,
+          border: "1px solid #e0e0e0",
+          backgroundColor: "#fffdf5",
+        }}
+      >
+        <Typography variant="caption" sx={{ color: "#7a4d00", fontWeight: 600 }}>
+          대표사진은 회원 승인 흐름에서 처리하고, 추가 사진은 개별 이미지 심사로 승인/거절합니다.
+        </Typography>
+      </Box>
+
       {/* 승인/거절 버튼 */}
       <Box sx={{ display: "flex", gap: 1.5, mb: 2 }}>
         <Button
@@ -379,9 +430,7 @@ export default function ImageReviewPanel({
             },
           }}
         >
-          {rankSelected
-            ? `${currentRank}등급으로 승인하기`
-            : "승인하기"}
+          회원 승인하기
         </Button>
       </Box>
 
@@ -394,14 +443,17 @@ export default function ImageReviewPanel({
         </Typography>
 
         <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1.5 }}>
-          {Array.from(
-            mapImagesBySlot(
-              user.profileUsing,
-              user.pendingImages || user.profileImages || [],
-            ),
-          )
-            .sort(([a], [b]) => a - b)
-            .map(([slotIndex, pair]) => (
+          {slotPairs
+            .map(([slotIndex, pair]) => {
+              const isRepresentativeReplacement =
+                slotIndex === 0 &&
+                Boolean(pair.current) &&
+                (Boolean(user.isApproved || user.approved) || Boolean(pair.pending?.isRepresentativeReplacement));
+              const showImageActions = Boolean(pair.pending) && (slotIndex > 0 || isRepresentativeReplacement);
+              const canApprove = pair.pending?.canApprove !== false;
+              const canReject = pair.pending?.canReject !== false;
+
+              return (
               <Box
                 key={slotIndex}
                 sx={{
@@ -536,36 +588,84 @@ export default function ImageReviewPanel({
                         />
                       </Box>
                     </Box>
-                    <Box sx={{ display: "flex", gap: 0.5, mt: 0.75, justifyContent: "center" }}>
-                      <IconButton
-                        size="small"
-                        onClick={() =>
-                          handleRejectImageClick(pair.pending!.id)
-                        }
-                        sx={{
-                          backgroundColor: "#f44336",
-                          color: "#fff",
-                          width: 28,
-                          height: 28,
-                          "&:hover": { backgroundColor: "#d32f2f" },
-                        }}
+                    {showImageActions ? (
+                      isRepresentativeReplacement ? (
+                        <Box sx={{ display: "grid", gap: 0.5, mt: 0.75 }}>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="error"
+                            disabled={!canReject || processing}
+                            onClick={() => handleRejectImageClick(pair.pending!.id)}
+                            sx={{ fontSize: "0.7rem", minHeight: 28, py: 0.25 }}
+                          >
+                            교체 거절
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="contained"
+                            color="success"
+                            disabled={!canApprove || processing}
+                            onClick={() => handleApproveImage(pair.pending!.id)}
+                            sx={{ fontSize: "0.7rem", minHeight: 28, py: 0.25 }}
+                          >
+                            대표사진 교체 승인
+                          </Button>
+                        </Box>
+                      ) : (
+                        <Box sx={{ display: "flex", gap: 0.5, mt: 0.75, justifyContent: "center" }}>
+                          <Tooltip title="사진 거절">
+                            <span>
+                              <IconButton
+                                size="small"
+                                aria-label="사진 거절"
+                                disabled={!canReject || processing}
+                                onClick={() =>
+                                  handleRejectImageClick(pair.pending!.id)
+                                }
+                                sx={{
+                                  backgroundColor: "#f44336",
+                                  color: "#fff",
+                                  width: 28,
+                                  height: 28,
+                                  "&:hover": { backgroundColor: "#d32f2f" },
+                                  "&.Mui-disabled": { backgroundColor: "#e0e0e0" },
+                                }}
+                              >
+                                <CloseIcon sx={{ fontSize: 16 }} />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                          <Tooltip title="사진 승인">
+                            <span>
+                              <IconButton
+                                size="small"
+                                aria-label="사진 승인"
+                                disabled={!canApprove || processing}
+                                onClick={() => handleApproveImage(pair.pending!.id)}
+                                sx={{
+                                  backgroundColor: "#4caf50",
+                                  color: "#fff",
+                                  width: 28,
+                                  height: 28,
+                                  "&:hover": { backgroundColor: "#388e3c" },
+                                  "&.Mui-disabled": { backgroundColor: "#e0e0e0" },
+                                }}
+                              >
+                                <CheckCircleIcon sx={{ fontSize: 16 }} />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </Box>
+                      )
+                    ) : slotIndex === 0 ? (
+                      <Typography
+                        variant="caption"
+                        sx={{ display: "block", mt: 0.75, color: "#7a4d00", textAlign: "center", fontSize: "0.68rem" }}
                       >
-                        <CloseIcon sx={{ fontSize: 16 }} />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleApproveImage(pair.pending!.id)}
-                        sx={{
-                          backgroundColor: "#4caf50",
-                          color: "#fff",
-                          width: 28,
-                          height: 28,
-                          "&:hover": { backgroundColor: "#388e3c" },
-                        }}
-                      >
-                        <CheckCircleIcon sx={{ fontSize: 16 }} />
-                      </IconButton>
-                    </Box>
+                        회원 승인에서 처리
+                      </Typography>
+                    ) : null}
                   </Box>
                 ) : (
                   <Box
@@ -593,7 +693,8 @@ export default function ImageReviewPanel({
                   </Box>
                 )}
               </Box>
-            ))}
+              );
+            })}
         </Box>
       </Box>
 

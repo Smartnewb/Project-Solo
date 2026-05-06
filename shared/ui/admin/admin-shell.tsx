@@ -9,7 +9,6 @@ import { AdminSidebar } from './sidebar';
 import { AdminCountrySelectorModal } from './admin-country-selector';
 import {
   buildAdminLogoutPayload,
-  getStoredAdminCountry,
   getStoredAdminRefreshToken,
   setStoredAdminRefreshToken,
 } from '@/shared/auth/admin-auth-contract';

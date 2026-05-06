@@ -6,6 +6,50 @@ import type {
 } from '@/types/admin';
 import type { FormattedData } from './_shared';
 
+function normalizeAppearanceUser(user: any) {
+	const profileImages =
+		user.profileImages ??
+		user.images?.map((img: any, idx: number) => ({
+			id: img.imageId ?? img.id ?? `${user.userId ?? user.id}-${idx}`,
+			url: img.url ?? img.imageUrl,
+			order: img.slotIndex ?? img.order ?? idx,
+			isMain: img.isMain ?? idx === 0,
+		})) ??
+		[];
+	const hasBlindMatchingApprovedAt =
+		'blindMatchingApprovedAt' in user || 'blind_matching_approved_at' in user;
+	const hasApprovedPhotoCount =
+		'approvedPhotoCount' in user || 'approved_photo_count' in user;
+	const hasApprovedPhotoFlag = 'hasApprovedPhoto' in user || 'has_approved_photo' in user;
+	const approvedPhotoCount = hasApprovedPhotoCount
+		? Number(user.approvedPhotoCount ?? user.approved_photo_count ?? 0)
+		: undefined;
+
+	return {
+		...user,
+		id: user.id ?? user.userId,
+		appearanceGrade: user.appearanceGrade ?? user.rank ?? 'UNKNOWN',
+		profileImageUrl:
+			user.profileImageUrl ??
+			user.profile_image_url ??
+			profileImages.find((img: any) => img.isMain)?.url ??
+			profileImages[0]?.url ??
+			null,
+		profileImages,
+		...(hasBlindMatchingApprovedAt
+			? {
+					blindMatchingApprovedAt:
+						user.blindMatchingApprovedAt ?? user.blind_matching_approved_at ?? null,
+				}
+			: {}),
+		...(hasApprovedPhotoCount ? { approvedPhotoCount } : {}),
+		...(hasApprovedPhotoFlag
+			? { hasApprovedPhoto: user.hasApprovedPhoto ?? user.has_approved_photo ?? false }
+			: {}),
+		approvalMode: user.approvalMode ?? user.approval_mode,
+	};
+}
+
 export const userAppearance = {
 	getUsersWithAppearanceGrade: async (params: {
 		page?: number;
@@ -22,6 +66,7 @@ export const userAppearance = {
 		hasPreferences?: boolean;
 		includeDeleted?: boolean;
 		userStatus?: 'pending' | 'approved' | 'rejected';
+		sort?: 'newest' | 'oldest' | 'name';
 	}) => {
 		try {
 			;
@@ -54,6 +99,7 @@ export const userAppearance = {
 			if (params.includeDeleted !== undefined)
 				queryParams.append('includeDeleted', params.includeDeleted.toString());
 			if (params.userStatus) queryParams.append('userStatus', params.userStatus);
+			if (params.sort) queryParams.append('sort', params.sort);
 
 			queryParams.append('filter', 'all');
 
@@ -64,18 +110,7 @@ export const userAppearance = {
 			try {
 				const result = await adminGet<{ data: any[]; meta: any }>(url);
 				const rawData = result.data ?? [];
-				const normalizedData = rawData.map((user: any) => ({
-					...user,
-					id: user.id ?? user.userId,
-					appearanceGrade: user.appearanceGrade ?? user.rank ?? 'UNKNOWN',
-					profileImageUrl: user.profileImageUrl ?? user.images?.[0]?.url ?? null,
-					profileImages: user.profileImages ?? user.images?.map((img: any, idx: number) => ({
-						id: img.imageId ?? `${user.userId}-${idx}`,
-						url: img.url,
-						order: img.slotIndex ?? idx,
-						isMain: img.isMain ?? idx === 0,
-					})) ?? [],
-				}));
+				const normalizedData = rawData.map(normalizeAppearanceUser);
 				return { data: normalizedData, meta: result.meta };
 			} catch (error: any) {
 				throw error;
@@ -96,7 +131,7 @@ export const userAppearance = {
 				`/admin/v2/users?filter=ungraded&${params.toString()}`,
 			);
 
-			return { data: result.data, meta: result.meta };
+			return { data: (result.data ?? []).map(normalizeAppearanceUser), meta: result.meta };
 		} catch (error) {
 			throw error;
 		}
@@ -179,6 +214,9 @@ export const userAppearance = {
 			if (!data.appearanceGrade && data.rank) {
 				data.appearanceGrade = data.rank;
 			}
+
+			const normalized = normalizeAppearanceUser(data);
+			Object.assign(data, normalized);
 
 			if (data.statusAt === undefined) {
 				data.statusAt = null;

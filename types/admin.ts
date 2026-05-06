@@ -45,6 +45,7 @@ export interface AdminCardNewsItem {
   layoutMode: CardNewsLayoutMode;
   hasReward: boolean;
   sections?: CardSection[];
+  sectionCount?: number;
   body?: string;
   readTimeMinutes?: number;
   readCount: number;
@@ -986,6 +987,7 @@ export interface AdminNoticeItem {
   priority: NoticePriority;
   expiresAt?: string | null;
   url?: string | null;
+  linkUrl?: string | null;
   hasReward: boolean;
   pushEnabled: boolean;
   pushTitle?: string | null;

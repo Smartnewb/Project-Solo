@@ -23,6 +23,100 @@ describe('userAppearance service', () => {
     });
   });
 
+  it('requests approved appearance users in newest signup order when sort is provided', async () => {
+    (adminGet as jest.Mock).mockResolvedValue({ data: [], meta: { total: 0 } });
+
+    await userAppearance.getUsersWithAppearanceGrade({
+      page: 1,
+      limit: 10,
+      userStatus: 'approved',
+      sort: 'newest',
+    });
+
+    const requestedUrl = (adminGet as jest.Mock).mock.calls[0][0] as string;
+    const query = new URLSearchParams(requestedUrl.split('?')[1]);
+
+    expect(requestedUrl.split('?')[0]).toBe('/admin/v2/users');
+    expect(query.get('page')).toBe('1');
+    expect(query.get('limit')).toBe('10');
+    expect(query.get('userStatus')).toBe('approved');
+    expect(query.get('sort')).toBe('newest');
+    expect(query.get('filter')).toBe('all');
+  });
+
+  it('normalizes approval mode fields from appearance user list responses', async () => {
+    (adminGet as jest.Mock).mockResolvedValue({
+      data: [
+        {
+          userId: 'user-1',
+          rank: 'UNKNOWN',
+          blind_matching_approved_at: '2026-05-01T00:00:00.000Z',
+          approved_photo_count: 0,
+          has_approved_photo: false,
+          approval_mode: 'BLIND_APPROVED',
+          images: [],
+        },
+        {
+          userId: 'user-2',
+          rank: 'UNKNOWN',
+          approvedPhotoCount: 2,
+          hasApprovedPhoto: true,
+          approvalMode: 'GRADE_REQUIRED',
+          images: [{ imageId: 'img-1', url: 'https://example.com/a.jpg', slotIndex: 0 }],
+        },
+      ],
+      meta: { total: 2 },
+    });
+
+    await expect(userAppearance.getUsersWithAppearanceGrade({ page: 1, limit: 10 })).resolves.toEqual({
+      data: [
+        expect.objectContaining({
+          id: 'user-1',
+          appearanceGrade: 'UNKNOWN',
+          blindMatchingApprovedAt: '2026-05-01T00:00:00.000Z',
+          approvedPhotoCount: 0,
+          hasApprovedPhoto: false,
+          approvalMode: 'BLIND_APPROVED',
+        }),
+        expect.objectContaining({
+          id: 'user-2',
+          appearanceGrade: 'UNKNOWN',
+          approvedPhotoCount: 2,
+          hasApprovedPhoto: true,
+          approvalMode: 'GRADE_REQUIRED',
+          profileImageUrl: 'https://example.com/a.jpg',
+        }),
+      ],
+      meta: { total: 2 },
+    });
+  });
+
+  it('preserves absent approval contract fields for legacy appearance responses', async () => {
+    (adminGet as jest.Mock).mockResolvedValue({
+      data: [
+        {
+          userId: 'legacy-user',
+          rank: 'UNKNOWN',
+          images: [{ imageId: 'img-1', url: 'https://example.com/a.jpg', slotIndex: 0 }],
+        },
+      ],
+      meta: { total: 1 },
+    });
+
+    const result = await userAppearance.getUsersWithAppearanceGrade({ page: 1, limit: 10 });
+
+    expect(result.data[0]).toEqual(
+      expect.objectContaining({
+        id: 'legacy-user',
+        appearanceGrade: 'UNKNOWN',
+        profileImageUrl: 'https://example.com/a.jpg',
+      }),
+    );
+    expect(result.data[0]).not.toHaveProperty('blindMatchingApprovedAt');
+    expect(result.data[0]).not.toHaveProperty('approvedPhotoCount');
+    expect(result.data[0]).not.toHaveProperty('hasApprovedPhoto');
+  });
+
   it('sends a default reason when granting gems from appearance admin', async () => {
     (adminPost as jest.Mock).mockResolvedValue({ data: { success: true } });
 

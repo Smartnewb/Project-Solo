@@ -25,6 +25,7 @@ export function useUsersWithAppearanceGrade(params: {
   hasPreferences?: boolean;
   includeDeleted?: boolean;
   userStatus?: 'pending' | 'approved' | 'rejected';
+  sort?: 'newest' | 'oldest' | 'name';
 }) {
   return useQuery({
     queryKey: [...usersKeys.appearance(), 'list', params],

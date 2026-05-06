@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Box, Tab, Tabs, Typography } from '@mui/material';
 
 const TABS = [
-	{ label: '실제 게시글', path: '/admin/community-automation/target-posts' },
+	{ label: '게시글 관리', path: '/admin/community-automation/target-posts' },
 	{ label: '캠페인', path: '/admin/community-automation/campaigns' },
 	{ label: '검수 큐', path: '/admin/community-automation/review-queue' },
 	{ label: '메트릭스', path: '/admin/community-automation/metrics' },
@@ -21,7 +21,7 @@ export default function CommunityAutomationLayout({ children }: { children: Reac
 	return (
 		<Box sx={{ p: 3 }}>
 			<Typography variant="h5" fontWeight={700} mb={2}>
-				커뮤니티 자동화
+				커뮤니티 관리
 			</Typography>
 			<Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
 				<Tabs value={currentTab === -1 ? 0 : currentTab} onChange={(_, v) => router.push(TABS[v].path)}>

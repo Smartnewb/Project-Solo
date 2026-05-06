@@ -168,6 +168,7 @@ const UserAppearanceTable = forwardRef<UserAppearanceTableRef, UserAppearanceTab
         const response = await AdminService.userAppearance.getUsersWithAppearanceGrade({
           page: page + 1,
           limit: rowsPerPage,
+          sort: 'newest',
           ...filters,
           ...(userStatus && { userStatus }),
         });
@@ -387,7 +388,7 @@ const UserAppearanceTable = forwardRef<UserAppearanceTableRef, UserAppearanceTab
         </Box>
 
         <Typography variant="caption" sx={{ display: 'block', mb: 1.5, px: 1, color: '#64748B' }}>
-          정렬 기준: 최근 접속 우선, 미접속 사용자는 가입일 최신순
+          정렬 기준: 가입일 최신순
         </Typography>
 
         <TableContainer

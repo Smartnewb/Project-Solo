@@ -190,9 +190,9 @@ export function NoticeTable() {
                   </TableCell>
                   <TableCell align="center">{formatExpires(item.expiresAt)}</TableCell>
                   <TableCell align="center">
-                    {item.url ? (
+                    {(item.url ?? item.linkUrl) ? (
                       <MuiLink
-                        href={item.url}
+                        href={item.url ?? item.linkUrl ?? undefined}
                         target="_blank"
                         rel="noopener"
                         sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}

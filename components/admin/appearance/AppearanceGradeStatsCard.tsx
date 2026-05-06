@@ -46,8 +46,8 @@ const GRADE_LABELS: Record<string, string> = {
 };
 
 const UNKNOWN_BREAKDOWN_COLORS = {
-  neverClassified: '#64748B',
-  inactiveReset: '#CBD5E1',
+  blindApproved: '#2563EB',
+  gradeRequired: '#D97706',
 };
 
 interface AppearanceGradeStatsCardProps {
@@ -255,32 +255,32 @@ function PieChartSection({
 }
 
 function UnknownBreakdownSection({
-  neverClassified,
-  inactiveReset,
+  blindApproved,
+  gradeRequired,
   totalUnknown,
 }: {
-  neverClassified: number;
-  inactiveReset: number;
+  blindApproved: number;
+  gradeRequired: number;
   totalUnknown: number;
 }) {
-  const neverPct = totalUnknown > 0 ? (neverClassified / totalUnknown) * 100 : 0;
-  const inactivePct = totalUnknown > 0 ? (inactiveReset / totalUnknown) * 100 : 0;
+  const blindPct = totalUnknown > 0 ? (blindApproved / totalUnknown) * 100 : 0;
+  const gradeRequiredPct = totalUnknown > 0 ? (gradeRequired / totalUnknown) * 100 : 0;
 
   const items = [
     {
-      label: '등급 미부여',
-      desc: '신규 가입 후 어드민 분류 대기',
-      count: neverClassified,
-      pct: neverPct,
-      color: UNKNOWN_BREAKDOWN_COLORS.neverClassified,
+      label: '블라인드 승인',
+      desc: '사진 등급 없이 블라인드 매칭 승인',
+      count: blindApproved,
+      pct: blindPct,
+      color: UNKNOWN_BREAKDOWN_COLORS.blindApproved,
       icon: <FiberNewOutlinedIcon sx={{ fontSize: 18 }} />,
     },
     {
-      label: '미접속 초기화',
-      desc: '7일 이상 미접속, 재접속 시 복원',
-      count: inactiveReset,
-      pct: inactivePct,
-      color: UNKNOWN_BREAKDOWN_COLORS.inactiveReset,
+      label: '등급 정리 필요',
+      desc: '승인 사진이 있어 등급 부여 필요',
+      count: gradeRequired,
+      pct: gradeRequiredPct,
+      color: UNKNOWN_BREAKDOWN_COLORS.gradeRequired,
       icon: <PersonOffOutlinedIcon sx={{ fontSize: 18 }} />,
     },
   ];
@@ -298,20 +298,20 @@ function UnknownBreakdownSection({
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
         <InfoOutlinedIcon sx={{ fontSize: 18, color: '#64748B' }} />
         <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#334155' }}>
-          미분류 상세 ({totalUnknown.toLocaleString()}명)
+          UNKNOWN 승인 흐름 ({totalUnknown.toLocaleString()}명)
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 'auto' }}>
           <BlockOutlinedIcon sx={{ fontSize: 14, color: '#EF4444' }} />
           <Typography variant="caption" sx={{ color: '#EF4444', fontWeight: 500 }}>
-            매칭 제외
+            운영 분리
           </Typography>
         </Box>
       </Box>
 
       {/* Stacked bar */}
       <Box sx={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', mb: 2 }}>
-        <Box sx={{ width: `${neverPct}%`, bgcolor: UNKNOWN_BREAKDOWN_COLORS.neverClassified, transition: 'width 0.3s' }} />
-        <Box sx={{ width: `${inactivePct}%`, bgcolor: UNKNOWN_BREAKDOWN_COLORS.inactiveReset, transition: 'width 0.3s' }} />
+        <Box sx={{ width: `${blindPct}%`, bgcolor: UNKNOWN_BREAKDOWN_COLORS.blindApproved, transition: 'width 0.3s' }} />
+        <Box sx={{ width: `${gradeRequiredPct}%`, bgcolor: UNKNOWN_BREAKDOWN_COLORS.gradeRequired, transition: 'width 0.3s' }} />
       </Box>
 
       <Stack spacing={1.5}>
@@ -329,7 +329,7 @@ function UnknownBreakdownSection({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: item.color === UNKNOWN_BREAKDOWN_COLORS.inactiveReset ? '#64748B' : item.color,
+                color: item.color,
                 flexShrink: 0,
               }}
             >
@@ -422,7 +422,13 @@ export default function AppearanceGradeStatsCard({ stats }: AppearanceGradeStats
 
   const unknownStat = safeStats.stats.find((s) => s.grade === 'UNKNOWN');
   const totalUnknown = unknownStat?.count || 0;
-  const hasBreakdown = safeStats.unknownBreakdown && totalUnknown > 0;
+  const hasUnknownApprovalBreakdown = Boolean(
+    safeStats.unknownBreakdown &&
+      ('blindApproved' in safeStats.unknownBreakdown || 'gradeRequired' in safeStats.unknownBreakdown),
+  );
+  const hasBreakdown = hasUnknownApprovalBreakdown && totalUnknown > 0;
+  const blindApprovedCount = safeStats.unknownBreakdown?.blindApproved ?? 0;
+  const gradeRequiredCount = safeStats.unknownBreakdown?.gradeRequired ?? 0;
 
   return (
     <Card sx={{ borderRadius: 3, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', overflow: 'visible' }}>
@@ -462,8 +468,8 @@ export default function AppearanceGradeStatsCard({ stats }: AppearanceGradeStats
         {hasBreakdown && (
           <Box sx={{ mb: 3 }}>
             <UnknownBreakdownSection
-              neverClassified={safeStats.unknownBreakdown!.neverClassified}
-              inactiveReset={safeStats.unknownBreakdown!.inactiveReset}
+              blindApproved={blindApprovedCount}
+              gradeRequired={gradeRequiredCount}
               totalUnknown={totalUnknown}
             />
           </Box>
