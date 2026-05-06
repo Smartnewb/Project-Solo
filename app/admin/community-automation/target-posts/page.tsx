@@ -164,7 +164,7 @@ export default function TargetPostsPage() {
 	const [total, setTotal] = useState(0);
 	const [opsQueueCounts, setOpsQueueCounts] = useState<Partial<Record<TargetPostOpsQueue, number>>>({});
 	const [categories, setCategories] = useState<CommunityAutomationCategoryOption[]>(COMMUNITY_AUTOMATION_CATEGORY_OPTIONS);
-	const [query, setQuery] = useState<TargetPostListQuery>({ page: 1, limit: 20, sort: 'urgencyScore', order: 'desc' });
+	const [query, setQuery] = useState<TargetPostListQuery>({ page: 1, limit: 20, sort: 'createdAt', order: 'desc' });
 	const [selected, setSelected] = useState<TargetPostDetail | null>(null);
 	const [selectedIds, setSelectedIds] = useState<string[]>([]);
 	const [moveCategoryId, setMoveCategoryId] = useState('');
@@ -462,7 +462,7 @@ export default function TargetPostsPage() {
 							...prev,
 							page: 1,
 							opsQueue: value === 'all' ? undefined : value,
-							sort: 'urgencyScore',
+							sort: value === 'all' ? 'createdAt' : 'urgencyScore',
 							order: 'desc',
 						}))
 					}
