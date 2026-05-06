@@ -1,13 +1,14 @@
 'use client';
 
-import { Box, Chip, Divider, Paper, Typography } from '@mui/material';
-import type { GhostChatSession } from '@/app/types/ghost-chat';
+import { Avatar, Box, Chip, Divider, Paper, Typography } from '@mui/material';
+import type { GhostChatSession, GhostChatSessionContext } from '@/app/types/ghost-chat';
 
 interface GhostContextPanelProps {
 	session: GhostChatSession | null;
+	context: GhostChatSessionContext | null;
 }
 
-function FieldRow({ label, value }: { label: string; value: string | number | null }) {
+function FieldRow({ label, value }: { label: string; value: string | number | null | undefined }) {
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
 			<Typography variant="caption" color="text.secondary">
@@ -18,6 +19,11 @@ function FieldRow({ label, value }: { label: string; value: string | number | nu
 			</Typography>
 		</Box>
 	);
+}
+
+function joinValues(values: Array<string | number | null | undefined>) {
+	const present = values.filter((value): value is string | number => value !== null && value !== undefined && value !== '');
+	return present.length > 0 ? present.join(' · ') : null;
 }
 
 function Section({
@@ -37,7 +43,7 @@ function Section({
 	);
 }
 
-export default function GhostContextPanel({ session }: GhostContextPanelProps) {
+export default function GhostContextPanel({ session, context }: GhostContextPanelProps) {
 	if (!session) {
 		return (
 			<Box
@@ -77,16 +83,66 @@ export default function GhostContextPanel({ session }: GhostContextPanelProps) {
 
 			<Paper elevation={0} sx={{ p: 1.5, border: 1, borderColor: 'divider', borderRadius: 2 }}>
 				<Section title="Ghost 프로필">
+					{context?.ghost ? (
+						<>
+							<Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center' }}>
+								<Avatar
+									src={context.ghost.primaryPhotoUrl ?? undefined}
+									alt={context.ghost.name}
+									sx={{ width: 48, height: 48 }}
+								>
+									{context.ghost.name.charAt(0)}
+								</Avatar>
+								<Box sx={{ minWidth: 0 }}>
+									<Typography variant="subtitle2" sx={{ fontWeight: 700 }} noWrap>
+										{context.ghost.name}
+									</Typography>
+									<Typography variant="caption" color="text.secondary">
+										상대 노출명: {context.ghost.anonymousName}
+									</Typography>
+								</Box>
+							</Box>
+							<FieldRow
+								label="기본 정보"
+								value={joinValues([context.ghost.age, context.ghost.gender, context.ghost.mbti, context.ghost.rank])}
+							/>
+							<FieldRow
+								label="학교/학과"
+								value={joinValues([context.ghost.university?.name, context.ghost.department?.name])}
+							/>
+							<FieldRow label="소개" value={context.ghost.introduction} />
+							{context.ghost.keywords && context.ghost.keywords.length > 0 && (
+								<Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
+									{context.ghost.keywords.map((keyword) => (
+										<Chip key={keyword} label={keyword} size="small" variant="outlined" />
+									))}
+								</Box>
+							)}
+						</>
+					) : (
+						<Typography variant="body2" color="text.secondary">
+							프로필 컨텍스트를 불러오는 중입니다.
+						</Typography>
+					)}
 					<FieldRow label="ghostAccountId" value={session.ghostAccountId} />
 					<FieldRow label="ghostUserId" value={session.ghostUserId} />
-					<Typography variant="body2" color="text.secondary">
-						프로필 컨텍스트 API 연결 필요
-					</Typography>
 				</Section>
 			</Paper>
 
 			<Paper elevation={0} sx={{ p: 1.5, border: 1, borderColor: 'divider', borderRadius: 2 }}>
 				<Section title="Target 유저">
+					{context?.target && (
+						<>
+							<FieldRow
+								label="기본 정보"
+								value={joinValues([context.target.age, context.target.gender, context.target.mbti, context.target.rank])}
+							/>
+							<FieldRow
+								label="학교/학과"
+								value={joinValues([context.target.university?.name, context.target.department?.name])}
+							/>
+						</>
+					)}
 					<FieldRow label="targetUserId" value={session.targetUserId} />
 					<FieldRow label="matchId" value={session.matchId} />
 					<FieldRow label="chatRoomId" value={session.chatRoomId} />
@@ -104,18 +160,21 @@ export default function GhostContextPanel({ session }: GhostContextPanelProps) {
 			</Paper>
 
 			<Paper elevation={0} sx={{ p: 1.5, border: 1, borderColor: 'divider', borderRadius: 2 }}>
-				<Section title="API 보완 필요">
-					<Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-						<Chip label="GET /sessions/:id/messages" size="small" variant="outlined" />
-						<Chip label="GET /sessions/:id/context" size="small" variant="outlined" />
-						<Chip label="new_message SSE" size="small" variant="outlined" />
-					</Box>
+				<Section title="노출 안전">
+					<FieldRow
+						label="상대방에게 보이는 이름"
+						value={context?.visibility.targetSeesGhostName ?? context?.ghost.anonymousName}
+					/>
+					<FieldRow
+						label="실명 노출 차단"
+						value={context?.visibility.realGhostNameHiddenFromTarget ? '활성' : '확인 필요'}
+					/>
 				</Section>
 			</Paper>
 
 			<Divider />
 			<Typography variant="caption" color="text.secondary">
-				현재 API에 없는 이름, 나이, 학교 등 프로필 사실은 표시하지 않습니다.
+				운영자 화면에는 Ghost 실제 프로필을 보여주고, 유저 화면에는 anonymousName 계약을 사용합니다.
 			</Typography>
 		</Box>
 	);

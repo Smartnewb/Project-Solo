@@ -179,7 +179,14 @@ async function proxyRequest(request: NextRequest, { params }: { params: { path: 
 	const responseHeaders = new Headers();
 	backendRes.headers.forEach((value, key) => {
 		const lower = key.toLowerCase();
-		if (lower === 'transfer-encoding' || lower === 'connection') return;
+		if (
+			lower === 'transfer-encoding' ||
+			lower === 'connection' ||
+			lower === 'content-encoding' ||
+			lower === 'content-length'
+		) {
+			return;
+		}
 		responseHeaders.set(key, value);
 	});
 

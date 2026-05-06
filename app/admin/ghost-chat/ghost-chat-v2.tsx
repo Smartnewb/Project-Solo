@@ -40,6 +40,7 @@ function GhostChatV2Content() {
 	const {
 		sessions,
 		selectedSession,
+		selectedContext,
 		selectedMessages,
 		loading,
 		messagesLoading,
@@ -162,7 +163,7 @@ function GhostChatV2Content() {
 		/>
 	);
 
-	const context = <GhostContextPanel session={selectedSession} />;
+	const context = <GhostContextPanel session={selectedSession} context={selectedContext} />;
 
 	if (isMobile) {
 		return (

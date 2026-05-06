@@ -86,6 +86,40 @@ export interface GhostChatMessagesResponse {
 	hasMore: boolean;
 }
 
+export interface GhostChatContextRef {
+	id: string | null;
+	name: string | null;
+}
+
+export interface GhostChatProfileContext {
+	accountId?: string;
+	userId: string;
+	name?: string;
+	anonymousName?: string;
+	age: number;
+	gender: string;
+	mbti: string | null;
+	rank: string | null;
+	introduction?: string | null;
+	keywords?: string[] | null;
+	university: GhostChatContextRef | null;
+	department: GhostChatContextRef | null;
+	primaryPhotoUrl?: string | null;
+}
+
+export interface GhostChatSessionContext {
+	ghost: GhostChatProfileContext & {
+		accountId: string;
+		name: string;
+		anonymousName: string;
+	};
+	target: Omit<GhostChatProfileContext, 'accountId' | 'name' | 'anonymousName'> | null;
+	visibility: {
+		targetSeesGhostName: string;
+		realGhostNameHiddenFromTarget: boolean;
+	};
+}
+
 export interface GhostChatPersonaContext {
 	ghostName?: string;
 	toneGuide?: string;
