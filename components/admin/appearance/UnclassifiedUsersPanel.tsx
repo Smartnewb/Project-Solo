@@ -23,11 +23,15 @@ import {
   Tabs,
   Tab,
   Stack,
+  ToggleButtonGroup,
+  ToggleButton,
   alpha,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import ViewListIcon from '@mui/icons-material/ViewList';
+import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import AdminService from '@/app/services/admin';
 import {
   UserProfileWithAppearance,
@@ -37,6 +41,7 @@ import {
   isGradeRequiredUser,
 } from '@/app/admin/users/appearance/types';
 import UserDetailModal, { UserDetail } from './UserDetailModal';
+import UnclassifiedUsersTable from './UnclassifiedUsersTable';
 import RegionFilter, { useRegionFilter } from '@/components/admin/common/RegionFilter';
 
 // 등급 색상 정의
@@ -101,6 +106,7 @@ export default function UnclassifiedUsersPanel() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(12);
+  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
 
   // 지역 필터 훅 사용
   const { region, setRegion: setRegionFilter, getRegionParam } = useRegionFilter();
@@ -179,6 +185,10 @@ export default function UnclassifiedUsersPanel() {
   // 페이지 변경 핸들러
   const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
     setPage(value);
+  };
+
+  const handleUsersRemove = (userIds: string[]) => {
+    setUsers((prev) => prev.filter((u) => !userIds.includes(u.userId ?? u.id)));
   };
 
   // 등급 토글 메뉴 열기
@@ -283,14 +293,29 @@ export default function UnclassifiedUsersPanel() {
             UNKNOWN 사용자를 등급 정리 대상과 블라인드 승인 대상으로 분리합니다.
           </Typography>
         </Box>
-        <Button
-          variant="outlined"
-          color="primary"
-          onClick={fetchUnclassifiedUsers}
-          disabled={loading}
-        >
-          새로고침
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={(_, v) => v && setViewMode(v)}
+            size="small"
+          >
+            <ToggleButton value="card" aria-label="카드 뷰">
+              <ViewModuleIcon fontSize="small" />
+            </ToggleButton>
+            <ToggleButton value="table" aria-label="테이블 뷰">
+              <ViewListIcon fontSize="small" />
+            </ToggleButton>
+          </ToggleButtonGroup>
+          <Button
+            variant="outlined"
+            color="primary"
+            onClick={fetchUnclassifiedUsers}
+            disabled={loading}
+          >
+            새로고침
+          </Button>
+        </Box>
       </Box>
 
       {/* 지역 필터 */}
@@ -332,6 +357,19 @@ export default function UnclassifiedUsersPanel() {
             ? '등급 정리 필요 사용자가 없습니다.'
             : '블라인드 승인 사용자가 없습니다.'}
         </Alert>
+      ) : viewMode === 'table' ? (
+        <UnclassifiedUsersTable
+          users={visibleUsers}
+          loading={loading}
+          error={error}
+          cohort={activeCohort}
+          totalCount={cohortUsers.length}
+          page={page}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onRefresh={fetchUnclassifiedUsers}
+          onUsersRemove={handleUsersRemove}
+        />
       ) : (
         <>
           <Grid container spacing={2}>

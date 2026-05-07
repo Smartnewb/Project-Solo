@@ -149,6 +149,22 @@ export function useBulkRejectUsers() {
   });
 }
 
+export function useBulkApproveUsers() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      userIds,
+      onProgress,
+    }: {
+      userIds: string[];
+      onProgress?: (current: number, total: number) => void;
+    }) => AdminService.userReview.bulkApproveUsers(userIds, onProgress),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: moderationKeys.userReview() });
+    },
+  });
+}
+
 export function useUpdateUserRank() {
   const queryClient = useQueryClient();
   return useMutation({

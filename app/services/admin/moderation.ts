@@ -411,6 +411,31 @@ export const userReview = {
 		return results;
 	},
 
+	bulkApproveUsers: async (
+		userIds: string[],
+		onProgress?: (current: number, total: number) => void,
+	) => {
+		const results: Array<{ userId: string; success: boolean; error?: string }> = [];
+
+		for (let i = 0; i < userIds.length; i++) {
+			const userId = userIds[i];
+			try {
+				await userReview.approveUser(userId);
+				results.push({ userId, success: true });
+				onProgress?.(i + 1, userIds.length);
+			} catch (error: any) {
+				results.push({
+					userId,
+					success: false,
+					error: error.response?.data?.message || error.message,
+				});
+				onProgress?.(i + 1, userIds.length);
+			}
+		}
+
+		return results;
+	},
+
 	updateUserRank: async (
 		userId: string,
 		rank: 'S' | 'A' | 'B' | 'C' | 'UNKNOWN',

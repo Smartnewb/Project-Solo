@@ -15,6 +15,7 @@ export {
   useApproveUser,
   useRejectUser,
   useBulkRejectUsers,
+  useBulkApproveUsers,
   useUpdateUserRank,
   useImageValidation,
   useReviewHistory,
