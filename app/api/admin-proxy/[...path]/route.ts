@@ -13,6 +13,8 @@ import { adminLog } from '@/shared/lib/admin-logger';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api';
 
+const PROACTIVE_REFRESH_THRESHOLD_MS = 5 * 60 * 1000;
+
 const ALLOWED_PATH_PREFIXES = [
 	'admin/',
 	'auth/',
@@ -41,6 +43,26 @@ function isPathAllowed(targetPath: string): boolean {
 	return ALLOWED_PATH_PREFIXES.some(
 		(prefix) => targetPath === prefix.replace(/\/$/, '') || targetPath.startsWith(prefix),
 	);
+}
+
+function decodeJwtPayload(token: string): { exp?: number } | null {
+	try {
+		const parts = token.split('.');
+		if (parts.length !== 3) return null;
+		const payload = parts[1];
+		const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+		const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=');
+		const decoded = atob(padded);
+		return JSON.parse(decoded);
+	} catch {
+		return null;
+	}
+}
+
+function isTokenExpiringSoon(token: string): boolean {
+	const payload = decodeJwtPayload(token);
+	if (!payload?.exp) return true;
+	return payload.exp * 1000 - Date.now() < PROACTIVE_REFRESH_THRESHOLD_MS;
 }
 
 const inFlightRefreshes = new Map<string, Promise<string | null>>();
@@ -133,6 +155,14 @@ async function proxyRequest(request: NextRequest, { params }: { params: { path: 
 
 	if (!isPathAllowed(targetPath)) {
 		return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+	}
+
+	// Proactive refresh: if token expires within 5 minutes, refresh before making the request
+	if (targetPath !== 'auth/refresh' && isTokenExpiringSoon(token)) {
+		const newToken = await refreshAccessToken(meta);
+		if (newToken) {
+			token = newToken;
+		}
 	}
 
 	const url = new URL(`${BACKEND_URL}/${targetPath}`);
