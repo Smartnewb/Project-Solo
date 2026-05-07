@@ -119,6 +119,13 @@ const SCHEDULED_COMMENT_HEALTH_LABEL: Record<ScheduledCommentTimelineItem['healt
 	revalidation_failed: '재검증 실패',
 };
 
+const SCHEDULED_TARGET_TYPE_LABEL: Record<string, string> = {
+	COMMENT: '댓글',
+	REPLY: '답글',
+	ARTICLE_LIKE: '게시글 좋아요',
+	COMMENT_LIKE: '댓글 좋아요',
+};
+
 const LIVE_COMMENT_TONE_LABEL: Record<LiveCommentSuggestion['tone'], string> = {
 	empathetic: '공감형',
 	question: '질문형',
@@ -794,7 +801,7 @@ export function CommunityPostAppDetailPanel({
 										예약 타임라인
 									</Typography>
 									<Typography variant="caption" color="text.secondary">
-										DB 상태 기준으로 예약/발화/취소 이력을 표시합니다.
+										DB 상태 기준으로 예약/발화/취소 작업을 표시합니다.
 									</Typography>
 								</Box>
 								<Button
@@ -813,13 +820,14 @@ export function CommunityPostAppDetailPanel({
 							) : scheduledComments.length === 0 ? (
 								<Paper variant="outlined" sx={{ p: 3, textAlign: 'center', borderColor: '#E5E8EB', bgcolor: '#F8F9FA' }}>
 									<Typography variant="body2" color="text.secondary">
-										예약된 댓글이 없습니다.
+										예약된 작업이 없습니다.
 									</Typography>
 								</Paper>
 							) : (
 								scheduledComments.map((item) => {
 									const isScheduled = item.status === 'scheduled';
 									const isLike = item.targetType === 'ARTICLE_LIKE' || item.targetType === 'COMMENT_LIKE';
+									const targetTypeLabel = item.targetType ? SCHEDULED_TARGET_TYPE_LABEL[item.targetType] ?? item.targetType : '작업';
 									const itemDelayMinutes = timelineDelayMinutesById[item.contentId] ?? 30;
 									const actionLoading = timelineActionId === item.contentId;
 									const likeIcon = item.targetType === 'ARTICLE_LIKE' ? '❤️' : item.targetType === 'COMMENT_LIKE' ? '💬❤️' : null;
@@ -828,6 +836,12 @@ export function CommunityPostAppDetailPanel({
 											<Stack spacing={1}>
 												<Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
 													<Box sx={{ minWidth: 0 }}>
+														<Chip
+															size="small"
+															label={targetTypeLabel}
+															variant="outlined"
+															sx={{ height: 22, mb: 0.7, fontWeight: 700 }}
+														/>
 														<Typography variant="body2" fontWeight={700} sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
 															{likeIcon ? `${likeIcon} ` : ''}{item.content || (isLike ? '좋아요' : '')}
 														</Typography>

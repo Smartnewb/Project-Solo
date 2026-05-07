@@ -5,8 +5,8 @@ import { Box, Tab, Tabs, Typography } from '@mui/material';
 
 const TABS = [
 	{ label: '게시글 관리', path: '/admin/community-automation/target-posts' },
+	{ label: '리뷰 자동작성', path: '/admin/community-automation/review-posts' },
 	{ label: '캠페인', path: '/admin/community-automation/campaigns' },
-	{ label: '검수 큐', path: '/admin/community-automation/review-queue' },
 	{ label: '메트릭스', path: '/admin/community-automation/metrics' },
 	{ label: '페르소나', path: '/admin/community-automation/personas' },
 	{ label: '설정', path: '/admin/community-automation/settings' },

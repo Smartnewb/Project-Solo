@@ -1,10 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
+import EditNoteIcon from '@mui/icons-material/EditNote';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import FlagOutlinedIcon from '@mui/icons-material/FlagOutlined';
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import TuneIcon from '@mui/icons-material/Tune';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import {
 	Alert,
@@ -14,7 +18,10 @@ import {
 	Checkbox,
 	Chip,
 	CircularProgress,
-	Divider,
+	Dialog,
+	DialogActions,
+	DialogContent,
+	DialogTitle,
 	Drawer,
 	FormControl,
 	InputLabel,
@@ -42,6 +49,7 @@ import communityService from '@/app/services/community';
 import {
 	campaigns as campaignsApi,
 	COMMUNITY_AUTOMATION_CATEGORY_OPTIONS,
+	reviewQueue as reviewApi,
 	targetPosts as targetPostsApi,
 } from '@/app/services/admin/community-automation';
 import { CommunityPostAppDetailPanel } from '@/app/admin/community/components/CommunityPostAppDetailPanel';
@@ -51,7 +59,7 @@ const STATUS_LABEL: Record<ContentStatus | 'none', string> = {
 	draft: '초안',
 	pending_review: '검수 대기',
 	approved: '승인',
-	scheduled: '예약됨',
+	scheduled: '발송 예약',
 	published: '발행됨',
 	rejected: '거절됨',
 	quality_failed: '품질 실패',
@@ -101,6 +109,8 @@ const EXCLUDED_CATEGORY_TOKENS = [
 	'롱폼',
 ];
 
+type ReviewDialogMode = 'reject' | 'inject' | 'withdraw' | 'regenerate' | null;
+
 function preview(text: string, length = 90) {
 	return text.length > length ? `${text.slice(0, length)}...` : text;
 }
@@ -108,6 +118,37 @@ function preview(text: string, length = 90) {
 function formatDate(value: string | null) {
 	if (!value) return '-';
 	return new Date(value).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+function formatRelativeTime(value: string | null) {
+	if (!value) return null;
+	const target = new Date(value).getTime();
+	if (Number.isNaN(target)) return null;
+	const diffMinutes = Math.ceil((target - Date.now()) / 60_000);
+	if (diffMinutes <= 0) return '곧 발송';
+	if (diffMinutes < 60) return `${diffMinutes}분 후`;
+	const hours = Math.floor(diffMinutes / 60);
+	const minutes = diffMinutes % 60;
+	if (hours < 24) return minutes > 0 ? `${hours}시간 ${minutes}분 후` : `${hours}시간 후`;
+	const days = Math.floor(hours / 24);
+	const remainHours = hours % 24;
+	return remainHours > 0 ? `${days}일 ${remainHours}시간 후` : `${days}일 후`;
+}
+
+function getCandidateTimingText(item: Content) {
+	if (item.status === 'scheduled') {
+		const relative = formatRelativeTime(item.scheduledAt);
+		return item.scheduledAt
+			? `${formatDate(item.scheduledAt)} 발송 예정${relative ? ` · ${relative}` : ''}`
+			: '발송 예약 시간이 아직 내려오지 않았습니다';
+	}
+	if (item.status === 'published' && item.publishedAt) {
+		return `${formatDate(item.publishedAt)} 발행 완료`;
+	}
+	if (item.reviewedAt && (item.status === 'rejected' || item.status === 'withdrawn')) {
+		return `${formatDate(item.reviewedAt)} 검수 처리`;
+	}
+	return null;
 }
 
 function formatCount(value: number) {
@@ -154,7 +195,6 @@ function getOpsQueueColor(queue: TargetPostOpsQueue | null | undefined) {
 }
 
 export default function TargetPostsPage() {
-	const router = useRouter();
 	const [loading, setLoading] = useState(true);
 	const [detailLoading, setDetailLoading] = useState(false);
 	const [actionLoading, setActionLoading] = useState(false);
@@ -174,6 +214,9 @@ export default function TargetPostsPage() {
 	const [instruction, setInstruction] = useState('');
 	const [manualText, setManualText] = useState('');
 	const [createdContents, setCreatedContents] = useState<Content[]>([]);
+	const [reviewDialogMode, setReviewDialogMode] = useState<ReviewDialogMode>(null);
+	const [reviewDialogTarget, setReviewDialogTarget] = useState<Content | null>(null);
+	const [reviewDialogText, setReviewDialogText] = useState('');
 
 	const load = useCallback(async () => {
 		setLoading(true);
@@ -215,6 +258,24 @@ export default function TargetPostsPage() {
 	const selectedPost = selected?.post ?? null;
 	const ghostBlocked = selected ? selected.ghostCandidateCount === 0 : false;
 	const regionCluster = selected?.defaults.defaultRegionCluster ?? '';
+	const reviewCandidates = useMemo(() => {
+		return [...(selected?.automationHistory ?? [])].sort((a, b) => {
+			const priority: Record<ContentStatus, number> = {
+				pending_review: 0,
+				quality_failed: 1,
+				draft: 2,
+				approved: 3,
+				scheduled: 4,
+				published: 5,
+				rejected: 6,
+				withdrawn: 7,
+			};
+			const statusDelta = priority[a.status] - priority[b.status];
+			if (statusDelta !== 0) return statusDelta;
+			return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+		});
+	}, [selected?.automationHistory]);
+	const pendingReviewCount = reviewCandidates.filter((item) => item.status === 'pending_review').length;
 
 	const loadScheduledComments = useCallback(
 		async (articleId = selectedPost?.id) => {
@@ -367,7 +428,7 @@ export default function TargetPostsPage() {
 				regionCluster: regionCluster || undefined,
 			});
 			setCreatedContents(result.items ?? []);
-			setSuccess(`LLM 댓글 후보 ${(result.items ?? []).length}개를 검수 큐에 생성했습니다.`);
+			setSuccess(`LLM 댓글 후보 ${(result.items ?? []).length}개를 후보 검수에 생성했습니다.`);
 			await refreshDetail();
 			await load();
 		} catch (e: unknown) {
@@ -375,6 +436,54 @@ export default function TargetPostsPage() {
 		} finally {
 			setActionLoading(false);
 		}
+	}
+
+	function openReviewDialog(mode: ReviewDialogMode, item: Content, prefill = '') {
+		setReviewDialogMode(mode);
+		setReviewDialogTarget(item);
+		setReviewDialogText(prefill);
+	}
+
+	function closeReviewDialog() {
+		setReviewDialogMode(null);
+		setReviewDialogTarget(null);
+		setReviewDialogText('');
+	}
+
+	async function applyReviewAction(item: Content, action: 'approve' | 'reject' | 'inject' | 'withdraw' | 'regenerate', text = '') {
+		setActionLoading(true);
+		setError(null);
+		setSuccess(null);
+		try {
+			if (action === 'approve') {
+				const result = await reviewApi.approve(item.id);
+				setSuccess(`댓글 후보를 승인했습니다. ${formatDate(result.scheduledAt)} 발송 예정입니다.`);
+			} else if (action === 'reject') {
+				await reviewApi.reject(item.id, text);
+				setSuccess('댓글 후보를 거절했습니다.');
+			} else if (action === 'inject') {
+				const result = await reviewApi.inject(item.id, text);
+				setSuccess(`댓글 후보를 수정 승인했습니다. ${formatDate(result.scheduledAt)} 발송 예정입니다.`);
+			} else if (action === 'withdraw') {
+				await reviewApi.withdraw(item.id, text);
+				setSuccess('댓글 후보를 회수했습니다.');
+			} else if (action === 'regenerate') {
+				await reviewApi.regenerate(item.id);
+				setSuccess('댓글 후보 재생성을 요청했습니다.');
+			}
+			closeReviewDialog();
+			await refreshDetail();
+			await load();
+		} catch (e: unknown) {
+			setError(e instanceof Error ? e.message : '검수 처리 실패');
+		} finally {
+			setActionLoading(false);
+		}
+	}
+
+	async function confirmReviewDialog() {
+		if (!reviewDialogMode || !reviewDialogTarget) return;
+		await applyReviewAction(reviewDialogTarget, reviewDialogMode, reviewDialogText);
 	}
 
 	async function createManualComment() {
@@ -389,7 +498,7 @@ export default function TargetPostsPage() {
 			});
 			setCreatedContents(result.item ? [result.item] : []);
 			setManualText('');
-			setSuccess('직접 입력 댓글을 검수 큐에 생성했습니다.');
+			setSuccess('직접 입력 댓글을 후보 검수에 생성했습니다.');
 			await refreshDetail();
 			await load();
 		} catch (e: unknown) {
@@ -1023,91 +1132,372 @@ export default function TargetPostsPage() {
 									? '같은 REGION_CLUSTER ghost 후보 없음'
 									: `같은 cluster ACTIVE ghost ${selected.ghostCandidateCount}명`}
 							</Alert>
-							<CommunityPostAppDetailPanel
-								post={{
-									...selected.post,
-									categoryName: categories.find((category) => category.id === selected.post.categoryId)?.label ?? selected.post.categoryName,
+							<Box
+								sx={{
+									display: 'grid',
+									gridTemplateColumns: { xs: '1fr', xl: 'minmax(0, 1fr) 420px' },
+									gap: 2,
+									alignItems: 'start',
 								}}
-								comments={selected.comments}
-								ghostCandidates={selected.ghostCandidates}
-								ghostCandidateCount={selected.ghostCandidateCount}
-								submitLabel="지금 고스트 댓글 달기"
-								onSubmitGhostComment={createLiveGhostComment}
-								onSubmitGhostLike={createLiveGhostLike}
-								onReload={refreshDetail}
-								scheduledComments={scheduledComments}
-								scheduledCommentsLoading={scheduledCommentsLoading}
-								onReloadScheduledComments={() => loadScheduledComments(selected.post.id)}
-								onCancelScheduledComment={cancelScheduledComment}
-								onRescheduleScheduledComment={rescheduleScheduledComment}
-								onLoadLiveCommentSuggestions={loadLiveCommentSuggestions}
-							/>
-							<Paper variant="outlined" sx={{ p: 2, borderRadius: '16px', borderColor: '#E5E8EB' }}>
-								<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }} justifyContent="space-between">
-									<Box>
-										<Typography variant="subtitle2" fontWeight={800}>게시글 제어</Typography>
-										<Typography variant="body2" color="text.secondary">
-											현재 게시글을 커뮤니티 노출에서 가리거나 제거합니다.
-										</Typography>
-									</Box>
-									<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-										<Button variant="outlined" disabled={actionLoading} onClick={() => applyPostVisibility([selected.post.id], true)}>
-											가리기
-										</Button>
-										<Button variant="outlined" disabled={actionLoading} onClick={() => applyPostVisibility([selected.post.id], false)}>
-											가리기 해제
-										</Button>
-										<Button color="error" variant="outlined" disabled={actionLoading} onClick={() => deletePosts([selected.post.id])}>
-											제거
-										</Button>
+							>
+								<CommunityPostAppDetailPanel
+									post={{
+										...selected.post,
+										categoryName: categories.find((category) => category.id === selected.post.categoryId)?.label ?? selected.post.categoryName,
+									}}
+									comments={selected.comments}
+									ghostCandidates={selected.ghostCandidates}
+									ghostCandidateCount={selected.ghostCandidateCount}
+									submitLabel="지금 고스트 댓글 달기"
+									onSubmitGhostComment={createLiveGhostComment}
+									onSubmitGhostLike={createLiveGhostLike}
+									onReload={refreshDetail}
+									scheduledComments={scheduledComments}
+									scheduledCommentsLoading={scheduledCommentsLoading}
+									onReloadScheduledComments={() => loadScheduledComments(selected.post.id)}
+									onCancelScheduledComment={cancelScheduledComment}
+									onRescheduleScheduledComment={rescheduleScheduledComment}
+									onLoadLiveCommentSuggestions={loadLiveCommentSuggestions}
+								/>
+								<Stack spacing={1.5} sx={{ position: { xl: 'sticky' }, top: { xl: 16 } }}>
+									<Paper
+										variant="outlined"
+										sx={{
+											p: 2,
+											borderRadius: '16px',
+											borderColor: '#D9D6FE',
+											bgcolor: '#FBFAFF',
+											boxShadow: '0 12px 32px rgba(89, 37, 220, 0.08)',
+										}}
+									>
+										<Stack spacing={1.6}>
+											<Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+												<Stack direction="row" spacing={1} alignItems="center">
+													<Box
+														sx={{
+															width: 36,
+															height: 36,
+															borderRadius: '12px',
+															display: 'grid',
+															placeItems: 'center',
+															bgcolor: '#F4F3FF',
+															color: '#5925DC',
+														}}
+													>
+														<AutoAwesomeIcon fontSize="small" />
+													</Box>
+													<Box>
+														<Typography variant="subtitle2" fontWeight={900} color="#191F28">
+															LLM 댓글 후보 생성
+														</Typography>
+														<Typography variant="caption" color="text.secondary">
+															생성 즉시 아래 후보 검수에 표시됩니다.
+														</Typography>
+													</Box>
+												</Stack>
+												<Chip size="small" label="3개" sx={{ bgcolor: '#FFFFFF', fontWeight: 800 }} />
+											</Stack>
+											<TextField
+												size="small"
+												label="톤"
+												value={tone}
+												onChange={(e) => setTone(e.target.value)}
+												InputProps={{ startAdornment: <TuneIcon fontSize="small" sx={{ mr: 0.8, color: '#7A4AE2' }} /> }}
+											/>
+											<TextField
+												size="small"
+												label="추가 지시"
+												placeholder="예: 질문형 1개, 공감형 1개, 분위기 전환 1개"
+												value={instruction}
+												onChange={(e) => setInstruction(e.target.value)}
+												multiline
+												minRows={2}
+											/>
+											<Button
+												variant="contained"
+												disabled={actionLoading}
+												onClick={createLlmDrafts}
+												startIcon={actionLoading ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeIcon />}
+												sx={{
+													borderRadius: '10px',
+													fontWeight: 900,
+													bgcolor: '#5925DC',
+													'&:hover': { bgcolor: '#4A1FB8' },
+												}}
+											>
+												후보 생성
+											</Button>
+										</Stack>
+									</Paper>
+
+									<Paper variant="outlined" sx={{ p: 2, borderRadius: '16px', borderColor: '#E5E8EB' }}>
+										<Stack spacing={1.4}>
+											<Stack direction="row" spacing={1} alignItems="center">
+												<EditNoteIcon fontSize="small" sx={{ color: '#175CD3' }} />
+												<Box>
+													<Typography variant="subtitle2" fontWeight={900}>직접 댓글 입력</Typography>
+													<Typography variant="caption" color="text.secondary">운영자가 작성한 문장도 같은 후보 검수 흐름으로 보냅니다.</Typography>
+												</Box>
+											</Stack>
+											<TextField
+												label="댓글 내용"
+												value={manualText}
+												onChange={(e) => setManualText(e.target.value)}
+												multiline
+												minRows={3}
+											/>
+											<Button
+												variant="outlined"
+												disabled={actionLoading || !manualText.trim()}
+												onClick={createManualComment}
+												sx={{ borderRadius: '10px', fontWeight: 800 }}
+											>
+												후보에 추가
+											</Button>
+										</Stack>
+									</Paper>
+
+									<Paper variant="outlined" sx={{ p: 2, borderRadius: '16px', borderColor: '#E5E8EB' }}>
+										<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }} justifyContent="space-between">
+											<Box>
+												<Typography variant="subtitle2" fontWeight={900}>게시글 제어</Typography>
+												<Typography variant="caption" color="text.secondary">
+													노출 상태를 이 화면에서 바로 처리합니다.
+												</Typography>
+											</Box>
+											<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+												<Button size="small" variant="outlined" disabled={actionLoading} onClick={() => applyPostVisibility([selected.post.id], true)}>
+													가리기
+												</Button>
+												<Button size="small" variant="outlined" disabled={actionLoading} onClick={() => applyPostVisibility([selected.post.id], false)}>
+													해제
+												</Button>
+												<Button size="small" color="error" variant="outlined" disabled={actionLoading} onClick={() => deletePosts([selected.post.id])}>
+													제거
+												</Button>
+											</Stack>
+										</Stack>
+									</Paper>
+								</Stack>
+							</Box>
+
+							<Paper
+								variant="outlined"
+								sx={{
+									p: 2,
+									borderRadius: '16px',
+									borderColor: pendingReviewCount > 0 ? '#FEDF89' : '#E5E8EB',
+									bgcolor: '#FFFFFF',
+								}}
+							>
+								<Stack spacing={1.6}>
+									<Stack direction={{ xs: 'column', md: 'row' }} spacing={1} alignItems={{ md: 'center' }} justifyContent="space-between">
+										<Box>
+											<Typography variant="subtitle1" fontWeight={900} color="#191F28">
+												후보 검수
+											</Typography>
+											<Typography variant="body2" color="text.secondary">
+												별도 검수 큐로 이동하지 않고 이 게시글 안에서 생성, 수정, 승인까지 완료합니다.
+											</Typography>
+											<Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+												승인하면 즉시 발행하지 않고 서버 타이밍 정책에 따라 발송 예약되며, 예약 시각은 각 후보 카드에 표시됩니다.
+											</Typography>
+										</Box>
+										<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+											<Chip label={`검수 대기 ${formatCount(pendingReviewCount)}`} color={pendingReviewCount > 0 ? 'warning' : 'default'} sx={{ fontWeight: 800 }} />
+											<Chip label={`전체 후보 ${formatCount(reviewCandidates.length)}`} variant="outlined" sx={{ fontWeight: 800 }} />
+											{createdContents.length > 0 && (
+												<Chip label={`방금 생성 ${formatCount(createdContents.length)}`} color="success" variant="outlined" sx={{ fontWeight: 800 }} />
+											)}
+										</Stack>
 									</Stack>
+									{reviewCandidates.length === 0 ? (
+										<Box sx={{ p: 3, borderRadius: '14px', bgcolor: '#F8F9FA', textAlign: 'center' }}>
+											<Typography variant="body2" color="text.secondary">
+												아직 이 게시글에 생성된 댓글 후보가 없습니다.
+											</Typography>
+										</Box>
+									) : (
+										<Box
+											sx={{
+												display: 'grid',
+												gridTemplateColumns: { xs: '1fr', lg: 'repeat(2, minmax(0, 1fr))' },
+												gap: 1.2,
+											}}
+										>
+											{reviewCandidates.map((item) => {
+												const text = item.finalText ?? item.generatedText ?? '';
+												const isActionable = item.status === 'pending_review' || item.status === 'quality_failed' || item.status === 'draft';
+												const timingText = getCandidateTimingText(item);
+												return (
+													<Paper
+														key={item.id}
+														variant="outlined"
+														sx={{
+															p: 1.5,
+															borderRadius: '14px',
+															borderColor: item.status === 'pending_review' ? '#FEDF89' : '#E5E8EB',
+															bgcolor: item.status === 'pending_review' ? '#FFFCF5' : '#FFFFFF',
+															minWidth: 0,
+														}}
+													>
+														<Stack spacing={1.2}>
+															<Stack direction="row" spacing={1} alignItems="flex-start" justifyContent="space-between">
+																<Stack spacing={0.5} minWidth={0}>
+																	<Stack direction="row" spacing={0.8} alignItems="center" minWidth={0}>
+																		<Chip label={STATUS_LABEL[item.status]} color={STATUS_COLOR[item.status]} size="small" sx={{ fontWeight: 800 }} />
+																		<Typography variant="caption" color="text.secondary" noWrap>
+																			생성 {formatDate(item.createdAt)}
+																		</Typography>
+																	</Stack>
+																	{timingText && (
+																		<Typography
+																			variant="caption"
+																			sx={{
+																				color: item.status === 'scheduled' ? '#175CD3' : 'text.secondary',
+																				fontWeight: item.status === 'scheduled' ? 800 : 600,
+																				lineHeight: 1.35,
+																				wordBreak: 'keep-all',
+																			}}
+																		>
+																			{timingText}
+																		</Typography>
+																	)}
+																</Stack>
+																{item.targetType && (
+																	<Chip size="small" label={item.targetType} variant="outlined" sx={{ height: 24 }} />
+																)}
+															</Stack>
+															<Typography
+																variant="body2"
+																sx={{
+																	color: '#191F28',
+																	lineHeight: 1.65,
+																	whiteSpace: 'pre-wrap',
+																	wordBreak: 'break-word',
+																}}
+															>
+																{text || '-'}
+															</Typography>
+															{item.qualityScores && (
+																<Stack direction="row" spacing={0.7} flexWrap="wrap" useFlexGap>
+																	{Object.entries(item.qualityScores)
+																		.filter(([, value]) => value !== undefined)
+																		.slice(0, 4)
+																		.map(([key, value]) => (
+																			<Chip
+																				key={key}
+																				size="small"
+																				label={`${key} ${value}`}
+																				sx={{
+																					height: 23,
+																					bgcolor: '#F8F9FA',
+																					border: '1px solid #E5E8EB',
+																					fontSize: 11,
+																				}}
+																			/>
+																		))}
+																</Stack>
+															)}
+															<Stack direction="row" spacing={0.7} flexWrap="wrap" useFlexGap justifyContent="flex-end">
+																<Button
+																	size="small"
+																	variant="contained"
+																	color="success"
+																	disabled={actionLoading || !isActionable}
+																	onClick={() => applyReviewAction(item, 'approve')}
+																	startIcon={<CheckCircleOutlineIcon />}
+																>
+																	승인
+																</Button>
+																<Button
+																	size="small"
+																	variant="outlined"
+																	disabled={actionLoading || !isActionable}
+																	onClick={() => openReviewDialog('inject', item, text)}
+																>
+																	수정승인
+																</Button>
+																<Button
+																	size="small"
+																	variant="outlined"
+																	color="error"
+																	disabled={actionLoading || !isActionable}
+																	onClick={() => openReviewDialog('reject', item)}
+																>
+																	거절
+																</Button>
+																<Button
+																	size="small"
+																	variant="outlined"
+																	disabled={actionLoading}
+																	onClick={() => openReviewDialog('regenerate', item)}
+																	startIcon={<RestartAltIcon />}
+																>
+																	재생성
+																</Button>
+																<Button
+																	size="small"
+																	variant="outlined"
+																	color="warning"
+																	disabled={actionLoading || item.status === 'withdrawn'}
+																	onClick={() => openReviewDialog('withdraw', item)}
+																>
+																	회수
+																</Button>
+															</Stack>
+														</Stack>
+													</Paper>
+												);
+											})}
+										</Box>
+									)}
 								</Stack>
 							</Paper>
-							<Divider />
-							<Stack spacing={1.5}>
-								<Typography variant="subtitle2">LLM 댓글 후보 3개 생성</Typography>
-								<TextField size="small" label="톤" value={tone} onChange={(e) => setTone(e.target.value)} />
-								<TextField
-									size="small"
-									label="추가 지시"
-									value={instruction}
-									onChange={(e) => setInstruction(e.target.value)}
-									multiline
-									minRows={2}
-								/>
-								<Button variant="contained" disabled={actionLoading} onClick={createLlmDrafts}>
-									{actionLoading ? <CircularProgress size={16} /> : 'LLM 후보 생성'}
-								</Button>
-							</Stack>
-							<Stack spacing={1.5}>
-								<Typography variant="subtitle2">직접 입력 댓글</Typography>
-								<TextField
-									label="댓글 내용"
-									value={manualText}
-									onChange={(e) => setManualText(e.target.value)}
-									multiline
-									minRows={3}
-								/>
-								<Button
-									variant="outlined"
-									disabled={actionLoading || !manualText.trim()}
-									onClick={createManualComment}
-								>
-									직접 입력 검수 큐 생성
-								</Button>
-							</Stack>
-							{createdContents.length > 0 && (
-								<Alert
-									severity="success"
-									action={<Button color="inherit" size="small" onClick={() => router.push('/admin/community-automation/review-queue')}>검수 큐</Button>}
-								>
-									{createdContents.length}개 생성됨
-								</Alert>
-							)}
 						</Stack>
 					)}
 				</Box>
 			</Drawer>
+			<Dialog open={Boolean(reviewDialogMode)} onClose={closeReviewDialog} maxWidth="sm" fullWidth>
+				<DialogTitle sx={{ fontWeight: 900 }}>
+					{reviewDialogMode === 'inject'
+						? '댓글 수정 승인'
+						: reviewDialogMode === 'reject'
+							? '댓글 후보 거절'
+							: reviewDialogMode === 'withdraw'
+								? '댓글 후보 회수'
+								: reviewDialogMode === 'regenerate'
+									? '댓글 후보 재생성'
+									: ''}
+				</DialogTitle>
+				<DialogContent sx={{ pt: '12px !important' }}>
+					{reviewDialogMode === 'regenerate' ? (
+						<Typography variant="body2" color="text.secondary">
+							이 후보를 기준으로 재생성을 요청합니다. 현재 상태는 상세 후보 목록에서 다시 확인할 수 있습니다.
+						</Typography>
+					) : (
+						<TextField
+							label={reviewDialogMode === 'inject' ? '최종 댓글 텍스트' : '사유'}
+							value={reviewDialogText}
+							onChange={(event) => setReviewDialogText(event.target.value)}
+							multiline
+							minRows={reviewDialogMode === 'inject' ? 6 : 3}
+							fullWidth
+						/>
+					)}
+				</DialogContent>
+				<DialogActions sx={{ px: 3, pb: 2 }}>
+					<Button onClick={closeReviewDialog}>취소</Button>
+					<Button
+						variant="contained"
+						disabled={actionLoading || (reviewDialogMode === 'inject' && !reviewDialogText.trim())}
+						onClick={confirmReviewDialog}
+						sx={{ fontWeight: 800 }}
+					>
+						{actionLoading ? <CircularProgress size={16} color="inherit" /> : '확인'}
+					</Button>
+				</DialogActions>
+			</Dialog>
 		</Box>
 	);
 }

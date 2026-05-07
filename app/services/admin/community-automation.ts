@@ -147,6 +147,14 @@ export interface BulkApplyResult {
 	failed: Array<{ id: string; error: string }>;
 }
 
+export interface ReviewScheduleResult {
+	message: string;
+	contentId: string;
+	status: 'scheduled';
+	scheduledAt: string;
+	jobId: string;
+}
+
 export interface ContentStatusCount {
 	status: ContentStatus;
 	count: number;
@@ -176,6 +184,65 @@ export interface QueueDepth {
 	scheduled: number;
 	draft: number;
 	quality_failed: number;
+}
+
+export type ReviewSourceType = 'APP_STORE' | 'PLAY_STORE' | 'YEONPICK';
+export type ReviewSourceSafetyStatus = 'pending' | 'approved' | 'rejected';
+export type ReviewSourceEmbeddingStatus = 'pending' | 'embedded' | 'failed';
+export type ReviewPostJobStatus = 'draft' | 'scheduled' | 'published' | 'failed' | 'cancelled';
+
+export interface ReviewSourceDocument {
+	id: string;
+	sourceType: ReviewSourceType;
+	sourceId: string;
+	country: 'KR' | 'JP';
+	rating: number | null;
+	title: string | null;
+	body: string;
+	authorMeta: Record<string, unknown>;
+	sourceCreatedAt: string | null;
+	qualityScore: number;
+	safetyStatus: ReviewSourceSafetyStatus;
+	embeddingStatus: ReviewSourceEmbeddingStatus;
+	qdrantPointId: string | null;
+	embeddingError: string | null;
+	createdAt: string;
+	updatedAt: string | null;
+}
+
+export interface ReviewSourceStat {
+	sourceType: ReviewSourceType;
+	safetyStatus: ReviewSourceSafetyStatus;
+	embeddingStatus: ReviewSourceEmbeddingStatus;
+	count: number;
+}
+
+export interface CommunityReviewPostJob {
+	id: string;
+	status: ReviewPostJobStatus;
+	title: string;
+	content: string;
+	sourceDocumentIds: string[];
+	ragContext: Array<Record<string, unknown>>;
+	scheduledAt: string | null;
+	publishedAt: string | null;
+	publishedArticleId: string | null;
+	createdBy: string;
+	errorMessage: string | null;
+	createdAt: string;
+	updatedAt: string | null;
+}
+
+export interface CreateReviewPostJobBody {
+	seedText: string;
+	sourceTypes?: ReviewSourceType[];
+	minRating?: number;
+	scheduledAt: string;
+}
+
+export interface UpdateReviewPostJobBody {
+	title: string;
+	content: string;
 }
 
 export type ReactionSpeed = 'high' | 'mid' | 'low';
@@ -445,16 +512,18 @@ export const reviewQueue = {
 		return result.data;
 	},
 
-	approve: async (id: string): Promise<void> => {
-		await adminPatch(`${BASE}/review-queue/${id}/approve`);
+	approve: async (id: string): Promise<ReviewScheduleResult> => {
+		const result = await adminPatch<{ data: ReviewScheduleResult }>(`${BASE}/review-queue/${id}/approve`);
+		return result.data;
 	},
 
 	reject: async (id: string, reason: string): Promise<void> => {
 		await adminPatch(`${BASE}/review-queue/${id}/reject`, { reason });
 	},
 
-	inject: async (id: string, newText: string): Promise<void> => {
-		await adminPatch(`${BASE}/review-queue/${id}/inject`, { newText });
+	inject: async (id: string, newText: string): Promise<ReviewScheduleResult> => {
+		const result = await adminPatch<{ data: ReviewScheduleResult }>(`${BASE}/review-queue/${id}/inject`, { newText });
+		return result.data;
 	},
 
 	regenerate: async (id: string, body?: { campaignId?: string; dagTemplateId?: string }): Promise<void> => {
@@ -558,6 +627,68 @@ export const targetPosts = {
 			body,
 		);
 		return result.data.items;
+	},
+};
+
+// ==================== Review Sources / Review Posts ====================
+
+export const reviewSources = {
+	list: async (query?: {
+		sourceType?: ReviewSourceType;
+		safetyStatus?: ReviewSourceSafetyStatus;
+		embeddingStatus?: ReviewSourceEmbeddingStatus;
+		limit?: number;
+	}): Promise<ReviewSourceDocument[]> => {
+		const result = await adminGet<{ data: ReviewSourceDocument[] }>(
+			`${BASE}/review-sources`,
+			query,
+		);
+		return result.data;
+	},
+
+	stats: async (): Promise<ReviewSourceStat[]> => {
+		const result = await adminGet<{ data: ReviewSourceStat[] }>(`${BASE}/review-sources/stats`);
+		return result.data;
+	},
+
+	syncQdrant: async (limit = 100): Promise<{ embedded: number; failed: number }> => {
+		const result = await adminPost<{ data: { embedded: number; failed: number } }>(
+			`${BASE}/review-sources/qdrant-sync`,
+			{ limit },
+		);
+		return result.data;
+	},
+
+	listPostJobs: async (status?: ReviewPostJobStatus): Promise<CommunityReviewPostJob[]> => {
+		const result = await adminGet<{ data: CommunityReviewPostJob[] }>(
+			`${BASE}/review-sources/post-jobs`,
+			status ? { status } : undefined,
+		);
+		return result.data;
+	},
+
+	createPostJob: async (body: CreateReviewPostJobBody): Promise<CommunityReviewPostJob> => {
+		const result = await adminPost<{ data: CommunityReviewPostJob }>(
+			`${BASE}/review-sources/post-jobs`,
+			body,
+		);
+		return result.data;
+	},
+
+	schedulePostJob: async (id: string, scheduledAt: string): Promise<CommunityReviewPostJob> => {
+		const result = await adminPatch<{ data: CommunityReviewPostJob }>(
+			`${BASE}/review-sources/post-jobs/${id}/schedule`,
+			{ scheduledAt },
+		);
+		return result.data;
+	},
+
+	updatePostJob: async (id: string, body: UpdateReviewPostJobBody): Promise<CommunityReviewPostJob> => {
+		const result = await adminPatch<{ data: CommunityReviewPostJob }>(
+			`${BASE}/review-sources/post-jobs/${id}`,
+			body,
+		);
+		return result.data;
 	},
 };
 
