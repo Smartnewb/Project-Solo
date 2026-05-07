@@ -27,7 +27,7 @@ import type {
 	LiveCommentSuggestion,
 	ScheduledCommentTimelineItem,
 } from '@/app/services/admin/community-automation';
-import type { GhostCommentBody, GhostCommentResult } from '@/app/services/community';
+import type { GhostCommentBody, GhostCommentResult, GhostLikeBody, GhostLikeResult } from '@/app/services/community';
 import { safeToLocaleString } from '@/app/utils/formatters';
 
 type CommentLike = {
@@ -84,6 +84,7 @@ interface CommunityPostAppDetailPanelProps {
 	ghostCandidateCount?: number;
 	submitLabel?: string;
 	onSubmitGhostComment: (articleId: string, body: GhostCommentBody) => Promise<GhostCommentResult>;
+	onSubmitGhostLike?: (articleId: string, body: GhostLikeBody) => Promise<GhostLikeResult>;
 	onReload?: () => Promise<void>;
 	scheduledComments?: ScheduledCommentTimelineItem[];
 	scheduledCommentsLoading?: boolean;
@@ -131,6 +132,7 @@ export function CommunityPostAppDetailPanel({
 	ghostCandidateCount,
 	submitLabel = '지금 고스트 댓글 달기',
 	onSubmitGhostComment,
+	onSubmitGhostLike,
 	onReload,
 	scheduledComments = [],
 	scheduledCommentsLoading = false,
@@ -140,7 +142,7 @@ export function CommunityPostAppDetailPanel({
 	onLoadLiveCommentSuggestions,
 }: CommunityPostAppDetailPanelProps) {
 	const [localComments, setLocalComments] = useState<CommentLike[]>(comments);
-	const [operationTab, setOperationTab] = useState<'compose' | 'timeline'>('compose');
+	const [operationTab, setOperationTab] = useState<'compose' | 'like' | 'timeline'>('compose');
 	const [mode, setMode] = useState<'auto' | 'manual'>('auto');
 	const [deliveryMode, setDeliveryMode] = useState<'now' | 'delay'>('now');
 	const [delayMinutes, setDelayMinutes] = useState(30);
@@ -154,6 +156,8 @@ export function CommunityPostAppDetailPanel({
 	const [timelineActionId, setTimelineActionId] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState<string | null>(null);
+	const [likeAction, setLikeAction] = useState<'article' | 'comment'>('article');
+	const [targetCommentId, setTargetCommentId] = useState('');
 
 	useEffect(() => {
 		setLocalComments(comments);
@@ -174,6 +178,7 @@ export function CommunityPostAppDetailPanel({
 	const canSubmit = content.trim().length > 0 && (mode === 'auto' || selectedGhostId);
 	const canSubmitSuggestion = mode === 'auto' || selectedGhostId;
 	const timelineEnabled = Boolean(onReloadScheduledComments || onCancelScheduledComment || onRescheduleScheduledComment);
+	const likeEnabled = Boolean(onSubmitGhostLike);
 
 	async function submit(options?: { contentOverride?: string; delayMinutesOverride?: number }) {
 		const nextContent = options?.contentOverride?.trim() ?? content.trim();
@@ -246,6 +251,47 @@ export function CommunityPostAppDetailPanel({
 			await submit({ contentOverride: suggestion.content, delayMinutesOverride });
 		} finally {
 			setSuggestionActionKey(null);
+		}
+	}
+
+	async function submitLike() {
+		if (!onSubmitGhostLike) return;
+		if (mode === 'manual' && !selectedGhostId) return;
+		if (likeAction === 'comment' && !targetCommentId) return;
+		setSubmitting(true);
+		setError(null);
+		setSuccess(null);
+		try {
+			const result = await onSubmitGhostLike(post.id, {
+				ghostAccountId: mode === 'manual' ? selectedGhostId : undefined,
+				delayMinutes: deliveryMode === 'delay' ? delayMinutes : undefined,
+				targetCommentId: likeAction === 'comment' ? targetCommentId : null,
+			});
+			const ghostLabel = result.ghost.name ?? result.ghost.ghostUserId;
+			if (result.scheduledLike) {
+				setSuccess(
+					`${ghostLabel} 계정으로 ${result.scheduledLike.delayMinutes}분 후 ${
+						result.scheduledLike.targetCommentId ? '댓글' : '게시글'
+					} 좋아요 발송을 예약했습니다.`,
+				);
+				await onReloadScheduledComments?.();
+				setOperationTab('timeline');
+			} else if (result.like) {
+				setSuccess(
+					result.selectionMode === 'manual'
+						? `${ghostLabel} 계정으로 좋아요를 발송했습니다.`
+						: `${ghostLabel} 계정이 자동 선택되어 좋아요를 발송했습니다.`,
+				);
+				try {
+					await onReload?.();
+				} catch {
+					// Show success even if reload fails
+				}
+			}
+		} catch (e: unknown) {
+			setError(e instanceof Error ? e.message : '좋아요 발송에 실패했습니다.');
+		} finally {
+			setSubmitting(false);
 		}
 	}
 
@@ -389,6 +435,7 @@ export function CommunityPostAppDetailPanel({
 							sx={{ minHeight: 40, mb: 2, borderBottom: '1px solid #E7E9EC' }}
 						>
 							<Tab value="compose" label="댓글 작성" sx={{ minHeight: 40, fontWeight: 700 }} />
+							<Tab value="like" label="좋아요" sx={{ minHeight: 40, fontWeight: 700 }} />
 							<Tab value="timeline" label="예약 타임라인" sx={{ minHeight: 40, fontWeight: 700 }} />
 						</Tabs>
 					)}
@@ -594,6 +641,151 @@ export function CommunityPostAppDetailPanel({
 					</Stack>
 						</>
 					)}
+					{operationTab === 'like' && likeEnabled && (
+						<>
+					<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} justifyContent="space-between">
+						<Box>
+							<Typography variant="subtitle1" fontWeight={800} color="#191F28">고스트 좋아요</Typography>
+							<Typography variant="caption" color="text.secondary">
+								ACTIVE 후보 {ghostCandidateCount ?? ghostCandidates.length}명
+							</Typography>
+						</Box>
+						<ToggleButtonGroup
+							size="small"
+							exclusive
+							value={mode}
+							onChange={(_, value) => value && setMode(value)}
+							sx={{
+								'& .MuiToggleButton-root.Mui-selected': {
+									bgcolor: '#F7F3FF',
+									color: '#7A4AE2',
+									fontWeight: 700,
+								},
+							}}
+						>
+							<ToggleButton value="auto">자동 선택</ToggleButton>
+							<ToggleButton value="manual">직접 선택</ToggleButton>
+						</ToggleButtonGroup>
+					</Stack>
+
+					<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mt: 2 }}>
+						<ToggleButtonGroup
+							size="small"
+							exclusive
+							value={likeAction}
+							onChange={(_, value) => value && setLikeAction(value)}
+							sx={{
+								'& .MuiToggleButton-root.Mui-selected': {
+									bgcolor: '#F7F3FF',
+									color: '#7A4AE2',
+									fontWeight: 700,
+								},
+							}}
+						>
+							<ToggleButton value="article">게시글 좋아요</ToggleButton>
+							<ToggleButton value="comment">댓글 좋아요</ToggleButton>
+						</ToggleButtonGroup>
+						<ToggleButtonGroup
+							size="small"
+							exclusive
+							value={deliveryMode}
+							onChange={(_, value) => value && setDeliveryMode(value)}
+							sx={{
+								'& .MuiToggleButton-root.Mui-selected': {
+									bgcolor: '#F7F3FF',
+									color: '#7A4AE2',
+									fontWeight: 700,
+								},
+							}}
+						>
+							<ToggleButton value="now">즉시 발송</ToggleButton>
+							<ToggleButton value="delay">지연 발송</ToggleButton>
+						</ToggleButtonGroup>
+						{deliveryMode === 'delay' && (
+							<FormControl size="small" sx={{ minWidth: 150 }}>
+								<InputLabel>발송 지연</InputLabel>
+								<Select
+									label="발송 지연"
+									value={delayMinutes}
+									onChange={(event) => setDelayMinutes(Number(event.target.value))}
+								>
+									{Array.from({ length: 36 }, (_, index) => (index + 1) * 5).map((minutes) => (
+										<MenuItem key={minutes} value={minutes}>
+											{minutes}분 후
+										</MenuItem>
+									))}
+								</Select>
+							</FormControl>
+						)}
+					</Stack>
+
+					{mode === 'manual' && (
+						<FormControl fullWidth size="small" sx={{ mt: 2 }}>
+							<InputLabel>고스트 계정</InputLabel>
+							<Select
+								label="고스트 계정"
+								value={selectedGhostId}
+								onChange={(event) => setSelectedGhostId(event.target.value)}
+							>
+								{ghostCandidates.map((candidate) => {
+									const ghostAccountId = getGhostAccountId(candidate);
+									return (
+										<MenuItem key={ghostAccountId} value={ghostAccountId}>
+											{candidate.name ?? candidate.ghostUserId}
+											{candidate.regionCluster ? ` · ${candidate.regionCluster}` : ''}
+										</MenuItem>
+									);
+								})}
+							</Select>
+						</FormControl>
+					)}
+
+					{likeAction === 'comment' && (
+						<FormControl fullWidth size="small" sx={{ mt: 2 }}>
+							<InputLabel>대상 댓글</InputLabel>
+							<Select
+								label="대상 댓글"
+								value={targetCommentId}
+								onChange={(event) => setTargetCommentId(event.target.value)}
+							>
+								{sortedComments
+									.filter((c) => !c.isBlinded && !c.isDeleted)
+									.map((comment) => (
+										<MenuItem key={comment.id} value={comment.id}>
+											{getCommentAuthor(comment)}: {comment.content.slice(0, 40)}
+											{comment.content.length > 40 ? '...' : ''}
+										</MenuItem>
+									))}
+							</Select>
+						</FormControl>
+					)}
+
+					<Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 2 }}>
+						<Button
+							variant="contained"
+							startIcon={submitting ? <CircularProgress size={16} color="inherit" /> : <SendIcon />}
+							disabled={submitting || (mode === 'manual' && !selectedGhostId) || (likeAction === 'comment' && !targetCommentId)}
+							onClick={submitLike}
+							sx={{
+								borderRadius: '9999px',
+								bgcolor: '#E91E63',
+								boxShadow: 'none',
+								fontWeight: 700,
+								'&:hover': { bgcolor: '#C2185B', boxShadow: 'none' },
+							}}
+						>
+							{deliveryMode === 'delay'
+								? `${delayMinutes}분 후 좋아요 예약`
+								: likeAction === 'article'
+									? '게시글 좋아요 발송'
+									: '댓글 좋아요 발송'}
+						</Button>
+						<Typography variant="caption" color="text.secondary">
+							{deliveryMode === 'delay' ? '예약 시점에 선택된 고스트로 발송' : '즉시 좋아요 발송'}
+						</Typography>
+					</Stack>
+						</>
+					)}
 					{operationTab === 'timeline' && timelineEnabled && (
 						<Stack spacing={1.3}>
 							<Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
@@ -627,15 +819,17 @@ export function CommunityPostAppDetailPanel({
 							) : (
 								scheduledComments.map((item) => {
 									const isScheduled = item.status === 'scheduled';
+									const isLike = item.targetType === 'ARTICLE_LIKE' || item.targetType === 'COMMENT_LIKE';
 									const itemDelayMinutes = timelineDelayMinutesById[item.contentId] ?? 30;
 									const actionLoading = timelineActionId === item.contentId;
+									const likeIcon = item.targetType === 'ARTICLE_LIKE' ? '❤️' : item.targetType === 'COMMENT_LIKE' ? '💬❤️' : null;
 									return (
 										<Paper key={item.contentId} variant="outlined" sx={{ p: 1.5, borderColor: '#E5E8EB', bgcolor: '#FFFFFF' }}>
 											<Stack spacing={1}>
 												<Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
 													<Box sx={{ minWidth: 0 }}>
 														<Typography variant="body2" fontWeight={700} sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-															{item.content}
+															{likeIcon ? `${likeIcon} ` : ''}{item.content || (isLike ? '좋아요' : '')}
 														</Typography>
 														<Typography variant="caption" color="text.secondary" noWrap display="block">
 															{item.ghostName ?? item.ghostUserId ?? item.ghostAccountId ?? 'ghost 미지정'}

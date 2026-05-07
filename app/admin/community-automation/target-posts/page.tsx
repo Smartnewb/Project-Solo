@@ -37,7 +37,7 @@ import type {
 	TargetPostOpsQueue,
 	TargetPostSummary,
 } from '@/app/services/admin/community-automation';
-import type { GhostCommentBody } from '@/app/services/community';
+import type { GhostCommentBody, GhostLikeBody } from '@/app/services/community';
 import communityService from '@/app/services/community';
 import {
 	campaigns as campaignsApi,
@@ -427,6 +427,18 @@ export default function TargetPostsPage() {
 			};
 		});
 		await load();
+		return result;
+	}
+
+	async function createLiveGhostLike(articleId: string, body: GhostLikeBody) {
+		const result = await targetPostsApi.createLiveGhostLike(articleId, body);
+		if (result.scheduledLike) {
+			await loadScheduledComments(articleId);
+			await load();
+		} else {
+			await refreshDetail();
+			await load();
+		}
 		return result;
 	}
 
@@ -1021,6 +1033,7 @@ export default function TargetPostsPage() {
 								ghostCandidateCount={selected.ghostCandidateCount}
 								submitLabel="지금 고스트 댓글 달기"
 								onSubmitGhostComment={createLiveGhostComment}
+								onSubmitGhostLike={createLiveGhostLike}
 								onReload={refreshDetail}
 								scheduledComments={scheduledComments}
 								scheduledCommentsLoading={scheduledCommentsLoading}

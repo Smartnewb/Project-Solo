@@ -1,5 +1,5 @@
 import { adminGet, adminPost, adminPut, adminPatch, adminDelete } from '@/shared/lib/http/admin-fetch';
-import type { GhostCommentBody, GhostCommentResult } from '@/app/services/community';
+import type { GhostCommentBody, GhostCommentResult, GhostLikeBody, GhostLikeResult } from '@/app/services/community';
 
 const BASE = '/admin/v2/community-automation';
 
@@ -304,6 +304,7 @@ export interface ScheduledCommentTimelineItem {
 	ghostName: string | null;
 	ghostUserId: string | null;
 	content: string;
+	targetType?: 'COMMENT' | 'ARTICLE_LIKE' | 'COMMENT_LIKE';
 	status: ScheduledCommentStatus;
 	scheduledAt: string | null;
 	publishedAt: string | null;
@@ -506,6 +507,17 @@ export const targetPosts = {
 	): Promise<GhostCommentResult> => {
 		const result = await adminPost<{ data: GhostCommentResult }>(
 			`${BASE}/target-posts/${articleId}/live-comments`,
+			body,
+		);
+		return result.data;
+	},
+
+	createLiveGhostLike: async (
+		articleId: string,
+		body: GhostLikeBody,
+	): Promise<GhostLikeResult> => {
+		const result = await adminPost<{ data: GhostLikeResult }>(
+			`/admin/v2/community/posts/${articleId}/ghost-likes`,
 			body,
 		);
 		return result.data;

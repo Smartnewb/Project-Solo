@@ -125,6 +125,33 @@ export interface GhostCommentResult {
 	warning?: string;
 }
 
+export interface GhostLikeBody {
+	ghostAccountId?: string;
+	delayMinutes?: number;
+	targetCommentId?: string | null;
+}
+
+export interface GhostLikeResult {
+	like?: {
+		id: string;
+		articleId: string;
+		userId: string;
+		commentId?: string;
+	};
+	scheduledLike?: {
+		contentId: string;
+		articleId: string;
+		targetCommentId: string | null;
+		delayMinutes: number;
+		scheduledAt: string | Date;
+		status: 'scheduled';
+	};
+	ghost: GhostCandidate;
+	selectionMode: 'auto' | 'manual';
+	ghostCandidateCount: number;
+	warning?: string;
+}
+
 export interface Category {
 	id: string;
 	code: string;
@@ -283,6 +310,17 @@ const communityService = {
 	): Promise<GhostCommentResult> => {
 		const result = await adminPost<{ data: GhostCommentResult }>(
 			`/admin/v2/community/posts/${articleId}/ghost-comments`,
+			body,
+		);
+		return result.data;
+	},
+
+	createGhostLike: async (
+		articleId: string,
+		body: GhostLikeBody,
+	): Promise<GhostLikeResult> => {
+		const result = await adminPost<{ data: GhostLikeResult }>(
+			`/admin/v2/community/posts/${articleId}/ghost-likes`,
 			body,
 		);
 		return result.data;
