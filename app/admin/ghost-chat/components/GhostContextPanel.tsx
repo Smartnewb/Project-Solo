@@ -1,6 +1,11 @@
 'use client';
 
-import { Avatar, Box, Chip, Divider, Paper, Typography } from '@mui/material';
+import Link from 'next/link';
+import { Avatar, Box, Button, Chip, Divider, Paper, Typography } from '@mui/material';
+import {
+	AccountCircle as AccountCircleIcon,
+	OpenInNew as OpenInNewIcon,
+} from '@mui/icons-material';
 import type { GhostChatSession, GhostChatSessionContext } from '@/app/types/ghost-chat';
 
 interface GhostContextPanelProps {
@@ -118,14 +123,25 @@ export default function GhostContextPanel({ session, context }: GhostContextPane
 									))}
 								</Box>
 							)}
+							<Button
+								component={Link}
+								href={`/admin/ai-profiles/ghosts?ghostAccountId=${encodeURIComponent(session.ghostAccountId)}`}
+								target="_blank"
+								rel="noreferrer"
+								size="small"
+								variant="outlined"
+								startIcon={<AccountCircleIcon fontSize="small" />}
+								endIcon={<OpenInNewIcon fontSize="small" />}
+								sx={{ alignSelf: 'flex-start' }}
+							>
+								Ghost 프로필 확인
+							</Button>
 						</>
 					) : (
 						<Typography variant="body2" color="text.secondary">
 							프로필 컨텍스트를 불러오는 중입니다.
 						</Typography>
 					)}
-					<FieldRow label="ghostAccountId" value={session.ghostAccountId} />
-					<FieldRow label="ghostUserId" value={session.ghostUserId} />
 				</Section>
 			</Paper>
 
@@ -141,11 +157,21 @@ export default function GhostContextPanel({ session, context }: GhostContextPane
 								label="학교/학과"
 								value={joinValues([context.target.university?.name, context.target.department?.name])}
 							/>
+							<Button
+								component={Link}
+								href={`/admin/users?userId=${encodeURIComponent(session.targetUserId)}`}
+								target="_blank"
+								rel="noreferrer"
+								size="small"
+								variant="outlined"
+								startIcon={<AccountCircleIcon fontSize="small" />}
+								endIcon={<OpenInNewIcon fontSize="small" />}
+								sx={{ alignSelf: 'flex-start' }}
+							>
+								상대 프로필 확인
+							</Button>
 						</>
 					)}
-					<FieldRow label="targetUserId" value={session.targetUserId} />
-					<FieldRow label="matchId" value={session.matchId} />
-					<FieldRow label="chatRoomId" value={session.chatRoomId} />
 				</Section>
 			</Paper>
 

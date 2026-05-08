@@ -29,6 +29,7 @@ interface GhostSessionQueueProps {
 	newSessionIds: Set<string>;
 	unreadMap: Record<string, number>;
 	activeTab: GhostQueueTab;
+	variant?: 'rail' | 'grid';
 	onTabChange: (tab: GhostQueueTab) => void;
 	onSelectSession: (id: string) => void;
 	onAssignSession: (id: string) => void | Promise<void>;
@@ -205,7 +206,7 @@ function GhostSessionCard({
 						{isNew && <Chip label="NEW" color="warning" size="small" sx={{ height: 22, fontWeight: 800 }} />}
 					</Stack>
 					<Typography variant="subtitle2" sx={{ fontWeight: 800 }} noWrap>
-						Ghost {shortId(session.id)}
+						{replyNeeded ? '응답 필요 채팅' : '확인된 채팅'}
 					</Typography>
 				</Box>
 				{unreadCount > 0 && <Badge badgeContent={unreadCount} color="error" sx={{ mt: 0.5, mr: 0.5 }} />}
@@ -243,10 +244,10 @@ function GhostSessionCard({
 
 			<Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75, mb: 1 }}>
 				<Typography variant="caption" color="text.secondary" noWrap>
-					대상 {shortId(session.targetUserId)}
+					상대 {shortId(session.targetUserId)}
 				</Typography>
 				<Typography variant="caption" color="text.secondary" noWrap>
-					채팅방 {shortId(session.chatRoomId)}
+					Ghost {shortId(session.ghostAccountId)}
 				</Typography>
 				<Typography variant="caption" color="text.secondary" noWrap>
 					매치 {shortId(session.matchId)}
@@ -286,6 +287,7 @@ export default function GhostSessionQueue({
 	newSessionIds,
 	unreadMap,
 	activeTab,
+	variant = 'rail',
 	onTabChange,
 	onSelectSession,
 	onAssignSession,
@@ -321,7 +323,8 @@ export default function GhostSessionQueue({
 				height: '100%',
 				display: 'flex',
 				flexDirection: 'column',
-				borderRight: { md: 1 },
+				borderRight: { md: variant === 'rail' ? 1 : 0 },
+				borderBottom: { md: variant === 'grid' ? 1 : 0 },
 				borderColor: 'divider',
 			}}
 		>
@@ -336,15 +339,25 @@ export default function GhostSessionQueue({
 				<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 1.25 }}>
 					<Box sx={{ minWidth: 0 }}>
 						<Typography variant="subtitle2" sx={{ fontWeight: 900 }} noWrap>
-							운영 세션 큐
+							채팅 카드 테이블
 						</Typography>
 						<Typography variant="caption" color="text.secondary" noWrap>
-							응답 필요 세션을 우선 확인하세요.
+							세션 ID 대신 응답 상태와 상대/Ghost 정보를 우선 표시합니다.
 						</Typography>
 					</Box>
 					<Chip label={`${queueStats.total}건`} size="small" variant="outlined" sx={{ fontWeight: 800 }} />
 				</Box>
-				<Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 0.75, mb: 1.25 }}>
+				<Box
+					sx={{
+						display: 'grid',
+						gridTemplateColumns:
+							variant === 'grid'
+								? { xs: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(3, minmax(0, 1fr))' }
+								: 'repeat(3, minmax(0, 1fr))',
+						gap: 0.75,
+						mb: 1.25,
+					}}
+				>
 					<StatPill
 						label="응답 필요"
 						value={queueStats.needsReply}
@@ -404,7 +417,21 @@ export default function GhostSessionQueue({
 						</Typography>
 					</Box>
 				) : (
-					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+					<Box
+						sx={{
+							display: 'grid',
+							gridTemplateColumns:
+								variant === 'grid'
+									? {
+										xs: '1fr',
+										sm: 'repeat(2, minmax(260px, 1fr))',
+										lg: 'repeat(3, minmax(260px, 1fr))',
+										xl: 'repeat(6, minmax(220px, 1fr))',
+									}
+									: '1fr',
+							gap: 1,
+						}}
+					>
 						{filteredSessions.map((session) => (
 							<GhostSessionCard
 								key={session.id}

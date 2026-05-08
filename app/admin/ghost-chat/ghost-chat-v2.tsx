@@ -6,11 +6,16 @@ import {
 	Alert,
 	Box,
 	CircularProgress,
+	Dialog,
+	IconButton,
 	Snackbar,
 	Typography,
 	useMediaQuery,
 	useTheme,
 } from '@mui/material';
+import {
+	Close as CloseIcon,
+} from '@mui/icons-material';
 import GhostChatPanel from './components/GhostChatPanel';
 import GhostChatStatusBar from './components/GhostChatStatusBar';
 import GhostContextPanel from './components/GhostContextPanel';
@@ -35,6 +40,7 @@ function GhostChatV2Content() {
 		isMobile && sessionFromUrl ? 'chat' : 'list',
 	);
 	const [snackbarOpen, setSnackbarOpen] = useState(false);
+	const [fullScreenOpen, setFullScreenOpen] = useState(false);
 	const initializedSessionFromUrlRef = useRef<string | null>(null);
 
 	const {
@@ -139,6 +145,7 @@ function GhostChatV2Content() {
 			newSessionIds={newSessionIds}
 			unreadMap={unreadMap}
 			activeTab={activeTab}
+			variant={isMobile ? 'rail' : 'grid'}
 			onTabChange={setActiveTab}
 			onSelectSession={handleSelectSession}
 			onAssignSession={(id) => {
@@ -152,6 +159,7 @@ function GhostChatV2Content() {
 	const chat = (
 		<GhostChatPanel
 			session={selectedSession}
+			context={selectedContext}
 			messages={selectedMessages}
 			loading={loading}
 			messagesLoading={messagesLoading}
@@ -160,10 +168,59 @@ function GhostChatV2Content() {
 			onSendMessage={sendMessage}
 			onClose={closeSession}
 			onBack={isMobile ? handleMobileBack : undefined}
+			onOpenFullScreen={selectedSession ? () => setFullScreenOpen(true) : undefined}
 		/>
 	);
 
 	const context = <GhostContextPanel session={selectedSession} context={selectedContext} />;
+	const fullScreenDialog = (
+		<Dialog fullScreen open={fullScreenOpen} onClose={() => setFullScreenOpen(false)}>
+			<Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
+				<Box
+					sx={{
+						px: 2,
+						py: 1.25,
+						borderBottom: 1,
+						borderColor: 'divider',
+						display: 'flex',
+						alignItems: 'center',
+						gap: 1,
+					}}
+				>
+					<Typography variant="subtitle1" sx={{ flex: 1, fontWeight: 900 }}>
+						Ghost Chat 전체 대응
+					</Typography>
+					<IconButton onClick={() => setFullScreenOpen(false)} aria-label="전체 화면 닫기">
+						<CloseIcon />
+					</IconButton>
+				</Box>
+				<Box
+					sx={{
+						flex: 1,
+						minHeight: 0,
+						display: 'grid',
+						gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1fr) 380px' },
+					}}
+				>
+					<GhostChatPanel
+						session={selectedSession}
+						context={selectedContext}
+						messages={selectedMessages}
+						loading={loading}
+						messagesLoading={messagesLoading}
+						actionLoading={actionLoading}
+						onAssign={handleAssignSession}
+						onSendMessage={sendMessage}
+						onClose={closeSession}
+						fullScreenMode
+					/>
+					<Box sx={{ display: { xs: 'none', lg: 'block' }, minHeight: 0 }}>
+						{context}
+					</Box>
+				</Box>
+			</Box>
+		</Dialog>
+	);
 
 	if (isMobile) {
 		return (
@@ -192,6 +249,7 @@ function GhostChatV2Content() {
 					onClose={() => setSnackbarOpen(false)}
 					message={`새 Ghost Chat 세션 ${newSessionIds.size}건 도착`}
 				/>
+				{fullScreenDialog}
 			</Box>
 		);
 	}
@@ -212,7 +270,8 @@ function GhostChatV2Content() {
 					sx={{
 						flex: 1,
 						minHeight: 0,
-						display: 'flex',
+						display: 'grid',
+						gridTemplateRows: 'minmax(220px, 36vh) minmax(0, 1fr)',
 						border: 1,
 						borderColor: 'divider',
 						borderRadius: 2,
@@ -220,9 +279,17 @@ function GhostChatV2Content() {
 						bgcolor: 'background.paper',
 					}}
 				>
-					<Box sx={{ width: 430, minWidth: 430 }}>{queue}</Box>
-					<Box sx={{ flex: 1, minWidth: 0 }}>{chat}</Box>
-					<Box sx={{ width: 360, minWidth: 360 }}>{context}</Box>
+					<Box sx={{ minHeight: 0 }}>{queue}</Box>
+					<Box
+						sx={{
+							minHeight: 0,
+							display: 'grid',
+							gridTemplateColumns: 'minmax(0, 1fr) 360px',
+						}}
+					>
+						<Box sx={{ minWidth: 0 }}>{chat}</Box>
+						<Box sx={{ minWidth: 360 }}>{context}</Box>
+					</Box>
 				</Box>
 			)}
 			<Snackbar
@@ -231,6 +298,7 @@ function GhostChatV2Content() {
 				onClose={() => setSnackbarOpen(false)}
 				message={`새 Ghost Chat 세션 ${newSessionIds.size}건 도착`}
 			/>
+			{fullScreenDialog}
 		</Box>
 	);
 }

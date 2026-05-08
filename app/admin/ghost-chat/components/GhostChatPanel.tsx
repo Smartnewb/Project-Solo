@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import {
 	Alert,
+	Avatar,
 	Box,
 	Button,
 	Chip,
@@ -13,19 +14,24 @@ import {
 	ListItem,
 	Paper,
 	TextField,
+	Tooltip,
 	Typography,
 } from '@mui/material';
 import {
+	AutoAwesome as AutoAwesomeIcon,
 	ArrowBack as ArrowBackIcon,
 	Close as CloseIcon,
+	OpenInFull as OpenInFullIcon,
+	ScheduleSend as ScheduleSendIcon,
 	Send as SendIcon,
 } from '@mui/icons-material';
-import type { GhostChatSession, GhostChatTimelineMessage } from '@/app/types/ghost-chat';
+import type { GhostChatSession, GhostChatSessionContext, GhostChatTimelineMessage } from '@/app/types/ghost-chat';
 import { GHOST_CHAT_STATE_LABELS } from '@/app/types/ghost-chat';
 import GhostChatConfirmDialog from './GhostChatConfirmDialog';
 
 interface GhostChatPanelProps {
 	session: GhostChatSession | null;
+	context?: GhostChatSessionContext | null;
 	messages: GhostChatTimelineMessage[];
 	loading: boolean;
 	messagesLoading: boolean;
@@ -34,6 +40,8 @@ interface GhostChatPanelProps {
 	onSendMessage: (id: string, content: string) => Promise<void>;
 	onClose: (id: string) => Promise<void> | void;
 	onBack?: () => void;
+	onOpenFullScreen?: () => void;
+	fullScreenMode?: boolean;
 }
 
 type ConfirmMode = 'first-send' | 'close' | null;
@@ -70,6 +78,13 @@ function buildTimeline(session: GhostChatSession) {
 	].filter((item) => item.at);
 }
 
+function compactProfileLabel(profile: GhostChatSessionContext['ghost'] | NonNullable<GhostChatSessionContext['target']> | null | undefined) {
+	if (!profile) return '프로필 로딩 중';
+	return [profile.age ? `${profile.age}세` : null, profile.university?.name, profile.department?.name, profile.mbti]
+		.filter(Boolean)
+		.join(' · ');
+}
+
 const senderLabels: Record<GhostChatTimelineMessage['senderType'], string> = {
 	TARGET_USER: '상대 유저',
 	GHOST: 'Ghost',
@@ -85,6 +100,7 @@ function getComposerBlockedReason(session: GhostChatSession) {
 
 export default function GhostChatPanel({
 	session,
+	context,
 	messages,
 	loading,
 	messagesLoading,
@@ -93,12 +109,15 @@ export default function GhostChatPanel({
 	onSendMessage,
 	onClose,
 	onBack,
+	onOpenFullScreen,
+	fullScreenMode = false,
 }: GhostChatPanelProps) {
 	const [draft, setDraft] = useState('');
 	const [localError, setLocalError] = useState<string | null>(null);
 	const [confirmMode, setConfirmMode] = useState<ConfirmMode>(null);
 
 	const timeline = useMemo(() => (session ? buildTimeline(session) : []), [session]);
+	const recentMessages = useMemo(() => messages.slice(-6).reverse(), [messages]);
 	const canSend = Boolean(session && session.state === 'ACTIVE' && draft.trim() && !actionLoading);
 	const canClose = Boolean(session && session.state !== 'CLOSED' && !actionLoading);
 	const composerBlockedReason = session ? getComposerBlockedReason(session) : null;
@@ -188,17 +207,69 @@ export default function GhostChatPanel({
 						</IconButton>
 					)}
 					<Typography variant="h6" sx={{ fontWeight: 700, flex: 1 }} noWrap>
-						Ghost {shortId(session.id)}
+						현재 열린 채팅
 					</Typography>
 					<Chip
 						label={GHOST_CHAT_STATE_LABELS[session.state]}
 						color={stateColors[session.state]}
 						size="small"
 					/>
+					{onOpenFullScreen && (
+						<Tooltip title="전체 화면에서 대응">
+							<IconButton size="small" onClick={onOpenFullScreen} aria-label="전체 화면에서 대응">
+								<OpenInFullIcon fontSize="small" />
+							</IconButton>
+						</Tooltip>
+					)}
 				</Box>
-				<Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1.5 }}>
-					<Chip label={`chatRoomId ${shortId(session.chatRoomId)}`} size="small" variant="outlined" />
-					<Chip label={`matchId ${shortId(session.matchId)}`} size="small" variant="outlined" />
+				<Box
+					sx={{
+						display: 'grid',
+						gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+						gap: 1,
+						mb: 1.5,
+					}}
+				>
+					<Paper elevation={0} sx={{ p: 1.25, border: 1, borderColor: 'divider', borderRadius: 1.5 }}>
+						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+							<Avatar
+								src={context?.ghost.primaryPhotoUrl ?? undefined}
+								alt={context?.ghost.anonymousName ?? 'Ghost'}
+								sx={{ width: 40, height: 40 }}
+							>
+								{context?.ghost.anonymousName?.charAt(0) ?? 'G'}
+							</Avatar>
+							<Box sx={{ minWidth: 0 }}>
+								<Typography variant="caption" color="text.secondary">
+									Ghost 프로필
+								</Typography>
+								<Typography variant="subtitle2" sx={{ fontWeight: 800 }} noWrap>
+									{context?.ghost.anonymousName ?? `Ghost ${shortId(session.ghostAccountId)}`}
+								</Typography>
+								<Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+									{compactProfileLabel(context?.ghost)}
+								</Typography>
+							</Box>
+						</Box>
+					</Paper>
+					<Paper elevation={0} sx={{ p: 1.25, border: 1, borderColor: 'divider', borderRadius: 1.5 }}>
+						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+							<Avatar sx={{ width: 40, height: 40 }}>
+								{context?.target?.gender?.charAt(0) ?? 'U'}
+							</Avatar>
+							<Box sx={{ minWidth: 0 }}>
+								<Typography variant="caption" color="text.secondary">
+									상대 유저
+								</Typography>
+								<Typography variant="subtitle2" sx={{ fontWeight: 800 }} noWrap>
+									{shortId(session.targetUserId)}
+								</Typography>
+								<Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+									{compactProfileLabel(context?.target)}
+								</Typography>
+							</Box>
+						</Box>
+					</Paper>
 				</Box>
 				<Box sx={{ display: 'flex', gap: 1 }}>
 					{session.state === 'PENDING' && (
@@ -224,7 +295,17 @@ export default function GhostChatPanel({
 				</Box>
 			</Box>
 
-			<Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', p: 2, bgcolor: 'grey.50' }}>
+			<Box
+				sx={{
+					flex: 1,
+					minHeight: 0,
+					display: 'grid',
+					gridTemplateColumns: fullScreenMode ? { xs: '1fr', lg: '1fr 320px' } : '1fr',
+					overflow: 'hidden',
+					bgcolor: 'grey.50',
+				}}
+			>
+				<Box sx={{ minHeight: 0, overflowY: 'auto', p: 2 }}>
 				{localError && (
 					<Alert severity="error" sx={{ mb: 2 }} onClose={() => setLocalError(null)}>
 						{localError}
@@ -305,6 +386,60 @@ export default function GhostChatPanel({
 						</ListItem>
 					)}
 				</List>
+				</Box>
+				{fullScreenMode && (
+					<Box
+						sx={{
+							display: { xs: 'none', lg: 'flex' },
+							flexDirection: 'column',
+							gap: 1.25,
+							p: 2,
+							borderLeft: 1,
+							borderColor: 'divider',
+							bgcolor: 'background.paper',
+							overflowY: 'auto',
+						}}
+					>
+						<Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+							최근 채팅 내역
+						</Typography>
+						{recentMessages.length === 0 ? (
+							<Typography variant="body2" color="text.secondary">
+								최근 메시지가 없습니다.
+							</Typography>
+						) : (
+							recentMessages.map((message) => (
+								<Paper
+									key={message.id}
+									elevation={0}
+									sx={{ p: 1, border: 1, borderColor: 'divider', borderRadius: 1.5 }}
+								>
+									<Typography variant="caption" sx={{ fontWeight: 800 }}>
+										{senderLabels[message.senderType]} · {formatTime(message.createdAt)}
+									</Typography>
+									<Typography variant="body2" sx={{ mt: 0.5, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+										{message.content?.trim() || `[${message.messageType}]`}
+									</Typography>
+								</Paper>
+							))
+						)}
+						<Divider />
+						<Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+							AI 응답 지원
+						</Typography>
+						<Typography variant="caption" color="text.secondary">
+							RAG Fusion, Qdrant 검색, Gemini 2.5 Flash 초안 생성은 백엔드 API가 연결되면 이 영역에서 검수 후 전송/예약 전송으로 확장합니다.
+						</Typography>
+						<Box sx={{ display: 'flex', gap: 1 }}>
+							<Button size="small" variant="outlined" disabled startIcon={<AutoAwesomeIcon fontSize="small" />}>
+								초안 생성
+							</Button>
+							<Button size="small" variant="outlined" disabled startIcon={<ScheduleSendIcon fontSize="small" />}>
+								예약 전송
+							</Button>
+						</Box>
+					</Box>
+				)}
 			</Box>
 
 			<Divider />
