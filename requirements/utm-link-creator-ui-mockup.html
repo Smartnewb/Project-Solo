@@ -1,0 +1,937 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UTM 링크 생성 UI 개선 목업</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --surface: #ffffff;
+      --surface-soft: #f9fafb;
+      --ink: #17202a;
+      --muted: #687385;
+      --line: #d9dee7;
+      --line-strong: #c3cad6;
+      --blue: #2563eb;
+      --blue-soft: #eff6ff;
+      --green: #138a5b;
+      --green-soft: #ecfdf5;
+      --amber: #b7791f;
+      --amber-soft: #fffbeb;
+      --red: #d92d20;
+      --red-soft: #fff1f0;
+      --violet: #6d28d9;
+      --violet-soft: #f5f3ff;
+      --shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+      font-family: Inter, Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    .page {
+      min-height: 100vh;
+      padding: 28px;
+    }
+
+    .shell {
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 18px;
+    }
+
+    .title {
+      margin: 0 0 8px;
+      font-size: 28px;
+      line-height: 1.22;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .top-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    button,
+    .button {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--ink);
+      border-radius: 8px;
+      min-height: 38px;
+      padding: 0 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .button-primary {
+      border-color: var(--blue);
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 392px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .decision-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .decision {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .decision strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    .decision span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .form-panel,
+    .side-panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+    }
+
+    .form-header {
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .form-header h2,
+    .side-section h3 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    .completion {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 260px;
+    }
+
+    .score-ring {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background:
+        conic-gradient(var(--green) 0 82%, #e5e7eb 82% 100%);
+      color: #fff;
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    .completion p {
+      margin: 0;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--line);
+      padding: 0 20px;
+      background: var(--surface-soft);
+      overflow-x: auto;
+    }
+
+    .tab {
+      border: 0;
+      border-bottom: 3px solid transparent;
+      border-radius: 0;
+      background: transparent;
+      min-height: 44px;
+      padding: 0 14px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .tab.active {
+      color: var(--blue);
+      border-bottom-color: var(--blue);
+    }
+
+    .form-body {
+      padding: 18px 20px 22px;
+    }
+
+    .section {
+      border: 1px solid var(--line);
+      border-left-width: 5px;
+      border-radius: 8px;
+      margin-bottom: 14px;
+      overflow: hidden;
+      background: var(--surface);
+    }
+
+    .section.required {
+      border-left-color: var(--red);
+    }
+
+    .section.recommended {
+      border-left-color: var(--amber);
+    }
+
+    .section.advanced {
+      border-left-color: var(--violet);
+    }
+
+    .section-head {
+      min-height: 58px;
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      background: var(--surface-soft);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section-head h3 {
+      margin: 0;
+      font-size: 15px;
+      letter-spacing: 0;
+    }
+
+    .section-head p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 11px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .badge.required {
+      background: var(--red-soft);
+      color: var(--red);
+    }
+
+    .badge.recommended {
+      background: var(--amber-soft);
+      color: var(--amber);
+    }
+
+    .badge.auto {
+      background: var(--green-soft);
+      color: var(--green);
+    }
+
+    .badge.advanced {
+      background: var(--violet-soft);
+      color: var(--violet);
+    }
+
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      padding: 14px;
+    }
+
+    .field-grid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .field {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .field.is-empty {
+      border-color: #f1a2a2;
+      background: #fffafa;
+    }
+
+    .field.is-filled {
+      border-color: #9dd7bd;
+      background: #fcfffd;
+    }
+
+    .field-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 40px;
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(249, 250, 251, 0.8);
+    }
+
+    .field-label strong {
+      font-size: 13px;
+    }
+
+    .field-label em {
+      color: var(--muted);
+      font-style: normal;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .field-control {
+      padding: 10px;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line-strong);
+      border-radius: 7px;
+      min-height: 38px;
+      padding: 8px 10px;
+      font: inherit;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    textarea {
+      min-height: 78px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
+    .field-help {
+      display: grid;
+      gap: 6px;
+      padding: 0 10px 10px;
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+
+    .field-help b {
+      color: var(--ink);
+      font-weight: 800;
+    }
+
+    .choice-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      padding: 14px;
+    }
+
+    .choice {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fff;
+    }
+
+    .choice.active {
+      border-color: var(--blue);
+      box-shadow: inset 0 0 0 1px var(--blue);
+      background: var(--blue-soft);
+    }
+
+    .choice strong {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 5px;
+    }
+
+    .choice span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .side-panel {
+      position: sticky;
+      top: 20px;
+      overflow: hidden;
+    }
+
+    .side-section {
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .side-section:last-child {
+      border-bottom: 0;
+    }
+
+    .url-preview {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #101828;
+      color: #d1fadf;
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.55;
+      overflow-wrap: anywhere;
+    }
+
+    .param-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .param {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 10px;
+      background: var(--surface-soft);
+      font-size: 12px;
+    }
+
+    .param code {
+      color: var(--blue);
+      font-weight: 800;
+    }
+
+    .insight-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .insight {
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 12px;
+      line-height: 1.45;
+      border: 1px solid var(--line);
+      background: var(--surface-soft);
+    }
+
+    .insight.good {
+      border-color: #b7e4cc;
+      background: var(--green-soft);
+    }
+
+    .insight.warn {
+      border-color: #f6d58f;
+      background: var(--amber-soft);
+    }
+
+    .dashboard-map {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .map-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      min-height: 82px;
+      background: #fff;
+    }
+
+    .map-item strong {
+      display: block;
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .map-item span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .mock-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 20px;
+      border-top: 1px solid var(--line);
+      background: var(--surface-soft);
+    }
+
+    .mock-footer p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 1180px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .side-panel {
+        position: static;
+      }
+    }
+
+    @media (max-width: 820px) {
+      .page {
+        padding: 14px;
+      }
+
+      .topbar,
+      .form-header,
+      .mock-footer {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .completion {
+        min-width: 0;
+      }
+
+      .decision-strip,
+      .field-grid,
+      .field-grid.three,
+      .choice-row,
+      .dashboard-map {
+        grid-template-columns: 1fr;
+      }
+
+      .tabs {
+        padding: 0 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="shell">
+      <header class="topbar">
+        <div>
+          <h1 class="title">UTM 링크 생성 UI 개선 목업</h1>
+          <p class="subtitle">목표: 운영자가 “무엇을 왜 입력하는지” 바로 이해하고, 생성 전 추적 품질을 확인할 수 있는 폼.</p>
+        </div>
+        <div class="top-actions">
+          <button type="button">현재 폼과 비교</button>
+          <button type="button" class="button-primary">이 방향으로 구현 검토</button>
+        </div>
+      </header>
+
+      <section class="decision-strip" aria-label="의사결정 포인트">
+        <article class="decision">
+          <strong>1. 필드 구분 강화</strong>
+          <span>필수, 권장, 광고 바인딩을 카드와 좌측 색상으로 분리합니다.</span>
+        </article>
+        <article class="decision">
+          <strong>2. 필드마다 의미 제공</strong>
+          <span>각 입력에 예시, 성과 연결 위치, 상태 뱃지를 함께 둡니다.</span>
+        </article>
+        <article class="decision">
+          <strong>3. 실시간 URL 프리뷰</strong>
+          <span>입력 즉시 어떤 파라미터가 생기는지 오른쪽에서 확인합니다.</span>
+        </article>
+        <article class="decision">
+          <strong>4. 품질 점수</strong>
+          <span>필수만 채운 링크와 분석 가능한 링크를 운영자가 구분합니다.</span>
+        </article>
+      </section>
+
+      <div class="layout">
+        <section class="form-panel" aria-label="UTM 생성 목업 폼">
+          <div class="form-header">
+            <div>
+              <h2>새 UTM 링크 생성</h2>
+              <p class="subtitle">빠른 입력은 유지하되, 분석에 필요한 필드를 놓치지 않게 구성합니다.</p>
+            </div>
+            <div class="completion" aria-label="분석 가능성 점수">
+              <div class="score-ring">82</div>
+              <div>
+                <strong>분석 가능성 높음</strong>
+                <p>필수값, UTM ID, 플랫폼, 소재 형식이 채워졌습니다. 광고 ID가 있으면 100점에 가까워집니다.</p>
+              </div>
+            </div>
+          </div>
+
+          <nav class="tabs" aria-label="생성 단계">
+            <button class="tab active" type="button">1. 캠페인 기본값</button>
+            <button class="tab" type="button">2. 분석 필드</button>
+            <button class="tab" type="button">3. 광고 ID</button>
+            <button class="tab" type="button">4. 검증 및 생성</button>
+          </nav>
+
+          <div class="form-body">
+            <section class="section required">
+              <div class="section-head">
+                <div>
+                  <h3>필수 입력</h3>
+                  <p>이 값이 없으면 링크가 만들어지지 않습니다. 프리셋 선택 시 source와 medium은 자동 입력됩니다.</p>
+                </div>
+                <span class="badge required">필수 4개</span>
+              </div>
+
+              <div class="field-grid">
+                <div class="field is-filled">
+                  <div class="field-label">
+                    <strong>채널</strong>
+                    <em>source + medium 자동</em>
+                  </div>
+                  <div class="field-control">
+                    <select>
+                      <option>인스타그램</option>
+                      <option>Meta 광고</option>
+                      <option>에브리타임</option>
+                      <option>오프라인 포스터</option>
+                    </select>
+                  </div>
+                  <div class="field-help">
+                    <span><b>왜 필요?</b> 유입이 시작된 장소입니다.</span>
+                    <span><b>예시</b> instagram, meta, everytime, poster</span>
+                  </div>
+                </div>
+
+                <div class="field is-empty">
+                  <div class="field-label">
+                    <strong>캠페인</strong>
+                    <em>utm_campaign</em>
+                  </div>
+                  <div class="field-control">
+                    <input value="2026_may_signup_kr20f" />
+                  </div>
+                  <div class="field-help">
+                    <span><b>왜 필요?</b> 예산과 성과를 묶는 기준입니다.</span>
+                    <span><b>권장 형식</b> YYYYMM_objective_audience</span>
+                  </div>
+                </div>
+
+                <div class="field is-filled">
+                  <div class="field-label">
+                    <strong>소스</strong>
+                    <em>utm_source</em>
+                  </div>
+                  <div class="field-control">
+                    <input value="instagram" disabled />
+                  </div>
+                  <div class="field-help">
+                    <span><b>성과 연결</b> 채널별 유입, 가입, 결제 리포트의 1차 그룹입니다.</span>
+                  </div>
+                </div>
+
+                <div class="field is-filled">
+                  <div class="field-label">
+                    <strong>매체</strong>
+                    <em>utm_medium</em>
+                  </div>
+                  <div class="field-control">
+                    <input value="cpc" disabled />
+                  </div>
+                  <div class="field-help">
+                    <span><b>성과 연결</b> paid, organic, social, offline 같은 트래픽 유형 비교에 씁니다.</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="choice-row" aria-label="목적지 선택">
+                <div class="choice active">
+                  <strong>웹 랜딩</strong>
+                  <span>전체 UTM query가 URL에 붙습니다. 가장 직관적인 프리뷰를 제공합니다.</span>
+                </div>
+                <div class="choice">
+                  <strong>iOS App Store</strong>
+                  <span>App Store의 ct 캠페인 토큰 중심으로 이동합니다. 추가 추적은 리다이렉트 이벤트에서 보강합니다.</span>
+                </div>
+                <div class="choice">
+                  <strong>Android Play Store</strong>
+                  <span>referrer에 전체 UTM 파라미터를 인코딩해서 전달합니다.</span>
+                </div>
+              </div>
+            </section>
+
+            <section class="section recommended">
+              <div class="section-head">
+                <div>
+                  <h3>권장 입력</h3>
+                  <p>필수는 아니지만, 소재별/타겟별/전술별 성과를 보려면 사실상 필요합니다.</p>
+                </div>
+                <span class="badge recommended">성과 분석 강화</span>
+              </div>
+
+              <div class="field-grid three">
+                <div class="field is-filled">
+                  <div class="field-label">
+                    <strong>콘텐츠</strong>
+                    <em>utm_content</em>
+                  </div>
+                  <div class="field-control">
+                    <input value="reels_video_a" />
+                  </div>
+                  <div class="field-help">
+                    <span><b>왜 필요?</b> 같은 캠페인 안에서 소재 A/B를 구분합니다.</span>
+                  </div>
+                </div>
+
+                <div class="field is-filled">
+                  <div class="field-label">
+                    <strong>타겟/키워드</strong>
+                    <em>utm_term</em>
+                  </div>
+                  <div class="field-control">
+                    <input value="female_univ_20s" />
+                  </div>
+                  <div class="field-help">
+                    <span><b>예시</b> school_a, search_keyword, female_univ_20s</span>
+                  </div>
+                </div>
+
+                <div class="field is-filled">
+                  <div class="field-label">
+                    <strong>UTM ID</strong>
+                    <em>자동 생성</em>
+                  </div>
+                  <div class="field-control">
+                    <input value="instagram_2026_may_signup_kr20f" />
+                  </div>
+                  <div class="field-help">
+                    <span><b>왜 필요?</b> 플랫폼이 달라도 같은 캠페인을 안정적으로 묶습니다.</span>
+                  </div>
+                </div>
+
+                <div class="field is-filled">
+                  <div class="field-label">
+                    <strong>Source platform</strong>
+                    <em>플랫폼</em>
+                  </div>
+                  <div class="field-control">
+                    <select>
+                      <option>Meta Ads</option>
+                      <option>Instagram Organic</option>
+                      <option>Google Ads</option>
+                    </select>
+                  </div>
+                  <div class="field-help">
+                    <span><b>주의</b> source=instagram이어도 실제 구매 매체는 Meta Ads일 수 있습니다.</span>
+                  </div>
+                </div>
+
+                <div class="field is-filled">
+                  <div class="field-label">
+                    <strong>Creative format</strong>
+                    <em>소재 형식</em>
+                  </div>
+                  <div class="field-control">
+                    <select>
+                      <option>Reels / Shorts</option>
+                      <option>Image</option>
+                      <option>QR / Poster</option>
+                    </select>
+                  </div>
+                  <div class="field-help">
+                    <span><b>성과 연결</b> 이미지, 영상, QR 등 형식별 전환율 비교에 씁니다.</span>
+                  </div>
+                </div>
+
+                <div class="field is-filled">
+                  <div class="field-label">
+                    <strong>Marketing tactic</strong>
+                    <em>전술</em>
+                  </div>
+                  <div class="field-control">
+                    <select>
+                      <option>신규 유저 획득</option>
+                      <option>리타게팅</option>
+                      <option>CRM</option>
+                    </select>
+                  </div>
+                  <div class="field-help">
+                    <span><b>왜 필요?</b> 운영 언어와 대시보드 필터 기준을 맞춥니다.</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="section advanced">
+              <div class="section-head">
+                <div>
+                  <h3>광고 플랫폼 바인딩</h3>
+                  <p>Meta/Google 관리자 화면의 ID를 연결하면 광고 단위 drilldown과 전환 내보내기가 쉬워집니다.</p>
+                </div>
+                <span class="badge advanced">고급 추적</span>
+              </div>
+
+              <div class="field-grid three">
+                <div class="field">
+                  <div class="field-label">
+                    <strong>플랫폼</strong>
+                    <em>binding</em>
+                  </div>
+                  <div class="field-control">
+                    <select>
+                      <option>Meta</option>
+                      <option>Google Ads</option>
+                    </select>
+                  </div>
+                  <div class="field-help">
+                    <span><b>UI 제안</b> 플랫폼에 따라 Adset 또는 Ad group 필드만 보여줍니다.</span>
+                  </div>
+                </div>
+
+                <div class="field">
+                  <div class="field-label">
+                    <strong>Campaign ID</strong>
+                    <em>권장</em>
+                  </div>
+                  <div class="field-control">
+                    <input placeholder="120xxxxxxxx" />
+                  </div>
+                  <div class="field-help">
+                    <span><b>복붙 지원</b> 광고 URL이나 텍스트에서 자동 추출 후보를 보여줄 수 있습니다.</span>
+                  </div>
+                </div>
+
+                <div class="field">
+                  <div class="field-label">
+                    <strong>Ad ID / Creative ID</strong>
+                    <em>선택</em>
+                  </div>
+                  <div class="field-control">
+                    <input placeholder="광고 또는 소재 ID" />
+                  </div>
+                  <div class="field-help">
+                    <span><b>언제?</b> 같은 캠페인 안에 소재가 많을 때 개별 광고 성과를 분리합니다.</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <footer class="mock-footer">
+            <p>구현 시에는 기존 `TextField`/`Chip`/`Alert` 기반으로 옮기되, 섹션 컨테이너와 오른쪽 프리뷰 패널을 추가하는 방향이 가장 작습니다.</p>
+            <button class="button-primary" type="button">검증 후 링크 생성</button>
+          </footer>
+        </section>
+
+        <aside class="side-panel" aria-label="UTM 프리뷰와 검증">
+          <section class="side-section">
+            <h3>실시간 URL 프리뷰</h3>
+            <div class="url-preview" aria-label="생성 URL">
+https://some-in-univ.com?
+utm_source=instagram
+&utm_medium=cpc
+&utm_campaign=2026_may_signup_kr20f
+&utm_content=reels_video_a
+&utm_term=female_univ_20s
+&utm_id=instagram_2026_may_signup_kr20f
+            </div>
+            <div class="param-list">
+              <div class="param"><code>utm_source</code><span>채널 성과</span></div>
+              <div class="param"><code>utm_campaign</code><span>캠페인 성과</span></div>
+              <div class="param"><code>utm_content</code><span>소재 A/B</span></div>
+              <div class="param"><code>utm_id</code><span>플랫폼 통합 키</span></div>
+            </div>
+          </section>
+
+          <section class="side-section">
+            <h3>생성 전 검증</h3>
+            <div class="insight-list">
+              <div class="insight good">
+                <strong>좋음</strong><br />
+                캠페인명에 기간, 목적, 타겟이 포함되어 있습니다.
+              </div>
+              <div class="insight good">
+                <strong>좋음</strong><br />
+                source=instagram, sourcePlatform=Meta Ads 조합은 유효합니다.
+              </div>
+              <div class="insight warn">
+                <strong>보완 가능</strong><br />
+                Campaign ID를 넣으면 광고 관리자 성과와 더 안정적으로 연결됩니다.
+              </div>
+            </div>
+          </section>
+
+          <section class="side-section">
+            <h3>이 값으로 볼 수 있는 대시보드</h3>
+            <div class="dashboard-map">
+              <div class="map-item">
+                <strong>채널별 유입</strong>
+                <span>utm_source, utm_medium 기준</span>
+              </div>
+              <div class="map-item">
+                <strong>캠페인별 가입</strong>
+                <span>utm_campaign, utm_id 기준</span>
+              </div>
+              <div class="map-item">
+                <strong>소재별 전환</strong>
+                <span>utm_content, creativeFormat 기준</span>
+              </div>
+              <div class="map-item">
+                <strong>광고 ID drilldown</strong>
+                <span>platformBindings 기준</span>
+              </div>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
