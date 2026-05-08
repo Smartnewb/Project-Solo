@@ -59,7 +59,7 @@ function ExposureRow({ item }: { item: GhostExposureItem }) {
 					</span>
 					<Badge
 						variant={isExposed ? 'outline' : 'default'}
-						className={isExposed ? 'text-blue-700 border-blue-300 bg-blue-50' : 'bg-green-600'}
+						className={isExposed ? 'text-[#e00b41] border-[#ffd1da] bg-[#f7f7f7]' : 'bg-[#ff385c]'}
 					>
 						{isExposed ? '노출' : '수락'}
 					</Badge>
@@ -147,7 +147,7 @@ export function GhostExposureHistory({ ghostAccountId }: GhostExposureHistoryPro
 										<span className="text-gray-600 w-24 shrink-0">{PATH_LABELS[path]}</span>
 										<div className="flex-1 bg-gray-100 rounded-full h-1.5 overflow-hidden">
 											<div
-												className="bg-blue-500 h-full rounded-full"
+												className="bg-[#ff385c] h-full rounded-full"
 												style={{ width: `${Math.round((c / byPathMax) * 100)}%` }}
 											/>
 										</div>

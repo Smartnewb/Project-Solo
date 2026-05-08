@@ -417,7 +417,7 @@ function CandidateCard({
 		<div
 			className={cn(
 				'overflow-hidden rounded-lg border transition-all',
-				selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-slate-200 opacity-60',
+				selected ? 'border-[#ff385c] ring-2 ring-[#ffd1da]' : 'border-slate-200 opacity-60',
 			)}
 		>
 			<button
@@ -436,7 +436,7 @@ function CandidateCard({
 				<div
 					className={cn(
 						'absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border-2 transition-colors',
-						selected ? 'border-blue-500 bg-blue-500' : 'border-white bg-white/80',
+						selected ? 'border-[#ff385c] bg-[#ff385c]' : 'border-white bg-white/80',
 					)}
 				>
 					{selected ? <Check className="h-3.5 w-3.5 text-white" /> : null}

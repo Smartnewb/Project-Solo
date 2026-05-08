@@ -144,7 +144,7 @@ export function RecipientSelector({ onFilterChange }: Props) {
 							</div>
 							<div>
 								<div className='text-xs text-gray-500'>마케팅 동의</div>
-								<div className='text-2xl font-bold text-blue-600'>
+								<div className='text-2xl font-bold text-[#ff385c]'>
 									{count.smsConsented.toLocaleString()}
 								</div>
 							</div>

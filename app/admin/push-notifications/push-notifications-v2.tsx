@@ -364,12 +364,12 @@ function PushNotificationsV2Content() {
                 {filters.universities.map(university => (
                   <span
                     key={university}
-                    className="inline-flex items-center bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
+                    className="inline-flex items-center bg-[#ffd1da] text-[#e00b41] px-3 py-1 rounded-full text-sm"
                   >
                     {university}
                     <button
                       onClick={() => toggleUniversity(university)}
-                      className="ml-2 text-blue-600 hover:text-blue-800"
+                      className="ml-2 text-[#ff385c] hover:text-[#e00b41]"
                     >
                       ×
                     </button>
@@ -406,12 +406,12 @@ function PushNotificationsV2Content() {
                         role="button"
                         tabIndex={0}
                         className={`px-3 py-2 cursor-pointer hover:bg-gray-100 ${
-                          filters.universities.includes(university) ? 'bg-blue-50' : ''
+                          filters.universities.includes(university) ? 'bg-[#f7f7f7]' : ''
                         }`}
                       >
                         {university}
                         {filters.universities.includes(university) && (
-                          <span className="ml-2 text-blue-600">✓</span>
+                          <span className="ml-2 text-[#ff385c]">✓</span>
                         )}
                       </div>
                     ))
@@ -496,7 +496,7 @@ function PushNotificationsV2Content() {
             <button
               onClick={() => handleFilterUsers(1)}
               disabled={loading}
-              className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
+              className="bg-[#ff385c] text-white px-6 py-2 rounded hover:bg-[#ff385c] disabled:bg-gray-400"
             >
               {loading ? '조회 중...' : '사용자 검색'}
             </button>
@@ -505,7 +505,7 @@ function PushNotificationsV2Content() {
               <button
                 onClick={addToTargetUsers}
                 disabled={loading}
-                className="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 disabled:bg-gray-400"
+                className="bg-[#ff385c] text-white px-6 py-2 rounded hover:bg-[#ff385c] disabled:bg-gray-400"
               >
                 {loading ? '추가 중...' : `발송 대상자 리스트에 추가 (${totalCount}명)`}
               </button>
@@ -514,7 +514,7 @@ function PushNotificationsV2Content() {
 
           {totalCount > 0 && (
             <div className="mt-4">
-              <div className="p-4 bg-blue-50 rounded mb-4">
+              <div className="p-4 bg-[#f7f7f7] rounded mb-4">
                 <p className="font-semibold">검색 결과: 총 {totalCount}명</p>
                 <p className="text-sm text-gray-600">현재 페이지: {filteredUsers.length}명</p>
               </div>
@@ -541,12 +541,12 @@ function PushNotificationsV2Content() {
                               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleViewProfile(user.id); } }}
                               role="button"
                               tabIndex={0}
-                              className="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-blue-500"
+                              className="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-[#ff385c]"
                             />
                           ) : (
                             <div
                               onClick={() => handleViewProfile(user.id)}
-                              className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-blue-500"
+                              className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-[#ff385c]"
                             >
                               <span className="text-gray-500 text-xs">없음</span>
                             </div>
@@ -597,7 +597,7 @@ function PushNotificationsV2Content() {
                           onClick={() => handlePageChange(pageNum)}
                           className={`px-3 py-1 border rounded ${
                             currentPage === pageNum
-                              ? 'bg-blue-500 text-white'
+                              ? 'bg-[#ff385c] text-white'
                               : 'hover:bg-gray-100'
                           }`}
                         >
@@ -665,12 +665,12 @@ function PushNotificationsV2Content() {
                           src={user.profileImageUrl}
                           alt={user.name}
                           onClick={() => handleViewProfile(user.id)}
-                          className="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-blue-500"
+                          className="w-10 h-10 rounded-full object-cover cursor-pointer hover:ring-2 hover:ring-[#ff385c]"
                         />
                       ) : (
                         <div
                           onClick={() => handleViewProfile(user.id)}
-                          className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-blue-500"
+                          className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center cursor-pointer hover:ring-2 hover:ring-[#ff385c]"
                         >
                           <span className="text-gray-500 text-xs">없음</span>
                         </div>
@@ -746,7 +746,7 @@ function PushNotificationsV2Content() {
           <button
             onClick={handleSendPushNotification}
             disabled={isSubmitting || loading || targetUsers.length === 0}
-            className="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 disabled:bg-gray-400"
+            className="bg-[#ff385c] text-white px-6 py-2 rounded hover:bg-[#ff385c] disabled:bg-gray-400"
           >
             {isSubmitting || loading ? '발송 중...' : `푸시 알림 발송 (총 ${targetUsers.length}명)`}
           </button>

@@ -50,6 +50,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
     label: '회원 관리',
     items: [
       { href: '/admin/users/appearance', label: '사용자 관리' },
+      { href: '/admin/unapproved-users', label: '미승인 유저' },
       { href: '/admin/profile-review', label: '프로필 심사' },
       { href: '/admin/reports', label: '프로필 신고 관리' },
       { href: '/admin/blacklist', label: '블랙리스트' },
@@ -193,7 +194,7 @@ function ExpandableGroup({ item, pathname, onNavigate }: ExpandableGroupProps) {
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
-      <CollapsibleTrigger className="flex w-full items-center justify-between px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50">
+      <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg px-4 py-2 text-sm font-medium text-[#6a6a6a] transition-colors hover:bg-[#f7f7f7] hover:text-[#222222]">
         <span>{item.label}</span>
         <ChevronDown
           className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`}
@@ -208,8 +209,8 @@ function ExpandableGroup({ item, pathname, onNavigate }: ExpandableGroupProps) {
                 onClick={onNavigate}
                 className={`block pl-8 pr-4 py-2.5 text-sm transition-colors ${
                   pathname === child.href
-                    ? 'bg-primary text-white'
-                    : 'text-gray-600 hover:bg-primary hover:text-white'
+                    ? 'bg-[#ff385c] text-white'
+                    : 'text-[#6a6a6a] hover:bg-[#fff5f7] hover:text-[#222222]'
                 }`}
               >
                 {child.label}
@@ -226,10 +227,10 @@ export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
-    <nav className="flex-1 overflow-y-auto py-4">
+    <nav className="flex-1 overflow-y-auto px-3 py-4">
       {NAV_CATEGORIES.map((category) => (
         <div key={category.label}>
-          <div className="px-4 py-2 mt-3 text-sm font-semibold text-gray-400 uppercase tracking-wider">
+          <div className="mt-4 px-3 py-2 text-xs font-semibold uppercase tracking-[0.04em] text-[#929292]">
             {category.icon} {category.label}
           </div>
           <ul>
@@ -252,8 +253,8 @@ export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
                     onClick={onNavigate}
                     className={`block px-4 py-2.5 text-sm transition-colors ${
                       pathname === item.href
-                        ? 'bg-primary text-white'
-                        : 'text-gray-600 hover:bg-primary hover:text-white'
+                        ? 'bg-[#ff385c] text-white'
+                        : 'text-[#6a6a6a] hover:bg-[#fff5f7] hover:text-[#222222]'
                     }`}
                   >
                     {item.label}

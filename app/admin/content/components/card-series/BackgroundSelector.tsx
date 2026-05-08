@@ -130,10 +130,10 @@ export default function BackgroundSelector({
             fontWeight: 500
           },
           '& .Mui-selected': {
-            color: '#7A4AE2 !important'
+            color: '#ff385c !important'
           },
           '& .MuiTabs-indicator': {
-            backgroundColor: '#7A4AE2'
+            backgroundColor: '#ff385c'
           }
         }}
       >
@@ -174,8 +174,8 @@ export default function BackgroundSelector({
                 startIcon={<AddPhotoAlternateIcon />}
                 onClick={onAddPresetClick}
                 sx={{
-                  borderColor: '#7A4AE2',
-                  color: '#7A4AE2',
+                  borderColor: '#ff385c',
+                  color: '#ff385c',
                   '&:hover': {
                     borderColor: '#6839CC',
                     bgcolor: 'rgba(122, 74, 226, 0.04)'
@@ -229,7 +229,7 @@ export default function BackgroundSelector({
                         overflow: 'hidden',
                         cursor: 'pointer',
                         scrollSnapAlign: 'start',
-                        border: isSelected ? '3px solid #7A4AE2' : '2px solid transparent',
+                        border: isSelected ? '3px solid #ff385c' : '2px solid transparent',
                         boxShadow: isSelected
                           ? '0 0 0 2px rgba(122, 74, 226, 0.2)'
                           : '0 2px 8px rgba(0,0,0,0.08)',
@@ -311,7 +311,7 @@ export default function BackgroundSelector({
                             position: 'absolute',
                             top: 6,
                             right: 6,
-                            bgcolor: '#7A4AE2',
+                            bgcolor: '#ff385c',
                             borderRadius: '50%',
                             width: 22,
                             height: 22,
@@ -372,7 +372,7 @@ export default function BackgroundSelector({
                     scrollSnapAlign: 'start',
                     transition: 'all 0.2s ease',
                     '&:hover': {
-                      borderColor: '#7A4AE2',
+                      borderColor: '#ff385c',
                       bgcolor: 'rgba(122, 74, 226, 0.04)'
                     }
                   }}
@@ -398,9 +398,9 @@ export default function BackgroundSelector({
                     gap: 1.5
                   }}
                 >
-                  <CheckCircleIcon sx={{ color: '#7A4AE2', fontSize: 18 }} />
+                  <CheckCircleIcon sx={{ color: '#ff385c', fontSize: 18 }} />
                   <Typography variant="body2" color="text.secondary">
-                    선택됨: <strong style={{ color: '#7A4AE2' }}>{selectedPreset.displayName}</strong>
+                    선택됨: <strong style={{ color: '#ff385c' }}>{selectedPreset.displayName}</strong>
                   </Typography>
                 </Box>
               )}
@@ -418,13 +418,13 @@ export default function BackgroundSelector({
                 p: 4,
                 borderRadius: 2,
                 border: '2px dashed',
-                borderColor: isDragOver ? '#7A4AE2' : 'grey.300',
+                borderColor: isDragOver ? '#ff385c' : 'grey.300',
                 bgcolor: isDragOver ? 'rgba(122, 74, 226, 0.04)' : 'grey.50',
                 textAlign: 'center',
                 transition: 'all 0.2s ease',
                 cursor: 'pointer',
                 '&:hover': {
-                  borderColor: '#7A4AE2',
+                  borderColor: '#ff385c',
                   bgcolor: 'rgba(122, 74, 226, 0.04)'
                 }
               }}
@@ -432,12 +432,12 @@ export default function BackgroundSelector({
             >
               {uploadingBackground ? (
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                  <CircularProgress size={40} sx={{ color: '#7A4AE2' }} />
+                  <CircularProgress size={40} sx={{ color: '#ff385c' }} />
                   <Typography color="text.secondary">업로드 중...</Typography>
                 </Box>
               ) : (
                 <>
-                  <CloudUploadIcon sx={{ fontSize: 48, color: isDragOver ? '#7A4AE2' : 'grey.400', mb: 1 }} />
+                  <CloudUploadIcon sx={{ fontSize: 48, color: isDragOver ? '#ff385c' : 'grey.400', mb: 1 }} />
                   <Typography variant="body1" fontWeight={500} sx={{ mb: 0.5 }}>
                     이미지를 드래그하거나 클릭하여 업로드
                   </Typography>

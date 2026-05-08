@@ -170,19 +170,19 @@ export function MessageComposer({ templateId, templateTitle, templateContent, on
                         {templateId && !message.trim() && (
                             <button
                                 onClick={handleApplyTemplate}
-                                className='text-xs px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700'
+                                className='text-xs px-3 py-1 bg-[#ff385c] text-white rounded hover:bg-[#e00b41]'
                             >
                                 템플릿 적용
                             </button>
                         )}
 
                         {messageSource === 'template' && templateTitle && (
-                            <span className='text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded'>
+                            <span className='text-xs px-2 py-1 bg-[#ffd1da] text-[#e00b41] rounded'>
                                 템플릿: {templateTitle}
                             </span>
                         )}
                         {messageSource === 'draft' && (
-                            <span className='text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded'>
+                            <span className='text-xs px-2 py-1 bg-[#ffd1da] text-[#e00b41] rounded'>
                                 임시저장 불러옴
                             </span>
                         )}
@@ -206,7 +206,7 @@ export function MessageComposer({ templateId, templateTitle, templateContent, on
                                 <button
                                     type='button'
                                     onClick={handleApplyTemplate}
-                                    className='text-xs text-purple-600 hover:text-purple-700 underline'
+                                    className='text-xs text-[#ff385c] hover:text-[#e00b41] underline'
                                 >
                                     템플릿 다시 적용
                                 </button>
@@ -214,7 +214,7 @@ export function MessageComposer({ templateId, templateTitle, templateContent, on
                             <button
                                 type='button'
                                 onClick={handleLoadDraft}
-                                className='text-xs text-blue-600 hover:text-blue-700 underline'
+                                className='text-xs text-[#ff385c] hover:text-[#e00b41] underline'
                             >
                                 임시저장 불러오기
                             </button>

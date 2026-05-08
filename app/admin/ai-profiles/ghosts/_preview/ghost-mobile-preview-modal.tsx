@@ -154,7 +154,7 @@ function SimGroup<T extends string | number>({
 						onClick={() => onChange(opt)}
 						className={
 							value === opt
-								? 'rounded-md border border-purple-500 bg-purple-50 px-2.5 py-1 text-xs font-medium text-purple-700'
+								? 'rounded-md border border-[#ff385c] bg-[#f7f7f7] px-2.5 py-1 text-xs font-medium text-[#e00b41]'
 								: 'rounded-md border border-slate-200 px-2.5 py-1 text-xs text-slate-600 hover:border-slate-300'
 						}
 					>

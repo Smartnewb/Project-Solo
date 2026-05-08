@@ -353,7 +353,7 @@ export function CommunityPostAppDetailPanel({
 				</Box>
 				<Box sx={{ p: 2, background: 'linear-gradient(to bottom, #FFFFFF, #F5F1FF)' }}>
 					<Stack direction="row" spacing={1.2} alignItems="center">
-						<Avatar sx={{ width: 36, height: 36, bgcolor: '#F2EDFF', color: '#7A4AE2', fontWeight: 700 }}>
+						<Avatar sx={{ width: 36, height: 36, bgcolor: '#f7f7f7', color: '#ff385c', fontWeight: 700 }}>
 							{(post.authorName ?? post.nickname ?? '익').slice(0, 1)}
 						</Avatar>
 						<Box sx={{ minWidth: 0, flex: 1 }}>
@@ -399,7 +399,7 @@ export function CommunityPostAppDetailPanel({
 								return (
 									<Box key={comment.id} sx={{ ml: isReply ? 3 : 0 }}>
 										<Stack direction="row" spacing={1} alignItems="flex-start">
-											<Avatar sx={{ width: 28, height: 28, fontSize: 12, bgcolor: '#F2EDFF', color: '#7A4AE2', fontWeight: 700 }}>
+											<Avatar sx={{ width: 28, height: 28, fontSize: 12, bgcolor: '#f7f7f7', color: '#ff385c', fontWeight: 700 }}>
 												{getCommentAuthor(comment).slice(0, 1)}
 											</Avatar>
 											<Box sx={{ minWidth: 0, flex: 1 }}>
@@ -463,8 +463,8 @@ export function CommunityPostAppDetailPanel({
 							onChange={(_, value) => value && setMode(value)}
 							sx={{
 								'& .MuiToggleButton-root.Mui-selected': {
-									bgcolor: '#F7F3FF',
-									color: '#7A4AE2',
+									bgcolor: '#f7f7f7',
+									color: '#ff385c',
 									fontWeight: 700,
 								},
 							}}
@@ -482,8 +482,8 @@ export function CommunityPostAppDetailPanel({
 							onChange={(_, value) => value && setDeliveryMode(value)}
 							sx={{
 								'& .MuiToggleButton-root.Mui-selected': {
-									bgcolor: '#F7F3FF',
-									color: '#7A4AE2',
+									bgcolor: '#f7f7f7',
+									color: '#ff385c',
 									fontWeight: 700,
 								},
 							}}
@@ -563,7 +563,7 @@ export function CommunityPostAppDetailPanel({
 														<Chip
 															size="small"
 															label={LIVE_COMMENT_TONE_LABEL[suggestion.tone]}
-															sx={{ height: 22, fontWeight: 700, bgcolor: '#F7F3FF', color: '#7A4AE2' }}
+															sx={{ height: 22, fontWeight: 700, bgcolor: '#f7f7f7', color: '#ff385c' }}
 														/>
 														<Typography variant="caption" color="text.secondary">
 															{suggestion.reason}
@@ -634,10 +634,10 @@ export function CommunityPostAppDetailPanel({
 							onClick={() => submit()}
 							sx={{
 								borderRadius: '9999px',
-								bgcolor: '#7A4AE2',
+								bgcolor: '#ff385c',
 								boxShadow: 'none',
 								fontWeight: 700,
-								'&:hover': { bgcolor: '#6B3FD4', boxShadow: 'none' },
+								'&:hover': { bgcolor: '#e00b41', boxShadow: 'none' },
 							}}
 						>
 							{deliveryMode === 'delay' ? `${delayMinutes}분 후 발송 예약` : submitLabel}
@@ -664,8 +664,8 @@ export function CommunityPostAppDetailPanel({
 							onChange={(_, value) => value && setMode(value)}
 							sx={{
 								'& .MuiToggleButton-root.Mui-selected': {
-									bgcolor: '#F7F3FF',
-									color: '#7A4AE2',
+									bgcolor: '#f7f7f7',
+									color: '#ff385c',
 									fontWeight: 700,
 								},
 							}}
@@ -683,8 +683,8 @@ export function CommunityPostAppDetailPanel({
 							onChange={(_, value) => value && setLikeAction(value)}
 							sx={{
 								'& .MuiToggleButton-root.Mui-selected': {
-									bgcolor: '#F7F3FF',
-									color: '#7A4AE2',
+									bgcolor: '#f7f7f7',
+									color: '#ff385c',
 									fontWeight: 700,
 								},
 							}}
@@ -699,8 +699,8 @@ export function CommunityPostAppDetailPanel({
 							onChange={(_, value) => value && setDeliveryMode(value)}
 							sx={{
 								'& .MuiToggleButton-root.Mui-selected': {
-									bgcolor: '#F7F3FF',
-									color: '#7A4AE2',
+									bgcolor: '#f7f7f7',
+									color: '#ff385c',
 									fontWeight: 700,
 								},
 							}}

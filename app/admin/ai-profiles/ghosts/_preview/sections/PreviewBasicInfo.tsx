@@ -35,7 +35,7 @@ export function PreviewBasicInfo({ profile }: { profile: GhostProfilePreviewResp
 						{profile.keywords.map((kw) => (
 							<span
 								key={kw}
-								className="rounded-full bg-purple-50 px-2.5 py-1 text-xs text-purple-700"
+								className="rounded-full bg-[#f7f7f7] px-2.5 py-1 text-xs text-[#e00b41]"
 							>
 								#{kw}
 							</span>

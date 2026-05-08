@@ -6,14 +6,14 @@ export function PreviewIdealType({ profile }: { profile: GhostProfilePreviewResp
 			<div className="mb-3 text-base font-semibold text-slate-900">이상형</div>
 			{profile.idealTypeResult && (
 				<div className="mb-3">
-					<div className="text-sm font-medium text-purple-600">
+					<div className="text-sm font-medium text-[#ff385c]">
 						{profile.idealTypeResult.name}
 					</div>
 					<div className="mt-1 flex flex-wrap gap-1.5">
 						{profile.idealTypeResult.tags.map((tag) => (
 							<span
 								key={tag}
-								className="rounded-full bg-purple-50 px-2 py-0.5 text-xs text-purple-700"
+								className="rounded-full bg-[#f7f7f7] px-2 py-0.5 text-xs text-[#e00b41]"
 							>
 								#{tag}
 							</span>

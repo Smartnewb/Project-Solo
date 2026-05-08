@@ -75,18 +75,22 @@ export function AdminShell({ children }: { children: ReactNode }) {
   }, [router]);
 
   if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white text-[#222222]">
+        Loading...
+      </div>
+    );
   }
 
   if (!session) {
     if (error && error !== 'Authentication required') {
       return (
-        <div className="flex items-center justify-center min-h-screen p-6">
+        <div className="flex items-center justify-center min-h-screen p-6 bg-white">
           <div className="max-w-md text-center space-y-4">
-            <p className="text-gray-700">{error}</p>
+            <p className="text-[#3f3f3f]">{error}</p>
             <button
               onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-gray-900 text-white rounded hover:bg-gray-800"
+              className="min-h-12 rounded-lg bg-[#ff385c] px-6 py-[14px] text-sm font-medium text-white transition-colors hover:bg-[#e00b41]"
             >
               새로고침
             </button>
@@ -101,23 +105,23 @@ export function AdminShell({ children }: { children: ReactNode }) {
     <AdminSessionContext.Provider value={{ session, isLoading, error, changeCountry, logout }}>
       <CountryProvider>
       <AdminQueryProvider>
-          <div className="flex min-h-screen bg-gray-100">
-            <div className={`fixed inset-y-0 left-0 z-50 h-screen w-64 overflow-y-auto bg-white shadow-lg transform transition-transform md:sticky md:top-0 md:h-screen md:translate-x-0 md:shrink-0 ${
+          <div className="admin-airbnb-screen flex min-h-screen bg-white text-[#222222]">
+            <div className={`fixed inset-y-0 left-0 z-50 h-screen w-72 overflow-y-auto border-r border-[#dddddd] bg-white transform transition-transform md:sticky md:top-0 md:h-screen md:translate-x-0 md:shrink-0 ${
               sidebarOpen ? 'translate-x-0' : '-translate-x-full'
             }`}>
-              <div className="p-4 border-b shrink-0">
-                <h2 className="text-lg font-semibold">관리자 대시보드</h2>
-                <p className="text-sm text-gray-500">{session.user.email}</p>
+              <div className="shrink-0 border-b border-[#dddddd] p-5">
+                <h2 className="text-lg font-semibold tracking-normal text-[#222222]">관리자 대시보드</h2>
+                <p className="mt-1 truncate text-sm text-[#6a6a6a]">{session.user.email}</p>
               </div>
               <div className="flex-1 overflow-y-auto">
                 <AdminSidebar onNavigate={() => setSidebarOpen(false)} />
               </div>
-              <div className="px-4 pt-3 border-t shrink-0">
+              <div className="shrink-0 border-t border-[#dddddd] px-4 pt-3">
                 <button
                   onClick={() => {
                     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
                   }}
-                  className="w-full flex items-center justify-between px-3 py-2 text-sm text-gray-400 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors"
+                  className="flex w-full items-center justify-between rounded-full border border-[#dddddd] bg-[#f7f7f7] px-3 py-2 text-sm text-[#6a6a6a] transition-colors hover:border-[#222222] hover:bg-white"
                 >
                   <span className="flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -125,7 +129,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                     </svg>
                     메뉴 검색
                   </span>
-                  <kbd className="text-[10px] px-1.5 py-0.5 bg-white rounded border border-gray-200 font-medium">
+                  <kbd className="rounded border border-[#dddddd] bg-white px-1.5 py-0.5 text-[10px] font-medium text-[#6a6a6a]">
                     ⌘K
                   </kbd>
                 </button>
@@ -133,7 +137,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
               <div className="px-4 pt-2 pb-3 space-y-1 shrink-0">
                 <button
                   onClick={() => setCountryModalOpen(true)}
-                  className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-colors flex items-center gap-2"
+                  className="flex w-full items-center gap-2 rounded-lg px-4 py-2 text-left text-[#3f3f3f] transition-colors hover:bg-[#f7f7f7]"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" />
@@ -142,7 +146,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 </button>
                 <button
                   onClick={logout}
-                  className="w-full text-left px-4 py-2 text-red-500 hover:bg-red-50 rounded transition-colors"
+                  className="w-full rounded-lg px-4 py-2 text-left text-[#c13515] transition-colors hover:bg-[#fff5f7]"
                 >
                   로그아웃
                 </button>
@@ -151,24 +155,24 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
             {sidebarOpen && (
               <div
-                className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+                className="fixed inset-0 z-40 bg-black/50 md:hidden"
                 onClick={() => setSidebarOpen(false)}
               />
             )}
 
             <div className="flex min-w-0 flex-1 flex-col overflow-auto">
-              <div className="md:hidden flex items-center justify-between p-4 bg-white shadow-sm">
-                <h1 className="text-lg font-semibold">관리자 대시보드</h1>
+              <div className="flex items-center justify-between border-b border-[#dddddd] bg-white p-4 md:hidden">
+                <h1 className="text-lg font-semibold text-[#222222]">관리자 대시보드</h1>
                 <button
                   onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="p-2 rounded-md hover:bg-gray-100"
+                  className="rounded-full p-2 transition-colors hover:bg-[#f7f7f7]"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                   </svg>
                 </button>
               </div>
-              <main className="flex-1 overflow-y-auto p-6">
+              <main className="flex-1 overflow-y-auto bg-white p-6">
                 <ToastProvider>
                   <ConfirmDialogProvider>
                     <ToastContainer />

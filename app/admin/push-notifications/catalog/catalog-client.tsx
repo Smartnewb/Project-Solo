@@ -368,7 +368,7 @@ function NotificationRow({
 				id={`row-${item.eventType}`}
 				className={`border-b border-slate-100 cursor-pointer transition ${
 					highlighted
-						? 'bg-blue-50 ring-2 ring-blue-300 ring-inset'
+						? 'bg-[#f7f7f7] ring-2 ring-[#ffd1da] ring-inset'
 						: 'hover:bg-slate-50'
 				}`}
 				onClick={onToggle}

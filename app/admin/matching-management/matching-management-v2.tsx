@@ -655,7 +655,7 @@ function MatchingManagementV2Content() {
                   onChange={(e) => setHistorySearchName(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleSearchMatchingHistory(); }}
                   placeholder="이름으로 검색"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#ff385c]"
                 />
               </Box>
               <Box sx={{ minWidth: 120 }}>
@@ -665,7 +665,7 @@ function MatchingManagementV2Content() {
                 <select
                   value={historySearchType}
                   onChange={(e) => setHistorySearchType(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#ff385c]"
                 >
                   <option value="all">전체</option>
                   <option value="scheduled">무료 매칭</option>
@@ -932,7 +932,7 @@ function MatchingManagementV2Content() {
                   onChange={(e) => setFailureSearchName(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') handleSearchMatchingFailures(); }}
                   placeholder="이름으로 검색"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#ff385c]"
                 />
               </Box>
               <Button

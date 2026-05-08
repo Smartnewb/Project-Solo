@@ -171,7 +171,7 @@ function getStatusAccent(status: ContentStatus | 'none') {
 			return '#FF6B6B';
 		case 'scheduled':
 		case 'approved':
-			return '#7A4AE2';
+			return '#ff385c';
 		default:
 			return '#D0D5DD';
 	}
@@ -182,7 +182,7 @@ function getOpsQueueColor(queue: TargetPostOpsQueue | null | undefined) {
 		case 'risk':
 			return { bg: '#FFF1F0', fg: '#B42318', border: '#FDA29B' };
 		case 'ghost_touched':
-			return { bg: '#F4F3FF', fg: '#5925DC', border: '#D9D6FE' };
+			return { bg: '#F4F3FF', fg: '#ff385c', border: '#D9D6FE' };
 		case 'warming_up':
 			return { bg: '#ECFDF3', fg: '#027A48', border: '#ABEFC6' };
 		case 'needs_comment':
@@ -806,7 +806,7 @@ export default function TargetPostsPage() {
 												transform: 'translateY(-2px)',
 											},
 											'&:focus-visible': {
-												outline: '3px solid #E2D5FF',
+												outline: '3px solid #ffd1da',
 												outlineOffset: 2,
 											},
 										}}
@@ -830,10 +830,10 @@ export default function TargetPostsPage() {
 														height: 24,
 														maxWidth: '68%',
 														borderRadius: '9999px',
-														bgcolor: '#F7F3FF',
-														color: '#7A4AE2',
+														bgcolor: '#f7f7f7',
+														color: '#ff385c',
 														fontWeight: 700,
-														border: '1px solid #E2D5FF',
+														border: '1px solid #ffd1da',
 														'& .MuiChip-label': {
 															overflow: 'hidden',
 															textOverflow: 'ellipsis',
@@ -1181,7 +1181,7 @@ export default function TargetPostsPage() {
 															display: 'grid',
 															placeItems: 'center',
 															bgcolor: '#F4F3FF',
-															color: '#5925DC',
+															color: '#ff385c',
 														}}
 													>
 														<AutoAwesomeIcon fontSize="small" />
@@ -1202,7 +1202,7 @@ export default function TargetPostsPage() {
 												label="톤"
 												value={tone}
 												onChange={(e) => setTone(e.target.value)}
-												InputProps={{ startAdornment: <TuneIcon fontSize="small" sx={{ mr: 0.8, color: '#7A4AE2' }} /> }}
+												InputProps={{ startAdornment: <TuneIcon fontSize="small" sx={{ mr: 0.8, color: '#ff385c' }} /> }}
 											/>
 											<TextField
 												size="small"
@@ -1221,7 +1221,7 @@ export default function TargetPostsPage() {
 												sx={{
 													borderRadius: '10px',
 													fontWeight: 900,
-													bgcolor: '#5925DC',
+													bgcolor: '#ff385c',
 													'&:hover': { bgcolor: '#4A1FB8' },
 												}}
 											>

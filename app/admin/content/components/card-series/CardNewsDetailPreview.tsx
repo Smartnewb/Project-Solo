@@ -434,7 +434,7 @@ function ArticlePreview({ sections }: { sections: CardSection[] }) {
                 width: currentIndex === index ? 18 : 6,
                 height: 6,
                 borderRadius: currentIndex === index ? '10px' : '3px',
-                background: currentIndex === index ? '#7A4AE2' : '#E2D5FF',
+                background: currentIndex === index ? '#ff385c' : '#ffd1da',
                 transition: 'all 0.3s'
               }}
             />
@@ -459,7 +459,7 @@ function ArticlePreview({ sections }: { sections: CardSection[] }) {
                 sx={{
                   width: '100%',
                   aspectRatio: '4 / 5',
-                  background: '#F7F3FF',
+                  background: '#f7f7f7',
                   borderRadius: '16px',
                   overflow: 'hidden',
                   display: 'flex',

@@ -9,7 +9,7 @@ import { cn } from '@/shared/utils';
 function SourceBadge({ vendor }: { vendor?: string }) {
 	const label =
 		vendor === 'real-user' ? { text: '유저', cls: 'border-violet-300 bg-violet-50/90 text-violet-700' } :
-		vendor === 'unknown' ? { text: 'Ghost', cls: 'border-blue-300 bg-blue-50/90 text-blue-700' } :
+		vendor === 'unknown' ? { text: 'Ghost', cls: 'border-[#ffd1da] bg-[#f7f7f7] text-[#e00b41]' } :
 		{ text: 'AI', cls: 'border-amber-300 bg-amber-50/90 text-amber-700' };
 	return (
 		<Badge variant="outline" className={cn('text-[10px] font-semibold backdrop-blur-sm', label.cls)}>

@@ -176,7 +176,7 @@ export function GenderAnalysisTable({
             {getAnalysisData().map((item, index) => (
               <div
                 key={index}
-                className={`rounded-md ${item.gender === "MALE" ? "bg-blue-50" : "bg-pink-50"} flex-1 text-center`}
+                className={`rounded-md ${item.gender === "MALE" ? "bg-[#f7f7f7]" : "bg-pink-50"} flex-1 text-center`}
               >
                 <p
                   className={`text-xl font-semibold ${item.gender === "MALE" ? "text-[#1D4ED8]" : "text-pink-700"}`}

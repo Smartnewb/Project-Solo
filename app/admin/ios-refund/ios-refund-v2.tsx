@@ -138,7 +138,7 @@ function IOSRefundPageContent() {
                 className={`px-4 py-2 rounded-lg text-white font-medium transition-colors ${
                   syncing
                     ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700'
+                    : 'bg-[#ff385c] hover:bg-[#e00b41]'
                 }`}
               >
                 {syncing ? '동기화 중...' : '환불 상태 동기화'}
@@ -159,7 +159,7 @@ function IOSRefundPageContent() {
                 </label>
                 <select
                   {...filterForm.register('filterStatus')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff385c] focus:border-transparent"
                 >
                   <option value="ALL">전체</option>
                   <option value={AppleRefundStatus.NONE}>정상</option>
@@ -174,7 +174,7 @@ function IOSRefundPageContent() {
                   type="text"
                   {...filterForm.register('searchTerm')}
                   placeholder="사용자 이름 또는 ID"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff385c] focus:border-transparent"
                 />
               </div>
               <div>
@@ -184,7 +184,7 @@ function IOSRefundPageContent() {
                 <input
                   type="date"
                   {...filterForm.register('startDate')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff385c] focus:border-transparent"
                 />
               </div>
               <div>
@@ -194,7 +194,7 @@ function IOSRefundPageContent() {
                 <input
                   type="date"
                   {...filterForm.register('endDate')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#ff385c] focus:border-transparent"
                 />
               </div>
             </div>
@@ -207,7 +207,7 @@ function IOSRefundPageContent() {
               </button>
               <button
                 onClick={handleSearch}
-                className="px-4 py-2 text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
+                className="px-4 py-2 text-white bg-[#ff385c] rounded-lg hover:bg-[#e00b41] transition-colors"
               >
                 검색
               </button>
@@ -223,7 +223,7 @@ function IOSRefundPageContent() {
 
             {loading ? (
               <div className="flex justify-center items-center py-20">
-                <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-4 border-[#ff385c] border-t-transparent rounded-full animate-spin" />
               </div>
             ) : items.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-gray-500">

@@ -9,7 +9,7 @@ interface CountryFABProps {
 export default function CountryFAB({ onClick }: CountryFABProps) {
   const { country, countryFlag, countryLabel } = useCountry();
 
-  const bgColor = country === 'kr' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-red-500 hover:bg-red-600';
+  const bgColor = country === 'kr' ? 'bg-[#ff385c] hover:bg-[#ff385c]' : 'bg-red-500 hover:bg-red-600';
 
   return (
     <button

@@ -561,12 +561,12 @@ function PhotoRegenerationSection({ detail }: { detail: GhostDetail }) {
 										onClick={() => toggleRef(photo.url)}
 										className={cn(
 											'relative aspect-square cursor-pointer overflow-hidden rounded-md border-2',
-											isRef ? 'border-blue-500 ring-1 ring-blue-200' : 'border-transparent hover:border-slate-300',
+											isRef ? 'border-[#ff385c] ring-1 ring-[#ffd1da]' : 'border-transparent hover:border-slate-300',
 										)}
 									>
 										{/* eslint-disable-next-line @next/next/no-img-element */}
 										<img src={photo.url} alt={`슬롯 ${photo.slotIndex}`} className="h-full w-full object-cover" />
-										{isRef && <div className="absolute inset-0 bg-blue-500/20" />}
+										{isRef && <div className="absolute inset-0 bg-[#ff385c]/20" />}
 									</div>
 								);
 							})}

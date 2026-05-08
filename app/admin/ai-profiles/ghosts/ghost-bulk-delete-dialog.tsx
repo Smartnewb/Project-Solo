@@ -184,7 +184,7 @@ export function GhostBulkDeleteDialog({
 												<Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-slate-400" />
 											)}
 											{entry.status === 'success' && (
-												<CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-600" />
+												<CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-[#ff385c]" />
 											)}
 											{entry.status === 'failed' && (
 												<XCircle className="h-3.5 w-3.5 shrink-0 text-red-600" />

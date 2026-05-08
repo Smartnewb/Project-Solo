@@ -42,44 +42,44 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-white p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-5xl font-bold text-gray-800">Sometime</h1>
-          <p className="text-gray-600 mt-2 text-lg">관리자 대시보드</p>
+        <div className="mb-8 text-center">
+          <h1 className="text-[28px] font-bold leading-[1.43] text-[#222222]">Sometime</h1>
+          <p className="mt-2 text-base text-[#6a6a6a]">관리자 대시보드</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-8 space-y-6">
+        <div className="space-y-6 rounded-[14px] border border-[#dddddd] bg-white p-8 shadow-card">
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label className="block text-gray-700 mb-1 text-base">이메일</label>
+              <label className="mb-1 block text-base text-[#3f3f3f]">이메일</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                className="min-h-14 w-full rounded-lg border border-[#dddddd] px-4 py-3 text-[#222222] placeholder:text-[#6a6a6a] focus:border-[#222222] focus:outline-none"
                 placeholder="관리자 이메일을 입력하세요"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-gray-700 mb-1 text-base">비밀번호</label>
+              <label className="mb-1 block text-base text-[#3f3f3f]">비밀번호</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                className="min-h-14 w-full rounded-lg border border-[#dddddd] px-4 py-3 text-[#222222] placeholder:text-[#6a6a6a] focus:border-[#222222] focus:outline-none"
                 placeholder="비밀번호를 입력하세요"
                 required
               />
             </div>
 
-            {error && <div className="text-red-500 text-sm">{error}</div>}
+            {error && <div className="text-sm text-[#c13515]">{error}</div>}
 
             <button
               type="submit"
-              className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition duration-200 text-lg"
+              className="min-h-12 w-full rounded-lg bg-[#ff385c] px-6 py-[14px] text-base font-medium text-white transition-colors hover:bg-[#e00b41] disabled:bg-[#ffd1da]"
               disabled={isLoading}
             >
               {isLoading ? '로그인 중...' : '관리자 로그인'}

@@ -172,7 +172,7 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
                         onClick={handleClearDates}
                         className={`px-3 py-1.5 text-sm rounded-md transition-colors' 
                             ${selectedPeriod === 'all'
-                                ? 'text-white bg-[#7D4EE4]'
+                                ? 'text-white bg-[#ff385c]'
                                 : 'border border-border text-gray-700 bg-gary-100 text-gray-700'
                             }`}
                     >
@@ -182,7 +182,7 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
                         onClick={() => handleQuickPeriod(7)}
                         className={`px-3 py-1.5 text-sm rounded-md transition-colors' 
                             ${selectedPeriod === '7days'
-                                ? 'text-white bg-[#7D4EE4]'
+                                ? 'text-white bg-[#ff385c]'
                                 : 'border border-border text-gray-700 bg-gary-100 text-gray-700'
                             }`}
                     >
@@ -192,7 +192,7 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
                         onClick={() => handleQuickPeriod(30)}
                         className={`px-3 py-1.5 text-sm rounded-md transition-colors' 
                             ${selectedPeriod === '30days'
-                                ? 'text-white bg-[#7D4EE4]'
+                                ? 'text-white bg-[#ff385c]'
                                 : 'border border-border text-gray-700 bg-gary-100 text-gray-700'
                             }`}
                     >
@@ -202,7 +202,7 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
                         onClick={() => handleQuickPeriod(90)}
                         className={`px-3 py-1.5 text-sm rounded-md transition-colors' 
                             ${selectedPeriod === '90days'
-                                ? 'text-white bg-[#7D4EE4]'
+                                ? 'text-white bg-[#ff385c]'
                                 : 'border border-border text-gray-700 bg-gary-100 text-gray-700'
                             }`}
                         
@@ -223,7 +223,7 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
                                 <PopoverTrigger asChild>
                                     <button className={`w-full flex-1 flex px-3 py-2 text-left border rounded-md text-sm items-center justify-between
                                                 ${startDateOpen
-                                                ? 'border-[#7D4EE4]'
+                                                ? 'border-[#ff385c]'
                                                 : 'border-[#D1D5DB]'
                                                 }`}>
                                         <span className={ dateRange.from ? '' : 'text-gray-400'}>
@@ -257,7 +257,7 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
                                                 setDateRange(prev => ({ ...prev, from: undefined,}))
                                             }}>취소</button>
                                         <button
-                                            className='px-3 py-1.5 text-sm text-white font-medium hover:bg-purple-700 rounded-md bg-[#7D4EE4]'
+                                            className='px-3 py-1.5 text-sm text-white font-medium hover:bg-[#e00b41] rounded-md bg-[#ff385c]'
                                             onClick={() => {
                                                 setStartDateOpen(false);
                                             }}
@@ -281,7 +281,7 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
                                 <PopoverTrigger asChild>
                                     <button className={`w-full flex-1 flex px-3 py-2 text-left border rounded-md text-sm items-center justify-between
                                                 ${endDateOpen
-                                                ? 'border-[#7D4EE4]'
+                                                ? 'border-[#ff385c]'
                                                 : 'border-[#D1D5DB]'
                                                 }`}>
                                         <span className={ dateRange.to ? '' : 'text-gray-400'}>
@@ -324,7 +324,7 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
                                                 setDateRange(prev => ({ ...prev, from: undefined,}))
                                             }}>취소</button>
                                         <button
-                                            className='px-3 py-1.5 text-sm text-white font-medium hover:bg-purple-700 rounded-md bg-[#7D4EE4]'
+                                            className='px-3 py-1.5 text-sm text-white font-medium hover:bg-[#e00b41] rounded-md bg-[#ff385c]'
                                             onClick={() => {
                                                 setEndDateOpen(false);
                                             }}
@@ -339,9 +339,9 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
 
                 {/* 선택된 기간 표시 */}
                 {(dateRange.from || dateRange.to) && (
-                    <div className='mt-4 p-3 bg-purple-50 border border-purple-200 rounded-md'>
+                    <div className='mt-4 p-3 bg-[#f7f7f7] border border-[#ffd1da] rounded-md'>
                         <div className='flex items-center justify-between'>
-                            <div className='text-sm text-[#7D4EE4]'>
+                            <div className='text-sm text-[#ff385c]'>
                                 <span className='font-medium'>선택된 기간: </span>
                                 {dateRange.from && dateRange.to ? (
                                     `${safeFormat(dateRange.from, 'yyyy-MM-dd')} ~ ${safeFormat(dateRange.to, 'yyyy-MM-dd')}`
@@ -354,7 +354,7 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
                             </div>
                             <button
                                 onClick={handleClearDates}
-                                className='text-[#7D4EE4] hover:text-purple-700 text-sm font-medium'
+                                className='text-[#ff385c] hover:text-[#e00b41] text-sm font-medium'
                             >
                                 초기화
                             </button>

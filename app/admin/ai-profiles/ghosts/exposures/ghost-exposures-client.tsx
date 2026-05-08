@@ -26,7 +26,7 @@ function GhostListRow({
 	return (
 		<div
 			className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-				isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 bg-white hover:bg-gray-50'
+				isSelected ? 'border-[#ff385c] bg-[#f7f7f7]' : 'border-gray-200 bg-white hover:bg-gray-50'
 			}`}
 			onClick={onSelect}
 		>

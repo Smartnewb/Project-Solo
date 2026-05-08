@@ -345,14 +345,14 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
       return (
         <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
           <p className="font-medium text-gray-900">{data.name}</p>
-          <p className="text-blue-600">매출액: {formatCurrency(data.value)}</p>
-          <p className="text-green-600">
+          <p className="text-[#ff385c]">매출액: {formatCurrency(data.value)}</p>
+          <p className="text-[#ff385c]">
             거래건수: {formatNumber(data.count)}건
           </p>
           <p className="text-orange-600">
             유료 사용자: {formatNumber(data.paidUserCount || 0)}명
           </p>
-          <p className="text-purple-600">비율: {data.percentage.toFixed(1)}%</p>
+          <p className="text-[#ff385c]">비율: {data.percentage.toFixed(1)}%</p>
         </div>
       );
     }
@@ -435,7 +435,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
         <div className="flex gap-2">
           <button
             onClick={handleRefresh}
-            className="px-4 py-2 bg-[#7D4EE4] text-white rounded-lg hover:bg-purple-700 transition-colors"
+            className="px-4 py-2 bg-[#ff385c] text-white rounded-lg hover:bg-[#e00b41] transition-colors"
           >
             새로고침
           </button>
@@ -495,7 +495,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
               onChange={(e) =>
                 setSelectedPaymentType(e.target.value as paymentType)
               }
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#ff385c]"
             >
               {PAYMENT_TYPE_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -517,7 +517,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
       {/* 로딩 상태 */}
       {isLoading && (
         <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff385c]"></div>
           <span className="ml-2">데이터를 불러오는 중...</span>
         </div>
       )}
@@ -533,7 +533,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                   ? `${getClusterRegionLabel(selectedRegions[0])} 매출액`
                   : `선택된 지역 (${selectedRegions.length}개) 매출액`}
             </h3>
-            <div className="text-4xl font-bold text-purple-600 mb-4">
+            <div className="text-4xl font-bold text-[#ff385c] mb-4">
               {formatCurrency(getFilteredTotals().totalSales)}
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
@@ -553,15 +553,15 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                   명
                 </div>
               </div>
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="text-center p-4 bg-[#f7f7f7] rounded-lg">
                 <div className="text-sm text-gray-500">ARPPU</div>
-                <div className="text-xl font-semibold text-blue-900">
+                <div className="text-xl font-semibold text-[#222222]">
                   {formatCurrency(iapStats?.arppu ?? 0)}
                 </div>
               </div>
-              <div className="text-center p-4 bg-purple-50 rounded-lg">
+              <div className="text-center p-4 bg-[#f7f7f7] rounded-lg">
                 <div className="text-sm text-gray-500">결제 타입</div>
-                <div className="text-xl font-semibold text-purple-900">
+                <div className="text-xl font-semibold text-[#222222]">
                   {getPaymentTypeLabel(selectedPaymentType)}
                 </div>
               </div>
@@ -602,7 +602,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                           filteredData.length > 5 && (
                             <button
                               onClick={() => setShowAllRegions((prev) => !prev)}
-                              className="px-3 py-1.5 text-sm font-medium text-[#7D4EE4] bg-purple-50 rounded-md hover:bg-purple-100 transition-colors"
+                              className="px-3 py-1.5 text-sm font-medium text-[#ff385c] bg-[#f7f7f7] rounded-md hover:bg-[#ffd1da] transition-colors"
                             >
                               {showAllRegions ? "접기" : "더보기"}
                             </button>
@@ -654,7 +654,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                                     <span
                                       className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-medium ${
                                         index < 3
-                                          ? "bg-[#7D4EE4] text-white"
+                                          ? "bg-[#ff385c] text-white"
                                           : "bg-gray-200 text-gray-600"
                                       }`}
                                     >
@@ -687,13 +687,13 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                                   <div className="flex items-center justify-end gap-2">
                                     <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
                                       <div
-                                        className="h-full bg-[#7D4EE4] rounded-full"
+                                        className="h-full bg-[#ff385c] rounded-full"
                                         style={{
                                           width: `${calculatePercentages()[regionData.region] || 0}%`,
                                         }}
                                       />
                                     </div>
-                                    <span className="text-sm font-medium text-[#7D4EE4] min-w-[3rem] text-right">
+                                    <span className="text-sm font-medium text-[#ff385c] min-w-[3rem] text-right">
                                       {(
                                         calculatePercentages()[
                                           regionData.region
@@ -722,7 +722,7 @@ export function TotalAmount({ startDate, endDate }: TotalAmountProps) {
                               {formatNumber(getFilteredTotals().totalPaidUsers)}
                               명
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-[#7D4EE4]">
+                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-[#ff385c]">
                               100.0%
                             </td>
                           </tr>

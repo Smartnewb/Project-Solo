@@ -162,7 +162,7 @@ function UserSearchSection({ gender, selectedUser, onSelectUser }: UserSearchSec
 						onChange={(e) => setSearchTerm(e.target.value)}
 						onKeyDown={handleKeyDown}
 						placeholder="이름, 이메일, 전화번호로 검색"
-						className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+						className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff385c]"
 					/>
 					<Button onClick={handleSearch} disabled={isLoading || !searchTerm.trim()}>
 						{isLoading ? '검색 중...' : '검색'}
@@ -381,7 +381,7 @@ export default function ForceMatchingTab() {
 						onChange={(e) => setReason(e.target.value)}
 						placeholder="강제 매칭 사유를 입력하세요 (선택사항)"
 						rows={2}
-						className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+						className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff385c] resize-none"
 					/>
 				</Box>
 

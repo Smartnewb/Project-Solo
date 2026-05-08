@@ -92,7 +92,7 @@ export default function PublicReviewManagement() {
 					<SummaryBadge
 						label="전체 공개 리뷰"
 						count={reviews.length}
-						color="#6941C6"
+						color="#ff385c"
 					/>
 					{(Object.entries(sourceCounts) as [PublicReviewSource, number][]).map(
 						([source, count]) => {

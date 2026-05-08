@@ -12,7 +12,7 @@ export function PreviewBottomLikeBar({ matchStatus }: { matchStatus: MatchStatus
 	const { text, variant } = LABELS[matchStatus];
 	const cls =
 		variant === 'primary'
-			? 'bg-purple-600 text-white'
+			? 'bg-[#ff385c] text-white'
 			: variant === 'secondary'
 				? 'bg-slate-100 text-slate-600'
 				: 'bg-slate-200 text-slate-400';

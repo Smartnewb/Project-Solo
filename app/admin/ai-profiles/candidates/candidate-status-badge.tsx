@@ -11,7 +11,7 @@ const LABEL: Record<GhostCandidateStatus, string> = {
 
 const COLOR: Record<GhostCandidateStatus, string> = {
 	PENDING: 'bg-slate-200 text-slate-700 hover:bg-slate-200',
-	QUEUED: 'bg-blue-500 hover:bg-blue-500',
+	QUEUED: 'bg-[#ff385c] hover:bg-[#ff385c]',
 	SENT: 'bg-emerald-500 hover:bg-emerald-500',
 	CANCELED: 'bg-rose-500 hover:bg-rose-500',
 };

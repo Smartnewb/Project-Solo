@@ -46,7 +46,7 @@ export function PreviewMainImage({ profile, country }: Props) {
 
 			{/* 오버레이 */}
 			<div className="absolute bottom-4 left-5 right-5 text-white">
-				<div className="mb-1 inline-flex items-center gap-1 rounded-md bg-purple-600 px-2 py-1 text-xs font-bold">
+				<div className="mb-1 inline-flex items-center gap-1 rounded-md bg-[#ff385c] px-2 py-1 text-xs font-bold">
 					<span>최근 접속</span>
 					<span className="font-light">{formatLastLogin(profile.updatedAt)}</span>
 				</div>

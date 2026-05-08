@@ -150,7 +150,7 @@ function SectionImageUpload({
       onDragLeave={onDragLeave}
       onDrop={onDrop}
       sx={{
-        border: dragOver ? '2px dashed #7A4AE2' : `2px dashed ${emptyBorderColor}`,
+        border: dragOver ? '2px dashed #ff385c' : `2px dashed ${emptyBorderColor}`,
         borderRadius: 2,
         p: 4,
         textAlign: 'center',
@@ -164,7 +164,7 @@ function SectionImageUpload({
         <CircularProgress size={24} />
       ) : (
         <>
-          <PhotoCameraIcon sx={{ fontSize: 40, color: dragOver ? '#7A4AE2' : emptyIconColor, mb: 1 }} />
+          <PhotoCameraIcon sx={{ fontSize: 40, color: dragOver ? '#ff385c' : emptyIconColor, mb: 1 }} />
           {required ? (
             <>
               <Typography variant="body2" color={dragOver ? 'primary' : 'error'} fontWeight="bold">

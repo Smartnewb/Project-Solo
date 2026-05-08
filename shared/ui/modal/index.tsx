@@ -26,7 +26,7 @@ const Modal = React.forwardRef<HTMLDivElement, ModalProps>(
             ref={ref}
             className={cn(
               "relative bg-white max-h-[90vh] overflow-auto",
-              "w-full max-w-lg rounded-xl border shadow-lg",
+              "w-full max-w-lg rounded-[14px] border border-[#dddddd] shadow-card",
               "animate-in fade-in-0 zoom-in-95",
               className
             )}
@@ -48,7 +48,7 @@ const ModalHeader = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "flex items-center justify-between border-b p-4 bg-white",
+      "flex items-center justify-between border-b border-[#dddddd] bg-white p-4",
       className
     )}
     {...props}
@@ -57,7 +57,7 @@ const ModalHeader = React.forwardRef<
     {onClose && (
       <button
         onClick={onClose}
-        className="rounded-full p-1 hover:bg-gray-100 transition-colors"
+        className="rounded-full p-1 transition-colors hover:bg-[#f7f7f7]"
       >
         <X className="h-4 w-4" />
       </button>
@@ -85,7 +85,7 @@ const ModalFooter = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "flex items-center justify-end gap-2 border-t p-4 bg-white",
+      "flex items-center justify-end gap-2 border-t border-[#dddddd] bg-white p-4",
       className
     )}
     {...props}
@@ -93,4 +93,4 @@ const ModalFooter = React.forwardRef<
 ));
 ModalFooter.displayName = "ModalFooter";
 
-export { Modal, ModalHeader, ModalContent, ModalFooter }; 
+export { Modal, ModalHeader, ModalContent, ModalFooter };

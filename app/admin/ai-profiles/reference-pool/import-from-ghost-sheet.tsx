@@ -341,7 +341,7 @@ function GhostRow({
 							onClick={() => onToggle(item.ghostAccountId, photoUrl)}
 							className={cn(
 								'relative aspect-[3/4] overflow-hidden rounded-md border-2 transition-all',
-								isSelected && 'border-blue-500 ring-2 ring-blue-200',
+								isSelected && 'border-[#ff385c] ring-2 ring-[#ffd1da]',
 								!isSelected && !disabled && 'border-transparent hover:border-slate-300',
 								disabled && 'cursor-not-allowed border-slate-200',
 							)}
@@ -355,8 +355,8 @@ function GhostRow({
 								className={cn('h-full w-full object-cover', disabled && 'opacity-30 grayscale')}
 							/>
 							{isSelected ? (
-								<div className="absolute inset-0 flex items-center justify-center bg-blue-500/20">
-									<div className="rounded-full bg-blue-500 p-1">
+								<div className="absolute inset-0 flex items-center justify-center bg-[#ff385c]/20">
+									<div className="rounded-full bg-[#ff385c] p-1">
 										<Check className="h-3 w-3 text-white" />
 									</div>
 								</div>

@@ -83,8 +83,8 @@ export function AgeAnalysisComponent({ startDate, endDate }: AgeAnalysisProps) {
   const AGE_COLOR_SYSTEM = [
     {
       chart: "#3B82F6",
-      bg: "bg-blue-50",
-      text: "text-blue-700",
+      bg: "bg-[#f7f7f7]",
+      text: "text-[#e00b41]",
     },
     {
       chart: "#10B981",
@@ -93,8 +93,8 @@ export function AgeAnalysisComponent({ startDate, endDate }: AgeAnalysisProps) {
     },
     {
       chart: "#8B5CF6",
-      bg: "bg-purple-50",
-      text: "text-purple-700",
+      bg: "bg-[#f7f7f7]",
+      text: "text-[#e00b41]",
     },
     {
       chart: "#F59E0B",

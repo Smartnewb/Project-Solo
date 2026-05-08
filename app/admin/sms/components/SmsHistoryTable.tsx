@@ -111,7 +111,7 @@ export function SmsHistoryTable({ histories, limit = 50 }: SmsHistoryTableProps)
                 {loading ? (
                     // 로딩 스피너
                     <div className='flex justify-center items-center py-12'>
-                        <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600'></div>
+                        <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff385c]'></div>
                     </div>
                 ) : data.length === 0 ? (
                     // 발송 내역 없는 경우

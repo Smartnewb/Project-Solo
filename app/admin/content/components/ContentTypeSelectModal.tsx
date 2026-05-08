@@ -20,8 +20,8 @@ interface Props {
 
 // 실제 앱 디자인 토큰
 const APP = {
-  brandPrimary: '#7A4AE2',
-  surfaceTertiary: '#F2EDFF',
+  brandPrimary: '#ff385c',
+  surfaceTertiary: '#f7f7f7',
   surfaceBg: '#FFFFFF',
   textPrimary: '#000000',
   textMuted: '#7C7C7C',
@@ -158,7 +158,7 @@ function LongformPreview() {
       {/* hero image — 16:9 */}
       <div style={{
         width: '100%', paddingBottom: `${(9 / 16) * 100}%`, position: 'relative',
-        background: 'linear-gradient(135deg, #7A4AE2, #9747FF, #c084e0)',
+        background: 'linear-gradient(135deg, #ff385c, #e00b41, #c084e0)',
       }}>
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 600 }}>HERO IMAGE</span>
@@ -319,8 +319,8 @@ export function ContentTypeSelectModal({ open, onClose, onSelect }: Props) {
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
                 '&:hover': {
-                  borderColor: '#7A4AE2',
-                  bgcolor: '#F7F3FF',
+                  borderColor: '#ff385c',
+                  bgcolor: '#f7f7f7',
                   transform: 'translateY(-2px)',
                   boxShadow: '0 4px 16px rgba(122,74,226,0.15)',
                 },

@@ -5,12 +5,12 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 
 // ─── 실제 앱 디자인 토큰 ──────────────────────────────────────────
 const C = {
-  brandPrimary: '#7A4AE2',
+  brandPrimary: '#ff385c',
   brandAccent: '#A892D7',
-  brandLight: '#E2D5FF',
+  brandLight: '#ffd1da',
   surfaceBg: '#FFFFFF',
-  surfaceSecondary: '#F7F3FF',   // 대기화면 bg
-  surfaceTertiary: '#F2EDFF',
+  surfaceSecondary: '#f7f7f7',   // 대기화면 bg
+  surfaceTertiary: '#f7f7f7',
   borderCard: '#E5E8EB',
   textPrimary: '#000000',
   textSecondary: '#333333',
@@ -440,9 +440,9 @@ function HomeMatchScreen() {
             {/* 좋아요 버튼 */}
             <div style={{
               width: '100%', height: 56, borderRadius: 16,
-              background: 'linear-gradient(135deg, #9B6DFF, #7A4AE2, #6B3FD4)',
+              background: 'linear-gradient(135deg, #9B6DFF, #ff385c, #e00b41)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, cursor: 'pointer',
-              border: '3px solid #6B3FD4', overflow: 'hidden', position: 'relative',
+              border: '3px solid #e00b41', overflow: 'hidden', position: 'relative',
             }}>
               <span style={{ color: '#fff', fontSize: 16, fontWeight: 700 }}>💜 좋아요 보내기</span>
             </div>
@@ -606,7 +606,7 @@ function ChatRoomScreen() {
             )}
             <div style={{ maxWidth: '68%' }}>
               <div style={{
-                background: msg.mine ? `linear-gradient(135deg, ${C.brandPrimary}, #9747FF)` : '#F2F3F5',
+                background: msg.mine ? `linear-gradient(135deg, ${C.brandPrimary}, #e00b41)` : '#F2F3F5',
                 color: msg.mine ? '#fff' : C.textPrimary,
                 borderRadius: msg.mine ? '16px 16px 4px 16px' : '4px 16px 16px 16px',
                 padding: '8px 12px', fontSize: 13, lineHeight: 1.5,
@@ -663,7 +663,7 @@ function ButtonsScreen() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
         {[
           { label: '확인', bg: C.brandPrimary, color: '#fff', border: C.brandPrimary },
-          { label: '좋아요 보내기', bg: 'linear-gradient(135deg,#9B6DFF,#7A4AE2,#6B3FD4)', color: '#fff', border: '#6B3FD4', isGrad: true },
+          { label: '좋아요 보내기', bg: 'linear-gradient(135deg,#9B6DFF,#ff385c,#e00b41)', color: '#fff', border: '#e00b41', isGrad: true },
           { label: '나중에', bg: '#F8F9FA', color: C.textMuted, border: '#E4E2E2', bw: 2 },
           { label: '더보기', bg: 'transparent', color: C.brandPrimary, border: C.brandPrimary },
           { label: '취소', bg: '#fff', color: C.brandPrimary, border: C.brandPrimary },
@@ -733,7 +733,7 @@ export default function AppPreviewPage() {
 
   const notes: Record<ScreenId, string[]> = {
     'home-match': ['매칭 카드: 파트너 사진이 카드 전체를 채움', '상단 타이머 — 실시간 카운트다운', '우상단 최근 접속 배지 (보라색 pill)', '하단 그라데이션 오버레이 + 나이/MBTI/학교/연애스타일', '우측 "더 보기 →" 사이드 버튼', '카드 클릭 → 파트너 상세 + 좋아요 버튼 shimmer', 'Like Collapse: 블러 아바타 순차 등장 + 보라 그라데이션'],
-    'home-waiting': ['`surface.secondary: #F7F3FF` 배경', 'D-2 카운트다운 타이머', '여우 마스코트 우측 하단 반투명', '매주 목·일요일 매칭 안내'],
+    'home-waiting': ['`surface.secondary: #f7f7f7` 배경', 'D-2 카운트다운 타이머', '여우 마스코트 우측 하단 반투명', '매주 목·일요일 매칭 안내'],
     'chat-list': ['채팅 목록: 아바타 + 이름 + 대학교', '읽지않은 메시지 빨간 뱃지', '마지막 메시지 미리보기'],
     'chat-room': ['헤더: 뒤로 + 프로필사진/이름/학과 + ⋮', '새 매칭 배너 (borderColor: brand.primary)', '메시지: 보라 그라데이션 (내) vs 회색 (상대)', '타이핑 인디케이터 bounce 애니메이션', 'Enter로 전송'],
     'buttons': ['6 variants 탭 피드백', '4 size (60/50/34/41px)', '키워드 칩 선택 토글'],
@@ -749,7 +749,7 @@ export default function AppPreviewPage() {
       <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
         {SCREENS.map(s => (
           <Chip key={s.id} label={s.label} onClick={() => setActive(s.id)} variant={active === s.id ? 'filled' : 'outlined'}
-            sx={{ bgcolor: active === s.id ? '#7A4AE2' : 'transparent', color: active === s.id ? '#fff' : '#7A4AE2', borderColor: '#7A4AE2', fontWeight: 600, '&:hover': { bgcolor: active === s.id ? '#6B3FD4' : '#F7F3FF' } }}
+            sx={{ bgcolor: active === s.id ? '#ff385c' : 'transparent', color: active === s.id ? '#fff' : '#ff385c', borderColor: '#ff385c', fontWeight: 600, '&:hover': { bgcolor: active === s.id ? '#e00b41' : '#f7f7f7' } }}
           />
         ))}
       </Box>
@@ -770,7 +770,7 @@ export default function AppPreviewPage() {
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.8 }}>
               {notes[active].map((n, i) => (
                 <Typography key={i} variant="body2" color="text.secondary" sx={{ display: 'flex', gap: 1 }}>
-                  <span style={{ color: '#7A4AE2', fontWeight: 700, flexShrink: 0 }}>•</span>{n}
+                  <span style={{ color: '#ff385c', fontWeight: 700, flexShrink: 0 }}>•</span>{n}
                 </Typography>
               ))}
             </Box>
@@ -779,10 +779,10 @@ export default function AppPreviewPage() {
           <Box sx={{ p: 2.5, bgcolor: '#fff', borderRadius: 2, border: '1px solid #e0e0e0' }}>
             <Typography variant="subtitle2" fontWeight="bold" gutterBottom>주요 디자인 토큰</Typography>
             {[
-              { name: 'brand.primary', hex: '#7A4AE2' },
+              { name: 'brand.primary', hex: '#ff385c' },
               { name: 'brand.accent', hex: '#A892D7' },
-              { name: 'brand.light', hex: '#E2D5FF' },
-              { name: 'surface.secondary', hex: '#F7F3FF' },
+              { name: 'brand.light', hex: '#ffd1da' },
+              { name: 'surface.secondary', hex: '#f7f7f7' },
               { name: 'border.card', hex: '#E5E8EB' },
               { name: 'state.online', hex: '#37DA1A' },
               { name: 'state.error', hex: '#E8586D' },

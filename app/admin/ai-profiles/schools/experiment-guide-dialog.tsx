@@ -106,7 +106,7 @@ function StepConcept() {
 				initial={{ opacity: 0, y: 10 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={{ delay: 0.6 }}
-				className="rounded-lg bg-blue-50 px-4 py-3 text-sm text-blue-800"
+				className="rounded-lg bg-[#f7f7f7] px-4 py-3 text-sm text-[#e00b41]"
 			>
 				두 그룹의 <strong>리텐션, 매칭 수락률, 결제 전환율</strong>을 비교하여 가상 매칭의 실제 효과를 측정합니다.
 			</motion.div>
@@ -126,7 +126,7 @@ function StepFlow() {
 			icon: Users,
 			label: '가상 프로필 생성',
 			desc: '프로필 유형 기반 자동 생성',
-			color: 'bg-blue-500',
+			color: 'bg-[#ff385c]',
 		},
 		{
 			icon: FlaskConical,

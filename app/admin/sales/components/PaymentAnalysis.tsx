@@ -305,7 +305,7 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
                 </div>
                 <button
                     onClick={handleRefresh}
-                    className="px-4 py-2 bg-[#7D4EE4] text-white rounded-lg hover:bg-purple-700"
+                    className="px-4 py-2 bg-[#ff385c] text-white rounded-lg hover:bg-[#e00b41]"
                 >
                     새로고침
                 </button>
@@ -322,7 +322,7 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
             {/* 로딩 상태 */}
             {isLoading && (
                 <div className="flex justify-center items-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff385c]"></div>
                     <span className="ml-2">데이터를 불러오는 중...</span>
                 </div>
             )}
@@ -415,13 +415,13 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
                                         총계
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-900">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-[#222222]">
                                         {formatCurrency(paymentData?.totalAmount || 0)}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
                                         {formatNumber(paymentData?.totalCount || 0)}건
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-purple-600">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-[#ff385c]">
                                         100.0%
                                     </td>
                                 </tr>

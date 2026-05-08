@@ -77,7 +77,7 @@ const PERIOD_DATE_RANGES: Record<string, { start: string; end: string }> = {
 };
 
 const PIE_COLORS = [
-  "#7D4EE4",
+  "#ff385c",
   "#22c55e",
   "#3b82f6",
   "#f97316",
@@ -301,7 +301,7 @@ export function ProductAnalysisTab({
       return (
         <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
           <p className="font-medium text-gray-900">{data.featureName}</p>
-          <p className="text-purple-600">
+          <p className="text-[#ff385c]">
             소비량: {formatNumber(data.totalGemsConsumed)}개
           </p>
           <p className="text-gray-600">
@@ -318,10 +318,10 @@ export function ProductAnalysisTab({
       return (
         <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
           <p className="font-medium text-gray-900">{label}시</p>
-          <p className="text-purple-600">
+          <p className="text-[#ff385c]">
             사용횟수: {formatNumber(payload[0].value)}회
           </p>
-          <p className="text-blue-600">
+          <p className="text-[#ff385c]">
             소비량: {formatNumber(payload[1]?.value || 0)}개
           </p>
         </div>
@@ -342,7 +342,7 @@ export function ProductAnalysisTab({
         <button
           onClick={handleRefresh}
           disabled={isAnyLoading}
-          className="px-4 py-2 bg-[#7D4EE4] text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+          className="px-4 py-2 bg-[#ff385c] text-white rounded-lg hover:bg-[#e00b41] transition-colors disabled:opacity-50"
         >
           새로고침
         </button>
@@ -361,14 +361,14 @@ export function ProductAnalysisTab({
               type="date"
               value={filterStartDate}
               onChange={(e) => setFilterStartDate(e.target.value)}
-              className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7D4EE4] focus:border-transparent"
+              className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff385c] focus:border-transparent"
             />
             <span className="text-gray-400 text-sm">~</span>
             <input
               type="date"
               value={filterEndDate}
               onChange={(e) => setFilterEndDate(e.target.value)}
-              className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7D4EE4] focus:border-transparent"
+              className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff385c] focus:border-transparent"
             />
           </div>
           <div className="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50">
@@ -383,7 +383,7 @@ export function ProductAnalysisTab({
                     return d;
                   })(),
                 )
-                  ? "bg-[#7D4EE4] text-white shadow-sm"
+                  ? "bg-[#ff385c] text-white shadow-sm"
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
               }`}
             >
@@ -400,7 +400,7 @@ export function ProductAnalysisTab({
                     return d;
                   })(),
                 )
-                  ? "bg-[#7D4EE4] text-white shadow-sm"
+                  ? "bg-[#ff385c] text-white shadow-sm"
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
               }`}
             >
@@ -417,7 +417,7 @@ export function ProductAnalysisTab({
                     return d;
                   })(),
                 )
-                  ? "bg-[#7D4EE4] text-white shadow-sm"
+                  ? "bg-[#ff385c] text-white shadow-sm"
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
               }`}
             >
@@ -427,7 +427,7 @@ export function ProductAnalysisTab({
               onClick={() => handleQuickSelect(null)}
               className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                 filterStartDate === "" && filterEndDate === ""
-                  ? "bg-[#7D4EE4] text-white shadow-sm"
+                  ? "bg-[#ff385c] text-white shadow-sm"
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
               }`}
             >
@@ -437,7 +437,7 @@ export function ProductAnalysisTab({
           <select
             value={selectedPeriod}
             onChange={(e) => handlePeriodSelect(e.target.value)}
-            className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7D4EE4] focus:border-transparent"
+            className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff385c] focus:border-transparent"
           >
             <option value="">전체 기간</option>
             {Object.entries(PRICE_PERIOD_NAMES).map(([key, name]) => (
@@ -449,7 +449,7 @@ export function ProductAnalysisTab({
           <button
             onClick={handleApplyFilter}
             disabled={isAnyLoading}
-            className="px-4 py-1.5 text-sm font-medium bg-[#7D4EE4] text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+            className="px-4 py-1.5 text-sm font-medium bg-[#ff385c] text-white rounded-lg hover:bg-[#e00b41] transition-colors disabled:opacity-50"
           >
             적용
           </button>
@@ -457,10 +457,10 @@ export function ProductAnalysisTab({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-purple-600 rounded-lg shadow-sm p-6">
-          <div className="text-sm text-purple-100 mb-1">총 매출액</div>
+        <div className="bg-[#ff385c] rounded-lg shadow-sm p-6">
+          <div className="text-sm text-[#ffd1da] mb-1">총 매출액</div>
           {loadingProductSales ? (
-            <div className="h-8 bg-purple-500 rounded animate-pulse" />
+            <div className="h-8 bg-[#ff385c] rounded animate-pulse" />
           ) : (
             <div className="text-2xl font-bold text-white">
               {productSales ? formatCurrency(productSales.totalRevenue) : "-"}
@@ -468,10 +468,10 @@ export function ProductAnalysisTab({
           )}
         </div>
 
-        <div className="bg-blue-600 rounded-lg shadow-sm p-6">
-          <div className="text-sm text-blue-100 mb-1">총 판매 건수</div>
+        <div className="bg-[#ff385c] rounded-lg shadow-sm p-6">
+          <div className="text-sm text-[#ffffff] mb-1">총 판매 건수</div>
           {loadingProductSales ? (
-            <div className="h-8 bg-blue-500 rounded animate-pulse" />
+            <div className="h-8 bg-[#ff385c] rounded animate-pulse" />
           ) : (
             <div className="text-2xl font-bold text-white">
               {productSales
@@ -481,10 +481,10 @@ export function ProductAnalysisTab({
           )}
         </div>
 
-        <div className="bg-green-600 rounded-lg shadow-sm p-6">
+        <div className="bg-[#ff385c] rounded-lg shadow-sm p-6">
           <div className="text-sm text-green-100 mb-1">총 구매자 수</div>
           {loadingProductSales ? (
-            <div className="h-8 bg-green-500 rounded animate-pulse" />
+            <div className="h-8 bg-[#ff385c] rounded animate-pulse" />
           ) : (
             <div className="text-2xl font-bold text-white">
               {productSales
@@ -514,52 +514,52 @@ export function ProductAnalysisTab({
         </div>
         {loadingProductSales ? (
           <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff385c]" />
             <span className="ml-2 text-gray-600">데이터를 불러오는 중...</span>
           </div>
         ) : productSales && productSales.products.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-purple-50">
+              <thead className="bg-[#f7f7f7]">
                 <tr>
                   <th
-                    className="px-6 py-3 text-left text-xs font-medium text-purple-700 uppercase tracking-wider cursor-pointer hover:bg-purple-100"
+                    className="px-6 py-3 text-left text-xs font-medium text-[#e00b41] uppercase tracking-wider cursor-pointer hover:bg-[#ffd1da]"
                     onClick={() => handleSort("productName")}
                   >
                     상품명{renderSortIcon("productName")}
                   </th>
                   <th
-                    className="px-6 py-3 text-right text-xs font-medium text-purple-700 uppercase tracking-wider cursor-pointer hover:bg-purple-100"
+                    className="px-6 py-3 text-right text-xs font-medium text-[#e00b41] uppercase tracking-wider cursor-pointer hover:bg-[#ffd1da]"
                     onClick={() => handleSort("salesCount")}
                   >
                     판매량{renderSortIcon("salesCount")}
                   </th>
                   <th
-                    className="px-6 py-3 text-right text-xs font-medium text-purple-700 uppercase tracking-wider cursor-pointer hover:bg-purple-100"
+                    className="px-6 py-3 text-right text-xs font-medium text-[#e00b41] uppercase tracking-wider cursor-pointer hover:bg-[#ffd1da]"
                     onClick={() => handleSort("totalRevenue")}
                   >
                     매출액{renderSortIcon("totalRevenue")}
                   </th>
                   <th
-                    className="px-6 py-3 text-right text-xs font-medium text-purple-700 uppercase tracking-wider cursor-pointer hover:bg-purple-100"
+                    className="px-6 py-3 text-right text-xs font-medium text-[#e00b41] uppercase tracking-wider cursor-pointer hover:bg-[#ffd1da]"
                     onClick={() => handleSort("uniqueBuyers")}
                   >
                     구매자수{renderSortIcon("uniqueBuyers")}
                   </th>
                   <th
-                    className="px-6 py-3 text-right text-xs font-medium text-purple-700 uppercase tracking-wider cursor-pointer hover:bg-purple-100"
+                    className="px-6 py-3 text-right text-xs font-medium text-[#e00b41] uppercase tracking-wider cursor-pointer hover:bg-[#ffd1da]"
                     onClick={() => handleSort("gemAmount")}
                   >
                     지급구슬{renderSortIcon("gemAmount")}
                   </th>
                   <th
-                    className="px-6 py-3 text-right text-xs font-medium text-purple-700 uppercase tracking-wider cursor-pointer hover:bg-purple-100"
+                    className="px-6 py-3 text-right text-xs font-medium text-[#e00b41] uppercase tracking-wider cursor-pointer hover:bg-[#ffd1da]"
                     onClick={() => handleSort("pricePerGem")}
                   >
                     구슬당단가{renderSortIcon("pricePerGem")}
                   </th>
                   <th
-                    className="px-6 py-3 text-right text-xs font-medium text-purple-700 uppercase tracking-wider cursor-pointer hover:bg-purple-100"
+                    className="px-6 py-3 text-right text-xs font-medium text-[#e00b41] uppercase tracking-wider cursor-pointer hover:bg-[#ffd1da]"
                     onClick={() => handleSort("revenueShare")}
                   >
                     매출비중{renderSortIcon("revenueShare")}
@@ -575,7 +575,7 @@ export function ProductAnalysisTab({
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">
                       {formatNumber(product.salesCount)}건
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-purple-600 font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-[#ff385c] font-medium">
                       {formatCurrency(product.totalRevenue)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">
@@ -611,7 +611,7 @@ export function ProductAnalysisTab({
                 onClick={() => setBestSellerTab("count")}
                 className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                   bestSellerTab === "count"
-                    ? "bg-[#7D4EE4] text-white shadow-sm"
+                    ? "bg-[#ff385c] text-white shadow-sm"
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                 }`}
               >
@@ -621,7 +621,7 @@ export function ProductAnalysisTab({
                 onClick={() => setBestSellerTab("revenue")}
                 className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                   bestSellerTab === "revenue"
-                    ? "bg-[#7D4EE4] text-white shadow-sm"
+                    ? "bg-[#ff385c] text-white shadow-sm"
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                 }`}
               >
@@ -631,7 +631,7 @@ export function ProductAnalysisTab({
           </div>
           {loadingRanking ? (
             <div className="flex justify-center items-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500" />
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#ff385c]" />
             </div>
           ) : productRanking ? (
             <div className="space-y-2">
@@ -662,7 +662,7 @@ export function ProductAnalysisTab({
                     </span>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm font-medium text-green-600">
+                    <div className="text-sm font-medium text-[#ff385c]">
                       {bestSellerTab === "count"
                         ? `${formatNumber(item.salesCount)}건`
                         : formatCurrency(item.totalRevenue)}
@@ -697,7 +697,7 @@ export function ProductAnalysisTab({
                 onClick={() => setWorstSellerTab("count")}
                 className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                   worstSellerTab === "count"
-                    ? "bg-[#7D4EE4] text-white shadow-sm"
+                    ? "bg-[#ff385c] text-white shadow-sm"
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                 }`}
               >
@@ -707,7 +707,7 @@ export function ProductAnalysisTab({
                 onClick={() => setWorstSellerTab("revenue")}
                 className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                   worstSellerTab === "revenue"
-                    ? "bg-[#7D4EE4] text-white shadow-sm"
+                    ? "bg-[#ff385c] text-white shadow-sm"
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                 }`}
               >
@@ -717,7 +717,7 @@ export function ProductAnalysisTab({
           </div>
           {loadingRanking ? (
             <div className="flex justify-center items-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500" />
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#ff385c]" />
             </div>
           ) : productRanking ? (
             <div className="space-y-2">
@@ -772,7 +772,7 @@ export function ProductAnalysisTab({
         </h3>
         {loadingPeriod ? (
           <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff385c]" />
             <span className="ml-2 text-gray-600">데이터를 불러오는 중...</span>
           </div>
         ) : periodAnalysis && periodAnalysis.periods.length > 0 ? (
@@ -808,7 +808,7 @@ export function ProductAnalysisTab({
                   <Bar
                     yAxisId="left"
                     dataKey="매출액"
-                    fill="#7D4EE4"
+                    fill="#ff385c"
                     radius={[4, 4, 0, 0]}
                   />
                   <Bar
@@ -862,7 +862,7 @@ export function ProductAnalysisTab({
                       <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                         {period.periodName}
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-purple-600 font-medium">
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-[#ff385c] font-medium">
                         {formatCurrency(period.totalRevenue)}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-600">
@@ -893,7 +893,7 @@ export function ProductAnalysisTab({
                           <span
                             className={
                               period.growthRate > 0
-                                ? "text-green-600"
+                                ? "text-[#ff385c]"
                                 : "text-red-600"
                             }
                           >
@@ -951,7 +951,7 @@ export function ProductAnalysisTab({
                           <td
                             className={`px-4 py-3 whitespace-nowrap text-sm text-right font-medium ${
                               item.changeRate > 0
-                                ? "text-green-600"
+                                ? "text-[#ff385c]"
                                 : item.changeRate < 0
                                   ? "text-red-600"
                                   : "text-gray-600"
@@ -987,7 +987,7 @@ export function ProductAnalysisTab({
         </h3>
         {loadingGem ? (
           <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff385c]" />
             <span className="ml-2 text-gray-600">데이터를 불러오는 중...</span>
           </div>
         ) : gemConsumption ? (
@@ -1102,10 +1102,10 @@ export function ProductAnalysisTab({
                         yAxisId="left"
                         type="monotone"
                         dataKey="usageCount"
-                        stroke="#7D4EE4"
+                        stroke="#ff385c"
                         strokeWidth={2}
                         name="사용횟수"
-                        dot={{ fill: "#7D4EE4", r: 3 }}
+                        dot={{ fill: "#ff385c", r: 3 }}
                       />
                       <Line
                         yAxisId="right"
@@ -1163,7 +1163,7 @@ export function ProductAnalysisTab({
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-600">
                             {formatNumber(feature.usageCount)}회
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-purple-600 font-medium">
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-[#ff385c] font-medium">
                             {formatNumber(feature.totalGemsConsumed)}개
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-600">
@@ -1186,7 +1186,7 @@ export function ProductAnalysisTab({
                         <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-gray-900">
                           {formatNumber(gemConsumption.totalUsageCount)}회
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-purple-600">
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-[#ff385c]">
                           {formatNumber(gemConsumption.totalGemsConsumed)}개
                         </td>
                         <td className="px-4 py-3" colSpan={3}></td>
@@ -1210,7 +1210,7 @@ export function ProductAnalysisTab({
         </h3>
         {loadingSystem ? (
           <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff385c]" />
             <span className="ml-2 text-gray-600">데이터를 불러오는 중...</span>
           </div>
         ) : systemComparison ? (
@@ -1222,7 +1222,7 @@ export function ProductAnalysisTab({
                   className={`p-6 rounded-lg ${
                     system.systemType === "REMATCHING_TICKET"
                       ? "bg-gray-100"
-                      : "bg-purple-50"
+                      : "bg-[#f7f7f7]"
                   }`}
                 >
                   <div className="text-sm text-gray-500 mb-1">
@@ -1235,7 +1235,7 @@ export function ProductAnalysisTab({
                     className={`text-2xl font-bold mb-3 ${
                       system.systemType === "REMATCHING_TICKET"
                         ? "text-gray-700"
-                        : "text-purple-600"
+                        : "text-[#ff385c]"
                     }`}
                   >
                     {formatCurrency(system.totalRevenue)}
@@ -1326,7 +1326,7 @@ export function ProductAnalysisTab({
                   const isPositive = value > 0;
                   return (
                     <span
-                      className={isPositive ? "text-green-600" : "text-red-600"}
+                      className={isPositive ? "text-[#ff385c]" : "text-red-600"}
                     >
                       {isPositive ? "+" : ""}
                       {isPercent
@@ -1344,7 +1344,7 @@ export function ProductAnalysisTab({
                     <div
                       className={`text-2xl font-bold text-center mb-4 ${
                         systemComparison.revenueGrowthRate > 0
-                          ? "text-green-600"
+                          ? "text-[#ff385c]"
                           : "text-red-600"
                       }`}
                     >
@@ -1410,7 +1410,7 @@ export function ProductAnalysisTab({
                             <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                               {method.methodName}
                             </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-purple-600 font-medium">
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-[#ff385c] font-medium">
                               {formatCurrency(method.totalRevenue)}
                             </td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-600">

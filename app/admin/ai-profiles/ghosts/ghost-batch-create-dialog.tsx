@@ -586,7 +586,7 @@ function EditPanel({ card, cardIdx, totalCards, updateCard, setCards, onNavigate
 									className={cn(
 										'relative aspect-[3/4] overflow-hidden rounded-lg border-2 transition-all',
 										canUseReference ? 'cursor-pointer' : 'cursor-default',
-										isRef ? 'border-blue-500 ring-2 ring-blue-200' : 'border-transparent',
+										isRef ? 'border-[#ff385c] ring-2 ring-[#ffd1da]' : 'border-transparent',
 										canUseReference && !isRef && 'hover:border-slate-300',
 									)}
 									onClick={() => canUseReference && togglePhotoRef(photoIdx)}
@@ -594,8 +594,8 @@ function EditPanel({ card, cardIdx, totalCards, updateCard, setCards, onNavigate
 									{/* eslint-disable-next-line @next/next/no-img-element */}
 									<img src={url} alt={`사진 ${photoIdx + 1}`} className="h-full w-full object-cover" />
 									{isRef && (
-										<div className="absolute inset-0 flex items-center justify-center bg-blue-500/20">
-											<div className="rounded-full bg-blue-500 p-1">
+										<div className="absolute inset-0 flex items-center justify-center bg-[#ff385c]/20">
+											<div className="rounded-full bg-[#ff385c] p-1">
 												<Check className="h-3.5 w-3.5 text-white" />
 											</div>
 										</div>
@@ -618,9 +618,9 @@ function EditPanel({ card, cardIdx, totalCards, updateCard, setCards, onNavigate
 							외부 업로드 이미지입니다. 사진 재생성은 지원되지 않습니다. 사진을 변경하려면 미리보기 단계로 돌아가 다시 업로드하세요.
 						</div>
 					) : (
-						<div className="space-y-3 rounded-lg border border-blue-200 bg-blue-50/50 p-3">
+						<div className="space-y-3 rounded-lg border border-[#ffd1da] bg-[#f7f7f7] p-3">
 							<div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-								<Sparkles className="h-3.5 w-3.5 text-blue-500" />
+								<Sparkles className="h-3.5 w-3.5 text-[#ff385c]" />
 								<span>사진 재생성</span>
 								{canUseReference && card.photoRegen.selectedRefs.size > 0 && (
 									<Badge variant="secondary" className="text-[10px]">
@@ -642,7 +642,7 @@ function EditPanel({ card, cardIdx, totalCards, updateCard, setCards, onNavigate
 													<span className="font-medium">{option.label}</span>
 													<span className="text-[10px] text-slate-400">{option.pricePerImage}</span>
 													{option.supportsReference && (
-														<span className="text-[10px] text-blue-600">img2img</span>
+														<span className="text-[10px] text-[#ff385c]">img2img</span>
 													)}
 												</div>
 											</SelectItem>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -12,10 +12,6 @@ import {
   Chip,
   CircularProgress,
   Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   MenuItem,
   Pagination,
   Menu,
@@ -27,7 +23,6 @@ import {
   ToggleButton,
   alpha,
 } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
 import InstagramIcon from '@mui/icons-material/Instagram';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import ViewListIcon from '@mui/icons-material/ViewList';
@@ -43,6 +38,12 @@ import {
 import UserDetailModal, { UserDetail } from './UserDetailModal';
 import UnclassifiedUsersTable from './UnclassifiedUsersTable';
 import RegionFilter, { useRegionFilter } from '@/components/admin/common/RegionFilter';
+
+interface UnclassifiedUsersPanelProps {
+  title?: string;
+  description?: string;
+  initialViewMode?: 'card' | 'table';
+}
 
 // 등급 색상 정의
 const GRADE_COLORS: Record<AppearanceGrade, string> = {
@@ -99,24 +100,30 @@ const isGradeRequiredCohortUser = (user: UserProfileWithAppearance) =>
   isGradeRequiredUser(user) ||
   (user.appearanceGrade === 'UNKNOWN' && !isBlindApprovedUser(user) && !hasApprovalContractFields(user));
 
-export default function UnclassifiedUsersPanel() {
+const getErrorMessage = (error: unknown, fallback: string) =>
+  error instanceof Error ? error.message : fallback;
+
+export default function UnclassifiedUsersPanel({
+  title = '미분류 사용자',
+  description = 'UNKNOWN 사용자를 등급 정리 대상과 블라인드 승인 대상으로 분리합니다.',
+  initialViewMode = 'table',
+}: UnclassifiedUsersPanelProps) {
   const [users, setUsers] = useState<UserProfileWithAppearance[]>([]);
   const [activeCohort, setActiveCohort] = useState<'GRADE_REQUIRED' | 'BLIND_APPROVED'>('GRADE_REQUIRED');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(12);
-  const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+  const [viewMode, setViewMode] = useState<'card' | 'table'>(initialViewMode);
 
   // 지역 필터 훅 사용
-  const { region, setRegion: setRegionFilter, getRegionParam } = useRegionFilter();
+  const { region, setRegion: setRegionFilter } = useRegionFilter();
 
   // 등급 설정 상태
   const [selectedUser, setSelectedUser] = useState<UserProfileWithAppearance | null>(null);
   const [selectedGrade, setSelectedGrade] = useState<AppearanceGrade>('UNKNOWN');
   const [savingGrade, setSavingGrade] = useState(false);
   const [gradeMenuAnchorEl, setGradeMenuAnchorEl] = useState<null | HTMLElement>(null);
-  const [activeUserId, setActiveUserId] = useState<string | null>(null);
 
   // 유저 상세 정보 모달 상태
   const [userDetailModalOpen, setUserDetailModalOpen] = useState(false);
@@ -133,16 +140,18 @@ export default function UnclassifiedUsersPanel() {
   const totalPages = Math.max(1, Math.ceil(cohortUsers.length / pageSize));
   const visibleUsers = cohortUsers.slice((page - 1) * pageSize, page * pageSize);
 
+  const totalUnknownCount = users.length;
   const gradeRequiredCount = gradeRequiredUsers.length;
   const blindApprovedCount = blindApprovedUsers.length;
 
   // 미분류 사용자 목록 조회
-  const fetchUnclassifiedUsers = async () => {
+  const fetchUnclassifiedUsers = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const firstPage = await AdminService.userAppearance.getUnclassifiedUsers(1, pageSize, getRegionParam());
+      const regionParam = !region || region === 'ALL' ? undefined : region;
+      const firstPage = await AdminService.userAppearance.getUnclassifiedUsers(1, pageSize, regionParam);
       const meta = firstPage.meta ?? {};
       const totalPagesFromMeta = Number(meta.totalPages ?? 1);
       const itemsPerPageFromMeta = Number(meta.itemsPerPage ?? pageSize);
@@ -157,24 +166,23 @@ export default function UnclassifiedUsersPanel() {
         const fullResponse = await AdminService.userAppearance.getUnclassifiedUsers(
           1,
           Math.max(totalItems, pageSize),
-          getRegionParam(),
+          regionParam,
         );
         setUsers(fullResponse.data);
       } else {
         setUsers(firstPage.data);
       }
-    } catch (err: any) {
-      console.error('미분류 사용자 목록 조회 중 오류:', err);
-      setError(err.message ?? '미분류 사용자 목록을 불러오는 중 오류가 발생했습니다.');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, '미분류 사용자 목록을 불러오는 중 오류가 발생했습니다.'));
     } finally {
       setLoading(false);
     }
-  };
+  }, [pageSize, region]);
 
   useEffect(() => {
     setPage(1);
     fetchUnclassifiedUsers();
-  }, [region]);
+  }, [fetchUnclassifiedUsers]);
 
   useEffect(() => {
     if (page > totalPages) {
@@ -196,13 +204,11 @@ export default function UnclassifiedUsersPanel() {
     setGradeMenuAnchorEl(event.currentTarget);
     setSelectedUser(user);
     setSelectedGrade(user.appearanceGrade);
-    setActiveUserId(user.userId ?? user.id);
   };
 
   // 등급 토글 메뉴 닫기
   const handleCloseGradeMenu = () => {
     setGradeMenuAnchorEl(null);
-    setActiveUserId(null);
   };
 
   // 유저 상세 정보 모달 열기
@@ -214,14 +220,11 @@ export default function UnclassifiedUsersPanel() {
       setUserDetailError(null);
       setUserDetail(null);
 
-      console.log('유저 상세 정보 조회 요청:', userId);
       const data = await AdminService.userAppearance.getUserDetails(userId);
-      console.log('유저 상세 정보 응답:', data);
 
       setUserDetail(data);
-    } catch (error: any) {
-      console.error('유저 상세 정보 조회 중 오류:', error);
-      setUserDetailError(error.message ?? '유저 상세 정보를 불러오는 중 오류가 발생했습니다.');
+    } catch (error: unknown) {
+      setUserDetailError(getErrorMessage(error, '유저 상세 정보를 불러오는 중 오류가 발생했습니다.'));
     } finally {
       setLoadingUserDetail(false);
     }
@@ -234,11 +237,7 @@ export default function UnclassifiedUsersPanel() {
 
   // 등급 설정 저장
   const handleSaveGrade = async (newGrade: AppearanceGrade) => {
-    console.log('미분류 패널 - 등급 설정 시작:', { newGrade });
-    console.log('미분류 패널 - 선택된 사용자:', selectedUser);
-
     if (!selectedUser) {
-      console.error('미분류 패널 - 선택된 사용자가 없습니다.');
       setError('선택된 사용자가 없습니다.');
       return;
     }
@@ -247,27 +246,23 @@ export default function UnclassifiedUsersPanel() {
     const userId = selectedUser.userId ?? selectedUser.id;
 
     if (!userId) {
-      console.error('미분류 패널 - 선택된 사용자의 ID가 없습니다.');
       setError('선택된 사용자의 ID가 없습니다.');
       return;
     }
 
-    console.log('미분류 패널 - 등급 설정 파라미터:', { userId, grade: newGrade });
-
     try {
       setSavingGrade(true);
       await AdminService.userAppearance.setUserAppearanceGrade(userId, newGrade);
-      console.log('미분류 패널 - 등급 설정 성공!');
 
       // 목록 업데이트 (미분류에서 제거)
       if (newGrade !== 'UNKNOWN') {
-        setUsers(users.filter(user => {
+        setUsers((prev) => prev.filter(user => {
           const userIdToCompare = user.userId ?? user.id;
           return userIdToCompare !== userId;
         }));
       } else {
         // 미분류로 다시 설정한 경우는 상태만 업데이트
-        setUsers(users.map(user => {
+        setUsers((prev) => prev.map(user => {
           const userIdToCompare = user.userId ?? user.id;
           return userIdToCompare === userId
             ? { ...user, appearanceGrade: newGrade }
@@ -276,9 +271,8 @@ export default function UnclassifiedUsersPanel() {
       }
 
       handleCloseGradeMenu();
-    } catch (err: any) {
-      console.error('미분류 패널 - 등급 설정 중 오류:', err);
-      setError(err.message ?? '등급 설정 중 오류가 발생했습니다.');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, '등급 설정 중 오류가 발생했습니다.'));
     } finally {
       setSavingGrade(false);
     }
@@ -288,9 +282,9 @@ export default function UnclassifiedUsersPanel() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
-          <Typography variant="h6">미분류 사용자</Typography>
+          <Typography variant="h6">{title}</Typography>
           <Typography variant="body2" color="text.secondary">
-            UNKNOWN 사용자를 등급 정리 대상과 블라인드 승인 대상으로 분리합니다.
+            {description}
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
@@ -327,6 +321,45 @@ export default function UnclassifiedUsersPanel() {
           sx={{ minWidth: 150 }}
         />
       </Box>
+
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={12} md={4}>
+          <Card variant="outlined" sx={{ borderColor: '#CBD5E1' }}>
+            <CardContent sx={{ py: 2 }}>
+              <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 700 }}>
+                전체 UNKNOWN
+              </Typography>
+              <Typography variant="h5" sx={{ mt: 0.5, fontWeight: 800, color: '#0F172A' }}>
+                {loading ? '-' : `${totalUnknownCount.toLocaleString()}명`}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <Card variant="outlined" sx={{ borderColor: '#FDBA74', bgcolor: alpha('#F97316', 0.04) }}>
+            <CardContent sx={{ py: 2 }}>
+              <Typography variant="caption" sx={{ color: '#C2410C', fontWeight: 700 }}>
+                등급 설정 후 승인 필요
+              </Typography>
+              <Typography variant="h5" sx={{ mt: 0.5, fontWeight: 800, color: '#9A3412' }}>
+                {loading ? '-' : `${gradeRequiredCount.toLocaleString()}명`}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <Card variant="outlined" sx={{ borderColor: '#93C5FD', bgcolor: alpha('#2563EB', 0.04) }}>
+            <CardContent sx={{ py: 2 }}>
+              <Typography variant="caption" sx={{ color: '#1D4ED8', fontWeight: 700 }}>
+                블라인드 승인 상태
+              </Typography>
+              <Typography variant="h5" sx={{ mt: 0.5, fontWeight: 800, color: '#1E40AF' }}>
+                {loading ? '-' : `${blindApprovedCount.toLocaleString()}명`}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
 
       <Tabs
         value={activeCohort}
@@ -533,6 +566,7 @@ export default function UnclassifiedUsersPanel() {
       >
         <MenuItem
           onClick={() => handleSaveGrade('S')}
+          disabled={savingGrade}
           sx={{
             color: GRADE_COLORS['S'],
             fontWeight: selectedGrade === 'S' ? 'bold' : 'normal',
@@ -543,6 +577,7 @@ export default function UnclassifiedUsersPanel() {
         </MenuItem>
         <MenuItem
           onClick={() => handleSaveGrade('A')}
+          disabled={savingGrade}
           sx={{
             color: GRADE_COLORS['A'],
             fontWeight: selectedGrade === 'A' ? 'bold' : 'normal',
@@ -553,6 +588,7 @@ export default function UnclassifiedUsersPanel() {
         </MenuItem>
         <MenuItem
           onClick={() => handleSaveGrade('B')}
+          disabled={savingGrade}
           sx={{
             color: GRADE_COLORS['B'],
             fontWeight: selectedGrade === 'B' ? 'bold' : 'normal',
@@ -563,6 +599,7 @@ export default function UnclassifiedUsersPanel() {
         </MenuItem>
         <MenuItem
           onClick={() => handleSaveGrade('C')}
+          disabled={savingGrade}
           sx={{
             color: GRADE_COLORS['C'],
             fontWeight: selectedGrade === 'C' ? 'bold' : 'normal',
@@ -573,6 +610,7 @@ export default function UnclassifiedUsersPanel() {
         </MenuItem>
         <MenuItem
           onClick={() => handleSaveGrade('UNKNOWN')}
+          disabled={savingGrade}
           sx={{
             color: GRADE_COLORS['UNKNOWN'],
             fontWeight: selectedGrade === 'UNKNOWN' ? 'bold' : 'normal',

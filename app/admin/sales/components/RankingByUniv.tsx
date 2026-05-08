@@ -319,7 +319,7 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
                 onClick={() => setViewMode("top20")}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
                   viewMode === "top20"
-                    ? "bg-white text-purple-700 shadow-sm"
+                    ? "bg-white text-[#e00b41] shadow-sm"
                     : "text-gray-600 hover:text-gray-900"
                 }`}
               >
@@ -329,7 +329,7 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
                 onClick={() => setViewMode("byCluster")}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
                   viewMode === "byCluster"
-                    ? "bg-white text-purple-700 shadow-sm"
+                    ? "bg-white text-[#e00b41] shadow-sm"
                     : "text-gray-600 hover:text-gray-900"
                 }`}
               >
@@ -343,14 +343,14 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
           <div className="flex items-center gap-3 mt-3">
             <button
               onClick={expandAllClusters}
-              className="text-xs text-purple-600 hover:text-purple-800 font-medium"
+              className="text-xs text-[#ff385c] hover:text-[#e00b41] font-medium"
             >
               모두 펼치기
             </button>
             <span className="text-gray-300">|</span>
             <button
               onClick={collapseAllClusters}
-              className="text-xs text-purple-600 hover:text-purple-800 font-medium"
+              className="text-xs text-[#ff385c] hover:text-[#e00b41] font-medium"
             >
               모두 접기
             </button>
@@ -361,7 +361,7 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
       {isLoading && (
         <div className="flex items-center justify-center py-12">
           <div className="flex items-center gap-3">
-            <div className="w-5 h-5 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-5 h-5 border-2 border-[#ff385c] border-t-transparent rounded-full animate-spin"></div>
             <span className="text-gray-500">데이터 로딩중...</span>
           </div>
         </div>
@@ -392,27 +392,27 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
         <div className="p-6">
           <div className="overflow-hidden rounded-lg border border-gray-200">
             <table className="w-full">
-              <thead className="bg-gradient-to-r from-purple-50 to-indigo-50">
+              <thead className="bg-gradient-to-r from-[#f7f7f7] to-indigo-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-purple-800 uppercase tracking-wider w-16">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#e00b41] uppercase tracking-wider w-16">
                     순위
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-purple-800 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#e00b41] uppercase tracking-wider">
                     대학명
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-purple-800 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#e00b41] uppercase tracking-wider">
                     클러스터
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-purple-800 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-[#e00b41] uppercase tracking-wider">
                     매출
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-purple-800 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-[#e00b41] uppercase tracking-wider">
                     결제건수
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-purple-800 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-[#e00b41] uppercase tracking-wider">
                     비율
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-purple-800 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-[#e00b41] uppercase tracking-wider">
                     평균매출
                   </th>
                 </tr>
@@ -452,13 +452,13 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
                         </span>
                       </td>
                       <td className="px-4 py-3.5">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#ffd1da] text-[#e00b41]">
                           {CLUSTER_NAMES[cluster]}
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-right">
                         <span
-                          className={`text-sm font-semibold ${isTopThree ? "text-purple-700" : "text-blue-600"}`}
+                          className={`text-sm font-semibold ${isTopThree ? "text-[#e00b41]" : "text-[#ff385c]"}`}
                         >
                           {formatCurrency(item.amount)}
                         </span>
@@ -469,7 +469,7 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-right">
-                        <span className="text-sm text-purple-600 font-medium">
+                        <span className="text-sm text-[#ff385c] font-medium">
                           {item.percentage !== undefined
                             ? `${item.percentage.toFixed(1)}%`
                             : "-"}
@@ -514,13 +514,13 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
                   onClick={() => toggleCluster(clusterCode)}
                   className={`w-full px-5 py-4 flex items-center justify-between transition-colors ${
                     isExpanded
-                      ? "bg-purple-50 border-b border-purple-100"
+                      ? "bg-[#f7f7f7] border-b border-[#ffd1da]"
                       : "bg-white hover:bg-gray-50"
                   }`}
                 >
                   <div className="flex items-center gap-4">
                     <svg
-                      className={`w-5 h-5 text-purple-500 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
+                      className={`w-5 h-5 text-[#ff385c] transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -540,7 +540,7 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
                       <span className="text-xs text-gray-400 font-mono">
                         {clusterCode}
                       </span>
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-purple-100 text-purple-700 text-xs font-semibold">
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#ffd1da] text-[#e00b41] text-xs font-semibold">
                         {clusterItems.length}
                       </span>
                     </div>
@@ -549,7 +549,7 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
                   <div className="flex items-center gap-6">
                     <div className="text-right">
                       <p className="text-xs text-gray-400">총 매출</p>
-                      <p className="text-sm font-bold text-purple-700">
+                      <p className="text-sm font-bold text-[#e00b41]">
                         {formatCurrency(clusterTotal)}
                       </p>
                     </div>
@@ -599,13 +599,13 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
                             <td className="px-5 py-3 text-sm font-medium text-gray-900">
                               {item.universityName}
                             </td>
-                            <td className="px-5 py-3 text-right text-sm font-semibold text-blue-600">
+                            <td className="px-5 py-3 text-right text-sm font-semibold text-[#ff385c]">
                               {formatCurrency(item.amount)}
                             </td>
                             <td className="px-5 py-3 text-right text-sm text-gray-600">
                               {item.count}건
                             </td>
-                            <td className="px-5 py-3 text-right text-sm text-purple-600 font-medium">
+                            <td className="px-5 py-3 text-right text-sm text-[#ff385c] font-medium">
                               {item.percentage !== undefined
                                 ? `${item.percentage.toFixed(1)}%`
                                 : "-"}

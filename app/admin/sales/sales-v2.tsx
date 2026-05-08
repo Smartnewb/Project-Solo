@@ -49,8 +49,8 @@ function SalesPageContent() {
               </p>
             </div>
             <div className="flex items-center space-x-3">
-              <div className="bg-purple-50 px-3 py-1 rounded-full">
-                <span className="text-purple-700 text-sm font-medium">
+              <div className="bg-[#f7f7f7] px-3 py-1 rounded-full">
+                <span className="text-[#e00b41] text-sm font-medium">
                   실시간 데이터
                 </span>
               </div>
@@ -61,7 +61,7 @@ function SalesPageContent() {
               onClick={() => setMainTab("sales")}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 mainTab === "sales"
-                  ? "border-purple-600 text-purple-600"
+                  ? "border-[#ff385c] text-[#ff385c]"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
@@ -71,7 +71,7 @@ function SalesPageContent() {
               onClick={() => setMainTab("metrics")}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 mainTab === "metrics"
-                  ? "border-purple-600 text-purple-600"
+                  ? "border-[#ff385c] text-[#ff385c]"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
@@ -81,7 +81,7 @@ function SalesPageContent() {
               onClick={() => setMainTab("products")}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 mainTab === "products"
-                  ? "border-purple-600 text-purple-600"
+                  ? "border-[#ff385c] text-[#ff385c]"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
@@ -91,7 +91,7 @@ function SalesPageContent() {
               onClick={() => setMainTab("insights")}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 mainTab === "insights"
-                  ? "border-purple-600 text-purple-600"
+                  ? "border-[#ff385c] text-[#ff385c]"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
@@ -141,7 +141,7 @@ function SalesPageContent() {
                       onClick={() => setSalesTrendTab("monthly")}
                       className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                         salesTrendTab === "monthly"
-                          ? "bg-white text-purple-700 shadow-sm"
+                          ? "bg-white text-[#e00b41] shadow-sm"
                           : "text-gray-600 hover:text-gray-900"
                       }`}
                     >
@@ -151,7 +151,7 @@ function SalesPageContent() {
                       onClick={() => setSalesTrendTab("daily")}
                       className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                         salesTrendTab === "daily"
-                          ? "bg-white text-purple-700 shadow-sm"
+                          ? "bg-white text-[#e00b41] shadow-sm"
                           : "text-gray-600 hover:text-gray-900"
                       }`}
                     >

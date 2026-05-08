@@ -290,7 +290,7 @@ function UsersV2Content() {
                   key={pageNum}
                   onClick={() => setPage(pageNum)}
                   className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${page === pageNum
-                    ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                    ? 'z-10 bg-[#f7f7f7] border-[#ff385c] text-[#ff385c]'
                     : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
                     }`}
                 >
@@ -437,7 +437,7 @@ function UsersV2Content() {
                               href={`https://www.instagram.com/${user.instagramId}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-blue-500 hover:underline"
+                              className="text-[#ff385c] hover:underline"
                             >
                               @{user.instagramId}
                             </a>
@@ -465,7 +465,7 @@ function UsersV2Content() {
                             차단됨
                           </span>
                         ) : user.role === 'admin' ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#ffd1da] text-[#e00b41]">
                             관리자
                           </span>
                         ) : (
@@ -485,7 +485,7 @@ function UsersV2Content() {
                       <div className="flex space-x-2">
                         <button
                           onClick={() => handleUserSelect(user)}
-                          className="text-blue-500 hover:text-blue-700"
+                          className="text-[#ff385c] hover:text-[#e00b41]"
                         >
                           상세정보
                         </button>
@@ -493,7 +493,7 @@ function UsersV2Content() {
                         {isBlocked ? (
                           <button
                             onClick={() => handleUnblockUser(user.userId)}
-                            className="text-green-500 hover:text-green-700"
+                            className="text-[#ff385c] hover:text-green-700"
                             disabled={loading}
                           >
                             차단해제
@@ -627,11 +627,11 @@ function UsersV2Content() {
 
         <div className="mt-4 flex flex-wrap gap-2">
           {selectedGender !== 'all' && (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 gap-2">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-[#ffd1da] text-[#e00b41] gap-2">
               {selectedGender === 'MALE' ? '남성' : '여성'}
               <button
                 onClick={() => setSelectedGender('all')}
-                className="hover:bg-blue-200 rounded-full p-1"
+                className="hover:bg-[#ffd1da] rounded-full p-1"
                 aria-label="성별 필터 제거"
               >
                 <svg
@@ -651,11 +651,11 @@ function UsersV2Content() {
             </span>
           )}
           {selectedClass !== 'all' && (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800 gap-2">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-[#ffd1da] text-[#e00b41] gap-2">
               {selectedClass}등급
               <button
                 onClick={() => setSelectedClass('all')}
-                className="hover:bg-purple-200 rounded-full p-1"
+                className="hover:bg-[#fff5f7] rounded-full p-1"
                 aria-label="등급 필터 제거"
               >
                 <svg
@@ -694,7 +694,7 @@ function UsersV2Content() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setExposureSheetUser({ userId: selectedUser.userId, name: selectedUser.name })}
-                    className="text-xs px-3 py-1.5 rounded-md border border-blue-300 text-blue-700 hover:bg-blue-50 transition-colors"
+                    className="text-xs px-3 py-1.5 rounded-md border border-[#ffd1da] text-[#e00b41] hover:bg-[#f7f7f7] transition-colors"
                   >
                     Ghost 노출 이력
                   </button>
@@ -774,7 +774,7 @@ function UsersV2Content() {
                           <div
                             key={image.id}
                             className={`h-16 w-16 rounded-md overflow-hidden cursor-pointer border-2 ${
-                              (selectedImage === image.url) ? 'border-blue-500' : 'border-transparent'
+                              (selectedImage === image.url) ? 'border-[#ff385c]' : 'border-transparent'
                             }`}
                             onClick={() => {
                               ;
@@ -820,7 +820,7 @@ function UsersV2Content() {
                               href={`https://www.instagram.com/${selectedUser.instagramId}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-blue-500 hover:underline"
+                              className="text-[#ff385c] hover:underline"
                             >
                               @{selectedUser.instagramId}
                             </a>
@@ -866,7 +866,7 @@ function UsersV2Content() {
                       {/* 프로필 정보 */}
                       {selectedUser.preferences?.self && Array.isArray(selectedUser.preferences.self) && selectedUser.preferences.self.length > 0 && (
                         <div>
-                          <h4 className="text-md font-semibold mb-3 text-purple-700">프로필 정보</h4>
+                          <h4 className="text-md font-semibold mb-3 text-[#e00b41]">프로필 정보</h4>
                           <div className="space-y-3">
                             {selectedUser.preferences.self.map((pref, index) => (
                               <div key={index} className="border-b border-gray-200 pb-3 last:border-0">
@@ -875,7 +875,7 @@ function UsersV2Content() {
                                   {pref.selectedOptions.map((option, optIndex) => (
                                     <span
                                       key={optIndex}
-                                      className="px-2 py-1 bg-purple-100 text-purple-800 text-sm rounded-full"
+                                      className="px-2 py-1 bg-[#ffd1da] text-[#e00b41] text-sm rounded-full"
                                     >
                                       {option.displayName}
                                     </span>
@@ -890,7 +890,7 @@ function UsersV2Content() {
                       {/* 이상형 정보 */}
                       {selectedUser.preferences?.partner && Array.isArray(selectedUser.preferences.partner) && selectedUser.preferences.partner.length > 0 && (
                         <div>
-                          <h4 className="text-md font-semibold mb-3 text-blue-700">이상형 정보</h4>
+                          <h4 className="text-md font-semibold mb-3 text-[#e00b41]">이상형 정보</h4>
                           <div className="space-y-3">
                             {selectedUser.preferences.partner.map((pref, index) => (
                               <div key={index} className="border-b border-gray-200 pb-3 last:border-0">
@@ -899,7 +899,7 @@ function UsersV2Content() {
                                   {pref.selectedOptions.map((option, optIndex) => (
                                     <span
                                       key={optIndex}
-                                      className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"
+                                      className="px-2 py-1 bg-[#ffd1da] text-[#e00b41] text-sm rounded-full"
                                     >
                                       {option.displayName}
                                     </span>

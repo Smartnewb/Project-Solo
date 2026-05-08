@@ -52,7 +52,7 @@ const formatDateToString = (date: Date): string => {
 };
 
 const PIE_COLORS = [
-  "#7D4EE4",
+  "#ff385c",
   "#22c55e",
   "#3b82f6",
   "#f97316",
@@ -62,7 +62,7 @@ const PIE_COLORS = [
   "#8b5cf6",
 ];
 
-const FUNNEL_COLORS = ["#7D4EE4", "#a78bfa", "#c4b5fd", "#e9d5ff"];
+const FUNNEL_COLORS = ["#ff385c", "#a78bfa", "#c4b5fd", "#e9d5ff"];
 
 export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
   const [gemTrigger, setGemTrigger] = useState<GemTriggerResponse | null>(null);
@@ -211,7 +211,7 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
       return (
         <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
           <p className="font-medium text-gray-900">{data.balanceRange}</p>
-          <p className="text-purple-600">
+          <p className="text-[#ff385c]">
             구매건수: {formatNumber(data.purchaseCount)}건
           </p>
           <p className="text-gray-600">
@@ -229,7 +229,7 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
       return (
         <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
           <p className="font-medium text-gray-900">{data.featureName}</p>
-          <p className="text-purple-600">
+          <p className="text-[#ff385c]">
             {featureFunnelView === "lastFeature"
               ? `구매건수: ${formatNumber(data.purchaseCount)}건`
               : `전환율: ${formatPercent(data.conversionRate)}`}
@@ -249,7 +249,7 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
       return (
         <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
           <p className="font-medium text-gray-900">{data.days}일</p>
-          <p className="text-purple-600">
+          <p className="text-[#ff385c]">
             사용자수: {formatNumber(data.userCount)}명
           </p>
           <p className="text-gray-600">
@@ -267,10 +267,10 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
       return (
         <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
           <p className="font-medium text-gray-900">상위 {data.percentile}%</p>
-          <p className="text-purple-600">
+          <p className="text-[#ff385c]">
             사용자수: {formatNumber(data.userCount)}명
           </p>
-          <p className="text-blue-600">
+          <p className="text-[#ff385c]">
             매출비중: {formatPercent(data.revenueShare)}
           </p>
           <p className="text-gray-600">
@@ -303,7 +303,7 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
       return (
         <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
           <p className="font-medium text-gray-900">{label}</p>
-          <p className="text-purple-600">
+          <p className="text-[#ff385c]">
             {formatNumber(payload[0].value)}
             {payload[0].name.includes("율") ? "%" : "건"}
           </p>
@@ -316,7 +316,7 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
   const getHealthStatusColor = (status: string) => {
     switch (status) {
       case "healthy":
-        return "text-green-600 bg-green-50";
+        return "text-[#ff385c] bg-green-50";
       case "inflation":
         return "text-orange-600 bg-orange-50";
       case "deflation":
@@ -346,7 +346,7 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
         <button
           onClick={handleRefresh}
           disabled={isAnyLoading}
-          className="px-4 py-2 bg-[#7D4EE4] text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+          className="px-4 py-2 bg-[#ff385c] text-white rounded-lg hover:bg-[#e00b41] transition-colors disabled:opacity-50"
         >
           새로고침
         </button>
@@ -359,14 +359,14 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
               type="date"
               value={filterStartDate}
               onChange={(e) => setFilterStartDate(e.target.value)}
-              className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7D4EE4] focus:border-transparent"
+              className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff385c] focus:border-transparent"
             />
             <span className="text-gray-400 text-sm">~</span>
             <input
               type="date"
               value={filterEndDate}
               onChange={(e) => setFilterEndDate(e.target.value)}
-              className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7D4EE4] focus:border-transparent"
+              className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff385c] focus:border-transparent"
             />
           </div>
           <div className="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50">
@@ -381,7 +381,7 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
                     return d;
                   })(),
                 )
-                  ? "bg-[#7D4EE4] text-white shadow-sm"
+                  ? "bg-[#ff385c] text-white shadow-sm"
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
               }`}
             >
@@ -398,7 +398,7 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
                     return d;
                   })(),
                 )
-                  ? "bg-[#7D4EE4] text-white shadow-sm"
+                  ? "bg-[#ff385c] text-white shadow-sm"
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
               }`}
             >
@@ -415,7 +415,7 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
                     return d;
                   })(),
                 )
-                  ? "bg-[#7D4EE4] text-white shadow-sm"
+                  ? "bg-[#ff385c] text-white shadow-sm"
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
               }`}
             >
@@ -425,7 +425,7 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
               onClick={() => handleQuickSelect(null)}
               className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                 filterStartDate === "" && filterEndDate === ""
-                  ? "bg-[#7D4EE4] text-white shadow-sm"
+                  ? "bg-[#ff385c] text-white shadow-sm"
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
               }`}
             >
@@ -435,7 +435,7 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
           <button
             onClick={() => fetchAllData()}
             disabled={isAnyLoading}
-            className="px-4 py-1.5 text-sm font-medium bg-[#7D4EE4] text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+            className="px-4 py-1.5 text-sm font-medium bg-[#ff385c] text-white rounded-lg hover:bg-[#e00b41] transition-colors disabled:opacity-50"
           >
             적용
           </button>
@@ -452,20 +452,20 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
           ) : gemTrigger ? (
             <div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                <div className="bg-purple-50 rounded-lg p-3">
-                  <div className="text-xs text-purple-600 mb-1">평균 잔액</div>
-                  <div className="text-lg font-bold text-purple-700">
+                <div className="bg-[#f7f7f7] rounded-lg p-3">
+                  <div className="text-xs text-[#ff385c] mb-1">평균 잔액</div>
+                  <div className="text-lg font-bold text-[#e00b41]">
                     {formatNumber(gemTrigger.averageBalance)}개
                   </div>
                 </div>
-                <div className="bg-blue-50 rounded-lg p-3">
-                  <div className="text-xs text-blue-600 mb-1">중앙값</div>
-                  <div className="text-lg font-bold text-blue-700">
+                <div className="bg-[#f7f7f7] rounded-lg p-3">
+                  <div className="text-xs text-[#ff385c] mb-1">중앙값</div>
+                  <div className="text-lg font-bold text-[#e00b41]">
                     {formatNumber(gemTrigger.medianBalance)}개
                   </div>
                 </div>
                 <div className="bg-green-50 rounded-lg p-3">
-                  <div className="text-xs text-green-600 mb-1">최빈값</div>
+                  <div className="text-xs text-[#ff385c] mb-1">최빈값</div>
                   <div className="text-lg font-bold text-green-700">
                     {formatNumber(gemTrigger.modeBalance)}개
                   </div>
@@ -496,7 +496,7 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
                         >
                           <stop
                             offset="0%"
-                            stopColor="#7D4EE4"
+                            stopColor="#ff385c"
                             stopOpacity={1}
                           />
                           <stop
@@ -545,7 +545,7 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
                 onClick={() => setFeatureFunnelView("lastFeature")}
                 className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                   featureFunnelView === "lastFeature"
-                    ? "bg-[#7D4EE4] text-white shadow-sm"
+                    ? "bg-[#ff385c] text-white shadow-sm"
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                 }`}
               >
@@ -555,7 +555,7 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
                 onClick={() => setFeatureFunnelView("conversion")}
                 className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                   featureFunnelView === "conversion"
-                    ? "bg-[#7D4EE4] text-white shadow-sm"
+                    ? "bg-[#ff385c] text-white shadow-sm"
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                 }`}
               >
@@ -586,7 +586,7 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
                       <Tooltip content={<FeatureFunnelTooltip />} />
                       <Bar
                         dataKey="purchaseCount"
-                        fill="#7D4EE4"
+                        fill="#ff385c"
                         radius={[0, 4, 4, 0]}
                       >
                         {featureFunnel.lastFeatureBeforePurchase
@@ -661,17 +661,17 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
           ) : firstPurchase ? (
             <div>
               <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="bg-purple-50 rounded-lg p-3">
-                  <div className="text-xs text-purple-600 mb-1">
+                <div className="bg-[#f7f7f7] rounded-lg p-3">
+                  <div className="text-xs text-[#ff385c] mb-1">
                     평균 첫 결제까지 소요일
                   </div>
-                  <div className="text-lg font-bold text-purple-700">
+                  <div className="text-lg font-bold text-[#e00b41]">
                     {firstPurchase.averageDays.toFixed(1)}일
                   </div>
                 </div>
-                <div className="bg-blue-50 rounded-lg p-3">
-                  <div className="text-xs text-blue-600 mb-1">중앙값</div>
-                  <div className="text-lg font-bold text-blue-700">
+                <div className="bg-[#f7f7f7] rounded-lg p-3">
+                  <div className="text-xs text-[#ff385c] mb-1">중앙값</div>
+                  <div className="text-lg font-bold text-[#e00b41]">
                     {firstPurchase.medianDays}일
                   </div>
                 </div>
@@ -698,7 +698,7 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
                           <Tooltip content={<FirstPurchaseTooltip />} />
                           <Bar
                             dataKey="userCount"
-                            fill="#7D4EE4"
+                            fill="#ff385c"
                             radius={[4, 4, 0, 0]}
                           />
                         </BarChart>
@@ -760,22 +760,22 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
           ) : whaleUsers ? (
             <div>
               <div className="grid grid-cols-3 gap-3 mb-4">
-                <div className="bg-purple-50 rounded-lg p-3">
-                  <div className="text-xs text-purple-600 mb-1">
+                <div className="bg-[#f7f7f7] rounded-lg p-3">
+                  <div className="text-xs text-[#ff385c] mb-1">
                     고래 유저 수
                   </div>
-                  <div className="text-lg font-bold text-purple-700">
+                  <div className="text-lg font-bold text-[#e00b41]">
                     {formatNumber(whaleUsers.whaleCount)}명
                   </div>
                 </div>
-                <div className="bg-blue-50 rounded-lg p-3">
-                  <div className="text-xs text-blue-600 mb-1">
+                <div className="bg-[#f7f7f7] rounded-lg p-3">
+                  <div className="text-xs text-[#ff385c] mb-1">
                     고래 기준 (상위)
                   </div>
-                  <div className="text-lg font-bold text-blue-700">5%</div>
+                  <div className="text-lg font-bold text-[#e00b41]">5%</div>
                 </div>
                 <div className="bg-green-50 rounded-lg p-3">
-                  <div className="text-xs text-green-600 mb-1">최소 결제액</div>
+                  <div className="text-xs text-[#ff385c] mb-1">최소 결제액</div>
                   <div className="text-lg font-bold text-green-700">
                     {formatNumber(whaleUsers.whaleThreshold)}원
                   </div>
@@ -803,12 +803,12 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
                             >
                               <stop
                                 offset="0%"
-                                stopColor="#7D4EE4"
+                                stopColor="#ff385c"
                                 stopOpacity={0.8}
                               />
                               <stop
                                 offset="100%"
-                                stopColor="#7D4EE4"
+                                stopColor="#ff385c"
                                 stopOpacity={0.1}
                               />
                             </linearGradient>
@@ -827,7 +827,7 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
                           <Area
                             type="monotone"
                             dataKey="revenueShare"
-                            stroke="#7D4EE4"
+                            stroke="#ff385c"
                             fill="url(#whaleAreaGradient)"
                           />
                         </AreaChart>
@@ -886,7 +886,7 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
                             .map((feature, i) => (
                               <span
                                 key={i}
-                                className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full"
+                                className="px-2 py-0.5 bg-[#ffd1da] text-[#e00b41] text-xs rounded-full"
                               >
                                 {feature}
                               </span>
@@ -912,15 +912,15 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
           ) : gemEconomy ? (
             <div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                <div className="bg-purple-50 rounded-lg p-3">
-                  <div className="text-xs text-purple-600 mb-1">총 충전량</div>
-                  <div className="text-lg font-bold text-purple-700">
+                <div className="bg-[#f7f7f7] rounded-lg p-3">
+                  <div className="text-xs text-[#ff385c] mb-1">총 충전량</div>
+                  <div className="text-lg font-bold text-[#e00b41]">
                     {formatNumber(gemEconomy.summary.totalCharged)}개
                   </div>
                 </div>
-                <div className="bg-blue-50 rounded-lg p-3">
-                  <div className="text-xs text-blue-600 mb-1">총 소비량</div>
-                  <div className="text-lg font-bold text-blue-700">
+                <div className="bg-[#f7f7f7] rounded-lg p-3">
+                  <div className="text-xs text-[#ff385c] mb-1">총 소비량</div>
+                  <div className="text-lg font-bold text-[#e00b41]">
                     {formatNumber(gemEconomy.summary.totalConsumed)}개
                   </div>
                 </div>
@@ -961,12 +961,12 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
                             >
                               <stop
                                 offset="0%"
-                                stopColor="#7D4EE4"
+                                stopColor="#ff385c"
                                 stopOpacity={0.6}
                               />
                               <stop
                                 offset="100%"
-                                stopColor="#7D4EE4"
+                                stopColor="#ff385c"
                                 stopOpacity={0.1}
                               />
                             </linearGradient>
@@ -998,7 +998,7 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
                             type="monotone"
                             dataKey="totalCharged"
                             name="충전량"
-                            stroke="#7D4EE4"
+                            stroke="#ff385c"
                             fill="url(#chargedGradient)"
                           />
                           <Area
@@ -1075,7 +1075,7 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
                 onClick={() => setMatchingFunnelView("funnel")}
                 className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                   matchingFunnelView === "funnel"
-                    ? "bg-[#7D4EE4] text-white shadow-sm"
+                    ? "bg-[#ff385c] text-white shadow-sm"
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                 }`}
               >
@@ -1085,7 +1085,7 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
                 onClick={() => setMatchingFunnelView("trend")}
                 className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
                   matchingFunnelView === "trend"
-                    ? "bg-[#7D4EE4] text-white shadow-sm"
+                    ? "bg-[#ff385c] text-white shadow-sm"
                     : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                 }`}
               >
@@ -1100,32 +1100,32 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
               {matchingFunnelView === "funnel" ? (
                 <>
                   <div className="grid grid-cols-4 gap-2 mb-4">
-                    <div className="bg-purple-100 rounded-lg p-2 text-center">
-                      <div className="text-xs text-purple-600 mb-1">
+                    <div className="bg-[#ffd1da] rounded-lg p-2 text-center">
+                      <div className="text-xs text-[#ff385c] mb-1">
                         좋아요 전환율
                       </div>
-                      <div className="text-lg font-bold text-purple-700">
+                      <div className="text-lg font-bold text-[#e00b41]">
                         {formatPercent(matchingFunnel.funnel.likeRate)}
                       </div>
                     </div>
-                    <div className="bg-purple-50 rounded-lg p-2 text-center">
-                      <div className="text-xs text-purple-600 mb-1">
+                    <div className="bg-[#f7f7f7] rounded-lg p-2 text-center">
+                      <div className="text-xs text-[#ff385c] mb-1">
                         채팅 전환율
                       </div>
-                      <div className="text-lg font-bold text-purple-700">
+                      <div className="text-lg font-bold text-[#e00b41]">
                         {formatPercent(matchingFunnel.funnel.chatRate)}
                       </div>
                     </div>
-                    <div className="bg-blue-50 rounded-lg p-2 text-center">
-                      <div className="text-xs text-blue-600 mb-1">
+                    <div className="bg-[#f7f7f7] rounded-lg p-2 text-center">
+                      <div className="text-xs text-[#ff385c] mb-1">
                         결제 전환율
                       </div>
-                      <div className="text-lg font-bold text-blue-700">
+                      <div className="text-lg font-bold text-[#e00b41]">
                         {formatPercent(matchingFunnel.funnel.purchaseRate)}
                       </div>
                     </div>
                     <div className="bg-green-50 rounded-lg p-2 text-center">
-                      <div className="text-xs text-green-600 mb-1">
+                      <div className="text-xs text-[#ff385c] mb-1">
                         전체 전환율
                       </div>
                       <div className="text-lg font-bold text-green-700">
@@ -1201,9 +1201,9 @@ export function InsightsTab({ startDate, endDate }: InsightsTabProps) {
                         type="monotone"
                         dataKey="matchCount"
                         name="매칭 수"
-                        stroke="#7D4EE4"
+                        stroke="#ff385c"
                         strokeWidth={2}
-                        dot={{ fill: "#7D4EE4", r: 3 }}
+                        dot={{ fill: "#ff385c", r: 3 }}
                       />
                       <Line
                         yAxisId="right"

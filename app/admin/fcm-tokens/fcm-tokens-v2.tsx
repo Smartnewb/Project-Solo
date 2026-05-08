@@ -90,7 +90,7 @@ function FcmTokensPageContent() {
 							onClick={() => handlePageChange(page)}
 							className={`px-3 py-1 text-sm border rounded ${
 								page === currentPage
-									? 'bg-blue-600 text-white border-blue-600'
+									? 'bg-[#ff385c] text-white border-[#ff385c]'
 									: 'hover:bg-gray-100'
 							}`}
 						>
@@ -129,8 +129,8 @@ function FcmTokensPageContent() {
 
 	const getRankColor = (rank: string) => {
 		switch (rank) {
-			case 'S': return 'bg-purple-100 text-purple-800';
-			case 'A': return 'bg-blue-100 text-blue-800';
+			case 'S': return 'bg-[#ffd1da] text-[#e00b41]';
+			case 'A': return 'bg-[#ffd1da] text-[#e00b41]';
 			case 'B': return 'bg-green-100 text-green-800';
 			case 'C': return 'bg-yellow-100 text-yellow-800';
 			default: return 'bg-gray-100 text-gray-800';
@@ -150,9 +150,9 @@ function FcmTokensPageContent() {
 							{summary.totalUsers.toLocaleString()}
 						</div>
 					</div>
-					<div className="bg-white rounded-lg shadow p-4 border-l-4 border-green-500">
+					<div className="bg-white rounded-lg shadow p-4 border-l-4 border-[#ff385c]">
 						<div className="text-sm text-gray-500">토큰 보유</div>
-						<div className="text-2xl font-bold mt-1 text-green-600">
+						<div className="text-2xl font-bold mt-1 text-[#ff385c]">
 							{summary.withToken.toLocaleString()}
 						</div>
 					</div>
@@ -162,9 +162,9 @@ function FcmTokensPageContent() {
 							{summary.withoutToken.toLocaleString()}
 						</div>
 					</div>
-					<div className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
+					<div className="bg-white rounded-lg shadow p-4 border-l-4 border-[#ff385c]">
 						<div className="text-sm text-gray-500">iOS</div>
-						<div className="text-2xl font-bold mt-1 text-blue-600">
+						<div className="text-2xl font-bold mt-1 text-[#ff385c]">
 							{summary.iosCount.toLocaleString()}
 						</div>
 					</div>
@@ -174,9 +174,9 @@ function FcmTokensPageContent() {
 							{summary.androidCount.toLocaleString()}
 						</div>
 					</div>
-					<div className="bg-white rounded-lg shadow p-4 border-l-4 border-purple-500">
+					<div className="bg-white rounded-lg shadow p-4 border-l-4 border-[#ff385c]">
 						<div className="text-sm text-gray-500">활성 유저 토큰률</div>
-						<div className="text-2xl font-bold mt-1 text-purple-600">
+						<div className="text-2xl font-bold mt-1 text-[#ff385c]">
 							{summary.activeUserTokenRate.toFixed(1)}%
 						</div>
 					</div>
@@ -257,7 +257,7 @@ function FcmTokensPageContent() {
 														key={idx}
 														className={`inline-block px-2 py-0.5 text-xs rounded-full font-medium ${
 															token.platform === 'ios'
-																? 'bg-blue-100 text-blue-700'
+																? 'bg-[#ffd1da] text-[#e00b41]'
 																: 'bg-green-100 text-green-700'
 														} ${!token.isActive ? 'opacity-50' : ''}`}
 													>

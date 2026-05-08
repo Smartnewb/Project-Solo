@@ -29,15 +29,15 @@ export function SuccessRate() {
     }, []);
 
     const getSuccessRateColor = (rate: number): string => {
-        if (rate >= 95) return 'text-green-600';
-        if (rate >= 90) return 'text-blue-600';
+        if (rate >= 95) return 'text-[#ff385c]';
+        if (rate >= 90) return 'text-[#ff385c]';
         if (rate >= 80) return 'text-yellow-600';
         return 'text-red-600';
     };
 
     const getSuccessRateBgColor = (rate: number): string => {
         if (rate >= 95) return 'bg-green-50';
-        if (rate >= 90) return 'bg-blue-50';
+        if (rate >= 90) return 'bg-[#f7f7f7]';
         if (rate >= 80) return 'bg-yellow-50';
         return 'bg-red-50';
     };
@@ -57,7 +57,7 @@ export function SuccessRate() {
                     <button
                         onClick={fetchSuccessRate}
                         disabled={isLoading}
-                        className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 disabled:bg-gray-300 transition-colors"
+                        className="px-4 py-2 bg-[#ff385c] text-white text-sm rounded-lg hover:bg-[#e00b41] disabled:bg-gray-300 transition-colors"
                     >
                         {isLoading ? '조회 중...' : '새로고침'}
                     </button>
@@ -73,7 +73,7 @@ export function SuccessRate() {
 
                 {isLoading && (
                     <div className="flex justify-center items-center py-12">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff385c]"></div>
                         <span className="ml-2 text-gray-600">데이터를 불러오는 중...</span>
                     </div>
                 )}
@@ -113,7 +113,7 @@ export function SuccessRate() {
 
                         <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
                             <div
-                                className="h-full bg-gradient-to-r from-green-500 to-green-400 transition-all duration-500"
+                                className="h-full bg-gradient-to-r from-[#ff385c] to-green-400 transition-all duration-500"
                                 style={{ width: `${data.successRate}%` }}
                             />
                         </div>

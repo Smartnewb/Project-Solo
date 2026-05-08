@@ -46,7 +46,7 @@ const CHIP_COLOR: Record<'red' | 'amber' | 'green', { active: string; inactive: 
 	},
 	green: {
 		active: 'bg-green-100 border-green-400 text-green-700',
-		inactive: 'border-slate-200 text-slate-600 hover:border-green-300 hover:text-green-600',
+		inactive: 'border-slate-200 text-slate-600 hover:border-green-300 hover:text-[#ff385c]',
 	},
 };
 

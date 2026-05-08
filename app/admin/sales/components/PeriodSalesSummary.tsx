@@ -121,7 +121,7 @@ export function PeriodSalesSummary({
             새로고침
           </button>
         </div>
-        <div className="text-2xl font-bold text-purple-600 mb-1">
+        <div className="text-2xl font-bold text-[#ff385c] mb-1">
           {weeklyData ? formatCurrency(weeklyData.weeklySales ?? 0) : "-"}
         </div>
         <div className="text-sm text-gray-500 mb-2">
@@ -157,7 +157,7 @@ export function PeriodSalesSummary({
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-medium text-gray-500">이번 달 매출</h3>
         </div>
-        <div className="text-2xl font-bold text-blue-600 mb-1">
+        <div className="text-2xl font-bold text-[#ff385c] mb-1">
           {monthlyData ? formatCurrency(monthlyData.monthlySales ?? 0) : "-"}
         </div>
         <div className="text-sm text-gray-500 mb-2">

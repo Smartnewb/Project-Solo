@@ -161,7 +161,7 @@ export default function CardNewsPreview({
               background: '#FFFFFF',
               padding: '8px 16px',
               borderRadius: '20px',
-              color: '#7A4AE2',
+              color: '#ff385c',
               fontSize: 13,
               fontWeight: 600,
               textDecoration: 'none',
@@ -192,7 +192,7 @@ export default function CardNewsPreview({
             width: 36,
             height: 8,
             borderRadius: '10px',
-            background: '#7A4AE2'
+            background: '#ff385c'
           }}
         />
         <Box

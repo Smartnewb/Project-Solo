@@ -28,25 +28,25 @@ export function DataStatus({
 	if (isLoading) {
 		return skeleton ?? (
 			<div className="animate-pulse space-y-2">
-				<div className="h-4 bg-gray-200 rounded w-3/4" />
-				<div className="h-4 bg-gray-200 rounded w-1/2" />
+				<div className="h-4 w-3/4 rounded bg-[#f2f2f2]" />
+				<div className="h-4 w-1/2 rounded bg-[#f2f2f2]" />
 			</div>
 		);
 	}
 
 	if (isError) {
 		return (
-			<div className="rounded-md bg-red-50 p-4">
+			<div className="rounded-[14px] border border-[#ffd1da] bg-[#fff5f7] p-4">
 				<div className="flex items-center gap-2">
-					<span className="text-red-600 text-sm font-medium">데이터 로드 실패</span>
+					<span className="text-sm font-medium text-[#c13515]">데이터 로드 실패</span>
 				</div>
 				{error?.message && (
-					<p className="mt-1 text-red-500 text-xs">{error.message}</p>
+					<p className="mt-1 text-xs text-[#c13515]">{error.message}</p>
 				)}
 				{onRetry && (
 					<button
 						onClick={onRetry}
-						className="mt-2 text-xs text-red-600 underline hover:text-red-800"
+						className="mt-2 text-xs text-[#c13515] underline hover:text-[#b32505]"
 					>
 						재시도
 					</button>
@@ -57,8 +57,8 @@ export function DataStatus({
 
 	if (isEmpty) {
 		return (
-			<div className="rounded-md bg-gray-50 p-4 text-center">
-				<p className="text-gray-500 text-sm">데이터 없음</p>
+			<div className="rounded-[14px] border border-[#dddddd] bg-[#f7f7f7] p-4 text-center">
+				<p className="text-sm text-[#6a6a6a]">데이터 없음</p>
 			</div>
 		);
 	}
@@ -66,7 +66,7 @@ export function DataStatus({
 	return (
 		<>
 			{isStale && (
-				<div className="mb-2 inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+				<div className="mb-2 inline-flex items-center rounded-full bg-[#fff8e8] px-2.5 py-0.5 text-xs font-medium text-[#b26a00]">
 					{staleMessage}
 				</div>
 			)}

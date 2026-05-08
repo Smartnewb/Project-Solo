@@ -418,7 +418,7 @@ export function RevenueMetricsTab({
       return (
         <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
           <p className="font-medium text-gray-900">{label}회 구매</p>
-          <p className="text-purple-600">
+          <p className="text-[#ff385c]">
             사용자 수: {formatNumber(data.userCount)}명
           </p>
           <p className="text-gray-600">비율: {data.percentage.toFixed(1)}%</p>
@@ -438,15 +438,15 @@ export function RevenueMetricsTab({
     loadingSuccessRate;
 
   const getSuccessRateColor = (rate: number): string => {
-    if (rate >= 95) return "text-green-600";
-    if (rate >= 90) return "text-blue-600";
+    if (rate >= 95) return "text-[#ff385c]";
+    if (rate >= 90) return "text-[#ff385c]";
     if (rate >= 80) return "text-yellow-600";
     return "text-red-600";
   };
 
   const getSuccessRateBgColor = (rate: number): string => {
     if (rate >= 95) return "bg-green-50";
-    if (rate >= 90) return "bg-blue-50";
+    if (rate >= 90) return "bg-[#f7f7f7]";
     if (rate >= 80) return "bg-yellow-50";
     return "bg-red-50";
   };
@@ -458,7 +458,7 @@ export function RevenueMetricsTab({
         <button
           onClick={handleRefresh}
           disabled={isAnyLoading}
-          className="px-4 py-2 bg-[#7D4EE4] text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+          className="px-4 py-2 bg-[#ff385c] text-white rounded-lg hover:bg-[#e00b41] transition-colors disabled:opacity-50"
         >
           새로고침
         </button>
@@ -481,7 +481,7 @@ export function RevenueMetricsTab({
                   onClick={() => handleCardPeriodChange(period)}
                   className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                     cardPeriodType === period
-                      ? "bg-[#7D4EE4] text-white shadow-sm"
+                      ? "bg-[#ff385c] text-white shadow-sm"
                       : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                   }`}
                 >
@@ -495,7 +495,7 @@ export function RevenueMetricsTab({
                 type="checkbox"
                 checked={includeDeleted}
                 onChange={(e) => setIncludeDeleted(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-[#7D4EE4] focus:ring-[#7D4EE4]"
+                className="h-4 w-4 rounded border-gray-300 text-[#ff385c] focus:ring-[#ff385c]"
               />
               탈퇴자 포함
             </label>
@@ -507,19 +507,19 @@ export function RevenueMetricsTab({
                 type="date"
                 value={customStartDate}
                 onChange={(e) => setCustomStartDate(e.target.value)}
-                className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7D4EE4] focus:border-transparent"
+                className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff385c] focus:border-transparent"
               />
               <span className="text-gray-400 text-sm">~</span>
               <input
                 type="date"
                 value={customEndDate}
                 onChange={(e) => setCustomEndDate(e.target.value)}
-                className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7D4EE4] focus:border-transparent"
+                className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff385c] focus:border-transparent"
               />
               <button
                 type="button"
                 onClick={handleApplyCustomPeriod}
-                className="px-3 py-1.5 text-sm font-medium bg-[#7D4EE4] text-white rounded-lg hover:bg-purple-700 transition-colors"
+                className="px-3 py-1.5 text-sm font-medium bg-[#ff385c] text-white rounded-lg hover:bg-[#e00b41] transition-colors"
               >
                 적용
               </button>
@@ -554,7 +554,7 @@ export function RevenueMetricsTab({
             <div className="h-8 bg-gray-100 rounded animate-pulse" />
           ) : (
             <>
-              <div className="text-2xl font-bold text-purple-600">
+              <div className="text-2xl font-bold text-[#ff385c]">
                 {revenueMetrics ? formatCurrency(revenueMetrics.arpu) : "-"}
               </div>
               <div className="text-xs text-gray-400 mt-2">
@@ -578,7 +578,7 @@ export function RevenueMetricsTab({
             <div className="h-8 bg-gray-100 rounded animate-pulse" />
           ) : (
             <>
-              <div className="text-2xl font-bold text-purple-600">
+              <div className="text-2xl font-bold text-[#ff385c]">
                 {revenueMetrics ? formatCurrency(revenueMetrics.arppu) : "-"}
               </div>
               <div className="text-xs text-gray-400 mt-2">
@@ -601,7 +601,7 @@ export function RevenueMetricsTab({
           {loadingMetrics ? (
             <div className="h-8 bg-gray-100 rounded animate-pulse" />
           ) : (
-            <div className="text-2xl font-bold text-purple-600">
+            <div className="text-2xl font-bold text-[#ff385c]">
               {revenueMetrics
                 ? formatPercent(revenueMetrics.payingUserRate)
                 : "-"}
@@ -619,7 +619,7 @@ export function RevenueMetricsTab({
             <div className="h-8 bg-gray-100 rounded animate-pulse" />
           ) : (
             <>
-              <div className="text-2xl font-bold text-purple-600">
+              <div className="text-2xl font-bold text-[#ff385c]">
                 {aovData ? formatCurrency(aovData.aov) : "-"}
               </div>
               <div className="text-xs text-gray-400 mt-2">
@@ -644,7 +644,7 @@ export function RevenueMetricsTab({
                   onClick={() => handleGranularityChange(g)}
                   className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                     granularity === g
-                      ? "bg-[#7D4EE4] text-white shadow-sm"
+                      ? "bg-[#ff385c] text-white shadow-sm"
                       : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                   }`}
                 >
@@ -657,20 +657,20 @@ export function RevenueMetricsTab({
                 type="date"
                 value={trendStartDate}
                 onChange={(e) => setTrendStartDate(e.target.value)}
-                className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7D4EE4] focus:border-transparent"
+                className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff385c] focus:border-transparent"
               />
               <span className="text-gray-400 text-sm">~</span>
               <input
                 type="date"
                 value={trendEndDate}
                 onChange={(e) => setTrendEndDate(e.target.value)}
-                className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7D4EE4] focus:border-transparent"
+                className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff385c] focus:border-transparent"
               />
               <button
                 type="button"
                 onClick={fetchTrendData}
                 disabled={loadingTrend}
-                className="px-3 py-1.5 text-sm font-medium bg-[#7D4EE4] text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+                className="px-3 py-1.5 text-sm font-medium bg-[#ff385c] text-white rounded-lg hover:bg-[#e00b41] transition-colors disabled:opacity-50"
               >
                 적용
               </button>
@@ -679,7 +679,7 @@ export function RevenueMetricsTab({
         </div>
         {loadingTrend ? (
           <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff385c]" />
             <span className="ml-2 text-gray-600">데이터를 불러오는 중...</span>
           </div>
         ) : trendData && trendData.data.length > 0 ? (
@@ -712,10 +712,10 @@ export function RevenueMetricsTab({
                   yAxisId="amount"
                   type="monotone"
                   dataKey="arpu"
-                  stroke="#7D4EE4"
+                  stroke="#ff385c"
                   strokeWidth={2}
                   name="ARPU"
-                  dot={{ fill: "#7D4EE4", r: 4 }}
+                  dot={{ fill: "#ff385c", r: 4 }}
                 />
                 <Line
                   yAxisId="amount"
@@ -761,7 +761,7 @@ export function RevenueMetricsTab({
         </h3>
         {loadingSuccessRate ? (
           <div className="flex justify-center items-center py-8">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500" />
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#ff385c]" />
           </div>
         ) : successRateData ? (
           <div className="space-y-4">
@@ -785,7 +785,7 @@ export function RevenueMetricsTab({
                 <div className="text-xs text-gray-500">총 시도</div>
               </div>
               <div className="text-center p-3 bg-green-50 rounded-lg">
-                <div className="text-lg font-semibold text-green-600">
+                <div className="text-lg font-semibold text-[#ff385c]">
                   {formatNumber(successRateData.successfulPayments)}건
                 </div>
                 <div className="text-xs text-gray-500">성공</div>
@@ -803,7 +803,7 @@ export function RevenueMetricsTab({
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-green-500 to-green-400 transition-all duration-500"
+                className="h-full bg-gradient-to-r from-[#ff385c] to-green-400 transition-all duration-500"
                 style={{ width: `${successRateData.successRate}%` }}
               />
             </div>
@@ -820,12 +820,12 @@ export function RevenueMetricsTab({
           </h3>
           {loadingConversion ? (
             <div className="flex justify-center items-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500" />
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#ff385c]" />
             </div>
           ) : conversionData ? (
             <div className="space-y-4">
-              <div className="text-center p-6 bg-purple-50 rounded-lg">
-                <div className="text-4xl font-bold text-purple-600">
+              <div className="text-center p-6 bg-[#f7f7f7] rounded-lg">
+                <div className="text-4xl font-bold text-[#ff385c]">
                   {formatPercent(conversionData.conversionRate)}
                 </div>
                 <div className="text-sm text-gray-500 mt-1">전환율</div>
@@ -838,16 +838,16 @@ export function RevenueMetricsTab({
                   <div className="text-xs text-gray-500">전체 사용자</div>
                 </div>
                 <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="text-lg font-semibold text-purple-600">
+                  <div className="text-lg font-semibold text-[#ff385c]">
                     {formatNumber(conversionData.convertedUsers)}명
                   </div>
                   <div className="text-xs text-gray-500">결제 사용자</div>
                 </div>
               </div>
-              <div className="text-center p-3 bg-blue-50 rounded-lg">
+              <div className="text-center p-3 bg-[#f7f7f7] rounded-lg">
                 <div className="text-sm text-gray-600">
                   첫 결제까지 평균{" "}
-                  <span className="font-semibold text-blue-600">
+                  <span className="font-semibold text-[#ff385c]">
                     {conversionData.avgDaysToFirstPurchase.toFixed(1)}일
                   </span>
                 </div>
@@ -864,12 +864,12 @@ export function RevenueMetricsTab({
           </h3>
           {loadingRepurchase ? (
             <div className="flex justify-center items-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500" />
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#ff385c]" />
             </div>
           ) : repurchaseData ? (
             <div className="space-y-4">
               <div className="text-center p-6 bg-green-50 rounded-lg">
-                <div className="text-4xl font-bold text-green-600">
+                <div className="text-4xl font-bold text-[#ff385c]">
                   {formatPercent(repurchaseData.repeatPurchaseRate)}
                 </div>
                 <div className="text-sm text-gray-500 mt-1">재구매율</div>
@@ -882,7 +882,7 @@ export function RevenueMetricsTab({
                   <div className="text-xs text-gray-500">전체 구매자</div>
                 </div>
                 <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="text-lg font-semibold text-green-600">
+                  <div className="text-lg font-semibold text-[#ff385c]">
                     {formatNumber(repurchaseData.repeatPurchasers)}명
                   </div>
                   <div className="text-xs text-gray-500">재구매자</div>
@@ -897,10 +897,10 @@ export function RevenueMetricsTab({
                     </span>
                   </div>
                 </div>
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
+                <div className="text-center p-3 bg-[#f7f7f7] rounded-lg">
                   <div className="text-sm text-gray-600">
                     구매 간격{" "}
-                    <span className="font-semibold text-blue-600">
+                    <span className="font-semibold text-[#ff385c]">
                       {repurchaseData.avgDaysBetweenPurchases.toFixed(1)}일
                     </span>
                   </div>
@@ -919,7 +919,7 @@ export function RevenueMetricsTab({
         </h3>
         {loadingRepurchase ? (
           <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff385c]" />
             <span className="ml-2 text-gray-600">데이터를 불러오는 중...</span>
           </div>
         ) : repurchaseData &&
@@ -943,7 +943,7 @@ export function RevenueMetricsTab({
                 <Tooltip content={<DistributionTooltip />} />
                 <Bar
                   dataKey="userCount"
-                  fill="#7D4EE4"
+                  fill="#ff385c"
                   radius={[4, 4, 0, 0]}
                   name="사용자 수"
                 />
@@ -961,27 +961,27 @@ export function RevenueMetricsTab({
         <h3 className="text-lg font-semibold text-gray-900 mb-4">LTV 분석</h3>
         {loadingLtv ? (
           <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff385c]" />
             <span className="ml-2 text-gray-600">데이터를 불러오는 중...</span>
           </div>
         ) : ltvData ? (
           <div className="space-y-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-purple-50 rounded-lg">
+              <div className="text-center p-4 bg-[#f7f7f7] rounded-lg">
                 <div className="text-sm text-gray-500 mb-1">평균 LTV</div>
-                <div className="text-xl font-bold text-purple-600">
+                <div className="text-xl font-bold text-[#ff385c]">
                   {formatCurrency(ltvData.avgLtv)}
                 </div>
               </div>
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="text-center p-4 bg-[#f7f7f7] rounded-lg">
                 <div className="text-sm text-gray-500 mb-1">7일 LTV</div>
-                <div className="text-xl font-bold text-blue-600">
+                <div className="text-xl font-bold text-[#ff385c]">
                   {formatCurrency(ltvData.avgLtv7Days)}
                 </div>
               </div>
               <div className="text-center p-4 bg-green-50 rounded-lg">
                 <div className="text-sm text-gray-500 mb-1">30일 LTV</div>
-                <div className="text-xl font-bold text-green-600">
+                <div className="text-xl font-bold text-[#ff385c]">
                   {formatCurrency(ltvData.avgLtv30Days)}
                 </div>
               </div>
@@ -1024,10 +1024,10 @@ export function RevenueMetricsTab({
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">
                           {formatNumber(cohort.userCount)}명
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-blue-600 font-medium">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-[#ff385c] font-medium">
                           {formatCurrency(cohort.ltv7Days)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-green-600 font-medium">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-[#ff385c] font-medium">
                           {formatCurrency(cohort.ltv30Days)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-orange-600 font-medium">

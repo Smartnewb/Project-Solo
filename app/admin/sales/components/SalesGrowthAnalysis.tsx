@@ -55,7 +55,7 @@ const formatPercent = (value: number | null): string => {
 
 const getGrowthColor = (value: number | null): string => {
   if (value === null) return "text-gray-400";
-  if (value > 0) return "text-green-600";
+  if (value > 0) return "text-[#ff385c]";
   if (value < 0) return "text-red-600";
   return "text-gray-600";
 };
@@ -203,7 +203,7 @@ export function SalesGrowthAnalysis({
       return (
         <div className="bg-white p-4 border border-gray-300 rounded-lg shadow-lg">
           <p className="font-semibold text-gray-900 mb-2">{label}</p>
-          <p className="text-purple-600">매출: {formatCurrency(data.amount)}</p>
+          <p className="text-[#ff385c]">매출: {formatCurrency(data.amount)}</p>
           <p className={getGrowthColor(data.momGrowthRate)}>
             MoM: {formatPercent(data.momGrowthRate)}
           </p>
@@ -213,7 +213,7 @@ export function SalesGrowthAnalysis({
             </p>
           )}
           {data.movingAvg3M && (
-            <p className="text-blue-500 text-sm mt-1">
+            <p className="text-[#ff385c] text-sm mt-1">
               3개월 이평: {formatCurrency(data.movingAvg3M)}
             </p>
           )}
@@ -227,7 +227,7 @@ export function SalesGrowthAnalysis({
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-center py-12">
-          <div className="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-6 h-6 border-2 border-[#ff385c] border-t-transparent rounded-full animate-spin"></div>
           <span className="ml-3 text-gray-500">매출 성장 분석 로딩중...</span>
         </div>
       </div>
@@ -241,7 +241,7 @@ export function SalesGrowthAnalysis({
           <p className="text-red-500">{error}</p>
           <button
             onClick={fetchMonthlyTrend}
-            className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+            className="mt-4 px-4 py-2 bg-[#ff385c] text-white rounded-lg hover:bg-[#e00b41]"
           >
             다시 시도
           </button>
@@ -289,7 +289,7 @@ export function SalesGrowthAnalysis({
             )}
           </div>
 
-          <div className="p-4 rounded-lg border bg-purple-50">
+          <div className="p-4 rounded-lg border bg-[#f7f7f7]">
             <p className="text-xs text-gray-500 uppercase tracking-wide">
               평균 월 성장률
             </p>
@@ -303,11 +303,11 @@ export function SalesGrowthAnalysis({
             </p>
           </div>
 
-          <div className="p-4 rounded-lg border bg-blue-50">
+          <div className="p-4 rounded-lg border bg-[#f7f7f7]">
             <p className="text-xs text-gray-500 uppercase tracking-wide">
               누적 매출
             </p>
-            <p className="text-2xl font-bold mt-1 text-blue-700">
+            <p className="text-2xl font-bold mt-1 text-[#e00b41]">
               {formatCurrency(summary.totalRevenue)}
             </p>
             <p className="text-xs text-gray-400 mt-1">
@@ -329,7 +329,7 @@ export function SalesGrowthAnalysis({
             <p className="text-lg font-bold text-green-700 mt-2">
               {summary.bestMonth.label}
             </p>
-            <p className="text-sm text-green-600">
+            <p className="text-sm text-[#ff385c]">
               {formatCurrency(summary.bestMonth.amount)}
             </p>
           </div>
@@ -356,7 +356,7 @@ export function SalesGrowthAnalysis({
             onClick={() => setSelectedView("chart")}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
               selectedView === "chart"
-                ? "bg-white text-purple-700 shadow-sm"
+                ? "bg-white text-[#e00b41] shadow-sm"
                 : "text-gray-600 hover:text-gray-900"
             }`}
           >
@@ -366,7 +366,7 @@ export function SalesGrowthAnalysis({
             onClick={() => setSelectedView("table")}
             className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
               selectedView === "table"
-                ? "bg-white text-purple-700 shadow-sm"
+                ? "bg-white text-[#e00b41] shadow-sm"
                 : "text-gray-600 hover:text-gray-900"
             }`}
           >
@@ -399,9 +399,9 @@ export function SalesGrowthAnalysis({
                   type="monotone"
                   dataKey="amount"
                   name="매출"
-                  stroke="#7D4EE4"
+                  stroke="#ff385c"
                   strokeWidth={2}
-                  dot={{ fill: "#7D4EE4", strokeWidth: 2 }}
+                  dot={{ fill: "#ff385c", strokeWidth: 2 }}
                 />
                 <Line
                   type="monotone"
@@ -485,12 +485,12 @@ export function SalesGrowthAnalysis({
                   .map((item, index) => (
                     <tr
                       key={item.label}
-                      className={index === 0 ? "bg-purple-50/50" : ""}
+                      className={index === 0 ? "bg-[#f7f7f7]/50" : ""}
                     >
                       <td className="px-4 py-3 text-sm font-medium text-gray-900">
                         {item.label}
                         {index === 0 && (
-                          <span className="ml-2 text-xs text-purple-600 font-normal">
+                          <span className="ml-2 text-xs text-[#ff385c] font-normal">
                             (최신)
                           </span>
                         )}
@@ -511,7 +511,7 @@ export function SalesGrowthAnalysis({
                       >
                         {formatPercent(item.yoyGrowthRate)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-right text-blue-600">
+                      <td className="px-4 py-3 text-sm text-right text-[#ff385c]">
                         {item.movingAvg3M
                           ? formatCurrency(item.movingAvg3M)
                           : "-"}

@@ -415,7 +415,7 @@ export function GhostBatchPreviewDialog({
 								{previewImageSource === 'manual-upload' ? (
 									<Badge
 										variant="secondary"
-										className="border-blue-200 bg-blue-50 text-blue-700"
+										className="border-[#ffd1da] bg-[#f7f7f7] text-[#e00b41]"
 									>
 										외부 업로드
 									</Badge>

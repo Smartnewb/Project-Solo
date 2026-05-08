@@ -123,7 +123,7 @@ function LoadingSkeleton() {
           <Skeleton variant="text" width={120} height={32} />
         </Box>
         <Box className="flex flex-col gap-4">
-          <Box className="p-4 rounded-xl bg-blue-50/50">
+          <Box className="p-4 rounded-xl bg-[#f7f7f7]">
             <Box className="flex justify-between mb-2">
               <Skeleton variant="text" width={80} />
               <Skeleton variant="text" width={60} />
