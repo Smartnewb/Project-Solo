@@ -55,6 +55,7 @@ export function CardSeriesForm({ mode, id }: Props) {
       schema: cardNewsFormSchema,
       defaultValues: {
         title: '',
+        displayTitle: '',
         description: '',
         categoryCode: '',
         layoutMode: 'image_only',
@@ -137,6 +138,7 @@ export function CardSeriesForm({ mode, id }: Props) {
         setIsPublished(!!cardNewsData.publishedAt);
         reset({
           title: cardNewsData.title,
+          displayTitle: cardNewsData.displayTitle || '',
           description: cardNewsData.description || '',
           categoryCode: cardNewsData.category.code,
           layoutMode:
@@ -259,6 +261,7 @@ export function CardSeriesForm({ mode, id }: Props) {
 
     const basePayload = {
       title: data.title.trim(),
+      displayTitle: data.displayTitle?.trim() || null,
       description: data.description.trim(),
       layoutMode: data.layoutMode,
       backgroundImage:
@@ -344,6 +347,26 @@ export function CardSeriesForm({ mode, id }: Props) {
                   error={!!fieldState.error}
                   sx={{ mb: 2 }}
                   required
+                />
+              )}
+            />
+
+            <Controller
+              name="displayTitle"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  fullWidth
+                  label="앱 홈 노출 제목 (선택 사항)"
+                  inputProps={{ maxLength: 40 }}
+                  helperText={
+                    fieldState.error?.message ??
+                    `${(field.value ?? '').length}/40자 | 권장 16자, 비워두면 제목이 사용됩니다.`
+                  }
+                  error={!!fieldState.error}
+                  sx={{ mb: 2 }}
                 />
               )}
             />

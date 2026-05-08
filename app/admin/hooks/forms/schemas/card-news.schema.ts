@@ -20,6 +20,7 @@ export const cardSectionSchema = z.object({
 export const cardNewsFormSchema = z
   .object({
     title: z.string().min(1, '제목을 입력해주세요.').max(50, '제목은 최대 50자까지 입력 가능합니다.'),
+    displayTitle: z.string().max(40, '앱 홈 노출 제목은 최대 40자까지 입력 가능합니다.').optional(),
     description: z.string().min(1, '설명을 입력해주세요.').max(100, '설명은 최대 100자까지 입력 가능합니다.'),
     categoryCode: z.string().min(1, '카테고리를 선택해주세요.'),
     layoutMode: layoutModeSchema,

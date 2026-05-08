@@ -66,6 +66,7 @@ export function LongformForm({ mode, id }: Props) {
     schema: longformFormSchema,
     defaultValues: {
       title: '',
+      displayTitle: '',
       subtitle: '',
       description: '',
       categoryCode: '',
@@ -187,6 +188,7 @@ export function LongformForm({ mode, id }: Props) {
 
         reset({
           title: detail.title,
+          displayTitle: detail.displayTitle || '',
           subtitle: detail.subtitle || '',
           description: detail.description || '',
           categoryCode,
@@ -266,6 +268,7 @@ export function LongformForm({ mode, id }: Props) {
 
   const buildPayload = (data: LongformFormData): CreateCardNewsRequest => ({
     title: data.title.trim(),
+    displayTitle: data.displayTitle?.trim() || null,
     subtitle: data.subtitle?.trim() || undefined,
     description: data.description.trim(),
     categoryCode: data.categoryCode,
@@ -299,6 +302,7 @@ export function LongformForm({ mode, id }: Props) {
       if (isEdit && id) {
         const updatePayload = {
           title: payload.title,
+          displayTitle: payload.displayTitle,
           subtitle: payload.subtitle,
           description: payload.description,
           hasReward: payload.hasReward,
@@ -417,6 +421,26 @@ export function LongformForm({ mode, id }: Props) {
                   error={!!fieldState.error}
                   sx={{ mb: 2 }}
                   required
+                />
+              )}
+            />
+
+            <Controller
+              name="displayTitle"
+              control={control}
+              render={({ field, fieldState }) => (
+                <TextField
+                  {...field}
+                  value={field.value ?? ''}
+                  fullWidth
+                  label="앱 홈 노출 제목 (선택 사항)"
+                  inputProps={{ maxLength: 40 }}
+                  helperText={
+                    fieldState.error?.message ??
+                    `${(field.value ?? '').length}/40자 | 권장 16자, 비워두면 제목이 사용됩니다.`
+                  }
+                  error={!!fieldState.error}
+                  sx={{ mb: 2 }}
                 />
               )}
             />

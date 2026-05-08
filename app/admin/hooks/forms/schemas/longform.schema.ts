@@ -7,6 +7,10 @@ export const longformFormSchema = z.object({
     .string()
     .min(1, '제목을 입력해주세요.')
     .max(50, '제목은 최대 50자까지 입력 가능합니다.'),
+  displayTitle: z
+    .string()
+    .max(40, '앱 홈 노출 제목은 최대 40자까지 입력 가능합니다.')
+    .optional(),
   subtitle: z
     .string()
     .max(100, '부제목은 최대 100자까지 입력 가능합니다.')
