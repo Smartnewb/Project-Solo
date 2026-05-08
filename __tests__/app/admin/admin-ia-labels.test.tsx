@@ -1,23 +1,30 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import userEvent from '@testing-library/user-event';
 import ActionRequired from '@/app/admin/dashboard/components/ActionRequired';
 import QuickAccess from '@/app/admin/dashboard/components/QuickAccess';
 import AdminService from '@/app/services/admin';
 import { getReviewInbox } from '@/app/services/review-inbox';
 import { AdminSidebar } from '@/shared/ui/admin/sidebar';
 
-jest.mock('next/link', () => ({
-  __esModule: true,
-  default: React.forwardRef<
+jest.mock('next/link', () => {
+  const MockNextLink = React.forwardRef<
     HTMLAnchorElement,
     { href: string; children: React.ReactNode }
-  >(({ href, children, ...props }, ref) => (
-    <a ref={ref} href={href} {...props}>
-      {children}
-    </a>
-  )),
-}));
+  >(function MockNextLink({ href, children, ...props }, ref) {
+    return (
+      <a ref={ref} href={href} {...props}>
+        {children}
+      </a>
+    );
+  });
+
+  return {
+    __esModule: true,
+    default: MockNextLink,
+  };
+});
 
 jest.mock('next/navigation', () => ({
   usePathname: jest.fn(() => '/admin/dashboard'),
@@ -51,6 +58,7 @@ const mockedGetUniversityVerificationPending =
 describe('admin IA labels', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    window.localStorage.clear();
     mockedGetPendingUsers.mockResolvedValue({
       data: [],
       meta: { total: 2 },
@@ -86,6 +94,28 @@ describe('admin IA labels', () => {
     expect(screen.getByRole('link', { name: '프로필 신고 관리' })).toHaveAttribute('href', '/admin/reports');
     expect(screen.getByRole('link', { name: '검토 인박스' })).toHaveAttribute('href', '/admin/review-inbox');
     expect(screen.queryByRole('link', { name: 'AI 검토 인박스' })).not.toBeInTheDocument();
+  });
+
+  it('lets operators pin sidebar menu items as local favorites', async () => {
+    const user = userEvent.setup();
+
+    render(<AdminSidebar />);
+
+    await user.click(screen.getByRole('button', { name: '검토 인박스 즐겨찾기 추가' }));
+
+    expect(screen.getByRole('heading', { name: '즐겨찾기' })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /검토 인박스/ })[0]).toHaveAttribute(
+      'href',
+      '/admin/review-inbox',
+    );
+    expect(window.localStorage.getItem('admin-sidebar.favorite-hrefs.v1')).toContain(
+      '/admin/review-inbox',
+    );
+
+    await user.click(screen.getAllByRole('button', { name: '검토 인박스 즐겨찾기 해제' })[0]);
+
+    expect(screen.queryByRole('heading', { name: '즐겨찾기' })).not.toBeInTheDocument();
+    expect(window.localStorage.getItem('admin-sidebar.favorite-hrefs.v1')).toBe('[]');
   });
 
   it('uses 검토 인박스 in quick access', () => {

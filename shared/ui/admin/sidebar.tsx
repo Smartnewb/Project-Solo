@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { ChevronDown, Star } from 'lucide-react';
 import {
   Collapsible,
   CollapsibleContent,
@@ -29,6 +29,13 @@ interface NavCategory {
   label: string;
   items: NavItem[];
 }
+
+interface FavoriteNavLink extends NavLink {
+  category: string;
+  icon: string;
+}
+
+const FAVORITE_STORAGE_KEY = 'admin-sidebar.favorite-hrefs.v1';
 
 function isExpandable(item: NavItem): item is NavExpandable {
   return 'children' in item;
@@ -145,6 +152,57 @@ export const NAV_CATEGORIES: NavCategory[] = [
   },
 ];
 
+function flattenNavLinks(): FavoriteNavLink[] {
+  return NAV_CATEGORIES.flatMap((category) =>
+    category.items.flatMap((item) => {
+      const links = isExpandable(item) ? item.children : [item];
+      return links.map((link) => ({
+        ...link,
+        category: category.label,
+        icon: category.icon,
+      }));
+    }),
+  );
+}
+
+function readFavoriteHrefs(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(FAVORITE_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? parsed.filter((value): value is string => typeof value === 'string')
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function useFavoriteMenuItems() {
+  const [favoriteHrefs, setFavoriteHrefs] = useState<string[]>([]);
+
+  useEffect(() => {
+    setFavoriteHrefs(readFavoriteHrefs());
+  }, []);
+
+  const toggleFavorite = (href: string) => {
+    setFavoriteHrefs((current) => {
+      const next = current.includes(href)
+        ? current.filter((item) => item !== href)
+        : [...current, href];
+      try {
+        window.localStorage.setItem(FAVORITE_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // ignore quota/access errors
+      }
+      return next;
+    });
+  };
+
+  return { favoriteHrefs, toggleFavorite };
+}
+
 function useExpandableState(
   id: string,
   defaultOpen: boolean,
@@ -185,9 +243,94 @@ interface ExpandableGroupProps {
   item: NavExpandable;
   pathname: string;
   onNavigate?: () => void;
+  favoriteHrefs: string[];
+  onToggleFavorite: (href: string) => void;
 }
 
-function ExpandableGroup({ item, pathname, onNavigate }: ExpandableGroupProps) {
+function FavoriteButton({
+  label,
+  active,
+  onClick,
+  activeRow,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  activeRow?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={`${label} 즐겨찾기 ${active ? '해제' : '추가'}`}
+      aria-pressed={active}
+      title={`즐겨찾기 ${active ? '해제' : '추가'}`}
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onClick();
+      }}
+      className={`mx-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors ${
+        active
+          ? 'text-[#ffb400] hover:bg-[#fff2cc]'
+          : activeRow
+            ? 'text-white/80 hover:bg-white/15 hover:text-white'
+            : 'text-[#b0b0b0] hover:bg-[#fff5f7] hover:text-[#ff385c]'
+      }`}
+    >
+      <Star className="h-4 w-4" fill={active ? 'currentColor' : 'none'} />
+    </button>
+  );
+}
+
+function SidebarLinkRow({
+  href,
+  label,
+  pathname,
+  onNavigate,
+  favorite,
+  onToggleFavorite,
+  nested = false,
+}: NavLink & {
+  pathname: string;
+  onNavigate?: () => void;
+  favorite: boolean;
+  onToggleFavorite: (href: string) => void;
+  nested?: boolean;
+}) {
+  const active = pathname === href;
+
+  return (
+    <div
+      className={`flex items-center overflow-hidden rounded-lg transition-colors ${
+        active
+          ? 'bg-[#ff385c] text-white'
+          : 'text-[#6a6a6a] hover:bg-[#fff5f7] hover:text-[#222222]'
+      }`}
+    >
+      <Link
+        href={href}
+        onClick={onNavigate}
+        className={`min-w-0 flex-1 py-2.5 text-sm ${nested ? 'pl-8 pr-2' : 'px-4 pr-2'}`}
+      >
+        <span className="block truncate">{label}</span>
+      </Link>
+      <FavoriteButton
+        label={label}
+        active={favorite}
+        activeRow={active}
+        onClick={() => onToggleFavorite(href)}
+      />
+    </div>
+  );
+}
+
+function ExpandableGroup({
+  item,
+  pathname,
+  onNavigate,
+  favoriteHrefs,
+  onToggleFavorite,
+}: ExpandableGroupProps) {
   const childHrefs = item.children.map((c) => c.href);
   const containsActive = childHrefs.some((href) => pathname === href || pathname.startsWith(`${href}/`));
   const [open, setOpen] = useExpandableState(item.id, item.defaultOpen ?? false, containsActive);
@@ -203,18 +346,16 @@ function ExpandableGroup({ item, pathname, onNavigate }: ExpandableGroupProps) {
       <CollapsibleContent>
         <ul>
           {item.children.map((child) => (
-            <li key={child.href}>
-              <Link
+            <li key={child.href} className="mt-1">
+              <SidebarLinkRow
                 href={child.href}
-                onClick={onNavigate}
-                className={`block pl-8 pr-4 py-2.5 text-sm transition-colors ${
-                  pathname === child.href
-                    ? 'bg-[#ff385c] text-white'
-                    : 'text-[#6a6a6a] hover:bg-[#fff5f7] hover:text-[#222222]'
-                }`}
-              >
-                {child.label}
-              </Link>
+                label={child.label}
+                pathname={pathname}
+                onNavigate={onNavigate}
+                favorite={favoriteHrefs.includes(child.href)}
+                onToggleFavorite={onToggleFavorite}
+                nested
+              />
             </li>
           ))}
         </ul>
@@ -223,11 +364,71 @@ function ExpandableGroup({ item, pathname, onNavigate }: ExpandableGroupProps) {
   );
 }
 
+function FavoriteMenuPanel({
+  items,
+  onNavigate,
+  onToggleFavorite,
+}: {
+  items: FavoriteNavLink[];
+  onNavigate?: () => void;
+  onToggleFavorite: (href: string) => void;
+}) {
+  if (items.length === 0) return null;
+
+  return (
+    <section className="mb-4 rounded-xl border border-[#ffd1dc] bg-[#fff5f7] p-3">
+      <div className="mb-2 flex items-center justify-between px-1">
+        <h3 className="text-xs font-semibold uppercase tracking-[0.04em] text-[#c13515]">
+          즐겨찾기
+        </h3>
+        <span className="rounded-full bg-white px-2 py-0.5 text-[11px] font-medium text-[#c13515]">
+          {items.length}
+        </span>
+      </div>
+      <div className="grid grid-cols-1 gap-2">
+        {items.map((item) => (
+          <div
+            key={item.href}
+            className="group flex items-center gap-2 rounded-lg border border-white bg-white px-3 py-2 shadow-sm transition-colors hover:border-[#ff385c]"
+          >
+            <Link href={item.href} onClick={onNavigate} className="min-w-0 flex-1">
+              <span className="mb-0.5 flex items-center gap-1.5 text-[11px] font-medium text-[#929292]">
+                <span>{item.icon}</span>
+                <span className="truncate">{item.category}</span>
+              </span>
+              <span className="block truncate text-sm font-semibold text-[#222222]">
+                {item.label}
+              </span>
+            </Link>
+            <FavoriteButton
+              label={item.label}
+              active
+              onClick={() => onToggleFavorite(item.href)}
+            />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const { favoriteHrefs, toggleFavorite } = useFavoriteMenuItems();
+  const favoriteItems = useMemo(() => {
+    const allItems = flattenNavLinks();
+    return favoriteHrefs
+      .map((href) => allItems.find((item) => item.href === href))
+      .filter((item): item is FavoriteNavLink => Boolean(item));
+  }, [favoriteHrefs]);
 
   return (
     <nav className="flex-1 overflow-y-auto px-3 py-4">
+      <FavoriteMenuPanel
+        items={favoriteItems}
+        onNavigate={onNavigate}
+        onToggleFavorite={toggleFavorite}
+      />
       {NAV_CATEGORIES.map((category) => (
         <div key={category.label}>
           <div className="mt-4 px-3 py-2 text-xs font-semibold uppercase tracking-[0.04em] text-[#929292]">
@@ -242,23 +443,22 @@ export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
                       item={item}
                       pathname={pathname ?? ''}
                       onNavigate={onNavigate}
+                      favoriteHrefs={favoriteHrefs}
+                      onToggleFavorite={toggleFavorite}
                     />
                   </li>
                 );
               }
               return (
-                <li key={item.href}>
-                  <Link
+                <li key={item.href} className="mt-1">
+                  <SidebarLinkRow
                     href={item.href}
-                    onClick={onNavigate}
-                    className={`block px-4 py-2.5 text-sm transition-colors ${
-                      pathname === item.href
-                        ? 'bg-[#ff385c] text-white'
-                        : 'text-[#6a6a6a] hover:bg-[#fff5f7] hover:text-[#222222]'
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
+                    label={item.label}
+                    pathname={pathname ?? ''}
+                    onNavigate={onNavigate}
+                    favorite={favoriteHrefs.includes(item.href)}
+                    onToggleFavorite={toggleFavorite}
+                  />
                 </li>
               );
             })}
