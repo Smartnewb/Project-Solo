@@ -7,6 +7,11 @@ export interface UtmLink {
 	utmMedium: string;
 	utmCampaign: string;
 	utmContent: string | null;
+	utmTerm?: string | null;
+	utmId?: string | null;
+	utmSourcePlatform?: string | null;
+	utmCreativeFormat?: string | null;
+	utmMarketingTactic?: string | null;
 	destinationType: string;
 	destinationUrl: string;
 	shortCode: string;
@@ -20,7 +25,81 @@ export interface UtmLink {
 	adAccountId?: string | null;
 	campaignId?: string | null;
 	adsetId?: string | null;
+	adGroupId?: string | null;
 	adId?: string | null;
+	creativeId?: string | null;
+	bindings?: UtmPlatformBinding[];
+}
+
+export interface UtmPlatformBinding {
+	platform: string;
+	adAccountId?: string | null;
+	campaignId?: string | null;
+	campaignName?: string | null;
+	adsetId?: string | null;
+	adsetName?: string | null;
+	adGroupId?: string | null;
+	adGroupName?: string | null;
+	adId?: string | null;
+	adName?: string | null;
+	creativeId?: string | null;
+	creativeName?: string | null;
+	keywordId?: string | null;
+	criterionId?: string | null;
+	placement?: string | null;
+	siteSourceName?: string | null;
+}
+
+export interface UtmDrilldownRow {
+	key: string;
+	label: string;
+	platform?: string | null;
+	utmLinkId?: string | null;
+	clicks: number;
+	signups: number;
+	profileApproved: number;
+	purchases: number;
+	signupRate: number;
+	purchaseRate: number;
+}
+
+export interface UtmConversionExportRow {
+	platform: string;
+	conversionType: string;
+	eventId?: string | null;
+	attributionId?: string | null;
+	status: string;
+	attempts: number;
+	lastError?: string | null;
+	nextRetryAt?: string | null;
+}
+
+export interface UtmConversionExportResponse {
+	rows: UtmConversionExportRow[];
+	countsByStatus: Record<string, number>;
+}
+
+export interface UtmLinkFlow {
+	link: UtmLink | null;
+	bindings: UtmPlatformBinding[];
+	touches: Array<{
+		id: string;
+		attributionId: string;
+		touchId?: string | null;
+		utmSource?: string | null;
+		utmCampaign?: string | null;
+		utmContent?: string | null;
+		utmId?: string | null;
+		createdAt: string;
+	}>;
+	conversions: Array<{
+		id: string;
+		eventName: string;
+		eventId?: string | null;
+		attributionId: string;
+		occurredAt: string;
+	}>;
+	exports: UtmConversionExportRow[];
 }
 
 export interface UtmDashboardSummary {
@@ -84,29 +163,60 @@ export interface UtmAttributionHealth {
 	};
 }
 
+type UtmLinkQuery = {
+	page?: number;
+	search?: string;
+	utmSource?: string;
+	utmCampaign?: string;
+	utmContent?: string;
+	utmTerm?: string;
+	platform?: string;
+	campaignId?: string;
+	adsetId?: string;
+	adGroupId?: string;
+	adId?: string;
+	creativeId?: string;
+};
+
+type ConversionExportQuery = {
+	startDate: string;
+	endDate: string;
+	platform?: string;
+	conversionType?: string;
+	status?: string;
+};
+
+type CreateUtmLinkInput = {
+	name: string;
+	utmSource: string;
+	utmMedium: string;
+	utmCampaign: string;
+	utmContent?: string;
+	utmTerm?: string;
+	utmId?: string;
+	utmSourcePlatform?: string;
+	utmCreativeFormat?: string;
+	utmMarketingTactic?: string;
+	destinationType: string;
+	memo?: string;
+	platformBindings?: UtmPlatformBinding[];
+};
+
 export const utm = {
-	getLinks: async (params?: { page?: number; search?: string; utmSource?: string }) => {
+	getLinks: async (params?: UtmLinkQuery) => {
 		const query: Record<string, string> = {};
-		if (params?.page != null) query.page = String(params.page);
-		if (params?.search) query.search = params.search;
-		if (params?.utmSource) query.utmSource = params.utmSource;
+		for (const [key, value] of Object.entries(params ?? {})) {
+			if (value != null && value !== '') query[key] = String(value);
+		}
 		return adminGet<{ data: UtmLink[]; meta: { total: number; page: number; limit: number } }>('/admin/v2/utm/links', query);
 	},
 
-	createLink: async (data: {
-		name: string;
-		utmSource: string;
-		utmMedium: string;
-		utmCampaign: string;
-		utmContent?: string;
-		destinationType: string;
-		memo?: string;
-	}) => {
+	createLink: async (data: CreateUtmLinkInput) => {
 		const result = await adminPost<{ data: UtmLink }>('/admin/v2/utm/links', data);
 		return result.data;
 	},
 
-	updateLink: async (id: string, data: { name?: string; memo?: string }) => {
+	updateLink: async (id: string, data: Partial<CreateUtmLinkInput>) => {
 		const result = await adminPatch<{ data: UtmLink }>(`/admin/v2/utm/links/${id}`, data);
 		return result.data;
 	},
@@ -151,6 +261,26 @@ export const utm = {
 
 	getAttributionHealth: async (startDate: string, endDate: string) => {
 		const result = await adminGet<{ data: UtmAttributionHealth }>('/admin/v2/utm/dashboard/attribution-health', { startDate, endDate });
+		return result.data;
+	},
+
+	getDrilldown: async (params: Record<string, string>) => {
+		const result = await adminGet<{ data: UtmDrilldownRow[] }>('/admin/v2/utm/dashboard/drilldown', params);
+		return result.data;
+	},
+
+	getLinkFlow: async (utmLinkId: string, params: Record<string, string>) => {
+		const result = await adminGet<{ data: UtmLinkFlow }>(`/admin/v2/utm/dashboard/links/${utmLinkId}/flow`, params);
+		return result.data;
+	},
+
+	getPlatformBindings: async (params: Record<string, string>) => {
+		const result = await adminGet<{ data: UtmPlatformBinding[] }>('/admin/v2/utm/dashboard/platform-bindings', params);
+		return result.data;
+	},
+
+	getConversionExports: async (params: ConversionExportQuery) => {
+		const result = await adminGet<{ data: UtmConversionExportResponse }>('/admin/v2/utm/dashboard/conversion-exports', params);
 		return result.data;
 	},
 };

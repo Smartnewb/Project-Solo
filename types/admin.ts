@@ -37,6 +37,7 @@ export type CardNewsTrack = 'cards' | 'longform';
 export interface AdminCardNewsItem {
   id: string;
   title: string;
+  displayTitle?: string | null;
   subtitle?: string;
   description?: string;
   postType: string;
@@ -66,6 +67,7 @@ export interface AdminCardNewsListResponse {
 
 export interface CreateCardNewsRequest {
   title: string;
+  displayTitle?: string | null;
   subtitle?: string;
   description?: string;
   categoryCode: string;
@@ -89,6 +91,7 @@ export interface CreateCardNewsRequest {
 
 export interface UpdateCardNewsRequest {
   title?: string;
+  displayTitle?: string | null;
   subtitle?: string;
   description?: string;
   backgroundImage?: {

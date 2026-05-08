@@ -97,6 +97,11 @@ export type {
 	UtmChannelRow,
 	UtmCampaignRow,
 	UtmAttributionHealth,
+	UtmPlatformBinding,
+	UtmDrilldownRow,
+	UtmConversionExportRow,
+	UtmConversionExportResponse,
+	UtmLinkFlow,
 } from './utm';
 export { ghostInjection } from './ghost-injection';
 export { ghostChat } from './ghost-chat';

@@ -23,6 +23,7 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  MenuItem,
   Tooltip,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
@@ -34,6 +35,14 @@ import AdminService from '@/app/services/admin';
 import type { UtmLink } from '@/app/services/admin';
 import { useToast } from '@/shared/ui/admin/toast';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog';
+import {
+	PLACEMENT_OPTIONS,
+	PLATFORM_BINDING_OPTIONS,
+	SITE_SOURCE_NAME_OPTIONS,
+	UTM_CREATIVE_FORMAT_OPTIONS,
+	UTM_MARKETING_TACTIC_OPTIONS,
+	UTM_SOURCE_PLATFORM_OPTIONS,
+} from '../utm-options';
 
 interface UtmLinkListProps {
   refreshKey: number;
@@ -47,23 +56,55 @@ export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(0);
+	  const [search, setSearch] = useState('');
+	  const [platformFilter, setPlatformFilter] = useState('');
+	  const [campaignFilter, setCampaignFilter] = useState('');
+	  const [contentFilter, setContentFilter] = useState('');
+	  const [termFilter, setTermFilter] = useState('');
+	  const [campaignIdFilter, setCampaignIdFilter] = useState('');
+	  const [adsetIdFilter, setAdsetIdFilter] = useState('');
+	  const [adGroupIdFilter, setAdGroupIdFilter] = useState('');
+	  const [adIdFilter, setAdIdFilter] = useState('');
+	  const [creativeIdFilter, setCreativeIdFilter] = useState('');
+	  const [page, setPage] = useState(0);
 
   const [editOpen, setEditOpen] = useState(false);
   const [editLink, setEditLink] = useState<UtmLink | null>(null);
   const [editName, setEditName] = useState('');
   const [editMemo, setEditMemo] = useState('');
-  const [editSaving, setEditSaving] = useState(false);
+  const [editContent, setEditContent] = useState('');
+  const [editTerm, setEditTerm] = useState('');
+  const [editUtmId, setEditUtmId] = useState('');
+  const [editSourcePlatform, setEditSourcePlatform] = useState('');
+  const [editCreativeFormat, setEditCreativeFormat] = useState('');
+  const [editMarketingTactic, setEditMarketingTactic] = useState('');
+  const [editBindingPlatform, setEditBindingPlatform] = useState<'meta' | 'google_ads'>('meta');
+  const [editCampaignId, setEditCampaignId] = useState('');
+  const [editAdsetId, setEditAdsetId] = useState('');
+	  const [editAdGroupId, setEditAdGroupId] = useState('');
+	  const [editAdId, setEditAdId] = useState('');
+	  const [editCreativeId, setEditCreativeId] = useState('');
+	  const [editPlacement, setEditPlacement] = useState('');
+	  const [editSiteSourceName, setEditSiteSourceName] = useState('');
+	  const [editSaving, setEditSaving] = useState(false);
 
   const fetchLinks = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const result = await AdminService.utm.getLinks({
-        page: page + 1,
-        search: search || undefined,
-      });
+	      const result = await AdminService.utm.getLinks({
+	        page: page + 1,
+	        search: search || undefined,
+	        utmCampaign: campaignFilter || undefined,
+	        utmContent: contentFilter || undefined,
+	        platform: platformFilter || undefined,
+	        utmTerm: termFilter || undefined,
+	        campaignId: campaignIdFilter || undefined,
+	        adsetId: adsetIdFilter || undefined,
+	        adGroupId: adGroupIdFilter || undefined,
+	        adId: adIdFilter || undefined,
+	        creativeId: creativeIdFilter || undefined,
+	      });
       setLinks(result.data);
       setTotal(result.meta.total);
     } catch (err: any) {
@@ -71,7 +112,19 @@ export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+	  }, [
+	    page,
+	    search,
+	    campaignFilter,
+	    contentFilter,
+	    platformFilter,
+	    termFilter,
+	    campaignIdFilter,
+	    adsetIdFilter,
+	    adGroupIdFilter,
+	    adIdFilter,
+	    creativeIdFilter,
+	  ]);
 
   useEffect(() => {
     fetchLinks();
@@ -91,21 +144,54 @@ export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
     }
   };
 
-  const openEdit = (link: UtmLink) => {
-    setEditLink(link);
-    setEditName(link.name);
-    setEditMemo(link.memo || '');
-    setEditOpen(true);
-  };
+	  const openEdit = (link: UtmLink) => {
+	    setEditLink(link);
+	    setEditName(link.name);
+	    setEditMemo(link.memo || '');
+	    setEditContent(link.utmContent || '');
+	    setEditTerm(link.utmTerm || '');
+	    setEditUtmId(link.utmId || '');
+	    setEditSourcePlatform(link.utmSourcePlatform || '');
+	    setEditCreativeFormat(link.utmCreativeFormat || '');
+	    setEditMarketingTactic(link.utmMarketingTactic || '');
+	    const binding = link.bindings?.[0];
+	    setEditBindingPlatform(binding?.platform === 'google_ads' ? 'google_ads' : 'meta');
+	    setEditCampaignId(binding?.campaignId || '');
+	    setEditAdsetId(binding?.adsetId || '');
+	    setEditAdGroupId(binding?.adGroupId || '');
+	    setEditAdId(binding?.adId || '');
+	    setEditCreativeId(binding?.creativeId || '');
+	    setEditPlacement(binding?.placement || '');
+	    setEditSiteSourceName(binding?.siteSourceName || '');
+	    setEditOpen(true);
+	  };
 
   const handleEditSave = async () => {
     if (!editLink) return;
     setEditSaving(true);
     try {
-      const updated = await AdminService.utm.updateLink(editLink.id, {
-        name: editName,
-        memo: editMemo || undefined,
-      });
+	      const updated = await AdminService.utm.updateLink(editLink.id, {
+	        name: editName,
+	        memo: editMemo || undefined,
+	        utmContent: editContent || undefined,
+	        utmTerm: editTerm || undefined,
+	        utmId: editUtmId || undefined,
+	        utmSourcePlatform: editSourcePlatform || undefined,
+	        utmCreativeFormat: editCreativeFormat || undefined,
+	        utmMarketingTactic: editMarketingTactic || undefined,
+	        platformBindings: [
+	          {
+	            platform: editBindingPlatform,
+	            campaignId: editCampaignId || undefined,
+	            adsetId: editBindingPlatform === 'meta' ? editAdsetId || undefined : undefined,
+		            adGroupId: editBindingPlatform === 'google_ads' ? editAdGroupId || undefined : undefined,
+		            adId: editAdId || undefined,
+		            creativeId: editCreativeId || undefined,
+		            placement: editPlacement || undefined,
+		            siteSourceName: editSiteSourceName || undefined,
+		          },
+		        ].filter((binding) => binding.campaignId || binding.adsetId || binding.adGroupId || binding.adId || binding.creativeId || binding.placement || binding.siteSourceName),
+		      });
       setLinks((prev) => prev.map((l) => (l.id === editLink.id ? { ...l, ...updated } : l)));
       setEditOpen(false);
       toast.success('수정되었습니다.');
@@ -165,7 +251,102 @@ export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
             }}
             sx={{ width: 280 }}
           />
-        </Box>
+	          <TextField
+	            select
+	            label="플랫폼"
+            size="small"
+            value={platformFilter}
+            onChange={(e) => {
+              setPlatformFilter(e.target.value);
+              setPage(0);
+            }}
+            sx={{ width: 140 }}
+          >
+            <MenuItem value="">전체</MenuItem>
+	            <MenuItem value="meta">Meta</MenuItem>
+	            <MenuItem value="google_ads">Google Ads</MenuItem>
+	          </TextField>
+	          <TextField
+	            label="utm_campaign"
+	            size="small"
+	            value={campaignFilter}
+	            onChange={(e) => {
+	              setCampaignFilter(e.target.value);
+	              setPage(0);
+	            }}
+	            sx={{ width: 180 }}
+	          />
+	          <TextField
+	            label="utm_content"
+	            size="small"
+	            value={contentFilter}
+	            onChange={(e) => {
+	              setContentFilter(e.target.value);
+	              setPage(0);
+	            }}
+	            sx={{ width: 180 }}
+	          />
+	          <TextField
+	            label="utm_term"
+	            size="small"
+	            value={termFilter}
+            onChange={(e) => {
+              setTermFilter(e.target.value);
+              setPage(0);
+	            }}
+	            sx={{ width: 160 }}
+	          />
+	          <TextField
+	            label="campaign_id"
+	            size="small"
+	            value={campaignIdFilter}
+	            onChange={(e) => {
+	              setCampaignIdFilter(e.target.value);
+	              setPage(0);
+	            }}
+	            sx={{ width: 170 }}
+	          />
+	          <TextField
+	            label="adset_id"
+	            size="small"
+	            value={adsetIdFilter}
+	            onChange={(e) => {
+	              setAdsetIdFilter(e.target.value);
+	              setPage(0);
+	            }}
+	            sx={{ width: 150 }}
+	          />
+	          <TextField
+	            label="ad_group_id"
+	            size="small"
+	            value={adGroupIdFilter}
+	            onChange={(e) => {
+	              setAdGroupIdFilter(e.target.value);
+	              setPage(0);
+	            }}
+	            sx={{ width: 160 }}
+	          />
+	          <TextField
+	            label="ad_id"
+	            size="small"
+	            value={adIdFilter}
+	            onChange={(e) => {
+	              setAdIdFilter(e.target.value);
+	              setPage(0);
+	            }}
+	            sx={{ width: 140 }}
+	          />
+	          <TextField
+	            label="creative_id"
+	            size="small"
+	            value={creativeIdFilter}
+	            onChange={(e) => {
+	              setCreativeIdFilter(e.target.value);
+	              setPage(0);
+	            }}
+	            sx={{ width: 160 }}
+	          />
+	        </Box>
 
         {error && (
           <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
@@ -190,6 +371,8 @@ export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
                     <TableCell sx={{ fontWeight: 600 }}>이름</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>채널</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>캠페인</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>상세</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>바인딩</TableCell>
                     <TableCell sx={{ fontWeight: 600 }} align="right">클릭 수</TableCell>
                     <TableCell sx={{ fontWeight: 600 }} align="right">가입 수</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>생성일</TableCell>
@@ -215,6 +398,20 @@ export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
                       <TableCell>
                         <Typography variant="body2" color="textSecondary">
                           {link.utmCampaign}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="caption" color="textSecondary">
+                          {[
+                            link.utmContent && `content=${link.utmContent}`,
+                            link.utmTerm && `term=${link.utmTerm}`,
+                            link.utmId && `id=${link.utmId}`,
+                          ].filter(Boolean).join(' · ') || '-'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="caption" color="textSecondary">
+                          {(link.bindings ?? []).map((binding) => `${binding.platform}:${binding.campaignId ?? binding.adId ?? binding.creativeId ?? '-'}`).join(', ') || '-'}
                         </Typography>
                       </TableCell>
                       <TableCell align="right">
@@ -279,7 +476,7 @@ export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
         )}
       </Paper>
 
-      <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle sx={{ fontWeight: 700 }}>링크 수정</DialogTitle>
         <DialogContent dividers>
           <TextField
@@ -289,15 +486,64 @@ export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
             onChange={(e) => setEditName(e.target.value)}
             sx={{ mb: 2, mt: 1 }}
           />
-          <TextField
-            label="메모"
-            fullWidth
-            multiline
-            rows={3}
-            value={editMemo}
-            onChange={(e) => setEditMemo(e.target.value)}
-          />
-        </DialogContent>
+	          <TextField
+	            label="메모"
+	            fullWidth
+	            multiline
+	            rows={3}
+	            value={editMemo}
+	            onChange={(e) => setEditMemo(e.target.value)}
+	            sx={{ mb: 2 }}
+	          />
+	          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
+	            <TextField label="utm_content" value={editContent} onChange={(e) => setEditContent(e.target.value)} fullWidth />
+	            <TextField label="utm_term" value={editTerm} onChange={(e) => setEditTerm(e.target.value)} fullWidth />
+	            <TextField label="utm_id" value={editUtmId} onChange={(e) => setEditUtmId(e.target.value)} fullWidth />
+		            <TextField select label="utm_source_platform" value={editSourcePlatform} onChange={(e) => setEditSourcePlatform(e.target.value)} fullWidth>
+		              {UTM_SOURCE_PLATFORM_OPTIONS.map((option) => (
+		                <MenuItem key={option.value || 'empty-source-platform'} value={option.value}>{option.label}</MenuItem>
+		              ))}
+		            </TextField>
+		            <TextField select label="utm_creative_format" value={editCreativeFormat} onChange={(e) => setEditCreativeFormat(e.target.value)} fullWidth>
+		              {UTM_CREATIVE_FORMAT_OPTIONS.map((option) => (
+		                <MenuItem key={option.value || 'empty-creative-format'} value={option.value}>{option.label}</MenuItem>
+		              ))}
+		            </TextField>
+		            <TextField select label="utm_marketing_tactic" value={editMarketingTactic} onChange={(e) => setEditMarketingTactic(e.target.value)} fullWidth>
+		              {UTM_MARKETING_TACTIC_OPTIONS.map((option) => (
+		                <MenuItem key={option.value || 'empty-marketing-tactic'} value={option.value}>{option.label}</MenuItem>
+		              ))}
+		            </TextField>
+	          </Box>
+	          <Typography variant="subtitle2" fontWeight={700} sx={{ mt: 3, mb: 1 }}>
+	            플랫폼 바인딩
+	          </Typography>
+	          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
+	            <TextField select label="플랫폼" value={editBindingPlatform} onChange={(e) => setEditBindingPlatform(e.target.value as 'meta' | 'google_ads')} fullWidth>
+	              {PLATFORM_BINDING_OPTIONS.map((option) => (
+	                <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+	              ))}
+	            </TextField>
+	            <TextField label="campaign_id" value={editCampaignId} onChange={(e) => setEditCampaignId(e.target.value)} fullWidth />
+	            {editBindingPlatform === 'meta' ? (
+	              <TextField label="adset_id" value={editAdsetId} onChange={(e) => setEditAdsetId(e.target.value)} fullWidth />
+	            ) : (
+	              <TextField label="ad_group_id" value={editAdGroupId} onChange={(e) => setEditAdGroupId(e.target.value)} fullWidth />
+	            )}
+	            <TextField label="ad_id" value={editAdId} onChange={(e) => setEditAdId(e.target.value)} fullWidth />
+	            <TextField label="creative_id" value={editCreativeId} onChange={(e) => setEditCreativeId(e.target.value)} fullWidth />
+	            <TextField select label="placement" value={editPlacement} onChange={(e) => setEditPlacement(e.target.value)} fullWidth>
+	              {PLACEMENT_OPTIONS.map((option) => (
+	                <MenuItem key={option.value || 'empty-placement'} value={option.value}>{option.label}</MenuItem>
+	              ))}
+	            </TextField>
+	            <TextField select label="site_source_name" value={editSiteSourceName} onChange={(e) => setEditSiteSourceName(e.target.value)} fullWidth>
+	              {SITE_SOURCE_NAME_OPTIONS.map((option) => (
+	                <MenuItem key={option.value || 'empty-site-source-name'} value={option.value}>{option.label}</MenuItem>
+	              ))}
+	            </TextField>
+	          </Box>
+	        </DialogContent>
         <DialogActions sx={{ px: 3, py: 2 }}>
           <Button onClick={() => setEditOpen(false)} disabled={editSaving}>
             취소

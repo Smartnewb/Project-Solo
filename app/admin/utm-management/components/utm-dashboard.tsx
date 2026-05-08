@@ -13,12 +13,13 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TableSortLabel,
-  Collapse,
-  IconButton,
-  CircularProgress,
-  Alert,
-} from '@mui/material';
+	  TableSortLabel,
+	  Collapse,
+	  IconButton,
+	  CircularProgress,
+	  Alert,
+	  Button,
+	} from '@mui/material';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -30,8 +31,10 @@ import type {
   UtmDashboardSummary,
   UtmFunnelStep,
   UtmChannelRow,
-  UtmCampaignRow,
-} from '@/app/services/admin';
+	  UtmCampaignRow,
+	  UtmConversionExportRow,
+	  UtmLinkFlow,
+	} from '@/app/services/admin';
 
 type DatePreset = '오늘' | '7일' | '30일' | '이번달';
 
@@ -65,22 +68,30 @@ const FUNNEL_COLORS = ['#8B5CF6', '#A78BFA', '#C4B5FD', '#DDD6FE', '#EDE9FE'];
 type SortKey = 'clicks' | 'signups' | 'signupRate' | 'approved' | 'purchases' | 'purchaseRate';
 
 export default function UtmDashboard() {
-  const [datePreset, setDatePreset] = useState<DatePreset>('7일');
-  const [channelFilter, setChannelFilter] = useState('');
-  const [campaignFilter, setCampaignFilter] = useState('');
+	  const [datePreset, setDatePreset] = useState<DatePreset>('7일');
+	  const [channelFilter, setChannelFilter] = useState('');
+	  const [campaignFilter, setCampaignFilter] = useState('');
+	  const [exportPlatformFilter, setExportPlatformFilter] = useState('');
+	  const [exportStatusFilter, setExportStatusFilter] = useState('');
+	  const [exportConversionTypeFilter, setExportConversionTypeFilter] = useState('');
+	  const [linkFlowId, setLinkFlowId] = useState('');
 
-  const [summary, setSummary] = useState<UtmDashboardSummary | null>(null);
-  const [attributionHealth, setAttributionHealth] = useState<UtmAttributionHealth | null>(null);
-  const [funnel, setFunnel] = useState<UtmFunnelStep[]>([]);
-  const [channels, setChannels] = useState<UtmChannelRow[]>([]);
-  const [loading, setLoading] = useState(true);
+	  const [summary, setSummary] = useState<UtmDashboardSummary | null>(null);
+	  const [attributionHealth, setAttributionHealth] = useState<UtmAttributionHealth | null>(null);
+	  const [funnel, setFunnel] = useState<UtmFunnelStep[]>([]);
+	  const [channels, setChannels] = useState<UtmChannelRow[]>([]);
+	  const [conversionExports, setConversionExports] = useState<UtmConversionExportRow[]>([]);
+	  const [conversionExportCounts, setConversionExportCounts] = useState<Record<string, number>>({});
+	  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [sortBy, setSortBy] = useState<SortKey>('clicks');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [expandedSource, setExpandedSource] = useState<string | null>(null);
-  const [campaignRows, setCampaignRows] = useState<UtmCampaignRow[]>([]);
-  const [campaignLoading, setCampaignLoading] = useState(false);
+	  const [campaignRows, setCampaignRows] = useState<UtmCampaignRow[]>([]);
+	  const [campaignLoading, setCampaignLoading] = useState(false);
+	  const [linkFlow, setLinkFlow] = useState<UtmLinkFlow | null>(null);
+	  const [linkFlowLoading, setLinkFlowLoading] = useState(false);
 
   const { startDate, endDate } = getDateRange(datePreset);
 
@@ -88,22 +99,31 @@ export default function UtmDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const [summaryData, funnelData, channelsData, attributionHealthData] = await Promise.all([
+      const [summaryData, funnelData, channelsData, attributionHealthData, conversionExportData] = await Promise.all([
         AdminService.utm.getSummary(startDate, endDate, channelFilter || undefined, campaignFilter || undefined),
         AdminService.utm.getFunnel(startDate, endDate, channelFilter || undefined, campaignFilter || undefined),
         AdminService.utm.getChannels(startDate, endDate),
         AdminService.utm.getAttributionHealth(startDate, endDate),
+	        AdminService.utm.getConversionExports({
+	          startDate,
+	          endDate,
+	          platform: exportPlatformFilter || undefined,
+	          status: exportStatusFilter || undefined,
+	          conversionType: exportConversionTypeFilter || undefined,
+	        }),
       ]);
       setSummary(summaryData);
-      setFunnel(funnelData);
-      setChannels(channelsData);
-      setAttributionHealth(attributionHealthData);
+	      setFunnel(funnelData);
+	      setChannels(channelsData);
+	      setAttributionHealth(attributionHealthData);
+	      setConversionExports(conversionExportData.rows);
+	      setConversionExportCounts(conversionExportData.countsByStatus);
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || '데이터를 불러오지 못했습니다.');
     } finally {
       setLoading(false);
     }
-  }, [startDate, endDate, channelFilter, campaignFilter]);
+	  }, [startDate, endDate, channelFilter, campaignFilter, exportPlatformFilter, exportStatusFilter, exportConversionTypeFilter]);
 
   useEffect(() => {
     fetchData();
@@ -123,7 +143,7 @@ export default function UtmDashboard() {
     return (a[sortBy] - b[sortBy]) * mul;
   });
 
-  const handleExpandRow = async (source: string) => {
+	  const handleExpandRow = async (source: string) => {
     if (expandedSource === source) {
       setExpandedSource(null);
       return;
@@ -138,7 +158,21 @@ export default function UtmDashboard() {
     } finally {
       setCampaignLoading(false);
     }
-  };
+	  };
+
+	  const loadLinkFlow = async () => {
+	    if (!linkFlowId.trim()) return;
+	    setLinkFlowLoading(true);
+	    try {
+	      const data = await AdminService.utm.getLinkFlow(linkFlowId.trim(), { startDate, endDate });
+	      setLinkFlow(data);
+	    } catch (err: any) {
+	      setError(err.response?.data?.message || err.message || '링크 흐름을 불러오지 못했습니다.');
+	      setLinkFlow(null);
+	    } finally {
+	      setLinkFlowLoading(false);
+	    }
+	  };
 
   const renderChangeChip = (change: number | null) => {
     if (change == null) return <Typography variant="caption" color="textSecondary">--</Typography>;
@@ -208,16 +242,49 @@ export default function UtmDashboard() {
             ))}
           </TextField>
 
-          <TextField
-            label="캠페인"
+	          <TextField
+	            label="캠페인"
             placeholder="캠페인 필터"
             value={campaignFilter}
             onChange={(e) => setCampaignFilter(e.target.value)}
             size="small"
-            sx={{ minWidth: 180 }}
-          />
-        </Box>
-      </Paper>
+	            sx={{ minWidth: 180 }}
+	          />
+	          <TextField
+	            select
+	            label="Export 플랫폼"
+	            value={exportPlatformFilter}
+	            onChange={(e) => setExportPlatformFilter(e.target.value)}
+	            size="small"
+	            sx={{ minWidth: 140 }}
+	          >
+	            <MenuItem value="">전체</MenuItem>
+	            <MenuItem value="meta">Meta</MenuItem>
+	            <MenuItem value="google_ads">Google Ads</MenuItem>
+	          </TextField>
+	          <TextField
+	            select
+	            label="Export 상태"
+	            value={exportStatusFilter}
+	            onChange={(e) => setExportStatusFilter(e.target.value)}
+	            size="small"
+	            sx={{ minWidth: 140 }}
+	          >
+	            <MenuItem value="">전체</MenuItem>
+	            {['pending', 'sent', 'failed', 'skipped'].map((status) => (
+	              <MenuItem key={status} value={status}>{status}</MenuItem>
+	            ))}
+	          </TextField>
+	          <TextField
+	            label="전환 타입"
+	            placeholder="signup, purchase..."
+	            value={exportConversionTypeFilter}
+	            onChange={(e) => setExportConversionTypeFilter(e.target.value)}
+	            size="small"
+	            sx={{ minWidth: 160 }}
+	          />
+	        </Box>
+	      </Paper>
 
       {/* Summary cards */}
       {summary && (
@@ -268,11 +335,11 @@ export default function UtmDashboard() {
         </Box>
       </Paper>
 
-      {/* Funnel chart */}
-      {funnel.length > 0 && (
-        <Paper variant="outlined" sx={{ p: 3 }}>
-          <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
-            전환 퍼널
+	      {/* Funnel chart */}
+	      {funnel.length > 0 && (
+		      <Paper variant="outlined" sx={{ p: 3 }}>
+	          <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
+	            전환 퍼널
           </Typography>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={funnel} layout="vertical" margin={{ left: 80, right: 40 }}>
@@ -294,10 +361,94 @@ export default function UtmDashboard() {
                   <Cell key={index} fill={FUNNEL_COLORS[index % FUNNEL_COLORS.length]} />
                 ))}
               </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </Paper>
-      )}
+	            </BarChart>
+	          </ResponsiveContainer>
+		      </Paper>
+	      )}
+
+		      <Paper variant="outlined" sx={{ p: 3 }}>
+		        <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
+		          링크별 Attribution Flow
+	        </Typography>
+	        <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
+	          <TextField
+	            label="utm_link_id"
+	            value={linkFlowId}
+	            onChange={(e) => setLinkFlowId(e.target.value)}
+	            size="small"
+	            sx={{ minWidth: 320 }}
+	          />
+	          <Button variant="outlined" onClick={loadLinkFlow} disabled={linkFlowLoading || !linkFlowId.trim()}>
+	            {linkFlowLoading ? <CircularProgress size={18} /> : '조회'}
+	          </Button>
+	        </Box>
+	        {linkFlow && (
+	          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(4, 1fr)' }, gap: 2 }}>
+	            <Box>
+	              <Typography variant="caption" color="textSecondary">Link</Typography>
+	              <Typography variant="body2" fontWeight={600}>{linkFlow.link?.name ?? '-'}</Typography>
+	              <Typography variant="caption" color="textSecondary">{linkFlow.link?.utmCampaign ?? '-'}</Typography>
+	            </Box>
+	            <Box>
+	              <Typography variant="caption" color="textSecondary">Bindings</Typography>
+	              <Typography variant="body2" fontWeight={600}>{linkFlow.bindings.length.toLocaleString()}</Typography>
+	              <Typography variant="caption" color="textSecondary">{linkFlow.bindings.map((b) => b.platform).join(', ') || '-'}</Typography>
+	            </Box>
+	            <Box>
+	              <Typography variant="caption" color="textSecondary">Touches</Typography>
+	              <Typography variant="body2" fontWeight={600}>{linkFlow.touches.length.toLocaleString()}</Typography>
+	              <Typography variant="caption" color="textSecondary">{linkFlow.touches[0]?.attributionId ?? '-'}</Typography>
+	            </Box>
+	            <Box>
+	              <Typography variant="caption" color="textSecondary">Conversions / Exports</Typography>
+	              <Typography variant="body2" fontWeight={600}>{linkFlow.conversions.length.toLocaleString()} / {linkFlow.exports.length.toLocaleString()}</Typography>
+	              <Typography variant="caption" color="textSecondary">{linkFlow.exports[0]?.status ?? '-'}</Typography>
+	            </Box>
+		          </Box>
+		        )}
+		      </Paper>
+
+	      <Paper variant="outlined" sx={{ p: 3 }}>
+        <Typography variant="h6" fontWeight={600} sx={{ mb: 2 }}>
+          전환 Export 상태
+        </Typography>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' }, gap: 2, mb: 2 }}>
+	          {['pending', 'sent', 'failed', 'skipped'].map((status) => (
+	            <Box key={status}>
+	              <Typography variant="caption" color="textSecondary">{status}</Typography>
+	              <Typography variant="h5" fontWeight={700}>
+	                {(conversionExportCounts[status] ?? 0).toLocaleString()}
+	              </Typography>
+	            </Box>
+	          ))}
+        </Box>
+        <TableContainer>
+          <Table size="small">
+            <TableHead>
+              <TableRow sx={{ backgroundColor: '#f9fafb' }}>
+                <TableCell sx={{ fontWeight: 600 }}>Platform</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Conversion</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Event ID</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 600 }} align="right">Attempts</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Last error</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {conversionExports.slice(0, 10).map((row) => (
+                <TableRow key={`${row.platform}-${row.conversionType}-${row.eventId ?? row.attributionId ?? row.status}`}>
+                  <TableCell>{row.platform}</TableCell>
+                  <TableCell>{row.conversionType}</TableCell>
+                  <TableCell>{row.eventId ?? '-'}</TableCell>
+                  <TableCell>{row.status}</TableCell>
+                  <TableCell align="right">{row.attempts}</TableCell>
+                  <TableCell>{row.lastError ?? '-'}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
 
       {/* Channel comparison table */}
       {channels.length > 0 && (

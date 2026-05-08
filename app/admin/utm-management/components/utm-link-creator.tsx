@@ -26,6 +26,14 @@ import AdminService from '@/app/services/admin';
 import type { UtmLink } from '@/app/services/admin';
 import { useToast } from '@/shared/ui/admin/toast';
 import QRCode from 'qrcode';
+import {
+	PLACEMENT_OPTIONS,
+	PLATFORM_BINDING_OPTIONS,
+	SITE_SOURCE_NAME_OPTIONS,
+	UTM_CREATIVE_FORMAT_OPTIONS,
+	UTM_MARKETING_TACTIC_OPTIONS,
+	UTM_SOURCE_PLATFORM_OPTIONS,
+} from '../utm-options';
 
 type DestinationType = 'web' | 'appstore_ios' | 'appstore_android';
 
@@ -53,6 +61,19 @@ export default function UtmLinkCreator({ onCreated }: UtmLinkCreatorProps) {
   const [medium, setMedium] = useState(CHANNEL_PRESETS[0].medium);
   const [campaign, setCampaign] = useState('');
   const [content, setContent] = useState('');
+  const [term, setTerm] = useState('');
+  const [utmId, setUtmId] = useState('');
+  const [sourcePlatform, setSourcePlatform] = useState('');
+  const [creativeFormat, setCreativeFormat] = useState('');
+  const [marketingTactic, setMarketingTactic] = useState('');
+  const [bindingPlatform, setBindingPlatform] = useState<'meta' | 'google_ads'>('meta');
+  const [bindingCampaignId, setBindingCampaignId] = useState('');
+  const [bindingAdsetId, setBindingAdsetId] = useState('');
+  const [bindingAdGroupId, setBindingAdGroupId] = useState('');
+  const [bindingAdId, setBindingAdId] = useState('');
+  const [bindingCreativeId, setBindingCreativeId] = useState('');
+  const [bindingPlacement, setBindingPlacement] = useState('');
+  const [bindingSiteSourceName, setBindingSiteSourceName] = useState('');
   const [destinationType, setDestinationType] = useState<DestinationType>('web');
   const [memo, setMemo] = useState('');
   const [name, setName] = useState('');
@@ -101,8 +122,25 @@ export default function UtmLinkCreator({ onCreated }: UtmLinkCreatorProps) {
         utmMedium: medium,
         utmCampaign: campaign,
         utmContent: content || undefined,
+        utmTerm: term || undefined,
+        utmId: utmId || undefined,
+        utmSourcePlatform: sourcePlatform || undefined,
+        utmCreativeFormat: creativeFormat || undefined,
+        utmMarketingTactic: marketingTactic || undefined,
         destinationType,
         memo: memo || undefined,
+        platformBindings: [
+          {
+            platform: bindingPlatform,
+            campaignId: bindingCampaignId || undefined,
+            adsetId: bindingPlatform === 'meta' ? bindingAdsetId || undefined : undefined,
+            adGroupId: bindingPlatform === 'google_ads' ? bindingAdGroupId || undefined : undefined,
+            adId: bindingAdId || undefined,
+            creativeId: bindingCreativeId || undefined,
+            placement: bindingPlacement || undefined,
+            siteSourceName: bindingSiteSourceName || undefined,
+          },
+        ].filter((binding) => binding.campaignId || binding.adsetId || binding.adGroupId || binding.adId || binding.creativeId),
       });
 
       setCreatedLink(result);
@@ -118,6 +156,18 @@ export default function UtmLinkCreator({ onCreated }: UtmLinkCreatorProps) {
       // Reset form
       setCampaign('');
       setContent('');
+      setTerm('');
+      setUtmId('');
+      setSourcePlatform('');
+      setCreativeFormat('');
+      setMarketingTactic('');
+      setBindingCampaignId('');
+      setBindingAdsetId('');
+      setBindingAdGroupId('');
+      setBindingAdId('');
+      setBindingCreativeId('');
+      setBindingPlacement('');
+      setBindingSiteSourceName('');
       setMemo('');
       setName('');
     } catch (err: any) {
@@ -211,6 +261,62 @@ export default function UtmLinkCreator({ onCreated }: UtmLinkCreatorProps) {
             helperText="자동 생성되며 직접 수정 가능"
             fullWidth
           />
+        </Box>
+
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>
+            Advanced tracking
+          </Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' }, gap: 2 }}>
+            <TextField label="Term (utm_term)" value={term} onChange={(e) => setTerm(e.target.value)} fullWidth />
+            <TextField label="UTM ID (utm_id)" value={utmId} onChange={(e) => setUtmId(e.target.value)} fullWidth />
+	            <TextField select label="Source platform" value={sourcePlatform} onChange={(e) => setSourcePlatform(e.target.value)} fullWidth>
+	              {UTM_SOURCE_PLATFORM_OPTIONS.map((option) => (
+	                <MenuItem key={option.value || 'empty-source-platform'} value={option.value}>{option.label}</MenuItem>
+	              ))}
+	            </TextField>
+	            <TextField select label="Creative format" value={creativeFormat} onChange={(e) => setCreativeFormat(e.target.value)} fullWidth>
+	              {UTM_CREATIVE_FORMAT_OPTIONS.map((option) => (
+	                <MenuItem key={option.value || 'empty-creative-format'} value={option.value}>{option.label}</MenuItem>
+	              ))}
+	            </TextField>
+	            <TextField select label="Marketing tactic" value={marketingTactic} onChange={(e) => setMarketingTactic(e.target.value)} fullWidth>
+	              {UTM_MARKETING_TACTIC_OPTIONS.map((option) => (
+	                <MenuItem key={option.value || 'empty-marketing-tactic'} value={option.value}>{option.label}</MenuItem>
+	              ))}
+	            </TextField>
+          </Box>
+        </Box>
+
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>
+            Platform binding
+          </Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(4, 1fr)' }, gap: 2 }}>
+	            <TextField select label="Platform" value={bindingPlatform} onChange={(e) => setBindingPlatform(e.target.value as 'meta' | 'google_ads')} fullWidth>
+	              {PLATFORM_BINDING_OPTIONS.map((option) => (
+	                <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
+	              ))}
+	            </TextField>
+            <TextField label="Campaign ID" value={bindingCampaignId} onChange={(e) => setBindingCampaignId(e.target.value)} fullWidth />
+            {bindingPlatform === 'meta' ? (
+              <TextField label="Adset ID" value={bindingAdsetId} onChange={(e) => setBindingAdsetId(e.target.value)} fullWidth />
+            ) : (
+              <TextField label="Ad group ID" value={bindingAdGroupId} onChange={(e) => setBindingAdGroupId(e.target.value)} fullWidth />
+            )}
+            <TextField label="Ad ID" value={bindingAdId} onChange={(e) => setBindingAdId(e.target.value)} fullWidth />
+            <TextField label="Creative ID" value={bindingCreativeId} onChange={(e) => setBindingCreativeId(e.target.value)} fullWidth />
+	            <TextField select label="Placement" value={bindingPlacement} onChange={(e) => setBindingPlacement(e.target.value)} fullWidth>
+	              {PLACEMENT_OPTIONS.map((option) => (
+	                <MenuItem key={option.value || 'empty-placement'} value={option.value}>{option.label}</MenuItem>
+	              ))}
+	            </TextField>
+	            <TextField select label="Site source name" value={bindingSiteSourceName} onChange={(e) => setBindingSiteSourceName(e.target.value)} fullWidth>
+	              {SITE_SOURCE_NAME_OPTIONS.map((option) => (
+	                <MenuItem key={option.value || 'empty-site-source-name'} value={option.value}>{option.label}</MenuItem>
+	              ))}
+	            </TextField>
+          </Box>
         </Box>
 
         <Box sx={{ mt: 2 }}>
