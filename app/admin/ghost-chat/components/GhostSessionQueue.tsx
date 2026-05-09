@@ -2,39 +2,41 @@
 
 import { type ReactNode, useMemo } from 'react';
 import {
+	Avatar,
 	Badge,
 	Box,
 	Button,
-	ButtonGroup,
 	Chip,
 	Paper,
 	Stack,
 	Typography,
 } from '@mui/material';
 import {
-	AccessTime as AccessTimeIcon,
-	AssignmentInd as AssignmentIndIcon,
 	Forum as ForumIcon,
 	Inbox as InboxIcon,
 	NotificationsActive as NotificationsActiveIcon,
+	PeopleAlt as PeopleAltIcon,
+	Schedule as ScheduleIcon,
 } from '@mui/icons-material';
-import type { GhostChatSession } from '@/app/types/ghost-chat';
+import type { GhostChatSession, GhostChatTimelineMessage } from '@/app/types/ghost-chat';
 import { GHOST_CHAT_STATE_LABELS } from '@/app/types/ghost-chat';
 
-type GhostQueueTab = 'queue' | 'mine';
+interface TargetProfilePreview {
+	name: string;
+	subtitle: string;
+	photoUrl?: string | null;
+	tags?: string[];
+}
 
 interface GhostSessionQueueProps {
 	sessions: GhostChatSession[];
 	selectedSessionId: string | null;
 	newSessionIds: Set<string>;
 	unreadMap: Record<string, number>;
-	activeTab: GhostQueueTab;
 	variant?: 'rail' | 'grid';
-	onTabChange: (tab: GhostQueueTab) => void;
+	getPreviewMessages?: (sessionId: string) => GhostChatTimelineMessage[];
+	getTargetProfilePreview?: (sessionId: string) => TargetProfilePreview | null;
 	onSelectSession: (id: string) => void;
-	onAssignSession: (id: string) => void | Promise<void>;
-	currentAdminId?: string | null;
-	assigningSessionId?: string | null;
 }
 
 const stateColors: Record<GhostChatSession['state'], 'warning' | 'success' | 'info' | 'default'> = {
@@ -88,11 +90,16 @@ function sortForQueue(a: GhostChatSession, b: GhostChatSession) {
 	return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
 }
 
+function senderLabel(senderType: GhostChatTimelineMessage['senderType']) {
+	if (senderType === 'GHOST') return 'Ghost';
+	if (senderType === 'TARGET_USER') return '상대';
+	return '시스템';
+}
+
 function needsAdminReply(session: GhostChatSession, unreadCount: number) {
-	if (session.state === 'PENDING') return true;
 	if (unreadCount > 0) return true;
 	if (!session.lastUserMessageAt) return false;
-	if (!session.lastAdminMessageAt) return session.state === 'ACTIVE';
+	if (!session.lastAdminMessageAt) return session.state !== 'CLOSED';
 	return new Date(session.lastUserMessageAt).getTime() > new Date(session.lastAdminMessageAt).getTime();
 }
 
@@ -135,39 +142,85 @@ function StatPill({
 	);
 }
 
+function MessagePreviewBubble({ message }: { message: GhostChatTimelineMessage }) {
+	const isGhost = message.senderType === 'GHOST';
+	const isSystem = message.senderType === 'SYSTEM';
+	return (
+		<Box
+			sx={{
+				display: 'flex',
+				justifyContent: isGhost ? 'flex-end' : 'flex-start',
+				px: 0.25,
+			}}
+		>
+			<Box
+				sx={{
+					maxWidth: '86%',
+					px: 1,
+					py: 0.75,
+					borderRadius: isGhost ? '10px 10px 2px 10px' : '10px 10px 10px 2px',
+					border: 1,
+					borderColor: isGhost ? 'primary.light' : 'divider',
+					bgcolor: isSystem ? 'grey.100' : isGhost ? 'rgba(25, 118, 210, 0.08)' : 'background.paper',
+					boxShadow: '0 1px 2px rgba(15, 23, 42, 0.06)',
+				}}
+			>
+				<Typography
+					variant="caption"
+					color={isGhost ? 'primary.main' : 'text.secondary'}
+					sx={{ display: 'block', fontWeight: 800, lineHeight: 1.1, mb: 0.25 }}
+				>
+					{senderLabel(message.senderType)}
+				</Typography>
+				<Typography
+					variant="caption"
+					color="text.primary"
+					sx={{
+						display: '-webkit-box',
+						WebkitLineClamp: 2,
+						WebkitBoxOrient: 'vertical',
+						overflow: 'hidden',
+						lineHeight: 1.35,
+						wordBreak: 'break-word',
+					}}
+				>
+					{message.content ?? (message.messageType === 'image' ? '이미지 메시지' : '메시지 본문 없음')}
+				</Typography>
+			</Box>
+		</Box>
+	);
+}
+
 function GhostSessionCard({
 	session,
 	selected,
 	isNew,
 	unreadCount,
+	previewMessages,
+	targetProfile,
 	onSelect,
-	onAssign,
-	assigning,
-	currentAdminId,
 }: {
 	session: GhostChatSession;
 	selected: boolean;
 	isNew: boolean;
 	unreadCount: number;
+	previewMessages: GhostChatTimelineMessage[];
+	targetProfile: TargetProfilePreview | null;
 	onSelect: () => void;
-	onAssign: () => void;
-	assigning: boolean;
-	currentAdminId?: string | null;
 }) {
-	const canAssign = session.state === 'PENDING';
 	const isClosed = session.state === 'CLOSED';
-	const isMine = Boolean(currentAdminId && session.assignedAdminId === currentAdminId);
 	const replyNeeded = needsAdminReply(session, unreadCount);
 	const lastUserLabel = session.lastUserMessageAt
-		? `유저 ${elapsedLabel(session.lastUserMessageAt)}`
-		: '유저 메시지 없음';
+		? elapsedLabel(session.lastUserMessageAt)
+		: '대기 중';
+	const lastGhostLabel = session.lastAdminMessageAt
+		? elapsedLabel(session.lastAdminMessageAt)
+		: '아직 없음';
 	const responseChip = replyNeeded
-		? { label: session.state === 'PENDING' ? '배정 필요' : '응답 필요', color: 'error' as const }
-		: { label: session.state === 'ACTIVE' ? '운영 중' : '확인 완료', color: 'default' as const };
-	const adminLabel =
-		(isMine && '내 담당') ||
-		session.assignedAdminId ||
-		(session.state === 'ACTIVE' && !currentAdminId ? '담당자 확인 필요' : '미배정');
+		? { label: '응답 필요', color: 'error' as const }
+		: { label: session.state === 'CLOSED' ? '종료됨' : '흐름 안정', color: 'default' as const };
+	const displayName = targetProfile?.name ?? '상대 프로필';
+	const subtitle = targetProfile?.subtitle ?? `상대 ${shortId(session.targetUserId)}`;
 
 	return (
 		<Paper
@@ -176,26 +229,44 @@ function GhostSessionCard({
 			sx={{
 				position: 'relative',
 				p: 1.5,
+				minHeight: 440,
+				display: 'flex',
+				flexDirection: 'column',
 				cursor: 'pointer',
 				border: selected ? '2px solid' : '1px solid',
 				borderColor: selected ? 'primary.main' : isNew ? 'warning.main' : 'divider',
-				borderLeft: '5px solid',
-				borderLeftColor: stateAccentColors[session.state],
-				borderRadius: 1.5,
+				borderTop: '4px solid',
+				borderTopColor: replyNeeded ? 'error.main' : stateAccentColors[session.state],
+				borderRadius: 1,
 				bgcolor: selected ? 'action.selected' : isNew ? 'warning.50' : 'background.paper',
 				transition: 'border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease',
 				'&:hover': { bgcolor: selected ? undefined : 'action.hover' },
 			}}
 		>
-			<Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, mb: 1 }}>
+			<Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25, mb: 1 }}>
+				<Avatar
+					src={targetProfile?.photoUrl ?? undefined}
+					alt={displayName}
+					sx={{ width: 44, height: 44, flexShrink: 0, fontWeight: 800 }}
+				>
+					{displayName.charAt(0)}
+				</Avatar>
 				<Box sx={{ flex: 1, minWidth: 0 }}>
-					<Stack direction="row" spacing={0.75} sx={{ mb: 0.75, flexWrap: 'wrap', rowGap: 0.5 }}>
-						<Chip
-							label={GHOST_CHAT_STATE_LABELS[session.state]}
-							color={stateColors[session.state]}
-							size="small"
-							sx={{ height: 22, fontSize: '0.7rem', fontWeight: 800 }}
-						/>
+					<Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75, minWidth: 0 }}>
+						<Typography variant="subtitle2" sx={{ fontWeight: 900, minWidth: 0 }} noWrap>
+							{displayName}
+						</Typography>
+						<Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0 }}>
+							{lastUserLabel}
+						</Typography>
+					</Box>
+					<Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block', mb: 0.75 }}>
+						{subtitle}
+					</Typography>
+					<Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap', rowGap: 0.5 }}>
+						{(targetProfile?.tags ?? []).slice(0, 2).map((tag) => (
+							<Chip key={tag} label={tag} size="small" variant="outlined" sx={{ height: 22, fontSize: '0.7rem' }} />
+						))}
 						<Chip
 							label={responseChip.label}
 							color={responseChip.color}
@@ -205,9 +276,6 @@ function GhostSessionCard({
 						/>
 						{isNew && <Chip label="NEW" color="warning" size="small" sx={{ height: 22, fontWeight: 800 }} />}
 					</Stack>
-					<Typography variant="subtitle2" sx={{ fontWeight: 800 }} noWrap>
-						{replyNeeded ? '응답 필요 채팅' : '확인된 채팅'}
-					</Typography>
 				</Box>
 				{unreadCount > 0 && <Badge badgeContent={unreadCount} color="error" sx={{ mt: 0.5, mr: 0.5 }} />}
 			</Box>
@@ -226,20 +294,51 @@ function GhostSessionCard({
 			>
 				<Box sx={{ minWidth: 0 }}>
 					<Typography variant="caption" color="text.secondary" noWrap>
-						마지막 유저
+						상태
 					</Typography>
 					<Typography variant="body2" sx={{ fontWeight: 700 }} noWrap>
-						{lastUserLabel}
+						{GHOST_CHAT_STATE_LABELS[session.state]}
 					</Typography>
 				</Box>
 				<Box sx={{ minWidth: 0 }}>
 					<Typography variant="caption" color="text.secondary" noWrap>
-						생성
+						최근 Ghost
 					</Typography>
 					<Typography variant="body2" sx={{ fontWeight: 700 }} noWrap>
-						{compactDateTime(session.createdAt)}
+						{lastGhostLabel}
 					</Typography>
 				</Box>
+			</Box>
+
+			<Box
+				sx={{
+					flex: 1,
+					minHeight: 228,
+					display: 'flex',
+					flexDirection: 'column',
+					gap: 0.6,
+					mb: 1.25,
+					p: 0.75,
+					borderRadius: 1,
+					bgcolor: 'grey.50',
+					border: 1,
+					borderColor: 'divider',
+				}}
+			>
+				<Typography variant="caption" color="text.secondary" sx={{ fontWeight: 800, px: 0.25 }}>
+					최근 채팅 6개
+				</Typography>
+				{previewMessages.length > 0 ? (
+					previewMessages.slice(-6).map((message) => (
+						<MessagePreviewBubble key={message.id} message={message} />
+					))
+				) : (
+					<Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', px: 1 }}>
+						<Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
+							목록 API에 메시지 본문이 없어 선택 시 대화 내용을 확인할 수 있습니다.
+						</Typography>
+					</Box>
+				)}
 			</Box>
 
 			<Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75, mb: 1 }}>
@@ -247,13 +346,10 @@ function GhostSessionCard({
 					상대 {shortId(session.targetUserId)}
 				</Typography>
 				<Typography variant="caption" color="text.secondary" noWrap>
-					Ghost {shortId(session.ghostAccountId)}
-				</Typography>
-				<Typography variant="caption" color="text.secondary" noWrap>
 					매치 {shortId(session.matchId)}
 				</Typography>
 				<Typography variant="caption" color="text.secondary" noWrap>
-					담당 {adminLabel}
+					생성 {compactDateTime(session.createdAt)}
 				</Typography>
 			</Box>
 
@@ -263,18 +359,14 @@ function GhostSessionCard({
 				<Box sx={{ flex: 1 }} />
 				<Button
 					size="small"
-					variant={canAssign ? 'contained' : 'outlined'}
-					disabled={isClosed || assigning}
+					variant={selected ? 'contained' : 'outlined'}
+					disabled={isClosed}
 					onClick={(event) => {
 						event.stopPropagation();
-						if (canAssign) {
-							void onAssign();
-							return;
-						}
 						onSelect();
 					}}
 				>
-					{canAssign ? '배정받기' : '열기'}
+					열기
 				</Button>
 			</Box>
 		</Paper>
@@ -286,36 +378,24 @@ export default function GhostSessionQueue({
 	selectedSessionId,
 	newSessionIds,
 	unreadMap,
-	activeTab,
 	variant = 'rail',
-	onTabChange,
+	getPreviewMessages,
+	getTargetProfilePreview,
 	onSelectSession,
-	onAssignSession,
-	currentAdminId,
-	assigningSessionId,
 }: GhostSessionQueueProps) {
 	const queueStats = useMemo(() => {
-		const pending = sessions.filter((session) => session.state === 'PENDING').length;
-		const mine = sessions.filter(
-			(session) =>
-				currentAdminId &&
-				session.state === 'ACTIVE' &&
-				session.assignedAdminId === currentAdminId,
-		).length;
+		const active = sessions.filter((session) => session.state !== 'CLOSED').length;
 		const needsReply = sessions.filter((session) => needsAdminReply(session, unreadMap[session.id] ?? 0)).length;
-		return { total: sessions.length, pending, mine, needsReply };
-	}, [currentAdminId, sessions, unreadMap]);
+		const recentlyUpdated = sessions.filter((session) => {
+			const updatedAt = new Date(session.updatedAt).getTime();
+			return Number.isFinite(updatedAt) && Date.now() - updatedAt < 1000 * 60 * 60 * 24;
+		}).length;
+		return { total: sessions.length, active, needsReply, recentlyUpdated };
+	}, [sessions, unreadMap]);
 
 	const filteredSessions = useMemo(() => {
-		const filtered = sessions.filter((session) => {
-			if (activeTab === 'mine') {
-				if (!currentAdminId) return false;
-				return session.state === 'ACTIVE' && session.assignedAdminId === currentAdminId;
-			}
-			return true;
-		});
-		return filtered.sort(sortForQueue);
-	}, [activeTab, currentAdminId, sessions]);
+		return sessions.filter((session) => session.state !== 'CLOSED').sort(sortForQueue);
+	}, [sessions]);
 
 	return (
 		<Box
@@ -338,14 +418,14 @@ export default function GhostSessionQueue({
 			>
 				<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, mb: 1.25 }}>
 					<Box sx={{ minWidth: 0 }}>
-						<Typography variant="subtitle2" sx={{ fontWeight: 900 }} noWrap>
-							채팅 카드 테이블
+						<Typography variant="h6" sx={{ fontWeight: 900, lineHeight: 1.2 }} noWrap>
+							고스트 챗 관리
 						</Typography>
 						<Typography variant="caption" color="text.secondary" noWrap>
-							세션 ID 대신 응답 상태와 상대/Ghost 정보를 우선 표시합니다.
+							채팅방 단위로 한눈에 보고 바로 대응합니다.
 						</Typography>
 					</Box>
-					<Chip label={`${queueStats.total}건`} size="small" variant="outlined" sx={{ fontWeight: 800 }} />
+					<Chip label={`전체 ${queueStats.total}건`} size="small" variant="outlined" sx={{ fontWeight: 800 }} />
 				</Box>
 				<Box
 					sx={{
@@ -365,34 +445,24 @@ export default function GhostSessionQueue({
 						color="error.main"
 					/>
 					<StatPill
-						label="미배정"
-						value={queueStats.pending}
-						icon={<AccessTimeIcon fontSize="small" />}
-						color="warning.main"
+						label="열린 채팅"
+						value={queueStats.active}
+						icon={<ForumIcon fontSize="small" />}
+						color="primary.main"
 					/>
 					<StatPill
-						label="내 담당"
-						value={queueStats.mine}
-						icon={<AssignmentIndIcon fontSize="small" />}
+						label="24h 활동"
+						value={queueStats.recentlyUpdated}
+						icon={<ScheduleIcon fontSize="small" />}
 						color="success.main"
 					/>
 				</Box>
-				<ButtonGroup size="small" fullWidth>
-					<Button
-						variant={activeTab === 'queue' ? 'contained' : 'outlined'}
-						onClick={() => onTabChange('queue')}
-						startIcon={<ForumIcon fontSize="small" />}
-					>
-						대기
-					</Button>
-					<Button
-						variant={activeTab === 'mine' ? 'contained' : 'outlined'}
-						onClick={() => onTabChange('mine')}
-						startIcon={<AssignmentIndIcon fontSize="small" />}
-					>
-						내 담당
-					</Button>
-				</ButtonGroup>
+				<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, color: 'text.secondary' }}>
+					<PeopleAltIcon fontSize="small" />
+					<Typography variant="caption" noWrap>
+						Ghost/상대/최근 메시지 상태를 카드 테이블에서 바로 스캔합니다.
+					</Typography>
+				</Box>
 			</Box>
 
 			<Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', p: 1.5 }}>
@@ -410,11 +480,7 @@ export default function GhostSessionQueue({
 						}}
 					>
 						<InboxIcon sx={{ fontSize: 42, opacity: 0.45 }} />
-						<Typography variant="body2">
-							{activeTab === 'mine' && !currentAdminId
-								? '관리자 세션 정보를 불러오는 중입니다.'
-								: '표시할 Ghost Chat 세션이 없습니다.'}
-						</Typography>
+						<Typography variant="body2">표시할 Ghost Chat 채팅방이 없습니다.</Typography>
 					</Box>
 				) : (
 					<Box
@@ -424,12 +490,11 @@ export default function GhostSessionQueue({
 								variant === 'grid'
 									? {
 										xs: '1fr',
-										sm: 'repeat(2, minmax(260px, 1fr))',
-										lg: 'repeat(3, minmax(260px, 1fr))',
-										xl: 'repeat(6, minmax(220px, 1fr))',
+										sm: 'repeat(auto-fit, minmax(308px, 1fr))',
+										xl: 'repeat(auto-fit, minmax(268px, 1fr))',
 									}
 									: '1fr',
-							gap: 1,
+							gap: 1.25,
 						}}
 					>
 						{filteredSessions.map((session) => (
@@ -439,10 +504,9 @@ export default function GhostSessionQueue({
 								selected={selectedSessionId === session.id}
 								isNew={newSessionIds.has(session.id)}
 								unreadCount={unreadMap[session.id] ?? 0}
+								previewMessages={getPreviewMessages?.(session.id) ?? []}
+								targetProfile={getTargetProfilePreview?.(session.id) ?? null}
 								onSelect={() => onSelectSession(session.id)}
-								onAssign={() => onAssignSession(session.id)}
-								assigning={assigningSessionId === session.id}
-								currentAdminId={currentAdminId}
 							/>
 						))}
 					</Box>

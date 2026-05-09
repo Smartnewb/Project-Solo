@@ -54,8 +54,6 @@ export default function GhostContextPanel({ session, context }: GhostContextPane
 			<Box
 				sx={{
 					height: '100%',
-					borderLeft: { md: 1 },
-					borderColor: 'divider',
 					display: 'flex',
 					alignItems: 'center',
 					justifyContent: 'center',
@@ -73,21 +71,19 @@ export default function GhostContextPanel({ session, context }: GhostContextPane
 		<Box
 			sx={{
 				height: '100%',
-				borderLeft: { md: 1 },
-				borderColor: 'divider',
 				overflowY: 'auto',
 				p: 2,
 				display: 'flex',
 				flexDirection: 'column',
-				gap: 2,
+				gap: 1.5,
 			}}
 		>
 			<Typography variant="h6" sx={{ fontWeight: 700 }}>
-				컨텍스트
+				선택된 Ghost 프로필
 			</Typography>
 
-			<Paper elevation={0} sx={{ p: 1.5, border: 1, borderColor: 'divider', borderRadius: 2 }}>
-				<Section title="Ghost 프로필">
+			<Paper elevation={0} sx={{ p: 1.5, border: 1, borderColor: 'divider', borderRadius: 2, width: '100%' }}>
+				<Section title="유저에게 응답할 Ghost">
 					{context?.ghost ? (
 						<>
 							<Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center' }}>
@@ -107,14 +103,22 @@ export default function GhostContextPanel({ session, context }: GhostContextPane
 									</Typography>
 								</Box>
 							</Box>
-							<FieldRow
-								label="기본 정보"
-								value={joinValues([context.ghost.age, context.ghost.gender, context.ghost.mbti, context.ghost.rank])}
-							/>
-							<FieldRow
-								label="학교/학과"
-								value={joinValues([context.ghost.university?.name, context.ghost.department?.name])}
-							/>
+							<Box
+								sx={{
+									display: 'grid',
+									gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+									gap: 1.25,
+								}}
+							>
+								<FieldRow
+									label="기본 정보"
+									value={joinValues([context.ghost.age, context.ghost.gender, context.ghost.mbti, context.ghost.rank])}
+								/>
+								<FieldRow
+									label="학교/학과"
+									value={joinValues([context.ghost.university?.name, context.ghost.department?.name])}
+								/>
+							</Box>
 							<FieldRow label="소개" value={context.ghost.introduction} />
 							{context.ghost.keywords && context.ghost.keywords.length > 0 && (
 								<Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
@@ -145,58 +149,34 @@ export default function GhostContextPanel({ session, context }: GhostContextPane
 				</Section>
 			</Paper>
 
-			<Paper elevation={0} sx={{ p: 1.5, border: 1, borderColor: 'divider', borderRadius: 2 }}>
-				<Section title="Target 유저">
-					{context?.target && (
-						<>
-							<FieldRow
-								label="기본 정보"
-								value={joinValues([context.target.age, context.target.gender, context.target.mbti, context.target.rank])}
-							/>
-							<FieldRow
-								label="학교/학과"
-								value={joinValues([context.target.university?.name, context.target.department?.name])}
-							/>
-							<Button
-								component={Link}
-								href={`/admin/users?userId=${encodeURIComponent(session.targetUserId)}`}
-								target="_blank"
-								rel="noreferrer"
-								size="small"
-								variant="outlined"
-								startIcon={<AccountCircleIcon fontSize="small" />}
-								endIcon={<OpenInNewIcon fontSize="small" />}
-								sx={{ alignSelf: 'flex-start' }}
-							>
-								상대 프로필 확인
-							</Button>
-						</>
-					)}
-				</Section>
-			</Paper>
+			<Box
+				sx={{
+					display: 'grid',
+					gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+					gap: 1.5,
+				}}
+			>
+				<Paper elevation={0} sx={{ p: 1.5, border: 1, borderColor: 'divider', borderRadius: 2 }}>
+					<Section title="운영 안전장치">
+						<FieldRow label="userMessageCount" value={session.userMessageCount} />
+						<FieldRow label="adminMessageCount" value={session.adminMessageCount} />
+						<FieldRow label="closedReason" value={session.closedReason} />
+					</Section>
+				</Paper>
 
-			<Paper elevation={0} sx={{ p: 1.5, border: 1, borderColor: 'divider', borderRadius: 2 }}>
-				<Section title="운영 안전장치">
-					<FieldRow label="assignedAdminId" value={session.assignedAdminId} />
-					<FieldRow label="assignedAt" value={session.assignedAt} />
-					<FieldRow label="userMessageCount" value={session.userMessageCount} />
-					<FieldRow label="adminMessageCount" value={session.adminMessageCount} />
-					<FieldRow label="closedReason" value={session.closedReason} />
-				</Section>
-			</Paper>
-
-			<Paper elevation={0} sx={{ p: 1.5, border: 1, borderColor: 'divider', borderRadius: 2 }}>
-				<Section title="노출 안전">
-					<FieldRow
-						label="상대방에게 보이는 이름"
-						value={context?.visibility.targetSeesGhostName ?? context?.ghost.anonymousName}
-					/>
-					<FieldRow
-						label="실명 노출 차단"
-						value={context?.visibility.realGhostNameHiddenFromTarget ? '활성' : '확인 필요'}
-					/>
-				</Section>
-			</Paper>
+				<Paper elevation={0} sx={{ p: 1.5, border: 1, borderColor: 'divider', borderRadius: 2 }}>
+					<Section title="노출 안전">
+						<FieldRow
+							label="상대방에게 보이는 이름"
+							value={context?.visibility.targetSeesGhostName ?? context?.ghost.anonymousName}
+						/>
+						<FieldRow
+							label="실명 노출 차단"
+							value={context?.visibility.realGhostNameHiddenFromTarget ? '활성' : '확인 필요'}
+						/>
+					</Section>
+				</Paper>
+			</Box>
 
 			<Divider />
 			<Typography variant="caption" color="text.secondary">

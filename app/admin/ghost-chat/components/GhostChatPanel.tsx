@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
 	Alert,
 	Avatar,
@@ -36,7 +36,6 @@ interface GhostChatPanelProps {
 	loading: boolean;
 	messagesLoading: boolean;
 	actionLoading: boolean;
-	onAssign: (id: string) => Promise<void> | void;
 	onSendMessage: (id: string, content: string) => Promise<void>;
 	onClose: (id: string) => Promise<void> | void;
 	onBack?: () => void;
@@ -70,7 +69,6 @@ function formatTime(dateString: string | null) {
 function buildTimeline(session: GhostChatSession) {
 	return [
 		{ label: '세션 생성됨', at: session.createdAt },
-		{ label: '관리자 배정됨', at: session.assignedAt },
 		{ label: '첫 유저 메시지', at: session.firstUserMessageAt },
 		{ label: '마지막 유저 메시지', at: session.lastUserMessageAt },
 		{ label: '마지막 Ghost 메시지', at: session.lastAdminMessageAt },
@@ -92,10 +90,22 @@ const senderLabels: Record<GhostChatTimelineMessage['senderType'], string> = {
 };
 
 function getComposerBlockedReason(session: GhostChatSession) {
-	if (session.state === 'PENDING') return '먼저 세션을 본인에게 배정해야 메시지를 보낼 수 있습니다.';
+	if (session.state === 'PENDING') return '아직 대화가 충분히 열리지 않았습니다. 새 메시지를 확인한 뒤 전송하세요.';
 	if (session.state === 'IDLE') return '응답 없음 상태입니다. 세션을 새로고침한 뒤 전송 여부를 확인하세요.';
 	if (session.state === 'CLOSED') return '종료된 세션에는 메시지를 보낼 수 없습니다.';
 	return null;
+}
+
+function buildLocalAiDraft(
+	messages: GhostChatTimelineMessage[],
+	context: GhostChatSessionContext | null | undefined,
+) {
+	const latestUserMessage = [...messages].reverse().find((message) => message.senderType === 'TARGET_USER');
+	const ghostName = context?.ghost.anonymousName ?? '나';
+	if (!latestUserMessage?.content) {
+		return `${ghostName} 톤으로 자연스럽게 이어갈 수 있는 답장을 작성해 주세요.`;
+	}
+	return `${latestUserMessage.content}\n\n좋아요. 부담스럽지 않게 얘기 이어가보고 싶어요. 조금 더 편하게 말해줘도 돼요.`;
 }
 
 export default function GhostChatPanel({
@@ -105,7 +115,6 @@ export default function GhostChatPanel({
 	loading,
 	messagesLoading,
 	actionLoading,
-	onAssign,
 	onSendMessage,
 	onClose,
 	onBack,
@@ -113,6 +122,7 @@ export default function GhostChatPanel({
 	fullScreenMode = false,
 }: GhostChatPanelProps) {
 	const [draft, setDraft] = useState('');
+	const [aiDraft, setAiDraft] = useState<string | null>(null);
 	const [localError, setLocalError] = useState<string | null>(null);
 	const [confirmMode, setConfirmMode] = useState<ConfirmMode>(null);
 
@@ -120,7 +130,12 @@ export default function GhostChatPanel({
 	const recentMessages = useMemo(() => messages.slice(-6).reverse(), [messages]);
 	const canSend = Boolean(session && session.state === 'ACTIVE' && draft.trim() && !actionLoading);
 	const canClose = Boolean(session && session.state !== 'CLOSED' && !actionLoading);
+	const canRequestAiDraft = Boolean(session && session.state === 'ACTIVE' && !actionLoading && !messagesLoading);
 	const composerBlockedReason = session ? getComposerBlockedReason(session) : null;
+
+	useEffect(() => {
+		setAiDraft(null);
+	}, [session?.id]);
 
 	const sendDraft = async () => {
 		if (!session) return;
@@ -147,14 +162,15 @@ export default function GhostChatPanel({
 		setConfirmMode('close');
 	};
 
-	const handleAssign = async () => {
+	const handleRequestAiDraft = () => {
 		if (!session) return;
-		try {
-			setLocalError(null);
-			await onAssign(session.id);
-		} catch (err) {
-			setLocalError(err instanceof Error ? err.message : 'Ghost Chat 세션 배정에 실패했습니다.');
-		}
+		setLocalError(null);
+		setAiDraft(buildLocalAiDraft(messages, context));
+	};
+
+	const handleApplyAiDraft = () => {
+		if (!aiDraft) return;
+		setDraft(aiDraft);
 	};
 
 	const handleConfirm = async () => {
@@ -272,16 +288,6 @@ export default function GhostChatPanel({
 					</Paper>
 				</Box>
 				<Box sx={{ display: 'flex', gap: 1 }}>
-					{session.state === 'PENDING' && (
-						<Button
-							size="small"
-							variant="contained"
-							disabled={actionLoading}
-							onClick={handleAssign}
-						>
-							내가 배정받기
-						</Button>
-					)}
 					<Button
 						size="small"
 						variant="outlined"
@@ -428,11 +434,17 @@ export default function GhostChatPanel({
 							AI 응답 지원
 						</Typography>
 						<Typography variant="caption" color="text.secondary">
-							RAG Fusion, Qdrant 검색, Gemini 2.5 Flash 초안 생성은 백엔드 API가 연결되면 이 영역에서 검수 후 전송/예약 전송으로 확장합니다.
+							운영자가 필요할 때만 RAG Fusion/Qdrant/Gemini 2.5 Flash 초안을 요청하고, 검수 후 전송합니다.
 						</Typography>
 						<Box sx={{ display: 'flex', gap: 1 }}>
-							<Button size="small" variant="outlined" disabled startIcon={<AutoAwesomeIcon fontSize="small" />}>
-								초안 생성
+							<Button
+								size="small"
+								variant="outlined"
+								disabled={!canRequestAiDraft}
+								startIcon={<AutoAwesomeIcon fontSize="small" />}
+								onClick={handleRequestAiDraft}
+							>
+								초안 요청
 							</Button>
 							<Button size="small" variant="outlined" disabled startIcon={<ScheduleSendIcon fontSize="small" />}>
 								예약 전송
@@ -448,6 +460,51 @@ export default function GhostChatPanel({
 					<Alert severity="info" sx={{ mb: 1.5 }}>
 						{composerBlockedReason}
 					</Alert>
+				)}
+				<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.25 }}>
+					<Button
+						size="small"
+						variant="outlined"
+						disabled={!canRequestAiDraft}
+						startIcon={<AutoAwesomeIcon fontSize="small" />}
+						onClick={handleRequestAiDraft}
+					>
+						AI 초안 요청
+					</Button>
+					<Chip label="검수 후 직접 전송" size="small" variant="outlined" />
+					<Chip label="예약 발송 준비" size="small" variant="outlined" />
+				</Box>
+				{aiDraft && (
+					<Paper
+						elevation={0}
+						sx={{
+							mb: 1.5,
+							p: 1.25,
+							border: 1,
+							borderColor: 'primary.light',
+							borderRadius: 1.5,
+							bgcolor: 'rgba(25, 118, 210, 0.06)',
+						}}
+					>
+						<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.75 }}>
+							<AutoAwesomeIcon fontSize="small" color="primary" />
+							<Typography variant="subtitle2" sx={{ fontWeight: 800, flex: 1 }}>
+								요청된 AI 초안
+							</Typography>
+							<Button size="small" variant="text" onClick={handleRequestAiDraft}>
+								다시 생성
+							</Button>
+							<Button size="small" variant="contained" onClick={handleApplyAiDraft}>
+								입력창에 적용
+							</Button>
+						</Box>
+						<Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+							{aiDraft}
+						</Typography>
+						<Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>
+							자동 발송하지 않습니다. 운영자가 문구를 검수하고 전송 버튼을 눌러야 유저에게 발송됩니다.
+						</Typography>
+					</Paper>
 				)}
 				<TextField
 					label="Ghost persona로 전송"

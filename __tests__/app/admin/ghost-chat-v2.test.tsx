@@ -7,7 +7,6 @@ let mockSessionFromUrl: string | null = null;
 let mockIsMobile = false;
 const mockReplace = jest.fn();
 const mockSelectSession = jest.fn();
-const mockAssignSession = jest.fn();
 const mockSendMessage = jest.fn();
 const mockCloseSession = jest.fn();
 const mockClearSelectedSession = jest.fn();
@@ -40,14 +39,16 @@ jest.mock('@/app/admin/ghost-chat/hooks/useGhostChatSessions', () => ({
 	useGhostChatSessions: () => ({
 		sessions: [],
 		selectedSession: null,
+		selectedContext: null,
+		selectedMessages: [],
 		loading: false,
+		messagesLoading: false,
 		error: null,
 		newSessionIds: new Set<string>(),
 		unreadMap: {},
 		statusCounts: { pending: 0, active: 0, idle: 0, closed: 0 },
 		actionLoadingId: null,
 		selectSession: mockSelectSession,
-		assignSession: mockAssignSession,
 		sendMessage: mockSendMessage,
 		closeSession: mockCloseSession,
 		clearSelectedSession: mockClearSelectedSession,
@@ -68,16 +69,14 @@ jest.mock('@/app/admin/ghost-chat/components/GhostChatStatusBar', () => ({
 jest.mock('@/app/admin/ghost-chat/components/GhostSessionQueue', () => ({
 	__esModule: true,
 	default: ({
-		currentAdminId,
-		onAssignSession,
+		onSelectSession,
 	}: {
-		currentAdminId: string | null;
-		onAssignSession: (id: string) => void;
+		onSelectSession: (id: string) => void;
 	}) => (
 		<div>
-			<div>queue-admin:{currentAdminId ?? 'none'}</div>
-			<button type="button" onClick={() => onAssignSession('session-assign')}>
-				assign-session
+			<div>chat-room-grid</div>
+			<button type="button" onClick={() => onSelectSession('session-open')}>
+				open-session
 			</button>
 		</div>
 	),
@@ -99,7 +98,6 @@ describe('GhostChatV2', () => {
 		mockIsMobile = false;
 		mockReplace.mockReset();
 		mockSelectSession.mockReset();
-		mockAssignSession.mockReset();
 		mockSendMessage.mockReset();
 		mockCloseSession.mockReset();
 		mockClearSelectedSession.mockReset();
@@ -116,7 +114,6 @@ describe('GhostChatV2', () => {
 			logout: jest.fn(),
 		});
 		mockSelectSession.mockResolvedValue(undefined);
-		mockAssignSession.mockResolvedValue(undefined);
 	});
 
 	it('loads the selected session on initial deep-link render', async () => {
@@ -129,21 +126,20 @@ describe('GhostChatV2', () => {
 		});
 	});
 
-	it('passes current admin id to the session queue', () => {
+	it('renders the chat room grid', () => {
 		render(<GhostChatV2 />);
 
-		expect(screen.getByText('queue-admin:admin-123')).toBeInTheDocument();
+		expect(screen.getByText('chat-room-grid')).toBeInTheDocument();
 	});
 
-	it('selects and deep-links the session after assignment succeeds', async () => {
+	it('selects and deep-links a chat room from the grid', async () => {
 		render(<GhostChatV2 />);
 
-		fireEvent.click(screen.getByRole('button', { name: 'assign-session' }));
+		fireEvent.click(screen.getByRole('button', { name: 'open-session' }));
 
 		await waitFor(() => {
-			expect(mockAssignSession).toHaveBeenCalledWith('session-assign');
-			expect(mockSelectSession).toHaveBeenCalledWith('session-assign');
-			expect(mockReplace).toHaveBeenCalledWith('/admin/ghost-chat?session=session-assign', { scroll: false });
+			expect(mockSelectSession).toHaveBeenCalledWith('session-open');
+			expect(mockReplace).toHaveBeenCalledWith('/admin/ghost-chat?session=session-open', { scroll: false });
 		});
 	});
 });

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
 	Alert,
 	Box,
+	Button,
 	CircularProgress,
 	Dialog,
 	IconButton,
@@ -15,15 +16,18 @@ import {
 } from '@mui/material';
 import {
 	Close as CloseIcon,
+	OpenInFull as OpenInFullIcon,
 } from '@mui/icons-material';
 import GhostChatPanel from './components/GhostChatPanel';
 import GhostChatStatusBar from './components/GhostChatStatusBar';
 import GhostContextPanel from './components/GhostContextPanel';
 import GhostSessionQueue from './components/GhostSessionQueue';
 import { useGhostChatSessions } from './hooks/useGhostChatSessions';
-import { useAdminSession } from '@/shared/contexts/admin-session-context';
+import {
+	getDevGhostChatMessagePreview,
+	getDevGhostChatTargetPreview,
+} from './mock-data';
 
-type GhostQueueTab = 'queue' | 'mine';
 type GhostMobileView = 'list' | 'chat' | 'context';
 
 function GhostChatV2Content() {
@@ -32,15 +36,14 @@ function GhostChatV2Content() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const sessionFromUrl = searchParams?.get('session') ?? null;
-	const { session: adminSession } = useAdminSession();
 
 	const [selectedSessionId, setSelectedSessionId] = useState<string | null>(sessionFromUrl);
-	const [activeTab, setActiveTab] = useState<GhostQueueTab>('queue');
 	const [mobileView, setMobileView] = useState<GhostMobileView>(() =>
 		isMobile && sessionFromUrl ? 'chat' : 'list',
 	);
 	const [snackbarOpen, setSnackbarOpen] = useState(false);
 	const [fullScreenOpen, setFullScreenOpen] = useState(false);
+	const [detailPanelOpen, setDetailPanelOpen] = useState(true);
 	const initializedSessionFromUrlRef = useRef<string | null>(null);
 
 	const {
@@ -56,11 +59,11 @@ function GhostChatV2Content() {
 		statusCounts,
 		actionLoadingId,
 		selectSession,
-		assignSession,
 		sendMessage,
 		closeSession,
 		clearSelectedSession,
 		events,
+		usingDevMocks,
 	} = useGhostChatSessions();
 
 	useEffect(() => {
@@ -99,23 +102,17 @@ function GhostChatV2Content() {
 			router.replace('/admin/ghost-chat?session=' + encodeURIComponent(id), { scroll: false });
 			if (isMobile) {
 				setMobileView('chat');
+			} else {
+				setDetailPanelOpen(true);
 			}
 		},
 		[isMobile, router, selectSession],
 	);
 
-	const handleAssignSession = useCallback(
-		async (id: string) => {
-			await assignSession(id);
-			setSelectedSessionId(id);
-			await selectSession(id);
-			router.replace('/admin/ghost-chat?session=' + encodeURIComponent(id), { scroll: false });
-			if (isMobile) {
-				setMobileView('chat');
-			}
-		},
-		[assignSession, isMobile, router, selectSession],
-	);
+	useEffect(() => {
+		if (!usingDevMocks || selectedSessionId || sessions.length === 0) return;
+		handleSelectSession(sessions[0].id);
+	}, [handleSelectSession, selectedSessionId, sessions, usingDevMocks]);
 
 	const handleMobileBack = useCallback(() => {
 		setMobileView('list');
@@ -144,15 +141,10 @@ function GhostChatV2Content() {
 			selectedSessionId={selectedSessionId}
 			newSessionIds={newSessionIds}
 			unreadMap={unreadMap}
-			activeTab={activeTab}
 			variant={isMobile ? 'rail' : 'grid'}
-			onTabChange={setActiveTab}
+			getPreviewMessages={usingDevMocks ? getDevGhostChatMessagePreview : undefined}
+			getTargetProfilePreview={usingDevMocks ? getDevGhostChatTargetPreview : undefined}
 			onSelectSession={handleSelectSession}
-			onAssignSession={(id) => {
-				void handleAssignSession(id);
-			}}
-			currentAdminId={adminSession?.user.id ?? null}
-			assigningSessionId={actionLoadingId}
 		/>
 	);
 
@@ -164,7 +156,6 @@ function GhostChatV2Content() {
 			loading={loading}
 			messagesLoading={messagesLoading}
 			actionLoading={actionLoading}
-			onAssign={handleAssignSession}
 			onSendMessage={sendMessage}
 			onClose={closeSession}
 			onBack={isMobile ? handleMobileBack : undefined}
@@ -209,7 +200,6 @@ function GhostChatV2Content() {
 						loading={loading}
 						messagesLoading={messagesLoading}
 						actionLoading={actionLoading}
-						onAssign={handleAssignSession}
 						onSendMessage={sendMessage}
 						onClose={closeSession}
 						fullScreenMode
@@ -226,6 +216,9 @@ function GhostChatV2Content() {
 		return (
 			<Box sx={{ p: 2, height: '100vh', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
 				{mobileView === 'list' && statusBar}
+				{usingDevMocks && (
+					<Alert severity="info">개발 환경 목업 데이터로 Ghost Chat UI를 표시 중입니다.</Alert>
+				)}
 				{error && <Alert severity="error">{error}</Alert>}
 				{loading && sessions.length === 0 ? (
 					<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
@@ -255,9 +248,24 @@ function GhostChatV2Content() {
 	}
 
 	return (
-		<Box sx={{ p: 3, height: '100vh', display: 'flex', flexDirection: 'column', gap: 2 }}>
+		<Box sx={{ p: 2, height: '100vh', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
 			{statusBar}
+			{usingDevMocks && (
+				<Alert severity="info">개발 환경 목업 데이터로 Ghost Chat UI를 표시 중입니다.</Alert>
+			)}
 			{error && <Alert severity="error">{error}</Alert>}
+			{selectedSession && !detailPanelOpen && (
+				<Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+					<Button
+						size="small"
+						variant="outlined"
+						startIcon={<OpenInFullIcon fontSize="small" />}
+						onClick={() => setDetailPanelOpen(true)}
+					>
+						우측 패널 열기
+					</Button>
+				</Box>
+			)}
 			{loading && sessions.length === 0 ? (
 				<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
 					<CircularProgress size={32} />
@@ -271,7 +279,12 @@ function GhostChatV2Content() {
 						flex: 1,
 						minHeight: 0,
 						display: 'grid',
-						gridTemplateRows: 'minmax(220px, 36vh) minmax(0, 1fr)',
+						gridTemplateColumns: detailPanelOpen
+							? {
+								md: 'minmax(0, 1fr) minmax(560px, 42vw)',
+								xl: 'minmax(0, 1fr) minmax(640px, 44vw)',
+							}
+							: '1fr',
 						border: 1,
 						borderColor: 'divider',
 						borderRadius: 2,
@@ -280,16 +293,43 @@ function GhostChatV2Content() {
 					}}
 				>
 					<Box sx={{ minHeight: 0 }}>{queue}</Box>
-					<Box
-						sx={{
-							minHeight: 0,
-							display: 'grid',
-							gridTemplateColumns: 'minmax(0, 1fr) 360px',
-						}}
-					>
-						<Box sx={{ minWidth: 0 }}>{chat}</Box>
-						<Box sx={{ minWidth: 360 }}>{context}</Box>
-					</Box>
+					{detailPanelOpen && (
+						<Box
+							sx={{
+								minWidth: 0,
+								minHeight: 0,
+								borderLeft: 1,
+								borderColor: 'divider',
+								display: 'grid',
+								gridTemplateRows: '44px minmax(260px, 34%) minmax(0, 1fr)',
+							}}
+						>
+							<Box
+								sx={{
+									px: 1.5,
+									borderBottom: 1,
+									borderColor: 'divider',
+									display: 'flex',
+									alignItems: 'center',
+									gap: 1,
+									bgcolor: 'background.paper',
+								}}
+							>
+								<Typography variant="subtitle2" sx={{ flex: 1, fontWeight: 900 }} noWrap>
+									상세 패널
+								</Typography>
+								<IconButton
+									size="small"
+									onClick={() => setDetailPanelOpen(false)}
+									aria-label="우측 상세 패널 닫기"
+								>
+									<CloseIcon fontSize="small" />
+								</IconButton>
+							</Box>
+							<Box sx={{ minHeight: 0 }}>{context}</Box>
+							<Box sx={{ minHeight: 0, borderTop: 1, borderColor: 'divider' }}>{chat}</Box>
+						</Box>
+					)}
 				</Box>
 			)}
 			<Snackbar

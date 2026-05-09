@@ -9,6 +9,13 @@ import type {
 	GhostChatTimelineMessage,
 } from '@/app/types/ghost-chat';
 import { AdminApiError } from '@/shared/lib/http/admin-fetch';
+import {
+	DEV_GHOST_CHAT_SESSIONS,
+	appendDevGhostChatMessage,
+	getDevGhostChatContext,
+	getDevGhostChatMessages,
+	getDevGhostChatSession,
+} from '../mock-data';
 import { useGhostChatEvents } from './useGhostChatEvents';
 
 interface GhostChatStatusCounts {
@@ -28,6 +35,8 @@ const emptyCounts: GhostChatStatusCounts = {
 	idle: 0,
 	closed: 0,
 };
+
+const devMocksEnabled = process.env.NODE_ENV === 'development';
 
 const sortSessions = (sessions: GhostChatSession[]) =>
 	[...sessions].sort(
@@ -67,6 +76,7 @@ export function useGhostChatSessions() {
 	const [newSessionIds, setNewSessionIds] = useState<Set<string>>(new Set());
 	const [unreadMap, setUnreadMap] = useState<Record<string, number>>({});
 	const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+	const [usingDevMocks, setUsingDevMocks] = useState(false);
 
 	const selectedSessionIdRef = useRef<string | null>(null);
 	const sessionsRef = useRef<GhostChatSession[]>([]);
@@ -85,8 +95,20 @@ export function useGhostChatSessions() {
 				setError(null);
 			}
 			const nextSessions = await ghostChat.listSessions();
+			if (devMocksEnabled && nextSessions.length === 0) {
+				setUsingDevMocks(true);
+				setSessions(sortSessions(DEV_GHOST_CHAT_SESSIONS));
+				return;
+			}
+			setUsingDevMocks(false);
 			setSessions(sortSessions(nextSessions));
 		} catch (err) {
+			if (devMocksEnabled) {
+				setUsingDevMocks(true);
+				setError(null);
+				setSessions(sortSessions(DEV_GHOST_CHAT_SESSIONS));
+				return;
+			}
 			setError(getGhostChatErrorMessage(err, 'Ghost Chat 세션을 불러오지 못했습니다.'));
 		} finally {
 			setLoading(false);
@@ -94,15 +116,26 @@ export function useGhostChatSessions() {
 	}, []);
 
 	const refreshSelectedSession = useCallback(async (id: string) => {
+		if (devMocksEnabled && usingDevMocks) {
+			const mockSession = getDevGhostChatSession(id);
+			if (!mockSession) throw new Error('Ghost Chat 목업 세션을 찾을 수 없습니다.');
+			setSelectedSession(mockSession);
+			return mockSession;
+		}
 		const nextSession = await ghostChat.getSession(id);
 		setSelectedSession(nextSession);
 		return nextSession;
-	}, []);
+	}, [usingDevMocks]);
 
 	const refreshSelectedMessages = useCallback(async (id: string) => {
 		setMessagesLoading(true);
 		setSelectedMessages([]);
 		try {
+			if (devMocksEnabled && usingDevMocks) {
+				const response = getDevGhostChatMessages(id);
+				setSelectedMessages(response.messages);
+				return response.messages;
+			}
 			const response = await ghostChat.getMessages(id, { limit: 50 });
 			setSelectedMessages(response.messages);
 			return response.messages;
@@ -113,10 +146,15 @@ export function useGhostChatSessions() {
 		} finally {
 			setMessagesLoading(false);
 		}
-	}, []);
+	}, [usingDevMocks]);
 
 	const refreshSelectedContext = useCallback(async (id: string) => {
 		try {
+			if (devMocksEnabled && usingDevMocks) {
+				const context = getDevGhostChatContext(id);
+				setSelectedContext(context);
+				return context;
+			}
 			const context = await ghostChat.getContext(id);
 			setSelectedContext(context);
 			return context;
@@ -125,7 +163,7 @@ export function useGhostChatSessions() {
 			setError(getGhostChatErrorMessage(err, 'Ghost Chat 컨텍스트를 불러오지 못했습니다.'));
 			return null;
 		}
-	}, []);
+	}, [usingDevMocks]);
 
 	const selectSession = useCallback(
 		async (id: string) => {
@@ -193,6 +231,25 @@ export function useGhostChatSessions() {
 			setActionLoadingId(id);
 			try {
 				setError(null);
+				if (devMocksEnabled && usingDevMocks) {
+					const nextMessages = appendDevGhostChatMessage(id, trimmedContent);
+					const mockSession = getDevGhostChatSession(id);
+					if (mockSession) {
+						const now = new Date().toISOString();
+						const updatedSession: GhostChatSession = {
+							...mockSession,
+							adminMessageCount: mockSession.adminMessageCount + 1,
+							lastAdminMessageAt: now,
+							updatedAt: now,
+						};
+						setSelectedSession(updatedSession);
+						setSessions((current) =>
+							current.map((session) => (session.id === id ? updatedSession : session)),
+						);
+					}
+					setSelectedMessages(nextMessages);
+					return;
+				}
 				await ghostChat.sendMessage(id, { content: trimmedContent });
 				const nextSession = await ghostChat.getSession(id);
 				if (selectedSessionIdRef.current === id) {
@@ -211,7 +268,7 @@ export function useGhostChatSessions() {
 				setActionLoadingId(null);
 			}
 		},
-		[refreshSelectedContext, refreshSelectedMessages, refreshSessions],
+		[refreshSelectedContext, refreshSelectedMessages, refreshSessions, usingDevMocks],
 	);
 
 	const closeSession = useCallback(
@@ -322,7 +379,7 @@ export function useGhostChatSessions() {
 		selectedMessages,
 		loading,
 		messagesLoading,
-		error: error ?? events.error,
+		error: error ?? (usingDevMocks ? null : events.error),
 		newSessionIds,
 		unreadMap,
 		statusCounts,
@@ -335,5 +392,6 @@ export function useGhostChatSessions() {
 		clearSelectedSession,
 		clearSessionBadge,
 		events,
+		usingDevMocks,
 	};
 }
