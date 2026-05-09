@@ -298,7 +298,7 @@ src/admin/v2/utm/
 | UTM 클릭 이벤트를 `utm_click_events` 테이블로 신규 수집 | DB 마이그레이션 후 데이터 적재 확인 |
 | 가입/승인/구매 이벤트는 기존 테이블에서 JOIN으로 추출 가능 | user, payment 테이블 컬럼 확인 필요 |
 | UTM 세션을 쿠키 또는 user 레코드에 저장 가능 | 유저 가입 플로우 확인 필요 |
-| `shortUrl`은 별도 리다이렉트 서버 없이 API가 처리 | 단축 URL 처리 엔드포인트 별도 설계 필요 |
+| `shortUrl` 공개 형식은 `https://some-in-univ.com/go/{shortCode}` | backend/API host는 내부 라우팅으로만 사용하고 운영 URL에는 노출하지 않음 |
 
 ---
 
@@ -326,5 +326,5 @@ src/admin/v2/utm/
 ### Phase 3 — 정밀도 향상 (미래)
 
 - UTM 세션 기반 가입/구매 어트리뷰션 정확도 개선
-- 단축 URL 리다이렉트 처리 (`/r/:shortCode`)
+- 단축 URL 리다이렉트 처리 (`/go/:shortCode`, 공개 URL은 `https://some-in-univ.com/go/{shortCode}`)
 - 채널별 CAC(고객 획득 비용) 계산 연동

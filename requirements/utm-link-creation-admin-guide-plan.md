@@ -91,6 +91,7 @@ Platform binding은 광고 플랫폼의 원본 ID와 UTM 링크를 묶는 영역
    - iOS는 App Store `ct`에 캠페인만 들어간다는 주의 표시
    - 같은 `utmSource + utmCampaign + utmContent + utmTerm` 중복 여부 경고
    - 생성 후 short URL/QR/복사 버튼 제공
+   - short URL의 공개 형식은 `https://some-in-univ.com/go/{shortCode}`이다. 운영자에게 노출되거나 광고/QR에 들어가는 URL에는 `api.some-in-univ.com` 또는 `/api` prefix를 넣지 않는다.
 
 ### 3.2 호버 툴팁 문구
 
@@ -257,6 +258,7 @@ type UtmAiSuggestion = {
 - 광고 플랫폼 CSV 붙여넣기/업로드에서 여러 링크 초안 생성
 - 생성 전 "성과 분석 가능성 점수"와 대시보드 preview 제공
 - 링크 생성 결과에 QR, short URL, destination URL 차이를 더 명확히 표시
+- short URL 표시/복사는 백엔드의 `shortUrl` 응답을 그대로 사용하되, 응답이 `api.some-in-univ.com` 또는 `/api/go/` 형태이면 생성 규칙 위반으로 본다.
 
 ## 6. 수용 기준
 
@@ -271,5 +273,6 @@ type UtmAiSuggestion = {
 
 - 프론트의 목적지 타입에 `deeplink`를 추가할지는 별도 결정이 필요하다. 백엔드는 지원하지만 현재 UI는 노출하지 않는다.
 - iOS App Store URL은 현재 `utm_campaign`만 `ct`로 반영한다. iOS 캠페인에서 소재/타겟 단위 분석이 중요하면 short URL 리다이렉트 이벤트와 attribution touch 저장을 반드시 신뢰해야 한다.
+- UTM 단축 링크는 공개 마케팅 도메인(`some-in-univ.com/go/...`)이 기준이다. backend/API host는 내부 라우팅 구현 세부사항이며, UTM 생성 규칙이나 관리자 복사 URL에 포함하지 않는다.
 - `Gemini 3.0 Pro`라는 정확한 API model id에 고정하면 모델 종료/교체에 취약하다. 환경변수 기반 alias로 운영해야 한다.
 - AI 자동입력은 canonical naming을 보조하는 기능이어야 하며, 저장 직전의 실제 API payload는 기존 검증 규칙으로 결정해야 한다.
