@@ -93,7 +93,7 @@ describe('ChatManagementTab preset pagination bug', () => {
     mockGetChatRooms.mockClear();
 
     await waitFor(() => {
-      expect(screen.getByText('room-0')).toBeInTheDocument();
+      expect(screen.getAllByText('M · F').length).toBeGreaterThan(0);
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'next-page' }));

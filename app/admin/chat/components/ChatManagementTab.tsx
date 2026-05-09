@@ -45,6 +45,7 @@ import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
 import chatService, {
   ChatRoom,
   ChatMessage,
+  ChatUser,
   DatePreset,
 } from '@/app/services/chat';
 import AdminService from '@/app/services/admin';
@@ -68,6 +69,8 @@ const SESSION_FILTER_LABELS: Record<SessionFilter, string> = {
   ghost: '고스트 채팅',
 };
 
+const DEFAULT_ROWS_PER_PAGE = 48;
+
 type DecoratedChatRoom = Omit<ChatRoom, 'sessionType' | 'ghostChatSessionId'> & {
   sessionType: SessionFilter;
   ghostChatSessionId: string | null;
@@ -88,7 +91,7 @@ export default function ChatManagementTab() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(20);
+  const [rowsPerPage, setRowsPerPage] = useState(DEFAULT_ROWS_PER_PAGE);
   const [totalCount, setTotalCount] = useState(0);
 
   const [startDate, setStartDate] = useState<Date | null>(null);
@@ -172,6 +175,44 @@ export default function ChatManagementTab() {
     if (role === 'male') return '남성';
     if (role === 'female') return '여성';
     return '시스템';
+  };
+
+  const getTextValue = (value: string | { name?: string | null } | null | undefined) => {
+    if (!value) return null;
+    if (typeof value === 'string') return value.trim() || null;
+    return value.name?.trim() || null;
+  };
+
+  const getRepresentativePhoto = (user: ChatUser) => {
+    const imageGroups = [user.profileImages, user.images].filter(Array.isArray) as NonNullable<ChatUser['profileImages']>[];
+    const mainImage = imageGroups
+      .flat()
+      .find((image) => image?.isMain && (image.url || image.imageUrl));
+    const firstImage = imageGroups.flat().find((image) => image?.url || image?.imageUrl);
+
+    return (
+      user.primaryPhotoUrl ||
+      user.mainPhotoUrl ||
+      user.profileImageUrl ||
+      user.profile_image_url ||
+      mainImage?.url ||
+      mainImage?.imageUrl ||
+      firstImage?.url ||
+      firstImage?.imageUrl ||
+      user.imageUrl ||
+      user.profileImage ||
+      undefined
+    );
+  };
+
+  const getProfileSummaryItems = (user: ChatUser) => {
+    const items = [
+      user.age ? `${user.age}세` : null,
+      getTextValue(user.university) ?? user.universityName,
+      getTextValue(user.department) ?? user.departmentName,
+      user.mbti,
+    ];
+    return items.filter((item): item is string => Boolean(item));
   };
 
   const fetchPreviewMessagesForRooms = async (rooms: DecoratedChatRoom[]) => {
@@ -361,7 +402,7 @@ export default function ChatManagementTab() {
   }, []);
 
   useEffect(() => {
-    if (page > 0 || rowsPerPage !== 20) {
+    if (page > 0 || rowsPerPage !== DEFAULT_ROWS_PER_PAGE) {
       fetchChatRooms();
     }
   }, [page, rowsPerPage]);
@@ -581,9 +622,9 @@ export default function ChatManagementTab() {
                     key={chatRoom.id}
                     variant="outlined"
                     sx={{
-                      p: 1.5,
+                      p: 1.25,
                       borderRadius: 1,
-                      minHeight: 430,
+                      minHeight: 440,
                       display: 'flex',
                       flexDirection: 'column',
                       borderTop: '4px solid',
@@ -617,11 +658,11 @@ export default function ChatManagementTab() {
                           />
                         </Stack>
                         <Typography variant="subtitle2" sx={{ fontWeight: 900 }} noWrap>
-                          {chatRoom.id}
+                          {chatRoom.male.name} · {chatRoom.female.name}
                         </Typography>
                         {chatRoom.ghostChatSessionId && (
                           <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
-                            Ghost session {chatRoom.ghostChatSessionId}
+                            고스트 응대 세션
                           </Typography>
                         )}
                       </Box>
@@ -637,33 +678,62 @@ export default function ChatManagementTab() {
                         {[
                           { label: '남성 사용자', user: chatRoom.male },
                           { label: '여성 사용자', user: chatRoom.female },
-                        ].map(({ label, user }) => (
-                          <Box
-                            key={label}
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 0.75,
-                              minWidth: 0,
-                              px: 0.75,
-                              py: 0.5,
-                              borderRadius: 1,
-                              bgcolor: 'background.paper',
-                              border: 1,
-                              borderColor: 'divider',
-                            }}
-                          >
-                            <Avatar src={user.profileImage} sx={{ width: 32, height: 32, flexShrink: 0 }} />
-                            <Box sx={{ minWidth: 0 }}>
-                              <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
-                                {label}
-                              </Typography>
-                              <Typography variant="body2" sx={{ fontWeight: 800 }} noWrap>
-                                {user.name}
-                              </Typography>
+                        ].map(({ label, user }) => {
+                          const profileItems = getProfileSummaryItems(user);
+                          return (
+                            <Box
+                              key={label}
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                gap: 0.85,
+                                minWidth: 0,
+                                px: 0.75,
+                                py: 0.65,
+                                borderRadius: 1,
+                                bgcolor: 'background.paper',
+                                border: 1,
+                                borderColor: 'divider',
+                              }}
+                            >
+                              <Avatar
+                                src={getRepresentativePhoto(user)}
+                                sx={{ width: 44, height: 44, flexShrink: 0, fontWeight: 800 }}
+                              >
+                                {user.name?.charAt(0)}
+                              </Avatar>
+                              <Box sx={{ minWidth: 0, flex: 1 }}>
+                                <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
+                                  {label}
+                                </Typography>
+                                <Typography variant="body2" sx={{ fontWeight: 800, lineHeight: 1.2 }} noWrap>
+                                  {user.name}
+                                </Typography>
+                                {profileItems.length > 0 ? (
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{
+                                      display: '-webkit-box',
+                                      WebkitLineClamp: 2,
+                                      WebkitBoxOrient: 'vertical',
+                                      overflow: 'hidden',
+                                      lineHeight: 1.3,
+                                      mt: 0.25,
+                                      wordBreak: 'keep-all',
+                                    }}
+                                  >
+                                    {profileItems.slice(0, 4).join(' · ')}
+                                  </Typography>
+                                ) : (
+                                  <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 0.25 }}>
+                                    프로필 정보 없음
+                                  </Typography>
+                                )}
+                              </Box>
                             </Box>
-                          </Box>
-                        ))}
+                          );
+                        })}
                       </Box>
 
                       <Box
@@ -824,6 +894,7 @@ export default function ChatManagementTab() {
           onPageChange={handleChangePage}
           rowsPerPage={rowsPerPage}
           onRowsPerPageChange={handleChangeRowsPerPage}
+          rowsPerPageOptions={[24, DEFAULT_ROWS_PER_PAGE]}
           labelRowsPerPage="페이지당 행 수:"
           labelDisplayedRows={({ from, to, count }) => `${from}-${to} / ${count}`}
         />
@@ -858,7 +929,7 @@ export default function ChatManagementTab() {
               <Box sx={{ p: 2, bgcolor: 'grey.50', borderBottom: 1, borderColor: 'divider' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Avatar src={selectedChatRoom.male.profileImage} />
+                    <Avatar src={getRepresentativePhoto(selectedChatRoom.male)} />
                     <Box>
                       <Typography variant="subtitle2">{selectedChatRoom.male.name}</Typography>
                       <Typography variant="caption" color="text.secondary">남성</Typography>
@@ -874,7 +945,7 @@ export default function ChatManagementTab() {
                   </Box>
 
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Avatar src={selectedChatRoom.female.profileImage} />
+                    <Avatar src={getRepresentativePhoto(selectedChatRoom.female)} />
                     <Box>
                       <Typography variant="subtitle2">{selectedChatRoom.female.name}</Typography>
                       <Typography variant="caption" color="text.secondary">여성</Typography>
@@ -947,7 +1018,7 @@ export default function ChatManagementTab() {
                         >
                           <ListItemAvatar sx={{ minWidth: 'auto' }}>
                             <Avatar
-                              src={isMaleMessage ? selectedChatRoom.male.profileImage : selectedChatRoom.female.profileImage}
+                              src={getRepresentativePhoto(isMaleMessage ? selectedChatRoom.male : selectedChatRoom.female)}
                               sx={{ width: 32, height: 32, cursor: 'pointer' }}
                               onClick={() => handleUserClick(message.senderId)}
                             />

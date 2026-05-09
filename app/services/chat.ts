@@ -6,6 +6,28 @@ export interface ChatUser {
   id: string;
   name: string;
   profileImage: string;
+  profileImageUrl?: string | null;
+  profile_image_url?: string | null;
+  primaryPhotoUrl?: string | null;
+  mainPhotoUrl?: string | null;
+  imageUrl?: string | null;
+  profileImages?: Array<{
+    url?: string | null;
+    imageUrl?: string | null;
+    isMain?: boolean | null;
+  }>;
+  images?: Array<{
+    url?: string | null;
+    imageUrl?: string | null;
+    isMain?: boolean | null;
+  }>;
+  age?: number | null;
+  gender?: string | null;
+  university?: string | { name?: string | null } | null;
+  universityName?: string | null;
+  department?: string | { name?: string | null } | null;
+  departmentName?: string | null;
+  mbti?: string | null;
   isGhost?: boolean;
   isFaker?: boolean | null;
 }
