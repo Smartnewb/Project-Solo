@@ -118,7 +118,7 @@ export interface GhostChatSessionContext {
 		name: string;
 		anonymousName: string;
 	};
-	target: Omit<GhostChatProfileContext, 'accountId' | 'name' | 'anonymousName'> | null;
+	target: Omit<GhostChatProfileContext, 'accountId' | 'anonymousName'> | null;
 	visibility: {
 		targetSeesGhostName: string;
 		realGhostNameHiddenFromTarget: boolean;

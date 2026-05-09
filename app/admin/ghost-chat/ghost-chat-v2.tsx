@@ -44,7 +44,7 @@ function compactTargetProfile(context: GhostChatSessionContext | null | undefine
 		.filter(Boolean)
 		.join(' · ');
 	return {
-		name: target.department?.name ? `${target.department.name} 유저` : '상대 유저',
+		name: target.name ?? '상대 유저',
 		subtitle: subtitle || '프로필 정보 확인 중',
 		photoUrl: target.primaryPhotoUrl ?? null,
 		tags: [target.rank, target.gender].filter((value): value is string => Boolean(value)),
