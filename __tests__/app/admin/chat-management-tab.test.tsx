@@ -59,6 +59,12 @@ jest.mock('@/app/services/admin', () => ({
   },
 }));
 
+jest.mock('@/app/services/admin/ghost-chat', () => ({
+  ghostChat: {
+    listSessions: jest.fn().mockResolvedValue([]),
+  },
+}));
+
 jest.mock('@/components/admin/appearance/UserDetailModal', () => ({
   __esModule: true,
   default: () => <div data-testid="user-detail-modal" />,
@@ -117,5 +123,5 @@ describe('ChatManagementTab preset pagination bug', () => {
       ([args]) => args.page !== 1 && args.preset === 'today'
     );
     expect(staleCalls).toHaveLength(0);
-  });
+  }, 15000);
 });

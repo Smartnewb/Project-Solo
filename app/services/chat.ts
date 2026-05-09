@@ -6,6 +6,8 @@ export interface ChatUser {
   id: string;
   name: string;
   profileImage: string;
+  isGhost?: boolean;
+  isFaker?: boolean | null;
 }
 
 export interface ChatRoom {
@@ -15,6 +17,8 @@ export interface ChatRoom {
   isActive: boolean;
   lastMessageAt: string | null;
   createdAt: string;
+  sessionType?: 'ai' | 'user';
+  ghostChatSessionId?: string | null;
 }
 
 export interface ChatMessage {
