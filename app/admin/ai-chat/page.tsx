@@ -1,5 +1,5 @@
-import AIChatManagementPageV2 from './ai-chat-v2';
+import { redirect } from 'next/navigation';
 
 export default function AIChatManagementPagePage() {
-  return <AIChatManagementPageV2 />;
+  redirect('/admin/ghost-chat');
 }
