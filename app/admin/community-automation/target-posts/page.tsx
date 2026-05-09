@@ -10,6 +10,7 @@ import FlagOutlinedIcon from '@mui/icons-material/FlagOutlined';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import TuneIcon from '@mui/icons-material/Tune';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import WhatshotIcon from '@mui/icons-material/Whatshot';
 import {
 	Alert,
 	Avatar,
@@ -217,6 +218,8 @@ export default function TargetPostsPage() {
 	const [reviewDialogMode, setReviewDialogMode] = useState<ReviewDialogMode>(null);
 	const [reviewDialogTarget, setReviewDialogTarget] = useState<Content | null>(null);
 	const [reviewDialogText, setReviewDialogText] = useState('');
+	const [hotPromotionOpen, setHotPromotionOpen] = useState(false);
+	const [hotPromotionComment, setHotPromotionComment] = useState('');
 
 	const load = useCallback(async () => {
 		setLoading(true);
@@ -565,6 +568,27 @@ export default function TargetPostsPage() {
 		setScheduledComments(items);
 		await refreshDetail();
 		await load();
+	}
+
+	async function promoteSelectedPostToHot() {
+		if (!selectedPost) return;
+		setActionLoading(true);
+		setError(null);
+		setSuccess(null);
+		try {
+			const result = await targetPostsApi.promoteToHotArticle(selectedPost.id, {
+				curatorComment: hotPromotionComment.trim() || undefined,
+			});
+			setSuccess(`인기 게시글로 등업했습니다. hotId=${result.hotId}`);
+			setHotPromotionOpen(false);
+			setHotPromotionComment('');
+			await refreshDetail();
+			await load();
+		} catch (e: unknown) {
+			setError(e instanceof Error ? e.message : '인기 게시글 등업 실패');
+		} finally {
+			setActionLoading(false);
+		}
 	}
 
 	async function loadLiveCommentSuggestions() {
@@ -1120,7 +1144,7 @@ export default function TargetPostsPage() {
 					setScheduledComments([]);
 				}}
 			>
-				<Box sx={{ width: { xs: '100vw', lg: 1040 }, p: 3 }}>
+				<Box sx={{ width: { xs: '100vw', lg: 1040, xl: 1360 }, p: 3 }}>
 					{detailLoading || !selected ? (
 						<Box display="flex" justifyContent="center" py={8}>
 							<CircularProgress />
@@ -1132,14 +1156,14 @@ export default function TargetPostsPage() {
 									? '같은 REGION_CLUSTER ghost 후보 없음'
 									: `같은 cluster ACTIVE ghost ${selected.ghostCandidateCount}명`}
 							</Alert>
-							<Box
-								sx={{
-									display: 'grid',
-									gridTemplateColumns: { xs: '1fr', xl: 'minmax(0, 1fr) 420px' },
-									gap: 2,
-									alignItems: 'start',
-								}}
-							>
+								<Box
+									sx={{
+										display: 'grid',
+										gridTemplateColumns: { xs: '1fr', xl: 'minmax(720px, 1fr) 420px' },
+										gap: 2,
+										alignItems: 'start',
+									}}
+								>
 								<CommunityPostAppDetailPanel
 									post={{
 										...selected.post,
@@ -1266,6 +1290,16 @@ export default function TargetPostsPage() {
 												</Typography>
 											</Box>
 											<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+												<Button
+													size="small"
+													variant="contained"
+													disabled={actionLoading}
+													startIcon={<WhatshotIcon />}
+													onClick={() => setHotPromotionOpen(true)}
+													sx={{ boxShadow: 'none', fontWeight: 800 }}
+												>
+													인기글 등업
+												</Button>
 												<Button size="small" variant="outlined" disabled={actionLoading} onClick={() => applyPostVisibility([selected.post.id], true)}>
 													가리기
 												</Button>
@@ -1457,8 +1491,46 @@ export default function TargetPostsPage() {
 						</Stack>
 					)}
 				</Box>
-			</Drawer>
-			<Dialog open={Boolean(reviewDialogMode)} onClose={closeReviewDialog} maxWidth="sm" fullWidth>
+				</Drawer>
+				<Dialog
+					open={hotPromotionOpen}
+					onClose={() => !actionLoading && setHotPromotionOpen(false)}
+					maxWidth="sm"
+					fullWidth
+				>
+					<DialogTitle sx={{ fontWeight: 900 }}>인기 게시글로 등업할까요?</DialogTitle>
+					<DialogContent sx={{ pt: '12px !important' }}>
+						<Stack spacing={1.5}>
+							<Typography variant="body2" color="text.secondary">
+								원본 게시글은 그대로 두고 hot_articles 참조만 추가합니다. 확인하면 앱 인기 탭에 이 게시글이 노출됩니다.
+							</Typography>
+							<TextField
+								label="큐레이터 코멘트"
+								placeholder="선택 입력"
+								value={hotPromotionComment}
+								onChange={(event) => setHotPromotionComment(event.target.value)}
+								inputProps={{ maxLength: 255 }}
+								fullWidth
+							/>
+						</Stack>
+					</DialogContent>
+					<DialogActions sx={{ px: 3, pb: 2 }}>
+						<Button disabled={actionLoading} onClick={() => setHotPromotionOpen(false)}>
+							취소
+						</Button>
+						<Button
+							variant="contained"
+							color="warning"
+							disabled={actionLoading}
+							startIcon={actionLoading ? <CircularProgress size={16} color="inherit" /> : <WhatshotIcon />}
+							onClick={promoteSelectedPostToHot}
+							sx={{ fontWeight: 800 }}
+						>
+							인기글 등업
+						</Button>
+					</DialogActions>
+				</Dialog>
+				<Dialog open={Boolean(reviewDialogMode)} onClose={closeReviewDialog} maxWidth="sm" fullWidth>
 				<DialogTitle sx={{ fontWeight: 900 }}>
 					{reviewDialogMode === 'inject'
 						? '댓글 수정 승인'

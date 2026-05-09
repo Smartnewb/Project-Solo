@@ -456,6 +456,18 @@ export interface TargetPostDraftResult {
 	ghostCandidateCount: number;
 }
 
+export interface PromoteTargetPostToHotBody {
+	curatorComment?: string;
+}
+
+export interface PromoteTargetPostToHotResult {
+	success: boolean;
+	hotId: string;
+	articleId: string;
+	isPublic: boolean;
+	publicAt: string | Date;
+}
+
 // ==================== Campaigns ====================
 
 export const campaigns = {
@@ -627,6 +639,17 @@ export const targetPosts = {
 			body,
 		);
 		return result.data.items;
+	},
+
+	promoteToHotArticle: async (
+		articleId: string,
+		body: PromoteTargetPostToHotBody,
+	): Promise<PromoteTargetPostToHotResult> => {
+		const result = await adminPost<{ data: PromoteTargetPostToHotResult }>(
+			`${BASE}/target-posts/${articleId}/promote-hot`,
+			body,
+		);
+		return result.data;
 	},
 };
 
