@@ -29,6 +29,7 @@ import {
 } from './mock-data';
 
 type GhostMobileView = 'list' | 'chat' | 'context';
+const devPreviewEnabled = process.env.NODE_ENV === 'development';
 
 function GhostChatV2Content() {
 	const theme = useTheme();
@@ -142,8 +143,8 @@ function GhostChatV2Content() {
 			newSessionIds={newSessionIds}
 			unreadMap={unreadMap}
 			variant={isMobile ? 'rail' : 'grid'}
-			getPreviewMessages={usingDevMocks ? getDevGhostChatMessagePreview : undefined}
-			getTargetProfilePreview={usingDevMocks ? getDevGhostChatTargetPreview : undefined}
+			getPreviewMessages={devPreviewEnabled ? getDevGhostChatMessagePreview : undefined}
+			getTargetProfilePreview={devPreviewEnabled ? getDevGhostChatTargetPreview : undefined}
 			onSelectSession={handleSelectSession}
 		/>
 	);

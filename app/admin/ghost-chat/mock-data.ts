@@ -7,6 +7,31 @@ import type {
 
 const now = Date.now();
 const iso = (minutesAgo: number) => new Date(now - minutesAgo * 60_000).toISOString();
+const targetNames = ['김지우', '박민준', '정재현', '이도현', '최태민', '유승재', '한서준', '오현우'];
+const targetSubtitles = [
+	'경영학과 2학년',
+	'컴퓨터학과 3학년',
+	'경제학과 4학년',
+	'건축학과 2학년',
+	'전자공학과 3학년',
+	'미디어학과 4학년',
+];
+const targetTagSets = [
+	['진로 고민', '교환학생'],
+	['카페', '전시'],
+	['영화', '산책'],
+	['답장 대기', '편한 톤'],
+	['동아리', '공감'],
+	['취업', '과제'],
+];
+
+function hashString(value: string) {
+	return [...value].reduce((hash, char) => hash + char.charCodeAt(0), 0);
+}
+
+function pickById<T>(values: T[], id: string) {
+	return values[hashString(id) % values.length];
+}
 
 export interface DevGhostChatTargetPreview {
 	name: string;
@@ -266,6 +291,43 @@ function makeMessage(
 	};
 }
 
+function makePreviewMessage(
+	sessionId: string,
+	index: number,
+	senderType: GhostChatTimelineMessage['senderType'],
+	content: string,
+	minutesAgo: number,
+): GhostChatTimelineMessage {
+	return {
+		id: `${sessionId}-preview-message-${index}`,
+		chatRoomId: `${sessionId}-room`,
+		senderType,
+		senderId: senderType === 'GHOST' ? `${sessionId}-ghost` : `${sessionId}-target`,
+		content,
+		messageType: 'text',
+		mediaUrl: null,
+		audioDuration: null,
+		createdAt: iso(minutesAgo),
+		contentLanguage: 'ko',
+		contentTranslated: null,
+		translatedLanguage: null,
+		translationStatus: null,
+		translationErrorCode: null,
+		translatedAt: null,
+	};
+}
+
+function buildDevPreviewMessages(sessionId: string) {
+	return [
+		makePreviewMessage(sessionId, 1, 'TARGET_USER', '요즘 과제가 많아서 정신없네요.', 48),
+		makePreviewMessage(sessionId, 2, 'GHOST', '그럴 때는 잠깐 쉬어가면서 정리하는 게 도움이 되더라구요.', 42),
+		makePreviewMessage(sessionId, 3, 'TARGET_USER', '맞아요. 그래도 얘기하니까 좀 편해졌어요.', 25),
+		makePreviewMessage(sessionId, 4, 'GHOST', '다행이에요. 여기서는 편하게 말해도 괜찮아요.', 18),
+		makePreviewMessage(sessionId, 5, 'TARGET_USER', '요즘 진로도 조금 고민돼요.', 7),
+		makePreviewMessage(sessionId, 6, 'GHOST', '어떤 부분이 제일 걸리는지 천천히 얘기해줘요.', 4),
+	];
+}
+
 const messages: Record<string, GhostChatTimelineMessage[]> = Object.fromEntries(
 	DEV_GHOST_CHAT_SESSIONS.map((session) => [
 		session.id,
@@ -274,8 +336,8 @@ const messages: Record<string, GhostChatTimelineMessage[]> = Object.fromEntries(
 			makeMessage(session, 2, 'GHOST', '저녁에 과제 조금 하고 카페 갈까 생각 중이에요.', 42),
 			makeMessage(session, 3, 'TARGET_USER', '오 카페 좋아하세요? 저도 조용한 데 자주 가요.', 25),
 			makeMessage(session, 4, 'GHOST', '좋아요. 너무 시끄러운 곳보다는 얘기하기 편한 곳이 좋더라구요.', 18),
-			makeMessage(session, 5, 'TARGET_USER', '그럼 이번 주에 시간 맞으면 같이 가볼래요?', 7),
-			makeMessage(session, 6, 'GHOST', '좋아요. 이번 주 목요일이나 금요일 저녁은 어때요?', 4),
+			makeMessage(session, 5, 'TARGET_USER', '요즘에는 어떤 얘기 하는 게 편하세요?', 7),
+			makeMessage(session, 6, 'GHOST', '가볍게 일상 얘기부터 해도 좋고, 고민 얘기도 괜찮아요.', 4),
 		],
 	]),
 );
@@ -286,12 +348,12 @@ export function getDevGhostChatSession(id: string): GhostChatSession | null {
 
 export function getDevGhostChatContext(id: string): GhostChatSessionContext | null {
 	const session = getDevGhostChatSession(id);
-	if (!session) return null;
 	if (contexts[id]) return contexts[id];
+	const target = getDevGhostChatTargetPreview(id);
 	return {
 		ghost: {
-			accountId: session.ghostAccountId,
-			userId: session.ghostUserId,
+			accountId: session?.ghostAccountId ?? `${id}-ghost-account`,
+			userId: session?.ghostUserId ?? `${id}-ghost-user`,
 			name: '목업 고스트',
 			anonymousName: '소미',
 			age: 22,
@@ -305,13 +367,14 @@ export function getDevGhostChatContext(id: string): GhostChatSessionContext | nu
 			primaryPhotoUrl: 'https://i.pravatar.cc/160?img=29',
 		},
 		target: {
-			userId: session.targetUserId,
+			userId: session?.targetUserId ?? `${id}-target-user`,
 			age: 24,
 			gender: 'MALE',
 			mbti: 'ISTP',
 			rank: 'B',
 			university: { id: 'univ-target', name: '한양대학교' },
-			department: { id: 'dept-target', name: '전자공학과' },
+			department: { id: 'dept-target', name: target?.subtitle.split(' ')[0] ?? '전자공학과' },
+			primaryPhotoUrl: target?.photoUrl,
 		},
 		visibility: { targetSeesGhostName: '소미', realGhostNameHiddenFromTarget: true },
 	};
@@ -319,24 +382,32 @@ export function getDevGhostChatContext(id: string): GhostChatSessionContext | nu
 
 export function getDevGhostChatMessages(id: string): GhostChatMessagesResponse {
 	return {
-		messages: messages[id] ?? [],
+		messages: messages[id] ?? buildDevPreviewMessages(id),
 		nextCursor: null,
 		hasMore: false,
 	};
 }
 
 export function getDevGhostChatMessagePreview(id: string, limit = 6): GhostChatTimelineMessage[] {
-	return (messages[id] ?? []).slice(-limit);
+	return (messages[id] ?? buildDevPreviewMessages(id)).slice(-limit);
 }
 
 export function getDevGhostChatTargetPreview(id: string): DevGhostChatTargetPreview | null {
-	return targetPreviews[id] ?? null;
+	if (targetPreviews[id]) return targetPreviews[id];
+	const hash = hashString(id);
+	return {
+		name: pickById(targetNames, id),
+		subtitle: pickById(targetSubtitles, id),
+		photoUrl: `https://i.pravatar.cc/160?img=${(hash % 50) + 1}`,
+		tags: pickById(targetTagSets, id),
+	};
 }
 
 export function appendDevGhostChatMessage(sessionId: string, content: string): GhostChatTimelineMessage[] {
 	const session = getDevGhostChatSession(sessionId);
-	if (!session) return [];
-	const next = makeMessage(session, Date.now(), 'GHOST', content, 0);
-	messages[sessionId] = [...(messages[sessionId] ?? []), next];
+	const next = session
+		? makeMessage(session, Date.now(), 'GHOST', content, 0)
+		: makePreviewMessage(sessionId, Date.now(), 'GHOST', content, 0);
+	messages[sessionId] = [...(messages[sessionId] ?? buildDevPreviewMessages(sessionId)), next];
 	return messages[sessionId];
 }

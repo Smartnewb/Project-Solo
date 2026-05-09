@@ -131,7 +131,7 @@ export function useGhostChatSessions() {
 		setMessagesLoading(true);
 		setSelectedMessages([]);
 		try {
-			if (devMocksEnabled && usingDevMocks) {
+			if (devMocksEnabled) {
 				const response = getDevGhostChatMessages(id);
 				setSelectedMessages(response.messages);
 				return response.messages;
@@ -150,7 +150,7 @@ export function useGhostChatSessions() {
 
 	const refreshSelectedContext = useCallback(async (id: string) => {
 		try {
-			if (devMocksEnabled && usingDevMocks) {
+			if (devMocksEnabled) {
 				const context = getDevGhostChatContext(id);
 				setSelectedContext(context);
 				return context;
@@ -231,7 +231,7 @@ export function useGhostChatSessions() {
 			setActionLoadingId(id);
 			try {
 				setError(null);
-				if (devMocksEnabled && usingDevMocks) {
+				if (devMocksEnabled) {
 					const nextMessages = appendDevGhostChatMessage(id, trimmedContent);
 					const mockSession = getDevGhostChatSession(id);
 					if (mockSession) {

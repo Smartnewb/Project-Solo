@@ -491,9 +491,11 @@ export default function GhostSessionQueue({
 									? {
 										xs: '1fr',
 										sm: 'repeat(auto-fit, minmax(308px, 1fr))',
-										xl: 'repeat(auto-fit, minmax(268px, 1fr))',
+										xl: 'repeat(auto-fit, minmax(292px, 1fr))',
 									}
 									: '1fr',
+							maxWidth: variant === 'grid' ? 'calc(6 * 292px + 5 * 10px)' : undefined,
+							width: '100%',
 							gap: 1.25,
 						}}
 					>
