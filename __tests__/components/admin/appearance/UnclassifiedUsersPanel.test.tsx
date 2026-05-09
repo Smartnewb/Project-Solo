@@ -48,7 +48,7 @@ describe('UnclassifiedUsersPanel', () => {
   });
 
   it('filters cohorts before local pagination so later-page blind-approved users are visible', async () => {
-    const firstPageUsers = Array.from({ length: 12 }, (_, index) =>
+    const firstPageUsers = Array.from({ length: 100 }, (_, index) =>
       makeUser(`grade-${index + 1}`, {
         approvedPhotoCount: 1,
         hasApprovedPhoto: true,
@@ -72,14 +72,14 @@ describe('UnclassifiedUsersPanel', () => {
     ];
 
     mockGetUnclassifiedUsers
-      .mockResolvedValueOnce({ data: firstPageUsers, meta: { totalItems: 14 } })
-      .mockResolvedValueOnce({ data: fullUsers, meta: { totalItems: 14 } });
+      .mockResolvedValueOnce({ data: firstPageUsers, meta: { totalItems: 102, totalPages: 2 } })
+      .mockResolvedValueOnce({ data: fullUsers.slice(100), meta: { totalItems: 102, totalPages: 2 } });
 
     render(<UnclassifiedUsersPanel />);
 
     expect(await screen.findByRole('tab', { name: '블라인드 승인 (2)' })).toBeInTheDocument();
-    expect(mockGetUnclassifiedUsers).toHaveBeenNthCalledWith(1, 1, 12, undefined);
-    expect(mockGetUnclassifiedUsers).toHaveBeenNthCalledWith(2, 1, 14, undefined);
+    expect(mockGetUnclassifiedUsers).toHaveBeenNthCalledWith(1, 1, 100, undefined);
+    expect(mockGetUnclassifiedUsers).toHaveBeenNthCalledWith(2, 2, 100, undefined);
 
     fireEvent.click(screen.getByRole('tab', { name: '블라인드 승인 (2)' }));
 

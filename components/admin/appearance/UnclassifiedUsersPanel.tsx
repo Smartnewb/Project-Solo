@@ -103,6 +103,8 @@ const isGradeRequiredCohortUser = (user: UserProfileWithAppearance) =>
 const getErrorMessage = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
 
+const UNCLASSIFIED_FETCH_LIMIT = 100;
+
 export default function UnclassifiedUsersPanel({
   title = '미분류 사용자',
   description = 'UNKNOWN 사용자를 등급 정리 대상과 블라인드 승인 대상으로 분리합니다.',
@@ -151,24 +153,35 @@ export default function UnclassifiedUsersPanel({
       setError(null);
 
       const regionParam = !region || region === 'ALL' ? undefined : region;
-      const firstPage = await AdminService.userAppearance.getUnclassifiedUsers(1, pageSize, regionParam);
+      const firstPage = await AdminService.userAppearance.getUnclassifiedUsers(
+        1,
+        UNCLASSIFIED_FETCH_LIMIT,
+        regionParam,
+      );
       const meta = firstPage.meta ?? {};
-      const totalPagesFromMeta = Number(meta.totalPages ?? 1);
-      const itemsPerPageFromMeta = Number(meta.itemsPerPage ?? pageSize);
+      const totalPagesFromMeta = Number(meta.totalPages ?? 0);
       const totalItems = Number(
         meta.totalItems ??
         meta.total ??
-        (totalPagesFromMeta > 1 ? totalPagesFromMeta * itemsPerPageFromMeta : undefined) ??
         firstPage.data.length,
       );
+      const computedTotalPages = Math.ceil(totalItems / UNCLASSIFIED_FETCH_LIMIT);
+      const pagesToFetch = Math.max(1, totalPagesFromMeta, computedTotalPages);
 
-      if (totalItems > firstPage.data.length) {
-        const fullResponse = await AdminService.userAppearance.getUnclassifiedUsers(
-          1,
-          Math.max(totalItems, pageSize),
-          regionParam,
+      if (pagesToFetch > 1) {
+        const restResponses = await Promise.all(
+          Array.from({ length: pagesToFetch - 1 }, (_, index) =>
+            AdminService.userAppearance.getUnclassifiedUsers(
+              index + 2,
+              UNCLASSIFIED_FETCH_LIMIT,
+              regionParam,
+            ),
+          ),
         );
-        setUsers(fullResponse.data);
+        setUsers([
+          ...firstPage.data,
+          ...restResponses.flatMap((response) => response.data),
+        ]);
       } else {
         setUsers(firstPage.data);
       }
@@ -177,7 +190,7 @@ export default function UnclassifiedUsersPanel({
     } finally {
       setLoading(false);
     }
-  }, [pageSize, region]);
+  }, [region]);
 
   useEffect(() => {
     setPage(1);

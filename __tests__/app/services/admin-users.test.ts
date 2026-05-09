@@ -91,6 +91,20 @@ describe('userAppearance service', () => {
     });
   });
 
+  it('caps unclassified user requests at the backend limit', async () => {
+    (adminGet as jest.Mock).mockResolvedValue({ data: [], meta: { totalItems: 0 } });
+
+    await userAppearance.getUnclassifiedUsers(1, 335);
+
+    const requestedUrl = (adminGet as jest.Mock).mock.calls[0][0] as string;
+    const query = new URLSearchParams(requestedUrl.split('?')[1]);
+
+    expect(requestedUrl.split('?')[0]).toBe('/admin/v2/users');
+    expect(query.get('filter')).toBe('ungraded');
+    expect(query.get('page')).toBe('1');
+    expect(query.get('limit')).toBe('100');
+  });
+
   it('preserves absent approval contract fields for legacy appearance responses', async () => {
     (adminGet as jest.Mock).mockResolvedValue({
       data: [

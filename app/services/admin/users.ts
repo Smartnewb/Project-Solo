@@ -6,6 +6,8 @@ import type {
 } from '@/types/admin';
 import type { FormattedData } from './_shared';
 
+const ADMIN_USERS_MAX_LIMIT = 100;
+
 function normalizeAppearanceUser(user: any) {
 	const profileImages =
 		user.profileImages ??
@@ -123,8 +125,9 @@ export const userAppearance = {
 	getUnclassifiedUsers: async (page: number, limit: number, region?: string) => {
 		try {
 			const params = new URLSearchParams();
+			const safeLimit = Math.min(Math.max(1, limit), ADMIN_USERS_MAX_LIMIT);
 			params.append('page', page.toString());
-			params.append('limit', limit.toString());
+			params.append('limit', safeLimit.toString());
 			if (region) params.append('region', region);
 
 			const result = await adminGet<{ data: any[]; meta: any }>(
