@@ -560,7 +560,18 @@ export default function ChatManagementTab() {
               <Typography variant="body2">표시할 {SESSION_FILTER_LABELS[sessionFilter]} 채팅방이 없습니다.</Typography>
             </Box>
           ) : (
-            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 1 }}>
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  sm: 'repeat(2, minmax(0, 1fr))',
+                  lg: 'repeat(3, minmax(0, 1fr))',
+                  xl: 'repeat(6, minmax(0, 1fr))',
+                },
+                gap: 1.25,
+              }}
+            >
               {visibleChatRooms.map((chatRoom) => {
                 const isGhost = chatRoom.sessionType === 'ghost';
                 const previewMessages = previewMessagesByRoomId[chatRoom.id] ?? [];
@@ -572,7 +583,7 @@ export default function ChatManagementTab() {
                     sx={{
                       p: 1.5,
                       borderRadius: 1,
-                      minHeight: 310,
+                      minHeight: 430,
                       display: 'flex',
                       flexDirection: 'column',
                       borderTop: '4px solid',
@@ -582,14 +593,11 @@ export default function ChatManagementTab() {
                   >
                     <Box
                       sx={{
-                        display: 'grid',
-                        gridTemplateColumns: {
-                          xs: '1fr',
-                          md: 'minmax(220px, 1.1fr) minmax(260px, 1.2fr) minmax(220px, 1fr) auto',
-                        },
-                        gap: 1.5,
-                        alignItems: 'center',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 1,
                         mb: 1.25,
+                        minWidth: 0,
                       }}
                     >
                       <Box sx={{ minWidth: 0 }}>
@@ -621,8 +629,8 @@ export default function ChatManagementTab() {
                       <Box
                         sx={{
                           display: 'grid',
-                          gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
-                          gap: 1,
+                          gridTemplateColumns: '1fr',
+                          gap: 0.75,
                           minWidth: 0,
                         }}
                       >
@@ -630,8 +638,22 @@ export default function ChatManagementTab() {
                           { label: '남성 사용자', user: chatRoom.male },
                           { label: '여성 사용자', user: chatRoom.female },
                         ].map(({ label, user }) => (
-                          <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
-                            <Avatar src={user.profileImage} sx={{ width: 38, height: 38, flexShrink: 0 }} />
+                          <Box
+                            key={label}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 0.75,
+                              minWidth: 0,
+                              px: 0.75,
+                              py: 0.5,
+                              borderRadius: 1,
+                              bgcolor: 'background.paper',
+                              border: 1,
+                              borderColor: 'divider',
+                            }}
+                          >
+                            <Avatar src={user.profileImage} sx={{ width: 32, height: 32, flexShrink: 0 }} />
                             <Box sx={{ minWidth: 0 }}>
                               <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block' }}>
                                 {label}
@@ -648,8 +670,8 @@ export default function ChatManagementTab() {
                         sx={{
                           display: 'grid',
                           gridTemplateColumns: '1fr 1fr',
-                          gap: 1,
-                          p: 1,
+                          gap: 0.75,
+                          p: 0.75,
                           borderRadius: 1,
                           bgcolor: 'grey.50',
                         }}
@@ -687,7 +709,8 @@ export default function ChatManagementTab() {
                             : undefined
                         }
                         startIcon={<ChatIcon />}
-                        sx={{ justifySelf: { xs: 'stretch', md: 'end' }, whiteSpace: 'nowrap' }}
+                        fullWidth
+                        sx={{ whiteSpace: 'nowrap' }}
                       >
                         {isGhost && chatRoom.ghostChatSessionId ? '고스트 뷰 열기' : '채팅 보기'}
                       </Button>
@@ -696,11 +719,11 @@ export default function ChatManagementTab() {
                     <Box
                       sx={{
                         flex: 1,
-                        minHeight: 150,
+                        minHeight: 190,
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: 0.75,
-                        p: 1,
+                        gap: 0.6,
+                        p: 0.75,
                         borderRadius: 1,
                         bgcolor: 'grey.50',
                         border: 1,
@@ -744,7 +767,7 @@ export default function ChatManagementTab() {
                             >
                               <Box
                                 sx={{
-                                  maxWidth: { xs: '92%', md: '72%' },
+                                  maxWidth: '92%',
                                   px: 1,
                                   py: 0.75,
                                   borderRadius: isRight ? '10px 10px 2px 10px' : '10px 10px 10px 2px',
