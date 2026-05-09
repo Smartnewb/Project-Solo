@@ -1,4 +1,5 @@
 export type GhostChatSessionState = 'PENDING' | 'ACTIVE' | 'IDLE' | 'CLOSED';
+export type GhostChatTargetUserType = 'REAL_FEMALE' | 'GHOST' | 'OTHER';
 
 export interface GhostChatSession {
 	id: string;
@@ -20,6 +21,10 @@ export interface GhostChatSession {
 	createdAt: string;
 	updatedAt: string;
 	deletedAt: string | null;
+	targetUserType?: GhostChatTargetUserType;
+	targetUserIsGhost?: boolean;
+	targetUserIsFaker?: boolean | null;
+	targetUserGender?: string | null;
 }
 
 export interface GhostChatOkResponse {

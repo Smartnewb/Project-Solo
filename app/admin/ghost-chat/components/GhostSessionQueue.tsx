@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode, useMemo } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import {
 	Avatar,
 	Badge,
@@ -9,6 +9,8 @@ import {
 	Chip,
 	Paper,
 	Stack,
+	ToggleButton,
+	ToggleButtonGroup,
 	Typography,
 } from '@mui/material';
 import {
@@ -18,7 +20,11 @@ import {
 	PeopleAlt as PeopleAltIcon,
 	Schedule as ScheduleIcon,
 } from '@mui/icons-material';
-import type { GhostChatSession, GhostChatTimelineMessage } from '@/app/types/ghost-chat';
+import type {
+	GhostChatSession,
+	GhostChatTargetUserType,
+	GhostChatTimelineMessage,
+} from '@/app/types/ghost-chat';
 import { GHOST_CHAT_STATE_LABELS } from '@/app/types/ghost-chat';
 
 interface TargetProfilePreview {
@@ -52,6 +58,30 @@ const stateAccentColors: Record<GhostChatSession['state'], string> = {
 	IDLE: 'info.main',
 	CLOSED: 'grey.400',
 };
+
+type TargetFilter = 'all' | 'real_female' | 'ghost';
+
+const targetFilterLabels: Record<TargetFilter, string> = {
+	all: '전체',
+	real_female: '실 여성',
+	ghost: '고스트',
+};
+
+const targetTypeMeta: Record<
+	GhostChatTargetUserType,
+	{ label: string; color: 'success' | 'warning' | 'default' }
+> = {
+	REAL_FEMALE: { label: '실 여성', color: 'success' },
+	GHOST: { label: '고스트 유저', color: 'warning' },
+	OTHER: { label: '기타 상대', color: 'default' },
+};
+
+function getTargetUserType(session: GhostChatSession): GhostChatTargetUserType {
+	if (session.targetUserType) return session.targetUserType;
+	if (session.targetUserIsGhost || session.targetUserIsFaker) return 'GHOST';
+	if (session.targetUserGender === 'FEMALE') return 'REAL_FEMALE';
+	return 'OTHER';
+}
 
 function shortId(id: string) {
 	return id.length > 10 ? `${id.slice(0, 6)}...${id.slice(-4)}` : id;
@@ -221,6 +251,7 @@ function GhostSessionCard({
 		: { label: session.state === 'CLOSED' ? '종료됨' : '흐름 안정', color: 'default' as const };
 	const displayName = targetProfile?.name ?? '상대 프로필';
 	const subtitle = targetProfile?.subtitle ?? `상대 ${shortId(session.targetUserId)}`;
+	const targetMeta = targetTypeMeta[getTargetUserType(session)];
 
 	return (
 		<Paper
@@ -264,6 +295,13 @@ function GhostSessionCard({
 						{subtitle}
 					</Typography>
 					<Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap', rowGap: 0.5 }}>
+						<Chip
+							label={targetMeta.label}
+							color={targetMeta.color}
+							size="small"
+							variant="outlined"
+							sx={{ height: 22, fontSize: '0.7rem', fontWeight: 800 }}
+						/>
 						{(targetProfile?.tags ?? []).slice(0, 2).map((tag) => (
 							<Chip key={tag} label={tag} size="small" variant="outlined" sx={{ height: 22, fontSize: '0.7rem' }} />
 						))}
@@ -383,19 +421,30 @@ export default function GhostSessionQueue({
 	getTargetProfilePreview,
 	onSelectSession,
 }: GhostSessionQueueProps) {
+	const [targetFilter, setTargetFilter] = useState<TargetFilter>('all');
+	const openSessions = useMemo(() => sessions.filter((session) => session.state !== 'CLOSED'), [sessions]);
+
 	const queueStats = useMemo(() => {
-		const active = sessions.filter((session) => session.state !== 'CLOSED').length;
-		const needsReply = sessions.filter((session) => needsAdminReply(session, unreadMap[session.id] ?? 0)).length;
-		const recentlyUpdated = sessions.filter((session) => {
+		const active = openSessions.length;
+		const needsReply = openSessions.filter((session) => needsAdminReply(session, unreadMap[session.id] ?? 0)).length;
+		const recentlyUpdated = openSessions.filter((session) => {
 			const updatedAt = new Date(session.updatedAt).getTime();
 			return Number.isFinite(updatedAt) && Date.now() - updatedAt < 1000 * 60 * 60 * 24;
 		}).length;
-		return { total: sessions.length, active, needsReply, recentlyUpdated };
-	}, [sessions, unreadMap]);
+		const realFemale = openSessions.filter((session) => getTargetUserType(session) === 'REAL_FEMALE').length;
+		const ghost = openSessions.filter((session) => getTargetUserType(session) === 'GHOST').length;
+		return { total: openSessions.length, active, needsReply, recentlyUpdated, realFemale, ghost };
+	}, [openSessions, unreadMap]);
 
 	const filteredSessions = useMemo(() => {
-		return sessions.filter((session) => session.state !== 'CLOSED').sort(sortForQueue);
-	}, [sessions]);
+		return openSessions
+			.filter((session) => {
+				if (targetFilter === 'real_female') return getTargetUserType(session) === 'REAL_FEMALE';
+				if (targetFilter === 'ghost') return getTargetUserType(session) === 'GHOST';
+				return true;
+			})
+			.sort(sortForQueue);
+	}, [openSessions, targetFilter]);
 
 	return (
 		<Box
@@ -463,6 +512,37 @@ export default function GhostSessionQueue({
 						Ghost/상대/최근 메시지 상태를 카드 테이블에서 바로 스캔합니다.
 					</Typography>
 				</Box>
+				<ToggleButtonGroup
+					exclusive
+					size="small"
+					value={targetFilter}
+					onChange={(_, nextValue: TargetFilter | null) => {
+						if (nextValue) setTargetFilter(nextValue);
+					}}
+					aria-label="상대 유저 분류 필터"
+					sx={{
+						mt: 1.25,
+						width: '100%',
+						'& .MuiToggleButton-root': {
+							flex: 1,
+							px: 1,
+							py: 0.75,
+							fontSize: '0.78rem',
+							fontWeight: 800,
+							textTransform: 'none',
+						},
+					}}
+				>
+					<ToggleButton value="all" aria-label="전체 채팅방">
+						{targetFilterLabels.all} {queueStats.total}
+					</ToggleButton>
+					<ToggleButton value="real_female" aria-label="실 여성 유저 채팅방">
+						{targetFilterLabels.real_female} {queueStats.realFemale}
+					</ToggleButton>
+					<ToggleButton value="ghost" aria-label="고스트 유저 채팅방">
+						{targetFilterLabels.ghost} {queueStats.ghost}
+					</ToggleButton>
+				</ToggleButtonGroup>
 			</Box>
 
 			<Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', p: 1.5 }}>
@@ -480,7 +560,9 @@ export default function GhostSessionQueue({
 						}}
 					>
 						<InboxIcon sx={{ fontSize: 42, opacity: 0.45 }} />
-						<Typography variant="body2">표시할 Ghost Chat 채팅방이 없습니다.</Typography>
+						<Typography variant="body2">
+							표시할 {targetFilterLabels[targetFilter]} 채팅방이 없습니다.
+						</Typography>
 					</Box>
 				) : (
 					<Box

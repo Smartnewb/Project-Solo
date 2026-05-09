@@ -9,8 +9,13 @@ import type {
 
 const BASE = '/admin/ghost-chat';
 
+export interface ListGhostChatSessionsQuery {
+	targetType?: 'all' | 'real_female' | 'ghost';
+}
+
 export const ghostChat = {
-	listSessions: () => adminGet<GhostChatSession[]>(`${BASE}/sessions`),
+	listSessions: (query?: ListGhostChatSessionsQuery) =>
+		adminGet<GhostChatSession[]>(`${BASE}/sessions`, query ? { ...query } : undefined),
 	getSession: (id: string) => adminGet<GhostChatSession>(`${BASE}/sessions/${id}`),
 	getContext: (id: string) =>
 		adminGet<GhostChatSessionContext>(`${BASE}/sessions/${id}/context`),
