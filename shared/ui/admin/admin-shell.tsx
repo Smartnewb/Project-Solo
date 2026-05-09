@@ -1,5 +1,5 @@
 'use client';
-/* eslint-disable no-restricted-globals -- AdminShell: reads/writes localStorage during country change and logout for legacy compatibility. */
+/* eslint-disable no-restricted-globals, no-restricted-properties -- AdminShell: reads/writes localStorage during country change and uses reload for legacy compatibility. */
 
 import { useEffect, useState, useCallback, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
@@ -106,22 +106,22 @@ export function AdminShell({ children }: { children: ReactNode }) {
       <CountryProvider>
       <AdminQueryProvider>
           <div className="admin-airbnb-screen flex min-h-screen bg-white text-[#222222]">
-            <div className={`fixed inset-y-0 left-0 z-50 h-screen w-72 overflow-y-auto border-r border-[#dddddd] bg-white transform transition-transform md:sticky md:top-0 md:h-screen md:translate-x-0 md:shrink-0 ${
+            <div className={`fixed inset-y-0 left-0 z-50 h-screen w-72 overflow-y-auto border-r border-[#12365f] bg-[#071a33] text-white transform transition-transform md:sticky md:top-0 md:h-screen md:translate-x-0 md:shrink-0 ${
               sidebarOpen ? 'translate-x-0' : '-translate-x-full'
             }`}>
-              <div className="shrink-0 border-b border-[#dddddd] p-5">
-                <h2 className="text-lg font-semibold tracking-normal text-[#222222]">관리자 대시보드</h2>
-                <p className="mt-1 truncate text-sm text-[#6a6a6a]">{session.user.email}</p>
+              <div className="shrink-0 border-b border-[#12365f] bg-[#06162b] p-5">
+                <h2 className="text-lg font-semibold tracking-normal text-white">관리자 대시보드</h2>
+                <p className="mt-1 truncate text-sm text-[#9fb6d8]">{session.user.email}</p>
               </div>
               <div className="flex-1 overflow-y-auto">
                 <AdminSidebar onNavigate={() => setSidebarOpen(false)} />
               </div>
-              <div className="shrink-0 border-t border-[#dddddd] px-4 pt-3">
+              <div className="shrink-0 border-t border-[#12365f] bg-[#071a33] px-4 pt-3">
                 <button
                   onClick={() => {
                     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
                   }}
-                  className="flex w-full items-center justify-between rounded-full border border-[#dddddd] bg-[#f7f7f7] px-3 py-2 text-sm text-[#6a6a6a] transition-colors hover:border-[#222222] hover:bg-white"
+                  className="flex w-full items-center justify-between rounded-full border border-[#1f4b7a] bg-[#0b2748] px-3 py-2 text-sm text-[#c7d7ef] transition-colors hover:border-[#4f8fd8] hover:bg-[#10345f]"
                 >
                   <span className="flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -129,15 +129,15 @@ export function AdminShell({ children }: { children: ReactNode }) {
                     </svg>
                     메뉴 검색
                   </span>
-                  <kbd className="rounded border border-[#dddddd] bg-white px-1.5 py-0.5 text-[10px] font-medium text-[#6a6a6a]">
+                  <kbd className="rounded border border-[#2f5f93] bg-[#06162b] px-1.5 py-0.5 text-[10px] font-medium text-[#9fb6d8]">
                     ⌘K
                   </kbd>
                 </button>
               </div>
-              <div className="px-4 pt-2 pb-3 space-y-1 shrink-0">
+              <div className="space-y-1 bg-[#071a33] px-4 pb-3 pt-2 shrink-0">
                 <button
                   onClick={() => setCountryModalOpen(true)}
-                  className="flex w-full items-center gap-2 rounded-lg px-4 py-2 text-left text-[#3f3f3f] transition-colors hover:bg-[#f7f7f7]"
+                  className="flex w-full items-center gap-2 rounded-lg px-4 py-2 text-left text-[#c7d7ef] transition-colors hover:bg-[#10345f] hover:text-white"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" />
@@ -146,7 +146,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
                 </button>
                 <button
                   onClick={logout}
-                  className="w-full rounded-lg px-4 py-2 text-left text-[#c13515] transition-colors hover:bg-[#fff5f7]"
+                  className="w-full rounded-lg px-4 py-2 text-left text-[#ffb3c1] transition-colors hover:bg-[#3a1730] hover:text-white"
                 >
                   로그아웃
                 </button>
