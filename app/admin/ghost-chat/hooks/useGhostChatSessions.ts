@@ -55,6 +55,14 @@ const countSessions = (sessions: GhostChatSession[]): GhostChatStatusCounts =>
 		{ ...emptyCounts },
 	);
 
+function filterVisibleMessages(messages: GhostChatTimelineMessage[]): GhostChatTimelineMessage[] {
+	return messages.filter((message) => {
+		const content = message.content ?? '';
+		if (message.senderType !== 'SYSTEM') return true;
+		return !content.includes('채팅방을 나갔습니다');
+	});
+}
+
 function getGhostChatErrorMessage(err: unknown, fallback: string): string {
 	if (err instanceof AdminApiError) {
 		if (err.status === 401) return '인증이 만료되었습니다. 다시 로그인해 주세요.';
@@ -70,6 +78,8 @@ export function useGhostChatSessions() {
 	const [selectedSession, setSelectedSession] = useState<GhostChatSession | null>(null);
 	const [selectedContext, setSelectedContext] = useState<GhostChatSessionContext | null>(null);
 	const [selectedMessages, setSelectedMessages] = useState<GhostChatTimelineMessage[]>([]);
+	const [contextMap, setContextMap] = useState<Record<string, GhostChatSessionContext>>({});
+	const [previewMessageMap, setPreviewMessageMap] = useState<Record<string, GhostChatTimelineMessage[]>>({});
 	const [loading, setLoading] = useState(true);
 	const [messagesLoading, setMessagesLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -80,6 +90,7 @@ export function useGhostChatSessions() {
 
 	const selectedSessionIdRef = useRef<string | null>(null);
 	const sessionsRef = useRef<GhostChatSession[]>([]);
+	const hydratedSessionIdsRef = useRef<Set<string>>(new Set());
 
 	useEffect(() => {
 		selectedSessionIdRef.current = selectedSession?.id ?? null;
@@ -133,12 +144,16 @@ export function useGhostChatSessions() {
 		try {
 			if (devMocksEnabled) {
 				const response = getDevGhostChatMessages(id);
-				setSelectedMessages(response.messages);
-				return response.messages;
+				const visibleMessages = filterVisibleMessages(response.messages);
+				setSelectedMessages(visibleMessages);
+				setPreviewMessageMap((current) => ({ ...current, [id]: visibleMessages.slice(-6) }));
+				return visibleMessages;
 			}
 			const response = await ghostChat.getMessages(id, { limit: 50 });
-			setSelectedMessages(response.messages);
-			return response.messages;
+			const visibleMessages = filterVisibleMessages(response.messages);
+			setSelectedMessages(visibleMessages);
+			setPreviewMessageMap((current) => ({ ...current, [id]: visibleMessages.slice(-6) }));
+			return visibleMessages;
 		} catch (err) {
 			setSelectedMessages([]);
 			setError(getGhostChatErrorMessage(err, 'Ghost Chat 메시지를 불러오지 못했습니다.'));
@@ -153,10 +168,14 @@ export function useGhostChatSessions() {
 			if (devMocksEnabled) {
 				const context = getDevGhostChatContext(id);
 				setSelectedContext(context);
+				if (context) {
+					setContextMap((current) => ({ ...current, [id]: context }));
+				}
 				return context;
 			}
 			const context = await ghostChat.getContext(id);
 			setSelectedContext(context);
+			setContextMap((current) => ({ ...current, [id]: context }));
 			return context;
 		} catch (err) {
 			setSelectedContext(null);
@@ -233,6 +252,7 @@ export function useGhostChatSessions() {
 				setError(null);
 				if (devMocksEnabled) {
 					const nextMessages = appendDevGhostChatMessage(id, trimmedContent);
+					const visibleMessages = filterVisibleMessages(nextMessages);
 					const mockSession = getDevGhostChatSession(id);
 					if (mockSession) {
 						const now = new Date().toISOString();
@@ -247,7 +267,8 @@ export function useGhostChatSessions() {
 							current.map((session) => (session.id === id ? updatedSession : session)),
 						);
 					}
-					setSelectedMessages(nextMessages);
+					setSelectedMessages(visibleMessages);
+					setPreviewMessageMap((current) => ({ ...current, [id]: visibleMessages.slice(-6) }));
 					return;
 				}
 				await ghostChat.sendMessage(id, { content: trimmedContent });
@@ -370,6 +391,66 @@ export function useGhostChatSessions() {
 		void refreshSessions();
 	}, [refreshSessions]);
 
+	useEffect(() => {
+		if (sessions.length === 0) return;
+		let cancelled = false;
+		const ids = sessions
+			.filter((session) => session.state !== 'CLOSED')
+			.map((session) => session.id)
+			.filter((id) => !hydratedSessionIdsRef.current.has(id));
+		if (ids.length === 0) return;
+		ids.forEach((id) => hydratedSessionIdsRef.current.add(id));
+
+		async function hydrateQueueCards() {
+			const chunkSize = 6;
+			for (let start = 0; start < ids.length; start += chunkSize) {
+				const chunk = ids.slice(start, start + chunkSize);
+				const entries = await Promise.all(
+					chunk.map(async (id) => {
+						try {
+							const [context, messageResponse] = devMocksEnabled
+								? [
+									getDevGhostChatContext(id),
+									getDevGhostChatMessages(id),
+								]
+								: await Promise.all([
+									ghostChat.getContext(id),
+									ghostChat.getMessages(id, { limit: 6 }),
+								]);
+							return {
+								id,
+								context,
+								messages: filterVisibleMessages(messageResponse.messages).slice(-6),
+							};
+						} catch {
+							return null;
+						}
+					}),
+				);
+				if (cancelled) return;
+				setContextMap((current) => {
+					const next = { ...current };
+					for (const entry of entries) {
+						if (entry?.context) next[entry.id] = entry.context;
+					}
+					return next;
+				});
+				setPreviewMessageMap((current) => {
+					const next = { ...current };
+					for (const entry of entries) {
+						if (entry) next[entry.id] = entry.messages;
+					}
+					return next;
+				});
+			}
+		}
+
+		void hydrateQueueCards();
+		return () => {
+			cancelled = true;
+		};
+	}, [sessions]);
+
 	const statusCounts = useMemo(() => countSessions(sessions), [sessions]);
 
 	return {
@@ -377,6 +458,8 @@ export function useGhostChatSessions() {
 		selectedSession,
 		selectedContext,
 		selectedMessages,
+		contextMap,
+		previewMessageMap,
 		loading,
 		messagesLoading,
 		error: error ?? (usingDevMocks ? null : events.error),

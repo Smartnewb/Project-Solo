@@ -27,9 +27,29 @@ import {
 	getDevGhostChatMessagePreview,
 	getDevGhostChatTargetPreview,
 } from './mock-data';
+import type { GhostChatSessionContext } from '@/app/types/ghost-chat';
 
 type GhostMobileView = 'list' | 'chat' | 'context';
 const devPreviewEnabled = process.env.NODE_ENV === 'development';
+
+function compactTargetProfile(context: GhostChatSessionContext | null | undefined) {
+	if (!context?.target) return null;
+	const target = context.target;
+	const subtitle = [
+		target.age ? `${target.age}세` : null,
+		target.university?.name,
+		target.department?.name,
+		target.mbti,
+	]
+		.filter(Boolean)
+		.join(' · ');
+	return {
+		name: target.department?.name ? `${target.department.name} 유저` : '상대 유저',
+		subtitle: subtitle || '프로필 정보 확인 중',
+		photoUrl: target.primaryPhotoUrl ?? null,
+		tags: [target.rank, target.gender].filter((value): value is string => Boolean(value)),
+	};
+}
 
 function GhostChatV2Content() {
 	const theme = useTheme();
@@ -52,6 +72,8 @@ function GhostChatV2Content() {
 		selectedSession,
 		selectedContext,
 		selectedMessages,
+		contextMap,
+		previewMessageMap,
 		loading,
 		messagesLoading,
 		error,
@@ -143,8 +165,13 @@ function GhostChatV2Content() {
 			newSessionIds={newSessionIds}
 			unreadMap={unreadMap}
 			variant={isMobile ? 'rail' : 'grid'}
-			getPreviewMessages={devPreviewEnabled ? getDevGhostChatMessagePreview : undefined}
-			getTargetProfilePreview={devPreviewEnabled ? getDevGhostChatTargetPreview : undefined}
+			getPreviewMessages={(id) =>
+				previewMessageMap[id] ?? (devPreviewEnabled ? getDevGhostChatMessagePreview(id) : [])
+			}
+			getTargetProfilePreview={(id) =>
+				compactTargetProfile(contextMap[id]) ??
+				(devPreviewEnabled ? getDevGhostChatTargetPreview(id) : null)
+			}
 			onSelectSession={handleSelectSession}
 		/>
 	);

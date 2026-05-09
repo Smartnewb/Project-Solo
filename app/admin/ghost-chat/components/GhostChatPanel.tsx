@@ -90,8 +90,6 @@ const senderLabels: Record<GhostChatTimelineMessage['senderType'], string> = {
 };
 
 function getComposerBlockedReason(session: GhostChatSession) {
-	if (session.state === 'PENDING') return '아직 대화가 충분히 열리지 않았습니다. 새 메시지를 확인한 뒤 전송하세요.';
-	if (session.state === 'IDLE') return '응답 없음 상태입니다. 세션을 새로고침한 뒤 전송 여부를 확인하세요.';
 	if (session.state === 'CLOSED') return '종료된 세션에는 메시지를 보낼 수 없습니다.';
 	return null;
 }
@@ -128,9 +126,9 @@ export default function GhostChatPanel({
 
 	const timeline = useMemo(() => (session ? buildTimeline(session) : []), [session]);
 	const recentMessages = useMemo(() => messages.slice(-6).reverse(), [messages]);
-	const canSend = Boolean(session && session.state === 'ACTIVE' && draft.trim() && !actionLoading);
+	const canSend = Boolean(session && session.state !== 'CLOSED' && draft.trim() && !actionLoading);
 	const canClose = Boolean(session && session.state !== 'CLOSED' && !actionLoading);
-	const canRequestAiDraft = Boolean(session && session.state === 'ACTIVE' && !actionLoading && !messagesLoading);
+	const canRequestAiDraft = Boolean(session && session.state !== 'CLOSED' && !actionLoading && !messagesLoading);
 	const composerBlockedReason = session ? getComposerBlockedReason(session) : null;
 
 	useEffect(() => {
@@ -514,8 +512,8 @@ export default function GhostChatPanel({
 					multiline
 					minRows={2}
 					maxRows={5}
-					disabled={!session || session.state !== 'ACTIVE' || actionLoading}
-					placeholder={session.state === 'ACTIVE' ? 'Ghost 명의로 보낼 메시지 입력' : composerBlockedReason ?? 'ACTIVE 세션에서만 전송할 수 있습니다.'}
+					disabled={!session || session.state === 'CLOSED' || actionLoading}
+					placeholder={session.state !== 'CLOSED' ? 'Ghost 명의로 보낼 메시지 입력' : composerBlockedReason ?? '종료된 세션입니다.'}
 					onKeyDown={(event) => {
 						if (event.key === 'Enter' && !event.shiftKey) {
 							event.preventDefault();
