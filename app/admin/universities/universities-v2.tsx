@@ -31,6 +31,24 @@ import type {
 } from '@/types/admin';
 
 type TabValue = 'all' | 'active' | 'inactive';
+type LogoSortValue = 'default' | 'missingFirst';
+
+const PAGE_SIZE = 20;
+const BULK_FETCH_SIZE = 100;
+
+function hasLogo(university: UniversityItem) {
+  return Boolean(university.logoUrl?.trim());
+}
+
+function sortUniversitiesByLogo(items: UniversityItem[], logoSort: LogoSortValue) {
+  if (logoSort !== 'missingFirst') return items;
+
+  return [...items].sort((a, b) => {
+    const logoDiff = Number(hasLogo(a)) - Number(hasLogo(b));
+    if (logoDiff !== 0) return logoDiff;
+    return a.name.localeCompare(b.name, 'ko');
+  });
+}
 
 function UniversitiesPageContent() {
 
@@ -45,6 +63,7 @@ function UniversitiesPageContent() {
   const [searchName, setSearchName] = useState('');
   const [filterRegion, setFilterRegion] = useState<string>('');
   const [filterType, setFilterType] = useState<UniversityType | ''>('');
+  const [logoSort, setLogoSort] = useState<LogoSortValue>('default');
 
   const [regions, setRegions] = useState<RegionMetaItem[]>([]);
   const [types, setTypes] = useState<TypeMetaItem[]>([]);
@@ -60,7 +79,7 @@ function UniversitiesPageContent() {
 
   useEffect(() => {
     loadUniversities();
-  }, [page, tabValue, searchName, filterRegion, filterType]);
+  }, [page, tabValue, searchName, filterRegion, filterType, logoSort]);
 
   const loadMetadata = async () => {
     try {
@@ -81,7 +100,7 @@ function UniversitiesPageContent() {
 
       const params: UniversityListParams = {
         page,
-        limit: 20,
+        limit: PAGE_SIZE,
       };
 
       if (searchName) params.name = searchName;
@@ -91,8 +110,36 @@ function UniversitiesPageContent() {
         params.isActive = tabValue === 'active';
       }
 
+      if (logoSort === 'missingFirst') {
+        const firstPage = await AdminService.universities.getList({
+          ...params,
+          page: 1,
+          limit: BULK_FETCH_SIZE,
+        });
+        const bulkTotalPages = firstPage.meta.totalPages;
+        const restPages = bulkTotalPages > 1
+          ? await Promise.all(
+            Array.from({ length: bulkTotalPages - 1 }, (_, index) =>
+              AdminService.universities.getList({
+                ...params,
+                page: index + 2,
+                limit: BULK_FETCH_SIZE,
+              }),
+            ),
+          )
+          : [];
+        const allItems = [firstPage, ...restPages].flatMap((data) => data.items);
+        const sortedItems = sortUniversitiesByLogo(allItems, logoSort);
+        const start = (page - 1) * PAGE_SIZE;
+
+        setUniversities(sortedItems.slice(start, start + PAGE_SIZE));
+        setTotalPages(Math.max(1, Math.ceil(firstPage.meta.total / PAGE_SIZE)));
+        setTotalCount(firstPage.meta.total);
+        return;
+      }
+
       const data = await AdminService.universities.getList(params);
-      setUniversities(data.items);
+      setUniversities(sortUniversitiesByLogo(data.items, logoSort));
       setTotalPages(data.meta.totalPages);
       setTotalCount(data.meta.total);
     } catch (err: any) {
@@ -100,7 +147,7 @@ function UniversitiesPageContent() {
     } finally {
       setLoading(false);
     }
-  }, [page, tabValue, searchName, filterRegion, filterType]);
+  }, [page, tabValue, searchName, filterRegion, filterType, logoSort]);
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: TabValue) => {
     setTabValue(newValue);
@@ -116,6 +163,7 @@ function UniversitiesPageContent() {
     setSearchName('');
     setFilterRegion('');
     setFilterType('');
+    setLogoSort('default');
     setPage(1);
   };
 
@@ -224,7 +272,10 @@ function UniversitiesPageContent() {
           <Select
             value={filterType}
             label="대학 유형"
-            onChange={(e) => setFilterType(e.target.value as UniversityType | '')}
+            onChange={(e) => {
+              setFilterType(e.target.value as UniversityType | '');
+              setPage(1);
+            }}
           >
             <MenuItem value="">전체</MenuItem>
             {types.map((type) => (
@@ -232,6 +283,21 @@ function UniversitiesPageContent() {
                 {type.name}
               </MenuItem>
             ))}
+          </Select>
+        </FormControl>
+
+        <FormControl size="small" sx={{ minWidth: 170 }}>
+          <InputLabel>로고 정렬</InputLabel>
+          <Select
+            value={logoSort}
+            label="로고 정렬"
+            onChange={(e) => {
+              setLogoSort(e.target.value as LogoSortValue);
+              setPage(1);
+            }}
+          >
+            <MenuItem value="default">기본</MenuItem>
+            <MenuItem value="missingFirst">로고 없는 순</MenuItem>
           </Select>
         </FormControl>
 
