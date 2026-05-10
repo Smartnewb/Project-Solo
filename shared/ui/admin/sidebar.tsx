@@ -269,12 +269,12 @@ function FavoriteButton({
         event.stopPropagation();
         onClick();
       }}
-      className={`mx-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors ${
+      className={`mx-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors ${
         active
           ? 'text-[#ffd166] hover:bg-white/10'
           : activeRow
             ? 'text-white/80 hover:bg-white/15 hover:text-white'
-            : 'text-[#6f8bad] hover:bg-white/10 hover:text-[#dceafe]'
+            : 'text-[#8fb0d6] hover:bg-white/10 hover:text-[#e6f0ff]'
       }`}
     >
       <Star className="h-4 w-4" fill={active ? 'currentColor' : 'none'} />
@@ -304,13 +304,13 @@ function SidebarLinkRow({
       className={`flex items-center overflow-hidden rounded-lg transition-colors ${
         active
           ? 'bg-[#2563eb] text-white shadow-sm shadow-blue-950/30'
-          : 'text-[#b8c9e3] hover:bg-[#10345f] hover:text-white'
+          : 'text-[#d2e0f3] hover:bg-[#10345f] hover:text-white'
       }`}
     >
       <Link
         href={href}
         onClick={onNavigate}
-        className={`min-w-0 flex-1 py-2.5 text-sm ${nested ? 'pl-8 pr-2' : 'px-4 pr-2'}`}
+        className={`min-w-0 flex-1 py-3 text-[15px] font-medium leading-6 ${nested ? 'pl-9 pr-2' : 'px-4 pr-2'}`}
       >
         <span className="block truncate">{label}</span>
       </Link>
@@ -337,7 +337,7 @@ function ExpandableGroup({
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
-      <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg px-4 py-2 text-sm font-medium text-[#b8c9e3] transition-colors hover:bg-[#10345f] hover:text-white">
+      <CollapsibleTrigger className="flex w-full items-center justify-between rounded-lg px-4 py-3 text-[15px] font-semibold leading-6 text-[#d2e0f3] transition-colors hover:bg-[#10345f] hover:text-white">
         <span>{item.label}</span>
         <ChevronDown
           className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`}
@@ -378,10 +378,10 @@ function FavoriteMenuPanel({
   return (
     <section className="mb-4 rounded-xl border border-[#1f4b7a] bg-[#0b2748] p-3">
       <div className="mb-2 flex items-center justify-between px-1">
-        <h3 className="text-xs font-semibold uppercase tracking-[0.04em] text-[#9cc7ff]">
+        <h3 className="text-[13px] font-semibold uppercase tracking-normal text-[#b3d6ff]">
           즐겨찾기
         </h3>
-        <span className="rounded-full bg-[#06162b] px-2 py-0.5 text-[11px] font-medium text-[#c7d7ef]">
+        <span className="rounded-full bg-[#06162b] px-2 py-0.5 text-xs font-medium text-[#d8e6f8]">
           {items.length}
         </span>
       </div>
@@ -389,14 +389,14 @@ function FavoriteMenuPanel({
         {items.map((item) => (
           <div
             key={item.href}
-            className="group flex items-center gap-2 rounded-lg border border-[#1f4b7a] bg-[#071a33] px-3 py-2 shadow-sm transition-colors hover:border-[#4f8fd8] hover:bg-[#10345f]"
+            className="group flex items-center gap-2 rounded-lg border border-[#1f4b7a] bg-[#071a33] px-3 py-2.5 shadow-sm transition-colors hover:border-[#4f8fd8] hover:bg-[#10345f]"
           >
             <Link href={item.href} onClick={onNavigate} className="min-w-0 flex-1">
-              <span className="mb-0.5 flex items-center gap-1.5 text-[11px] font-medium text-[#8ba6c8]">
+              <span className="mb-0.5 flex items-center gap-1.5 text-xs font-medium text-[#a9c2df]">
                 <span>{item.icon}</span>
                 <span className="truncate">{item.category}</span>
               </span>
-              <span className="block truncate text-sm font-semibold text-white">
+              <span className="block truncate text-[15px] font-semibold leading-6 text-white">
                 {item.label}
               </span>
             </Link>
@@ -423,7 +423,7 @@ export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
   }, [favoriteHrefs]);
 
   return (
-    <nav className="flex-1 overflow-y-auto bg-[#071a33] px-3 py-4">
+    <nav className="flex-1 overflow-y-auto bg-[#071a33] px-4 py-4">
       <FavoriteMenuPanel
         items={favoriteItems}
         onNavigate={onNavigate}
@@ -431,7 +431,7 @@ export function AdminSidebar({ onNavigate }: { onNavigate?: () => void }) {
       />
       {NAV_CATEGORIES.map((category) => (
         <div key={category.label}>
-          <div className="mt-4 px-3 py-2 text-xs font-semibold uppercase tracking-[0.04em] text-[#7fa4d1]">
+          <div className="mt-4 px-3 py-2 text-[13px] font-semibold uppercase tracking-normal text-[#a9c7eb]">
             {category.icon} {category.label}
           </div>
           <ul>

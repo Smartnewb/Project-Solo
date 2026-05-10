@@ -106,12 +106,12 @@ export function AdminShell({ children }: { children: ReactNode }) {
       <CountryProvider>
       <AdminQueryProvider>
           <div className="admin-airbnb-screen flex min-h-screen bg-white text-[#222222]">
-            <div className={`fixed inset-y-0 left-0 z-50 h-screen w-72 overflow-y-auto border-r border-[#12365f] bg-[#071a33] text-white transform transition-transform md:sticky md:top-0 md:h-screen md:translate-x-0 md:shrink-0 ${
+            <div className={`fixed inset-y-0 left-0 z-50 h-screen w-80 max-w-[calc(100vw-1.5rem)] overflow-y-auto border-r border-[#12365f] bg-[#071a33] text-white transform transition-transform md:sticky md:top-0 md:h-screen md:w-80 md:max-w-none md:translate-x-0 md:shrink-0 ${
               sidebarOpen ? 'translate-x-0' : '-translate-x-full'
             }`}>
               <div className="shrink-0 border-b border-[#12365f] bg-[#06162b] p-5">
-                <h2 className="text-lg font-semibold tracking-normal text-white">관리자 대시보드</h2>
-                <p className="mt-1 truncate text-sm text-[#9fb6d8]">{session.user.email}</p>
+                <h2 className="text-xl font-semibold tracking-normal text-white">관리자 대시보드</h2>
+                <p className="mt-1 truncate text-[15px] leading-6 text-[#b9cceb]">{session.user.email}</p>
               </div>
               <div className="flex-1 overflow-y-auto">
                 <AdminSidebar onNavigate={() => setSidebarOpen(false)} />
@@ -121,10 +121,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
                   onClick={() => {
                     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
                   }}
-                  className="flex w-full items-center justify-between rounded-full border border-[#1f4b7a] bg-[#0b2748] px-3 py-2 text-sm text-[#c7d7ef] transition-colors hover:border-[#4f8fd8] hover:bg-[#10345f]"
+                  className="flex w-full items-center justify-between rounded-full border border-[#1f4b7a] bg-[#0b2748] px-4 py-2.5 text-[15px] leading-6 text-[#d8e6f8] transition-colors hover:border-[#4f8fd8] hover:bg-[#10345f]"
                 >
                   <span className="flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                     메뉴 검색
@@ -137,16 +137,16 @@ export function AdminShell({ children }: { children: ReactNode }) {
               <div className="space-y-1 bg-[#071a33] px-4 pb-3 pt-2 shrink-0">
                 <button
                   onClick={() => setCountryModalOpen(true)}
-                  className="flex w-full items-center gap-2 rounded-lg px-4 py-2 text-left text-[#c7d7ef] transition-colors hover:bg-[#10345f] hover:text-white"
+                  className="flex w-full items-center gap-2 rounded-lg px-4 py-2.5 text-left text-[15px] leading-6 text-[#d8e6f8] transition-colors hover:bg-[#10345f] hover:text-white"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9" />
                   </svg>
                   국가 변경 ({session.selectedCountry.toUpperCase()})
                 </button>
                 <button
                   onClick={logout}
-                  className="w-full rounded-lg px-4 py-2 text-left text-[#ffb3c1] transition-colors hover:bg-[#3a1730] hover:text-white"
+                  className="w-full rounded-lg px-4 py-2.5 text-left text-[15px] leading-6 text-[#ffc2cd] transition-colors hover:bg-[#3a1730] hover:text-white"
                 >
                   로그아웃
                 </button>
