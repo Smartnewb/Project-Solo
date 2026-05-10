@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
 	Alert,
 	Box,
+	Button,
 	Chip,
 	CircularProgress,
 	FormControlLabel,
@@ -64,6 +65,14 @@ function coveragePercent(value: number, total: number): string {
 	return `${Math.round((value / total) * 100)}%`;
 }
 
+function formatDashboardError(error: any): string {
+	const message = error.response?.data?.message || error.message || '데이터를 불러오지 못했습니다.';
+	if (typeof message === 'string' && message.includes('Cannot GET /api/admin/v2/utm/dashboard')) {
+		return '백엔드 배포가 아직 새 UTM 성과 API를 로드하지 않았습니다. 잠시 후 다시 시도하세요.';
+	}
+	return message;
+}
+
 export default function UtmDashboard() {
 	const [datePreset, setDatePreset] = useState<DatePreset>('7일');
 	const [includeExtraMonitored, setIncludeExtraMonitored] = useState(false);
@@ -73,6 +82,7 @@ export default function UtmDashboard() {
 	const [error, setError] = useState<string | null>(null);
 
 	const { startDate, endDate } = useMemo(() => getDateRange(datePreset), [datePreset]);
+	const rangeLabel = `${startDate} ~ ${endDate}`;
 
 	const fetchData = useCallback(async () => {
 		setLoading(true);
@@ -85,7 +95,7 @@ export default function UtmDashboard() {
 			setSurfaces(surfaceData);
 			setReconciliation(reconciliationData);
 		} catch (err: any) {
-			setError(err.response?.data?.message || err.message || '데이터를 불러오지 못했습니다.');
+			setError(formatDashboardError(err));
 		} finally {
 			setLoading(false);
 		}
@@ -106,10 +116,44 @@ export default function UtmDashboard() {
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
 			{error && (
-				<Alert severity="error" onClose={() => setError(null)}>
+				<Alert
+					severity="error"
+					onClose={() => setError(null)}
+					action={
+						<Button color="inherit" size="small" onClick={fetchData}>
+							다시 불러오기
+						</Button>
+					}
+				>
 					{error}
 				</Alert>
 			)}
+
+			<Paper variant="outlined" sx={{ p: 3 }}>
+				<Box
+					sx={{
+						display: 'flex',
+						justifyContent: 'space-between',
+						gap: 2,
+						flexWrap: 'wrap',
+						alignItems: 'flex-start',
+					}}
+				>
+					<Box>
+						<Typography variant="h6" fontWeight={700}>
+							Meta 오프라인 리드 성과 대시보드
+						</Typography>
+						<Typography variant="body2" color="textSecondary" sx={{ mt: 0.75 }}>
+							{rangeLabel} 기준으로 Meta 집행 지표, 웹 UTM 트래픽, 앱 가입 cohort를 따로 봅니다.
+						</Typography>
+					</Box>
+					<Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+						<Chip size="small" color="primary" label="core monitored 기본" />
+						<Chip size="small" variant="outlined" label="festival-region 별도" />
+						<Chip size="small" variant="outlined" label="signup row reconciliation" />
+					</Box>
+				</Box>
+			</Paper>
 
 			<Paper variant="outlined" sx={{ p: 2 }}>
 				<Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -139,11 +183,41 @@ export default function UtmDashboard() {
 					<Typography variant="caption" color="textSecondary">
 						기본 CAC/signup은 core monitored UTM만 사용합니다.
 					</Typography>
+					{loading && <CircularProgress size={18} />}
 				</Box>
 			</Paper>
 
 			{surfaces && (
 				<>
+					<Box
+						sx={{
+							display: 'grid',
+							gridTemplateColumns: { xs: '1fr 1fr', md: 'repeat(4, 1fr)' },
+							gap: 2,
+						}}
+					>
+						<HeadlineStat
+							label="Core signups"
+							value={formatNumber(surfaces.appSignupCohort.coreSignups)}
+							helper="headline CAC/signup 기본 분모"
+						/>
+						<HeadlineStat
+							label="DB signups"
+							value={formatNumber(surfaces.appSignupCohort.dbSignups)}
+							helper={includeExtraMonitored ? 'extra 포함' : 'extra 제외'}
+						/>
+						<HeadlineStat
+							label="Revenue"
+							value={formatCurrency(surfaces.appSignupCohort.revenue)}
+							helper={`${formatNumber(surfaces.appSignupCohort.payments)} payments`}
+						/>
+						<HeadlineStat
+							label="Payment event coverage"
+							value={`${surfaces.appSignupCohort.coverage.paymentEventId}%`}
+							helper="신규 결제 event_id 수집률"
+						/>
+					</Box>
+
 					<Box
 						sx={{
 							display: 'grid',
@@ -210,6 +284,22 @@ export default function UtmDashboard() {
 
 			{reconciliation && <ReconciliationSection data={reconciliation} />}
 		</Box>
+	);
+}
+
+function HeadlineStat({ label, value, helper }: { label: string; value: string; helper: string }) {
+	return (
+		<Paper variant="outlined" sx={{ p: 2 }}>
+			<Typography variant="caption" color="textSecondary">
+				{label}
+			</Typography>
+			<Typography variant="h5" fontWeight={800} sx={{ mt: 0.5 }}>
+				{value}
+			</Typography>
+			<Typography variant="caption" color="textSecondary">
+				{helper}
+			</Typography>
+		</Paper>
 	);
 }
 

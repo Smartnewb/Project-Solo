@@ -107,7 +107,14 @@ export const NAV_CATEGORIES: NavCategory[] = [
       { href: '/admin/content', label: '운영 콘텐츠 관리' },
       { href: '/admin/seo', label: 'SEO 상태' },
       { href: '/admin/banners', label: '배너 관리' },
-      { href: '/admin/utm-management', label: 'UTM 추적' },
+      {
+        id: 'utm-management',
+        label: 'UTM 추적 관리',
+        children: [
+          { href: '/admin/utm-management', label: '링크 생성/관리' },
+          { href: '/admin/utm-management/dashboard', label: '성과 대시보드' },
+        ],
+      },
     ],
   },
   {
