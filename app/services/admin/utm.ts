@@ -163,6 +163,95 @@ export interface UtmAttributionHealth {
 	};
 }
 
+export interface UtmDashboardSurfaces {
+	metaDeliveryActions: {
+		spend: number | null;
+		impressions: number | null;
+		linkClicks: number | null;
+		metaRegistrations: number;
+		metaPurchases: number;
+		source: string;
+		status: string;
+		countsByStatus: Record<string, number>;
+		note: string;
+	};
+	webUtmTraffic: {
+		total: number;
+		redirect: number;
+		pageVisit: number;
+		setup: number;
+		internal: number;
+		bot: number;
+		external: number;
+		repeat: number;
+		uniqueTouch: number;
+		monitoredCore: number;
+		extraMonitored: number;
+	};
+	appSignupCohort: {
+		dbSignups: number;
+		approved: number;
+		purchasers: number;
+		payments: number;
+		revenue: number;
+		coreSignups: number;
+		extraSignups: number;
+		coverage: {
+			attributionId: number;
+			paymentEventId: number;
+		};
+		includeExtraMonitored: boolean;
+	};
+}
+
+export interface UtmReconciliationRow {
+	id: string;
+	userId: string;
+	attributionId: string | null;
+	touchId: string | null;
+	utmLinkId: string | null;
+	sessionId: string | null;
+	signupEventId: string | null;
+	paymentEventId: string | null;
+	fbclid: string | null;
+	fbc: string | null;
+	fbp: string | null;
+	osName: string;
+	appBundleId: string | null;
+	appVersion: string;
+	platform: string;
+	preFixPostFix: string;
+	utmSource: string | null;
+	utmCampaign: string | null;
+	userStatus: string | null;
+	hasPayment: boolean;
+	amount: number;
+	currency: string | null;
+	metaCapi: {
+		status: string;
+		eventsReceived: number;
+		error: string | null;
+	};
+	createdAt: string;
+}
+
+export interface UtmReconciliationResponse {
+	rows: UtmReconciliationRow[];
+	breakdown: {
+		platform: Array<{ key: string; count: number }>;
+		appVersion: Array<{ key: string; count: number }>;
+		preFixPostFix: Array<{ key: string; count: number }>;
+	};
+	coverage: {
+		total: number;
+		withAttributionId: number;
+		withSignupEventId: number;
+		withPayment: number;
+		withPaymentEventId: number;
+		withMetaCapiEvent: number;
+	};
+}
+
 type UtmLinkQuery = {
 	page?: number;
 	search?: string;
@@ -184,6 +273,12 @@ type ConversionExportQuery = {
 	platform?: string;
 	conversionType?: string;
 	status?: string;
+};
+
+type SurfacesQuery = {
+	startDate: string;
+	endDate: string;
+	includeExtraMonitored?: boolean;
 };
 
 type CreateUtmLinkInput = {
@@ -261,6 +356,20 @@ export const utm = {
 
 	getAttributionHealth: async (startDate: string, endDate: string) => {
 		const result = await adminGet<{ data: UtmAttributionHealth }>('/admin/v2/utm/dashboard/attribution-health', { startDate, endDate });
+		return result.data;
+	},
+
+	getSurfaces: async (params: SurfacesQuery) => {
+		const result = await adminGet<{ data: UtmDashboardSurfaces }>('/admin/v2/utm/dashboard/surfaces', {
+			startDate: params.startDate,
+			endDate: params.endDate,
+			includeExtraMonitored: params.includeExtraMonitored ? 'true' : 'false',
+		});
+		return result.data;
+	},
+
+	getReconciliation: async (startDate: string, endDate: string) => {
+		const result = await adminGet<{ data: UtmReconciliationResponse }>('/admin/v2/utm/dashboard/reconciliation', { startDate, endDate });
 		return result.data;
 	},
 
