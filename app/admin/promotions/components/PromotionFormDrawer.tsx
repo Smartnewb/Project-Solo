@@ -59,6 +59,8 @@ const DEFAULT_FORM = {
   isActive: true,
 };
 
+const IAP_72H_OFFER_SKUS = new Set(['gem_sale_10', 'gem_25', 'gem_50']);
+
 function formatProductLabel(p: AdminGemProduct): string {
   const sku = p.appleSku ? ` · ${p.appleSku}` : '';
   const display = p.applePrice?.displayPrice ?? `${p.price.toLocaleString()} ${p.currency}`;
@@ -164,6 +166,7 @@ export function PromotionFormDrawer({
   const sale = form.saleGemProductId
     ? productMap.get(form.saleGemProductId)
     : undefined;
+  const isIap72hOfferAsset = Boolean(sale?.appleSku && IAP_72H_OFFER_SKUS.has(sale.appleSku));
 
   const originPrice = origin?.applePrice?.price ?? origin?.price ?? 0;
   const salePrice = sale?.applePrice?.price ?? sale?.price ?? 0;
@@ -296,6 +299,10 @@ export function PromotionFormDrawer({
           <Typography variant="subtitle2" color="text.secondary">
             구슬 SKU 페어
           </Typography>
+          <Typography variant="caption" color="text.secondary">
+            할인 상품의 Apple SKU가 gem_sale_10, gem_25, gem_50이면 앱 72시간 오퍼 카드의
+            이미지/문구/CTA 에셋으로도 사용됩니다.
+          </Typography>
 
           {productsError && (
             <Typography variant="caption" color="error">
@@ -348,6 +355,12 @@ export function PromotionFormDrawer({
               <FormHelperText>{errors.saleGemProductId}</FormHelperText>
             )}
           </FormControl>
+
+          {isIap72hOfferAsset && (
+            <Typography variant="caption" color="secondary">
+              이 프로모션은 {sale?.appleSku} 72시간 오퍼 에셋으로 연결됩니다.
+            </Typography>
+          )}
 
           <Box
             sx={{

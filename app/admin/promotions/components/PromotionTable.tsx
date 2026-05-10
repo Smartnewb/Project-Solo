@@ -18,6 +18,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import type { Promotion } from '@/types/admin';
 
+const IAP_72H_OFFER_SKUS = new Set(['gem_sale_10', 'gem_25', 'gem_50']);
+
 interface PromotionTableProps {
   promotions: Promotion[];
   onEdit: (p: Promotion) => void;
@@ -79,7 +81,15 @@ export function PromotionTable({
                       {p.badge && (
                         <Chip label={p.badge} size="small" color="error" />
                       )}
+                      {p.targetAppleSku && IAP_72H_OFFER_SKUS.has(p.targetAppleSku) && (
+                        <Chip label="72H 오퍼 에셋" size="small" color="secondary" />
+                      )}
                     </Box>
+                    {p.targetAppleSku && (
+                      <Typography variant="caption" color="text.secondary">
+                        {p.targetAppleSku}
+                      </Typography>
+                    )}
                   </TableCell>
                   <TableCell>{p.discountRate}%</TableCell>
                   <TableCell>
