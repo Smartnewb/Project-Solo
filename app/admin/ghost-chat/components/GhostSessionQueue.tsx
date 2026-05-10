@@ -108,16 +108,23 @@ function compactDateTime(dateString: string | null) {
 	}).format(new Date(dateString));
 }
 
+function timestampOf(dateString: string | null | undefined) {
+	if (!dateString) return 0;
+	const time = new Date(dateString).getTime();
+	return Number.isFinite(time) ? time : 0;
+}
+
+function getLatestChatActivityTime(session: GhostChatSession) {
+	return Math.max(
+		timestampOf(session.lastUserMessageAt),
+		timestampOf(session.lastAdminMessageAt),
+		timestampOf(session.updatedAt),
+		timestampOf(session.createdAt),
+	);
+}
+
 function sortForQueue(a: GhostChatSession, b: GhostChatSession) {
-	if (a.state === 'PENDING' && b.state === 'PENDING') {
-		return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-	}
-	if (a.state === 'ACTIVE' && b.state === 'ACTIVE') {
-		const aTime = new Date(a.lastUserMessageAt ?? a.updatedAt).getTime();
-		const bTime = new Date(b.lastUserMessageAt ?? b.updatedAt).getTime();
-		return bTime - aTime;
-	}
-	return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+	return getLatestChatActivityTime(b) - getLatestChatActivityTime(a);
 }
 
 function senderLabel(senderType: GhostChatTimelineMessage['senderType']) {
@@ -249,6 +256,13 @@ function GhostSessionCard({
 	const responseChip = replyNeeded
 		? { label: '응답 필요', color: 'error' as const }
 		: { label: session.state === 'CLOSED' ? '종료됨' : '흐름 안정', color: 'default' as const };
+	const cardBorderColor = selected
+		? 'primary.main'
+		: replyNeeded
+			? 'error.main'
+			: isNew
+				? 'warning.main'
+				: 'divider';
 	const displayName = targetProfile?.name ?? '상대 프로필';
 	const subtitle = targetProfile?.subtitle ?? `상대 ${shortId(session.targetUserId)}`;
 	const targetMeta = targetTypeMeta[getTargetUserType(session)];
@@ -265,15 +279,45 @@ function GhostSessionCard({
 				flexDirection: 'column',
 				cursor: 'pointer',
 				border: selected ? '2px solid' : '1px solid',
-				borderColor: selected ? 'primary.main' : isNew ? 'warning.main' : 'divider',
+				borderColor: cardBorderColor,
 				borderTop: '4px solid',
 				borderTopColor: replyNeeded ? 'error.main' : stateAccentColors[session.state],
 				borderRadius: 1,
-				bgcolor: selected ? 'action.selected' : isNew ? 'warning.50' : 'background.paper',
+				bgcolor: selected
+					? 'action.selected'
+					: replyNeeded
+						? 'rgba(211, 47, 47, 0.06)'
+						: isNew
+							? 'warning.50'
+							: 'background.paper',
+				boxShadow: replyNeeded
+					? '0 0 0 1px rgba(211, 47, 47, 0.22), 0 8px 20px rgba(211, 47, 47, 0.14)'
+					: undefined,
 				transition: 'border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease',
-				'&:hover': { bgcolor: selected ? undefined : 'action.hover' },
+				'&:hover': {
+					bgcolor: selected ? undefined : replyNeeded ? 'rgba(211, 47, 47, 0.10)' : 'action.hover',
+				},
 			}}
 		>
+			{replyNeeded && (
+				<Box
+					sx={{
+						mb: 1,
+						px: 1,
+						py: 0.65,
+						borderRadius: 1,
+						bgcolor: 'error.main',
+						color: 'error.contrastText',
+						fontSize: '0.75rem',
+						fontWeight: 900,
+						lineHeight: 1.2,
+						letterSpacing: 0,
+						boxShadow: '0 4px 10px rgba(211, 47, 47, 0.22)',
+					}}
+				>
+					답장 필요 · 최근 유저 메시지 우선 처리
+				</Box>
+			)}
 			<Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.25, mb: 1 }}>
 				<Avatar
 					src={targetProfile?.photoUrl ?? undefined}

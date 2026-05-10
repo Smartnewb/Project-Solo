@@ -38,10 +38,23 @@ const emptyCounts: GhostChatStatusCounts = {
 
 const devMocksEnabled = process.env.NODE_ENV === 'development';
 
-const sortSessions = (sessions: GhostChatSession[]) =>
-	[...sessions].sort(
-		(a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+function timestampOf(dateString: string | null | undefined) {
+	if (!dateString) return 0;
+	const time = new Date(dateString).getTime();
+	return Number.isFinite(time) ? time : 0;
+}
+
+function getLatestChatActivityTime(session: GhostChatSession) {
+	return Math.max(
+		timestampOf(session.lastUserMessageAt),
+		timestampOf(session.lastAdminMessageAt),
+		timestampOf(session.updatedAt),
+		timestampOf(session.createdAt),
 	);
+}
+
+const sortSessions = (sessions: GhostChatSession[]) =>
+	[...sessions].sort((a, b) => getLatestChatActivityTime(b) - getLatestChatActivityTime(a));
 
 const countSessions = (sessions: GhostChatSession[]): GhostChatStatusCounts =>
 	sessions.reduce(
