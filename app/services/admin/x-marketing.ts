@@ -106,15 +106,21 @@ export const XMarketingAdminService = {
 	async getDashboard() {
 		return unwrap<XMarketingDashboard>(await adminGet(`${BASE}/dashboard`));
 	},
-	async collect(body: { query?: string; priority?: number } = {}) {
+	async collect(
+		body: { query?: string; priority?: number; limit?: number } = {},
+	) {
 		return unwrap(await adminPost(`${BASE}/collect`, body));
 	},
-	async getCollectedPosts(params?: Record<string, string | number | undefined>) {
+	async getCollectedPosts(
+		params?: Record<string, string | number | undefined>,
+	) {
 		return unwrap<XMarketingListResponse<XMarketingCollectedPost>>(
 			await adminGet(`${BASE}/collected-posts`, params),
 		);
 	},
-	async getReplyCandidates(params?: Record<string, string | number | undefined>) {
+	async getReplyCandidates(
+		params?: Record<string, string | number | undefined>,
+	) {
 		return unwrap<XMarketingListResponse<XMarketingReplyCandidate>>(
 			await adminGet(`${BASE}/reply-candidates`, params),
 		);
@@ -138,24 +144,47 @@ export const XMarketingAdminService = {
 		return unwrap<XMarketingRateLimit[]>(await adminGet(`${BASE}/rate-limits`));
 	},
 	async generateReplyCandidate(collectedPostId: string) {
-		return unwrap(await adminPost(`${BASE}/collected-posts/${collectedPostId}/reply-candidates`, {}));
+		return unwrap(
+			await adminPost(
+				`${BASE}/collected-posts/${collectedPostId}/reply-candidates`,
+				{},
+			),
+		);
 	},
 	async approveReplyCandidate(candidateId: string) {
-		return unwrap(await adminPatch(`${BASE}/reply-candidates/${candidateId}/approve`, {}));
+		return unwrap(
+			await adminPatch(`${BASE}/reply-candidates/${candidateId}/approve`, {}),
+		);
 	},
 	async rejectReplyCandidate(candidateId: string, reason?: string) {
-		return unwrap(await adminPatch(`${BASE}/reply-candidates/${candidateId}/reject`, { reason }));
+		return unwrap(
+			await adminPatch(`${BASE}/reply-candidates/${candidateId}/reject`, {
+				reason,
+			}),
+		);
 	},
-	async injectReplyCandidate(candidateId: string, body: { jaText?: string; koMeaning?: string }) {
-		return unwrap(await adminPatch(`${BASE}/reply-candidates/${candidateId}/inject`, body));
+	async injectReplyCandidate(
+		candidateId: string,
+		body: { jaText?: string; koMeaning?: string },
+	) {
+		return unwrap(
+			await adminPatch(`${BASE}/reply-candidates/${candidateId}/inject`, body),
+		);
 	},
-	async markActionPosted(actionId: string, body: { tweetId?: string; url?: string }) {
-		return unwrap(await adminPost(`${BASE}/actions/${actionId}/mark-posted`, body));
+	async markActionPosted(
+		actionId: string,
+		body: { tweetId?: string; url?: string },
+	) {
+		return unwrap(
+			await adminPost(`${BASE}/actions/${actionId}/mark-posted`, body),
+		);
 	},
 	async getSettings() {
 		return unwrap<Record<string, unknown>>(await adminGet(`${BASE}/settings`));
 	},
 	async updateSettings(settings: Record<string, unknown>) {
-		return unwrap<Record<string, unknown>>(await adminPatch(`${BASE}/settings`, settings));
+		return unwrap<Record<string, unknown>>(
+			await adminPatch(`${BASE}/settings`, settings),
+		);
 	},
 };
