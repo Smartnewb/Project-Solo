@@ -210,6 +210,7 @@ import { promotions } from './promotions';
 import { gemProducts } from './gem-products';
 import { iapCatalog } from './iap-catalog';
 import { campaigns, reviewQueue, metrics, personas, communitySettings, targetPosts } from './community-automation';
+import { XMarketingAdminService } from './x-marketing';
 
 const AdminService = {
 	stats,
@@ -266,6 +267,8 @@ const AdminService = {
 	personas,
 	communitySettings,
 	targetPosts,
+	xMarketing: XMarketingAdminService,
 };
 
 export default AdminService;
+export * from './x-marketing';

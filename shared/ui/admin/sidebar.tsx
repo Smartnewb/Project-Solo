@@ -115,6 +115,18 @@ export const NAV_CATEGORIES: NavCategory[] = [
           { href: '/admin/utm-management/dashboard', label: '성과 대시보드' },
         ],
       },
+      {
+        id: 'x-marketing',
+        label: 'X 마케팅 관리',
+        children: [
+          { href: '/admin/x-marketing/dashboard', label: '대시보드' },
+          { href: '/admin/x-marketing/collected-posts', label: '수집 게시글' },
+          { href: '/admin/x-marketing/reply-candidates', label: '답변 후보' },
+          { href: '/admin/x-marketing/own-posts', label: '독립 게시글' },
+          { href: '/admin/x-marketing/actions', label: '액션 이력' },
+          { href: '/admin/x-marketing/settings', label: '설정' },
+        ],
+      },
     ],
   },
   {
