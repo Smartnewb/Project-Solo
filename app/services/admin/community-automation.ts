@@ -136,6 +136,32 @@ export interface Content {
 	updatedAt: string | null;
 }
 
+export interface ActivityReferenceMeta {
+	id: string;
+	title: string;
+	createdAt: string;
+}
+
+export interface CreateActivityBody {
+	type: 'POST';
+	instruction: string;
+	category: string;
+	regionCluster?: string;
+	ghostAccountId?: string;
+	referenceMode: 'auto' | 'manual';
+	referenceArticleIds?: string[];
+	referenceLimit?: number;
+}
+
+export interface CreateActivityResult {
+	content: Content;
+	references: ActivityReferenceMeta[];
+	meta: {
+		referenceMode: 'auto' | 'manual';
+		referenceCount: number;
+	};
+}
+
 export interface BulkApplyBody {
 	contentIds: string[];
 	action: 'approve' | 'reject' | 'withdraw';
@@ -548,6 +574,15 @@ export const reviewQueue = {
 
 	bulk: async (body: BulkApplyBody): Promise<BulkApplyResult> => {
 		const result = await adminPost<{ data: BulkApplyResult }>(`${BASE}/review-queue/bulk`, body);
+		return result.data;
+	},
+};
+
+// ==================== Activities ====================
+
+export const activities = {
+	create: async (body: CreateActivityBody): Promise<CreateActivityResult> => {
+		const result = await adminPost<{ data: CreateActivityResult }>(`${BASE}/activities`, body);
 		return result.data;
 	},
 };

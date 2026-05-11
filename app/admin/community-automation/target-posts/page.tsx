@@ -36,6 +36,8 @@ import {
 	Typography,
 } from '@mui/material';
 import type {
+	CreateActivityBody,
+	CreateActivityResult,
 	CommunityAutomationCategoryOption,
 	Content,
 	ContentStatus,
@@ -48,8 +50,10 @@ import type {
 import type { GhostCommentBody, GhostLikeBody } from '@/app/services/community';
 import communityService from '@/app/services/community';
 import {
+	activities as activitiesApi,
 	campaigns as campaignsApi,
 	COMMUNITY_AUTOMATION_CATEGORY_OPTIONS,
+	CommunityAutomationCategory,
 	reviewQueue as reviewApi,
 	targetPosts as targetPostsApi,
 } from '@/app/services/admin/community-automation';
@@ -111,6 +115,14 @@ const EXCLUDED_CATEGORY_TOKENS = [
 ];
 
 type ReviewDialogMode = 'reject' | 'inject' | 'withdraw' | 'regenerate' | null;
+
+const DEFAULT_ACTIVITY_FORM: CreateActivityBody = {
+	type: 'POST',
+	instruction: '',
+	category: CommunityAutomationCategory.GENERAL,
+	referenceMode: 'auto',
+	referenceLimit: 3,
+};
 
 function preview(text: string, length = 90) {
 	return text.length > length ? `${text.slice(0, length)}...` : text;
@@ -220,6 +232,10 @@ export default function TargetPostsPage() {
 	const [reviewDialogText, setReviewDialogText] = useState('');
 	const [hotPromotionOpen, setHotPromotionOpen] = useState(false);
 	const [hotPromotionComment, setHotPromotionComment] = useState('');
+	const [activityDialogOpen, setActivityDialogOpen] = useState(false);
+	const [activityForm, setActivityForm] = useState<CreateActivityBody>(DEFAULT_ACTIVITY_FORM);
+	const [manualReferenceInput, setManualReferenceInput] = useState('');
+	const [activityResult, setActivityResult] = useState<CreateActivityResult | null>(null);
 
 	const load = useCallback(async () => {
 		setLoading(true);
@@ -597,6 +613,49 @@ export default function TargetPostsPage() {
 		return result.suggestions;
 	}
 
+	function openActivityDialog() {
+		const defaultCategory =
+			visibleCategories[0]?.id ?? visibleCategories[0]?.value ?? CommunityAutomationCategory.GENERAL;
+		setActivityForm({
+			...DEFAULT_ACTIVITY_FORM,
+			category: defaultCategory,
+			regionCluster: query.regionCluster,
+		});
+		setManualReferenceInput('');
+		setActivityResult(null);
+		setActivityDialogOpen(true);
+	}
+
+	async function createActivity() {
+		if (!activityForm.instruction.trim() || !activityForm.category) return;
+		setActionLoading(true);
+		setError(null);
+		setSuccess(null);
+		try {
+			const referenceArticleIds =
+				activityForm.referenceMode === 'manual'
+					? manualReferenceInput
+							.split(',')
+							.map((id) => id.trim())
+							.filter(Boolean)
+					: undefined;
+			const result = await activitiesApi.create({
+				...activityForm,
+				instruction: activityForm.instruction.trim(),
+				regionCluster: activityForm.regionCluster?.trim() || undefined,
+				ghostAccountId: activityForm.ghostAccountId?.trim() || undefined,
+				referenceArticleIds,
+			});
+			setActivityResult(result);
+			setSuccess('AI 게시글 초안을 검수 대기에 생성했습니다.');
+			await load();
+		} catch (e: unknown) {
+			setError(e instanceof Error ? e.message : 'AI 활동 생성 실패');
+		} finally {
+			setActionLoading(false);
+		}
+	}
+
 	return (
 		<Box>
 			<Paper sx={{ p: 1, mb: 2 }}>
@@ -690,6 +749,14 @@ export default function TargetPostsPage() {
 					</FormControl>
 					<Button variant="outlined" onClick={load} disabled={loading}>
 						새로고침
+					</Button>
+					<Button
+						variant="contained"
+						onClick={openActivityDialog}
+						startIcon={<AutoAwesomeIcon />}
+						sx={{ fontWeight: 900, bgcolor: '#ff385c', boxShadow: 'none' }}
+					>
+						AI 활동 추가
 					</Button>
 				</Stack>
 			</Paper>
@@ -1172,7 +1239,7 @@ export default function TargetPostsPage() {
 									comments={selected.comments}
 									ghostCandidates={selected.ghostCandidates}
 									ghostCandidateCount={selected.ghostCandidateCount}
-									submitLabel="지금 고스트 댓글 달기"
+									submitLabel="지금 AI 댓글 달기"
 									onSubmitGhostComment={createLiveGhostComment}
 									onSubmitGhostLike={createLiveGhostLike}
 									onReload={refreshDetail}
@@ -1492,6 +1559,156 @@ export default function TargetPostsPage() {
 					)}
 				</Box>
 				</Drawer>
+				<Dialog
+					open={activityDialogOpen}
+					onClose={() => !actionLoading && setActivityDialogOpen(false)}
+					maxWidth="sm"
+					fullWidth
+				>
+					<DialogTitle sx={{ fontWeight: 900 }}>AI 활동 추가</DialogTitle>
+					<DialogContent sx={{ pt: '12px !important' }}>
+						<Stack spacing={1.5}>
+							<FormControl size="small" fullWidth>
+								<InputLabel>활동 유형</InputLabel>
+								<Select label="활동 유형" value={activityForm.type}>
+									<MenuItem value="POST">글쓰기</MenuItem>
+								</Select>
+							</FormControl>
+							<TextField
+								label="작성 방향"
+								placeholder="예: 시험기간에 다들 공감할 수 있는 일상 글"
+								value={activityForm.instruction}
+								onChange={(event) =>
+									setActivityForm((prev) => ({ ...prev, instruction: event.target.value }))
+								}
+								multiline
+								minRows={3}
+								fullWidth
+							/>
+							<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+								<FormControl size="small" fullWidth>
+									<InputLabel>카테고리</InputLabel>
+									<Select
+										label="카테고리"
+										value={activityForm.category}
+										onChange={(event) =>
+											setActivityForm((prev) => ({ ...prev, category: event.target.value }))
+										}
+									>
+										{visibleCategories.map((category) => (
+											<MenuItem key={category.id ?? category.value} value={category.id ?? category.value}>
+												{category.label}
+											</MenuItem>
+										))}
+									</Select>
+								</FormControl>
+								<TextField
+									size="small"
+									label="REGION_CLUSTER"
+									value={activityForm.regionCluster ?? ''}
+									onChange={(event) =>
+										setActivityForm((prev) => ({ ...prev, regionCluster: event.target.value }))
+									}
+									fullWidth
+								/>
+							</Stack>
+							<TextField
+								size="small"
+								label="Ghost 계정 ID"
+								placeholder="선택 입력"
+								value={activityForm.ghostAccountId ?? ''}
+								onChange={(event) =>
+									setActivityForm((prev) => ({ ...prev, ghostAccountId: event.target.value }))
+								}
+								fullWidth
+							/>
+							<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+								<FormControl size="small" fullWidth>
+									<InputLabel>참고 방식</InputLabel>
+									<Select
+										label="참고 방식"
+										value={activityForm.referenceMode}
+										onChange={(event) =>
+											setActivityForm((prev) => ({
+												...prev,
+												referenceMode: event.target.value as CreateActivityBody['referenceMode'],
+											}))
+										}
+									>
+										<MenuItem value="auto">기존 게시글 자동 참고</MenuItem>
+										<MenuItem value="manual">게시글 ID 직접 지정</MenuItem>
+									</Select>
+								</FormControl>
+								<FormControl size="small" sx={{ minWidth: 120 }}>
+									<InputLabel>참고 수</InputLabel>
+									<Select
+										label="참고 수"
+										value={activityForm.referenceLimit ?? 3}
+										onChange={(event) =>
+											setActivityForm((prev) => ({ ...prev, referenceLimit: Number(event.target.value) }))
+										}
+									>
+										{[1, 2, 3, 4, 5].map((count) => (
+											<MenuItem key={count} value={count}>
+												{count}개
+											</MenuItem>
+										))}
+									</Select>
+								</FormControl>
+							</Stack>
+							{activityForm.referenceMode === 'manual' && (
+								<TextField
+									label="참고 게시글 ID"
+									placeholder="쉼표로 구분"
+									value={manualReferenceInput}
+									onChange={(event) => setManualReferenceInput(event.target.value)}
+									fullWidth
+								/>
+							)}
+							{activityResult && (
+								<Alert
+									severity="success"
+									action={
+										<Button color="inherit" size="small" href="/admin/community-automation/review-queue">
+											검수 대기로 이동
+										</Button>
+									}
+								>
+									초안이 검수 대기에 생성되었습니다. 참고된 게시글 {activityResult.meta.referenceCount}개
+								</Alert>
+							)}
+							{activityResult?.references.length ? (
+								<Stack spacing={0.8}>
+									<Typography variant="caption" color="text.secondary">
+										참고된 게시글
+									</Typography>
+									{activityResult.references.map((reference) => (
+										<Chip
+											key={reference.id}
+											size="small"
+											label={`${reference.title} · ${formatDate(reference.createdAt)}`}
+											sx={{ justifyContent: 'flex-start', maxWidth: '100%' }}
+										/>
+									))}
+								</Stack>
+							) : null}
+						</Stack>
+					</DialogContent>
+					<DialogActions sx={{ px: 3, pb: 2 }}>
+						<Button disabled={actionLoading} onClick={() => setActivityDialogOpen(false)}>
+							닫기
+						</Button>
+						<Button
+							variant="contained"
+							disabled={actionLoading || !activityForm.instruction.trim() || !activityForm.category}
+							startIcon={actionLoading ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeIcon />}
+							onClick={createActivity}
+							sx={{ fontWeight: 900, bgcolor: '#ff385c' }}
+						>
+							검수 대기에 생성
+						</Button>
+					</DialogActions>
+				</Dialog>
 				<Dialog
 					open={hotPromotionOpen}
 					onClose={() => !actionLoading && setHotPromotionOpen(false)}

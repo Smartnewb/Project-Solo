@@ -137,7 +137,7 @@ export function CommunityPostAppDetailPanel({
 	comments,
 	ghostCandidates = [],
 	ghostCandidateCount,
-	submitLabel = '지금 고스트 댓글 달기',
+	submitLabel = '지금 AI 댓글 달기',
 	onSubmitGhostComment,
 	onSubmitGhostLike,
 	onReload,
@@ -441,7 +441,7 @@ export function CommunityPostAppDetailPanel({
 							onChange={(_, value) => setOperationTab(value)}
 							sx={{ minHeight: 40, mb: 2, borderBottom: '1px solid #E7E9EC' }}
 						>
-							<Tab value="compose" label="댓글 작성" sx={{ minHeight: 40, fontWeight: 700 }} />
+							<Tab value="compose" label="AI 댓글" sx={{ minHeight: 40, fontWeight: 700 }} />
 							<Tab value="like" label="좋아요" sx={{ minHeight: 40, fontWeight: 700 }} />
 							<Tab value="timeline" label="예약 타임라인" sx={{ minHeight: 40, fontWeight: 700 }} />
 						</Tabs>
@@ -451,7 +451,7 @@ export function CommunityPostAppDetailPanel({
 						<>
 					<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} justifyContent="space-between">
 						<Box>
-							<Typography variant="subtitle1" fontWeight={800} color="#191F28">고스트 실시간 댓글</Typography>
+							<Typography variant="subtitle1" fontWeight={800} color="#191F28">AI 댓글 활동</Typography>
 							<Typography variant="caption" color="text.secondary">
 								ACTIVE 후보 {ghostCandidateCount ?? ghostCandidates.length}명
 							</Typography>
@@ -652,7 +652,7 @@ export function CommunityPostAppDetailPanel({
 						<>
 					<Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} justifyContent="space-between">
 						<Box>
-							<Typography variant="subtitle1" fontWeight={800} color="#191F28">고스트 좋아요</Typography>
+							<Typography variant="subtitle1" fontWeight={800} color="#191F28">AI 좋아요 활동</Typography>
 							<Typography variant="caption" color="text.secondary">
 								ACTIVE 후보 {ghostCandidateCount ?? ghostCandidates.length}명
 							</Typography>
