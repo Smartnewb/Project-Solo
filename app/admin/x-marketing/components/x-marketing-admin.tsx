@@ -10,13 +10,17 @@ import {
 	CardContent,
 	Chip,
 	Divider,
+	FormControlLabel,
 	Grid,
+	IconButton,
 	Stack,
+	Switch,
 	Tab,
 	Tabs,
 	TextField,
 	Typography,
 } from '@mui/material';
+import { Plus, Trash2 } from 'lucide-react';
 import {
 	XMarketingAction,
 	XMarketingAdminService,
@@ -33,6 +37,12 @@ type Props = {
 	initialView: View;
 };
 
+type CollectionQueryConfig = {
+	query: string;
+	enabled: boolean;
+	priority: number;
+};
+
 const tabs: { value: View; label: string; href: string }[] = [
 	{ value: 'dashboard', label: '대시보드', href: '/admin/x-marketing/dashboard' },
 	{ value: 'collected-posts', label: '수집 게시글', href: '/admin/x-marketing/collected-posts' },
@@ -40,6 +50,16 @@ const tabs: { value: View; label: string; href: string }[] = [
 	{ value: 'own-posts', label: '독립 게시글', href: '/admin/x-marketing/own-posts' },
 	{ value: 'actions', label: '액션 이력', href: '/admin/x-marketing/actions' },
 	{ value: 'settings', label: '설정', href: '/admin/x-marketing/settings' },
+];
+
+const defaultCollectionQueries: CollectionQueryConfig[] = [
+	{ query: '韓国語 韓国人 友達', enabled: true, priority: 10 },
+	{ query: '韓国 大学生 話してみたい', enabled: true, priority: 20 },
+	{ query: '韓国人 友達 作りたい', enabled: true, priority: 30 },
+	{ query: '韓国語 返信 自然', enabled: true, priority: 40 },
+	{ query: '韓国旅行 韓国人 友達', enabled: true, priority: 50 },
+	{ query: '韓国人 彼氏 遠距離', enabled: false, priority: 60 },
+	{ query: '日韓 遠距離 恋愛', enabled: false, priority: 70 },
 ];
 
 function metricValue(data: XMarketingDashboard | null, camel: keyof XMarketingDashboard, snake: keyof XMarketingDashboard) {
@@ -56,6 +76,27 @@ function postText(post: XMarketingCollectedPost) {
 
 function postKo(post: XMarketingCollectedPost) {
 	return post.text_ko ?? post.textKo ?? '';
+}
+
+function normalizeCollectionQueries(settings: Record<string, unknown>): CollectionQueryConfig[] {
+	const raw = settings.collection_queries ?? settings.collectionQueries;
+	if (!Array.isArray(raw)) return defaultCollectionQueries;
+
+	const queries = raw
+		.map((item): CollectionQueryConfig | null => {
+			if (!item || typeof item !== 'object') return null;
+			const value = item as Partial<CollectionQueryConfig>;
+			if (typeof value.query !== 'string' || value.query.trim().length === 0) return null;
+			return {
+				query: value.query,
+				enabled: value.enabled !== false,
+				priority: Number.isFinite(Number(value.priority)) ? Number(value.priority) : 100,
+			};
+		})
+		.filter((item): item is CollectionQueryConfig => item !== null)
+		.sort((a, b) => a.priority - b.priority);
+
+	return queries.length > 0 ? queries : defaultCollectionQueries;
 }
 
 export default function XMarketingAdmin({ initialView }: Props) {
@@ -221,7 +262,7 @@ export default function XMarketingAdmin({ initialView }: Props) {
 			)}
 			{view === 'own-posts' && <PostsCard posts={ownPosts} />}
 			{view === 'actions' && <ActionsCard actions={actions} />}
-			{view === 'settings' && <SettingsCard settings={settings} rateLimits={rateLimits} />}
+			{view === 'settings' && <SettingsCard settings={settings} rateLimits={rateLimits} onSaved={load} />}
 		</Box>
 	);
 }
@@ -382,22 +423,125 @@ function ActionsCard({ actions }: { actions: XMarketingAction[] }) {
 function SettingsCard({
 	settings,
 	rateLimits,
+	onSaved,
 }: {
 	settings: Record<string, unknown>;
 	rateLimits: XMarketingRateLimit[];
+	onSaved: () => Promise<void>;
 }) {
+	const [collectionQueries, setCollectionQueries] = useState<CollectionQueryConfig[]>(
+		normalizeCollectionQueries(settings),
+	);
+	const [saving, setSaving] = useState(false);
+	const [saveError, setSaveError] = useState<string | null>(null);
+
+	useEffect(() => {
+		setCollectionQueries(normalizeCollectionQueries(settings));
+	}, [settings]);
+
+	const updateQuery = (index: number, next: Partial<CollectionQueryConfig>) => {
+		setCollectionQueries((current) =>
+			current.map((item, itemIndex) => (itemIndex === index ? { ...item, ...next } : item)),
+		);
+	};
+
+	const addQuery = () => {
+		setCollectionQueries((current) => [
+			...current,
+			{ query: '', enabled: true, priority: Math.max(0, ...current.map((item) => item.priority)) + 10 },
+		]);
+	};
+
+	const removeQuery = (index: number) => {
+		setCollectionQueries((current) => current.filter((_, itemIndex) => itemIndex !== index));
+	};
+
+	const saveQueries = async () => {
+		setSaving(true);
+		setSaveError(null);
+		try {
+			const normalized = collectionQueries
+				.map((item) => ({
+					query: item.query.trim(),
+					enabled: item.enabled,
+					priority: Number.isFinite(Number(item.priority)) ? Number(item.priority) : 100,
+				}))
+				.filter((item) => item.query.length > 0)
+				.sort((a, b) => a.priority - b.priority);
+
+			await XMarketingAdminService.updateSettings({ collection_queries: normalized });
+			await onSaved();
+		} catch (err) {
+			setSaveError(getAdminErrorMessage(err, '수집 쿼리 저장에 실패했습니다.'));
+		} finally {
+			setSaving(false);
+		}
+	};
+
 	return (
 		<Grid container spacing={2}>
 			<Grid item xs={12} lg={7}>
 				<Card variant="outlined">
 					<CardContent>
-						<Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>운영 설정</Typography>
+						<Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" gap={1.5} sx={{ mb: 2 }}>
+							<Box>
+								<Typography variant="subtitle1" fontWeight={700}>수집 쿼리</Typography>
+								<Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+									우선순위가 낮은 숫자일수록 먼저 수집합니다.
+								</Typography>
+							</Box>
+							<Stack direction="row" gap={1}>
+								<Button variant="outlined" startIcon={<Plus size={16} />} onClick={addQuery}>
+									쿼리 추가
+								</Button>
+								<Button variant="contained" onClick={() => void saveQueries()} disabled={saving}>
+									저장
+								</Button>
+							</Stack>
+						</Stack>
 						<Alert severity="warning" sx={{ mb: 2 }}>
 							자동 답글/자동 좋아요는 kill switch와 2차 확인 없이 켜지지 않아야 합니다.
 						</Alert>
-						<Box component="pre" sx={{ m: 0, p: 2, bgcolor: 'grey.50', overflow: 'auto', fontSize: 12 }}>
-							{JSON.stringify(settings, null, 2)}
-						</Box>
+						{saveError && <Alert severity="error" sx={{ mb: 2 }}>{saveError}</Alert>}
+						<Stack divider={<Divider flexItem />} spacing={1.5}>
+							{collectionQueries.map((item, index) => (
+								<Stack
+									key={`${item.query}-${index}`}
+									direction={{ xs: 'column', md: 'row' }}
+									alignItems={{ xs: 'stretch', md: 'center' }}
+									gap={1.5}
+								>
+									<FormControlLabel
+										control={
+											<Switch
+												checked={item.enabled}
+												onChange={(event) => updateQuery(index, { enabled: event.target.checked })}
+											/>
+										}
+										label={item.enabled ? 'ON' : 'OFF'}
+										sx={{ minWidth: 92 }}
+									/>
+									<TextField
+										size="small"
+										label="수집 쿼리"
+										value={item.query}
+										onChange={(event) => updateQuery(index, { query: event.target.value })}
+										fullWidth
+									/>
+									<TextField
+										size="small"
+										label="우선순위"
+										type="number"
+										value={item.priority}
+										onChange={(event) => updateQuery(index, { priority: Number(event.target.value) })}
+										sx={{ width: { xs: '100%', md: 120 } }}
+									/>
+									<IconButton aria-label="쿼리 삭제" onClick={() => removeQuery(index)} color="error">
+										<Trash2 size={18} />
+									</IconButton>
+								</Stack>
+							))}
+						</Stack>
 					</CardContent>
 				</Card>
 			</Grid>
