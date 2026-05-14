@@ -197,7 +197,7 @@ function ChatPanel({
 	}
 
 	return (
-		<Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+		<Box sx={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
 			<Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
 				<Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 0 }}>
 					{onBack && (
@@ -229,7 +229,7 @@ function ChatPanel({
 					))}
 				</Stack>
 			</Box>
-			<Box sx={{ flex: 1, overflow: 'auto', bgcolor: 'grey.50', p: 2 }}>
+			<Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', bgcolor: 'grey.50', p: 2 }}>
 				{loading ? (
 					<Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 						<CircularProgress size={26} />
@@ -320,7 +320,7 @@ export default function SomemateChatPage() {
 	};
 
 	const listPane = (
-		<Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+		<Box sx={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
 			<Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
 				<Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
 					<Box>
@@ -360,7 +360,7 @@ export default function SomemateChatPage() {
 					</Button>
 				</Box>
 			</Box>
-			<Box sx={{ flex: 1, overflow: 'auto', p: 1.5 }}>
+			<Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', p: 1.5 }}>
 				{relationshipsQuery.isLoading ? (
 					<Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 						<CircularProgress size={26} />
@@ -398,7 +398,7 @@ export default function SomemateChatPage() {
 	);
 
 	return (
-		<Box sx={{ height: 'calc(100vh - 72px)', p: { xs: 0, md: 2 }, bgcolor: 'grey.50' }}>
+		<Box sx={{ height: 'calc(100vh - 72px)', minHeight: 0, p: { xs: 0, md: 2 }, bgcolor: 'grey.50' }}>
 			<Paper
 				elevation={0}
 				sx={{
@@ -409,11 +409,12 @@ export default function SomemateChatPage() {
 					overflow: 'hidden',
 					display: 'grid',
 					gridTemplateColumns: isMobile ? '1fr' : '420px minmax(0, 1fr)',
+					minHeight: 0,
 				}}
 			>
 				{(!isMobile || mobileMode === 'list') && listPane}
 				{(!isMobile || mobileMode === 'chat') && (
-					<Box sx={{ minWidth: 0, borderLeft: isMobile ? 0 : 1, borderColor: 'divider' }}>
+					<Box sx={{ minWidth: 0, minHeight: 0, borderLeft: isMobile ? 0 : 1, borderColor: 'divider' }}>
 						{chatPane}
 					</Box>
 				)}
