@@ -68,6 +68,8 @@ export interface SupportSessionUser {
   nickname?: string;
   phoneNumber?: string;
   universityName?: string;
+  age?: number;
+  gender?: 'MALE' | 'FEMALE';
 }
 
 export interface SupportSessionDetail {

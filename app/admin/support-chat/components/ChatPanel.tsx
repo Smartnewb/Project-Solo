@@ -15,6 +15,11 @@ import {
   Divider,
   Snackbar,
   IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText,
 } from '@mui/material';
 import {
   Send as SendIcon,
@@ -27,8 +32,10 @@ import {
   WifiOff as WifiOffIcon,
   Forum as ForumIcon,
   ArrowBack as ArrowBackIcon,
+  Diamond as DiamondIcon,
 } from '@mui/icons-material';
 import supportChatService from '@/app/services/support-chat';
+import AdminService from '@/app/services/admin';
 import { useSupportChatSocket } from '../hooks/useSupportChatSocket';
 import type { SupportSessionDetail, SupportMessage, SupportSenderType } from '@/app/types/support-chat';
 import { safeToLocaleString } from '@/app/utils/formatters';
@@ -55,13 +62,22 @@ const SENDER_CONFIG: Record<SupportSenderType, { icon: React.ReactNode; label: s
   admin: { icon: <SupportAgentIcon fontSize="small" />, label: '어드민', bgColor: '#e8f5e9' },
 };
 
+const DEFAULT_GEM_GRANT_MESSAGE = '고객지원 보상 구슬 지급';
+
 export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatPanelProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [session, setSession] = useState<SupportSessionDetail | null>(null);
+  const [userDetailPhoneNumber, setUserDetailPhoneNumber] = useState<string | null>(null);
+  const [gemsInfo, setGemsInfo] = useState<any>(null);
+  const [gemsLoading, setGemsLoading] = useState(false);
   const [messageInput, setMessageInput] = useState('');
   const [sending, setSending] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [gemGrantDialogOpen, setGemGrantDialogOpen] = useState(false);
+  const [gemGrantAmount, setGemGrantAmount] = useState(10);
+  const [gemGrantMessage, setGemGrantMessage] = useState(DEFAULT_GEM_GRANT_MESSAGE);
+  const [gemGrantLoading, setGemGrantLoading] = useState(false);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -96,6 +112,27 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const fetchUserAdminInfo = useCallback(async (userId: string) => {
+    setGemsLoading(true);
+    setUserDetailPhoneNumber(null);
+    setGemsInfo(null);
+
+    const [userDetailResult, gemsResult] = await Promise.allSettled([
+      AdminService.userAppearance.getUserDetails(userId),
+      AdminService.userAppearance.getUserGems(userId),
+    ]);
+
+    if (userDetailResult.status === 'fulfilled') {
+      setUserDetailPhoneNumber(userDetailResult.value?.phoneNumber || null);
+    }
+
+    if (gemsResult.status === 'fulfilled') {
+      setGemsInfo(gemsResult.value);
+    }
+
+    setGemsLoading(false);
+  }, []);
+
   const fetchSessionDetail = useCallback(async () => {
     if (!sessionId) return;
     setLoading(true);
@@ -103,12 +140,14 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
     try {
       const detail = await supportChatService.getSessionDetail(sessionId);
       setSession(detail);
+      await fetchUserAdminInfo(detail.user.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : '세션 정보를 불러오는데 실패했습니다.');
+      setGemsLoading(false);
     } finally {
       setLoading(false);
     }
-  }, [sessionId]);
+  }, [sessionId, fetchUserAdminInfo]);
 
   useEffect(() => {
     if (sessionId) {
@@ -160,6 +199,67 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
       });
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleOpenGemGrantDialog = () => {
+    setGemGrantAmount(10);
+    setGemGrantMessage(DEFAULT_GEM_GRANT_MESSAGE);
+    setGemGrantDialogOpen(true);
+  };
+
+  const handleGrantGems = async () => {
+    if (!session) return;
+
+    const phoneNumber = userDetailPhoneNumber || session.user.phoneNumber;
+    const normalizedMessage = gemGrantMessage.trim();
+
+    if (!phoneNumber || phoneNumber.includes('*')) {
+      setSnackbar({
+        open: true,
+        message: '원본 연락처를 확인할 수 없어 구슬을 지급할 수 없습니다.',
+        severity: 'error',
+      });
+      return;
+    }
+
+    if (!Number.isInteger(gemGrantAmount) || gemGrantAmount < 1) {
+      setSnackbar({ open: true, message: '구슬 개수는 1개 이상이어야 합니다.', severity: 'error' });
+      return;
+    }
+
+    if (!normalizedMessage) {
+      setSnackbar({ open: true, message: '푸시 알림 메시지를 입력해주세요.', severity: 'error' });
+      return;
+    }
+
+    setGemGrantLoading(true);
+    try {
+      const result = await AdminService.gems.bulkGrant({
+        phoneNumbers: [phoneNumber],
+        gemAmount: gemGrantAmount,
+        message: normalizedMessage,
+      });
+
+      const pushResult = result?.pushNotificationResult;
+      const pushSummary = pushResult
+        ? ` 푸시 성공 ${pushResult.pushSuccessCount}건, 실패 ${pushResult.pushFailureCount}건.`
+        : '';
+      setSnackbar({
+        open: true,
+        message: `구슬 ${gemGrantAmount}개 지급이 완료되었습니다.${pushSummary}`,
+        severity: (result?.failedCount ?? 0) > 0 ? 'error' : 'success',
+      });
+      setGemGrantDialogOpen(false);
+      await fetchUserAdminInfo(session.user.id);
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: err instanceof Error ? err.message : '구슬 지급 중 오류가 발생했습니다.',
+        severity: 'error',
+      });
+    } finally {
+      setGemGrantLoading(false);
     }
   };
 
@@ -316,6 +416,8 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
   const canTakeover = session?.status === 'waiting_admin' || session?.status === 'bot_handling';
   const canResolve = session?.status === 'admin_handling';
   const canSendMessage = session?.status === 'admin_handling';
+  const displayPhoneNumber = userDetailPhoneNumber || session?.user.phoneNumber;
+  const canGrantGems = !!displayPhoneNumber && !displayPhoneNumber.includes('*');
 
   return (
     <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100%', minWidth: 0 }}>
@@ -375,6 +477,15 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
                 해결 완료
               </Button>
             )}
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={handleOpenGemGrantDialog}
+              disabled={gemsLoading || !canGrantGems}
+              startIcon={<DiamondIcon />}
+            >
+              구슬 지급
+            </Button>
           </Box>
           {/* User info row */}
           <Box sx={{ display: 'flex', gap: 3, mt: 1, flexWrap: 'wrap' }}>
@@ -384,12 +495,18 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
                 <Typography variant="body2">{session.user.universityName}</Typography>
               </Box>
             )}
-            {session.user.phoneNumber && (
+            {displayPhoneNumber && (
               <Box>
                 <Typography variant="caption" color="text.secondary">연락처</Typography>
-                <Typography variant="body2">{session.user.phoneNumber}</Typography>
+                <Typography variant="body2">{displayPhoneNumber}</Typography>
               </Box>
             )}
+            <Box>
+              <Typography variant="caption" color="text.secondary">구슬</Typography>
+              <Typography variant="body2">
+                {gemsLoading ? '조회 중...' : `${gemsInfo?.gemBalance ?? 0}개`}
+              </Typography>
+            </Box>
             <Box>
               <Typography variant="caption" color="text.secondary">생성일</Typography>
               <Typography variant="body2">{formatDate(session.createdAt)}</Typography>
@@ -472,6 +589,49 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
           </Box>
         </>
       )}
+
+      <Dialog open={gemGrantDialogOpen} onClose={() => !gemGrantLoading && setGemGrantDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>구슬 지급</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            {session?.user.nickname || session?.user.id.substring(0, 8)}님에게 구슬을 지급하고 푸시 알림을 발송합니다.
+          </DialogContentText>
+          <TextField
+            fullWidth
+            type="number"
+            label="지급할 구슬 개수"
+            value={gemGrantAmount}
+            onChange={(e) => setGemGrantAmount(Math.max(1, Number.parseInt(e.target.value, 10) || 1))}
+            inputProps={{ min: 1 }}
+            sx={{ mb: 2 }}
+            disabled={gemGrantLoading}
+          />
+          <TextField
+            fullWidth
+            multiline
+            rows={3}
+            label="푸시 알림 메시지"
+            value={gemGrantMessage}
+            onChange={(e) => setGemGrantMessage(e.target.value)}
+            inputProps={{ maxLength: 200 }}
+            helperText={`${gemGrantMessage.length}/200자 | 지급 사유와 푸시 알림 메시지로 사용됩니다.`}
+            disabled={gemGrantLoading}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setGemGrantDialogOpen(false)} disabled={gemGrantLoading}>
+            취소
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleGrantGems}
+            disabled={gemGrantLoading || !canGrantGems || !gemGrantMessage.trim() || gemGrantAmount < 1}
+            startIcon={gemGrantLoading ? <CircularProgress size={16} /> : <DiamondIcon />}
+          >
+            구슬 지급 및 알림 발송
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar
         open={snackbar.open}
