@@ -86,7 +86,11 @@ function getGhostChatErrorMessage(err: unknown, fallback: string): string {
 	return err instanceof Error ? err.message : fallback;
 }
 
-export function useGhostChatSessions() {
+interface UseGhostChatSessionsOptions {
+	ghostAccountId?: string | null;
+}
+
+export function useGhostChatSessions(options: UseGhostChatSessionsOptions = {}) {
 	const [sessions, setSessions] = useState<GhostChatSession[]>([]);
 	const [selectedSession, setSelectedSession] = useState<GhostChatSession | null>(null);
 	const [selectedContext, setSelectedContext] = useState<GhostChatSessionContext | null>(null);
@@ -113,12 +117,16 @@ export function useGhostChatSessions() {
 		sessionsRef.current = sessions;
 	}, [sessions]);
 
-	const refreshSessions = useCallback(async (options: { preserveError?: boolean } = {}) => {
+	const refreshSessions = useCallback(async (refreshOptions: { preserveError?: boolean } = {}) => {
 		try {
-			if (!options.preserveError) {
+			if (!refreshOptions.preserveError) {
 				setError(null);
 			}
-			const nextSessions = await ghostChat.listSessions();
+			const nextSessions = await ghostChat.listSessions(
+				options.ghostAccountId
+					? { ghostAccountId: options.ghostAccountId, stateScope: 'all' }
+					: undefined,
+			);
 			if (devMocksEnabled && nextSessions.length === 0) {
 				setUsingDevMocks(true);
 				setSessions(sortSessions(DEV_GHOST_CHAT_SESSIONS));
@@ -137,7 +145,7 @@ export function useGhostChatSessions() {
 		} finally {
 			setLoading(false);
 		}
-	}, []);
+	}, [options.ghostAccountId]);
 
 	const refreshSelectedSession = useCallback(async (id: string) => {
 		if (devMocksEnabled && usingDevMocks) {

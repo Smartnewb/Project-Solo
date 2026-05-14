@@ -11,6 +11,8 @@ const BASE = '/admin/ghost-chat';
 
 export interface ListGhostChatSessionsQuery {
 	targetType?: 'all' | 'real_female' | 'ghost';
+	ghostAccountId?: string;
+	stateScope?: 'open' | 'all';
 }
 
 export const ghostChat = {

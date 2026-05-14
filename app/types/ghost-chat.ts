@@ -25,6 +25,9 @@ export interface GhostChatSession {
 	targetUserIsGhost?: boolean;
 	targetUserIsFaker?: boolean | null;
 	targetUserGender?: string | null;
+	targetUserName?: string | null;
+	targetUserAge?: number | null;
+	targetUserPrimaryPhotoUrl?: string | null;
 }
 
 export interface GhostChatOkResponse {

@@ -57,6 +57,7 @@ function GhostChatV2Content() {
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const sessionFromUrl = searchParams?.get('session') ?? null;
+	const ghostAccountIdFromUrl = searchParams?.get('ghostAccountId') ?? null;
 
 	const [selectedSessionId, setSelectedSessionId] = useState<string | null>(sessionFromUrl);
 	const [mobileView, setMobileView] = useState<GhostMobileView>(() =>
@@ -87,7 +88,7 @@ function GhostChatV2Content() {
 		clearSelectedSession,
 		events,
 		usingDevMocks,
-	} = useGhostChatSessions();
+	} = useGhostChatSessions({ ghostAccountId: ghostAccountIdFromUrl });
 
 	useEffect(() => {
 		if (!sessionFromUrl) {
@@ -100,14 +101,19 @@ function GhostChatV2Content() {
 			setSelectedSessionId(sessionFromUrl);
 			void selectSession(sessionFromUrl).catch(() => {
 				setSelectedSessionId(null);
-				router.replace('/admin/ghost-chat', { scroll: false });
+				router.replace(
+					ghostAccountIdFromUrl
+						? `/admin/ghost-chat?ghostAccountId=${encodeURIComponent(ghostAccountIdFromUrl)}`
+						: '/admin/ghost-chat',
+					{ scroll: false },
+				);
 			});
 		}
 
 		if (isMobile) {
 			setMobileView('chat');
 		}
-	}, [isMobile, router, selectSession, sessionFromUrl]);
+	}, [ghostAccountIdFromUrl, isMobile, router, selectSession, sessionFromUrl]);
 
 	useEffect(() => {
 		if (newSessionIds.size > 0) {
@@ -120,16 +126,24 @@ function GhostChatV2Content() {
 			setSelectedSessionId(id);
 			void selectSession(id).catch(() => {
 				setSelectedSessionId(null);
-				router.replace('/admin/ghost-chat', { scroll: false });
+				router.replace(
+					ghostAccountIdFromUrl
+						? `/admin/ghost-chat?ghostAccountId=${encodeURIComponent(ghostAccountIdFromUrl)}`
+						: '/admin/ghost-chat',
+					{ scroll: false },
+				);
 			});
-			router.replace('/admin/ghost-chat?session=' + encodeURIComponent(id), { scroll: false });
+			const nextParams = new URLSearchParams();
+			nextParams.set('session', id);
+			if (ghostAccountIdFromUrl) nextParams.set('ghostAccountId', ghostAccountIdFromUrl);
+			router.replace(`/admin/ghost-chat?${nextParams.toString()}`, { scroll: false });
 			if (isMobile) {
 				setMobileView('chat');
 			} else {
 				setDetailPanelOpen(true);
 			}
 		},
-		[isMobile, router, selectSession],
+		[ghostAccountIdFromUrl, isMobile, router, selectSession],
 	);
 
 	useEffect(() => {
@@ -141,8 +155,13 @@ function GhostChatV2Content() {
 		setMobileView('list');
 		setSelectedSessionId(null);
 		clearSelectedSession();
-		router.replace('/admin/ghost-chat', { scroll: false });
-	}, [clearSelectedSession, router]);
+		router.replace(
+			ghostAccountIdFromUrl
+				? `/admin/ghost-chat?ghostAccountId=${encodeURIComponent(ghostAccountIdFromUrl)}`
+				: '/admin/ghost-chat',
+			{ scroll: false },
+		);
+	}, [clearSelectedSession, ghostAccountIdFromUrl, router]);
 
 	const actionLoading = Boolean(actionLoadingId);
 
@@ -157,6 +176,12 @@ function GhostChatV2Content() {
 			onReconnect={events.reconnect}
 		/>
 	);
+
+	const filterNotice = ghostAccountIdFromUrl ? (
+		<Alert severity="info">
+			프로필 {ghostAccountIdFromUrl} 기준으로 생성된 Ghost Chat 세션만 표시 중입니다.
+		</Alert>
+	) : null;
 
 	const queue = (
 		<GhostSessionQueue
@@ -244,6 +269,7 @@ function GhostChatV2Content() {
 		return (
 			<Box sx={{ p: 2, height: '100vh', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
 				{mobileView === 'list' && statusBar}
+				{mobileView === 'list' && filterNotice}
 				{usingDevMocks && (
 					<Alert severity="info">개발 환경 목업 데이터로 Ghost Chat UI를 표시 중입니다.</Alert>
 				)}
@@ -278,6 +304,7 @@ function GhostChatV2Content() {
 	return (
 		<Box sx={{ p: 2, height: '100vh', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
 			{statusBar}
+			{filterNotice}
 			{usingDevMocks && (
 				<Alert severity="info">개발 환경 목업 데이터로 Ghost Chat UI를 표시 중입니다.</Alert>
 			)}

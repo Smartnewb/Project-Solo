@@ -1,9 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Eye, Loader2, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
+import { ExternalLink, Eye, Loader2, MessageCircle, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
+import { ghostChat } from '@/app/services/admin/ghost-chat';
 import { ghostInjection } from '@/app/services/admin/ghost-injection';
+import type { GhostChatSession, GhostChatTimelineMessage } from '@/app/types/ghost-chat';
+import { GHOST_CHAT_STATE_LABELS } from '@/app/types/ghost-chat';
 import type { GhostDetail, ImageVendor, UpdateGhostFields } from '@/app/types/ghost-injection';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
 import { useToast } from '@/shared/ui/admin/toast';
@@ -87,6 +91,30 @@ function formatDate(value: string): string {
 	} catch {
 		return value;
 	}
+}
+
+function compactDate(value: string | null): string {
+	if (!value) return '기록 없음';
+	try {
+		return new Intl.DateTimeFormat('ko-KR', {
+			month: '2-digit',
+			day: '2-digit',
+			hour: '2-digit',
+			minute: '2-digit',
+		}).format(new Date(value));
+	} catch {
+		return value;
+	}
+}
+
+function latestActivity(session: GhostChatSession): string | null {
+	return session.lastUserMessageAt ?? session.lastAdminMessageAt ?? session.updatedAt ?? session.createdAt;
+}
+
+function senderLabel(message: GhostChatTimelineMessage): string {
+	if (message.senderType === 'GHOST') return '썸메이트';
+	if (message.senderType === 'TARGET_USER') return '상대';
+	return '시스템';
 }
 
 function buildFieldsToUpdate(
@@ -264,6 +292,8 @@ export function GhostDetailDrawer({ ghostAccountId, onClose }: GhostDetailDrawer
 									</div>
 								</div>
 							</section>
+
+							<GhostChatHistorySection ghostAccountId={detail.ghostAccountId} />
 
 							{detail.keywords && detail.keywords.length > 0 && (
 								<section className="space-y-2">
@@ -473,6 +503,143 @@ export function GhostDetailDrawer({ ghostAccountId, onClose }: GhostDetailDrawer
 				onOpenChange={setPreviewOpen}
 			/>
 		</Sheet>
+	);
+}
+
+function GhostChatHistorySection({ ghostAccountId }: { ghostAccountId: string }) {
+	const chatQuery = useQuery({
+		queryKey: ghostInjectionKeys.ghostChatSessions(ghostAccountId),
+		queryFn: async () => {
+			const sessions = await ghostChat.listSessions({
+				ghostAccountId,
+				stateScope: 'all',
+			});
+			const previewEntries = await Promise.all(
+				sessions.slice(0, 20).map(async (session) => {
+					try {
+						const response = await ghostChat.getMessages(session.id, { limit: 3 });
+						return [session.id, response.messages] as const;
+					} catch {
+						return [session.id, []] as const;
+					}
+				}),
+			);
+			return {
+				sessions,
+				previews: Object.fromEntries(previewEntries) as Record<string, GhostChatTimelineMessage[]>,
+			};
+		},
+		enabled: Boolean(ghostAccountId),
+	});
+
+	const sessions = useMemo(
+		() =>
+			[...(chatQuery.data?.sessions ?? [])].sort((a, b) => {
+				const aTime = latestActivity(a) ? new Date(latestActivity(a) as string).getTime() : 0;
+				const bTime = latestActivity(b) ? new Date(latestActivity(b) as string).getTime() : 0;
+				return bTime - aTime;
+			}),
+		[chatQuery.data?.sessions],
+	);
+	const previews = chatQuery.data?.previews ?? {};
+
+	return (
+		<section className="space-y-3">
+			<div className="flex items-center justify-between gap-2">
+				<div className="flex items-center gap-2">
+					<MessageCircle className="h-4 w-4 text-slate-600" />
+					<h3 className="text-sm font-semibold text-slate-900">생성된 채팅방</h3>
+					<Badge variant="outline" className="text-xs">
+						{sessions.length}개
+					</Badge>
+				</div>
+				<Button asChild variant="outline" size="sm" className="h-8 gap-1.5">
+					<Link href={`/admin/ghost-chat?ghostAccountId=${encodeURIComponent(ghostAccountId)}`}>
+						<ExternalLink className="h-3.5 w-3.5" />
+						Ghost Chat
+					</Link>
+				</Button>
+			</div>
+
+			{chatQuery.isLoading ? (
+				<div className="rounded-md border bg-slate-50 p-4 text-center text-xs text-slate-500">
+					채팅방을 불러오는 중…
+				</div>
+			) : chatQuery.isError ? (
+				<Alert variant="destructive">
+					<AlertDescription>채팅방 목록을 불러오지 못했습니다.</AlertDescription>
+				</Alert>
+			) : sessions.length === 0 ? (
+				<div className="rounded-md border bg-slate-50 p-4 text-center text-xs text-slate-500">
+					아직 이 프로필로 생성된 채팅방이 없습니다.
+				</div>
+			) : (
+				<ul className="space-y-2">
+					{sessions.map((session) => {
+						const messages = previews[session.id] ?? [];
+						const targetLabel = session.targetUserName
+							? `${session.targetUserName}${session.targetUserAge ? ` · ${session.targetUserAge}세` : ''}`
+							: session.targetUserId;
+
+						return (
+							<li key={session.id} className="rounded-md border bg-white p-3 text-xs">
+								<div className="flex items-start gap-3">
+									<div className="h-10 w-10 overflow-hidden rounded-md bg-slate-100">
+										{session.targetUserPrimaryPhotoUrl ? (
+											<img
+												src={session.targetUserPrimaryPhotoUrl}
+												alt=""
+												className="h-full w-full object-cover"
+											/>
+										) : (
+											<div className="flex h-full w-full items-center justify-center text-[10px] text-slate-400">
+												No
+											</div>
+										)}
+									</div>
+									<div className="min-w-0 flex-1">
+										<div className="flex flex-wrap items-center gap-1.5">
+											<span className="font-semibold text-slate-900">{targetLabel}</span>
+											<Badge variant="outline" className="text-[10px]">
+												{GHOST_CHAT_STATE_LABELS[session.state]}
+											</Badge>
+											{session.targetUserType === 'REAL_FEMALE' && (
+												<Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-[10px] text-emerald-700">
+													실 유저
+												</Badge>
+											)}
+										</div>
+										<div className="mt-1 truncate text-slate-500">
+											room {session.chatRoomId} · 최근 {compactDate(latestActivity(session))}
+										</div>
+										<div className="mt-2 space-y-1">
+											{messages.length === 0 ? (
+												<div className="text-slate-400">표시할 최근 메시지가 없습니다.</div>
+											) : (
+												messages.map((message) => (
+													<div key={message.id} className="truncate text-slate-600">
+														<span className="font-medium text-slate-800">{senderLabel(message)}</span>
+														<span className="mx-1 text-slate-300">/</span>
+														{message.content ?? message.messageType}
+													</div>
+												))
+											)}
+										</div>
+									</div>
+									<Button asChild variant="outline" size="sm" className="h-8 shrink-0">
+										<Link
+											href={`/admin/ghost-chat?session=${encodeURIComponent(session.id)}&ghostAccountId=${encodeURIComponent(ghostAccountId)}`}
+										>
+											열기
+										</Link>
+									</Button>
+								</div>
+							</li>
+						);
+					})}
+				</ul>
+			)}
+		</section>
 	);
 }
 

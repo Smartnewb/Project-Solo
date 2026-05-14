@@ -24,6 +24,8 @@ export const ghostInjectionKeys = {
 	ghostDetail: (id: string) => [...ghostInjectionKeys.ghosts(), 'detail', id] as const,
 	ghostProfilePreview: (id: string) =>
 		[...ghostInjectionKeys.ghosts(), 'profile-preview', id] as const,
+	ghostChatSessions: (id: string) =>
+		[...ghostInjectionKeys.ghosts(), 'chat-sessions', id] as const,
 
 	candidates: () => [...ghostInjectionKeys.all, 'candidates'] as const,
 	candidateList: (query: CandidateListQuery) =>
