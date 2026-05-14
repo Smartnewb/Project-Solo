@@ -111,6 +111,7 @@ export type {
 } from './utm';
 export { ghostInjection } from './ghost-injection';
 export { ghostChat } from './ghost-chat';
+export { somemateChat } from './somemate-chat';
 export { ghostReferencePool } from './ghost-reference-pool';
 export { aiProfileGenerator } from './ai-profile-generator';
 export { promotions } from './promotions';
@@ -207,6 +208,7 @@ import { keywords } from './keywords';
 import { utm } from './utm';
 import { ghostInjection } from './ghost-injection';
 import { ghostChat } from './ghost-chat';
+import { somemateChat } from './somemate-chat';
 import { ghostReferencePool } from './ghost-reference-pool';
 import { aiProfileGenerator } from './ai-profile-generator';
 import { promotions } from './promotions';
@@ -257,6 +259,7 @@ const AdminService = {
 	utm,
 	ghostInjection,
 	ghostChat,
+	somemateChat,
 	ghostReferencePool,
 	aiProfileGenerator,
 	promotions,
