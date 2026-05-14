@@ -10,8 +10,8 @@ export default function UnapprovedUsersPage() {
         미승인 유저
       </Typography>
       <UnclassifiedUsersPanel
-        title="UNKNOWN 미승인 유저"
-        description="UNKNOWN rank 유저를 한 화면에서 확인하고, 등급 설정과 승인 처리를 진행합니다."
+        title="등급 미분류 미승인 유저"
+        description="아직 등급이 정리되지 않은 유저를 한 화면에서 확인하고, 등급 설정과 승인 처리를 진행합니다."
         initialViewMode="table"
       />
     </Box>

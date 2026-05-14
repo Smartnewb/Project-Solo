@@ -14,7 +14,9 @@ export function middleware(request: NextRequest) {
   if (pathname === '/admin' || pathname.startsWith('/admin/')) {
     const adminCookie = request.cookies.get('admin_session_meta');
     if (!adminCookie?.value) {
-      return NextResponse.redirect(new URL('/', request.url));
+      const loginUrl = new URL('/', request.url);
+      loginUrl.searchParams.set('next', `${pathname}${request.nextUrl.search}`);
+      return NextResponse.redirect(loginUrl);
     }
     return NextResponse.next();
   }

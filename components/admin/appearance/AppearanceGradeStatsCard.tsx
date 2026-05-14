@@ -58,12 +58,10 @@ function GradeStatMiniCard({
   grade,
   count,
   percentage,
-  total,
 }: {
   grade: string;
   count: number;
   percentage: number;
-  total: number;
 }) {
   const color = GRADE_COLORS[grade] || '#94A3B8';
   const label = GRADE_LABELS[grade] || grade;
@@ -147,7 +145,13 @@ function PieChartSection({
   const hasData = data.length > 0;
   const total = data.reduce((sum, d) => sum + d.value, 0);
 
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({
+    active,
+    payload,
+  }: {
+    active?: boolean;
+    payload?: Array<{ payload: { name: string; value: number; percentage: number } }>;
+  }) => {
     if (active && payload && payload.length) {
       const d = payload[0].payload;
       return (
@@ -298,7 +302,7 @@ function UnknownBreakdownSection({
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
         <InfoOutlinedIcon sx={{ fontSize: 18, color: '#64748B' }} />
         <Typography variant="subtitle2" sx={{ fontWeight: 600, color: '#334155' }}>
-          UNKNOWN 승인 흐름 ({totalUnknown.toLocaleString()}명)
+          등급 미분류 승인 흐름 ({totalUnknown.toLocaleString()}명)
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 'auto' }}>
           <BlockOutlinedIcon sx={{ fontSize: 14, color: '#EF4444' }} />
@@ -458,7 +462,6 @@ export default function AppearanceGradeStatsCard({ stats }: AppearanceGradeStats
                   grade={item.grade}
                   count={item.count || 0}
                   percentage={typeof item.percentage === 'number' ? item.percentage : 0}
-                  total={safeStats.total}
                 />
               </Grid>
             ))}

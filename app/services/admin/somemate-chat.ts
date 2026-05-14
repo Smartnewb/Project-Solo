@@ -10,6 +10,7 @@ export interface ListSomemateRelationshipsQuery {
 	q?: string;
 	userId?: string;
 	companionId?: string;
+	relationshipId?: string;
 	page?: number;
 	limit?: number;
 }

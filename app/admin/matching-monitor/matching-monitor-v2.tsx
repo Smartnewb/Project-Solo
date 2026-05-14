@@ -38,6 +38,18 @@ interface TabPanelProps {
 	value: number;
 }
 
+const PERIOD_LABEL: Record<DashboardPeriod, string> = {
+	today: '오늘',
+	'7d': '최근 7일',
+	'30d': '최근 30일',
+};
+
+const COUNTRY_LABEL: Record<DashboardCountry, string> = {
+	ALL: '전체 국가',
+	KR: '한국',
+	JP: '일본',
+};
+
 function TabPanel({ children, value, index }: TabPanelProps) {
 	return (
 		<div role="tabpanel" hidden={value !== index}>
@@ -88,27 +100,29 @@ export default function MatchingMonitorV2() {
 								size="small"
 								exclusive
 								value={period}
+								aria-label="매칭 모니터 기간 필터"
 								onChange={(_, v) => v && setPeriod(v)}
 							>
-								<ToggleButton value="today">오늘</ToggleButton>
-								<ToggleButton value="7d">7일</ToggleButton>
-								<ToggleButton value="30d">30일</ToggleButton>
+								<ToggleButton value="today" aria-label="오늘 데이터 보기">오늘</ToggleButton>
+								<ToggleButton value="7d" aria-label="최근 7일 데이터 보기">7일</ToggleButton>
+								<ToggleButton value="30d" aria-label="최근 30일 데이터 보기">30일</ToggleButton>
 							</ToggleButtonGroup>
 
 							<ToggleButtonGroup
 								size="small"
 								exclusive
 								value={country}
+								aria-label="매칭 모니터 국가 필터"
 								onChange={(_, v) => v && setCountry(v)}
 							>
-								<ToggleButton value="ALL">전체</ToggleButton>
-								<ToggleButton value="KR">KR</ToggleButton>
-								<ToggleButton value="JP">JP</ToggleButton>
+								<ToggleButton value="ALL" aria-label="전체 국가 데이터 보기">전체</ToggleButton>
+								<ToggleButton value="KR" aria-label="한국 데이터 보기">KR</ToggleButton>
+								<ToggleButton value="JP" aria-label="일본 데이터 보기">JP</ToggleButton>
 							</ToggleButtonGroup>
 
 							<Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
 								<Tooltip title="새로고침">
-									<IconButton size="small" onClick={handleRefresh}>
+									<IconButton size="small" onClick={handleRefresh} aria-label="매칭 모니터 데이터 새로고침">
 										<RefreshIcon fontSize="small" />
 									</IconButton>
 								</Tooltip>
@@ -132,6 +146,9 @@ export default function MatchingMonitorV2() {
 
 				{isLoading && !data ? (
 					<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+						<Typography variant="body2" color="text.secondary">
+							{PERIOD_LABEL[period]} · {COUNTRY_LABEL[country]} 기준 매칭 지표를 불러오는 중입니다.
+						</Typography>
 						<Skeleton variant="rounded" height={100} />
 						<Box sx={{ display: 'flex', gap: 2 }}>
 							{[1, 2, 3, 4].map((i) => (

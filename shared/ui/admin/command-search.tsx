@@ -9,28 +9,35 @@ interface FlatItem {
   label: string;
   category: string;
   icon: string;
+  searchText: string;
 }
 
 function flattenNav(): FlatItem[] {
   const flat: FlatItem[] = [];
+  const toFlatItem = (item: { href: string; label: string }, category: string, icon: string): FlatItem => {
+    const pathKeywords = item.href
+      .replace(/^\/admin\/?/, '')
+      .split(/[/-]/)
+      .filter(Boolean)
+      .join(' ');
+
+    return {
+      href: item.href,
+      label: item.label,
+      category,
+      icon,
+      searchText: `${item.label} ${category} ${item.href} ${pathKeywords}`.toLowerCase(),
+    };
+  };
+
   for (const cat of NAV_CATEGORIES) {
     for (const item of cat.items) {
       if ('children' in item) {
         for (const child of item.children) {
-          flat.push({
-            href: child.href,
-            label: child.label,
-            category: cat.label,
-            icon: cat.icon,
-          });
+          flat.push(toFlatItem(child, cat.label, cat.icon));
         }
       } else {
-        flat.push({
-          href: item.href,
-          label: item.label,
-          category: cat.label,
-          icon: cat.icon,
-        });
+        flat.push(toFlatItem(item, cat.label, cat.icon));
       }
     }
   }
@@ -50,11 +57,7 @@ export function CommandSearch() {
   const filtered = useMemo(() => {
     if (!query.trim()) return allItems;
     const q = query.toLowerCase();
-    return allItems.filter(
-      (item) =>
-        item.label.toLowerCase().includes(q) ||
-        item.category.toLowerCase().includes(q),
-    );
+    return allItems.filter((item) => item.searchText.includes(q));
   }, [query, allItems]);
 
   useEffect(() => {
@@ -103,10 +106,12 @@ export function CommandSearch() {
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
+        if (filtered.length === 0) return;
         setSelectedIndex((i) => (i + 1) % filtered.length);
         break;
       case 'ArrowUp':
         e.preventDefault();
+        if (filtered.length === 0) return;
         setSelectedIndex((i) => (i - 1 + filtered.length) % filtered.length);
         break;
       case 'Enter':

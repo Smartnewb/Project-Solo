@@ -13,6 +13,8 @@ import {
   Tooltip,
   IconButton,
   Checkbox,
+  Button,
+  Stack,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { PendingUser } from "../page";
@@ -113,9 +115,20 @@ export default function UserTableList({
   if (users.length === 0 && !searchTerm) {
     return (
       <Paper sx={{ p: 4, textAlign: "center" }}>
-        <Typography variant="body1" color="text.secondary">
+        <Typography variant="body1" sx={{ fontWeight: 700, color: "text.primary" }}>
           심사 대기 중인 사용자가 없습니다.
         </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          새 심사 대상이 들어오기 전까지 미승인 유저 또는 최근 심사 이력을 확인할 수 있습니다.
+        </Typography>
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={1} justifyContent="center" sx={{ mt: 2 }}>
+          <Button size="small" variant="outlined" href="/admin/unapproved-users">
+            미승인 유저 보기
+          </Button>
+          <Button size="small" variant="outlined" href="/admin/review-inbox">
+            검토 인박스 보기
+          </Button>
+        </Stack>
       </Paper>
     );
   }

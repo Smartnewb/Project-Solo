@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import {
 	Alert,
@@ -21,6 +22,7 @@ import {
 } from '@mui/material';
 import {
 	ArrowBack as ArrowBackIcon,
+	Clear as ClearIcon,
 	Refresh as RefreshIcon,
 	Search as SearchIcon,
 } from '@mui/icons-material';
@@ -188,6 +190,14 @@ function ChatPanel({
 	loading: boolean;
 	onBack?: () => void;
 }) {
+	const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+	useEffect(() => {
+		if (!loading && messages.length > 0) {
+			messagesEndRef.current?.scrollIntoView({ block: 'end' });
+		}
+	}, [loading, messages.length, selected?.id]);
+
 	if (!selected) {
 		return (
 			<Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -229,7 +239,7 @@ function ChatPanel({
 					))}
 				</Stack>
 			</Box>
-			<Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', bgcolor: 'grey.50', p: 2 }}>
+			<Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', bgcolor: 'grey.50', p: { xs: 1.5, md: 2 } }}>
 				{loading ? (
 					<Box sx={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 						<CircularProgress size={26} />
@@ -239,16 +249,19 @@ function ChatPanel({
 						<Typography color="text.secondary">표시할 대화가 없습니다.</Typography>
 					</Box>
 				) : (
-					<Stack spacing={1.25}>
-						{messages.map((message) => (
-							<Box key={message.id}>
-								<Box sx={{ mb: 0.5, display: 'flex', justifyContent: message.role === 'assistant' ? 'flex-start' : 'flex-end' }}>
-									<RoleLabel role={message.role} />
+					<Box sx={{ width: '100%', maxWidth: 960, mx: 'auto' }}>
+						<Stack spacing={1.25}>
+							{messages.map((message) => (
+								<Box key={message.id}>
+									<Box sx={{ mb: 0.5, display: 'flex', justifyContent: message.role === 'assistant' ? 'flex-start' : 'flex-end' }}>
+										<RoleLabel role={message.role} />
+									</Box>
+									<MessageBubble message={message} />
 								</Box>
-								<MessageBubble message={message} />
-							</Box>
-						))}
-					</Stack>
+							))}
+							<Box ref={messagesEndRef} />
+						</Stack>
+					</Box>
 				)}
 			</Box>
 		</Box>
@@ -258,18 +271,22 @@ function ChatPanel({
 export default function SomemateChatPage() {
 	const theme = useTheme();
 	const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+	const searchParams = useSearchParams();
+	const linkedRelationshipId = searchParams.get('relationshipId')?.trim() || null;
 	const [searchText, setSearchText] = useState('');
 	const [appliedSearch, setAppliedSearch] = useState('');
-	const [selectedId, setSelectedId] = useState<string | null>(null);
+	const [selectedId, setSelectedId] = useState<string | null>(linkedRelationshipId);
 	const [mobileMode, setMobileMode] = useState<'list' | 'chat'>('list');
 	const sentinelRef = useRef<HTMLDivElement | null>(null);
+	const deepLinkRelationshipId = appliedSearch ? null : linkedRelationshipId;
 
 	const relationshipsQuery = useInfiniteQuery({
-		queryKey: ['admin', 'somemate-chat', 'relationships', appliedSearch],
+		queryKey: ['admin', 'somemate-chat', 'relationships', appliedSearch, deepLinkRelationshipId],
 		initialPageParam: 1,
 		queryFn: ({ pageParam }) =>
 			somemateChat.listRelationships({
 				q: appliedSearch || undefined,
+				relationshipId: deepLinkRelationshipId || undefined,
 				page: Number(pageParam),
 				limit: PAGE_SIZE,
 			}),
@@ -289,6 +306,13 @@ export default function SomemateChatPage() {
 		queryFn: () => somemateChat.getMessages(selectedId!, { limit: 150 }),
 		enabled: Boolean(selectedId),
 	});
+
+	useEffect(() => {
+		if (linkedRelationshipId) {
+			setSelectedId(linkedRelationshipId);
+			if (isMobile) setMobileMode('chat');
+		}
+	}, [isMobile, linkedRelationshipId]);
 
 	useEffect(() => {
 		if (!selectedId && relationships.length > 0 && !isMobile) {
@@ -311,6 +335,13 @@ export default function SomemateChatPage() {
 	const applySearch = () => {
 		setSelectedId(null);
 		setAppliedSearch(searchText.trim());
+		setMobileMode('list');
+	};
+
+	const clearSearch = () => {
+		setSearchText('');
+		setAppliedSearch('');
+		setSelectedId(null);
 		setMobileMode('list');
 	};
 
@@ -359,6 +390,17 @@ export default function SomemateChatPage() {
 						검색
 					</Button>
 				</Box>
+				{appliedSearch && (
+					<Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1.25, minWidth: 0 }}>
+						<Chip
+							size="small"
+							label={`검색: ${appliedSearch}`}
+							onDelete={clearSearch}
+							deleteIcon={<ClearIcon />}
+							sx={{ maxWidth: '100%', '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' } }}
+						/>
+					</Box>
+				)}
 			</Box>
 			<Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', p: 1.5 }}>
 				{relationshipsQuery.isLoading ? (

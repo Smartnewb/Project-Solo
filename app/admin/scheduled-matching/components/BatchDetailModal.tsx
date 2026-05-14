@@ -58,7 +58,7 @@ export default function BatchDetailModal({ batchId, open, onClose }: BatchDetail
       setError(null);
       const result = await scheduledMatchingService.getBatchDetails(batchId, 100, 0);
       setData(result);
-    } catch (err) {
+    } catch {
       setError('배치 상세 정보를 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
@@ -101,7 +101,7 @@ export default function BatchDetailModal({ batchId, open, onClose }: BatchDetail
     <Dialog open={open} onClose={handleClose} maxWidth="lg" fullWidth>
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography variant="h6">배치 상세</Typography>
-        <IconButton onClick={handleClose} size="small">
+        <IconButton onClick={handleClose} size="small" aria-label="배치 상세 닫기">
           <CloseIcon />
         </IconButton>
       </DialogTitle>

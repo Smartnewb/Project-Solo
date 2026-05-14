@@ -1,10 +1,19 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function AdminLogin() {
+function getSafeRedirectPath(value: string | null) {
+  if (!value) return '/admin/dashboard';
+  if (!value.startsWith('/admin')) return '/admin/dashboard';
+  if (value.startsWith('//')) return '/admin/dashboard';
+  return value;
+}
+
+function AdminLoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectPath = getSafeRedirectPath(searchParams.get('next'));
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -29,12 +38,14 @@ export default function AdminLogin() {
         throw new Error(body?.error || '로그인에 실패했습니다.');
       }
 
-      router.push('/admin/dashboard');
-    } catch (err: any) {
+      router.push(redirectPath);
+    } catch (err: unknown) {
       if (err instanceof TypeError && err.message.includes('fetch')) {
         setError('네트워크 연결을 확인해주세요.');
-      } else {
+      } else if (err instanceof Error) {
         setError(err.message);
+      } else {
+        setError('로그인에 실패했습니다.');
       }
     } finally {
       setIsLoading(false);
@@ -47,6 +58,11 @@ export default function AdminLogin() {
         <div className="mb-8 text-center">
           <h1 className="text-[28px] font-bold leading-[1.43] text-[#222222]">Sometime</h1>
           <p className="mt-2 text-base text-[#6a6a6a]">관리자 대시보드</p>
+          {redirectPath !== '/admin/dashboard' && (
+            <p className="mt-3 rounded-full bg-[#f7f7f7] px-3 py-1 text-sm text-[#3f3f3f]">
+              로그인 후 요청한 관리자 화면으로 이동합니다.
+            </p>
+          )}
         </div>
 
         <div className="space-y-6 rounded-[14px] border border-[#dddddd] bg-white p-8 shadow-card">
@@ -88,5 +104,19 @@ export default function AdminLogin() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AdminLogin() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[#f7f7f7] px-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#dddddd] border-t-[#222222]" />
+        </div>
+      }
+    >
+      <AdminLoginForm />
+    </Suspense>
   );
 }

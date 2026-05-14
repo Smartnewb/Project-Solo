@@ -177,6 +177,9 @@ export default function UnclassifiedUsersTable({
     return user.instagramId;
   };
 
+  const getErrorMessage = (error: unknown, fallback: string) =>
+    error instanceof Error ? error.message : fallback;
+
   const handleSelectUser = (userId: string) => {
     setSelectedUsers((prev) =>
       prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId],
@@ -216,8 +219,8 @@ export default function UnclassifiedUsersTable({
         onRefresh();
       }
       handleCloseGradeMenu();
-    } catch (err: any) {
-      setLocalError(err.message || '등급 설정 중 오류가 발생했습니다.');
+    } catch (err: unknown) {
+      setLocalError(getErrorMessage(err, '등급 설정 중 오류가 발생했습니다.'));
     } finally {
       setSavingGrade(false);
     }
@@ -232,8 +235,8 @@ export default function UnclassifiedUsersTable({
       setUserDetail(null);
       const data = await AdminService.userAppearance.getUserDetails(userId);
       setUserDetail(data);
-    } catch (err: any) {
-      setUserDetailError(err.message || '유저 상세 정보를 불러오는 중 오류가 발생했습니다.');
+    } catch (err: unknown) {
+      setUserDetailError(getErrorMessage(err, '유저 상세 정보를 불러오는 중 오류가 발생했습니다.'));
     } finally {
       setLoadingUserDetail(false);
     }
@@ -257,8 +260,8 @@ export default function UnclassifiedUsersTable({
       }
       setSelectedUsers([]);
       setBulkGradeModalOpen(false);
-    } catch (err: any) {
-      setLocalError(err.message || '일괄 등급 설정 중 오류가 발생했습니다.');
+    } catch (err: unknown) {
+      setLocalError(getErrorMessage(err, '일괄 등급 설정 중 오류가 발생했습니다.'));
     } finally {
       setSavingBulkGrade(false);
     }
@@ -290,8 +293,8 @@ export default function UnclassifiedUsersTable({
         onUsersRemove(succeededIds);
       }
       onRefresh();
-    } catch (err: any) {
-      setLocalError(err.message || '일괄 승인 중 오류가 발생했습니다.');
+    } catch (err: unknown) {
+      setLocalError(getErrorMessage(err, '일괄 승인 중 오류가 발생했습니다.'));
     } finally {
       setApproving(false);
     }
@@ -329,8 +332,8 @@ export default function UnclassifiedUsersTable({
         onUsersRemove(succeededIds);
       }
       onRefresh();
-    } catch (err: any) {
-      setCombinedPhaseError(err.message || '처리 중 오류가 발생했습니다.');
+    } catch (err: unknown) {
+      setCombinedPhaseError(getErrorMessage(err, '처리 중 오류가 발생했습니다.'));
       setCombinedPhase('done');
       onRefresh();
     }
@@ -356,13 +359,13 @@ export default function UnclassifiedUsersTable({
           px: 1,
         }}
       >
-        <Typography variant="body2" sx={{ color: '#64748B' }}>
+        <Typography variant="body2" sx={{ color: selectedUsers.length > 0 ? '#1E293B' : '#64748B' }}>
           {selectedUsers.length > 0 ? (
             <span>
               <strong style={{ color: '#1E293B' }}>{selectedUsers.length}명</strong> 선택됨
             </span>
           ) : (
-            '사용자를 선택하여 일괄 작업 수행'
+            '왼쪽 체크박스를 선택하면 일괄 작업 버튼이 활성화됩니다.'
           )}
         </Typography>
         <Stack direction="row" spacing={1}>
@@ -553,9 +556,18 @@ export default function UnclassifiedUsersTable({
                     </TableCell>
 
                     <TableCell sx={{ ...bodyCellSx, textAlign: 'center' }}>
-                      <Typography variant="body2" sx={{ color: '#334155', fontWeight: 600 }}>
-                        {approvedPhotoCount}장
-                      </Typography>
+                      <Chip
+                        label={`${approvedPhotoCount}장`}
+                        size="small"
+                        variant={approvedPhotoCount > 0 ? 'filled' : 'outlined'}
+                        sx={{
+                          bgcolor: approvedPhotoCount > 0 ? alpha('#059669', 0.1) : '#fff',
+                          borderColor: approvedPhotoCount > 0 ? alpha('#059669', 0.2) : alpha('#D97706', 0.35),
+                          color: approvedPhotoCount > 0 ? '#047857' : '#D97706',
+                          fontWeight: 700,
+                          fontSize: '0.75rem',
+                        }}
+                      />
                     </TableCell>
 
                     <TableCell sx={{ ...bodyCellSx, textAlign: 'center' }}>

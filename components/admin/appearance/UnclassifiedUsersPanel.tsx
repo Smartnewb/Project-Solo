@@ -107,7 +107,7 @@ const UNCLASSIFIED_FETCH_LIMIT = 100;
 
 export default function UnclassifiedUsersPanel({
   title = '미분류 사용자',
-  description = 'UNKNOWN 사용자를 등급 정리 대상과 블라인드 승인 대상으로 분리합니다.',
+  description = '등급이 아직 정리되지 않은 사용자를 등급 정리 대상과 블라인드 승인 대상으로 분리합니다.',
   initialViewMode = 'table',
 }: UnclassifiedUsersPanelProps) {
   const [users, setUsers] = useState<UserProfileWithAppearance[]>([]);
@@ -340,7 +340,7 @@ export default function UnclassifiedUsersPanel({
           <Card variant="outlined" sx={{ borderColor: '#CBD5E1' }}>
             <CardContent sx={{ py: 2 }}>
               <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 700 }}>
-                전체 UNKNOWN
+                전체 등급 미분류
               </Typography>
               <Typography variant="h5" sx={{ mt: 0.5, fontWeight: 800, color: '#0F172A' }}>
                 {loading ? '-' : `${totalUnknownCount.toLocaleString()}명`}

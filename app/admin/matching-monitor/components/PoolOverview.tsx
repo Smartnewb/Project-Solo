@@ -28,6 +28,10 @@ interface Props {
 	segments: SegmentStat[];
 }
 
+function formatRankLabel(rank: string) {
+	return rank === 'UNKNOWN' ? '등급 미분류' : rank;
+}
+
 export default function PoolOverviewSection({ pool, segments }: Props) {
 	const { maleCount, femaleCount } = pool;
 	const total = maleCount + femaleCount;
@@ -63,7 +67,7 @@ export default function PoolOverviewSection({ pool, segments }: Props) {
 						{Object.entries(pool.byRank).map(([rank, count]) => (
 							<Chip
 								key={rank}
-								label={`${rank}: ${count.toLocaleString()}`}
+								label={`${formatRankLabel(rank)}: ${count.toLocaleString()}`}
 								size="small"
 								variant="outlined"
 							/>
@@ -101,7 +105,7 @@ export default function PoolOverviewSection({ pool, segments }: Props) {
 									return (
 										<TableRow key={seg.rank}>
 											<TableCell>
-												<Chip label={seg.rank} size="small" />
+												<Chip label={formatRankLabel(seg.rank)} size="small" />
 											</TableCell>
 											<TableCell align="right">{seg.maleCount.toLocaleString()}</TableCell>
 											<TableCell align="right">{seg.femaleCount.toLocaleString()}</TableCell>

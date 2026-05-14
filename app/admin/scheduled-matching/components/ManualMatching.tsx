@@ -124,6 +124,7 @@ export default function ManualMatching() {
   const [success, setSuccess] = useState<string | null>(null);
   const [detailDialog, setDetailDialog] = useState<ManualMatchingType | null>(null);
   const [cancelDialog, setCancelDialog] = useState<ManualMatchingType | null>(null);
+  const [executeDialog, setExecuteDialog] = useState<ManualMatchingType | null>(null);
   const [cancelReason, setCancelReason] = useState('');
 
   // Fetch list
@@ -140,7 +141,7 @@ export default function ManualMatching() {
       const response = await scheduledMatchingService.getManualMatchingList(params);
       setMatchings(response.data);
       setTotal(response.pagination.total);
-    } catch (err) {
+    } catch {
       setError('수동 매칭 목록을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
@@ -172,7 +173,7 @@ export default function ManualMatching() {
       if (!result.isValid) {
         setError(result.blockedReasons.join(', '));
       }
-    } catch (err) {
+    } catch {
       setError('유저 검증에 실패했습니다.');
     } finally {
       setValidating(false);
@@ -239,20 +240,21 @@ export default function ManualMatching() {
       setCancelDialog(null);
       setCancelReason('');
       fetchMatchings();
-    } catch (err) {
+    } catch {
       setError('매칭 취소에 실패했습니다.');
     }
   };
 
   // Execute matching immediately
-  const handleExecute = async (matching: ManualMatchingType) => {
-    if (!confirm('이 매칭을 즉시 실행하시겠습니까?')) return;
+  const handleExecute = async () => {
+    if (!executeDialog) return;
 
     try {
-      await scheduledMatchingService.executeManualMatching(matching.id);
+      await scheduledMatchingService.executeManualMatching(executeDialog.id);
       setSuccess('매칭이 실행되었습니다.');
+      setExecuteDialog(null);
       fetchMatchings();
-    } catch (err) {
+    } catch {
       setError('매칭 실행에 실패했습니다.');
     }
   };
@@ -478,7 +480,7 @@ export default function ManualMatching() {
               </Select>
             </FormControl>
             <Tooltip title="새로고침">
-              <IconButton onClick={fetchMatchings} size="small">
+              <IconButton onClick={fetchMatchings} size="small" aria-label="수동 매칭 목록 새로고침">
                 <RefreshIcon />
               </IconButton>
             </Tooltip>
@@ -509,7 +511,12 @@ export default function ManualMatching() {
               ) : matchings.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                    <Typography color="text.secondary">데이터가 없습니다.</Typography>
+                    <Typography variant="subtitle2" fontWeight={700}>
+                      조건에 맞는 수동 매칭이 없습니다.
+                    </Typography>
+                    <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+                      국가나 유형 필터를 변경해 다시 확인하세요.
+                    </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -547,7 +554,11 @@ export default function ManualMatching() {
                     <TableCell>{formatDateTime(matching.createdAt)}</TableCell>
                     <TableCell align="right">
                       <Tooltip title="상세보기">
-                        <IconButton size="small" onClick={() => setDetailDialog(matching)}>
+                        <IconButton
+                          size="small"
+                          onClick={() => setDetailDialog(matching)}
+                          aria-label="수동 매칭 상세 보기"
+                        >
                           <VisibilityIcon sx={{ fontSize: 18 }} />
                         </IconButton>
                       </Tooltip>
@@ -557,7 +568,8 @@ export default function ManualMatching() {
                             <IconButton
                               size="small"
                               color="primary"
-                              onClick={() => handleExecute(matching)}
+                              onClick={() => setExecuteDialog(matching)}
+                              aria-label="수동 매칭 즉시 실행"
                             >
                               <PlayArrowIcon sx={{ fontSize: 18 }} />
                             </IconButton>
@@ -567,6 +579,7 @@ export default function ManualMatching() {
                               size="small"
                               color="error"
                               onClick={() => setCancelDialog(matching)}
+                              aria-label="수동 매칭 취소"
                             >
                               <CancelIcon sx={{ fontSize: 18 }} />
                             </IconButton>
@@ -708,6 +721,24 @@ export default function ManualMatching() {
             </DialogActions>
           </>
         )}
+      </Dialog>
+
+      {/* Execute Dialog */}
+      <Dialog open={!!executeDialog} onClose={() => setExecuteDialog(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>수동 매칭 즉시 실행</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            예약된 수동 매칭을 지금 실행합니다. 실행 후에는 매칭 상태가 변경됩니다.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button variant="outline" onClick={() => setExecuteDialog(null)}>
+            닫기
+          </Button>
+          <Button onClick={handleExecute}>
+            즉시 실행
+          </Button>
+        </DialogActions>
       </Dialog>
 
       {/* Cancel Dialog */}

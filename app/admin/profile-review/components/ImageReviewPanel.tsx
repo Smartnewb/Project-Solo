@@ -18,7 +18,6 @@ import {
 import { PendingImage, PendingUser } from "../page";
 import CloseIcon from "@mui/icons-material/Close";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import CancelIcon from "@mui/icons-material/Cancel";
 import InstagramIcon from "@mui/icons-material/Instagram";
 import WarningIcon from "@mui/icons-material/Warning";
 import FavoriteIcon from "@mui/icons-material/Favorite";
@@ -28,7 +27,6 @@ import PaymentIcon from "@mui/icons-material/Payment";
 import SchoolIcon from "@mui/icons-material/School";
 import NewReleasesIcon from "@mui/icons-material/NewReleases";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AdminService from "@/app/services/admin";
@@ -36,7 +34,6 @@ import { safeToLocaleDateString, safeToLocaleString } from '@/app/utils/formatte
 import {
   mapImagesBySlot,
   getSlotLabel,
-  formatApprovedDate,
 } from "../utils/imageMapper";
 
 interface ImageReviewPanelProps {
@@ -86,6 +83,38 @@ const getRankConfig = (rank?: string) => {
   return configs[rank as keyof typeof configs] || configs.UNKNOWN;
 };
 
+type ApiErrorLike = {
+  response?: {
+    status?: number;
+    data?: {
+      message?: string;
+    };
+  };
+};
+
+const getApiError = (error: unknown): ApiErrorLike =>
+  typeof error === "object" && error !== null ? (error as ApiErrorLike) : {};
+
+const getApiErrorMessage = (error: unknown, fallback: string) =>
+  getApiError(error).response?.data?.message || (error instanceof Error ? error.message : fallback);
+
+const isStaleImageReviewError = (error: unknown) => {
+  const response = getApiError(error).response;
+  return response?.status === 400 && response.data?.message === "심사 대기 중인 이미지가 아닙니다.";
+};
+
+const getImageSlotIndex = (image: { imageOrder?: number; slotIndex?: number }, fallback: number) =>
+  image.slotIndex ?? fallback;
+
+const formatPreferenceOption = (option: unknown) => {
+  if (typeof option === "object" && option !== null) {
+    const name = (option as { name?: unknown }).name;
+    return typeof name === "string" ? name : JSON.stringify(option);
+  }
+
+  return String(option);
+};
+
 export default function ImageReviewPanel({
   user,
   onApprove,
@@ -121,11 +150,11 @@ export default function ImageReviewPanel({
     try {
       await AdminService.userReview.updateUserRank(
         user.userId,
-        newRank as any,
+        newRank as NonNullable<PendingUser["rank"]>,
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       setCurrentRank(previousRank);
-      toast.error(error.response?.data?.message || "Rank 업데이트에 실패했습니다.");
+      toast.error(getApiErrorMessage(error, "Rank 업데이트에 실패했습니다."));
     } finally {
       setIsUpdatingRank(false);
     }
@@ -133,10 +162,21 @@ export default function ImageReviewPanel({
 
   if (!user) {
     return (
-      <Paper sx={{ p: 4, textAlign: "center", height: "100%" }}>
-        <Typography variant="body1" color="text.secondary">
+      <Paper sx={{ p: 4, textAlign: "center", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+        <Typography variant="body1" sx={{ fontWeight: 700, color: "text.primary" }}>
           심사할 사용자를 선택해주세요.
         </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1, maxWidth: 360 }}>
+          왼쪽 목록에서 사용자를 선택하면 사진별 승인/반려와 등급 조정을 진행할 수 있습니다.
+        </Typography>
+        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", justifyContent: "center", mt: 2 }}>
+          <Button size="small" variant="outlined" href="/admin/unapproved-users">
+            미승인 유저 보기
+          </Button>
+          <Button size="small" variant="outlined" href="/admin/review-inbox">
+            검토 인박스 보기
+          </Button>
+        </Box>
       </Paper>
     );
   }
@@ -148,7 +188,7 @@ export default function ImageReviewPanel({
           id: img.id,
           imageUrl: img.imageUrl,
           imageOrder: img.imageOrder,
-          slotIndex: (img as any).slotIndex ?? img.imageOrder ?? index,
+          slotIndex: getImageSlotIndex(img, img.imageOrder ?? index),
           isMain: img.isMain,
         }));
 
@@ -204,15 +244,13 @@ export default function ImageReviewPanel({
       if (isRepresentativeReplacement) {
         toast.success("대표사진 교체가 승인되었습니다.");
       }
-    } catch (error: any) {
-      if (error.response?.status === 400 && error.response?.data?.message === "심사 대기 중인 이미지가 아닙니다.") {
+    } catch (error: unknown) {
+      if (isStaleImageReviewError(error)) {
         await onImageApproved(imageId);
         toast.info("이미 심사 완료된 이미지라 목록을 새로고침했습니다.");
         return;
       }
-      toast.error(
-        error.response?.data?.message || "이미지 승인 중 오류가 발생했습니다.",
-      );
+      toast.error(getApiErrorMessage(error, "이미지 승인 중 오류가 발생했습니다."));
     } finally {
       setProcessing(false);
     }
@@ -271,8 +309,8 @@ export default function ImageReviewPanel({
       if (isRepresentativeReplacement) {
         toast.success("대표사진 교체가 거절되었습니다.");
       }
-    } catch (error: any) {
-      if (error.response?.status === 400 && error.response?.data?.message === "심사 대기 중인 이미지가 아닙니다.") {
+    } catch (error: unknown) {
+      if (isStaleImageReviewError(error)) {
         setRejectImageModalOpen(false);
         const staleImageId = selectedImageId;
         setSelectedImageId(null);
@@ -281,9 +319,7 @@ export default function ImageReviewPanel({
         toast.info("이미 심사 완료된 이미지라 목록을 새로고침했습니다.");
         return;
       }
-      toast.error(
-        error.response?.data?.message || "이미지 거절 중 오류가 발생했습니다.",
-      );
+      toast.error(getApiErrorMessage(error, "이미지 거절 중 오류가 발생했습니다."));
     } finally {
       setProcessing(false);
     }
@@ -927,7 +963,7 @@ export default function ImageReviewPanel({
                 {pref.options.map((option, idx) => (
                   <Chip
                     key={idx}
-                    label={typeof option === 'object' && option !== null ? (option as any).name ?? JSON.stringify(option) : option}
+                    label={formatPreferenceOption(option)}
                     size="small"
                     variant="outlined"
                   />

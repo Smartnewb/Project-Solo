@@ -68,7 +68,7 @@ export default function ScheduleConfig() {
           description: currentConfig.description || '',
         });
       }
-    } catch (err) {
+    } catch {
       setError('설정을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
@@ -137,7 +137,7 @@ export default function ScheduleConfig() {
       }
 
       fetchConfigs();
-    } catch (err) {
+    } catch {
       setError('설정 저장에 실패했습니다.');
     } finally {
       setSaving(false);
@@ -349,11 +349,11 @@ export default function ScheduleConfig() {
                     }
                   />
                 }
-                label="UNKNOWN 랭크 포함"
+                label="등급 미분류 포함"
                 sx={{ display: 'block' }}
               />
               <Typography variant="caption" color="text.secondary">
-                랭크가 UNKNOWN인 사용자도 매칭 대상에 포함
+                등급이 아직 정리되지 않은 사용자도 매칭 대상에 포함
               </Typography>
             </Box>
           </Collapse>

@@ -222,10 +222,10 @@ function LikesManagementPageContent() {
             </FormControl>
 
             <FormControl size="small" sx={{ minWidth: 100 }}>
-              <InputLabel>Mutual</InputLabel>
+              <InputLabel>상호 좋아요</InputLabel>
               <Select
                 value={filters.isMutualLike}
-                label="Mutual"
+                label="상호 좋아요"
                 onChange={(e) => handleFilterChange('isMutualLike', e.target.value as FilterBoolean)}
               >
                 <MenuItem value="ALL">전체</MenuItem>
@@ -240,6 +240,7 @@ function LikesManagementPageContent() {
               onChange={(value) => handleFilterChange('startDate', value)}
               slotProps={{
                 textField: { size: 'small', sx: { width: 150 } },
+                openPickerButton: { 'aria-label': '시작일 선택' },
               }}
             />
 
@@ -249,6 +250,7 @@ function LikesManagementPageContent() {
               onChange={(value) => handleFilterChange('endDate', value)}
               slotProps={{
                 textField: { size: 'small', sx: { width: 150 } },
+                openPickerButton: { 'aria-label': '종료일 선택' },
               }}
             />
 
@@ -261,7 +263,7 @@ function LikesManagementPageContent() {
               >
                 <MenuItem value="createdAt">발송일</MenuItem>
                 <MenuItem value="viewedAt">조회일</MenuItem>
-                <MenuItem value="mutualLikeAt">Mutual시간</MenuItem>
+                <MenuItem value="mutualLikeAt">상호 좋아요 시간</MenuItem>
               </Select>
             </FormControl>
 
@@ -290,12 +292,23 @@ function LikesManagementPageContent() {
 
         {/* 테이블 */}
         {isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1.5, py: 8 }}>
             <CircularProgress />
+            <Typography variant="body2" color="text.secondary">
+              좋아요 목록을 불러오는 중입니다.
+            </Typography>
           </Box>
         ) : likes.length === 0 ? (
           <Box sx={{ textAlign: 'center', py: 8 }}>
-            <Typography color="text.secondary">좋아요 데이터가 없습니다.</Typography>
+            <Typography variant="subtitle1" fontWeight={700}>
+              조건에 맞는 좋아요가 없습니다.
+            </Typography>
+            <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+              검색어와 필터를 줄이거나 초기화 후 다시 확인하세요.
+            </Typography>
+            <Button variant="outlined" onClick={handleReset} startIcon={<RefreshIcon />} sx={{ mt: 2 }}>
+              필터 초기화
+            </Button>
           </Box>
         ) : (
           <>
@@ -307,7 +320,7 @@ function LikesManagementPageContent() {
                     <TableCell sx={{ minWidth: 200 }}>받은 사람</TableCell>
                     <TableCell align="center" sx={{ minWidth: 100 }}>상태</TableCell>
                     <TableCell align="center" sx={{ minWidth: 80 }}>편지</TableCell>
-                    <TableCell align="center" sx={{ minWidth: 100 }}>Mutual</TableCell>
+                    <TableCell align="center" sx={{ minWidth: 100 }}>상호 좋아요</TableCell>
                     <TableCell sx={{ minWidth: 140 }}>발송일</TableCell>
                     <TableCell align="center" sx={{ minWidth: 100 }}>조회</TableCell>
                     <TableCell align="center" sx={{ minWidth: 80 }}>만료</TableCell>
@@ -330,7 +343,7 @@ function LikesManagementPageContent() {
                             arrow
                             placement="top"
                           >
-                            <IconButton size="small" color="primary">
+                            <IconButton size="small" color="primary" aria-label="편지 내용 보기">
                               <MailOutlineIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>

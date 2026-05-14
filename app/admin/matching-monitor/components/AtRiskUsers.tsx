@@ -21,6 +21,32 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
 import { safeFormat } from '@/app/utils/formatters';
 import type { AtRiskUsers as AtRiskUsersType } from '../types';
 
+const FAILURE_REASON_LABELS: Record<string, string> = {
+	NO_SQL_CANDIDATES: 'SQL 후보 없음',
+	NO_PHOTO_POOL_CANDIDATES: '사진 심사 완료 후보 없음',
+	NO_ELIGIBLE_CANDIDATES: '적격 후보 없음',
+	NO_COMPATIBLE_CANDIDATES: '호환 후보 없음',
+	NO_REGION_CANDIDATES: '지역 조건 후보 없음',
+	NO_PREFERENCE_MATCH: '선호 조건 불일치',
+};
+
+function formatFailureReason(reason: string) {
+	return FAILURE_REASON_LABELS[reason] ?? reason.replace(/_/g, ' ').toLowerCase();
+}
+
+function getFailureReasonLabel(payload: unknown, fallback: string) {
+	if (
+		payload &&
+		typeof payload === 'object' &&
+		'fullName' in payload &&
+		typeof (payload as { fullName?: unknown }).fullName === 'string'
+	) {
+		return (payload as { fullName: string }).fullName;
+	}
+
+	return fallback;
+}
+
 export default function AtRiskUsersSection({
 	data,
 	onUserClick,
@@ -34,12 +60,19 @@ export default function AtRiskUsersSection({
 	const reasonData = useMemo(
 		() =>
 			data.topFailureReasons.map((r) => ({
-				name: r.reason.length > 20 ? `${r.reason.slice(0, 20)}...` : r.reason,
-				fullName: r.reason,
+				name: formatFailureReason(r.reason),
+				fullName: formatFailureReason(r.reason),
 				count: r.count,
 			})),
 		[data.topFailureReasons],
 	);
+
+	const handleUserRowKeyDown = (event: React.KeyboardEvent<HTMLTableRowElement>, userId: string) => {
+		if (event.key === 'Enter' || event.key === ' ') {
+			event.preventDefault();
+			onUserClick(userId);
+		}
+	};
 
 	return (
 		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -116,8 +149,12 @@ export default function AtRiskUsersSection({
 											<TableRow
 												key={user.userId}
 												hover
+												tabIndex={0}
+												role="button"
+												aria-label={`${user.name} 매칭 실패 진단 열기`}
 												sx={{ cursor: 'pointer' }}
 												onClick={() => onUserClick(user.userId)}
+												onKeyDown={(event) => handleUserRowKeyDown(event, user.userId)}
 											>
 												<TableCell>
 													<MuiTooltip title={user.userId} arrow placement="top">
@@ -146,7 +183,7 @@ export default function AtRiskUsersSection({
 												</TableCell>
 												<TableCell>
 													<Typography variant="body2" sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-														{user.lastFailureReason}
+														{formatFailureReason(user.lastFailureReason)}
 													</Typography>
 												</TableCell>
 												<TableCell>
@@ -176,8 +213,8 @@ export default function AtRiskUsersSection({
 									<YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={140} />
 									<RechartsTooltip
 										formatter={(value: number) => [value.toLocaleString(), '건수']}
-										labelFormatter={(label: string, payload: any[]) =>
-											payload?.[0]?.payload?.fullName || label
+										labelFormatter={(label: string, payload: Array<{ payload?: unknown }>) =>
+											getFailureReasonLabel(payload?.[0]?.payload, label)
 										}
 									/>
 									<Bar dataKey="count" fill="#ef4444" radius={[0, 4, 4, 0]} />

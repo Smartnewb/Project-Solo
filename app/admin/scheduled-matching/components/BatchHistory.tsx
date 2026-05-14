@@ -63,7 +63,7 @@ export default function BatchHistory() {
         const data = await scheduledMatchingService.getBatchesByCountry(countryFilter, 50, 0);
         setBatches(data);
       }
-    } catch (err) {
+    } catch {
       setError('배치 히스토리를 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
@@ -95,7 +95,7 @@ export default function BatchHistory() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h6">배치 히스토리</Typography>
         <Tooltip title="새로고침">
-          <IconButton onClick={fetchBatches} size="small">
+          <IconButton onClick={fetchBatches} size="small" aria-label="배치 히스토리 새로고침">
             <RefreshIcon />
           </IconButton>
         </Tooltip>
@@ -203,6 +203,7 @@ export default function BatchHistory() {
                           <IconButton
                             size="small"
                             onClick={() => setSelectedBatchId(batch.id)}
+                            aria-label={`${batch.country} 배치 상세 보기`}
                           >
                             <VisibilityIcon fontSize="small" />
                           </IconButton>

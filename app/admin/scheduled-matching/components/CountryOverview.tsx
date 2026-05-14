@@ -15,9 +15,11 @@ import {
   ToggleButtonGroup,
   ToggleButton,
   TextField,
-  Switch,
-  FormControlLabel,
   Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -243,6 +245,7 @@ export default function CountryOverview() {
   const [scheduleExecuting, setScheduleExecuting] = useState(false);
   const [scheduleResult, setScheduleResult] = useState<ScheduleMatchingResponse | null>(null);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [scheduleConfirmOpen, setScheduleConfirmOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -272,7 +275,7 @@ export default function CountryOverview() {
         newLastBatches[country] = batch;
       });
       setLastBatches(newLastBatches);
-    } catch (err) {
+    } catch {
       setError('데이터를 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
@@ -295,7 +298,7 @@ export default function CountryOverview() {
       setMapError(null);
       const stats = await scheduledMatchingService.getMatchingPoolStats(country, startDate, endDate);
       setMapStats(stats);
-    } catch (err) {
+    } catch {
       setMapError('지도 데이터를 불러오는데 실패했습니다.');
       setMapStats(null);
     } finally {
@@ -330,7 +333,7 @@ export default function CountryOverview() {
       setTriggering(country);
       await scheduledMatchingService.triggerManualExecution(country);
       fetchData();
-    } catch (err) {
+    } catch {
       setError('수동 실행에 실패했습니다.');
     } finally {
       setTriggering(null);
@@ -342,7 +345,7 @@ export default function CountryOverview() {
       setCancelling(batchId);
       await scheduledMatchingService.cancelBatch(batchId);
       fetchData();
-    } catch (err) {
+    } catch {
       setError('배치 취소에 실패했습니다.');
     } finally {
       setCancelling(null);
@@ -350,11 +353,8 @@ export default function CountryOverview() {
   };
 
   const handleScheduleMatching = async () => {
-    if (!confirm(`${scheduleCountry === 'KR' ? '한국' : '일본'} 오늘자 스케줄 매칭을 실행하시겠습니까?`)) {
-      return;
-    }
-
     try {
+      setScheduleConfirmOpen(false);
       setScheduleExecuting(true);
       setScheduleError(null);
       setScheduleResult(null);
@@ -382,8 +382,11 @@ export default function CountryOverview() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1.5, py: 4 }}>
         <CircularProgress />
+        <Typography variant="body2" color="text.secondary">
+          정기 매칭 현황을 불러오는 중입니다.
+        </Typography>
       </Box>
     );
   }
@@ -393,7 +396,7 @@ export default function CountryOverview() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h6">국가별 현황</Typography>
         <Tooltip title="새로고침">
-          <IconButton onClick={fetchData} size="small">
+          <IconButton onClick={fetchData} size="small" aria-label="국가별 정기 매칭 현황 새로고침">
             <RefreshIcon />
           </IconButton>
         </Tooltip>
@@ -463,9 +466,10 @@ export default function CountryOverview() {
             exclusive
             onChange={(_, value) => value && setScheduleCountry(value)}
             size="small"
+            aria-label="수동 스케줄 매칭 국가 선택"
           >
-            <ToggleButton value="KR">🇰🇷 한국</ToggleButton>
-            <ToggleButton value="JP">🇯🇵 일본</ToggleButton>
+            <ToggleButton value="KR" aria-label="한국 기준으로 수동 스케줄 매칭 실행">🇰🇷 한국</ToggleButton>
+            <ToggleButton value="JP" aria-label="일본 기준으로 수동 스케줄 매칭 실행">🇯🇵 일본</ToggleButton>
           </ToggleButtonGroup>
 
           <Typography variant="body2" color="text.secondary">
@@ -473,7 +477,7 @@ export default function CountryOverview() {
           </Typography>
 
           <Button
-            onClick={handleScheduleMatching}
+            onClick={() => setScheduleConfirmOpen(true)}
             disabled={scheduleExecuting}
           >
             {scheduleExecuting ? (
@@ -519,7 +523,7 @@ export default function CountryOverview() {
                 <Grid item xs={12} sm={6} md={4}>
                   <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
                     <Typography variant="caption" color="text.secondary">
-                      UNKNOWN 랭크 포함
+                      등급 미분류 포함
                     </Typography>
                     <Typography variant="h6">
                       <Chip
@@ -530,8 +534,8 @@ export default function CountryOverview() {
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
                       {currentConfig.includeUnknownRank
-                        ? '랭크 미산정 유저 포함'
-                        : '랭크 미산정 유저 제외'}
+                        ? '등급이 아직 정리되지 않은 유저 포함'
+                        : '등급이 아직 정리되지 않은 유저 제외'}
                     </Typography>
                   </Box>
                 </Grid>
@@ -561,6 +565,28 @@ export default function CountryOverview() {
         })()}
       </Paper>
 
+      <Dialog
+        open={scheduleConfirmOpen}
+        onClose={() => setScheduleConfirmOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>스케줄 매칭 실행</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            {scheduleCountry === 'KR' ? '한국' : '일본'} 오늘자 스케줄 매칭을 실행합니다. 매칭은 Queue를 통해 순차 처리됩니다.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button variant="outline" onClick={() => setScheduleConfirmOpen(false)}>
+            닫기
+          </Button>
+          <Button onClick={handleScheduleMatching} disabled={scheduleExecuting}>
+            실행
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Paper sx={{ mt: 4, p: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -572,6 +598,7 @@ export default function CountryOverview() {
               onClick={() => fetchMapStats(mapCountry, dateRange.startDate, dateRange.endDate)}
               size="small"
               disabled={mapLoading}
+              aria-label="매칭풀 지역별 현황 새로고침"
             >
               <RefreshIcon />
             </IconButton>
@@ -602,18 +629,20 @@ export default function CountryOverview() {
             exclusive
             onChange={handleMapCountryChange}
             size="small"
+            aria-label="매칭풀 지역별 현황 국가 필터"
           >
-            <ToggleButton value="KR">🇰🇷 한국</ToggleButton>
-            <ToggleButton value="JP">🇯🇵 일본</ToggleButton>
+            <ToggleButton value="KR" aria-label="한국 매칭풀 지역별 현황 보기">🇰🇷 한국</ToggleButton>
+            <ToggleButton value="JP" aria-label="일본 매칭풀 지역별 현황 보기">🇯🇵 일본</ToggleButton>
           </ToggleButtonGroup>
           <ToggleButtonGroup
             value={matchingType}
             exclusive
             onChange={handleMatchingTypeChange}
             size="small"
+            aria-label="매칭풀 지역별 현황 매칭 유형 필터"
           >
-            <ToggleButton value="scheduled">스케줄 매칭</ToggleButton>
-            <ToggleButton value="rematching">재매칭</ToggleButton>
+            <ToggleButton value="scheduled" aria-label="스케줄 매칭 기준 지역별 현황 보기">스케줄 매칭</ToggleButton>
+            <ToggleButton value="rematching" aria-label="재매칭 기준 지역별 현황 보기">재매칭</ToggleButton>
           </ToggleButtonGroup>
         </Box>
 
@@ -720,7 +749,14 @@ export default function CountryOverview() {
           </>
         ) : (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 1000 }}>
-            <Typography color="text.secondary">데이터가 없습니다.</Typography>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="subtitle1" fontWeight={700}>
+                지역별 매칭풀 데이터가 없습니다.
+              </Typography>
+              <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+                날짜 범위와 국가, 매칭 유형을 변경한 뒤 다시 확인하세요.
+              </Typography>
+            </Box>
           </Box>
         )}
       </Paper>

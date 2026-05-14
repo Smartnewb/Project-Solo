@@ -220,7 +220,7 @@ function ReportsManagementContent() {
         setSelectedReport(reportDetail);
         statusForm.setValue('status', reportDetail.status);
         statusForm.setValue('action', getDefaultActionForStatus(reportDetail.status));
-      } catch (err: unknown) {
+      } catch {
         if (fallbackReport) {
           setSelectedReport(fallbackReport);
           statusForm.setValue('status', fallbackReport.status);
@@ -264,7 +264,7 @@ function ReportsManagementContent() {
         setReports([]);
         setTotalCount(0);
       }
-    } catch (err: unknown) {
+    } catch {
       setError("신고 목록을 불러오는데 실패했습니다.");
     } finally {
       setLoading(false);
@@ -347,7 +347,7 @@ function ReportsManagementContent() {
         selectedReport.chatRoomId,
       );
       setChatHistory(response);
-    } catch (err: unknown) {
+    } catch {
       toast.error("채팅 내역을 불러오는데 실패했습니다.");
     } finally {
       setChatLoading(false);
@@ -363,7 +363,7 @@ function ReportsManagementContent() {
         selectedReport.reported.id,
       );
       setProfileImages(images);
-    } catch (err: unknown) {
+    } catch {
       toast.error("프로필 이미지를 불러오는데 실패했습니다.");
     } finally {
       setProfileImagesLoading(false);
@@ -386,7 +386,7 @@ function ReportsManagementContent() {
         status: data.status,
       });
       fetchReports();
-    } catch (_error: unknown) {
+    } catch {
       toast.error("상태 변경에 실패했습니다.");
     } finally {
       setStatusUpdating(false);
@@ -403,9 +403,9 @@ function ReportsManagementContent() {
 
       const data = await AdminService.userAppearance.getUserDetails(userId);
       setUserDetail(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setUserDetailError(
-        err.message || "사용자 정보를 불러오는데 실패했습니다.",
+        err instanceof Error ? err.message : "사용자 정보를 불러오는데 실패했습니다.",
       );
     } finally {
       setUserDetailLoading(false);
@@ -1248,11 +1248,12 @@ function ReportsManagementContent() {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleViewDetail(report)}
-                        color="primary"
-                      >
+	                      <IconButton
+	                        size="small"
+	                        onClick={() => handleViewDetail(report)}
+	                        color="primary"
+	                        aria-label={`${report.reported.name} 신고 상세 보기`}
+	                      >
                         <VisibilityIcon />
                       </IconButton>
                     </TableCell>

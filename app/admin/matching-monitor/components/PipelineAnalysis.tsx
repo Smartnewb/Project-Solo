@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Box, Card, CardContent, Typography, Chip } from '@mui/material';
+import { Box, Card, CardContent, Typography } from '@mui/material';
 import {
 	BarChart,
 	Bar,
@@ -16,9 +16,30 @@ import type { PipelineTransparency } from '../types';
 
 const FILTER_COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#6366f1', '#ef4444'];
 
+const FILTER_LABELS: Record<string, string> = {
+	NO_PHOTO_POOL_CANDIDATES: '사진 심사 완료 후보 없음',
+	NO_ELIGIBLE_CANDIDATES: '적격 후보 없음',
+	NO_COMPATIBLE_CANDIDATES: '호환 후보 없음',
+	NO_REGION_CANDIDATES: '지역 조건 후보 없음',
+	NO_PREFERENCE_MATCH: '선호 조건 불일치',
+	ALREADY_MATCHED: '이미 매칭됨',
+	BLOCKED_OR_REPORTED: '차단/신고 관계',
+};
+
+function formatFilterLabel(filterName: string) {
+	return FILTER_LABELS[filterName] ?? filterName.replace(/_/g, ' ').toLowerCase();
+}
+
 export default function PipelineAnalysis({ data }: { data: PipelineTransparency }) {
 	const filterData = useMemo(
-		() => [...data.byFilter].sort((a, b) => b.totalEliminated - a.totalEliminated).slice(0, 10),
+		() =>
+			[...data.byFilter]
+				.sort((a, b) => b.totalEliminated - a.totalEliminated)
+				.slice(0, 10)
+				.map((item) => ({
+					...item,
+					label: formatFilterLabel(item.filterName),
+				})),
 		[data.byFilter],
 	);
 
@@ -49,7 +70,7 @@ export default function PipelineAnalysis({ data }: { data: PipelineTransparency 
 									<XAxis type="number" tick={{ fontSize: 12 }} />
 									<YAxis
 										type="category"
-										dataKey="filterName"
+										dataKey="label"
 										tick={{ fontSize: 11 }}
 										width={160}
 									/>
@@ -58,6 +79,7 @@ export default function PipelineAnalysis({ data }: { data: PipelineTransparency 
 											value.toLocaleString(),
 											'탈락 건수',
 										]}
+										labelFormatter={(label) => String(label)}
 									/>
 									<Bar dataKey="totalEliminated" radius={[0, 4, 4, 0]}>
 										{filterData.map((_, i) => (

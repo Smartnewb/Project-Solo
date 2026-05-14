@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   Box,
   Paper,
@@ -13,8 +14,8 @@ import {
 } from '@mui/material';
 import {
   FiberManualRecord as DotIcon,
-  Person as PersonIcon,
   Inbox as InboxIcon,
+  AutoAwesome as ReviewInboxIcon,
 } from '@mui/icons-material';
 import type { SupportSessionSummary, SupportDomain } from '@/app/types/support-chat';
 import { DOMAIN_LABELS, DOMAIN_COLORS } from '@/app/types/support-chat';
@@ -162,6 +163,14 @@ export default function SessionQueue({
     : sessions.filter((s) => s.domain === domainFilter);
 
   const newCount = newSessionIds.size;
+  const hasOtherTabItems = activeTab === 'active' ? resolvedSessions.length > 0 : activeSessions.length > 0;
+  const emptyTitle = activeTab === 'active' ? '대기/응대 중인 세션이 없습니다.' : '해결된 세션이 없습니다.';
+  const emptyDescription =
+    domainFilter === 'all'
+      ? activeTab === 'active'
+        ? '지금 바로 응대할 고객지원 세션은 없습니다. 완료된 상담이나 검토 인박스에서 남은 처리 건을 확인할 수 있습니다.'
+        : '해결 완료로 분류된 상담 세션이 없습니다.'
+      : `${DOMAIN_LABELS[domainFilter]} 필터에 해당하는 세션이 없습니다.`;
 
   return (
     <Box
@@ -227,11 +236,53 @@ export default function SessionQueue({
       {/* Session list */}
       <Box sx={{ flex: 1, overflowY: 'auto', p: 1.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
         {filtered.length === 0 ? (
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, color: 'text.secondary' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flex: 1,
+              color: 'text.secondary',
+              textAlign: 'center',
+              px: 2,
+              gap: 1,
+            }}
+          >
             <InboxIcon sx={{ fontSize: 48, mb: 1, opacity: 0.5 }} />
-            <Typography variant="body2">
-              {activeTab === 'active' ? '대기/응대 중인 세션이 없습니다.' : '해결된 세션이 없습니다.'}
+            <Typography variant="body2" sx={{ fontWeight: 700, color: 'text.primary' }}>
+              {emptyTitle}
             </Typography>
+            <Typography variant="caption" sx={{ lineHeight: 1.5 }}>
+              {emptyDescription}
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, width: '100%', mt: 1 }}>
+              {domainFilter !== 'all' ? (
+                <Button size="small" variant="outlined" onClick={() => onDomainFilterChange('all')}>
+                  전체 문의 보기
+                </Button>
+              ) : null}
+              {hasOtherTabItems ? (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => onTabChange(activeTab === 'active' ? 'resolved' : 'active')}
+                >
+                  {activeTab === 'active' ? '해결 세션 보기' : '활성 세션 보기'}
+                </Button>
+              ) : null}
+              {activeTab === 'active' ? (
+                <Button
+                  size="small"
+                  variant="contained"
+                  component={Link}
+                  href="/admin/review-inbox"
+                  startIcon={<ReviewInboxIcon />}
+                >
+                  검토 인박스 보기
+                </Button>
+              ) : null}
+            </Box>
           </Box>
         ) : (
           filtered.map((session) => (

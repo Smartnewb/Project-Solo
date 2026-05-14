@@ -28,7 +28,6 @@ import type {
   ReviewInboxAction,
   ReviewInboxBucket,
   ReviewInboxEvidenceType,
-  ReviewInboxItem,
   ReviewInboxResponse,
   ReviewInboxSourceKind,
 } from './types';
@@ -106,6 +105,14 @@ function formatDateTime(value?: string) {
   });
 }
 
+function formatShortId(value?: string) {
+  if (!value) {
+    return null;
+  }
+
+  return value.length > 12 ? `${value.slice(0, 8)}...${value.slice(-4)}` : value;
+}
+
 function getActionButtonProps(action: ReviewInboxAction) {
   if (action.tone === 'danger') {
     return {
@@ -161,7 +168,7 @@ export default function ReviewInboxV2() {
         setSelectedIds(getInitialSelectedIds(response));
       } catch (loadError) {
         if (cancelled) return;
-      setError(loadError instanceof Error ? loadError.message : '검토 인박스를 불러오지 못했습니다.');
+        setError(loadError instanceof Error ? loadError.message : '검토 인박스를 불러오지 못했습니다.');
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -387,6 +394,8 @@ export default function ReviewInboxV2() {
                     {activeItems.map((item) => {
                       const isSelected = selectedItem?.id === item.id;
                       const tone = bucketTone[item.bucket];
+                      const createdAtLabel = formatDateTime(item.createdAt);
+                      const sourceIdLabel = formatShortId(item.sourceId);
 
                       return (
                         <Box
@@ -395,7 +404,7 @@ export default function ReviewInboxV2() {
                           type="button"
                           onClick={() => handleSelectItem(item.bucket, item.id)}
                           aria-pressed={isSelected}
-                          aria-label={`${item.title} 상세 보기`}
+                          aria-label={`${item.title} ${sourceIdLabel ? `ID ${sourceIdLabel}` : ''} 상세 보기`}
                           sx={{
                             display: 'flex',
                             alignItems: 'flex-start',
@@ -430,14 +439,15 @@ export default function ReviewInboxV2() {
                             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
                               {item.source}
                             </Typography>
-                            {(item.bucket === 'done' || item.handlerLabel) && (
-                              <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap" sx={{ mt: 1 }}>
-                                <Chip size="small" label={reviewInboxSourceKindLabels[item.sourceKind]} variant="outlined" />
-                                {item.handlerLabel ? (
-                                  <Chip size="small" label={item.handlerLabel} variant="outlined" />
-                                ) : null}
-                              </Stack>
-                            )}
+                            <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap" sx={{ mt: 1 }}>
+                              <Chip size="small" label={reviewInboxSourceKindLabels[item.sourceKind]} variant="outlined" />
+                              <Chip size="small" label={item.sourceStatus} variant="outlined" />
+                              {createdAtLabel ? <Chip size="small" label={`접수 ${createdAtLabel}`} variant="outlined" /> : null}
+                              {sourceIdLabel ? <Chip size="small" label={`ID ${sourceIdLabel}`} variant="outlined" /> : null}
+                              {item.handlerLabel ? (
+                                <Chip size="small" label={item.handlerLabel} variant="outlined" />
+                              ) : null}
+                            </Stack>
                             <Typography
                               variant="caption"
                               sx={{
@@ -475,7 +485,7 @@ export default function ReviewInboxV2() {
             </Card>
 
             {selectedItem && (
-              <Card sx={{ borderRadius: 3 }}>
+              <Card sx={{ borderRadius: 3, alignSelf: 'start', position: { lg: 'sticky' }, top: { lg: 16 } }}>
                 <CardContent sx={{ p: 2.5, '&:last-child': { pb: 2.5 } }}>
                   <Stack spacing={2}>
                     <Box>
@@ -500,6 +510,15 @@ export default function ReviewInboxV2() {
                       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>
                         {selectedItem.source}
                       </Typography>
+                      <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap" sx={{ mt: 1 }}>
+                        {formatDateTime(selectedItem.createdAt) ? (
+                          <Chip size="small" variant="outlined" label={`접수 ${formatDateTime(selectedItem.createdAt)}`} />
+                        ) : null}
+                        {formatShortId(selectedItem.sourceId) ? (
+                          <Chip size="small" variant="outlined" label={`원본 ID ${formatShortId(selectedItem.sourceId)}`} />
+                        ) : null}
+                        <Chip size="small" variant="outlined" label={`상태 ${selectedItem.sourceStatus}`} />
+                      </Stack>
                       {formatDateTime(selectedItem.completedAt) ? (
                         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
                           완료 시각 · {formatDateTime(selectedItem.completedAt)}
