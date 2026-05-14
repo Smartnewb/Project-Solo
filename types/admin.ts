@@ -294,7 +294,23 @@ export interface AppleIapPricePoint {
 
 export interface SyncApplePricesResponse {
   synced: number;
+  productsSynced?: number;
+  pricePointsSynced?: number;
+  storefront?: string;
   failed: string[];
+}
+
+export interface AdminAppleIapProduct {
+  sku: string;
+  ascIapId: string;
+  name: string;
+  state: string;
+  mappedGemProductId: string | null;
+  mappedGemProductName: string | null;
+  price: number | null;
+  currency: string | null;
+  displayPrice: string | null;
+  syncedAt: string;
 }
 
 export interface RestoreFemaleResponse {
