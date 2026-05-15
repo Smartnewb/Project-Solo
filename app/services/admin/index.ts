@@ -115,6 +115,7 @@ export { somemateChat } from './somemate-chat';
 export { ghostReferencePool } from './ghost-reference-pool';
 export { aiProfileGenerator } from './ai-profile-generator';
 export { promotions } from './promotions';
+export { incentiveCampaign } from './incentive-campaign';
 export { gemProducts } from './gem-products';
 export { iapCatalog } from './iap-catalog';
 export { aiProfileReferences } from './ai-profile-references';
@@ -170,6 +171,14 @@ export type {
 	FcmTokenUserItem,
 	FcmTokensResponse,
 } from './system';
+export type {
+	CampaignCalendarAssignment,
+	CampaignCalendarDay,
+	CampaignCalendarFemaleGroup,
+	CampaignCalendarMaleProfile,
+	CampaignCalendarResponse,
+	CampaignCalendarUserSummary,
+} from './incentive-campaign';
 
 // Import all consts to assemble AdminService
 import { stats, kpiReport } from './dashboard';
@@ -212,6 +221,7 @@ import { somemateChat } from './somemate-chat';
 import { ghostReferencePool } from './ghost-reference-pool';
 import { aiProfileGenerator } from './ai-profile-generator';
 import { promotions } from './promotions';
+import { incentiveCampaign } from './incentive-campaign';
 import { gemProducts } from './gem-products';
 import { iapCatalog } from './iap-catalog';
 import { activities, campaigns, reviewQueue, metrics, personas, communitySettings, targetPosts } from './community-automation';
@@ -263,6 +273,7 @@ const AdminService = {
 	ghostReferencePool,
 	aiProfileGenerator,
 	promotions,
+	incentiveCampaign,
 	gemProducts,
 	iapCatalog,
 	seo,

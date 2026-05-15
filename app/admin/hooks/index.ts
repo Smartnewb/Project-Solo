@@ -35,3 +35,4 @@ export * from './use-unsaved-guard';
 export * from './use-url-state';
 export * from './use-card-news-generation';
 export * from './use-promotions';
+export * from './use-incentive-campaign';

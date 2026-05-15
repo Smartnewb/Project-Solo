@@ -138,6 +138,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
       { href: '/admin/deleted-females', label: '탈퇴 회원 복구' },
       { href: '/admin/dormant-likes', label: '파묘 좋아요' },
       { href: '/admin/dormant-likes/logs', label: '처리 이력' },
+      { href: '/admin/incentive-campaign', label: '인센티브 캠페인' },
       { href: '/admin/care', label: '유저 케어' },
       { href: '/admin/care/logs', label: '케어 이력' },
     ],
