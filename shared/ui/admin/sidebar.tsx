@@ -62,7 +62,16 @@ export const NAV_CATEGORIES: NavCategory[] = [
       { href: '/admin/reports', label: '프로필 신고 관리' },
       { href: '/admin/blacklist', label: '블랙리스트' },
       { href: '/admin/review-inbox', label: '검토 인박스' },
-      { href: '/admin/community-automation', label: '커뮤니티 관리' },
+      {
+        id: 'community-automation',
+        label: '커뮤니티 관리',
+        children: [
+          { href: '/admin/community-automation/target-posts', label: '게시글/AI 활동' },
+          { href: '/admin/community-automation/questions', label: '주간 질문' },
+          { href: '/admin/community-automation/review-queue', label: '검수 대기' },
+          { href: '/admin/community-automation/metrics', label: '예약/메트릭' },
+        ],
+      },
       { href: '/admin/support-chat', label: '고객 지원' },
       { href: '/admin/universities', label: '대학교 관리' },
       { href: '/admin/universities/clusters', label: '대학교 클러스터' },

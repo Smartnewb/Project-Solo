@@ -59,6 +59,33 @@ export type {
 	CreateManualCommentBody,
 	TargetPostDraftResult,
 } from './community-automation';
+export { communityQuestions } from './community-questions';
+export type {
+	AssignCandidateBody,
+	AssignCandidateResult,
+	CandidateBatchDay,
+	CandidateBatchDetail,
+	CandidateBatchListParams,
+	CandidateBatchListResponse,
+	CandidateBatchSummary,
+	CommunityQuestion,
+	CommunityQuestionBatchStatus,
+	CommunityQuestionCalendarDay,
+	CommunityQuestionCalendarParams,
+	CommunityQuestionCalendarResponse,
+	CommunityQuestionCandidate,
+	CommunityQuestionCandidateStatus,
+	CommunityQuestionCountry,
+	CommunityQuestionCreateBody,
+	CommunityQuestionScope,
+	CommunityQuestionStatus,
+	CommunityQuestionTargetScope,
+	GenerateCandidateBatchBody,
+	GenerateCandidateBatchResult,
+	RejectCandidateBody,
+	UpdateCandidateBody,
+	UpdateQuestionScheduleBody,
+} from './community-questions';
 export type { CardNewsTopic, QueueStats, JobStatus } from './card-news-generation';
 export { reports, userReview, profileImages } from './moderation';
 export {
@@ -222,6 +249,7 @@ import { ghostReferencePool } from './ghost-reference-pool';
 import { aiProfileGenerator } from './ai-profile-generator';
 import { promotions } from './promotions';
 import { incentiveCampaign } from './incentive-campaign';
+import { communityQuestions } from './community-questions';
 import { gemProducts } from './gem-products';
 import { iapCatalog } from './iap-catalog';
 import { activities, campaigns, reviewQueue, metrics, personas, communitySettings, targetPosts } from './community-automation';
@@ -274,6 +302,7 @@ const AdminService = {
 	aiProfileGenerator,
 	promotions,
 	incentiveCampaign,
+	communityQuestions,
 	gemProducts,
 	iapCatalog,
 	seo,
