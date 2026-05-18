@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { adminLog } from '@/shared/lib/admin-logger';
 import {
-  getAdminAccessToken,
   getAdminRefreshToken,
   setAdminAccessToken,
   setAdminRefreshToken,
@@ -13,11 +12,10 @@ import {
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api';
 
 export async function POST() {
-  const currentToken = await getAdminAccessToken();
   const currentRefreshToken = await getAdminRefreshToken();
   const meta = await getSessionMeta();
 
-  if (!currentToken || !currentRefreshToken || !meta) {
+  if (!currentRefreshToken || !meta) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 

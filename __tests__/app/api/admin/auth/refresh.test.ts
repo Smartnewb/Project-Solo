@@ -133,16 +133,23 @@ describe('POST /api/admin/auth/refresh', () => {
   });
 
   describe('missing authentication', () => {
-    it('returns 401 when access token is missing', async () => {
+    it('refreshes successfully when access token is missing but refresh state exists', async () => {
       (getAdminAccessToken as jest.Mock).mockResolvedValue(null);
       (getAdminRefreshToken as jest.Mock).mockResolvedValue('refresh-token');
       (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
 
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ accessToken: 'new-access-token', refreshToken: 'new-refresh-token' }),
+      });
+
       const res = await POST();
       const body = await res.json();
 
-      expect(res.status).toBe(401);
-      expect(body.error).toBe('Not authenticated');
+      expect(res.status).toBe(200);
+      expect(body.accessToken).toBe('new-access-token');
+      expect(setAdminAccessToken).toHaveBeenCalledWith('new-access-token');
     });
 
     it('returns 401 when refresh token is missing', async () => {

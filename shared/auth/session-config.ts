@@ -3,6 +3,7 @@ import type { SessionOptions } from 'iron-session';
 export const ADMIN_COOKIE_NAME = 'admin_access_token';
 export const ADMIN_REFRESH_COOKIE_NAME = 'admin_refresh_token';
 export const ADMIN_META_COOKIE = 'admin_session_meta';
+export const ADMIN_AUTH_COOKIE_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
 
 export interface AdminSessionMeta {
   id: string;
@@ -34,6 +35,6 @@ export const sessionOptions: SessionOptions = {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
     sameSite: 'lax' as const,
-    maxAge: 60 * 60 * 8, // 8 hours
+    maxAge: ADMIN_AUTH_COOKIE_MAX_AGE_SECONDS,
   },
 };

@@ -15,10 +15,11 @@ jest.mock('iron-session', () => ({ getIronSession: mockGetIronSession }), { virt
 jest.mock('@/shared/auth/session-config', () => ({
   ADMIN_COOKIE_NAME: 'admin_access_token',
   ADMIN_REFRESH_COOKIE_NAME: 'admin_refresh_token',
+  ADMIN_AUTH_COOKIE_MAX_AGE_SECONDS: 30 * 24 * 60 * 60,
   sessionOptions: {
     password: 'DEVELOPMENT_SECRET_MUST_BE_32_CHARS_LONG!!',
     cookieName: 'admin_session_meta',
-    cookieOptions: { secure: false, httpOnly: true, sameSite: 'lax', maxAge: 28800 },
+    cookieOptions: { secure: false, httpOnly: true, sameSite: 'lax', maxAge: 30 * 24 * 60 * 60 },
   },
 }));
 
@@ -72,13 +73,13 @@ describe('shared/auth/cookies', () => {
       );
     });
 
-    it('sets the access token cookie with 8-hour maxAge', async () => {
+    it('sets the access token cookie with 30-day maxAge', async () => {
       await setAdminAccessToken('new-access-token');
 
       expect(mockSet).toHaveBeenCalledWith(
         'admin_access_token',
         'new-access-token',
-        expect.objectContaining({ maxAge: 60 * 60 * 8 }),
+        expect.objectContaining({ maxAge: 30 * 24 * 60 * 60 }),
       );
     });
   });
@@ -103,13 +104,13 @@ describe('shared/auth/cookies', () => {
   });
 
   describe('setAdminRefreshToken', () => {
-    it('sets the refresh token cookie with 7-day maxAge', async () => {
+    it('sets the refresh token cookie with 30-day maxAge', async () => {
       await setAdminRefreshToken('new-refresh-token');
 
       expect(mockSet).toHaveBeenCalledWith(
         'admin_refresh_token',
         'new-refresh-token',
-        expect.objectContaining({ maxAge: 7 * 24 * 60 * 60 }),
+        expect.objectContaining({ maxAge: 30 * 24 * 60 * 60 }),
       );
     });
 

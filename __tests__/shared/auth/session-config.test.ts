@@ -28,6 +28,11 @@ describe('shared/auth/session-config', () => {
       const { ADMIN_META_COOKIE } = await import('@/shared/auth/session-config');
       expect(ADMIN_META_COOKIE).toBe('admin_session_meta');
     });
+
+    it('exports ADMIN_AUTH_COOKIE_MAX_AGE_SECONDS as 30 days', async () => {
+      const { ADMIN_AUTH_COOKIE_MAX_AGE_SECONDS } = await import('@/shared/auth/session-config');
+      expect(ADMIN_AUTH_COOKIE_MAX_AGE_SECONDS).toBe(30 * 24 * 60 * 60);
+    });
   });
 
   describe('sessionOptions', () => {
@@ -46,9 +51,9 @@ describe('shared/auth/session-config', () => {
       expect(sessionOptions.cookieOptions?.sameSite).toBe('lax');
     });
 
-    it('sets maxAge to 8 hours (28800 seconds)', async () => {
+    it('sets maxAge to 30 days', async () => {
       const { sessionOptions } = await import('@/shared/auth/session-config');
-      expect(sessionOptions.cookieOptions?.maxAge).toBe(60 * 60 * 8);
+      expect(sessionOptions.cookieOptions?.maxAge).toBe(30 * 24 * 60 * 60);
     });
 
     it('returns development fallback secret when ADMIN_SESSION_SECRET is not set in non-production', async () => {

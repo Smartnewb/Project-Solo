@@ -147,14 +147,18 @@ async function proxyRequest(request: NextRequest, { params }: { params: { path: 
 	let token = await getAdminAccessToken();
 	const meta = await getSessionMeta();
 
-	if (!token) {
-		return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-	}
-
 	const targetPath = params.path.join('/');
 
 	if (!isPathAllowed(targetPath)) {
 		return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+	}
+
+	if (!token && targetPath !== 'auth/refresh') {
+		token = await refreshAccessToken(meta);
+	}
+
+	if (!token) {
+		return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 	}
 
 	// Proactive refresh: if token expires within 5 minutes, refresh before making the request

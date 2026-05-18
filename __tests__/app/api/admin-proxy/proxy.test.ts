@@ -18,7 +18,7 @@ jest.mock('@/shared/auth', () => ({
 }));
 
 import { GET, POST, PUT, PATCH, DELETE } from '@/app/api/admin-proxy/[...path]/route';
-import { getAdminAccessToken, getSessionMeta } from '@/shared/auth';
+import { getAdminAccessToken, getAdminRefreshToken, getSessionMeta } from '@/shared/auth';
 
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
@@ -30,6 +30,7 @@ const validMeta = {
   issuedAt: Date.now(),
   selectedCountry: 'kr',
 };
+const futureAccessToken = 'header.eyJleHAiOjQxMDI0NDQ4MDB9.signature';
 
 function createRequest(
   path: string,
@@ -66,6 +67,7 @@ function makeBackendResponse(body: unknown, status = 200, headers: Record<string
           },
         })
       : null,
+    json: () => Promise.resolve(body),
     arrayBuffer: () => Promise.resolve(Buffer.from(JSON.stringify(body))),
     headers: {
       forEach: (cb: (value: string, key: string) => void) => headersMap.forEach(cb),
@@ -77,11 +79,13 @@ function makeBackendResponse(body: unknown, status = 200, headers: Record<string
 describe('admin-proxy route handlers', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (getAdminRefreshToken as jest.Mock).mockResolvedValue(null);
   });
 
   describe('authentication guard', () => {
-    it('returns 401 when no access token is stored', async () => {
+    it('returns 401 when no access or refresh token is stored', async () => {
       (getAdminAccessToken as jest.Mock).mockResolvedValue(null);
+      (getAdminRefreshToken as jest.Mock).mockResolvedValue(null);
       (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
 
       const req = createRequest('users');
@@ -90,6 +94,39 @@ describe('admin-proxy route handlers', () => {
 
       expect(res.status).toBe(401);
       expect(body.error).toBe('Not authenticated');
+    });
+
+    it('refreshes and proxies when the access token cookie is missing but refresh state is valid', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue(null);
+      (getAdminRefreshToken as jest.Mock).mockResolvedValue('valid-refresh-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      mockFetch
+        .mockResolvedValueOnce(makeBackendResponse({
+          accessToken: futureAccessToken,
+          refreshToken: 'new-refresh-token',
+        }))
+        .mockResolvedValueOnce(makeBackendResponse({ items: [] }));
+
+      const req = createRequest('users');
+      const res = await GET(req, makeParams(['users']));
+
+      expect(res.status).toBe(200);
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        1,
+        expect.stringContaining('/auth/refresh'),
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ refreshToken: 'valid-refresh-token' }),
+        }),
+      );
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        2,
+        expect.stringContaining('/users'),
+        expect.objectContaining({
+          headers: expect.objectContaining({ Authorization: `Bearer ${futureAccessToken}` }),
+        }),
+      );
     });
 
     it('does not call backend when token is missing', async () => {
