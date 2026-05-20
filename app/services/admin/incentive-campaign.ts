@@ -218,6 +218,8 @@ export const incentiveCampaign = {
 	getCalendar: async (params: {
 		startDate: string;
 		endDate: string;
+		country?: IncentiveCampaignCountry;
+		detailDate?: string;
 	}): Promise<CampaignCalendarResponse> => {
 		const res = await adminGet<AdminDataResponse<CampaignCalendarResponse>>(
 			'/admin/v2/incentive-campaign/calendar',

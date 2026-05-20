@@ -3,23 +3,35 @@ import AdminService from '@/app/services/admin';
 import type {
 	EngagementFlowDailyQuery,
 	EngagementFlowQuery,
+	IncentiveCampaignCountry,
 } from '@/app/services/admin/incentive-campaign';
 
 export const incentiveCampaignKeys = {
 	all: ['admin', 'incentive-campaign'] as const,
-	calendar: (startDate: string, endDate: string) =>
-		[...incentiveCampaignKeys.all, 'calendar', { startDate, endDate }] as const,
+	calendar: (
+		startDate: string,
+		endDate: string,
+		country: IncentiveCampaignCountry,
+		detailDate: string,
+	) =>
+		[...incentiveCampaignKeys.all, 'calendar', { startDate, endDate, country, detailDate }] as const,
 	engagementFlow: (params: EngagementFlowQuery) =>
 		[...incentiveCampaignKeys.all, 'engagement-flow', params] as const,
 	engagementFlowDaily: (params: EngagementFlowDailyQuery) =>
 		[...incentiveCampaignKeys.all, 'engagement-flow-daily', params] as const,
 };
 
-export function useIncentiveCampaignCalendar(startDate: string, endDate: string) {
+export function useIncentiveCampaignCalendar(
+	startDate: string,
+	endDate: string,
+	country: IncentiveCampaignCountry,
+	detailDate: string,
+) {
 	return useQuery({
-		queryKey: incentiveCampaignKeys.calendar(startDate, endDate),
-		queryFn: () => AdminService.incentiveCampaign.getCalendar({ startDate, endDate }),
-		enabled: !!startDate && !!endDate,
+		queryKey: incentiveCampaignKeys.calendar(startDate, endDate, country, detailDate),
+		queryFn: () =>
+			AdminService.incentiveCampaign.getCalendar({ startDate, endDate, country, detailDate }),
+		enabled: !!startDate && !!endDate && !!country && !!detailDate,
 	});
 }
 

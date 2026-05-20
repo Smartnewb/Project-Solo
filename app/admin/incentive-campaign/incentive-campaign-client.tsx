@@ -339,7 +339,12 @@ export default function IncentiveCampaignClient() {
 		[selectedDate, country, segment, cacheMode],
 	);
 
-	const calendarQuery = useIncentiveCampaignCalendar(toDateKey(startOfMonth(month)), toDateKey(endOfMonth(month)));
+	const calendarQuery = useIncentiveCampaignCalendar(
+		toDateKey(startOfMonth(month)),
+		toDateKey(endOfMonth(month)),
+		country,
+		selectedDate,
+	);
 	const flowQuery = useIncentiveCampaignEngagementFlow(flowQueryParams);
 	const dailyQuery = useIncentiveCampaignEngagementFlowDaily(dailyQueryParams);
 
@@ -646,8 +651,8 @@ export default function IncentiveCampaignClient() {
 					{[
 						['월 배정', monthSummary.assignments],
 						['월 좋아요 발송', monthSummary.likes],
-						['월 배정 여성', monthSummary.assignedFemales],
-						['월 참여 여성', monthSummary.participatedFemales],
+						['일별 배정 여성 합', monthSummary.assignedFemales],
+						['일별 참여 여성 합', monthSummary.participatedFemales],
 					].map(([label, value]) => (
 						<MetricCard key={label} label={String(label)} value={formatNumber(Number(value))} />
 					))}
@@ -811,6 +816,10 @@ export default function IncentiveCampaignClient() {
 				</Stack>
 
 				{calendarQuery.isLoading ? (
+					<Box sx={{ py: 8, display: 'flex', justifyContent: 'center' }}>
+						<CircularProgress />
+					</Box>
+				) : selectedDay && selectedDay.totalAssignments > 0 && selectedDay.femaleGroups.length === 0 && calendarQuery.isFetching ? (
 					<Box sx={{ py: 8, display: 'flex', justifyContent: 'center' }}>
 						<CircularProgress />
 					</Box>
