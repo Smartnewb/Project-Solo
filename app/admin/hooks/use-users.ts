@@ -234,6 +234,21 @@ export function useUpdateUserProfile() {
   });
 }
 
+export function useUpdateUserUniversity() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { userId: string; universityId: string; departmentId: string }) =>
+      AdminService.userAppearance.updateUserUniversity(params.userId, {
+        universityId: params.universityId,
+        departmentId: params.departmentId,
+      }),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: [...usersKeys.appearance(), 'details', vars.userId] });
+      qc.invalidateQueries({ queryKey: usersKeys.appearance() });
+    },
+  });
+}
+
 export function useUpdateAccountStatus() {
   const qc = useQueryClient();
   return useMutation({

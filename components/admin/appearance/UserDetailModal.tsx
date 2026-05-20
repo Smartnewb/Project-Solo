@@ -66,6 +66,7 @@ import { formatDateWithoutTimezoneConversion, formatDateTimeWithoutTimezoneConve
 import EditProfileModal from './modals/EditProfileModal';
 import EmailNotificationModal from './modals/EmailNotificationModal';
 import SmsNotificationModal from './modals/SmsNotificationModal';
+import UniversityTransferModal from './modals/UniversityTransferModal';
 
 const SHOW_REMATCH_TICKET_ADMIN = false;
 
@@ -246,6 +247,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
   // 모달 상태
   const [editProfileModalOpen, setEditProfileModalOpen] = useState(false);
+  const [universityTransferModalOpen, setUniversityTransferModalOpen] = useState(false);
   const [emailNotificationModalOpen, setEmailNotificationModalOpen] = useState(false);
   const [smsNotificationModalOpen, setSmsNotificationModalOpen] = useState(false);
   const [deleteConfirmModalOpen, setDeleteConfirmModalOpen] = useState(false);
@@ -365,6 +367,10 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const handleOpenEditProfileModal = () => {
     handleCloseMenu();
     setEditProfileModalOpen(true);
+  };
+
+  const handleOpenUniversityTransferModal = () => {
+    setUniversityTransferModalOpen(true);
   };
 
   // 이메일 발송 모달 열기
@@ -771,6 +777,19 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     setResetPasswordResultOpen(false);
     setTemporaryPassword('');
   };
+
+  const rawUniversity = userDetail?.university as any;
+  const currentUniversityName =
+    userDetail?.universityDetails?.name ??
+    userDetail?.universityName ??
+    (typeof rawUniversity === 'string' ? rawUniversity : rawUniversity?.name) ??
+    null;
+  const currentDepartmentName =
+    userDetail?.universityDetails?.department ?? userDetail?.departmentName ?? null;
+  const currentUniversityGrade = userDetail?.universityDetails?.grade ?? userDetail?.grade ?? null;
+  const isUniversityVerified =
+    userDetail?.isUniversityVerified ??
+    Boolean(userDetail?.universityDetails?.authentication ?? userDetail?.verifiedAt);
 
   return (
     <Dialog
@@ -1183,7 +1202,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                 </Box>
 
                 {/* 대학 정보 */}
-                {(userDetail.universityDetails || userDetail.university) && (
+                {(currentUniversityName || currentDepartmentName) && (
                   <Box sx={{ mb: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                       <SchoolIcon sx={{ mr: 1, color: 'primary.main' }} />
@@ -1202,11 +1221,25 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                             </Typography>
                           </>
                         ) : (
-                          <Typography variant="body1">
-                            {userDetail.university}
-                          </Typography>
+                          <>
+                            <Typography variant="body1">{currentUniversityName}</Typography>
+                            {currentDepartmentName && (
+                              <Typography variant="body2" color="text.secondary">
+                                {currentDepartmentName}
+                                {currentUniversityGrade && ` ${currentUniversityGrade}학년`}
+                              </Typography>
+                            )}
+                          </>
                         )}
                       </Box>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={handleOpenUniversityTransferModal}
+                        disabled={actionLoading}
+                      >
+                        변경
+                      </Button>
                     </Box>
 
                     {/* 대학교 인증 상태 */}
@@ -1214,7 +1247,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                       <Typography variant="body2" color="text.secondary">
                         인증 상태:
                       </Typography>
-                      {userDetail.isUniversityVerified ? (
+                      {isUniversityVerified ? (
                         <Chip
                           label="✓ 인증됨"
                           size="small"
@@ -1764,6 +1797,36 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
         userName={userDetail?.name}
         onSuccess={() => {
           setActionSuccess('SMS가 발송되었습니다.');
+          if (onRefresh) onRefresh();
+        }}
+      />
+
+      <UniversityTransferModal
+        open={universityTransferModalOpen}
+        onClose={() => setUniversityTransferModalOpen(false)}
+        userId={userId || ''}
+        userName={userDetail?.name}
+        currentUniversityName={currentUniversityName}
+        currentDepartmentName={currentDepartmentName}
+        currentGrade={currentUniversityGrade}
+        isVerified={isUniversityVerified}
+        onSuccess={({ universityName, departmentName }) => {
+          setActionSuccess(`학교/학과가 ${universityName} ${departmentName}(으)로 변경되었습니다.`);
+          setUserDetail(prev => prev ? {
+            ...prev,
+            universityName,
+            departmentName,
+            universityDetails: prev.universityDetails
+              ? { ...prev.universityDetails, name: universityName, department: departmentName }
+              : {
+                  name: universityName,
+                  authentication: isUniversityVerified,
+                  department: departmentName,
+                  grade: currentUniversityGrade || '',
+                  studentNumber: '',
+                },
+          } : prev);
+          refreshUserDetail();
           if (onRefresh) onRefresh();
         }}
       />

@@ -1,4 +1,4 @@
-import { adminGet, adminPost, adminPatch, adminRequest } from '@/shared/lib/http/admin-fetch';
+import { adminGet, adminPost, adminPatch, adminPut, adminRequest } from '@/shared/lib/http/admin-fetch';
 import type {
 	DeletedFemalesListResponse,
 	RestoreFemaleResponse,
@@ -371,6 +371,14 @@ export const userAppearance = {
 		} catch (error: any) {
 			throw error;
 		}
+	},
+
+	updateUserUniversity: async (
+		userId: string,
+		data: { universityId: string; departmentId: string },
+	) => {
+		const result = await adminPut<{ data: any }>(`/admin/v2/users/${userId}/university`, data);
+		return result.data;
 	},
 
 	updateAccountStatus: async (
