@@ -6,6 +6,7 @@ import { Box, Tab, Tabs, Typography } from '@mui/material';
 const TABS = [
 	{ label: '게시글 관리 · AI 활동', path: '/admin/community-automation/target-posts' },
 	{ label: '주간 질문', path: '/admin/community-automation/questions' },
+	{ label: '오늘의 상담', path: '/admin/community-automation/love-court' },
 	{ label: '검수 대기', path: '/admin/community-automation/review-queue' },
 	{ label: '예약/메트릭', path: '/admin/community-automation/metrics' },
 	{ label: '리뷰 자동작성', path: '/admin/community-automation/review-posts' },

@@ -68,6 +68,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
         children: [
           { href: '/admin/community-automation/target-posts', label: '게시글/AI 활동' },
           { href: '/admin/community-automation/questions', label: '주간 질문' },
+          { href: '/admin/community-automation/love-court', label: '오늘의 상담' },
           { href: '/admin/community-automation/review-queue', label: '검수 대기' },
           { href: '/admin/community-automation/metrics', label: '예약/메트릭' },
         ],

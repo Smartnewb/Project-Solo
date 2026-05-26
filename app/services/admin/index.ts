@@ -146,6 +146,17 @@ export { incentiveCampaign } from './incentive-campaign';
 export { gemProducts } from './gem-products';
 export { iapCatalog } from './iap-catalog';
 export { aiProfileReferences } from './ai-profile-references';
+export { loveCourt } from './love-court';
+export type {
+	DeleteLoveCourtSubmissionBody,
+	LoveCourtOptionCandidate,
+	LoveCourtOptionStatus,
+	LoveCourtSubmission,
+	LoveCourtSubmissionListParams,
+	LoveCourtSubmissionListResponse,
+	LoveCourtSubmissionStatus,
+	UpdateLoveCourtOptionsBody,
+} from './love-court';
 export type { KeywordCategory, KeywordItem, KeywordsResponse } from './keywords';
 export type {
 	CareTarget,
@@ -252,6 +263,7 @@ import { incentiveCampaign } from './incentive-campaign';
 import { communityQuestions } from './community-questions';
 import { gemProducts } from './gem-products';
 import { iapCatalog } from './iap-catalog';
+import { loveCourt } from './love-court';
 import { activities, campaigns, reviewQueue, metrics, personas, communitySettings, targetPosts } from './community-automation';
 import { XMarketingAdminService } from './x-marketing';
 
@@ -303,6 +315,7 @@ const AdminService = {
 	promotions,
 	incentiveCampaign,
 	communityQuestions,
+	loveCourt,
 	gemProducts,
 	iapCatalog,
 	seo,
