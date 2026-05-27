@@ -149,6 +149,7 @@ export { aiProfileReferences } from './ai-profile-references';
 export { loveCourt } from './love-court';
 export type {
 	DeleteLoveCourtSubmissionBody,
+	GenerateLoveCourtVerdictResponse,
 	LoveCourtOptionCandidate,
 	LoveCourtOptionStatus,
 	LoveCourtSubmission,

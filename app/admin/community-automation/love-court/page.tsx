@@ -33,6 +33,7 @@ import type { SelectChangeEvent } from '@mui/material/Select';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import GavelIcon from '@mui/icons-material/Gavel';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SaveIcon from '@mui/icons-material/Save';
 import {
@@ -199,7 +200,8 @@ export default function LoveCourtAdminPage() {
 		mutations.updateOptions.isPending ||
 		mutations.approveOptions.isPending ||
 		mutations.regenerateOptions.isPending ||
-		mutations.deleteSubmission.isPending;
+		mutations.deleteSubmission.isPending ||
+		mutations.generateVerdict.isPending;
 
 	useEffect(() => {
 		if (selectedId && submissions.some((submission) => submission.id === selectedId)) return;
@@ -290,6 +292,26 @@ export default function LoveCourtAdminPage() {
 		}
 	}
 
+	async function handleGenerateVerdict(submission: LoveCourtSubmission) {
+		if (!submission.caseId) {
+			setLocalError('Case ID가 없어 판결을 생성할 수 없습니다.');
+			return;
+		}
+		if (
+			!window.confirm(
+				'현재 공개 중인 재판을 즉시 종료하고 AI 판결을 생성할까요? 다음 대기 재판이 있으면 바로 공개됩니다.',
+			)
+		) {
+			return;
+		}
+		setLocalError(null);
+		try {
+			await mutations.generateVerdict.mutateAsync(submission.caseId);
+		} catch (error) {
+			setLocalError(getAdminErrorMessage(error, 'AI 판결 생성 실패'));
+		}
+	}
+
 	async function handleDelete() {
 		if (!selected) return;
 		setLocalError(null);
@@ -374,7 +396,21 @@ export default function LoveCourtAdminPage() {
 			</Stack>
 
 			{published && (
-				<Alert severity="success" sx={{ mb: 2 }}>
+				<Alert
+					severity="success"
+					sx={{ mb: 2 }}
+					action={
+						<Button
+							color="inherit"
+							size="small"
+							startIcon={<GavelIcon />}
+							disabled={isBusy || !published.caseId}
+							onClick={() => handleGenerateVerdict(published)}
+						>
+							AI 판결 생성
+						</Button>
+					}
+				>
 					현재 공개 중: {published.title ?? published.id} · {formatDateTime(published.publishedAt)}
 				</Alert>
 			)}
@@ -552,6 +588,17 @@ export default function LoveCourtAdminPage() {
 								>
 									재생성
 								</Button>
+								{selected.status === 'published' && (
+									<Button
+										variant="contained"
+										color="warning"
+										startIcon={<GavelIcon />}
+										disabled={!selected.caseId || isBusy}
+										onClick={() => handleGenerateVerdict(selected)}
+									>
+										AI 판결 생성 후 종료
+									</Button>
+								)}
 								<Button
 									variant="outlined"
 									color="error"

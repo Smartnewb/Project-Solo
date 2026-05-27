@@ -70,5 +70,9 @@ export function useLoveCourtMutations() {
 			}) => AdminService.loveCourt.deleteSubmission(submissionId, body),
 			onSuccess: invalidate,
 		}),
+		generateVerdict: useMutation({
+			mutationFn: (caseId: string) => AdminService.loveCourt.generateVerdict(caseId),
+			onSuccess: invalidate,
+		}),
 	};
 }

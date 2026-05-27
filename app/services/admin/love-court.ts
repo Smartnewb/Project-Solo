@@ -99,6 +99,12 @@ export interface DeleteLoveCourtSubmissionBody {
 	reasonMessage: string;
 }
 
+export interface GenerateLoveCourtVerdictResponse {
+	status: 'generated' | 'failed';
+	verdict?: Record<string, unknown>;
+	errorMessage?: string;
+}
+
 export const loveCourt = {
 	listSubmissions: async (
 		params: LoveCourtSubmissionListParams = {},
@@ -150,6 +156,13 @@ export const loveCourt = {
 		const res = await adminPatch<
 			AdminDataResponse<{ submission: LoveCourtSubmission; notificationQueued: boolean }>
 		>(`${BASE}/submissions/${submissionId}/delete`, body);
+		return unwrapAdminData(res);
+	},
+
+	generateVerdict: async (caseId: string): Promise<GenerateLoveCourtVerdictResponse> => {
+		const res = await adminPost<AdminDataResponse<GenerateLoveCourtVerdictResponse>>(
+			`${BASE}/${caseId}/verdict/generate`,
+		);
 		return unwrapAdminData(res);
 	},
 };
