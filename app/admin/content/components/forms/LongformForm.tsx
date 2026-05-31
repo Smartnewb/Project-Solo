@@ -305,6 +305,7 @@ export function LongformForm({ mode, id }: Props) {
           displayTitle: payload.displayTitle,
           subtitle: payload.subtitle,
           description: payload.description,
+          categoryCode: payload.categoryCode,
           hasReward: payload.hasReward,
           body: payload.body,
           backgroundImage: payload.backgroundImage,

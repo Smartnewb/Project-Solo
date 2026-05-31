@@ -94,6 +94,7 @@ export interface UpdateCardNewsRequest {
   displayTitle?: string | null;
   subtitle?: string;
   description?: string;
+  categoryCode?: string;
   backgroundImage?: {
     type: 'PRESET' | 'CUSTOM';
     presetId?: string;
