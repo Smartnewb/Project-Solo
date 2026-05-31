@@ -300,22 +300,7 @@ export function LongformForm({ mode, id }: Props) {
     const payload = buildPayload(data);
     try {
       if (isEdit && id) {
-        const updatePayload = {
-          title: payload.title,
-          displayTitle: payload.displayTitle,
-          subtitle: payload.subtitle,
-          description: payload.description,
-          categoryCode: payload.categoryCode,
-          hasReward: payload.hasReward,
-          body: payload.body,
-          backgroundImage: payload.backgroundImage,
-          ...(payload.pushNotificationTitle
-            ? { pushNotificationTitle: payload.pushNotificationTitle }
-            : {}),
-          ...(payload.pushNotificationMessage
-            ? { pushNotificationMessage: payload.pushNotificationMessage }
-            : {}),
-        };
+        const { layoutMode: _layoutMode, ...updatePayload } = payload;
         await AdminService.cardNews.update(id, updatePayload);
         toast.success('롱폼 아티클이 수정되었습니다.');
         return id;
