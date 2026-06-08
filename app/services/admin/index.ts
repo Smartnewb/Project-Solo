@@ -21,6 +21,7 @@ export {
 } from './content';
 export { notices } from './notices';
 export type { NoticeListParams } from './notices';
+export { videos } from './video';
 export { seo } from './seo';
 export type { PageMeta, SitemapKind } from './seo';
 export { cardNewsGeneration } from './card-news-generation';
@@ -234,6 +235,7 @@ import {
 	publicReviews,
 } from './content';
 import { notices } from './notices';
+import { videos } from './video';
 import { seo } from './seo';
 import { cardNewsGeneration } from './card-news-generation';
 import { reports, userReview, profileImages } from './moderation';
@@ -292,6 +294,7 @@ const AdminService = {
 	likes,
 	momentQuestions,
 	notices,
+	videos,
 	sometimeArticles,
 	userEngagement,
 	forceMatching,

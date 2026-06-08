@@ -1,4 +1,4 @@
-export const CONTENT_TYPES = ['card-series', 'longform', 'article', 'notice'] as const;
+export const CONTENT_TYPES = ['card-series', 'longform', 'article', 'notice', 'video'] as const;
 export type ContentType = (typeof CONTENT_TYPES)[number];
 
 export const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
@@ -6,6 +6,7 @@ export const CONTENT_TYPE_LABELS: Record<ContentType, string> = {
   longform: '롱폼 아티클',
   article: '아티클',
   notice: '공지사항',
+  video: '영상 링크',
 };
 
 export const NEW_CATEGORY_OPTIONS = [

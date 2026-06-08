@@ -32,7 +32,7 @@ import SendIcon from '@mui/icons-material/Send';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useAdminForm } from '@/app/admin/hooks/forms';
 import { useUnsavedGuard } from '@/app/admin/hooks/use-unsaved-guard';
-import { useCardNewsCategories } from '@/app/admin/hooks';
+import { useLongformCategories } from '@/app/admin/hooks';
 import {
   longformFormSchema,
   type LongformFormData,
@@ -42,7 +42,6 @@ import {
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
 import { getApiErrorMessage } from '@/app/utils/errors';
-import { NEW_CATEGORY_OPTIONS } from '../../constants';
 
 interface Props {
   mode: 'create' | 'edit';
@@ -114,7 +113,7 @@ export function LongformForm({ mode, id }: Props) {
     [watchedBody],
   );
 
-  const { data: serverCategories } = useCardNewsCategories();
+  const { data: serverCategories } = useLongformCategories();
 
   const categoryOptions = useMemo(() => {
     const fromServer = (serverCategories ?? []).map((c) => ({
@@ -124,7 +123,10 @@ export function LongformForm({ mode, id }: Props) {
     const base =
       fromServer.length > 0
         ? fromServer
-        : NEW_CATEGORY_OPTIONS.map((c) => ({ code: c.code, label: c.label }));
+        : [
+            { code: 'story_relationship', label: '연애 이야기' },
+            { code: 'announcement', label: '공지' },
+          ];
     if (extraCategoryOption && !base.find((b) => b.code === extraCategoryOption.code)) {
       return [...base, extraCategoryOption];
     }
@@ -179,7 +181,7 @@ export function LongformForm({ mode, id }: Props) {
         setIsPublished(!!detail.publishedAt);
 
         const categoryCode = detail.category.code;
-        if (!NEW_CATEGORY_OPTIONS.find((o) => o.code === categoryCode)) {
+        if (!categoryOptions.find((o) => o.code === categoryCode)) {
           setExtraCategoryOption({
             code: categoryCode,
             label: detail.category.displayName || categoryCode,

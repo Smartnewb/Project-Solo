@@ -258,6 +258,45 @@ function NoticePreview() {
   );
 }
 
+// ─── 영상 링크 (VideoFeed 릴스 구조) ─────────────────────────────
+// 세로 9:16 썸네일 + YouTube 뱃지 + 채널/제목 오버레이
+function VideoPreview() {
+  return (
+    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+      {/* 9:16 세로 썸네일 */}
+      <div style={{
+        position: 'relative', width: 72, aspectRatio: '9 / 16', flexShrink: 0,
+        borderRadius: 10, overflow: 'hidden',
+        background: 'linear-gradient(160deg, #c084e0, #7a4ae2 60%, #3871ff)',
+      }}>
+        {/* YouTube 뱃지 */}
+        <div style={{
+          position: 'absolute', top: 6, left: 6,
+          background: 'rgba(0,0,0,0.6)', borderRadius: 4, padding: '2px 6px',
+        }}>
+          <span style={{ fontSize: 8, fontWeight: 800, color: '#fff', letterSpacing: 0.5 }}>YouTube</span>
+        </div>
+        {/* play */}
+        <div style={{
+          position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)',
+          width: 28, height: 28, borderRadius: '50%',
+          background: 'rgba(255,255,255,0.9)', display: 'grid', placeItems: 'center',
+          color: APP.brandPrimary, fontSize: 12, paddingLeft: 2,
+        }}>▶</div>
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.6, color: APP.brandPrimary, display: 'block', marginBottom: 4 }}>
+          SHORTS · 9:16
+        </span>
+        <span style={{ fontSize: 13, fontWeight: 800, color: APP.textPrimary, lineHeight: 1.35, display: 'block', marginBottom: 4 }}>
+          썸탈 때 답장 속도 어디까지?
+        </span>
+        <span style={{ fontSize: 11, color: APP.textMuted }}>연애 채널 · 댓글로 대화 시작</span>
+      </div>
+    </div>
+  );
+}
+
 // ─── 메인 모달 ────────────────────────────────────────────────────
 interface ContentTypeOption {
   type: ContentType;
@@ -290,6 +329,12 @@ const OPTIONS: ContentTypeOption[] = [
     label: '공지사항',
     description: '접기/펼치기 가능한 공지 카드. 커뮤니티 탭 상단 고정.',
     preview: <NoticePreview />,
+  },
+  {
+    type: 'video',
+    label: '영상 링크',
+    description: 'YouTube Shorts URL 등록. oEmbed 자동 메타 추출. 영상 피드(릴스)에 노출.',
+    preview: <VideoPreview />,
   },
 ];
 

@@ -65,6 +65,70 @@ export interface AdminCardNewsListResponse {
   limit: number;
 }
 
+// ───────────────────────── 영상 링크 (운영자 등록) ─────────────────────────
+
+export interface AdminVideoMeta {
+  provider: string;
+  videoId: string;
+  thumbnailUrl: string;
+  aspectRatio: string;
+  channelTitle: string;
+  embedUrl: string;
+}
+
+export type VideoStatus = 'draft' | 'published';
+
+export interface AdminVideoItem {
+  id: string;
+  title: string;
+  displayTitle?: string | null;
+  description?: string | null;
+  status: VideoStatus;
+  video: AdminVideoMeta;
+  readCount: number;
+  likeCount: number;
+  priority?: string | null;
+  featuredAt?: string | null;
+  publishedAt?: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface AdminVideoListResponse {
+  items: AdminVideoItem[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface VideoPreviewResponse {
+  provider: string;
+  videoId: string;
+  thumbnailUrl: string;
+  aspectRatio: string;
+  channelTitle: string;
+  embedUrl: string;
+  title: string;
+}
+
+export interface CreateVideoRequest {
+  url: string;
+  displayTitle?: string;
+  description?: string;
+  status: VideoStatus;
+  featuredAt?: string;
+  priority?: string;
+}
+
+export interface UpdateVideoRequest {
+  url?: string;
+  displayTitle?: string;
+  description?: string;
+  status?: VideoStatus;
+  featuredAt?: string;
+  priority?: string;
+}
+
 export interface CreateCardNewsRequest {
   title: string;
   displayTitle?: string | null;

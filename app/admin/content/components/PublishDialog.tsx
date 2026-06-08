@@ -17,6 +17,7 @@ import {
   usePublishCardNews,
   useUpdateSometimeArticle,
   usePublishNotice,
+  usePublishVideo,
 } from '@/app/admin/hooks';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import { getApiErrorMessage } from '@/app/utils/errors';
@@ -34,7 +35,8 @@ interface Props {
 
 export function PublishDialog({ open, onClose, type, item, onPublished }: Props) {
   const toast = useToast();
-  const supportsPush = type !== 'article';
+  // 영상 발행은 push/reward 미발송(가드레일) → push UI 숨김
+  const supportsPush = type !== 'article' && type !== 'video';
   const [pushEnabled, setPushEnabled] = useState(supportsPush);
   const [pushTitle, setPushTitle] = useState('');
   const [pushMessage, setPushMessage] = useState('');
@@ -42,6 +44,7 @@ export function PublishDialog({ open, onClose, type, item, onPublished }: Props)
   const publishCardNews = usePublishCardNews();
   const updateArticle = useUpdateSometimeArticle();
   const publishNotice = usePublishNotice();
+  const publishVideo = usePublishVideo();
 
   useEffect(() => {
     if (open) {
@@ -52,7 +55,10 @@ export function PublishDialog({ open, onClose, type, item, onPublished }: Props)
   }, [open, item?.id, supportsPush]);
 
   const isPending =
-    publishCardNews.isPending || updateArticle.isPending || publishNotice.isPending;
+    publishCardNews.isPending ||
+    updateArticle.isPending ||
+    publishNotice.isPending ||
+    publishVideo.isPending;
 
   const validate = () => {
     if (!supportsPush || !pushEnabled) return true;
@@ -100,6 +106,14 @@ export function PublishDialog({ open, onClose, type, item, onPublished }: Props)
           },
         });
         toast.success('아티클이 발행되었습니다.');
+      } else if (type === 'video') {
+        const result = await publishVideo.mutateAsync(item.id);
+        if (result.success) {
+          toast.success('영상이 발행되었습니다.');
+        } else {
+          toast.error('발행에 실패했습니다.');
+          return;
+        }
       } else if (type === 'notice') {
         const result = await publishNotice.mutateAsync({
           id: item.id,
@@ -147,7 +161,7 @@ export function PublishDialog({ open, onClose, type, item, onPublished }: Props)
 
         {!supportsPush ? (
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            아티클은 발행 시 푸시 알림이 발송되지 않습니다.
+            {typeLabel}은(는) 발행 시 푸시 알림이 발송되지 않습니다.
           </Typography>
         ) : (
           <>

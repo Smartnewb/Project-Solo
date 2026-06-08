@@ -10,6 +10,7 @@ import { CardSeriesTable } from './components/CardSeriesTable';
 import { LongformTable } from './components/LongformTable';
 import { ArticleTable } from './components/ArticleTable';
 import { NoticeTable } from './components/NoticeTable';
+import { VideoTable } from './components/VideoTable';
 import { ContentTypeSelectModal } from './components/ContentTypeSelectModal';
 import { CONTENT_TYPE_LABELS, type ContentType } from './constants';
 
@@ -87,6 +88,7 @@ function ContentPageInner() {
         <Tab value="longform" label="롱폼 아티클" />
         <Tab value="article" label="아티클" />
         <Tab value="notice" label="공지사항" />
+        <Tab value="video" label="영상 링크" />
       </Tabs>
 
       {currentTab === 'all' && <AllContentTable />}
@@ -94,6 +96,7 @@ function ContentPageInner() {
       {currentTab === 'longform' && <LongformTable />}
       {currentTab === 'article' && <ArticleTable />}
       {currentTab === 'notice' && <NoticeTable />}
+      {currentTab === 'video' && <VideoTable />}
     </Box>
   );
 }

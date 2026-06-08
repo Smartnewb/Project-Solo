@@ -215,6 +215,14 @@ export const cardNews = {
 			throw error;
 		}
 	},
+
+	getLongformCategories: async (): Promise<CardNewsCategory[]> => {
+		try {
+			return await adminGet<CardNewsCategory[]>('/posts/card-news/categories');
+		} catch (error: any) {
+			throw error;
+		}
+	},
 };
 
 export const banners = {

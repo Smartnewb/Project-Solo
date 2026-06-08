@@ -17,6 +17,9 @@ import type {
   UpdateNoticeRequest,
   UpdateSometimeArticleRequest,
   UploadAndCreatePresetRequest,
+  CreateVideoRequest,
+  UpdateVideoRequest,
+  VideoStatus,
 } from '@/types/admin';
 import type { AppReviewsParams } from '@/app/services/admin/content';
 
@@ -30,6 +33,7 @@ export const contentKeys = {
     [...contentKeys.cardNews(), 'list', { page, limit, track, categoryCode }] as const,
   cardNewsDetail: (id: string) => [...contentKeys.cardNews(), 'detail', id] as const,
   cardNewsCategories: () => [...contentKeys.cardNews(), 'categories'] as const,
+  longformCategories: () => [...contentKeys.cardNews(), 'longform-categories'] as const,
   banners: () => [...contentKeys.all, 'banners'] as const,
   bannerList: (position?: BannerPosition) => [...contentKeys.banners(), 'list', { position }] as const,
   sometimeArticles: () => [...contentKeys.all, 'sometime-articles'] as const,
@@ -47,6 +51,9 @@ export const contentKeys = {
   noticeList: (params?: object) => [...contentKeys.all, 'notices', 'list', params] as const,
   noticeDetail: (id: string) => [...contentKeys.all, 'notices', 'detail', id] as const,
   urgentNotices: () => [...contentKeys.all, 'notices', 'urgent'] as const,
+  videos: () => [...contentKeys.all, 'videos'] as const,
+  videoList: (params?: object) => [...contentKeys.videos(), 'list', params] as const,
+  videoDetail: (id: string) => [...contentKeys.videos(), 'detail', id] as const,
 };
 
 // ==================== Background Presets ====================
@@ -154,6 +161,13 @@ export function useCardNewsCategories() {
   return useQuery({
     queryKey: contentKeys.cardNewsCategories(),
     queryFn: () => AdminService.cardNews.getCategories(),
+  });
+}
+
+export function useLongformCategories() {
+  return useQuery({
+    queryKey: contentKeys.longformCategories(),
+    queryFn: () => AdminService.cardNews.getLongformCategories(),
   });
 }
 
@@ -472,6 +486,75 @@ export function useArchiveNotice() {
     onSuccess: (_result, id) => {
       queryClient.invalidateQueries({ queryKey: contentKeys.notices() });
       queryClient.invalidateQueries({ queryKey: contentKeys.noticeDetail(id) });
+    },
+  });
+}
+
+// ==================== Videos (영상 링크) ====================
+
+export function useVideoAdminList(params?: {
+  page?: number;
+  limit?: number;
+  status?: VideoStatus;
+}) {
+  return useQuery({
+    queryKey: contentKeys.videoList(params),
+    queryFn: () => AdminService.videos.getList(params ?? {}),
+  });
+}
+
+export function useVideoAdminDetail(id: string) {
+  return useQuery({
+    queryKey: contentKeys.videoDetail(id),
+    queryFn: () => AdminService.videos.getDetail(id),
+    enabled: !!id,
+  });
+}
+
+export function usePreviewVideo() {
+  return useMutation({
+    mutationFn: (url: string) => AdminService.videos.preview(url),
+  });
+}
+
+export function useCreateVideo() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CreateVideoRequest) => AdminService.videos.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: contentKeys.videos() });
+    },
+  });
+}
+
+export function useUpdateVideo() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateVideoRequest }) =>
+      AdminService.videos.update(id, data),
+    onSuccess: (_result, { id }) => {
+      queryClient.invalidateQueries({ queryKey: contentKeys.videos() });
+      queryClient.invalidateQueries({ queryKey: contentKeys.videoDetail(id) });
+    },
+  });
+}
+
+export function usePublishVideo() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => AdminService.videos.publish(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: contentKeys.videos() });
+    },
+  });
+}
+
+export function useDeleteVideo() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => AdminService.videos.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: contentKeys.videos() });
     },
   });
 }
