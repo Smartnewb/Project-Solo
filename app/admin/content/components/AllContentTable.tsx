@@ -56,6 +56,7 @@ const TYPE_LABELS: Record<UnifiedRow['type'], string> = {
   longform: '롱폼',
   article: '아티클',
   notice: '공지',
+  video: '영상',
 };
 
 const TYPE_COLORS: Record<UnifiedRow['type'], 'primary' | 'secondary' | 'info' | 'error'> = {
@@ -63,6 +64,7 @@ const TYPE_COLORS: Record<UnifiedRow['type'], 'primary' | 'secondary' | 'info' |
   longform: 'secondary',
   article: 'info',
   notice: 'error',
+  video: 'secondary',
 };
 
 const PAGE_INCREMENT = 20;
