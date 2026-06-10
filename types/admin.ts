@@ -129,6 +129,24 @@ export interface UpdateVideoRequest {
   priority?: string;
 }
 
+export interface BulkCreateVideoRequest {
+  urls: string[];
+  status: VideoStatus;
+}
+
+export interface BulkCreateVideoResultItem {
+  url: string;
+  videoId: string;
+  title?: string;
+  error?: string;
+}
+
+export interface BulkCreateVideoResponse {
+  success: BulkCreateVideoResultItem[];
+  duplicates: BulkCreateVideoResultItem[];
+  failed: BulkCreateVideoResultItem[];
+}
+
 export interface CreateCardNewsRequest {
   title: string;
   displayTitle?: string | null;

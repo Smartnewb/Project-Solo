@@ -7,6 +7,8 @@ import {
 import type {
   AdminVideoItem,
   AdminVideoListResponse,
+  BulkCreateVideoRequest,
+  BulkCreateVideoResponse,
   CreateVideoRequest,
   UpdateVideoRequest,
   VideoPreviewResponse,
@@ -83,5 +85,13 @@ export const videos = {
 
   delete: async (id: string): Promise<void> => {
     await adminDelete(`/admin/v2/content/videos/${id}`);
+  },
+
+  bulkCreate: async (data: BulkCreateVideoRequest): Promise<BulkCreateVideoResponse> => {
+    const res = await adminPost<{ data: BulkCreateVideoResponse }>(
+      '/admin/v2/content/videos/bulk',
+      data,
+    );
+    return res.data;
   },
 };

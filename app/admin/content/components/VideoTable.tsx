@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import {
   Box,
+  Button,
   Typography,
   Paper,
   Table,
@@ -23,6 +24,7 @@ import { useRouter } from 'next/navigation';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SendIcon from '@mui/icons-material/Send';
+import PlaylistAddIcon from '@mui/icons-material/PlaylistAdd';
 import type { VideoStatus } from '@/types/admin';
 import { useVideoAdminList, useDeleteVideo, useUrlState } from '@/app/admin/hooks';
 import { CONTENT_URL_KEYS } from '@/app/admin/hooks/use-url-state';
@@ -32,6 +34,7 @@ import { formatDateTimeKR } from '@/app/utils/formatters';
 import { getApiErrorMessage } from '@/app/utils/errors';
 import { StatusBadge } from './StatusBadge';
 import { PublishDialog } from './PublishDialog';
+import { BulkVideoImportDialog } from './BulkVideoImportDialog';
 
 export function VideoTable() {
   const router = useRouter();
@@ -44,6 +47,7 @@ export function VideoTable() {
   const rowsPerPage = getNumber(CONTENT_URL_KEYS.rowsPerPage, 10);
 
   const [publishItem, setPublishItem] = useState<{ id: string; title: string } | null>(null);
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
 
   const { data, isLoading } = useVideoAdminList({
     page: page + 1,
@@ -82,7 +86,7 @@ export function VideoTable() {
 
   return (
     <Box>
-      <Box sx={{ mb: 2 }}>
+      <Box sx={{ mb: 2, display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
         <FormControl size="small" sx={{ minWidth: 160 }}>
           <InputLabel id="video-filter-status">상태</InputLabel>
           <Select
@@ -101,6 +105,15 @@ export function VideoTable() {
             <MenuItem value="published">게시중</MenuItem>
           </Select>
         </FormControl>
+        <Box sx={{ flex: 1 }} />
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<PlaylistAddIcon />}
+          onClick={() => setBulkImportOpen(true)}
+        >
+          일괄 추가
+        </Button>
       </Box>
 
       <TableContainer component={Paper}>
@@ -211,6 +224,11 @@ export function VideoTable() {
         onClose={() => setPublishItem(null)}
         type="video"
         item={publishItem}
+      />
+
+      <BulkVideoImportDialog
+        open={bulkImportOpen}
+        onClose={() => setBulkImportOpen(false)}
       />
     </Box>
   );

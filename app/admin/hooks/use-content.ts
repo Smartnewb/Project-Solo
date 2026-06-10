@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AdminService from '@/app/services/admin';
 import type {
   BannerPosition,
+  BulkCreateVideoRequest,
   CardNewsTrack,
   CreateBannerRequest,
   CreateCardNewsRequest,
@@ -553,6 +554,16 @@ export function useDeleteVideo() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => AdminService.videos.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: contentKeys.videos() });
+    },
+  });
+}
+
+export function useBulkCreateVideos() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: BulkCreateVideoRequest) => AdminService.videos.bulkCreate(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: contentKeys.videos() });
     },
