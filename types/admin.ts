@@ -88,6 +88,7 @@ export interface AdminVideoItem {
   readCount: number;
   likeCount: number;
   priority?: string | null;
+  targetGender: TargetGender;
   featuredAt?: string | null;
   publishedAt?: string | null;
   createdAt: string | null;
@@ -111,6 +112,8 @@ export interface VideoPreviewResponse {
   title: string;
 }
 
+export type TargetGender = 'ALL' | 'MALE' | 'FEMALE';
+
 export interface CreateVideoRequest {
   url: string;
   displayTitle?: string;
@@ -118,6 +121,7 @@ export interface CreateVideoRequest {
   status: VideoStatus;
   featuredAt?: string;
   priority?: string;
+  targetGender?: TargetGender;
 }
 
 export interface UpdateVideoRequest {
@@ -127,11 +131,13 @@ export interface UpdateVideoRequest {
   status?: VideoStatus;
   featuredAt?: string;
   priority?: string;
+  targetGender?: TargetGender;
 }
 
 export interface BulkCreateVideoRequest {
   urls: string[];
   status: VideoStatus;
+  targetGender?: TargetGender;
 }
 
 export interface BulkCreateVideoResultItem {

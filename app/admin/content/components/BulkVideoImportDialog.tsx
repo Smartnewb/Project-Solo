@@ -20,7 +20,7 @@ import {
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import type { BulkCreateVideoResponse, VideoStatus } from '@/types/admin';
+import type { BulkCreateVideoResponse, TargetGender, VideoStatus } from '@/types/admin';
 import { useBulkCreateVideos } from '@/app/admin/hooks';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import { getApiErrorMessage } from '@/app/utils/errors';
@@ -43,6 +43,7 @@ export function BulkVideoImportDialog({ open, onClose }: Props) {
 
   const [urlsText, setUrlsText] = useState('');
   const [status, setStatus] = useState<VideoStatus>('published');
+  const [targetGender, setTargetGender] = useState<TargetGender>('ALL');
   const [result, setResult] = useState<BulkCreateVideoResponse | null>(null);
 
   const urls = parseUrls(urlsText);
@@ -54,7 +55,7 @@ export function BulkVideoImportDialog({ open, onClose }: Props) {
       return;
     }
     try {
-      const res = await bulkCreate.mutateAsync({ urls, status });
+      const res = await bulkCreate.mutateAsync({ urls, status, targetGender });
       setResult(res);
     } catch (err: unknown) {
       toast.error(getApiErrorMessage(err, '일괄 등록에 실패했습니다.'));
@@ -64,6 +65,7 @@ export function BulkVideoImportDialog({ open, onClose }: Props) {
   const handleClose = () => {
     setUrlsText('');
     setStatus('published');
+    setTargetGender('ALL');
     setResult(null);
     onClose();
   };
@@ -100,6 +102,19 @@ export function BulkVideoImportDialog({ open, onClose }: Props) {
               >
                 <MenuItem value="published">발행</MenuItem>
                 <MenuItem value="draft">초안</MenuItem>
+              </TextField>
+              <TextField
+                select
+                size="small"
+                label="노출 대상"
+                value={targetGender}
+                onChange={(e) => setTargetGender(e.target.value as TargetGender)}
+                sx={{ width: 160 }}
+                helperText="이 배치 전체 적용"
+              >
+                <MenuItem value="ALL">공통 (남녀 모두)</MenuItem>
+                <MenuItem value="MALE">남성</MenuItem>
+                <MenuItem value="FEMALE">여성</MenuItem>
               </TextField>
               <Typography variant="caption" color="text.secondary">
                 {urlCount > 0 ? `${urlCount}개 URL 감지됨` : 'URL 미입력'}

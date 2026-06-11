@@ -16,7 +16,7 @@ import {
   Typography,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import type { VideoPreviewResponse, VideoStatus } from '@/types/admin';
+import type { TargetGender, VideoPreviewResponse, VideoStatus } from '@/types/admin';
 import {
   usePreviewVideo,
   useCreateVideo,
@@ -55,6 +55,7 @@ export function VideoForm({ mode, id }: Props) {
   const [status, setStatus] = useState<VideoStatus>('draft');
   const [featuredAt, setFeaturedAt] = useState('');
   const [priority, setPriority] = useState('');
+  const [targetGender, setTargetGender] = useState<TargetGender>('ALL');
   // edit 모드에서 URL을 실제로 바꿨는지 (바꿨을 때만 재추출 전송)
   const [urlDirty, setUrlDirty] = useState(false);
 
@@ -67,6 +68,7 @@ export function VideoForm({ mode, id }: Props) {
     setStatus(d.status);
     setFeaturedAt(toLocalInput(d.featuredAt));
     setPriority(d.priority ?? '');
+    setTargetGender(d.targetGender ?? 'ALL');
     setPreview({
       provider: d.video.provider,
       videoId: d.video.videoId,
@@ -113,6 +115,7 @@ export function VideoForm({ mode, id }: Props) {
         status: publishNow ? 'published' : 'draft',
         featuredAt: buildFeaturedAtIso(),
         priority: priority.trim() || undefined,
+        targetGender,
       });
       toast.success(publishNow ? '영상이 등록·발행되었습니다.' : '영상이 임시저장되었습니다.');
       goList();
@@ -132,6 +135,7 @@ export function VideoForm({ mode, id }: Props) {
           status,
           featuredAt: featuredAt ? buildFeaturedAtIso() : undefined,
           priority: priority.trim(),
+          targetGender,
           ...(urlDirty && url.trim() ? { url: url.trim() } : {}),
         },
       });
@@ -264,6 +268,18 @@ export function VideoForm({ mode, id }: Props) {
                 sx={{ flex: 1 }}
               />
             </Stack>
+            <TextField
+              select
+              size="small"
+              label="노출 대상"
+              value={targetGender}
+              onChange={(e) => setTargetGender(e.target.value as TargetGender)}
+              helperText="공통은 남녀 모두, 남성/여성은 해당 성별에게만 노출됩니다."
+            >
+              <MenuItem value="ALL">공통 (남녀 모두)</MenuItem>
+              <MenuItem value="MALE">남성</MenuItem>
+              <MenuItem value="FEMALE">여성</MenuItem>
+            </TextField>
             {mode === 'edit' && (
               <TextField
                 select
