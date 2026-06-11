@@ -24,6 +24,7 @@ import type { BulkCreateVideoResponse, TargetGender, VideoStatus } from '@/types
 import { useBulkCreateVideos } from '@/app/admin/hooks';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import { getApiErrorMessage } from '@/app/utils/errors';
+import { TARGET_GENDER_OPTIONS } from '@/app/admin/content/constants';
 
 interface Props {
   open: boolean;
@@ -112,9 +113,11 @@ export function BulkVideoImportDialog({ open, onClose }: Props) {
                 sx={{ width: 160 }}
                 helperText="이 배치 전체 적용"
               >
-                <MenuItem value="ALL">공통 (남녀 모두)</MenuItem>
-                <MenuItem value="MALE">남성</MenuItem>
-                <MenuItem value="FEMALE">여성</MenuItem>
+                {TARGET_GENDER_OPTIONS.map((opt) => (
+                  <MenuItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </MenuItem>
+                ))}
               </TextField>
               <Typography variant="caption" color="text.secondary">
                 {urlCount > 0 ? `${urlCount}개 URL 감지됨` : 'URL 미입력'}

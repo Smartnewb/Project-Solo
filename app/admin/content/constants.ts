@@ -20,6 +20,13 @@ export const NEW_CATEGORY_OPTIONS = [
 
 export const NEW_CATEGORY_CODES = NEW_CATEGORY_OPTIONS.map((o) => o.code) as readonly string[];
 
+// 영상 노출 성별 타겟 옵션 (VideoForm / BulkVideoImportDialog 공유)
+export const TARGET_GENDER_OPTIONS = [
+  { value: 'ALL', label: '공통 (남녀 모두)' },
+  { value: 'MALE', label: '남성' },
+  { value: 'FEMALE', label: '여성' },
+] as const;
+
 // Legacy (sometime-articles pre-migration). Keys must match DB values.
 export const LEGACY_CATEGORY_LABELS: Record<string, string> = {
   story: '스토리',

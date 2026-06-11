@@ -25,6 +25,7 @@ import {
 } from '@/app/admin/hooks';
 import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import { getApiErrorMessage } from '@/app/utils/errors';
+import { TARGET_GENDER_OPTIONS } from '@/app/admin/content/constants';
 
 interface Props {
   mode: 'create' | 'edit';
@@ -276,9 +277,11 @@ export function VideoForm({ mode, id }: Props) {
               onChange={(e) => setTargetGender(e.target.value as TargetGender)}
               helperText="공통은 남녀 모두, 남성/여성은 해당 성별에게만 노출됩니다."
             >
-              <MenuItem value="ALL">공통 (남녀 모두)</MenuItem>
-              <MenuItem value="MALE">남성</MenuItem>
-              <MenuItem value="FEMALE">여성</MenuItem>
+              {TARGET_GENDER_OPTIONS.map((opt) => (
+                <MenuItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </MenuItem>
+              ))}
             </TextField>
             {mode === 'edit' && (
               <TextField
