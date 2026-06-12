@@ -23,9 +23,22 @@ interface TypingEvent {
   isTyping: boolean;
 }
 
+interface MessageUpdatedEvent {
+  sessionId: string;
+  id: string;
+  content: string;
+}
+
+interface MessageDeletedEvent {
+  sessionId: string;
+  messageId: string;
+}
+
 interface UseSupportChatSocketOptions {
   sessionId: string;
   onNewMessage?: (message: SupportMessage) => void;
+  onMessageUpdated?: (event: MessageUpdatedEvent) => void;
+  onMessageDeleted?: (event: MessageDeletedEvent) => void;
   onStatusChanged?: (event: SessionStatusChangedEvent) => void;
   onTyping?: (event: TypingEvent) => void;
 }
@@ -42,6 +55,8 @@ const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:8044'
 export function useSupportChatSocket({
   sessionId,
   onNewMessage,
+  onMessageUpdated,
+  onMessageDeleted,
   onStatusChanged,
   onTyping,
 }: UseSupportChatSocketOptions): UseSupportChatSocketReturn {
@@ -114,6 +129,14 @@ export function useSupportChatSocket({
       onNewMessage?.(message);
     });
 
+    socket.on('message_updated', (event: MessageUpdatedEvent) => {
+      onMessageUpdated?.(event);
+    });
+
+    socket.on('message_deleted', (event: MessageDeletedEvent) => {
+      onMessageDeleted?.(event);
+    });
+
     socket.on('session_status_changed', (event: SessionStatusChangedEvent) => {
       onStatusChanged?.(event);
     });
@@ -123,7 +146,7 @@ export function useSupportChatSocket({
     });
 
     socketRef.current = socket;
-  }, [sessionId, getAccessToken, onNewMessage, onStatusChanged, onTyping]);
+  }, [sessionId, getAccessToken, onNewMessage, onMessageUpdated, onMessageDeleted, onStatusChanged, onTyping]);
 
   const disconnect = useCallback(() => {
     if (socketRef.current) {

@@ -123,6 +123,23 @@ export interface ResolveSessionRequest {
   closingMessage?: string;
 }
 
+export interface UpdateMessageRequest {
+  content: string;
+}
+
+export interface UpdateMessageResponse {
+  success: boolean;
+  messageId: string;
+  sessionId: string;
+  content: string;
+}
+
+export interface DeleteMessageResponse {
+  success: boolean;
+  messageId: string;
+  sessionId: string;
+}
+
 export const SESSION_STATUS_LABELS: Record<SupportSessionStatus, string> = {
   bot_handling: 'AI 응대 중',
   waiting_admin: '어드민 대기',

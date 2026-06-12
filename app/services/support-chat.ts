@@ -1,11 +1,14 @@
-import { adminGet, adminPost } from '@/shared/lib/http/admin-fetch';
+import { adminDelete, adminGet, adminPatch, adminPost } from '@/shared/lib/http/admin-fetch';
 import type {
   AdminSessionsParams,
   AdminSessionsResponse,
+  DeleteMessageResponse,
   SupportSessionDetail,
   TakeoverResponse,
   ResolveResponse,
   ResolveSessionRequest,
+  UpdateMessageRequest,
+  UpdateMessageResponse,
 } from '@/app/types/support-chat';
 
 class SupportChatService {
@@ -55,6 +58,35 @@ class SupportChatService {
     } catch (error: unknown) {
       console.error('Support chat session 종료 실패:', error);
       const message = error instanceof Error ? error.message : '세션 종료에 실패했습니다.';
+      throw new Error(message);
+    }
+  }
+
+  async updateMessage(
+    sessionId: string,
+    messageId: string,
+    request: UpdateMessageRequest
+  ): Promise<UpdateMessageResponse> {
+    try {
+      return adminPatch<UpdateMessageResponse>(
+        `${this.basePath}/sessions/${sessionId}/messages/${messageId}`,
+        request
+      );
+    } catch (error: unknown) {
+      console.error('Support chat message 수정 실패:', error);
+      const message = error instanceof Error ? error.message : '메시지 수정에 실패했습니다.';
+      throw new Error(message);
+    }
+  }
+
+  async deleteMessage(sessionId: string, messageId: string): Promise<DeleteMessageResponse> {
+    try {
+      return adminDelete<DeleteMessageResponse>(
+        `${this.basePath}/sessions/${sessionId}/messages/${messageId}`
+      );
+    } catch (error: unknown) {
+      console.error('Support chat message 삭제 실패:', error);
+      const message = error instanceof Error ? error.message : '메시지 삭제에 실패했습니다.';
       throw new Error(message);
     }
   }
