@@ -66,6 +66,29 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
   // 사용자 프로필 상세 모달 상태
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [userDetail, setUserDetail] = useState<any>(null);
+  const [userDetailLoading, setUserDetailLoading] = useState(false);
+  const [userDetailError, setUserDetailError] = useState<string | null>(null);
+
+  // 프로필 클릭 시 모달 오픈 + 상세 정보 조회
+  const handleViewUserDetail = async (userId?: string) => {
+    if (!userId) return;
+
+    try {
+      setSelectedUserId(userId);
+      setUserModalOpen(true);
+      setUserDetailLoading(true);
+      setUserDetailError(null);
+      setUserDetail(null);
+
+      const data = await AdminService.userAppearance.getUserDetails(userId);
+      setUserDetail(data);
+    } catch (err: any) {
+      setUserDetailError(err.message || '유저 상세 정보를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setUserDetailLoading(false);
+    }
+  };
 
   // 매칭 상대 이력 조회 함수
   const fetchMatcherHistory = async () => {
@@ -234,10 +257,7 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
                     cursor: 'pointer',
                     '&:hover': { opacity: 0.8 }
                   }}
-                  onClick={() => {
-                    setSelectedUserId(selectedUser.id);
-                    setUserModalOpen(true);
-                  }}
+                  onClick={() => handleViewUserDetail(selectedUser.id)}
                 >
                   {selectedUser.name.charAt(0)}
                 </Avatar>
@@ -249,10 +269,7 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
                       color: 'primary.main',
                       '&:hover': { textDecoration: 'underline' }
                     }}
-                    onClick={() => {
-                      setSelectedUserId(selectedUser.id);
-                      setUserModalOpen(true);
-                    }}
+                    onClick={() => handleViewUserDetail(selectedUser.id)}
                   >
                     {selectedUser.name}{selectedUser.deletedAt ? ' (탈퇴)' : ''}
                   </Typography>
@@ -398,10 +415,7 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
                                       cursor: 'pointer',
                                       '&:hover': { opacity: 0.8 }
                                     }}
-                                    onClick={() => {
-                                      setSelectedUserId(item.requester.id);
-                                      setUserModalOpen(true);
-                                    }}
+                                    onClick={() => handleViewUserDetail(item.requester.id)}
                                   >
                                     {item.requester.name.charAt(0)}
                                   </Avatar>
@@ -414,10 +428,7 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
                                         color: 'primary.main',
                                         '&:hover': { textDecoration: 'underline' }
                                       }}
-                                      onClick={() => {
-                                        setSelectedUserId(item.requester.id);
-                                        setUserModalOpen(true);
-                                      }}
+                                      onClick={() => handleViewUserDetail(item.requester.id)}
                                     >
                                       {item.requester.name}{item.requester.deletedAt ? ' (탈퇴)' : ''}
                                     </Typography>
@@ -460,9 +471,9 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
         open={userModalOpen}
         onClose={() => setUserModalOpen(false)}
         userId={selectedUserId}
-        userDetail={{ id: '', name: '', age: 0, gender: 'MALE', profileImages: [] }}
-        loading={false}
-        error={null}
+        userDetail={userDetail || { id: '', name: '', age: 0, gender: 'MALE', profileImages: [] }}
+        loading={userDetailLoading}
+        error={userDetailError}
       />
     </LocalizationProvider>
   );

@@ -92,7 +92,8 @@ export const matching = {
 			params.name = name.trim();
 		}
 
-		const result = await adminGet<{ data: any }>('/admin/v2/matching', params);
+		// 백엔드는 { data: { items, meta, totalMatchCount, matcherInfo } } 형태로 응답 (V2 인터셉터 래핑)
+		const result = await adminGet<{ data: any }>('/admin/v2/matching/matcher-history', params);
 		return result.data;
 	},
 
