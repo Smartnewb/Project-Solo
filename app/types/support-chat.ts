@@ -1,4 +1,9 @@
-export type SupportSessionStatus = 'bot_handling' | 'waiting_admin' | 'admin_handling' | 'resolved';
+export type SupportSessionStatus =
+  | 'bot_handling'
+  | 'waiting_admin'
+  | 'admin_handling'
+  | 'resolved'
+  | 'admin_resolved';
 export type SupportLanguage = 'ko' | 'ja';
 export type SupportSenderType = 'user' | 'bot' | 'admin';
 export type SupportDomain = 'payment' | 'matching' | 'chat' | 'account' | 'other';
@@ -110,7 +115,7 @@ export interface TakeoverResponse {
 export interface ResolveResponse {
   success: boolean;
   sessionId: string;
-  status: 'resolved';
+  status: 'resolved' | 'admin_resolved';
   resolvedAt: string;
 }
 
@@ -123,6 +128,7 @@ export const SESSION_STATUS_LABELS: Record<SupportSessionStatus, string> = {
   waiting_admin: '어드민 대기',
   admin_handling: '어드민 응대 중',
   resolved: '해결 완료',
+  admin_resolved: '해결 완료',
 };
 
 export const SESSION_STATUS_COLORS: Record<SupportSessionStatus, 'default' | 'warning' | 'primary' | 'success'> = {
@@ -130,6 +136,7 @@ export const SESSION_STATUS_COLORS: Record<SupportSessionStatus, 'default' | 'wa
   waiting_admin: 'warning',
   admin_handling: 'primary',
   resolved: 'success',
+  admin_resolved: 'success',
 };
 
 export const LANGUAGE_LABELS: Record<SupportLanguage, string> = {

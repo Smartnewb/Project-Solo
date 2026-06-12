@@ -95,6 +95,23 @@ describe('useSessionPolling', () => {
         };
       }
 
+      if (status === 'admin_resolved') {
+        return {
+          sessions: [
+            {
+              sessionId: 'admin-resolved-1',
+              userId: 'user-6',
+              userNickname: '어드민 해결 유저',
+              status: 'admin_resolved',
+              language: 'ko',
+              messageCount: 6,
+              createdAt: '2026-04-18T00:05:00.000Z',
+            },
+          ],
+          pagination: { page: 1, limit: 100, total: 1, totalPages: 1 },
+        };
+      }
+
       throw new Error(`Unexpected status: ${status}`);
     });
 
@@ -107,9 +124,10 @@ describe('useSessionPolling', () => {
     expect(result.current.statusCounts).toEqual({
       waiting: 1,
       handling: 3,
-      resolved: 1,
+      resolved: 2,
     });
     expect(result.current.activeSessions).toHaveLength(4);
-    expect(result.current.resolvedSessions).toHaveLength(1);
+    expect(result.current.resolvedSessions).toHaveLength(2);
+    expect(result.current.resolvedSessions[0].sessionId).toBe('admin-resolved-1');
   });
 });

@@ -20,7 +20,7 @@ type SupportSessionSummary = {
   sessionId: string;
   userId: string;
   userNickname?: string;
-  status: 'waiting_admin' | 'admin_handling' | 'resolved' | 'bot_handling';
+  status: 'waiting_admin' | 'admin_handling' | 'resolved' | 'admin_resolved' | 'bot_handling';
   language: 'ko' | 'ja';
   messageCount: number;
   lastMessage?: string;
@@ -106,6 +106,7 @@ const SUPPORT_STATUS_LABELS: Record<SupportSessionSummary['status'], string> = {
   waiting_admin: '어드민 대기',
   admin_handling: '어드민 응대 중',
   resolved: '해결 완료',
+  admin_resolved: '해결 완료',
 };
 
 async function fetchBackendJson<T>(
@@ -575,9 +576,15 @@ function buildReviewInboxResponse(payload: {
   supportWaiting: PromiseSettledResult<SupportSessionsResponse>;
   supportHandling: PromiseSettledResult<SupportSessionsResponse>;
   supportResolved: PromiseSettledResult<SupportSessionsResponse>;
+  supportAdminResolved: PromiseSettledResult<SupportSessionsResponse>;
   supportResolvedDetails: Map<string, PromiseSettledResult<SupportSessionDetail>>;
   profileCompletedHistories: Map<string, PromiseSettledResult<ReportHistoryResponse>>;
 }): ReviewInboxResponse {
+  const completedSupportItems = [
+    ...getSupportItems(payload.supportResolved),
+    ...getSupportItems(payload.supportAdminResolved),
+  ];
+
   const approvalItems = sortByNewest([
     ...getReportItems(payload.profilePending).map((item) => mapProfileReport(item, 'approval')),
     ...getReportItems(payload.communityPending).map((item) => mapCommunityReport(item, 'approval')),
@@ -599,7 +606,7 @@ function buildReviewInboxResponse(payload: {
     ),
     ...getReportItems(payload.communityResolved).map((item) => mapCompletedCommunityReport(item, 'resolved')),
     ...getReportItems(payload.communityRejected).map((item) => mapCompletedCommunityReport(item, 'rejected')),
-    ...getSupportItems(payload.supportResolved).map((item) =>
+    ...completedSupportItems.map((item) =>
       mapCompletedSupportSession(item, payload.supportResolvedDetails.get(item.sessionId)),
     ),
   ]).slice(0, COMPLETED_BUCKET_LIMIT);
@@ -616,13 +623,14 @@ function buildReviewInboxResponse(payload: {
       getReportTotal(payload.profileDismissed) +
       getReportTotal(payload.communityResolved) +
       getReportTotal(payload.communityRejected) +
-      getSupportTotal(payload.supportResolved),
+      getSupportTotal(payload.supportResolved) +
+      getSupportTotal(payload.supportAdminResolved),
   };
 
   const doneBreakdown = {
     profile_report: getReportTotal(payload.profileResolved) + getReportTotal(payload.profileDismissed),
     community_report: getReportTotal(payload.communityResolved) + getReportTotal(payload.communityRejected),
-    support_chat: getSupportTotal(payload.supportResolved),
+    support_chat: getSupportTotal(payload.supportResolved) + getSupportTotal(payload.supportAdminResolved),
   };
 
   const warnings = [
@@ -637,6 +645,7 @@ function buildReviewInboxResponse(payload: {
     payload.communityResolved.status === 'rejected' ? createSourceFallbackWarning('커뮤니티 신고 완료 집계') : null,
     payload.communityRejected.status === 'rejected' ? createSourceFallbackWarning('커뮤니티 신고 반려 집계') : null,
     payload.supportResolved.status === 'rejected' ? createSourceFallbackWarning('고객지원 완료 집계') : null,
+    payload.supportAdminResolved.status === 'rejected' ? createSourceFallbackWarning('고객지원 관리자 완료 집계') : null,
   ].filter(Boolean) as string[];
 
   return {
@@ -681,6 +690,7 @@ export async function GET(_request: Request) {
     supportWaiting,
     supportHandling,
     supportResolved,
+    supportAdminResolved,
   ] = await Promise.allSettled([
     fetchBackendJson<BackendReportListResponse<ProfileReport>>(token, sessionMeta, 'admin/v2/reports', {
       type: 'profile',
@@ -741,20 +751,29 @@ export async function GET(_request: Request) {
       page: '1',
       limit: String(COMPLETED_BUCKET_LIMIT),
     }),
+    fetchBackendJson<SupportSessionsResponse>(token, sessionMeta, 'support-chat/admin/sessions', {
+      status: 'admin_resolved',
+      page: '1',
+      limit: String(COMPLETED_BUCKET_LIMIT),
+    }),
   ]);
 
   const supportResolvedDetails = new Map<string, PromiseSettledResult<SupportSessionDetail>>();
   const profileCompletedHistories = new Map<string, PromiseSettledResult<ReportHistoryResponse>>();
 
-  if (supportResolved.status === 'fulfilled') {
-    const resolvedSessions = getSupportItems(supportResolved);
+  const resolvedSupportSessions = [
+    ...getSupportItems(supportResolved),
+    ...getSupportItems(supportAdminResolved),
+  ];
+
+  if (resolvedSupportSessions.length > 0) {
     const detailResults = await Promise.allSettled(
-      resolvedSessions.map((session) =>
+      resolvedSupportSessions.map((session) =>
         fetchBackendJson<SupportSessionDetail>(token, sessionMeta, `support-chat/admin/sessions/${session.sessionId}`, {}),
       ),
     );
 
-    resolvedSessions.forEach((session, index) => {
+    resolvedSupportSessions.forEach((session, index) => {
       supportResolvedDetails.set(session.sessionId, detailResults[index]);
     });
   }
@@ -789,6 +808,7 @@ export async function GET(_request: Request) {
       supportWaiting,
       supportHandling,
       supportResolved,
+      supportAdminResolved,
       supportResolvedDetails,
       profileCompletedHistories,
     }),

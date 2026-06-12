@@ -76,20 +76,36 @@ export function useSessionPolling(): UseSessionPollingReturn {
   }, []);
 
   const fetchResolved = useCallback(async () => {
-    const res = await supportChatService.getSessions({
-      status: 'resolved',
-      page: 1,
-      limit: RESOLVED_FETCH_LIMIT,
-    });
+    const [resolvedRes, adminResolvedRes] = await Promise.all([
+      supportChatService.getSessions({
+        status: 'resolved',
+        page: 1,
+        limit: RESOLVED_FETCH_LIMIT,
+      }),
+      supportChatService.getSessions({
+        status: 'admin_resolved',
+        page: 1,
+        limit: RESOLVED_FETCH_LIMIT,
+      }),
+    ]);
 
     const uniqueSessions = Array.from(
-      new Map(res.sessions.map((session) => [session.sessionId, session])).values()
+      new Map(
+        [...resolvedRes.sessions, ...adminResolvedRes.sessions].map((session) => [
+          session.sessionId,
+          session,
+        ])
+      ).values()
+    ).sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
     setResolvedSessions(uniqueSessions);
     setStatusCounts((prev) => ({
       ...prev,
-      resolved: res.pagination.total || uniqueSessions.length,
+      resolved:
+        resolvedRes.pagination.total + adminResolvedRes.pagination.total ||
+        uniqueSessions.length,
     }));
   }, []);
 

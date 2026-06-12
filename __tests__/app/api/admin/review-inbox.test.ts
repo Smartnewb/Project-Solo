@@ -234,6 +234,28 @@ describe('admin review inbox route', () => {
       )
       .mockResolvedValueOnce(
         makeBackendJsonResponse({
+          sessions: [
+            {
+              sessionId: 'session-admin-resolved-1',
+              userId: 'user-4',
+              userNickname: '지우',
+              status: 'admin_resolved',
+              language: 'ko',
+              messageCount: 4,
+              lastMessage: '문의해 주셔서 감사합니다. 좋은 하루 되세요!',
+              domain: 'matching',
+              collectedInfo: { issueType: 'matching' },
+              createdAt: '2026-04-13T10:00:00.000Z',
+              updatedAt: '2026-04-16T11:00:00.000Z',
+              resolvedAt: '2026-04-16T11:00:00.000Z',
+              assignedAdminId: 'admin-3',
+            },
+          ],
+          pagination: { total: 3, page: 1, limit: 1, totalPages: 3 },
+        }),
+      )
+      .mockResolvedValueOnce(
+        makeBackendJsonResponse({
           sessionId: 'session-resolved-1',
           assignedAdminId: 'admin-1',
           createdAt: '2026-04-12T10:00:00.000Z',
@@ -243,6 +265,15 @@ describe('admin review inbox route', () => {
             { senderType: 'bot' },
             { senderType: 'admin' },
           ],
+        }),
+      )
+      .mockResolvedValueOnce(
+        makeBackendJsonResponse({
+          sessionId: 'session-admin-resolved-1',
+          assignedAdminId: 'admin-3',
+          createdAt: '2026-04-13T10:00:00.000Z',
+          resolvedAt: '2026-04-16T11:00:00.000Z',
+          messages: [{ senderType: 'user' }, { senderType: 'admin' }],
         }),
       )
       .mockResolvedValueOnce(
@@ -286,11 +317,11 @@ describe('admin review inbox route', () => {
     const body = await response.json();
 
     expect(response.status).toBe(200);
-    expect(body.summary).toEqual({ approval: 2, judgment: 3, done: 19 });
-    expect(body.doneBreakdown).toEqual({ profile_report: 6, community_report: 6, support_chat: 7 });
+    expect(body.summary).toEqual({ approval: 2, judgment: 3, done: 22 });
+    expect(body.doneBreakdown).toEqual({ profile_report: 6, community_report: 6, support_chat: 10 });
     expect(body.buckets.approval.total).toBe(2);
     expect(body.buckets.judgment.total).toBe(3);
-    expect(body.buckets.done.total).toBe(19);
+    expect(body.buckets.done.total).toBe(22);
     expect(body.buckets.approval.items[0]).toMatchObject({
       sourceKind: 'profile_report',
       title: '피신고자A 프로필 신고',
@@ -306,8 +337,9 @@ describe('admin review inbox route', () => {
     expect(body.buckets.done.items[0]).toMatchObject({
       sourceKind: 'support_chat',
       source: '1:1 문의 · 해결 완료',
-      handlerKind: 'ai_assisted',
-      handlerLabel: 'AI 응대 후 어드민 개입',
+      sourceId: 'session-admin-resolved-1',
+      handlerKind: 'admin_only',
+      handlerLabel: '어드민이 직접 처리',
       recommendation: '세션 다시 보기',
     });
     const completedProfileItem = body.buckets.done.items.find(
@@ -324,8 +356,8 @@ describe('admin review inbox route', () => {
         expect.objectContaining({ label: '처리 메모 · 허위 프로필 확인' }),
       ]),
     );
-    expect(body.buckets.done.items[0].actions[0].href).toBe('/admin/support-chat?session=session-resolved-1');
+    expect(body.buckets.done.items[0].actions[0].href).toBe('/admin/support-chat?session=session-admin-resolved-1');
     expect(body.warnings).toEqual([]);
-    expect(mockFetch).toHaveBeenCalledTimes(14);
+    expect(mockFetch).toHaveBeenCalledTimes(16);
   });
 });

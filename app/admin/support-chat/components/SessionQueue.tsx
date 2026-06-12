@@ -38,6 +38,7 @@ const statusDotColor: Record<string, string> = {
   waiting_admin: '#f44336',
   admin_handling: '#2196f3',
   resolved: '#4caf50',
+  admin_resolved: '#4caf50',
   bot_handling: '#9e9e9e',
 };
 
