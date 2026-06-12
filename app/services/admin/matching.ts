@@ -25,8 +25,29 @@ export const matching = {
 			params.type = type;
 		}
 
-		const result = await adminGet<{ data: any }>('/admin/v2/matching', params);
-		return result.data;
+		// 백엔드 v2 매칭 목록은 { data: MatchListItem[], meta: { total, page, limit, totalPages } } 형태로 응답.
+		// 화면(matching-management-v2)은 { items, meta: { totalItems } } 계약을 사용하므로 여기서 정규화한다.
+		const result = await adminGet<{
+			data: any[];
+			meta?: { total?: number; page?: number; limit?: number; totalPages?: number };
+		}>('/admin/v2/matching', params);
+
+		const currentPage = result.meta?.page ?? page;
+		const itemsPerPage = result.meta?.limit ?? limit;
+		const totalItems = result.meta?.total ?? 0;
+		const totalPages = result.meta?.totalPages ?? 0;
+
+		return {
+			items: result.data ?? [],
+			meta: {
+				currentPage,
+				itemsPerPage,
+				totalItems,
+				totalPages,
+				hasNextPage: currentPage < totalPages,
+				hasPreviousPage: currentPage > 1,
+			},
+		};
 	},
 
 	// 중복 매칭 여부 확인

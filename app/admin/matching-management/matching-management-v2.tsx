@@ -547,6 +547,26 @@ function MatchingManagementV2Content() {
     }
   };
 
+  // 매칭 내역에서 유저(본인/매칭상대) 이름·아바타 클릭 시 상세 모달 오픈 + 상세 정보 조회
+  const handleViewUserDetail = async (userId?: string) => {
+    if (!userId) return;
+
+    try {
+      setSelectedUserId(userId);
+      setUserDetailModalOpen(true);
+      setLoadingUserDetail(true);
+      setUserDetailError(null);
+      setUserDetail(null);
+
+      const data = await AdminService.userAppearance.getUserDetails(userId);
+      setUserDetail(data);
+    } catch (error: any) {
+      setUserDetailError(error.message || '유저 상세 정보를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setLoadingUserDetail(false);
+    }
+  };
+
   // 유저 상세 정보 모달 닫기
   const handleCloseUserDetailModal = () => {
     setUserDetailModalOpen(false);
@@ -745,12 +765,7 @@ function MatchingManagementV2Content() {
                                   cursor: 'pointer',
                                   '&:hover': { opacity: 0.8 }
                                 }}
-                                onClick={() => {
-                                  if (history.user?.id) {
-                                    setSelectedUserId(history.user.id);
-                                    setUserDetailModalOpen(true);
-                                  }
-                                }}
+                                onClick={() => handleViewUserDetail(history.user?.id)}
                               >
                                 {history.user?.name?.charAt(0)}
                               </Avatar>
@@ -763,12 +778,7 @@ function MatchingManagementV2Content() {
                                     color: 'primary.main',
                                     '&:hover': { textDecoration: 'underline' }
                                   }}
-                                  onClick={() => {
-                                    if (history.user?.id) {
-                                      setSelectedUserId(history.user.id);
-                                      setUserDetailModalOpen(true);
-                                    }
-                                  }}
+                                  onClick={() => handleViewUserDetail(history.user?.id)}
                                 >
                                   {history.user?.name}{history.user?.deletedAt ? ' (탈퇴)' : ''}
                                 </Typography>
@@ -788,12 +798,7 @@ function MatchingManagementV2Content() {
                                   cursor: 'pointer',
                                   '&:hover': { opacity: 0.8 }
                                 }}
-                                onClick={() => {
-                                  if (history.matcher?.id) {
-                                    setSelectedUserId(history.matcher.id);
-                                    setUserDetailModalOpen(true);
-                                  }
-                                }}
+                                onClick={() => handleViewUserDetail(history.matcher?.id)}
                               >
                                 {history.matcher?.name?.charAt(0)}
                               </Avatar>
@@ -806,12 +811,7 @@ function MatchingManagementV2Content() {
                                     color: 'primary.main',
                                     '&:hover': { textDecoration: 'underline' }
                                   }}
-                                  onClick={() => {
-                                    if (history.matcher?.id) {
-                                      setSelectedUserId(history.matcher.id);
-                                      setUserDetailModalOpen(true);
-                                    }
-                                  }}
+                                  onClick={() => handleViewUserDetail(history.matcher?.id)}
                                 >
                                   {history.matcher?.name}{history.matcher?.deletedAt ? ' (탈퇴)' : ''}
                                 </Typography>
