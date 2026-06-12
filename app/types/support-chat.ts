@@ -66,6 +66,7 @@ export interface SupportSessionSummary {
   domain?: SupportDomain;
   collectedInfo?: Record<string, string>;
   createdAt: string;
+  waitingSince?: string;
 }
 
 export interface SupportSessionUser {

@@ -80,8 +80,9 @@ function SessionCard({
     }
   }, [isNew]);
 
+  const waitingStartedAt = session.waitingSince ?? session.createdAt;
   const waitingMinutes = session.status === 'waiting_admin'
-    ? Math.floor((Date.now() - new Date(session.createdAt).getTime()) / 60000)
+    ? Math.floor((Date.now() - new Date(waitingStartedAt).getTime()) / 60000)
     : null;
 
   return (
