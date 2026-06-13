@@ -1053,22 +1053,6 @@ function MatchingManagementV2Content() {
           processUnmatchedUserMatching={processUnmatchedUserMatching}
           fetchUnmatchedUsers={fetchUnmatchedUsers}
         />
-
-        {/* 사용자 상세 정보 모달 */}
-        {userDetail && (
-          <UserDetailModal
-            open={userDetailModalOpen}
-            onClose={handleCloseUserDetailModal}
-            userId={selectedUserId}
-            userDetail={userDetail}
-            loading={loadingUserDetail}
-            error={userDetailError}
-            onRefresh={() => {
-              // 데이터 새로고침
-              fetchUnmatchedUsers();
-            }}
-          />
-        )}
       </TabPanel>
 
       {/* 단일 매칭 */}
@@ -1183,14 +1167,15 @@ function MatchingManagementV2Content() {
           </Box>
         </Paper>
       </TabPanel>
-      {/* 사용자 프로필 상세 모달 */}
+      {/* 사용자 프로필 상세 모달 (탭 공용 단일 인스턴스) */}
       <UserDetailModal
         open={userDetailModalOpen}
-        onClose={() => setUserDetailModalOpen(false)}
+        onClose={handleCloseUserDetailModal}
         userId={selectedUserId}
         userDetail={userDetail || { id: '', name: '', age: 0, gender: 'MALE', profileImages: [] }}
         loading={loadingUserDetail}
         error={userDetailError}
+        onRefresh={() => fetchUnmatchedUsers()}
       />
 
     </Box>
