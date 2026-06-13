@@ -61,6 +61,7 @@ export interface SupportSessionSummary {
   userNickname?: string;
   status: SupportSessionStatus;
   language: SupportLanguage;
+  assignedAdminId?: string;
   messageCount: number;
   lastMessage?: string;
   domain?: SupportDomain;
@@ -84,6 +85,7 @@ export interface SupportSessionDetail {
   status: SupportSessionStatus;
   language: SupportLanguage;
   assignedAdminId?: string;
+  adminNote?: string;
   domain?: SupportDomain;
   collectedInfo?: Record<string, string>;
   messages: SupportMessage[];
@@ -120,9 +122,49 @@ export interface ResolveResponse {
   resolvedAt: string;
 }
 
+export type SupportResolutionReason =
+  | 'solved'
+  | 'duplicate'
+  | 'spam'
+  | 'transferred'
+  | 'simple_inquiry'
+  | 'other';
+
 export interface ResolveSessionRequest {
   closingMessage?: string;
+  resolutionReason?: SupportResolutionReason;
 }
+
+export interface UpdateAdminNoteRequest {
+  note: string;
+}
+
+export interface UpdateAdminNoteResponse {
+  success: boolean;
+  sessionId: string;
+  note?: string;
+}
+
+export interface AiDraftSource {
+  question: string;
+  answer: string;
+  similarity: number;
+}
+
+export interface AiDraftResponse {
+  draft: string;
+  confidence: number;
+  sources: AiDraftSource[];
+}
+
+export const RESOLUTION_REASON_LABELS: Record<SupportResolutionReason, string> = {
+  solved: '해결됨',
+  duplicate: '중복문의',
+  spam: '스팸',
+  transferred: '타팀이관',
+  simple_inquiry: '단순문의',
+  other: '기타',
+};
 
 export interface UpdateMessageRequest {
   content: string;

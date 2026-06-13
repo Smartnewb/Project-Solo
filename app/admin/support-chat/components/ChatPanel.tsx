@@ -15,6 +15,7 @@ import {
   Divider,
   Snackbar,
   IconButton,
+  Tooltip,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -37,12 +38,24 @@ import {
   Delete as DeleteIcon,
   Check as CheckIcon,
   Close as CloseIcon,
+  Refresh as RefreshIcon,
+  Article as TemplateIcon,
+  AutoAwesome as AiDraftIcon,
+  StickyNote2 as NoteIcon,
 } from '@mui/icons-material';
 import supportChatService from '@/app/services/support-chat';
 import AdminService from '@/app/services/admin';
 import { useAdminSession } from '@/shared/contexts/admin-session-context';
 import { useSupportChatSocket } from '../hooks/useSupportChatSocket';
-import type { SupportSessionDetail, SupportMessage, SupportSenderType } from '@/app/types/support-chat';
+import QuickReplyDialog from './QuickReplyDialog';
+import ResolveDialog from './ResolveDialog';
+import type {
+  SupportSessionDetail,
+  SupportMessage,
+  SupportSenderType,
+  SupportResolutionReason,
+  AiDraftSource,
+} from '@/app/types/support-chat';
 import { safeToLocaleString } from '@/app/utils/formatters';
 import {
   SESSION_STATUS_LABELS,
@@ -88,6 +101,14 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
   const [gemGrantAmount, setGemGrantAmount] = useState(10);
   const [gemGrantMessage, setGemGrantMessage] = useState(DEFAULT_GEM_GRANT_MESSAGE);
   const [gemGrantLoading, setGemGrantLoading] = useState(false);
+  const [userTyping, setUserTyping] = useState(false);
+  const [quickReplyOpen, setQuickReplyOpen] = useState(false);
+  const [resolveDialogOpen, setResolveDialogOpen] = useState(false);
+  const [aiDraftLoading, setAiDraftLoading] = useState(false);
+  const [aiDraftSources, setAiDraftSources] = useState<AiDraftSource[]>([]);
+  const [noteValue, setNoteValue] = useState('');
+  const [noteSaving, setNoteSaving] = useState(false);
+  const [noteExpanded, setNoteExpanded] = useState(false);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -95,6 +116,8 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const userTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const adminTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleNewMessage = useCallback((message: SupportMessage) => {
     setSession((prev) => {
@@ -134,12 +157,24 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
     onSessionUpdated();
   }, [onSessionUpdated]);
 
-  const { state: socketState, sendMessage: socketSendMessage } = useSupportChatSocket({
+  const handleTyping = useCallback((event: { sessionId: string; userId: string; isTyping: boolean }) => {
+    if (event.sessionId !== sessionId) return;
+    // 어드민 본인이 보낸 typing 이벤트는 무시 (유저 입력만 표시)
+    if (event.userId === adminSession?.user.id) return;
+    setUserTyping(event.isTyping);
+    if (event.isTyping) {
+      if (userTypingTimeoutRef.current) clearTimeout(userTypingTimeoutRef.current);
+      userTypingTimeoutRef.current = setTimeout(() => setUserTyping(false), 5000);
+    }
+  }, [sessionId, adminSession?.user.id]);
+
+  const { state: socketState, sendMessage: socketSendMessage, setTyping, reconnect } = useSupportChatSocket({
     sessionId: sessionId || '',
     onNewMessage: handleNewMessage,
     onMessageUpdated: handleMessageUpdated,
     onMessageDeleted: handleMessageDeleted,
     onStatusChanged: handleStatusChanged,
+    onTyping: handleTyping,
   });
 
   const scrollToBottom = () => {
@@ -174,6 +209,7 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
     try {
       const detail = await supportChatService.getSessionDetail(sessionId);
       setSession(detail);
+      setNoteValue(detail.adminNote ?? '');
       await fetchUserAdminInfo(detail.user.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : '세션 정보를 불러오는데 실패했습니다.');
@@ -215,14 +251,19 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
     }
   };
 
-  const handleResolve = async () => {
+  const handleResolve = async (params: {
+    closingMessage?: string;
+    resolutionReason?: SupportResolutionReason;
+  }) => {
     if (!session || !sessionId) return;
     setActionLoading(true);
     try {
       await supportChatService.resolveSession(sessionId, {
-        closingMessage: '문의해 주셔서 감사합니다. 좋은 하루 되세요!',
+        ...(params.closingMessage ? { closingMessage: params.closingMessage } : {}),
+        ...(params.resolutionReason ? { resolutionReason: params.resolutionReason } : {}),
       });
       setSnackbar({ open: true, message: '세션이 해결 완료 처리되었습니다.', severity: 'success' });
+      setResolveDialogOpen(false);
       await fetchSessionDetail();
       onSessionUpdated();
     } catch (err) {
@@ -312,6 +353,8 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
       const success = await socketSendMessage(messageInput.trim());
       if (success) {
         setMessageInput('');
+        setTyping(false);
+        if (adminTypingTimeoutRef.current) clearTimeout(adminTypingTimeoutRef.current);
         await fetchSessionDetail();
         onSessionUpdated();
       } else {
@@ -388,6 +431,75 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
       handleSendMessage();
     }
   };
+
+  const handleMessageInputChange = (value: string) => {
+    setMessageInput(value);
+    if (!socketState.connected || !socketState.sessionJoined) return;
+    setTyping(true);
+    if (adminTypingTimeoutRef.current) clearTimeout(adminTypingTimeoutRef.current);
+    adminTypingTimeoutRef.current = setTimeout(() => setTyping(false), 2000);
+  };
+
+  const handleInsertTemplate = (content: string) => {
+    setMessageInput((prev) => (prev.trim() ? `${prev}\n${content}` : content));
+  };
+
+  const handleGenerateAiDraft = async () => {
+    if (!sessionId) return;
+    setAiDraftLoading(true);
+    try {
+      const result = await supportChatService.generateAiDraft(sessionId);
+      setMessageInput(result.draft);
+      setAiDraftSources(result.sources);
+      setSnackbar({
+        open: true,
+        message: `AI 초안을 생성했습니다. (신뢰도 ${(result.confidence * 100).toFixed(0)}%) 검토 후 전송하세요.`,
+        severity: 'success',
+      });
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: err instanceof Error ? err.message : 'AI 초안 생성에 실패했습니다.',
+        severity: 'error',
+      });
+    } finally {
+      setAiDraftLoading(false);
+    }
+  };
+
+  const handleSaveNote = async () => {
+    if (!sessionId) return;
+    setNoteSaving(true);
+    try {
+      const result = await supportChatService.updateAdminNote(sessionId, noteValue);
+      setNoteValue(result.note ?? '');
+      setSession((prev) => (prev ? { ...prev, adminNote: result.note } : prev));
+      setSnackbar({ open: true, message: '내부 메모를 저장했습니다.', severity: 'success' });
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: err instanceof Error ? err.message : '내부 메모 저장에 실패했습니다.',
+        severity: 'error',
+      });
+    } finally {
+      setNoteSaving(false);
+    }
+  };
+
+  // 세션 전환 시 유저 입력 표시·AI 초안 출처 초기화
+  useEffect(() => {
+    setUserTyping(false);
+    setAiDraftSources([]);
+    setNoteExpanded(false);
+  }, [sessionId]);
+
+  // 타이핑 타임아웃 정리
+  useEffect(() => {
+    return () => {
+      if (userTypingTimeoutRef.current) clearTimeout(userTypingTimeoutRef.current);
+      if (adminTypingTimeoutRef.current) clearTimeout(adminTypingTimeoutRef.current);
+    };
+  }, []);
 
   const formatDate = (dateString: string) => {
     return safeToLocaleString(dateString, 'ko-KR', {
@@ -594,8 +706,27 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
             {canSendMessage && (
               <Chip
                 icon={socketState.connected ? <WifiIcon /> : <WifiOffIcon />}
-                label={socketState.connected ? (socketState.sessionJoined ? '연결됨' : '참여 중...') : '연결 중...'}
+                label={socketState.connected ? (socketState.sessionJoined ? '연결됨' : '참여 중...') : '연결 끊김'}
                 color={socketState.connected && socketState.sessionJoined ? 'success' : 'default'}
+                size="small"
+                variant="outlined"
+              />
+            )}
+            {canSendMessage && !socketState.connected && (
+              <Button
+                size="small"
+                color="warning"
+                variant="outlined"
+                onClick={reconnect}
+                startIcon={<RefreshIcon />}
+              >
+                재연결
+              </Button>
+            )}
+            {session.assignedAdminId && (
+              <Chip
+                label={session.assignedAdminId === adminSession?.user.id ? '내 담당' : '다른 어드민 담당'}
+                color={session.assignedAdminId === adminSession?.user.id ? 'primary' : 'default'}
                 size="small"
                 variant="outlined"
               />
@@ -617,7 +748,7 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
                 variant="contained"
                 color="success"
                 size="small"
-                onClick={handleResolve}
+                onClick={() => setResolveDialogOpen(true)}
                 disabled={actionLoading}
                 startIcon={actionLoading ? <CircularProgress size={14} /> : <CheckCircleIcon />}
               >
@@ -689,6 +820,54 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
         </Box>
       )}
 
+      {/* 어드민 내부 메모 (유저 비노출) */}
+      {session && (
+        <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: 'divider', bgcolor: '#fffde7' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <NoteIcon fontSize="small" sx={{ color: '#f9a825' }} />
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, flex: 1 }}>
+              내부 메모
+              <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                (유저에게 보이지 않음)
+              </Typography>
+            </Typography>
+            <Button size="small" onClick={() => setNoteExpanded((v) => !v)}>
+              {noteExpanded ? '접기' : noteValue ? '메모 보기' : '메모 추가'}
+            </Button>
+          </Box>
+          {!noteExpanded && noteValue && (
+            <Typography variant="body2" color="text.secondary" noWrap sx={{ mt: 0.5, pl: 3.5 }}>
+              {noteValue}
+            </Typography>
+          )}
+          {noteExpanded && (
+            <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <TextField
+                value={noteValue}
+                onChange={(e) => setNoteValue(e.target.value)}
+                multiline
+                minRows={2}
+                size="small"
+                placeholder="교대/이관 시 참고할 내부 메모를 남기세요."
+                inputProps={{ maxLength: 2000 }}
+                disabled={noteSaving}
+              />
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <Button
+                  size="small"
+                  variant="contained"
+                  onClick={handleSaveNote}
+                  disabled={noteSaving || noteValue === (session.adminNote ?? '')}
+                  startIcon={noteSaving ? <CircularProgress size={14} /> : <CheckIcon />}
+                >
+                  메모 저장
+                </Button>
+              </Box>
+            </Box>
+          )}
+        </Box>
+      )}
+
       {/* Messages area */}
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
@@ -713,13 +892,60 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
       {canSendMessage && (
         <>
           <Divider />
-          <Box sx={{ p: 2, display: 'flex', gap: 1 }}>
+          {userTyping && (
+            <Typography variant="caption" color="text.secondary" sx={{ px: 2, pt: 1, fontStyle: 'italic' }}>
+              사용자가 입력 중입니다…
+            </Typography>
+          )}
+          {aiDraftSources.length > 0 && (
+            <Box sx={{ px: 2, pt: 1 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
+                참고한 유사 과거 문의
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: 0.5 }}>
+                {aiDraftSources.slice(0, 3).map((src, idx) => (
+                  <Tooltip key={idx} title={src.answer} placement="top">
+                    <Typography variant="caption" color="text.secondary" noWrap sx={{ cursor: 'help' }}>
+                      · {src.question}{' '}
+                      <Typography component="span" variant="caption" color="primary.main">
+                        ({(src.similarity * 100).toFixed(0)}%)
+                      </Typography>
+                    </Typography>
+                  </Tooltip>
+                ))}
+              </Box>
+            </Box>
+          )}
+          <Box sx={{ p: 2, display: 'flex', gap: 1, alignItems: 'flex-end' }}>
+            <Tooltip title="AI 답변 초안 생성">
+              <span>
+                <IconButton
+                  onClick={handleGenerateAiDraft}
+                  disabled={sending || aiDraftLoading}
+                  aria-label="AI 답변 초안 생성"
+                  color="secondary"
+                >
+                  {aiDraftLoading ? <CircularProgress size={20} /> : <AiDraftIcon />}
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title="빠른 답변 템플릿">
+              <span>
+                <IconButton
+                  onClick={() => setQuickReplyOpen(true)}
+                  disabled={sending}
+                  aria-label="빠른 답변 템플릿"
+                >
+                  <TemplateIcon />
+                </IconButton>
+              </span>
+            </Tooltip>
             <TextField
               fullWidth
               size="small"
               placeholder={socketState.connected && socketState.sessionJoined ? '메시지를 입력하세요...' : 'WebSocket 연결 중...'}
               value={messageInput}
-              onChange={(e) => setMessageInput(e.target.value)}
+              onChange={(e) => handleMessageInputChange(e.target.value)}
               onKeyPress={handleKeyPress}
               disabled={sending || !socketState.connected || !socketState.sessionJoined}
               multiline
@@ -736,6 +962,22 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
           </Box>
         </>
       )}
+
+      <QuickReplyDialog
+        open={quickReplyOpen}
+        onClose={() => setQuickReplyOpen(false)}
+        domain={session?.domain}
+        nickname={session?.user.nickname}
+        onSelect={handleInsertTemplate}
+      />
+
+      <ResolveDialog
+        open={resolveDialogOpen}
+        loading={actionLoading}
+        nickname={session?.user.nickname}
+        onClose={() => setResolveDialogOpen(false)}
+        onConfirm={handleResolve}
+      />
 
       <Dialog open={gemGrantDialogOpen} onClose={() => !gemGrantLoading && setGemGrantDialogOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle>구슬 지급</DialogTitle>

@@ -2,11 +2,13 @@ import { adminDelete, adminGet, adminPatch, adminPost } from '@/shared/lib/http/
 import type {
   AdminSessionsParams,
   AdminSessionsResponse,
+  AiDraftResponse,
   DeleteMessageResponse,
   SupportSessionDetail,
   TakeoverResponse,
   ResolveResponse,
   ResolveSessionRequest,
+  UpdateAdminNoteResponse,
   UpdateMessageRequest,
   UpdateMessageResponse,
 } from '@/app/types/support-chat';
@@ -87,6 +89,29 @@ class SupportChatService {
     } catch (error: unknown) {
       console.error('Support chat message 삭제 실패:', error);
       const message = error instanceof Error ? error.message : '메시지 삭제에 실패했습니다.';
+      throw new Error(message);
+    }
+  }
+
+  async generateAiDraft(sessionId: string): Promise<AiDraftResponse> {
+    try {
+      return adminGet<AiDraftResponse>(`${this.basePath}/sessions/${sessionId}/ai-draft`);
+    } catch (error: unknown) {
+      console.error('Support chat AI 초안 생성 실패:', error);
+      const message = error instanceof Error ? error.message : 'AI 답변 초안 생성에 실패했습니다.';
+      throw new Error(message);
+    }
+  }
+
+  async updateAdminNote(sessionId: string, note: string): Promise<UpdateAdminNoteResponse> {
+    try {
+      return adminPatch<UpdateAdminNoteResponse>(
+        `${this.basePath}/sessions/${sessionId}/note`,
+        { note }
+      );
+    } catch (error: unknown) {
+      console.error('Support chat 내부 메모 저장 실패:', error);
+      const message = error instanceof Error ? error.message : '내부 메모 저장에 실패했습니다.';
       throw new Error(message);
     }
   }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Box,
@@ -11,14 +11,18 @@ import {
   Alert,
   ButtonGroup,
   Button,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
 import {
   FiberManualRecord as DotIcon,
   Inbox as InboxIcon,
   AutoAwesome as ReviewInboxIcon,
+  Search as SearchIcon,
 } from '@mui/icons-material';
 import type { SupportSessionSummary, SupportDomain } from '@/app/types/support-chat';
 import { DOMAIN_LABELS, DOMAIN_COLORS } from '@/app/types/support-chat';
+import { useAdminSession } from '@/shared/contexts/admin-session-context';
 
 interface SessionQueueProps {
   activeSessions: SupportSessionSummary[];
@@ -57,17 +61,37 @@ const highlightKeyframes = {
   },
 };
 
+const slaBlinkKeyframes = {
+  '@keyframes slaBlink': {
+    '0%': { opacity: 1 },
+    '50%': { opacity: 0.35 },
+    '100%': { opacity: 1 },
+  },
+};
+
+/** SLA 임계(분) */
+const SLA_WARN_MINUTES = 10;
+const SLA_CRITICAL_MINUTES = 30;
+
+function computeWaitingMinutes(session: SupportSessionSummary): number | null {
+  if (session.status !== 'waiting_admin') return null;
+  const waitingStartedAt = session.waitingSince ?? session.createdAt;
+  return Math.floor((Date.now() - new Date(waitingStartedAt).getTime()) / 60000);
+}
+
 function SessionCard({
   session,
   selected,
   isNew,
   unreadCount,
+  assignedToMe,
   onClick,
 }: {
   session: SupportSessionSummary;
   selected: boolean;
   isNew: boolean;
   unreadCount: number;
+  assignedToMe: boolean;
   onClick: () => void;
 }) {
   const [highlight, setHighlight] = useState(isNew);
@@ -80,10 +104,15 @@ function SessionCard({
     }
   }, [isNew]);
 
-  const waitingStartedAt = session.waitingSince ?? session.createdAt;
-  const waitingMinutes = session.status === 'waiting_admin'
-    ? Math.floor((Date.now() - new Date(waitingStartedAt).getTime()) / 60000)
-    : null;
+  const waitingMinutes = computeWaitingMinutes(session);
+  const slaLevel: 'normal' | 'warn' | 'critical' =
+    waitingMinutes === null
+      ? 'normal'
+      : waitingMinutes >= SLA_CRITICAL_MINUTES
+        ? 'critical'
+        : waitingMinutes >= SLA_WARN_MINUTES
+          ? 'warn'
+          : 'normal';
 
   return (
     <Paper
@@ -119,12 +148,29 @@ function SessionCard({
         <Typography variant="subtitle2" sx={{ fontWeight: 600, flex: 1 }} noWrap>
           {session.userNickname || session.userId.substring(0, 8)}
         </Typography>
+        {assignedToMe && (
+          <Chip label="내 담당" color="primary" size="small" sx={{ fontSize: '0.6rem', height: 18, mr: 0.5 }} />
+        )}
+        {session.assignedAdminId && !assignedToMe && (
+          <Chip label="배정됨" size="small" variant="outlined" sx={{ fontSize: '0.6rem', height: 18, mr: 0.5 }} />
+        )}
         {unreadCount > 0 && (
           <Badge badgeContent={unreadCount} color="error" sx={{ mr: 0.5 }} />
         )}
         {waitingMinutes !== null && (
-          <Typography variant="caption" color="error.main" sx={{ fontWeight: 600 }}>
+          <Typography
+            variant="caption"
+            sx={{
+              fontWeight: slaLevel === 'normal' ? 600 : 700,
+              color: slaLevel === 'normal' ? 'error.main' : slaLevel === 'warn' ? '#e65100' : '#b71c1c',
+              ...(slaLevel === 'critical' && {
+                ...slaBlinkKeyframes,
+                animation: 'slaBlink 1.2s ease-in-out infinite',
+              }),
+            }}
+          >
             {waitingMinutes < 1 ? '방금' : `${waitingMinutes}분`}
+            {slaLevel === 'critical' ? ' ⚠' : ''}
           </Typography>
         )}
       </Box>
@@ -158,11 +204,48 @@ export default function SessionQueue({
   onClearNewSessionIds,
   unreadMap,
 }: SessionQueueProps) {
+  const [search, setSearch] = useState('');
+  const [myOnly, setMyOnly] = useState(false);
+  const { session: adminSession } = useAdminSession();
+  const myAdminId = adminSession?.user.id;
+
   const sessions = activeTab === 'active' ? activeSessions : resolvedSessions;
 
-  const filtered = domainFilter === 'all'
-    ? sessions
-    : sessions.filter((s) => s.domain === domainFilter);
+  const filtered = useMemo(() => {
+    const byAssignee =
+      myOnly && myAdminId ? sessions.filter((s) => s.assignedAdminId === myAdminId) : sessions;
+
+    const byDomain =
+      domainFilter === 'all' ? byAssignee : byAssignee.filter((s) => s.domain === domainFilter);
+
+    const query = search.trim().toLowerCase();
+    const bySearch = query
+      ? byDomain.filter(
+          (s) =>
+            (s.userNickname?.toLowerCase().includes(query) ?? false) ||
+            s.userId.toLowerCase().includes(query) ||
+            (s.lastMessage?.toLowerCase().includes(query) ?? false)
+        )
+      : byDomain;
+
+    if (activeTab !== 'active') return bySearch;
+
+    // 활성 탭: 대기(가장 오래 기다린 순) → AI 응대 → 어드민 응대
+    const statusRank: Record<string, number> = {
+      waiting_admin: 0,
+      bot_handling: 1,
+      admin_handling: 2,
+    };
+    const waitingStart = (s: SupportSessionSummary) =>
+      new Date(s.waitingSince ?? s.createdAt).getTime();
+
+    return [...bySearch].sort((a, b) => {
+      const rankDiff = (statusRank[a.status] ?? 3) - (statusRank[b.status] ?? 3);
+      if (rankDiff !== 0) return rankDiff;
+      // 같은 상태면 오래된(작은 timestamp) 순 우선
+      return waitingStart(a) - waitingStart(b);
+    });
+  }, [sessions, domainFilter, search, activeTab, myOnly, myAdminId]);
 
   const newCount = newSessionIds.size;
   const hasOtherTabItems = activeTab === 'active' ? resolvedSessions.length > 0 : activeSessions.length > 0;
@@ -188,6 +271,21 @@ export default function SessionQueue({
     >
       {/* Tab toggle + filter */}
       <Box sx={{ p: 1.5, borderBottom: 1, borderColor: 'divider' }}>
+        <TextField
+          fullWidth
+          size="small"
+          placeholder="닉네임 · 유저ID · 메시지 검색"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          sx={{ mb: 1 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon fontSize="small" />
+              </InputAdornment>
+            ),
+          }}
+        />
         <ButtonGroup size="small" fullWidth sx={{ mb: 1 }}>
           <Button
             variant={activeTab === 'active' ? 'contained' : 'outlined'}
@@ -222,6 +320,16 @@ export default function SessionQueue({
             />
           ))}
         </Box>
+        {myAdminId && (
+          <Chip
+            label="내 문의만"
+            onClick={() => setMyOnly((v) => !v)}
+            color={myOnly ? 'primary' : 'default'}
+            size="small"
+            variant={myOnly ? 'filled' : 'outlined'}
+            sx={{ fontSize: '0.7rem', mt: 0.75 }}
+          />
+        )}
       </Box>
 
       {/* New session alert */}
@@ -294,6 +402,7 @@ export default function SessionQueue({
               selected={selectedSessionId === session.sessionId}
               isNew={newSessionIds.has(session.sessionId)}
               unreadCount={unreadMap[session.sessionId] || 0}
+              assignedToMe={!!myAdminId && session.assignedAdminId === myAdminId}
               onClick={() => onSelectSession(session.sessionId)}
             />
           ))
