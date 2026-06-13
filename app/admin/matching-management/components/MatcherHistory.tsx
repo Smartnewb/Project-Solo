@@ -126,17 +126,29 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
     setHistoryPage(value);
   };
 
-  // 페이지 변경 시 자동으로 데이터 가져오기
+  // 페이지 변경 시 자동으로 데이터 가져오기.
+  // 마운트 시(첫 렌더)에는 조회하지 않고, 이후 historyPage 변경 시에만 조회.
+  // (1페이지로 되돌아오는 경우 포함 — 기존 `> 1` 가드가 1페이지 복귀를 누락시켰음)
+  const isFirstRender = React.useRef(true);
   React.useEffect(() => {
-    if (selectedUser && startDate && endDate && historyPage > 1) {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (selectedUser && startDate && endDate) {
       fetchMatcherHistory();
     }
   }, [historyPage]);
 
   // 검색 실행
   const handleSearch = () => {
-    setHistoryPage(1);
-    fetchMatcherHistory();
+    // 페이지가 1이 아니면 1로 리셋 → useEffect 가 1페이지로 재조회.
+    // 이미 1페이지면 상태 변화가 없어 effect 가 안 도므로 직접 조회.
+    if (historyPage !== 1) {
+      setHistoryPage(1);
+    } else {
+      fetchMatcherHistory();
+    }
   };
 
   // 엔터 키 핸들러
