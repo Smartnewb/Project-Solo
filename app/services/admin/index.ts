@@ -89,6 +89,27 @@ export type {
 } from './community-questions';
 export type { CardNewsTopic, QueueStats, JobStatus } from './card-news-generation';
 export { reports, userReview, profileImages } from './moderation';
+export { profileImageAudit } from './profile-image-audit';
+export type {
+	ProfileImageAuditActionResult,
+	ProfileImageAuditActionResultStatus,
+	ProfileImageAuditBlacklistHandoff,
+	ProfileImageAuditBulkActionResponse,
+	ProfileImageAuditBulkDeleteRequest,
+	ProfileImageAuditBulkMarkOkRequest,
+	ProfileImageAuditBulkRejectRequest,
+	ProfileImageAuditBulkSecondReviewRequest,
+	ProfileImageAuditItem,
+	ProfileImageAuditListMeta,
+	ProfileImageAuditListParams,
+	ProfileImageAuditListResponse,
+	ProfileImageAuditReviewedType,
+	ProfileImageAuditReviewStatus,
+	ProfileImageAuditRiskSignals,
+	ProfileImageAuditSiblingImage,
+	ProfileImageAuditStatus,
+	ProfileImageAuditValidation,
+} from './profile-image-audit';
 export {
 	gems,
 	gemPricing,
@@ -239,6 +260,7 @@ import { videos } from './video';
 import { seo } from './seo';
 import { cardNewsGeneration } from './card-news-generation';
 import { reports, userReview, profileImages } from './moderation';
+import { profileImageAudit } from './profile-image-audit';
 import {
 	gems,
 	gemPricing,
@@ -277,6 +299,7 @@ const AdminService = {
 	matching,
 	reports,
 	profileImages,
+	profileImageAudit,
 	userReview,
 	pushNotifications,
 	pushNotificationCatalog,
