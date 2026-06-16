@@ -15,6 +15,7 @@ import type { ProfileImageAuditItem } from '@/app/services/admin';
 import {
   formatAgeGender,
   formatImageSlot,
+  formatProfileRank,
 } from '../profile-image-audit-utils';
 
 type Props = {
@@ -103,6 +104,7 @@ export function ProfileImageAuditCard({ item, selected, onToggle }: Props) {
             {formatAgeGender(item)}
           </Typography>
           <Stack direction="row" spacing={0.5} useFlexGap flexWrap="wrap">
+            <Chip size="small" label={formatProfileRank(item.profileRank)} variant="outlined" />
             {item.hasReport && (
               <Chip
                 size="small"

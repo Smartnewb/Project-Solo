@@ -53,6 +53,7 @@ export type ProfileImageAuditItem = {
   readonly thumbnailUrl?: string | null;
   readonly userId: string;
   readonly profileId: string;
+  readonly profileRank: string | null;
   readonly age: number | null;
   readonly gender: string | null;
   readonly universityName: string | null;

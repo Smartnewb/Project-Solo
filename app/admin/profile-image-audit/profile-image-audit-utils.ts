@@ -16,6 +16,11 @@ export function formatImageSlot(item: ProfileImageAuditItem): string {
   return item.isMain ? '대표 사진' : `${item.slotIndex + 1}번 사진`;
 }
 
+export function formatProfileRank(rank: string | null): string {
+  if (rank === null || rank === 'UNKNOWN') return '등급 미분류';
+  return `등급 ${rank}`;
+}
+
 export function getSelectedAuditGroup(
   items: readonly ProfileImageAuditItem[],
   selectedIds: ReadonlySet<string>,

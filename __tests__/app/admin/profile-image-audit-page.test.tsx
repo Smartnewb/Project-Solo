@@ -35,6 +35,7 @@ describe('ProfileImageAuditPage', () => {
           imageId: 'image-2',
           imageUrl: 'https://cdn.example.com/profile-image-2.jpg',
           thumbnailUrl: null,
+          profileRank: 'B',
           age: 22,
           gender: 'MALE',
           universityName: '연세대학교',
@@ -68,7 +69,9 @@ describe('ProfileImageAuditPage', () => {
     );
     expect(screen.getByText('서울대학교')).toBeInTheDocument();
     expect(screen.getByText('24세 · 여성')).toBeInTheDocument();
+    expect(screen.getByText('등급 A')).toBeInTheDocument();
     expect(screen.getByText('연세대학교')).toBeInTheDocument();
+    expect(screen.getByText('등급 B')).toBeInTheDocument();
     expect(screen.getByAltText('profile-image-1 프로필 이미지')).toHaveAttribute(
       'src',
       'https://cdn.example.com/profile-image-1.jpg',
