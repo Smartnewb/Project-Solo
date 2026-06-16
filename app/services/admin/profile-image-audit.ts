@@ -162,7 +162,7 @@ export type ProfileImageAuditBulkActionResponse = {
     readonly requested: number;
     readonly succeeded: number;
     readonly failed: number;
-    readonly results: readonly ProfileImageAuditActionResult[];
+    readonly results?: readonly ProfileImageAuditActionResult[];
   };
 };
 

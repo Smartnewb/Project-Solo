@@ -212,4 +212,24 @@ describe('ProfileImageAuditPage', () => {
     ).toBeInTheDocument();
     expect(screen.queryByText('선택한 1장을 처리했습니다.')).not.toBeInTheDocument();
   });
+
+  it('surfaces bulk reject failures when the API omits per-image results', async () => {
+    const user = userEvent.setup();
+    mockedAudit.bulkReject.mockResolvedValueOnce({
+      data: {
+        requested: 1,
+        succeeded: 0,
+        failed: 1,
+      },
+    });
+
+    render(<ProfileImageAuditPage />);
+
+    await user.click(await screen.findByRole('checkbox', { name: 'profile-image-1 선택' }));
+    await user.click(screen.getByRole('button', { name: '사진 변경 요청' }));
+    await user.click(await screen.findByRole('button', { name: '처리' }));
+
+    expect(await screen.findByText('처리 실패 1장: 처리하지 못했습니다.')).toBeInTheDocument();
+    expect(screen.queryByText('Cannot read properties of undefined')).not.toBeInTheDocument();
+  });
 });

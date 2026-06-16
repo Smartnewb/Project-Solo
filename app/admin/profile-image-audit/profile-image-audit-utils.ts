@@ -121,11 +121,14 @@ export function summarizeBulkActionFailure(
 ): string | null {
   if (response.data.failed === 0) return null;
 
-  const failedMessages = response.data.results
+  const failedMessages = (response.data.results ?? [])
     .filter((result) => result.status !== 'success')
     .map((result) => translateBulkFailureMessage(result.message));
   const uniqueMessages = Array.from(new Set(failedMessages));
-  const summary = uniqueMessages.slice(0, 2).join(' ');
+  const summary =
+    uniqueMessages.length === 0
+      ? translateBulkFailureMessage(undefined)
+      : uniqueMessages.slice(0, 2).join(' ');
   const suffix = uniqueMessages.length > 2 ? ` 외 ${uniqueMessages.length - 2}건` : '';
 
   return `처리 실패 ${response.data.failed.toLocaleString()}장: ${summary}${suffix}`;

@@ -207,6 +207,19 @@ test('admin profile image audit read grid opens detail drawer with 16 image rows
     });
   });
   await page.route('**/api/admin-proxy/admin/v2/profile-image-audit/images**', async (route) => {
+    if (route.request().url().includes('/bulk-reject')) {
+      await route.fulfill({
+        json: {
+          data: {
+            requested: 1,
+            succeeded: 0,
+            failed: 1,
+          },
+        },
+      });
+      return;
+    }
+
     await route.fulfill({
       json: {
         data: items,
@@ -234,6 +247,14 @@ test('admin profile image audit read grid opens detail drawer with 16 image rows
   await expect(page.getByText('연관 사진')).toBeVisible();
   await expect(page.getByAltText('연관 사진 2')).toBeVisible();
   await expect(page.getByText('신고 1회')).toBeVisible();
+  await page.getByRole('button', { name: '닫기' }).click();
+
+  await page.getByRole('checkbox', { name: 'profile-image-1 선택' }).click();
+  await page.getByRole('button', { name: '사진 변경 요청' }).click();
+  await page.getByRole('button', { name: '처리' }).click();
+
+  await expect(page.getByText('처리 실패 1장: 처리하지 못했습니다.')).toBeVisible();
+  await expect(page.getByText("Cannot read properties of undefined")).toHaveCount(0);
   await page.screenshot({ path: SCREENSHOT_PATH, fullPage: true });
   expect(statSync(SCREENSHOT_PATH).size).toBeGreaterThan(0);
 });
