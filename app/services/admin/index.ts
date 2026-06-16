@@ -109,6 +109,7 @@ export type {
 	ProfileImageAuditSiblingImage,
 	ProfileImageAuditStatus,
 	ProfileImageAuditValidation,
+	ProfileImageAuditValidationDecision,
 } from './profile-image-audit';
 export {
 	gems,

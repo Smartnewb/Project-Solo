@@ -34,6 +34,8 @@ interface Props {
     gender?: string;
     universityName?: string;
   };
+  initialReason?: string;
+  initialMemo?: string;
   onSuccess?: () => void;
 }
 
@@ -49,9 +51,16 @@ const QUICK_REASONS = [
 const REASON_MAX = 500;
 const MEMO_MAX = 2000;
 
-export function BlacklistRegisterModal({ open, onClose, user, onSuccess }: Props) {
-  const [reason, setReason] = useState('');
-  const [memo, setMemo] = useState('');
+export function BlacklistRegisterModal({
+  open,
+  onClose,
+  user,
+  initialReason = '',
+  initialMemo = '',
+  onSuccess,
+}: Props) {
+  const [reason, setReason] = useState(initialReason);
+  const [memo, setMemo] = useState(initialMemo);
   const [confirmed, setConfirmed] = useState(false);
 
   const mutation = useMutation({
@@ -71,8 +80,8 @@ export function BlacklistRegisterModal({ open, onClose, user, onSuccess }: Props
     : null;
 
   const resetAndClose = () => {
-    setReason('');
-    setMemo('');
+    setReason(initialReason);
+    setMemo(initialMemo);
     setConfirmed(false);
     mutation.reset();
     onClose();

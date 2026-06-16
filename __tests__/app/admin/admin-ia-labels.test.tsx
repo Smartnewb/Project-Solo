@@ -91,6 +91,10 @@ describe('admin IA labels', () => {
   it('shows explicit sidebar labels for profile reports and the review inbox', () => {
     render(<AdminSidebar />);
 
+    expect(screen.getByRole('link', { name: '프로필 이미지 전수검사' })).toHaveAttribute(
+      'href',
+      '/admin/profile-image-audit',
+    );
     expect(screen.getByRole('link', { name: '프로필 신고 관리' })).toHaveAttribute('href', '/admin/reports');
     expect(screen.getByRole('link', { name: '검토 인박스' })).toHaveAttribute('href', '/admin/review-inbox');
     expect(screen.queryByRole('link', { name: 'AI 검토 인박스' })).not.toBeInTheDocument();
