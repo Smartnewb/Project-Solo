@@ -47,6 +47,33 @@ export type ProfileImageAuditRiskSignals = {
   readonly hasPurchaseHistory: boolean;
 };
 
+export type ProfileImageAuditReviewContext = {
+  readonly reportCount: number;
+  readonly hasSuspensionHistory: boolean;
+  readonly userCreatedAt: string | null;
+  readonly isFirstReview: boolean;
+  readonly receivedLikeCount: number;
+  readonly matchCount: number;
+  readonly chatRoomCount: number;
+  readonly hasPurchased: boolean;
+  readonly totalPurchaseAmount?: number | null;
+  readonly isUniversityVerified: boolean;
+};
+
+export type ProfileImageAuditRejectionHistory = {
+  readonly category: string;
+  readonly reason: string;
+  readonly createdAt: string;
+};
+
+export type ProfileImageAuditRejectedImage = {
+  readonly id: string;
+  readonly imageUrl: string;
+  readonly slotIndex: number;
+  readonly rejectionReason: string;
+  readonly rejectedAt: string;
+};
+
 export type ProfileImageAuditItem = {
   readonly profileImageId: string;
   readonly imageId: string;
@@ -76,6 +103,10 @@ export type ProfileImageAuditItem = {
   readonly siblingImages: readonly ProfileImageAuditSiblingImage[];
   readonly validation: ProfileImageAuditValidation | null;
   readonly riskSignals: ProfileImageAuditRiskSignals;
+  readonly reviewContext?: ProfileImageAuditReviewContext | null;
+  readonly rejectionHistory?: readonly ProfileImageAuditRejectionHistory[];
+  readonly rejectedImages?: readonly ProfileImageAuditRejectedImage[];
+  readonly bio?: string | null;
 };
 
 export type ProfileImageAuditListMeta = {

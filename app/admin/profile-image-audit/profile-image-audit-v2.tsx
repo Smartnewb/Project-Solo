@@ -11,7 +11,11 @@ import {
 } from '@mui/material';
 import { Images, RefreshCw } from 'lucide-react';
 import { profileImageAudit, userReview } from '@/app/services/admin';
-import type { ProfileImageAuditItem, ProfileImageAuditProfileRank } from '@/app/services/admin';
+import type {
+  ProfileImageAuditBulkActionResponse,
+  ProfileImageAuditItem,
+  ProfileImageAuditProfileRank,
+} from '@/app/services/admin';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
 import { BlacklistRegisterModal } from '@/app/admin/blacklist/components/BlacklistRegisterModal';
 import {
@@ -24,7 +28,11 @@ import { AuditBulkToolbar } from './components/AuditBulkToolbar';
 import { AuditFiltersBar } from './components/AuditFiltersBar';
 import { ConfirmAuditActionDialog } from './components/ConfirmAuditActionDialog';
 import { ProfileImageAuditGrid } from './components/ProfileImageAuditGrid';
-import { formatProfileRank, getSelectedAuditGroup } from './profile-image-audit-utils';
+import {
+  formatProfileRank,
+  getSelectedAuditGroup,
+  summarizeBulkActionFailure,
+} from './profile-image-audit-utils';
 import type { AuditAction, AuditFilters } from './types';
 
 export default function ProfileImageAuditV2() {
@@ -96,8 +104,7 @@ export default function ProfileImageAuditV2() {
     item: ProfileImageAuditItem,
     rank: ProfileImageAuditProfileRank,
   ) => {
-    const currentRank = item.profileRank ?? 'UNKNOWN';
-    if (currentRank === rank || rankUpdatingUserId !== null) return;
+    if ((item.profileRank ?? 'UNKNOWN') === rank || rankUpdatingUserId !== null) return;
 
     const previousItems = items;
     setRankUpdatingUserId(item.userId);
@@ -128,25 +135,33 @@ export default function ProfileImageAuditV2() {
     try {
       setBusy(true);
       setError(null);
+      let response: ProfileImageAuditBulkActionResponse;
       if (pendingAction === 'mark-ok') {
-        await profileImageAudit.bulkMarkOk({ profileImageIds: selectedGroup.selectedIds });
-      }
-      if (pendingAction === 'second-review') {
-        await profileImageAudit.bulkFlagSecondReview({ profileImageIds: selectedGroup.selectedIds });
-      }
-      if (pendingAction === 'reject') {
-        await profileImageAudit.bulkReject({
+        response = await profileImageAudit.bulkMarkOk({ profileImageIds: selectedGroup.selectedIds });
+      } else if (pendingAction === 'second-review') {
+        response = await profileImageAudit.bulkFlagSecondReview({ profileImageIds: selectedGroup.selectedIds });
+      } else if (pendingAction === 'reject') {
+        response = await profileImageAudit.bulkReject({
           profileImageIds: selectedGroup.selectedIds,
           reason: SIMPLE_REJECT_REASON,
         });
-      }
-      if (pendingAction === 'delete') {
-        await profileImageAudit.bulkDelete({
+      } else {
+        response = await profileImageAudit.bulkDelete({
           profileImageIds: selectedGroup.selectedIds,
           reason: DELETE_REASON,
         });
       }
-      setNotice(`선택한 ${selectedGroup.selectedIds.length.toLocaleString()}장을 처리했습니다.`);
+      const failureMessage = summarizeBulkActionFailure(response);
+      if (failureMessage) {
+        setError(failureMessage);
+        if (response.data.succeeded === 0) {
+          setPendingAction(null);
+          return;
+        }
+      }
+      if (response.data.succeeded > 0) {
+        setNotice(`선택한 ${response.data.succeeded.toLocaleString()}장을 처리했습니다.`);
+      }
       setPendingAction(null);
       await load();
     } catch (actionError) {

@@ -14,6 +14,7 @@ jest.mock('@/app/services/admin', () => ({
   profileImageAudit: {
     list: jest.fn(),
     bulkMarkOk: jest.fn(),
+    bulkFlagSecondReview: jest.fn(),
     bulkReject: jest.fn(),
     bulkDelete: jest.fn(),
     buildBlacklistHandoff: jest.fn(),
@@ -51,6 +52,7 @@ describe('ProfileImageAuditPage', () => {
       meta: { page: 1, limit: 16, total: 2, totalPages: 1 },
     });
     mockedAudit.bulkMarkOk.mockResolvedValue(profileImageAuditBulkActionFixture);
+    mockedAudit.bulkFlagSecondReview.mockResolvedValue(profileImageAuditBulkActionFixture);
     mockedAudit.bulkReject.mockResolvedValue(profileImageAuditBulkActionFixture);
     mockedAudit.bulkDelete.mockResolvedValue(profileImageAuditBulkActionFixture);
     mockedUserReview.updateUserRank.mockResolvedValue(undefined);
@@ -61,6 +63,65 @@ describe('ProfileImageAuditPage', () => {
       profileImageIds: ['profile-image-1'],
       imageUrls: ['https://cdn.example.com/profile-image-1.jpg'],
     });
+  });
+
+  it('renders the Todo 5 read grid and detail drawer at image grain', async () => {
+    const user = userEvent.setup();
+    const auditItems = Array.from({ length: 16 }, (_, index) => ({
+      ...profileImageAuditItemFixture,
+      profileImageId: `profile-image-${index + 1}`,
+      imageId: `image-${index + 1}`,
+      imageUrl: `https://cdn.example.com/profile-image-${index + 1}.jpg`,
+      thumbnailUrl: `https://cdn.example.com/profile-image-${index + 1}-thumb.jpg`,
+      userId: index === 0 ? 'user-1' : `user-${index + 1}`,
+      profileId: index === 0 ? 'profile-1' : `profile-${index + 1}`,
+      age: index === 0 ? 24 : 30 + index,
+      gender: index % 2 === 0 ? 'FEMALE' : 'MALE',
+      universityName: index === 0 ? '서울대학교' : '연세대학교',
+      slotIndex: index % 4,
+      isMain: index === 0,
+    }));
+    mockedAudit.list.mockResolvedValueOnce({
+      ...profileImageAuditListFixture,
+      data: auditItems,
+      meta: { page: 1, limit: 16, total: 16, totalPages: 1 },
+    });
+
+    render(<ProfileImageAuditPage />);
+
+    expect(await screen.findByRole('heading', { level: 1, name: '프로필 이미지 전수검사' })).toBeInTheDocument();
+    expect(await screen.findAllByTestId('profile-image-audit-card')).toHaveLength(16);
+    expect(screen.getByText('서울대학교')).toBeInTheDocument();
+    expect(screen.getByText('24세 · 여성')).toBeInTheDocument();
+    expect(screen.getByText('대표 사진')).toBeInTheDocument();
+    expect(screen.getAllByText('관리자 승인').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('자동 승인 · 88점').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('미검수').length).toBeGreaterThan(0);
+
+    const detailButton = screen.getAllByRole('button', { name: '심사 상세 보기' })[0];
+    if (!detailButton) throw new Error('detail button was not rendered');
+    await user.click(detailButton);
+
+    expect(await screen.findByRole('heading', { name: '심사 상세' })).toBeInTheDocument();
+    expect(screen.getByText('연관 사진')).toBeInTheDocument();
+    expect(screen.getByAltText('연관 사진 2')).toBeInTheDocument();
+    expect(screen.getByText('신고 1회')).toBeInTheDocument();
+    expect(screen.getByText('학교 인증')).toBeInTheDocument();
+    expect(screen.getByText('구매 이력')).toBeInTheDocument();
+    expect(screen.getByText('가입일')).toBeInTheDocument();
+    expect(screen.getByText('좋아요')).toBeInTheDocument();
+    expect(screen.getByText('매칭')).toBeInTheDocument();
+    expect(screen.getByText('채팅')).toBeInTheDocument();
+    expect(screen.getByText('이전 거절 이력')).toBeInTheDocument();
+    expect(screen.getByText('거절된 이미지 이력')).toBeInTheDocument();
+    expect(screen.getByText('소개글')).toBeInTheDocument();
+    expect(screen.getByText('검증 점수')).toBeInTheDocument();
+    expect(screen.getByText('자동 판정')).toBeInTheDocument();
+    expect(screen.getByText('판정 사유')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '사용자 상세에서 열기' })).toHaveAttribute(
+      'href',
+      '/admin/users/appearance?userId=user-1',
+    );
   });
 
   it('renders image-centered audit cards and bulk actions', async () => {
@@ -120,5 +181,35 @@ describe('ProfileImageAuditPage', () => {
         reason: '더 원활한 매칭을 위해 사진을 변경해주세요!',
       });
     });
+  });
+
+  it('surfaces per-image reject failures instead of reporting success', async () => {
+    const user = userEvent.setup();
+    mockedAudit.bulkReject.mockResolvedValueOnce({
+      data: {
+        requested: 1,
+        succeeded: 0,
+        failed: 1,
+        results: [
+          {
+            profileImageId: 'profile-image-1',
+            userId: 'user-1',
+            status: 'conflict',
+            message: 'main image removal requires replacementMainProfileImageId',
+          },
+        ],
+      },
+    });
+
+    render(<ProfileImageAuditPage />);
+
+    await user.click(await screen.findByRole('checkbox', { name: 'profile-image-1 선택' }));
+    await user.click(screen.getByRole('button', { name: '사진 변경 요청' }));
+    await user.click(await screen.findByRole('button', { name: '처리' }));
+
+    expect(
+      await screen.findByText('처리 실패 1장: 대표 사진은 대체 대표 사진 지정이 필요합니다.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('선택한 1장을 처리했습니다.')).not.toBeInTheDocument();
   });
 });

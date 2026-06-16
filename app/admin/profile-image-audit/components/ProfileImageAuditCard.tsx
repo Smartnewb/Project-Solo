@@ -20,11 +20,17 @@ import { AlertTriangle, CheckCircle2, X } from 'lucide-react';
 import type { ProfileImageAuditItem, ProfileImageAuditProfileRank } from '@/app/services/admin';
 import { PROFILE_RANK_OPTIONS } from '../constants';
 import {
+  formatAuditStatus,
   formatAgeGender,
+  formatImageKind,
   formatImageSlot,
   formatProfileRank,
+  formatReviewedType,
+  formatReviewStatus,
+  formatValidationSummary,
   parseProfileRank,
 } from '../profile-image-audit-utils';
+import { ProfileImageAuditDetailDrawer } from './ProfileImageAuditDetailDrawer';
 
 type Props = {
   readonly item: ProfileImageAuditItem;
@@ -38,6 +44,7 @@ export function ProfileImageAuditCard({ item, selected, onToggle, onRankChange, 
   const [src, setSrc] = useState(item.imageUrl);
   const [imageFailed, setImageFailed] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const handleImageError = () => {
     if (item.thumbnailUrl && src !== item.thumbnailUrl) {
@@ -50,6 +57,7 @@ export function ProfileImageAuditCard({ item, selected, onToggle, onRankChange, 
   return (
     <Card
       variant="outlined"
+      data-testid="profile-image-audit-card"
       sx={{
         borderColor: selected ? '#2563eb' : '#dbe3ef',
         boxShadow: selected ? '0 0 0 2px rgba(37,99,235,0.18)' : 'none',
@@ -152,6 +160,11 @@ export function ProfileImageAuditCard({ item, selected, onToggle, onRankChange, 
           </TextField>
           <Stack direction="row" spacing={0.5} useFlexGap flexWrap="wrap">
             <Chip size="small" label={formatProfileRank(item.profileRank)} variant="outlined" />
+            <Chip size="small" label={formatImageKind(item)} color={item.isMain ? 'primary' : 'default'} />
+            <Chip size="small" label={formatReviewedType(item.reviewedType)} variant="outlined" />
+            <Chip size="small" label={formatReviewStatus(item.reviewStatus)} variant="outlined" />
+            <Chip size="small" label={formatValidationSummary(item)} variant="outlined" />
+            <Chip size="small" label={formatAuditStatus(item.auditStatus)} color="info" variant="outlined" />
             {item.hasReport && (
               <Chip
                 size="small"
@@ -162,16 +175,28 @@ export function ProfileImageAuditCard({ item, selected, onToggle, onRankChange, 
               />
             )}
             {item.validation?.autoDecision === 'approved' && (
-              <Chip
-                size="small"
-                icon={<CheckCircle2 size={14} />}
-                label={`AI ${item.validation.totalScore ?? '-'}점`}
-                color="success"
-                variant="outlined"
-              />
+              <Chip size="small" icon={<CheckCircle2 size={14} />} label="AI 통과" color="success" variant="outlined" />
             )}
+            {item.isBlacklisted && <Chip size="small" label="블랙리스트" color="error" />}
+            {item.suspendedAt && <Chip size="small" label="정지" color="error" />}
             <Chip size="small" label={`${item.approvedImageCount}/${item.totalActiveImageCount}장`} />
           </Stack>
+          <ButtonBase
+            aria-label="심사 상세 보기"
+            onClick={() => setDetailOpen(true)}
+            sx={{
+              alignSelf: 'flex-start',
+              border: '1px solid #cbd5e1',
+              borderRadius: 1,
+              px: 1,
+              py: 0.5,
+              fontSize: 13,
+              fontWeight: 800,
+              color: '#1d4ed8',
+            }}
+          >
+            상세
+          </ButtonBase>
         </Stack>
       </CardContent>
       <Dialog open={viewerOpen} onClose={() => setViewerOpen(false)} maxWidth="lg" fullWidth>
@@ -212,6 +237,11 @@ export function ProfileImageAuditCard({ item, selected, onToggle, onRankChange, 
           />
         </DialogContent>
       </Dialog>
+      <ProfileImageAuditDetailDrawer
+        item={item}
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+      />
     </Card>
   );
 }
