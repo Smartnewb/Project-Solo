@@ -3,6 +3,7 @@
 import { Button, Stack, Typography } from '@mui/material';
 import {
   CheckCircle2,
+  CheckSquare,
   Eye,
   ShieldBan,
   Trash2,
@@ -12,13 +13,23 @@ import type { AuditAction, SelectedAuditGroup } from '../types';
 
 type Props = {
   readonly group: SelectedAuditGroup;
+  readonly visibleCount: number;
   readonly busy: boolean;
+  readonly onSelectVisible: () => void;
   readonly onAction: (action: AuditAction) => void;
   readonly onBlacklist: () => void;
 };
 
-export function AuditBulkToolbar({ group, busy, onAction, onBlacklist }: Props) {
+export function AuditBulkToolbar({
+  group,
+  visibleCount,
+  busy,
+  onSelectVisible,
+  onAction,
+  onBlacklist,
+}: Props) {
   const disabled = group.selectedIds.length === 0 || busy;
+  const selectVisibleDisabled = visibleCount === 0 || busy;
   const blacklistDisabled = disabled || group.selectedUserIds.length !== 1;
 
   return (
@@ -34,6 +45,15 @@ export function AuditBulkToolbar({ group, busy, onAction, onBlacklist }: Props) 
         {group.selectedUserIds.length > 1 ? ` · ${group.selectedUserIds.length}명` : ''}
       </Typography>
       <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<CheckSquare size={16} />}
+          disabled={selectVisibleDisabled}
+          onClick={onSelectVisible}
+        >
+          전체선택
+        </Button>
         <Button
           size="small"
           variant="contained"
@@ -61,7 +81,7 @@ export function AuditBulkToolbar({ group, busy, onAction, onBlacklist }: Props) 
           disabled={disabled}
           onClick={() => onAction('reject')}
         >
-          기준 미달 거절
+          사진 변경 요청
         </Button>
         <Button
           size="small"

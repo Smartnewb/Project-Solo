@@ -169,7 +169,7 @@ describe('profile image audit service boundaries', () => {
     await expect(
       profileImageAudit.bulkReject({
         profileImageIds: ['profile-image-1'],
-        reason: '프로필 사진 심사 기준에 부합하지 않아 반려되었습니다.',
+        reason: '더 원활한 매칭을 위해 사진을 변경해주세요!',
       }),
     ).resolves.toEqual(profileImageAuditBulkActionFixture);
     await expect(
@@ -208,7 +208,7 @@ describe('profile image audit service boundaries', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           profileImageIds: ['profile-image-1'],
-          reason: '프로필 사진 심사 기준에 부합하지 않아 반려되었습니다.',
+          reason: '더 원활한 매칭을 위해 사진을 변경해주세요!',
         }),
       },
     );

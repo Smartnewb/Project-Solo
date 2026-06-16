@@ -9,7 +9,7 @@ import {
   DialogTitle,
   Typography,
 } from '@mui/material';
-import { ACTION_LABELS } from '../constants';
+import { ACTION_LABELS, SIMPLE_REJECT_REASON } from '../constants';
 import { getActionTone } from '../profile-image-audit-utils';
 import type { AuditAction } from '../types';
 
@@ -40,7 +40,7 @@ export function ConfirmAuditActionDialog({
         </Typography>
         {action === 'reject' && (
           <Alert severity="info" sx={{ mt: 2 }}>
-            거절 사유는 “기준에 미달하는 프로필 이미지입니다.”로 일괄 기록됩니다.
+            거절 사유는 “{SIMPLE_REJECT_REASON}”로 일괄 기록됩니다.
           </Alert>
         )}
         {action === 'delete' && (

@@ -6,7 +6,7 @@ import type {
 import type { AuditAction, AuditFilters } from './types';
 
 export const PAGE_SIZE = 16;
-export const SIMPLE_REJECT_REASON = '기준에 미달하는 프로필 이미지입니다.';
+export const SIMPLE_REJECT_REASON = '더 원활한 매칭을 위해 사진을 변경해주세요!';
 export const DELETE_REASON = '전체 프로필 이미지 전수검사 중 부적절 이미지 즉시 삭제';
 
 export const DEFAULT_FILTERS: AuditFilters = {
@@ -53,6 +53,6 @@ export const PROFILE_RANK_OPTIONS: readonly {
 export const ACTION_LABELS: Record<AuditAction, string> = {
   'mark-ok': '정상 처리',
   'second-review': '2차 검토',
-  reject: '기준 미달 거절',
+  reject: '사진 변경 요청',
   delete: '즉시 삭제',
 };

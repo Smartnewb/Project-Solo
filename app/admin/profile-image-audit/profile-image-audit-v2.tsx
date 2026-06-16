@@ -88,6 +88,10 @@ export default function ProfileImageAuditV2() {
     });
   };
 
+  const selectVisibleItems = () => {
+    setSelectedIds(new Set(items.map((item) => item.profileImageId)));
+  };
+
   const handleRankChange = async (
     item: ProfileImageAuditItem,
     rank: ProfileImageAuditProfileRank,
@@ -195,7 +199,9 @@ export default function ProfileImageAuditV2() {
         <AuditFiltersBar filters={filters} onChange={handleFilterChange} />
         <AuditBulkToolbar
           group={selectedGroup}
+          visibleCount={items.length}
           busy={busy}
+          onSelectVisible={selectVisibleItems}
           onAction={setPendingAction}
           onBlacklist={openBlacklist}
         />
