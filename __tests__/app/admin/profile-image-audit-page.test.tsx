@@ -49,7 +49,7 @@ describe('ProfileImageAuditPage', () => {
           hasReport: false,
         },
       ],
-      meta: { page: 1, limit: 16, total: 2, totalPages: 1 },
+      meta: { page: 1, limit: 18, total: 2, totalPages: 1 },
     });
     mockedAudit.bulkMarkOk.mockResolvedValue(profileImageAuditBulkActionFixture);
     mockedAudit.bulkFlagSecondReview.mockResolvedValue(profileImageAuditBulkActionFixture);
@@ -67,7 +67,7 @@ describe('ProfileImageAuditPage', () => {
 
   it('renders the Todo 5 read grid and detail drawer at image grain', async () => {
     const user = userEvent.setup();
-    const auditItems = Array.from({ length: 16 }, (_, index) => ({
+    const auditItems = Array.from({ length: 18 }, (_, index) => ({
       ...profileImageAuditItemFixture,
       profileImageId: `profile-image-${index + 1}`,
       imageId: `image-${index + 1}`,
@@ -84,13 +84,13 @@ describe('ProfileImageAuditPage', () => {
     mockedAudit.list.mockResolvedValueOnce({
       ...profileImageAuditListFixture,
       data: auditItems,
-      meta: { page: 1, limit: 16, total: 16, totalPages: 1 },
+      meta: { page: 1, limit: 18, total: 18, totalPages: 1 },
     });
 
     render(<ProfileImageAuditPage />);
 
     expect(await screen.findByRole('heading', { level: 1, name: '프로필 이미지 전수검사' })).toBeInTheDocument();
-    expect(await screen.findAllByTestId('profile-image-audit-card')).toHaveLength(16);
+    expect(await screen.findAllByTestId('profile-image-audit-card')).toHaveLength(18);
     expect(screen.getByText('서울대학교')).toBeInTheDocument();
     expect(screen.getByText('24세 · 여성')).toBeInTheDocument();
     expect(screen.getByText('대표 사진')).toBeInTheDocument();
@@ -131,7 +131,7 @@ describe('ProfileImageAuditPage', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: '프로필 이미지 전수검사' })).toBeInTheDocument();
     expect(mockedAudit.list).toHaveBeenCalledWith(
-      expect.objectContaining({ page: 1, limit: 16, auditStatus: 'unreviewed' }),
+      expect.objectContaining({ page: 1, limit: 18, auditStatus: 'unreviewed' }),
     );
     expect(screen.getByText('서울대학교')).toBeInTheDocument();
     expect(screen.getByText('24세 · 여성')).toBeInTheDocument();
