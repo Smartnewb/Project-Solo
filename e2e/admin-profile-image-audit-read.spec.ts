@@ -212,8 +212,7 @@ test('admin profile image audit read grid opens detail drawer with 16 image rows
         json: {
           data: {
             requested: 1,
-            succeeded: 0,
-            failed: 1,
+            failed: 0,
           },
         },
       });
@@ -253,7 +252,7 @@ test('admin profile image audit read grid opens detail drawer with 16 image rows
   await page.getByRole('button', { name: '사진 변경 요청' }).click();
   await page.getByRole('button', { name: '처리' }).click();
 
-  await expect(page.getByText('처리 실패 1장: 처리하지 못했습니다.')).toBeVisible();
+  await expect(page.getByText('선택한 1장을 처리했습니다.')).toBeVisible();
   await expect(page.getByText("Cannot read properties of undefined")).toHaveCount(0);
   await page.screenshot({ path: SCREENSHOT_PATH, fullPage: true });
   expect(statSync(SCREENSHOT_PATH).size).toBeGreaterThan(0);

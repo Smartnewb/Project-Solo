@@ -116,10 +116,27 @@ export function translateBulkFailureMessage(message: string | undefined): string
   return message ?? '처리하지 못했습니다.';
 }
 
+function normalizeBulkCount(value: number | undefined): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+export function getBulkActionCounts(
+  response: ProfileImageAuditBulkActionResponse,
+): { readonly requested: number; readonly succeeded: number; readonly failed: number } {
+  const results = response.data.results ?? [];
+  const failedFromResults = results.filter((result) => result.status !== 'success').length;
+  const requested = normalizeBulkCount(response.data.requested) ?? results.length;
+  const failed = normalizeBulkCount(response.data.failed) ?? failedFromResults;
+  const succeeded = normalizeBulkCount(response.data.succeeded) ?? Math.max(requested - failed, 0);
+
+  return { requested, succeeded, failed };
+}
+
 export function summarizeBulkActionFailure(
   response: ProfileImageAuditBulkActionResponse,
 ): string | null {
-  if (response.data.failed === 0) return null;
+  const counts = getBulkActionCounts(response);
+  if (counts.failed === 0) return null;
 
   const failedMessages = (response.data.results ?? [])
     .filter((result) => result.status !== 'success')
@@ -131,5 +148,5 @@ export function summarizeBulkActionFailure(
       : uniqueMessages.slice(0, 2).join(' ');
   const suffix = uniqueMessages.length > 2 ? ` 외 ${uniqueMessages.length - 2}건` : '';
 
-  return `처리 실패 ${response.data.failed.toLocaleString()}장: ${summary}${suffix}`;
+  return `처리 실패 ${counts.failed.toLocaleString()}장: ${summary}${suffix}`;
 }

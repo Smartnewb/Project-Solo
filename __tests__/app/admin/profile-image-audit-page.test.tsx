@@ -232,4 +232,20 @@ describe('ProfileImageAuditPage', () => {
     expect(await screen.findByText('처리 실패 1장: 처리하지 못했습니다.')).toBeInTheDocument();
     expect(screen.queryByText('Cannot read properties of undefined')).not.toBeInTheDocument();
   });
+
+  it('handles bulk reject success when the API omits the succeeded count', async () => {
+    const user = userEvent.setup();
+    mockedAudit.bulkReject.mockResolvedValueOnce(
+      JSON.parse('{"data":{"requested":1,"failed":0}}'),
+    );
+
+    render(<ProfileImageAuditPage />);
+
+    await user.click(await screen.findByRole('checkbox', { name: 'profile-image-1 선택' }));
+    await user.click(screen.getByRole('button', { name: '사진 변경 요청' }));
+    await user.click(await screen.findByRole('button', { name: '처리' }));
+
+    expect(await screen.findByText('선택한 1장을 처리했습니다.')).toBeInTheDocument();
+    expect(screen.queryByText('Cannot read properties of undefined')).not.toBeInTheDocument();
+  });
 });

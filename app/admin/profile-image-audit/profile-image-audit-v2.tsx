@@ -28,11 +28,7 @@ import { AuditBulkToolbar } from './components/AuditBulkToolbar';
 import { AuditFiltersBar } from './components/AuditFiltersBar';
 import { ConfirmAuditActionDialog } from './components/ConfirmAuditActionDialog';
 import { ProfileImageAuditGrid } from './components/ProfileImageAuditGrid';
-import {
-  formatProfileRank,
-  getSelectedAuditGroup,
-  summarizeBulkActionFailure,
-} from './profile-image-audit-utils';
+import { formatProfileRank, getBulkActionCounts, getSelectedAuditGroup, summarizeBulkActionFailure } from './profile-image-audit-utils';
 import type { AuditAction, AuditFilters } from './types';
 
 export default function ProfileImageAuditV2() {
@@ -152,15 +148,16 @@ export default function ProfileImageAuditV2() {
         });
       }
       const failureMessage = summarizeBulkActionFailure(response);
+      const counts = getBulkActionCounts(response);
       if (failureMessage) {
         setError(failureMessage);
-        if (response.data.succeeded === 0) {
+        if (counts.succeeded === 0) {
           setPendingAction(null);
           return;
         }
       }
-      if (response.data.succeeded > 0) {
-        setNotice(`선택한 ${response.data.succeeded.toLocaleString()}장을 처리했습니다.`);
+      if (counts.succeeded > 0) {
+        setNotice(`선택한 ${counts.succeeded.toLocaleString()}장을 처리했습니다.`);
       }
       setPendingAction(null);
       await load();

@@ -159,9 +159,9 @@ export type ProfileImageAuditActionResult = {
 
 export type ProfileImageAuditBulkActionResponse = {
   readonly data: {
-    readonly requested: number;
-    readonly succeeded: number;
-    readonly failed: number;
+    readonly requested?: number;
+    readonly succeeded?: number;
+    readonly failed?: number;
     readonly results?: readonly ProfileImageAuditActionResult[];
   };
 };
