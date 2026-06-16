@@ -24,8 +24,16 @@ type Props = {
 };
 
 export function ProfileImageAuditCard({ item, selected, onToggle }: Props) {
-  const src = item.thumbnailUrl ?? item.imageUrl;
+  const [src, setSrc] = useState(item.imageUrl);
   const [imageFailed, setImageFailed] = useState(false);
+
+  const handleImageError = () => {
+    if (item.thumbnailUrl && src !== item.thumbnailUrl) {
+      setSrc(item.thumbnailUrl);
+      return;
+    }
+    setImageFailed(true);
+  };
 
   return (
     <Card
@@ -58,8 +66,14 @@ export function ProfileImageAuditCard({ item, selected, onToggle }: Props) {
             src={src}
             alt={`${item.profileImageId} 프로필 이미지`}
             loading="lazy"
-            onError={() => setImageFailed(true)}
-            sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            onError={handleImageError}
+            sx={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              display: 'block',
+              imageOrientation: 'from-image',
+            }}
           />
         )}
         <Checkbox

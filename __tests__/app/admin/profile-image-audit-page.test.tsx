@@ -69,6 +69,10 @@ describe('ProfileImageAuditPage', () => {
     expect(screen.getByText('서울대학교')).toBeInTheDocument();
     expect(screen.getByText('24세 · 여성')).toBeInTheDocument();
     expect(screen.getByText('연세대학교')).toBeInTheDocument();
+    expect(screen.getByAltText('profile-image-1 프로필 이미지')).toHaveAttribute(
+      'src',
+      'https://cdn.example.com/profile-image-1.jpg',
+    );
     expect(screen.getByRole('button', { name: '기준 미달 거절' })).toBeDisabled();
 
     await user.click(screen.getByRole('checkbox', { name: 'profile-image-1 선택' }));
