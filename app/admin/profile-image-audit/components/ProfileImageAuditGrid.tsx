@@ -47,7 +47,7 @@ export function ProfileImageAuditGrid({
       gridTemplateColumns={{
         xs: 'repeat(2, minmax(0, 1fr))',
         sm: 'repeat(3, minmax(0, 1fr))',
-        md: 'repeat(4, minmax(0, 1fr))',
+        md: 'repeat(6, minmax(0, 1fr))',
       }}
     >
       {items.map((item) => (

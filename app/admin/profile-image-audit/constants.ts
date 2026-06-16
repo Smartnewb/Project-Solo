@@ -5,7 +5,7 @@ import type {
 } from '@/app/services/admin';
 import type { AuditAction, AuditFilters } from './types';
 
-export const PAGE_SIZE = 16;
+export const PAGE_SIZE = 18;
 export const SIMPLE_REJECT_REASON = '더 원활한 매칭을 위해 사진을 변경해주세요!';
 export const DELETE_REASON = '전체 프로필 이미지 전수검사 중 부적절 이미지 즉시 삭제';
 
