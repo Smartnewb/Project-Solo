@@ -16,6 +16,7 @@ import {
   formatAuditStatus,
   formatValidationDecision,
   formatValidationSummary,
+  sortAuditSiblingImages,
 } from '../profile-image-audit-utils';
 
 type Props = {
@@ -96,7 +97,7 @@ export function ProfileImageAuditDetailDrawer({ item, open, onClose }: Props) {
               연관 사진
             </Typography>
             <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
-              {item.siblingImages.map((image, index) => (
+              {sortAuditSiblingImages(item.siblingImages).map((image, index) => (
                 <Box key={image.profileImageId} sx={{ width: 82 }}>
                   <Box
                     component="img"

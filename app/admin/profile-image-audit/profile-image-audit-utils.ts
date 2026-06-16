@@ -27,6 +27,16 @@ export function formatImageKind(item: ProfileImageAuditItem): string {
   return item.isMain ? '대표' : '추가';
 }
 
+export function sortAuditSiblingImages(
+  images: readonly ProfileImageAuditItem['siblingImages'][number][],
+): readonly ProfileImageAuditItem['siblingImages'][number][] {
+  return [...images].sort((left, right) => {
+    if (left.isMain !== right.isMain) return left.isMain ? -1 : 1;
+    if (left.slotIndex !== right.slotIndex) return left.slotIndex - right.slotIndex;
+    return left.profileImageId.localeCompare(right.profileImageId);
+  });
+}
+
 export function formatProfileRank(rank: ProfileImageAuditProfileRank | null): string {
   if (rank === null || rank === 'UNKNOWN') return '등급 미분류';
   return `등급 ${rank}`;
