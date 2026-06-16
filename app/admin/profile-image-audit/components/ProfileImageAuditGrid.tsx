@@ -1,7 +1,7 @@
 'use client';
 
 import { Box, CircularProgress, Typography } from '@mui/material';
-import type { ProfileImageAuditItem } from '@/app/services/admin';
+import type { ProfileImageAuditItem, ProfileImageAuditProfileRank } from '@/app/services/admin';
 import { ProfileImageAuditCard } from './ProfileImageAuditCard';
 
 type Props = {
@@ -9,9 +9,18 @@ type Props = {
   readonly selectedIds: ReadonlySet<string>;
   readonly loading: boolean;
   readonly onToggle: (profileImageId: string) => void;
+  readonly onRankChange: (item: ProfileImageAuditItem, rank: ProfileImageAuditProfileRank) => void;
+  readonly rankUpdatingUserId: string | null;
 };
 
-export function ProfileImageAuditGrid({ items, selectedIds, loading, onToggle }: Props) {
+export function ProfileImageAuditGrid({
+  items,
+  selectedIds,
+  loading,
+  onToggle,
+  onRankChange,
+  rankUpdatingUserId,
+}: Props) {
   if (loading) {
     return (
       <Box minHeight={360} display="flex" alignItems="center" justifyContent="center">
@@ -47,6 +56,8 @@ export function ProfileImageAuditGrid({ items, selectedIds, loading, onToggle }:
           item={item}
           selected={selectedIds.has(item.profileImageId)}
           onToggle={onToggle}
+          onRankChange={onRankChange}
+          rankUpdating={rankUpdatingUserId === item.userId}
         />
       ))}
     </Box>

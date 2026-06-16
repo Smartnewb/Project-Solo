@@ -1,4 +1,5 @@
 import type {
+  ProfileImageAuditProfileRank,
   ProfileImageAuditStatus,
   ProfileImageAuditValidationDecision,
 } from '@/app/services/admin';
@@ -36,6 +37,17 @@ export const VALIDATION_OPTIONS: readonly {
   { value: 'approved', label: '자동 승인' },
   { value: 'manual_review', label: '수동 검토' },
   { value: 'rejected', label: '자동 거절' },
+];
+
+export const PROFILE_RANK_OPTIONS: readonly {
+  readonly value: ProfileImageAuditProfileRank;
+  readonly label: string;
+}[] = [
+  { value: 'S', label: 'S' },
+  { value: 'A', label: 'A' },
+  { value: 'B', label: 'B' },
+  { value: 'C', label: 'C' },
+  { value: 'UNKNOWN', label: '미분류' },
 ];
 
 export const ACTION_LABELS: Record<AuditAction, string> = {

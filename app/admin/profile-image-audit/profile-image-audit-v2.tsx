@@ -10,8 +10,8 @@ import {
   Typography,
 } from '@mui/material';
 import { Images, RefreshCw } from 'lucide-react';
-import { profileImageAudit } from '@/app/services/admin';
-import type { ProfileImageAuditItem } from '@/app/services/admin';
+import { profileImageAudit, userReview } from '@/app/services/admin';
+import type { ProfileImageAuditItem, ProfileImageAuditProfileRank } from '@/app/services/admin';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
 import { BlacklistRegisterModal } from '@/app/admin/blacklist/components/BlacklistRegisterModal';
 import {
@@ -24,7 +24,7 @@ import { AuditBulkToolbar } from './components/AuditBulkToolbar';
 import { AuditFiltersBar } from './components/AuditFiltersBar';
 import { ConfirmAuditActionDialog } from './components/ConfirmAuditActionDialog';
 import { ProfileImageAuditGrid } from './components/ProfileImageAuditGrid';
-import { getSelectedAuditGroup } from './profile-image-audit-utils';
+import { formatProfileRank, getSelectedAuditGroup } from './profile-image-audit-utils';
 import type { AuditAction, AuditFilters } from './types';
 
 export default function ProfileImageAuditV2() {
@@ -36,6 +36,7 @@ export default function ProfileImageAuditV2() {
   const [selectedIds, setSelectedIds] = useState<ReadonlySet<string>>(() => new Set());
   const [pendingAction, setPendingAction] = useState<AuditAction | null>(null);
   const [blacklistTarget, setBlacklistTarget] = useState<ProfileImageAuditItem | null>(null);
+  const [rankUpdatingUserId, setRankUpdatingUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +86,36 @@ export default function ProfileImageAuditV2() {
       }
       return next;
     });
+  };
+
+  const handleRankChange = async (
+    item: ProfileImageAuditItem,
+    rank: ProfileImageAuditProfileRank,
+  ) => {
+    const currentRank = item.profileRank ?? 'UNKNOWN';
+    if (currentRank === rank || rankUpdatingUserId !== null) return;
+
+    const previousItems = items;
+    setRankUpdatingUserId(item.userId);
+    setItems((current) =>
+      current.map((entry) =>
+        entry.userId === item.userId ? { ...entry, profileRank: rank } : entry,
+      ),
+    );
+
+    try {
+      await userReview.updateUserRank(item.userId, rank);
+      setNotice(`등급을 ${formatProfileRank(rank)}로 변경했습니다.`);
+    } catch (rankError) {
+      setItems(previousItems);
+      const message =
+        rankError instanceof Error
+          ? getAdminErrorMessage(rankError, '등급 변경 실패')
+          : '등급 변경 실패';
+      setError(message);
+    } finally {
+      setRankUpdatingUserId(null);
+    }
   };
 
   const runAction = async () => {
@@ -175,6 +206,8 @@ export default function ProfileImageAuditV2() {
           selectedIds={selectedIds}
           loading={loading}
           onToggle={toggleSelection}
+          onRankChange={handleRankChange}
+          rankUpdatingUserId={rankUpdatingUserId}
         />
         {totalPages > 1 && (
           <Box display="flex" justifyContent="center" pt={1}>

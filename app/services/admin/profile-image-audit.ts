@@ -20,6 +20,7 @@ export type ProfileImageAuditValidationDecision =
   | 'approved'
   | 'manual_review'
   | 'rejected';
+export type ProfileImageAuditProfileRank = 'S' | 'A' | 'B' | 'C' | 'UNKNOWN';
 
 export type ProfileImageAuditSiblingImage = {
   readonly profileImageId: string;
@@ -53,7 +54,7 @@ export type ProfileImageAuditItem = {
   readonly thumbnailUrl?: string | null;
   readonly userId: string;
   readonly profileId: string;
-  readonly profileRank: string | null;
+  readonly profileRank: ProfileImageAuditProfileRank | null;
   readonly age: number | null;
   readonly gender: string | null;
   readonly universityName: string | null;

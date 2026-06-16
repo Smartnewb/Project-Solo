@@ -103,6 +103,7 @@ export type {
 	ProfileImageAuditListMeta,
 	ProfileImageAuditListParams,
 	ProfileImageAuditListResponse,
+	ProfileImageAuditProfileRank,
 	ProfileImageAuditReviewedType,
 	ProfileImageAuditReviewStatus,
 	ProfileImageAuditRiskSignals,

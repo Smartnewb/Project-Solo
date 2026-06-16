@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';
 import ProfileImageAuditPage from '@/app/admin/profile-image-audit/profile-image-audit-v2';
-import { profileImageAudit } from '@/app/services/admin';
+import { profileImageAudit, userReview } from '@/app/services/admin';
 import {
   profileImageAuditBulkActionFixture,
   profileImageAuditItemFixture,
@@ -18,9 +18,13 @@ jest.mock('@/app/services/admin', () => ({
     bulkDelete: jest.fn(),
     buildBlacklistHandoff: jest.fn(),
   },
+  userReview: {
+    updateUserRank: jest.fn(),
+  },
 }));
 
 const mockedAudit = profileImageAudit as jest.Mocked<typeof profileImageAudit>;
+const mockedUserReview = userReview as jest.Mocked<typeof userReview>;
 
 describe('ProfileImageAuditPage', () => {
   beforeEach(() => {
@@ -49,6 +53,7 @@ describe('ProfileImageAuditPage', () => {
     mockedAudit.bulkMarkOk.mockResolvedValue(profileImageAuditBulkActionFixture);
     mockedAudit.bulkReject.mockResolvedValue(profileImageAuditBulkActionFixture);
     mockedAudit.bulkDelete.mockResolvedValue(profileImageAuditBulkActionFixture);
+    mockedUserReview.updateUserRank.mockResolvedValue(undefined);
     mockedAudit.buildBlacklistHandoff.mockReturnValue({
       userId: 'user-1',
       reason: '부적절한 프로필 이미지',
@@ -76,6 +81,23 @@ describe('ProfileImageAuditPage', () => {
       'src',
       'https://cdn.example.com/profile-image-1.jpg',
     );
+
+    await user.click(screen.getByRole('button', { name: 'profile-image-1 크게 보기' }));
+    expect(screen.getByAltText('profile-image-1 프로필 이미지 크게 보기')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '큰 이미지 닫기' }));
+    await waitFor(() => {
+      expect(screen.queryByAltText('profile-image-1 프로필 이미지 크게 보기')).not.toBeInTheDocument();
+    });
+
+    const rankSelects = screen.getAllByRole('combobox', { name: '등급' });
+    const firstRankSelect = rankSelects[0];
+    if (!firstRankSelect) throw new Error('first rank select was not rendered');
+    await user.click(firstRankSelect);
+    await user.click(await screen.findByRole('option', { name: 'S' }));
+    await waitFor(() => {
+      expect(mockedUserReview.updateUserRank).toHaveBeenCalledWith('user-1', 'S');
+    });
+
     expect(screen.getByRole('button', { name: '기준 미달 거절' })).toBeDisabled();
 
     await user.click(screen.getByRole('checkbox', { name: 'profile-image-1 선택' }));
