@@ -6,7 +6,7 @@ import type {
   ProfileImageAuditValidationDecision,
 } from '@/app/services/admin';
 import type { ProfileImageAuditProfileRank } from '@/app/services/admin';
-import type { AuditAction, SelectedAuditGroup } from './types';
+import type { AuditAction, AuditFilters, SelectedAuditGroup } from './types';
 
 export function formatGender(gender: string | null): string {
   if (gender === 'FEMALE') return '여성';
@@ -101,6 +101,17 @@ export function getSelectedAuditGroup(
     selectedIds: selectedItems.map((item) => item.profileImageId),
     selectedUserIds,
   };
+}
+
+export function filterVisibleAuditItems(
+  items: readonly ProfileImageAuditItem[],
+  filters: AuditFilters,
+): readonly ProfileImageAuditItem[] {
+  return items.filter((item) => {
+    if (filters.includeBlacklisted !== true && item.isBlacklisted) return false;
+    if (filters.includeSuspended !== true && item.suspendedAt !== null) return false;
+    return true;
+  });
 }
 
 export function getActionTone(action: AuditAction): 'success' | 'warning' | 'error' | 'primary' {

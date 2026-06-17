@@ -1,5 +1,9 @@
 import type { ProfileImageAuditSiblingImage } from '@/app/services/admin';
-import { sortAuditSiblingImages } from '@/app/admin/profile-image-audit/profile-image-audit-utils';
+import {
+  filterVisibleAuditItems,
+  sortAuditSiblingImages,
+} from '@/app/admin/profile-image-audit/profile-image-audit-utils';
+import { profileImageAuditItemFixture } from '@/__tests__/app/services/fixtures/profile-image-audit';
 
 describe('profile image audit display utilities', () => {
   it('orders sibling images with the current representative image first, then slots', () => {
@@ -38,5 +42,35 @@ describe('profile image audit display utilities', () => {
       'slot-0',
       'slot-2',
     ]);
+  });
+
+  it('hides blacklisted and suspended users unless the operator explicitly includes them', () => {
+    const visibleItem = profileImageAuditItemFixture;
+    const blacklistedItem = {
+      ...profileImageAuditItemFixture,
+      profileImageId: 'blacklisted-image',
+      isBlacklisted: true,
+    };
+    const suspendedItem = {
+      ...profileImageAuditItemFixture,
+      profileImageId: 'suspended-image',
+      suspendedAt: '2026-06-17T05:18:28.953Z',
+    };
+
+    expect(
+      filterVisibleAuditItems([visibleItem, blacklistedItem, suspendedItem], {
+        auditStatus: 'unreviewed',
+        includeBlacklisted: false,
+        includeSuspended: false,
+      }).map((item) => item.profileImageId),
+    ).toEqual(['profile-image-1']);
+
+    expect(
+      filterVisibleAuditItems([visibleItem, blacklistedItem, suspendedItem], {
+        auditStatus: 'unreviewed',
+        includeBlacklisted: true,
+        includeSuspended: true,
+      }).map((item) => item.profileImageId),
+    ).toEqual(['profile-image-1', 'blacklisted-image', 'suspended-image']);
   });
 });

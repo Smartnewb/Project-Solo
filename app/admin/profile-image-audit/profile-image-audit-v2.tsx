@@ -28,7 +28,7 @@ import { AuditBulkToolbar } from './components/AuditBulkToolbar';
 import { AuditFiltersBar } from './components/AuditFiltersBar';
 import { ConfirmAuditActionDialog } from './components/ConfirmAuditActionDialog';
 import { ProfileImageAuditGrid } from './components/ProfileImageAuditGrid';
-import { formatProfileRank, getBulkActionCounts, getSelectedAuditGroup, summarizeBulkActionFailure } from './profile-image-audit-utils';
+import { filterVisibleAuditItems, formatProfileRank, getBulkActionCounts, getSelectedAuditGroup, summarizeBulkActionFailure } from './profile-image-audit-utils';
 import type { AuditAction, AuditFilters } from './types';
 
 export default function ProfileImageAuditV2() {
@@ -56,8 +56,10 @@ export default function ProfileImageAuditV2() {
       setLoading(true);
       setError(null);
       const response = await profileImageAudit.list({ page, limit: PAGE_SIZE, ...filters });
-      setItems(response.data);
-      setTotal(response.meta.total);
+      const visibleItems = filterVisibleAuditItems(response.data, filters);
+      const hiddenItemCount = response.data.length - visibleItems.length;
+      setItems(visibleItems);
+      setTotal(Math.max(response.meta.total - hiddenItemCount, visibleItems.length));
       setTotalPages(response.meta.totalPages);
       setSelectedIds(new Set());
     } catch (loadError) {
