@@ -127,7 +127,7 @@ export default function ProfileImageAuditV2() {
     }
   };
 
-  const runAction = async () => {
+  const runAction = async (rejectReason?: string) => {
     if (!pendingAction || selectedGroup.selectedIds.length === 0) return;
 
     try {
@@ -141,7 +141,7 @@ export default function ProfileImageAuditV2() {
       } else if (pendingAction === 'reject') {
         response = await profileImageAudit.bulkReject({
           profileImageIds: selectedGroup.selectedIds,
-          reason: SIMPLE_REJECT_REASON,
+          reason: rejectReason?.trim() || SIMPLE_REJECT_REASON,
         });
       } else {
         response = await profileImageAudit.bulkDelete({

@@ -7,6 +7,12 @@ import type { AuditAction, AuditFilters } from './types';
 
 export const PAGE_SIZE = 18;
 export const SIMPLE_REJECT_REASON = '더 원활한 매칭을 위해 사진을 변경해주세요!';
+export const REJECT_REASON_OPTIONS: readonly string[] = [
+  SIMPLE_REJECT_REASON,
+  '화질 문제로 사진 변경이 필요합니다.',
+  '얼굴이 드러나도록 사진을 변경해주세요.',
+  '다른 사람이 찍어 준 사진으로 바꾸면 더 좋을 것 같아요!',
+];
 export const DELETE_REASON = '전체 프로필 이미지 전수검사 중 부적절 이미지 즉시 삭제';
 
 export const DEFAULT_FILTERS: AuditFilters = {

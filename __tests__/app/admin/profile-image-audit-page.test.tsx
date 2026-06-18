@@ -168,17 +168,17 @@ describe('ProfileImageAuditPage', () => {
     expect(screen.getByText('선택 2장')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: '사진 변경 요청' }));
-    expect(
-      await screen.findByText(
-        '거절 사유는 “더 원활한 매칭을 위해 사진을 변경해주세요!”로 일괄 기록됩니다.',
-      ),
-    ).toBeInTheDocument();
+    expect(await screen.findByLabelText('직접 작성')).toHaveValue(
+      '더 원활한 매칭을 위해 사진을 변경해주세요!',
+    );
+    await user.click(screen.getByRole('combobox', { name: '사진 변경 요청 사유' }));
+    await user.click(await screen.findByRole('option', { name: '화질 문제로 사진 변경이 필요합니다.' }));
     await user.click(await screen.findByRole('button', { name: '처리' }));
 
     await waitFor(() => {
       expect(mockedAudit.bulkReject).toHaveBeenCalledWith({
         profileImageIds: ['profile-image-1', 'profile-image-2'],
-        reason: '더 원활한 매칭을 위해 사진을 변경해주세요!',
+        reason: '화질 문제로 사진 변경이 필요합니다.',
       });
     });
   });
