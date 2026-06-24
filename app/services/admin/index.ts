@@ -21,6 +21,13 @@ export {
 } from './content';
 export { notices } from './notices';
 export type { NoticeListParams } from './notices';
+export { etaMission } from './eta-mission';
+export type {
+	EtaSubmission,
+	EtaSubmissionList,
+	EtaSubmissionStatus,
+	EtaSubmissionStatusFilter,
+} from './eta-mission';
 export { videos } from './video';
 export { seo } from './seo';
 export type { PageMeta, SitemapKind } from './seo';
@@ -258,6 +265,7 @@ import {
 	publicReviews,
 } from './content';
 import { notices } from './notices';
+import { etaMission } from './eta-mission';
 import { videos } from './video';
 import { seo } from './seo';
 import { cardNewsGeneration } from './card-news-generation';
@@ -356,6 +364,7 @@ const AdminService = {
 	personas,
 	communitySettings,
 	targetPosts,
+	etaMission,
 	xMarketing: XMarketingAdminService,
 };
 

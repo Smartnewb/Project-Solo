@@ -18,6 +18,8 @@ import {
   ToggleButtonGroup,
   Tooltip,
   Alert,
+  Card,
+  CardActionArea,
 } from '@mui/material';
 import { ExpandMore, Send, ContentCopy } from '@mui/icons-material';
 import {
@@ -115,48 +117,50 @@ export default function PlaygroundClient() {
       </Box>
 
       <Box sx={{ flex: 1, display: 'flex', gap: 2, overflow: 'hidden' }}>
-        {/* 좌측: 질문셋 */}
+        {/* 좌측: 질문셋 카드 — 클릭 즉시 입력칸 채움 */}
         <Paper
           variant="outlined"
-          sx={{ width: 360, flexShrink: 0, overflow: 'auto', p: 1 }}
+          sx={{ width: 400, flexShrink: 0, overflow: 'auto', p: 1.5 }}
         >
-          <Typography variant="subtitle2" sx={{ px: 1, py: 0.5 }} color="text.secondary">
-            실 유저 질문셋 (30)
+          <Typography variant="subtitle2" sx={{ px: 0.5, pb: 1 }} color="text.secondary">
+            실 유저 질문셋 (30) · 카드 클릭 → 입력
           </Typography>
-          {QA_CATEGORIES.map((cat) => (
-            <Accordion key={cat.label} disableGutters defaultExpanded={false} elevation={0}>
-              <AccordionSummary expandIcon={<ExpandMore />} sx={{ minHeight: 40 }}>
-                <Typography variant="body2" fontWeight={600}>
+          <Stack spacing={2}>
+            {QA_CATEGORIES.map((cat) => (
+              <Box key={cat.label}>
+                <Typography variant="caption" fontWeight={700} color="text.secondary" sx={{ px: 0.5 }}>
                   {cat.label}
                 </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ p: 0 }}>
-                <Stack>
-                  {cat.questions.map((q) => (
-                    <Box
-                      key={q.id}
-                      onClick={() => pickPreset(q)}
-                      sx={{
-                        px: 1.5,
-                        py: 1,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        gap: 1,
-                        alignItems: 'flex-start',
-                        borderRadius: 1,
-                        '&:hover': { bgcolor: 'action.hover' },
-                      }}
-                    >
-                      <Tooltip title={LEVEL_META[q.level].label}>
-                        <span style={{ fontSize: 14 }}>{LEVEL_META[q.level].emoji}</span>
-                      </Tooltip>
-                      <Typography variant="body2">{q.text}</Typography>
-                    </Box>
-                  ))}
+                <Stack spacing={1} sx={{ mt: 0.75 }}>
+                  {cat.questions.map((q) => {
+                    const selected = question.trim() === q.text;
+                    return (
+                      <Card
+                        key={q.id}
+                        variant="outlined"
+                        sx={{
+                          borderColor: selected ? 'primary.main' : 'divider',
+                          borderLeft: `3px solid ${LEVEL_META[q.level].color}`,
+                          bgcolor: selected ? 'action.selected' : 'background.paper',
+                        }}
+                      >
+                        <CardActionArea onClick={() => pickPreset(q)} sx={{ px: 1.5, py: 1 }}>
+                          <Stack direction="row" spacing={1} alignItems="flex-start">
+                            <Tooltip title={LEVEL_META[q.level].label}>
+                              <span style={{ fontSize: 14, lineHeight: '20px' }}>
+                                {LEVEL_META[q.level].emoji}
+                              </span>
+                            </Tooltip>
+                            <Typography variant="body2">{q.text}</Typography>
+                          </Stack>
+                        </CardActionArea>
+                      </Card>
+                    );
+                  })}
                 </Stack>
-              </AccordionDetails>
-            </Accordion>
-          ))}
+              </Box>
+            ))}
+          </Stack>
         </Paper>
 
         {/* 우측: 입력 + 답변 */}
