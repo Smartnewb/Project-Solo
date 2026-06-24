@@ -60,6 +60,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
       { href: '/admin/unapproved-users', label: '미승인 유저' },
       { href: '/admin/profile-review', label: '프로필 심사' },
       { href: '/admin/profile-image-audit', label: '프로필 이미지 전수검사' },
+      { href: '/admin/eta-mission-review', label: '에타 미션 인증 심사' },
       { href: '/admin/reports', label: '프로필 신고 관리' },
       { href: '/admin/blacklist', label: '블랙리스트' },
       { href: '/admin/review-inbox', label: '검토 인박스' },
@@ -80,6 +81,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
         children: [
           { href: '/admin/support-chat', label: '상담' },
           { href: '/admin/support-chat/playground', label: 'CS Playground' },
+          { href: '/admin/support-chat/kb-review', label: 'KB 검수큐' },
         ],
       },
       { href: '/admin/universities', label: '대학교 관리' },
