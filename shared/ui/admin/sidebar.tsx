@@ -74,7 +74,14 @@ export const NAV_CATEGORIES: NavCategory[] = [
           { href: '/admin/community-automation/metrics', label: '예약/메트릭' },
         ],
       },
-      { href: '/admin/support-chat', label: '고객 지원' },
+      {
+        id: 'support-chat',
+        label: '고객 지원',
+        children: [
+          { href: '/admin/support-chat', label: '상담' },
+          { href: '/admin/support-chat/playground', label: 'CS Playground' },
+        ],
+      },
       { href: '/admin/universities', label: '대학교 관리' },
       { href: '/admin/universities/clusters', label: '대학교 클러스터' },
       { href: '/admin/reset-password', label: '비밀번호 초기화' },
