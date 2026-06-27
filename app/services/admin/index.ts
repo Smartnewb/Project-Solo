@@ -3,6 +3,7 @@ export { stats, kpiReport } from './dashboard';
 export { userAppearance, deletedFemales, userEngagement } from './users';
 export { matching, forceMatching } from './matching';
 export { pushNotifications, pushNotificationCatalog, aiChat, momentQuestions } from './messaging';
+export { pushNotificationRegistry } from './push-notification-registry';
 export type {
 	PushNotificationCatalogResponse,
 	PushNotificationItem,
@@ -10,6 +11,16 @@ export type {
 	PushNotificationVariant,
 	FreshmenMilestone,
 } from './messaging';
+export type {
+	DirectPushNotificationEntry,
+	PushNotificationAdminRegistryResponse,
+	PushRegistryAudience,
+	PushRegistryNotificationEntry,
+	PushRegistryPersistence,
+	PushRegistryTemplate,
+	PushRegistryThrottle,
+	PushRegistryTrigger,
+} from './push-notification-registry';
 export {
 	backgroundPresets,
 	cardNews,
@@ -255,6 +266,7 @@ import { stats, kpiReport } from './dashboard';
 import { userAppearance, deletedFemales, userEngagement } from './users';
 import { matching, forceMatching } from './matching';
 import { pushNotifications, pushNotificationCatalog, aiChat, momentQuestions } from './messaging';
+import { pushNotificationRegistry } from './push-notification-registry';
 import {
 	backgroundPresets,
 	cardNews,
@@ -313,6 +325,7 @@ const AdminService = {
 	userReview,
 	pushNotifications,
 	pushNotificationCatalog,
+	pushNotificationRegistry,
 	aiChat,
 	backgroundPresets,
 	cardNews,

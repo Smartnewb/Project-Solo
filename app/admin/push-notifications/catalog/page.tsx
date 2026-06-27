@@ -1,5 +1,5 @@
-import CatalogClient from './catalog-client';
+import { redirect } from 'next/navigation';
 
 export default function PushNotificationCatalogPage() {
-	return <CatalogClient />;
+	redirect('/admin/push-notifications?tab=registry&view=graph');
 }
