@@ -20,7 +20,7 @@ function PushNotificationsV2Content() {
 	const tabParam = searchParams.get('tab');
 	const viewParam = searchParams.get('view');
 	const currentTab: PushNotificationsTab = isPushNotificationsTab(tabParam) ? tabParam : 'send';
-	const registryView: PushRegistryView = isPushRegistryView(viewParam) ? viewParam : 'table';
+	const registryView: PushRegistryView = isPushRegistryView(viewParam) ? viewParam : 'graph';
 
 	const setTab = (tab: PushNotificationsTab) => {
 		const params = new URLSearchParams(searchParams.toString());
@@ -28,6 +28,13 @@ function PushNotificationsV2Content() {
 		if (tab === 'send') {
 			params.delete('view');
 		}
+		router.replace(`/admin/push-notifications?${params.toString()}`);
+	};
+
+	const setRegistryView = (view: PushRegistryView) => {
+		const params = new URLSearchParams(searchParams.toString());
+		params.set('tab', 'registry');
+		params.set('view', view);
 		router.replace(`/admin/push-notifications?${params.toString()}`);
 	};
 
@@ -48,7 +55,7 @@ function PushNotificationsV2Content() {
 				</Tabs>
 			</Box>
 
-			{currentTab === 'send' ? <PushSendTab /> : <PushRegistryTab view={registryView} />}
+			{currentTab === 'send' ? <PushSendTab /> : <PushRegistryTab view={registryView} onViewChange={setRegistryView} />}
 		</Box>
 	);
 }

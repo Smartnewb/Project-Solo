@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Box, CircularProgress, Typography } from '@mui/material';
+import { Alert, Box, Button, Chip, CircularProgress, Stack, Typography } from '@mui/material';
 import {
 	pushNotificationRegistry,
 	type PushNotificationAdminRegistryResponse,
@@ -11,6 +11,7 @@ import { PushRegistryFilters } from './registry/push-registry-filters';
 import { PushRegistryGraph } from './registry/push-registry-graph';
 import {
 	filterRegistryRows,
+	formatCategoryName,
 	initialRegistryFilters,
 	type RegistryRow,
 	type PushRegistryView,
@@ -20,11 +21,21 @@ import { PushRegistryTable } from './registry/push-registry-table';
 
 export type { PushRegistryView };
 
-export function PushRegistryTab({ view }: { view: PushRegistryView }) {
+type Props = {
+	view: PushRegistryView;
+	onViewChange?: (view: PushRegistryView) => void;
+};
+
+export function PushRegistryTab({ view, onViewChange }: Props) {
 	const [registry, setRegistry] = useState<PushNotificationAdminRegistryResponse | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [filters, setFilters] = useState(initialRegistryFilters);
+	const [currentView, setCurrentView] = useState<PushRegistryView>(view);
+
+	useEffect(() => {
+		setCurrentView(view);
+	}, [view]);
 
 	useEffect(() => {
 		let mounted = true;
@@ -55,6 +66,22 @@ export function PushRegistryTab({ view }: { view: PushRegistryView }) {
 	const filteredRows = useMemo(() => filterRegistryRows(rows, filters), [rows, filters]);
 	const categories = useMemo(() => Array.from(new Set(rows.map((row) => row.entry.category))).sort(), [rows]);
 	const directItems = registry?.directNotifications ?? [];
+	const selectedCategoryLabel = filters.category === 'all' ? null : formatCategoryName(filters.category);
+
+	const showTable = () => {
+		setCurrentView('table');
+		onViewChange?.('table');
+	};
+
+	const handleSelectCategory = (category: string) => {
+		setFilters({ ...initialRegistryFilters, category, direct: 'registry-only' });
+		showTable();
+	};
+
+	const handleSelectEventType = (eventType: string, category: string) => {
+		setFilters({ ...initialRegistryFilters, category, eventType, direct: 'registry-only' });
+		showTable();
+	};
 
 	if (loading) {
 		return (
@@ -94,10 +121,23 @@ export function PushRegistryTab({ view }: { view: PushRegistryView }) {
 			</Box>
 
 			<PushRegistryFilters categories={categories} filters={filters} onChange={setFilters} />
+			<ActiveRegistryFilter
+				categoryLabel={selectedCategoryLabel}
+				eventType={filters.eventType === 'all' ? null : filters.eventType}
+				onClear={() => setFilters(initialRegistryFilters)}
+				onShowGraph={() => {
+					setCurrentView('graph');
+					onViewChange?.('graph');
+				}}
+			/>
 
 			{filters.direct !== 'direct-only' ? (
-				view === 'graph' ? (
-					<PushRegistryGraph rows={filteredRows} />
+				currentView === 'graph' ? (
+					<PushRegistryGraph
+						rows={filteredRows}
+						onSelectCategory={handleSelectCategory}
+						onSelectEventType={handleSelectEventType}
+					/>
 				) : (
 					<PushRegistryTable rows={filteredRows} />
 				)
@@ -105,5 +145,42 @@ export function PushRegistryTab({ view }: { view: PushRegistryView }) {
 
 			<DirectNotificationList items={directItems} filter={filters.direct} />
 		</Box>
+	);
+}
+
+function ActiveRegistryFilter({
+	categoryLabel,
+	eventType,
+	onClear,
+	onShowGraph,
+}: {
+	categoryLabel: string | null;
+	eventType: string | null;
+	onClear: () => void;
+	onShowGraph: () => void;
+}) {
+	if (!categoryLabel && !eventType) return null;
+
+	return (
+		<Alert
+			severity="info"
+			sx={{ mb: 2, alignItems: 'center' }}
+			action={
+				<Stack direction="row" spacing={1}>
+					<Button color="inherit" size="small" onClick={onShowGraph}>
+						구조도
+					</Button>
+					<Button color="inherit" size="small" onClick={onClear}>
+						전체 보기
+					</Button>
+				</Stack>
+			}
+		>
+			<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+				<Typography variant="body2">구조도에서 선택한 알림만 보고 있습니다.</Typography>
+				{categoryLabel ? <Chip size="small" label={categoryLabel} /> : null}
+				{eventType ? <Chip size="small" label={eventType} /> : null}
+			</Stack>
+		</Alert>
 	);
 }

@@ -91,12 +91,7 @@ test.describe('Admin push notification registry', () => {
     await page.goto('/admin/push-notifications?tab=registry');
     await expect(page.locator('text=총 46개')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('text=이벤트 42개 · 크론 4개')).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText('campaign_reminder').first()).toBeVisible();
-    await expect(page.getByText('오늘의 추천 {remaining}명이 기다리고 있어요')).toBeVisible();
-    await expect(page.getByText('throttle: campaign_reminder:{userId}:{date} · 86400s')).toBeVisible();
-    await expect(page.getByText('somemate_resume').first()).toBeVisible();
-    await expect(page.getByText('somemate_discovery').first()).toBeVisible();
-    await expect(page.getByText('somemate_rehearsal_prompt').first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: '알림 구조도' })).toBeVisible({ timeout: 10000 });
     await expect(page.getByText('5개')).toBeVisible();
     await expect(page.locator('text=음성 통화 라이프사이클 푸시')).toBeVisible();
     await expect(page.getByText('신입생 마일스톤 푸시')).toBeVisible();
@@ -107,10 +102,22 @@ test.describe('Admin push notification registry', () => {
     await expect(page.getByText('persistence: general/roulette_reminder')).toBeVisible();
     await expect(page.getByText('skipPersist: false').first()).toBeVisible();
     await expect(page.getByText('notes: registry-external direct send')).toBeVisible();
+    await page.getByRole('button', { name: /캠페인 4개 · campaign/ }).click();
+    await expect(page).toHaveURL(/\/admin\/push-notifications\?tab=registry&view=table/);
+    await expect(page.getByText('campaign_reminder').first()).toBeVisible();
+    await expect(page.getByText('오늘의 추천 {remaining}명이 기다리고 있어요').first()).toBeVisible();
+    await expect(page.getByText('캠페인 참여가 끝나지 않은 유저에게 오늘 확인할 추천이 남아 있을 때 보냅니다.').first()).toBeVisible();
+    await expect(page.getByText('Throttle: campaign_reminder:{userId}:{date} · 86400s').first()).toBeVisible();
+    await expect(page.getByText('somemate_resume').first()).toBeVisible();
+    await expect(page.getByText('somemate_discovery').first()).toBeVisible();
+    await expect(page.getByText('somemate_rehearsal_prompt').first()).toBeVisible();
 
     await page.goto('/admin/push-notifications/catalog');
     await expect(page).toHaveURL(/\/admin\/push-notifications\?tab=registry&view=graph/);
     await expect(page.getByRole('heading', { name: '알림 구조도' })).toBeVisible({ timeout: 10000 });
+    await page.getByText('somemate_resume · 자동').click();
+    await expect(page.getByText('somemate_resume').first()).toBeVisible();
+    await expect(page.getByText('campaign_reminder')).not.toBeVisible();
 
     await page.goto('/admin/push-notifications?tab=send');
     await expect(page.locator('h2:has-text("사용자 필터링")')).toBeVisible({ timeout: 10000 });

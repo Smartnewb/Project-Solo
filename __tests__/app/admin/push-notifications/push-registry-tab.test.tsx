@@ -95,13 +95,14 @@ describe('PushRegistryTab', () => {
 		});
 
 		expect(screen.getByText('이벤트 42개 · 크론 4개')).toBeInTheDocument();
-		expect(screen.getByText('campaign_reminder')).toBeInTheDocument();
-		expect(screen.getByText('0 19 * * * · Asia/Seoul')).toBeInTheDocument();
-		expect(screen.getByText('campaignIncompleteFemales')).toBeInTheDocument();
-		expect(screen.getByText('remaining')).toBeInTheDocument();
-		expect(screen.getByText('오늘의 추천 명이 기다리고 있어요')).toBeInTheDocument();
-		expect(screen.getByText('throttle: campaign-reminder:{userId}:{date} · 86400s')).toBeInTheDocument();
-		expect(screen.getByText('suppressInRoom: false')).toBeInTheDocument();
+		expect(screen.getAllByText('campaign_reminder').length).toBeGreaterThan(0);
+		expect(screen.getAllByText('0 19 * * *에 자동 발송 (Asia/Seoul)').length).toBeGreaterThan(0);
+		expect(screen.getAllByText('캠페인 참여가 끝나지 않은 여성 유저').length).toBeGreaterThan(0);
+		expect(screen.getAllByText('캠페인 참여가 끝나지 않은 유저에게 오늘 확인할 추천이 남아 있을 때 보냅니다.').length).toBeGreaterThan(0);
+		expect(screen.getAllByText('remaining').length).toBeGreaterThan(0);
+		expect(screen.getAllByText('오늘의 추천 명이 기다리고 있어요').length).toBeGreaterThan(0);
+		expect(screen.getAllByText('Throttle: campaign-reminder:{userId}:{date} · 86400s').length).toBeGreaterThan(0);
+		expect(screen.getAllByText('채팅방 안 억제: 아니오').length).toBeGreaterThan(0);
 		expect(screen.getByText('Voice call push')).toBeInTheDocument();
 		expect(screen.getByText('body: 상대방이 기다리고 있어요')).toBeInTheDocument();
 		expect(screen.getAllByText('deepLink: -').length).toBeGreaterThan(0);
@@ -110,10 +111,35 @@ describe('PushRegistryTab', () => {
 		expect(screen.getByText('notes: registry-external direct send')).toBeInTheDocument();
 
 		fireEvent.change(screen.getByLabelText('검색'), { target: { value: 'chat' } });
-		expect(screen.getByText('chat_message')).toBeInTheDocument();
+		expect(screen.getAllByText('chat_message').length).toBeGreaterThan(0);
 		expect(screen.queryByText('campaign_reminder')).not.toBeInTheDocument();
 
 		expect(screen.queryByRole('button', { name: /발송/ })).not.toBeInTheDocument();
+	});
+
+	it('starts from the structure graph and filters to the table from category and notification clicks', async () => {
+		(pushNotificationRegistry.getRegistry as jest.Mock).mockResolvedValue(registryFixture);
+		const onViewChange = jest.fn();
+
+		render(<PushRegistryTab view="graph" onViewChange={onViewChange} />);
+
+		await waitFor(() => {
+			expect(screen.getByRole('heading', { name: '알림 구조도' })).toBeInTheDocument();
+		});
+
+		fireEvent.click(screen.getByRole('button', { name: /채팅/ }));
+
+		expect(onViewChange).toHaveBeenCalledWith('table');
+		expect(screen.getByText('구조도에서 선택한 알림만 보고 있습니다.')).toBeInTheDocument();
+		expect(screen.getAllByText('chat_message').length).toBeGreaterThan(0);
+		expect(screen.queryByText('campaign_reminder')).not.toBeInTheDocument();
+
+		fireEvent.click(screen.getByRole('button', { name: '구조도' }));
+		fireEvent.click(screen.getByRole('button', { name: '전체 보기' }));
+		fireEvent.click(screen.getByText('campaign_reminder · 자동'));
+
+		expect(screen.getAllByText('campaign_reminder').length).toBeGreaterThan(0);
+		expect(screen.queryByText('chat_message')).not.toBeInTheDocument();
 	});
 
 	it('renders deterministic error and empty states', async () => {

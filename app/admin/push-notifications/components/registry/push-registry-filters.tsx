@@ -1,6 +1,7 @@
 import { Box, FormControl, InputLabel, MenuItem, Paper, Select, TextField } from '@mui/material';
 import type { ReactNode } from 'react';
 import type { RegistryFilters } from './push-registry-model';
+import { formatCategoryName } from './push-registry-model';
 
 type Props = {
 	categories: string[];
@@ -9,7 +10,10 @@ type Props = {
 };
 
 export function PushRegistryFilters({ categories, filters, onChange }: Props) {
-	const setFilter = (key: keyof RegistryFilters, value: string) => onChange({ ...filters, [key]: value });
+	const setFilter = (key: keyof RegistryFilters, value: string) => {
+		const nextFilters = { ...filters, [key]: value };
+		onChange(key === 'category' ? { ...nextFilters, eventType: 'all' } : nextFilters);
+	};
 
 	return (
 		<Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 1 }}>
@@ -24,7 +28,7 @@ export function PushRegistryFilters({ categories, filters, onChange }: Props) {
 					<MenuItem value="all">전체</MenuItem>
 					{categories.map((category) => (
 						<MenuItem key={category} value={category}>
-							{category}
+							{formatCategoryName(category)} ({category})
 						</MenuItem>
 					))}
 				</RegistrySelect>
