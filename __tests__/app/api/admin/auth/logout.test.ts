@@ -23,11 +23,11 @@ import { getAdminAccessToken, getAdminRefreshToken, clearAdminCookies } from '@/
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
-function createRequest(body?: object): NextRequest {
+function createRequest(body?: object, headers: Record<string, string> = {}): NextRequest {
   return new NextRequest('http://localhost:3000/api/admin/auth/logout', {
     method: 'POST',
     body: body !== undefined ? JSON.stringify(body) : undefined,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...headers },
   });
 }
 
@@ -35,6 +35,18 @@ describe('POST /api/admin/auth/logout', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockFetch.mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve({}) });
+  });
+
+  describe('csrf guard', () => {
+    it('returns 403 for cross-origin logout requests', async () => {
+      const req = createRequest({}, { Origin: 'https://evil.example' });
+      const res = await POST(req);
+      const body = await res.json();
+
+      expect(res.status).toBe(403);
+      expect(body).toEqual({ success: false, message: 'Forbidden' });
+      expect(clearAdminCookies).not.toHaveBeenCalled();
+    });
   });
 
   describe('success with tokens present', () => {
