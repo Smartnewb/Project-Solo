@@ -7,6 +7,7 @@ import {
 	formatPersistence,
 	formatThrottle,
 	formatTriggerKo,
+	getRequiredFields,
 	toReadableTemplateText,
 } from './push-registry-model';
 
@@ -70,7 +71,7 @@ function NotificationIdentity({ row }: { row: RegistryRow }) {
 			<Typography variant="caption" color="text.secondary">
 				{formatCategoryName(row.entry.category)} · {row.entry.category}
 			</Typography>
-			<RequiredFields fields={row.entry.requiredFields} />
+			<RequiredFields fields={getRequiredFields(row.entry)} />
 		</>
 	);
 }

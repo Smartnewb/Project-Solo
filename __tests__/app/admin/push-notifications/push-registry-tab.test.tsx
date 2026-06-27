@@ -142,6 +142,38 @@ describe('PushRegistryTab', () => {
 		expect(screen.queryByText('chat_message')).not.toBeInTheDocument();
 	});
 
+	it('keeps rendering when browser history restores registry entries without array fields', async () => {
+		(pushNotificationRegistry.getRegistry as jest.Mock).mockResolvedValue({
+			...registryFixture,
+			notifications: {
+				chat_message: {
+					...registryFixture.notifications.chat_message,
+					requiredFields: undefined,
+				},
+			},
+			directNotifications: [
+				{
+					...registryFixture.directNotifications[0],
+					requiredFields: undefined,
+					notes: undefined,
+				},
+			],
+		});
+
+		render(<PushRegistryTab view="graph" />);
+
+		await waitFor(() => {
+			expect(screen.getByRole('heading', { name: '알림 구조도' })).toBeInTheDocument();
+		});
+
+		fireEvent.click(screen.getByRole('button', { name: /채팅/ }));
+		fireEvent.click(screen.getByRole('button', { name: '구조도' }));
+		fireEvent.click(screen.getByRole('button', { name: '전체 보기' }));
+
+		expect(screen.getByRole('heading', { name: '알림 구조도' })).toBeInTheDocument();
+		expect(screen.getByText('Registry 외부 직접 발송')).toBeInTheDocument();
+	});
+
 	it('renders deterministic error and empty states', async () => {
 		(pushNotificationRegistry.getRegistry as jest.Mock).mockRejectedValueOnce(new Error('boom'));
 		const { unmount } = render(<PushRegistryTab view="table" />);

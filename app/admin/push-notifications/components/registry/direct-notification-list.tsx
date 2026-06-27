@@ -1,5 +1,6 @@
 import { Box, Chip, Paper, Stack, Typography } from '@mui/material';
 import type { DirectPushNotificationEntry } from '@/app/services/admin/push-notification-registry';
+import { toStringArray } from './push-registry-model';
 
 export function DirectNotificationList({
 	items,
@@ -31,7 +32,7 @@ export function DirectNotificationList({
 						<Typography variant="body2">body: {item.template.ko?.body ?? '-'}</Typography>
 						<Typography variant="body2">route: {item.route}</Typography>
 						<Typography variant="body2">deepLink: {item.deepLink ?? '-'}</Typography>
-						<Typography variant="body2">requiredFields: {item.requiredFields.join(', ') || '-'}</Typography>
+						<Typography variant="body2">requiredFields: {toStringArray(item.requiredFields).join(', ') || '-'}</Typography>
 						<Typography variant="body2">
 							persistence: {item.persistence ? `${item.persistence.type}/${item.persistence.subType}` : '-'}
 						</Typography>
@@ -40,7 +41,7 @@ export function DirectNotificationList({
 						</Typography>
 						<Typography variant="body2">skipOnlineCheck: {String(item.skipOnlineCheck)}</Typography>
 						<Typography variant="body2">skipPersist: {String(item.skipPersist)}</Typography>
-						<Typography variant="body2">notes: {item.notes.join(' / ') || '-'}</Typography>
+						<Typography variant="body2">notes: {toStringArray(item.notes).join(' / ') || '-'}</Typography>
 						<Typography variant="caption" color="text.secondary">
 							source: {item.source}
 						</Typography>

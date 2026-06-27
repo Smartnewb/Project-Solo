@@ -111,6 +111,8 @@ test.describe('Admin push notification registry', () => {
     await expect(page.getByText('somemate_resume').first()).toBeVisible();
     await expect(page.getByText('somemate_discovery').first()).toBeVisible();
     await expect(page.getByText('somemate_rehearsal_prompt').first()).toBeVisible();
+    await page.goBack();
+    await expect(page.getByRole('heading', { name: '알림 구조도' })).toBeVisible({ timeout: 10000 });
 
     await page.goto('/admin/push-notifications/catalog');
     await expect(page).toHaveURL(/\/admin\/push-notifications\?tab=registry&view=graph/);

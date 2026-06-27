@@ -121,6 +121,14 @@ export const formatPersistence = (entry: PushRegistryNotificationEntry): string 
 export const formatThrottle = (entry: Pick<PushRegistryNotificationEntry, 'throttle'>): string =>
 	entry.throttle ? `${entry.throttle.key} · ${entry.throttle.ttlSeconds}s` : '-';
 
+export const toStringArray = (value: unknown): string[] => {
+	if (!Array.isArray(value)) return [];
+	return value.filter((item): item is string => typeof item === 'string');
+};
+
+export const getRequiredFields = (entry: Pick<PushRegistryNotificationEntry, 'requiredFields'>): string[] =>
+	toStringArray(entry.requiredFields);
+
 export const formatEventChipLabel = (row: RegistryRow): string =>
 	`${row.eventType} · ${row.entry.trigger.type === 'cron' ? '자동' : '이벤트'}`;
 
@@ -155,7 +163,7 @@ export function filterRegistryRows(rows: RegistryRow[], filters: RegistryFilters
 			entry.template.ja.body,
 			entry.route,
 			entry.deepLink ?? '',
-			entry.requiredFields.join(' '),
+			getRequiredFields(entry).join(' '),
 			formatPersistence(entry),
 			formatThrottle(entry),
 		].join(' ');

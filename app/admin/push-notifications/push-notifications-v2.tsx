@@ -35,7 +35,7 @@ function PushNotificationsV2Content() {
 		const params = new URLSearchParams(searchParams.toString());
 		params.set('tab', 'registry');
 		params.set('view', view);
-		router.replace(`/admin/push-notifications?${params.toString()}`);
+		router.push(`/admin/push-notifications?${params.toString()}`);
 	};
 
 	return (
