@@ -54,6 +54,10 @@ function makeParams(pathSegments: string[]) {
   return { params: { path: pathSegments } };
 }
 
+function makePromisedParams(pathSegments: string[]) {
+  return { params: Promise.resolve({ path: pathSegments }) };
+}
+
 function makeBackendResponse(body: unknown, status = 200, headers: Record<string, string> = {}) {
   const headersMap = new Map(Object.entries({ 'content-type': 'application/json', ...headers }));
   return {
@@ -141,6 +145,22 @@ describe('admin-proxy route handlers', () => {
   });
 
   describe('GET proxy', () => {
+    it('resolves promised route params before joining path segments', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      mockFetch.mockResolvedValueOnce(makeBackendResponse({ items: [] }));
+
+      const req = createRequest('admin/notifications/registry');
+      const res = await GET(req, makePromisedParams(['admin', 'notifications', 'registry']));
+
+      expect(res.status).toBe(200);
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('admin/notifications/registry'),
+        expect.anything(),
+      );
+    });
+
     it('forwards GET request to backend with Authorization header', async () => {
       (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
       (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);

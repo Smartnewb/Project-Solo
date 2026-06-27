@@ -67,6 +67,22 @@ function isTokenExpiringSoon(token: string): boolean {
 
 const inFlightRefreshes = new Map<string, Promise<string | null>>();
 
+type AdminProxyRouteParams = {
+	path?: string[];
+};
+
+type AdminProxyRouteContext = {
+	params?: AdminProxyRouteParams | Promise<AdminProxyRouteParams>;
+};
+
+async function resolveTargetPath(context: AdminProxyRouteContext): Promise<string | null> {
+	const params = await context.params;
+	if (!Array.isArray(params?.path) || params.path.length === 0) {
+		return null;
+	}
+	return params.path.join('/');
+}
+
 async function doRefresh(meta: AdminSessionMeta, refreshToken: string): Promise<string | null> {
 	try {
 		const res = await fetch(`${BACKEND_URL}/auth/refresh`, {
@@ -143,11 +159,14 @@ async function callBackend(
 	return fetch(url, { method, headers, body });
 }
 
-async function proxyRequest(request: NextRequest, { params }: { params: { path: string[] } }) {
+async function proxyRequest(request: NextRequest, context: AdminProxyRouteContext) {
 	let token = await getAdminAccessToken();
 	const meta = await getSessionMeta();
 
-	const targetPath = params.path.join('/');
+	const targetPath = await resolveTargetPath(context);
+	if (!targetPath) {
+		return NextResponse.json({ error: 'Bad request' }, { status: 400 });
+	}
 
 	if (!isPathAllowed(targetPath)) {
 		return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
