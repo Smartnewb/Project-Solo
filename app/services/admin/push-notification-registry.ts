@@ -70,7 +70,44 @@ export interface PushNotificationAdminRegistryResponse {
 	};
 }
 
+const normalizeStringArray = (value: unknown): string[] => {
+	if (!Array.isArray(value)) return [];
+	return value.filter((item): item is string => typeof item === 'string');
+};
+
+const normalizeNotificationEntry = (
+	entry: PushRegistryNotificationEntry,
+): PushRegistryNotificationEntry => ({
+	...entry,
+	requiredFields: normalizeStringArray(entry.requiredFields),
+});
+
+const normalizeDirectNotificationEntry = (
+	entry: DirectPushNotificationEntry,
+): DirectPushNotificationEntry => ({
+	...entry,
+	requiredFields: normalizeStringArray(entry.requiredFields),
+	notes: normalizeStringArray(entry.notes),
+});
+
+const normalizeRegistryResponse = (
+	response: PushNotificationAdminRegistryResponse,
+): PushNotificationAdminRegistryResponse => {
+	const notifications: Record<string, PushRegistryNotificationEntry> = {};
+	for (const [eventType, entry] of Object.entries(response.notifications ?? {})) {
+		notifications[eventType] = normalizeNotificationEntry(entry);
+	}
+
+	return {
+		...response,
+		notifications,
+		directNotifications: (response.directNotifications ?? []).map(normalizeDirectNotificationEntry),
+	};
+};
+
 export const pushNotificationRegistry = {
 	getRegistry: async (): Promise<PushNotificationAdminRegistryResponse> =>
-		adminGet<PushNotificationAdminRegistryResponse>('/admin/notifications/registry'),
+		normalizeRegistryResponse(
+			await adminGet<PushNotificationAdminRegistryResponse>('/admin/notifications/registry'),
+		),
 };
