@@ -33,6 +33,7 @@ export {
 export { notices } from './notices';
 export type { NoticeListParams } from './notices';
 export { etaMission } from './eta-mission';
+export { pixelCampus } from './pixel-campus';
 export type {
 	EtaSubmission,
 	EtaSubmissionList,
@@ -311,6 +312,7 @@ import { communityQuestions } from './community-questions';
 import { gemProducts } from './gem-products';
 import { iapCatalog } from './iap-catalog';
 import { loveCourt } from './love-court';
+import { pixelCampus } from './pixel-campus';
 import { activities, campaigns, reviewQueue, metrics, personas, communitySettings, targetPosts } from './community-automation';
 import { XMarketingAdminService } from './x-marketing';
 
@@ -378,6 +380,7 @@ const AdminService = {
 	communitySettings,
 	targetPosts,
 	etaMission,
+	pixelCampus,
 	xMarketing: XMarketingAdminService,
 };
 

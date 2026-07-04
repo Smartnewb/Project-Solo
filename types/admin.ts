@@ -217,6 +217,81 @@ export interface UploadImageResponse {
   message?: string;
 }
 
+// Pixel Campus CMS
+export type PixelCampusEpisodeStatus =
+  | 'draft'
+  | 'in_review'
+  | 'scheduled'
+  | 'published'
+  | 'archived';
+
+export type PixelCampusAxis =
+  | 'initiative'
+  | 'expression'
+  | 'planning'
+  | 'pace'
+  | 'conflict';
+
+export interface PixelCampusChoice {
+  id?: string;
+  label: string;
+  displayOrder: number;
+  axis: PixelCampusAxis;
+  direction: -1 | 1;
+  weight: 1 | 2 | 3;
+  revealCopy: string;
+}
+
+export type PixelCampusCut = {
+  speaker: 'miho' | 'me';
+  text: string;
+};
+
+export interface PixelCampusEpisode {
+  id: string;
+  chapterNo: number;
+  episodeNo: number;
+  title: string;
+  situationText: string;
+  cuts: PixelCampusCut[];
+  sceneImageUrl: string | null;
+  status: PixelCampusEpisodeStatus;
+  publishAt: string | null;
+  choices: PixelCampusChoice[];
+  answerCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PixelCampusEpisodePayload {
+  chapterNo: number;
+  episodeNo: number;
+  title: string;
+  cuts: PixelCampusCut[];
+  sceneImageUrl?: string | null;
+  publishAt?: string | null;
+  choices: PixelCampusChoice[];
+}
+
+export interface PixelCampusEpisodeListResponse {
+  items: PixelCampusEpisode[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface PixelCampusEpisodeStatsChoice {
+  choiceId: string;
+  label: string;
+  total: number;
+  male: number;
+  female: number;
+}
+
+export interface PixelCampusEpisodeStats {
+  choices: PixelCampusEpisodeStatsChoice[];
+}
+
 export interface CreatePresetRequest {
   name: string;
   displayName: string;

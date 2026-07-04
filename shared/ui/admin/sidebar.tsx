@@ -103,6 +103,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
       { href: '/admin/style-reference', label: 'V4 스타일 관리' },
       { href: '/admin/keywords', label: '키워드 관리' },
       { href: '/admin/moment', label: '모먼트' },
+      { href: '/admin/pixel-campus', label: '픽셀 캠퍼스' },
     ],
   },
   {
