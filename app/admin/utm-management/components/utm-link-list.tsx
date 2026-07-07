@@ -372,6 +372,7 @@ export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
                     <TableCell sx={{ fontWeight: 600 }}>채널</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>캠페인</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>상세</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>URL</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>바인딩</TableCell>
                     <TableCell sx={{ fontWeight: 600 }} align="right">클릭 수</TableCell>
                     <TableCell sx={{ fontWeight: 600 }} align="right">가입 수</TableCell>
@@ -407,6 +408,28 @@ export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
                             link.utmTerm && `term=${link.utmTerm}`,
                             link.utmId && `id=${link.utmId}`,
                           ].filter(Boolean).join(' · ') || '-'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ minWidth: 260, maxWidth: 360 }}>
+                        {link.shortUrl ? (
+                          <Typography
+                            variant="body2"
+                            fontWeight={500}
+                            sx={{ wordBreak: 'break-all' }}
+                          >
+                            {link.shortUrl}
+                          </Typography>
+                        ) : (
+                          <Typography variant="body2" color="textSecondary">
+                            추적 URL 없음
+                          </Typography>
+                        )}
+                        <Typography
+                          variant="caption"
+                          color="textSecondary"
+                          sx={{ display: 'block', mt: 0.5, wordBreak: 'break-all' }}
+                        >
+                          도착: {link.destinationUrl}
                         </Typography>
                       </TableCell>
                       <TableCell>
