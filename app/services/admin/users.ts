@@ -382,6 +382,13 @@ export const userAppearance = {
 		return result.data;
 	},
 
+	updateUserBirthday: async (userId: string, birthday: string) => {
+		const result = await adminPatch<{
+			data: { userId: string; birthday: string; age: number; message: string };
+		}>(`/admin/v2/users/${userId}/birthday`, { birthday });
+		return result.data;
+	},
+
 	updateAccountStatus: async (
 		userId: string,
 		status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED',

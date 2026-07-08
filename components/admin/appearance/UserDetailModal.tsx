@@ -67,6 +67,7 @@ import EditProfileModal from './modals/EditProfileModal';
 import EmailNotificationModal from './modals/EmailNotificationModal';
 import SmsNotificationModal from './modals/SmsNotificationModal';
 import UniversityTransferModal from './modals/UniversityTransferModal';
+import BirthdayEditModal from './modals/BirthdayEditModal';
 
 const SHOW_REMATCH_TICKET_ADMIN = false;
 
@@ -248,6 +249,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   // 모달 상태
   const [editProfileModalOpen, setEditProfileModalOpen] = useState(false);
   const [universityTransferModalOpen, setUniversityTransferModalOpen] = useState(false);
+  const [birthdayModalOpen, setBirthdayModalOpen] = useState(false);
   const [emailNotificationModalOpen, setEmailNotificationModalOpen] = useState(false);
   const [smsNotificationModalOpen, setSmsNotificationModalOpen] = useState(false);
   const [deleteConfirmModalOpen, setDeleteConfirmModalOpen] = useState(false);
@@ -1182,6 +1184,15 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                       />
                     )}
 
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => setBirthdayModalOpen(true)}
+                      disabled={actionLoading}
+                    >
+                      나이 변경
+                    </Button>
+
                     {userDetail.signupRoute && (
                       <Chip
                         label={`가입: ${SIGNUP_ROUTE_LABELS[userDetail.signupRoute] || userDetail.signupRoute}`}
@@ -1797,6 +1808,20 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
         userName={userDetail?.name}
         onSuccess={() => {
           setActionSuccess('SMS가 발송되었습니다.');
+          if (onRefresh) onRefresh();
+        }}
+      />
+
+      <BirthdayEditModal
+        open={birthdayModalOpen}
+        onClose={() => setBirthdayModalOpen(false)}
+        userId={userId || ''}
+        userName={userDetail?.name}
+        currentBirthday={userDetail?.birthday}
+        currentAge={userDetail?.age}
+        onSuccess={({ birthday, age }) => {
+          setActionSuccess(`생년월일이 ${birthday}(만 ${age}세)(으)로 변경되었습니다.`);
+          setUserDetail(prev => prev ? { ...prev, birthday, age } : prev);
           if (onRefresh) onRefresh();
         }}
       />

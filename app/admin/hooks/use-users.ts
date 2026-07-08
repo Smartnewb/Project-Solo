@@ -249,6 +249,18 @@ export function useUpdateUserUniversity() {
   });
 }
 
+export function useUpdateUserBirthday() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { userId: string; birthday: string }) =>
+      AdminService.userAppearance.updateUserBirthday(params.userId, params.birthday),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: [...usersKeys.appearance(), 'details', vars.userId] });
+      qc.invalidateQueries({ queryKey: usersKeys.appearance() });
+    },
+  });
+}
+
 export function useUpdateAccountStatus() {
   const qc = useQueryClient();
   return useMutation({
