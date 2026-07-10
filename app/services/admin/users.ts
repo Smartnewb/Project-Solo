@@ -360,7 +360,6 @@ export const userAppearance = {
 				name: profileData.name,
 				email: profileData.email,
 				phoneNumber: profileData.phoneNumber,
-				birthday: profileData.birthday,
 				instagramId: profileData.instagramId,
 				mbti: profileData.mbti,
 			};

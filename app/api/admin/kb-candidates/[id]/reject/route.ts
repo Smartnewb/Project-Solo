@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminAccessToken, getSessionMeta } from '@/shared/auth';
+import { isSameOrigin } from '@/shared/lib/csrf';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+	if (!isSameOrigin(request)) {
+		return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+	}
+
 	const token = await getAdminAccessToken();
 	const sessionMeta = await getSessionMeta();
 

@@ -9,7 +9,6 @@ import {
   Box,
   CircularProgress,
   Alert,
-  Typography,
   Grid
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
@@ -35,7 +34,6 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
     name: '',
     email: '',
     phoneNumber: '',
-    birthday: '',
     instagramId: '',
     mbti: ''
   });
@@ -54,7 +52,6 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
         name: userDetail.name || '',
         email: userDetail.email || '',
         phoneNumber: userDetail.phoneNumber || '',
-        birthday: (userDetail.birthday || '').slice(0, 10),
         instagramId: userDetail.instagramId || '',
         mbti: userDetail.mbti || ''
       });
@@ -85,7 +82,6 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
         name: formData.name,
         email: formData.email,
         phoneNumber: formData.phoneNumber,
-        birthday: formData.birthday || '',
         instagramId: formData.instagramId || '',
         mbti: formData.mbti || ''
       };
@@ -182,21 +178,6 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
                   onChange={handleChange}
                   disabled={loading}
                   placeholder="010-1234-5678"
-                />
-              </Grid>
-
-              {/* 생년월일 */}
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="생년월일"
-                  name="birthday"
-                  type="date"
-                  value={formData.birthday}
-                  onChange={handleChange}
-                  disabled={loading}
-                  slotProps={{ inputLabel: { shrink: true } }}
-                  helperText="만 18~27세만 가능 · 본인인증 기반이라 실제 생년월일만 입력"
                 />
               </Grid>
 
