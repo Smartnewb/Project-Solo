@@ -1,30 +1,39 @@
-import { adminGet, adminPatch } from '@/shared/lib/http/admin-fetch';
+import { adminGet, adminPost } from '@/shared/lib/http/admin-fetch';
 
 export type EtaSubmissionStatus = 'pending' | 'approved' | 'rejected';
 export type EtaSubmissionStatusFilter = EtaSubmissionStatus | 'all';
 
 export interface EtaSubmission {
 	id: string;
+	userId: string;
+	name: string | null;
+	schoolName: string;
+	screenshotUrl: string;
+	postUrl: string | null;
 	status: EtaSubmissionStatus;
-	userId?: string;
-	createdAt?: string;
-	updatedAt?: string;
-	[key: string]: unknown;
+	rejectionReason: string | null;
+	submittedAt: string;
+	reviewedAt: string | null;
 }
 
 export interface EtaSubmissionList {
-	data: EtaSubmission[];
-	meta?: {
-		total?: number;
-		page?: number;
-		limit?: number;
-		totalPages?: number;
-	};
+	items: EtaSubmission[];
+	total: number;
+	page: number;
+	limit: number;
 }
 
+const BASE = '/admin/missions/everytime-promo';
+
 export const etaMission = {
-	list: (params?: { status?: EtaSubmissionStatusFilter; page?: number; limit?: number }) =>
-		adminGet<EtaSubmissionList>('/admin/v2/eta-mission/submissions', params),
-	updateStatus: (id: string, status: EtaSubmissionStatus) =>
-		adminPatch<EtaSubmission>(`/admin/v2/eta-mission/submissions/${id}`, { status }),
+	getSubmissions: (
+		status: EtaSubmissionStatusFilter = 'pending',
+		page = 1,
+		limit = 20,
+	): Promise<EtaSubmissionList> =>
+		adminGet<EtaSubmissionList>(`${BASE}/submissions`, { status, page, limit }),
+	approve: (id: string): Promise<{ success: boolean; gemsAwarded: number }> =>
+		adminPost<{ success: boolean; gemsAwarded: number }>(`${BASE}/${id}/approve`),
+	reject: (id: string, reason: string): Promise<{ success: boolean }> =>
+		adminPost<{ success: boolean }>(`${BASE}/${id}/reject`, { reason }),
 };
