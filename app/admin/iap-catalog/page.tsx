@@ -1,5 +1,5 @@
-import IapCatalogClient from './iap-catalog-client';
+import CommerceCatalogClient from './commerce-catalog-client';
 
 export default function IapCatalogPage() {
-  return <IapCatalogClient />;
+  return <CommerceCatalogClient />;
 }

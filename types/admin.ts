@@ -477,6 +477,105 @@ export interface AdminAppleIapProduct {
   syncedAt: string;
 }
 
+// ==================== Commerce Catalog ====================
+export type CommerceProductType =
+  | 'CONSUMABLE'
+  | 'BUNDLE'
+  | 'DURATION_ACCESS'
+  | 'FEATURE_UNLOCK';
+export type CommerceVersionStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+export type CommerceProvider = 'APPLE_IAP' | 'GOOGLE_PLAY' | 'PORTONE';
+export type CommerceChannel = 'IOS' | 'ANDROID' | 'WEB';
+
+export interface CommerceEntitlement {
+  type: 'GEM' | 'TICKET' | 'DURATION_ACCESS' | 'FEATURE_UNLOCK';
+  key: string;
+  quantity?: number | null;
+  durationSeconds?: number | null;
+  metadata?: Record<string, unknown>;
+}
+
+export interface CommerceProviderMapping {
+  provider: CommerceProvider;
+  channel: CommerceChannel;
+  externalProductId: string;
+  purchaseOptionId?: string | null;
+  country: 'KR' | 'JP';
+  active: boolean;
+  storeProductId: string;
+  storeState: string;
+  lastSyncedAt?: string | null;
+  prices?: Array<{
+    storefront: string;
+    amount: number;
+    currency: string;
+    displayPrice?: string | null;
+  }>;
+}
+
+export interface CommerceCatalogProduct {
+  id: string;
+  product_key: string;
+  product_type: CommerceProductType;
+  is_active: boolean;
+  product_version_id: string;
+  version: number;
+  display_name: string;
+  description: string | null;
+  status: CommerceVersionStatus;
+  sort_order: number;
+  ui_metadata: Record<string, unknown>;
+  entitlements: CommerceEntitlement[];
+  provider_mappings?: CommerceProviderMapping[];
+}
+
+export interface CommerceCatalogProductsResponse {
+  KR: CommerceCatalogProduct[];
+  JP: CommerceCatalogProduct[];
+}
+
+export interface CreateCommerceProductRequest {
+  productKey: string;
+  productType: CommerceProductType;
+  localizations: Array<{
+    country: 'KR' | 'JP';
+    displayName: string;
+    description?: string;
+  }>;
+  entitlements: Array<{
+    type: CommerceEntitlement['type'];
+    key: string;
+    quantity?: number;
+    durationSeconds?: number;
+    metadata?: Record<string, unknown>;
+  }>;
+  sortOrder: number;
+  uiMetadata?: Record<string, unknown>;
+}
+
+export interface CommerceCatalogOperationResult {
+  operationId: string;
+  productId?: string;
+  purchaseOptionId?: string;
+  ascIapId?: string;
+  state?: string;
+  created?: boolean;
+}
+
+export interface GooglePlayOneTimeProduct {
+  productId: string;
+  listings: Array<{ languageCode: string; title: string; description: string }>;
+  purchaseOptions: Array<{
+    purchaseOptionId: string;
+    state: string;
+    regionalPricingAndAvailabilityConfigs: Array<{
+      regionCode: string;
+      price?: { currencyCode: string; units?: string; nanos?: number };
+      availability: string;
+    }>;
+  }>;
+}
+
 export interface RestoreFemaleResponse {
   id: string;
   email: string;
