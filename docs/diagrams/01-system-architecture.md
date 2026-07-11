@@ -1,5 +1,9 @@
 # Project-Solo - System Architecture
 
+> **ARCHIVED (2026-07):** Historical diagram moved from `memory/AI/diagrams/`.
+> Describes the pre-cleanup architecture; Supabase and `database.types.ts` no
+> longer exist in this repo. For the current architecture see `README.md`.
+
 ## Overview
 Next.js 14 Admin Dashboard for university student matching platform management.
 
