@@ -10,10 +10,13 @@ import {
 	type AdminSessionMeta,
 } from '@/shared/auth';
 import { adminLog } from '@/shared/lib/admin-logger';
+import { isSameOrigin } from '@/shared/lib/csrf';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api';
+const BACKEND_BASE_PATH = new URL(BACKEND_URL).pathname.replace(/\/$/, '');
 
 const PROACTIVE_REFRESH_THRESHOLD_MS = 5 * 60 * 1000;
+const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 const ALLOWED_PATH_PREFIXES = [
 	'admin/',
@@ -40,9 +43,33 @@ const ALLOWED_PATH_PREFIXES = [
 ];
 
 function isPathAllowed(targetPath: string): boolean {
+	// 1-4: Fast-reject literal ".." segments that arrive already decoded by the
+	// router. This is NOT a complete traversal defense on its own:
+	// percent-encoded dots ("%2e%2e") survive as a literal string here and only
+	// collapse after URL construction, so the authoritative check runs after
+	// `new URL()` normalizes the backend URL (see isBackendPathWithinBoundary).
+	if (/(^|\/)\.\.(\/|$)/.test(targetPath)) {
+		return false;
+	}
 	return ALLOWED_PATH_PREFIXES.some(
 		(prefix) => targetPath === prefix.replace(/\/$/, '') || targetPath.startsWith(prefix),
 	);
+}
+
+function isBackendPathWithinBoundary(url: URL): boolean {
+	const normalized = url.pathname;
+	const base = BACKEND_BASE_PATH;
+	// The normalized path must stay under the backend base path (e.g. "/api").
+	if (base && normalized !== base && !normalized.startsWith(`${base}/`)) {
+		return false;
+	}
+	const remaining =
+		base && normalized.startsWith(`${base}/`)
+			? normalized.slice(base.length + 1)
+			: normalized.replace(/^\//, '');
+	// After normalization ".." is gone; re-applying the allowlist confirms the
+	// resolved path still maps to an allowed backend route.
+	return remaining.length > 0 && isPathAllowed(remaining);
 }
 
 function decodeJwtPayload(token: string): { exp?: number } | null {
@@ -172,6 +199,22 @@ async function proxyRequest(request: NextRequest, context: AdminProxyRouteContex
 		return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 	}
 
+	// 1-4: CSRF guard. State-changing methods must originate from the same
+	// origin. Browsers always send an Origin/Referer header on these methods,
+	// so a missing/mismatched header means a forged request → fail-closed.
+	if (MUTATION_METHODS.has(request.method) && !isSameOrigin(request)) {
+		return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+	}
+
+	// 1-3: Defense-in-depth admin guard. sometimes-api enforces @Roles(ADMIN)
+	// on admin/* routes, but several allowlist prefixes (matching/, stats/,
+	// articles/, support-chat/, …) map to user-facing controllers that accept
+	// non-admin tokens. The proxy cannot rely on the backend alone, so require
+	// the session meta to carry the admin role before forwarding any request.
+	if (!meta || !Array.isArray(meta.roles) || !meta.roles.includes('admin')) {
+		return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+	}
+
 	if (!token && targetPath !== 'auth/refresh') {
 		token = await refreshAccessToken(meta);
 	}
@@ -189,6 +232,14 @@ async function proxyRequest(request: NextRequest, context: AdminProxyRouteContex
 	}
 
 	const url = new URL(`${BACKEND_URL}/${targetPath}`);
+
+	// 1-4: Defense-in-depth. `new URL()` decodes %2e%2e -> ".." and collapses
+	// it, so a path that cleared the allowlist pre-check can still resolve
+	// outside the backend base path (e.g. admin/%2e%2e/%2e%2e/secret -> /secret).
+	// Verify the normalized pathname stays in-bounds before forwarding.
+	if (!isBackendPathWithinBoundary(url)) {
+		return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+	}
 
 	request.nextUrl.searchParams.forEach((value, key) => {
 		url.searchParams.set(key, value);

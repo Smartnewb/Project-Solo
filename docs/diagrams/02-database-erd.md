@@ -1,5 +1,9 @@
 # Project-Solo - Database ERD
 
+> **ARCHIVED (2026-07):** Historical diagram moved from `memory/AI/diagrams/`.
+> The Supabase database and `database.types.ts` described here were removed in
+> the 2026-07 cleanup; the app talks to sometimes-api via the BFF proxy only.
+
 ## Overview
 Supabase PostgreSQL database with auto-generated TypeScript types.
 

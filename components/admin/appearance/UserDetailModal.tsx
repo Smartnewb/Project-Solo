@@ -2136,7 +2136,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
           <Alert severity="warning" sx={{ mb: 2 }}>
             <Typography variant="body2">
-              <strong>경고:</strong> 승인을 취소하면 사용자 상태가 '미승인'으로 변경되며,
+              <strong>경고:</strong> 승인을 취소하면 사용자 상태가 &apos;미승인&apos;으로 변경되며,
               다시 가입 승인을 받아야 합니다. 또한 자동으로 SMS가 발송됩니다.
             </Typography>
           </Alert>

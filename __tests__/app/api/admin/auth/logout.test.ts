@@ -27,7 +27,7 @@ function createRequest(body?: object, headers: Record<string, string> = {}): Nex
   return new NextRequest('http://localhost:3000/api/admin/auth/logout', {
     method: 'POST',
     body: body !== undefined ? JSON.stringify(body) : undefined,
-    headers: { 'Content-Type': 'application/json', ...headers },
+    headers: { 'Content-Type': 'application/json', Origin: 'http://localhost:3000', ...headers },
   });
 }
 

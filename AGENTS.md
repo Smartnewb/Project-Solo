@@ -9,8 +9,8 @@ University student matching platform Admin Dashboard (Next.js 14 + AWS Backend)
 
 | Category | Technology |
 |----------|------------|
-| Framework | Next.js 14.1.3 (App Router) |
-| Language | TypeScript 4.9.5 |
+| Framework | Next.js 14.2.35 (App Router) |
+| Language | TypeScript 5.3.3 |
 | UI | Material-UI 6.4.8 + Tailwind CSS 3.4.17 + Shadcn/ui |
 | State | React Context + cookie-based admin session |
 | Backend | AWS (sometimes-api) via BFF proxy |
@@ -45,14 +45,13 @@ Browser → Next.js (Vercel)
 
 ```
 app/
-├── admin/           # 30+ admin pages (v2 only, no legacy)
+├── admin/           # ~97 admin pages (v2 only, no legacy)
 │   ├── dashboard/   # Admin home
 │   ├── users/       # User management
 │   ├── matching/    # Matching management
 │   └── ...
 ├── api/admin/       # BFF route handlers (auth, session, proxy)
-├── home/            # User pages
-├── services/admin/  # API service layer (9 domain modules)
+├── services/admin/  # API service layer (40+ domain modules)
 ├── types/           # TypeScript types
 ├── utils/           # Utilities
 └── components/      # Shared components
@@ -64,7 +63,7 @@ shared/
 ├── contexts/        # Admin session context
 └── providers/       # React Query provider
 
-contexts/            # React Context providers (Auth, Country)
+contexts/            # React Context providers (Country only)
 e2e/                 # Playwright E2E tests
 __tests__/           # Jest unit tests
 ```
@@ -75,11 +74,11 @@ __tests__/           # Jest unit tests
 
 | File | Purpose |
 |------|---------|
-| `app/services/admin/index.ts` | Admin API barrel export (9 domain modules) |
+| `app/services/admin/index.ts` | Admin API barrel export (40+ domain modules) |
 | `shared/auth/cookies.ts` | httpOnly cookie CRUD |
 | `shared/auth/session-config.ts` | iron-session config |
 | `shared/ui/admin/admin-shell.tsx` | Admin layout (session, sidebar, error boundary) |
-| `contexts/AuthContext.tsx` | User auth state + admin session bridging |
+| `shared/contexts/admin-session-context.tsx` | Admin session state (cookie-backed) |
 | `middleware.ts` | Route protection (cookie check) |
 | `shared/lib/admin-logger.ts` | Structured JSON logging for BFF |
 
@@ -149,6 +148,7 @@ pnpm test:e2e         # Run Playwright E2E tests
 
 # Quality
 pnpm quality:admin-v2 # typecheck → lint → test pipeline
+                      #   targets: app/admin, components/admin, shared, app/api/admin
 
 # Lint
 pnpm lint             # ESLint check
@@ -160,7 +160,7 @@ pnpm lint             # ESLint check
 
 ```env
 NEXT_PUBLIC_API_URL=           # Backend API URL (sometimes-api)
-ADMIN_SESSION_SECRET=          # iron-session encryption secret
+ADMIN_SESSION_SECRET=          # iron-session encryption secret — REQUIRED in all environments
 SLACK_WEBHOOK_URL=             # Slack error notifications
 EDGE_CONFIG=                   # Vercel Edge Config (feature flags)
 ```
@@ -180,7 +180,6 @@ EDGE_CONFIG=                   # Vercel Edge Config (feature flags)
 ### State Management
 
 - Admin Session → `AdminSessionContext` (cookie-based)
-- Auth → `AuthContext` (login flow)
 - Country → `CountryContext`
 - Server State → React Query (via `AdminQueryProvider`)
 - Local → `useState`

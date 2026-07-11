@@ -1,14 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import {
   Grid,
   Card,
   CardContent,
   Typography,
   Box,
-  Alert,
-  CircularProgress,
   FormControlLabel,
   Switch,
 } from "@mui/material";
@@ -21,7 +18,6 @@ import {
   PersonRemove as WithdrawalIcon,
   Insights as InsightsIcon,
 } from "@mui/icons-material";
-import { useRouter } from "next/navigation";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { ko } from "date-fns/locale";
@@ -88,10 +84,6 @@ function SectionHeader({
 }
 
 function MemberStatsDashboardContent() {
-  const router = useRouter();
-  const [authChecking, setAuthChecking] = useState(true);
-  const [authError, setAuthError] = useState<string | null>(null);
-
   const {
     region,
     useCluster,
@@ -103,58 +95,6 @@ function MemberStatsDashboardContent() {
 
   const { includeDeleted, setIncludeDeleted, getIncludeDeletedParam } =
     useIncludeDeletedFilter();
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const checkAuth = async () => {
-      try {
-        setAuthChecking(true);
-        const token = localStorage.getItem("accessToken");
-        const isAdmin = localStorage.getItem("isAdmin");
-
-        if (!token || isAdmin !== "true") {
-          setAuthError("관리자 권한이 없습니다. 로그인 페이지로 이동합니다.");
-          setTimeout(() => {
-            router.push("/");
-          }, 2000);
-          return;
-        }
-
-        setAuthError(null);
-      } catch (error) {
-        setAuthError("인증 확인 중 오류가 발생했습니다.");
-      } finally {
-        setAuthChecking(false);
-      }
-    };
-
-    checkAuth();
-  }, [router]);
-
-  if (authChecking) {
-    return (
-      <Box className="flex items-center justify-center h-screen bg-gray-50">
-        <CircularProgress sx={{ color: "#8b5cf6" }} />
-        <Typography variant="h6" sx={{ ml: 2, color: "#374151" }}>
-          관리자 권한 확인 중...
-        </Typography>
-      </Box>
-    );
-  }
-
-  if (authError) {
-    return (
-      <Box className="flex flex-col items-center justify-center h-screen bg-gray-50">
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {authError}
-        </Alert>
-        <Typography variant="body1" sx={{ color: "#6b7280" }}>
-          잠시 후 로그인 페이지로 이동합니다...
-        </Typography>
-      </Box>
-    );
-  }
 
   const today = new Date();
   const formattedDate = `${today.getFullYear()}년 ${today.getMonth() + 1}월 ${today.getDate()}일`;

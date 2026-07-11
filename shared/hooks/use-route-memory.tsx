@@ -21,7 +21,11 @@ export default function useRouteMemory() {
   };
 
   const back = () => {
-    beforeUrl ? router.push(beforeUrl) : router.back();
+    if (beforeUrl) {
+      router.push(beforeUrl);
+    } else {
+      router.back();
+    }
     setBeforeUrl(null);
   };
 

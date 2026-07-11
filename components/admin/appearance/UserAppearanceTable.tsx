@@ -862,5 +862,6 @@ const UserAppearanceTable = forwardRef<UserAppearanceTableRef, UserAppearanceTab
     );
   },
 );
+UserAppearanceTable.displayName = 'UserAppearanceTable';
 
 export default UserAppearanceTable;

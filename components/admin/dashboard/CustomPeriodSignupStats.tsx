@@ -53,9 +53,6 @@ export default function CustomPeriodSignupStats() {
       return;
     }
 
-    // 인증 상태 확인
-    if (!checkAuthStatus()) return;
-
     setLoading(true);
     setError(null);
 
@@ -174,24 +171,8 @@ export default function CustomPeriodSignupStats() {
     }
   };
 
-  // 인증 상태 확인
-  const checkAuthStatus = () => {
-    const token = localStorage.getItem('accessToken');
-    const isAdmin = localStorage.getItem('isAdmin');
-
-    if (!token || isAdmin !== 'true') {
-      setError('관리자 권한이 필요합니다. 다시 로그인해주세요.');
-      return false;
-    }
-
-    return true;
-  };
-
   // 컴포넌트 마운트 시 초기 데이터 로드
   useEffect(() => {
-    // 인증 상태 확인
-    if (!checkAuthStatus()) return;
-
     // 시작일과 종료일이 유효한 경우에만 데이터 로드
     if (startDate && endDate && isDateRangeValid()) {
       fetchData();

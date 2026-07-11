@@ -1,0 +1,42 @@
+name: CI
+
+# Verification-only gate. Deployment stays on Vercel.
+# Runs on pull requests and direct pushes to main.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    env:
+      # Dummy secret for build-time evaluation only (Phase 1 made
+      # ADMIN_SESSION_SECRET required in all envs). Not a real credential.
+      ADMIN_SESSION_SECRET: ci-build-dummy-0123456789abcdef0123456789abcdef
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Test admin
+        run: pnpm test:admin

@@ -20,10 +20,10 @@ export interface AdminSessionData {
 
 function getSessionPassword(): string {
   const secret = process.env.ADMIN_SESSION_SECRET;
-  if (process.env.NODE_ENV === 'production' && !secret) {
-    throw new Error('ADMIN_SESSION_SECRET must be set in production');
+  if (!secret) {
+    throw new Error('ADMIN_SESSION_SECRET must be set');
   }
-  return secret || 'DEVELOPMENT_SECRET_MUST_BE_32_CHARS_LONG!!';
+  return secret;
 }
 
 export const sessionOptions: SessionOptions = {
