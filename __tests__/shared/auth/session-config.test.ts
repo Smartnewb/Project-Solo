@@ -56,13 +56,6 @@ describe('shared/auth/session-config', () => {
       expect(sessionOptions.cookieOptions?.maxAge).toBe(30 * 24 * 60 * 60);
     });
 
-    it('returns development fallback secret when ADMIN_SESSION_SECRET is not set in non-production', async () => {
-      delete process.env.ADMIN_SESSION_SECRET;
-      setNodeEnv('test');
-      const { sessionOptions } = await import('@/shared/auth/session-config');
-      expect(sessionOptions.password).toBe('DEVELOPMENT_SECRET_MUST_BE_32_CHARS_LONG!!');
-    });
-
     it('returns ADMIN_SESSION_SECRET when it is set', async () => {
       process.env.ADMIN_SESSION_SECRET = 'my-custom-secret-that-is-32-chars!';
       const { sessionOptions } = await import('@/shared/auth/session-config');
@@ -73,7 +66,24 @@ describe('shared/auth/session-config', () => {
       delete process.env.ADMIN_SESSION_SECRET;
       setNodeEnv('production');
       const { sessionOptions } = await import('@/shared/auth/session-config');
-      expect(() => sessionOptions.password).toThrow('ADMIN_SESSION_SECRET must be set in production');
+      expect(() => sessionOptions.password).toThrow('ADMIN_SESSION_SECRET must be set');
+    });
+
+    it('throws when ADMIN_SESSION_SECRET is missing in non-production (no fallback)', async () => {
+      delete process.env.ADMIN_SESSION_SECRET;
+      setNodeEnv('test');
+      const { sessionOptions } = await import('@/shared/auth/session-config');
+      expect(() => sessionOptions.password).toThrow('ADMIN_SESSION_SECRET must be set');
+    });
+
+    it('never falls back to the committed DEVELOPMENT_SECRET string', async () => {
+      delete process.env.ADMIN_SESSION_SECRET;
+      setNodeEnv('development');
+      const { sessionOptions } = await import('@/shared/auth/session-config');
+      expect(() => sessionOptions.password).toThrow();
+      expect(() => sessionOptions.password).not.toThrow(
+        'DEVELOPMENT_SECRET_MUST_BE_32_CHARS_LONG!!',
+      );
     });
 
     it('sets secure to false in non-production', async () => {

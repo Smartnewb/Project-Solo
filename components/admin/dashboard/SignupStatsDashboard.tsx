@@ -335,8 +335,6 @@ export default function SignupStatsDashboard({
 			return;
 		}
 
-		if (!checkAuthStatus()) return;
-
 		setCustomLoading(true);
 		setCustomError(null);
 
@@ -443,23 +441,12 @@ export default function SignupStatsDashboard({
 		}
 	};
 
-	const checkAuthStatus = () => {
-		const token = localStorage.getItem('accessToken');
-		const isAdmin = localStorage.getItem('isAdmin');
-		if (!token || isAdmin !== 'true') {
-			setCustomError('관리자 권한이 필요합니다. 다시 로그인해주세요.');
-			return false;
-		}
-		return true;
-	};
-
 	const handleAllPeriod = () => {
 		setStartDate(new Date('2024-01-01'));
 		setEndDate(new Date());
 	};
 
 	useEffect(() => {
-		if (!checkAuthStatus()) return;
 		if (startDate && endDate && isDateRangeValid()) {
 			fetchCustomPeriodData();
 		}
