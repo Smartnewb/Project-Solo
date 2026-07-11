@@ -43,7 +43,7 @@ export function ReferencePoolGrid({ items, isLoading, onDeactivate }: ReferenceP
 			<div className="flex flex-col items-center justify-center rounded-lg border border-dashed bg-white py-16 text-slate-400">
 				<ImageOff className="mb-2 h-10 w-10" />
 				<p className="text-sm">레퍼런스 풀이 비어있습니다</p>
-				<p className="text-xs">"새로 생성" 또는 "기존에서 임포트"로 시작하세요</p>
+				<p className="text-xs">&quot;새로 생성&quot; 또는 &quot;기존에서 임포트&quot;로 시작하세요</p>
 			</div>
 		);
 	}

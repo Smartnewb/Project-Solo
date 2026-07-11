@@ -703,7 +703,7 @@ function GemsManagementPageContent() {
                 • 지급 구슬: {pendingData?.gemAmount ?? 0}개
               </Typography>
               <Typography variant="body2" sx={{ mt: 1 }}>
-                • 푸시 메시지: "{pendingData?.message ?? ''}"
+                • 푸시 메시지: &quot;{pendingData?.message ?? ''}&quot;
               </Typography>
             </Box>
           </DialogContentText>

@@ -482,9 +482,11 @@ function KeywordsContent() {
 																	size="small"
 																	onClick={(e) => {
 																		e.stopPropagation();
-																		item.iconUrl
-																			? openPromptDialog(item)
-																			: handleGenerateIcon(item);
+																		if (item.iconUrl) {
+																			openPromptDialog(item);
+																		} else {
+																			handleGenerateIcon(item);
+																		}
 																	}}
 																	disabled={generatingIcon === item.normalizedKeyword}
 																	sx={{ p: 0.25 }}

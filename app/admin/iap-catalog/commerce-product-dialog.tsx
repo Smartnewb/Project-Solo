@@ -22,7 +22,7 @@ import type {
   CreateCommerceProductRequest,
 } from '@/types/admin';
 
-export interface CommerceProductFormValue extends CreateCommerceProductRequest {}
+export type CommerceProductFormValue = CreateCommerceProductRequest;
 
 interface CommerceProductDialogProps {
   open: boolean;
