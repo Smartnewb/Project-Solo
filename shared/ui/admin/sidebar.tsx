@@ -124,6 +124,8 @@ export const NAV_CATEGORIES: NavCategory[] = [
     items: [
       { href: '/admin/sms', label: 'SMS 관리' },
       { href: '/admin/push-notifications', label: '푸시 알림 관리' },
+      { href: '/admin/push-groups', label: '푸시 타겟 그룹' },
+      { href: '/admin/broadcast-push', label: '예약 푸시 발송' },
       { href: '/admin/fcm-tokens', label: 'FCM 토큰 현황' },
       { href: '/admin/content', label: '운영 콘텐츠 관리' },
       { href: '/admin/seo', label: 'SEO 상태' },

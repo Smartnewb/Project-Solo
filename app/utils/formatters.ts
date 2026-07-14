@@ -229,3 +229,14 @@ export function formatDateWithoutTimezoneConversion(dateString: string): string 
 
   return dateString;
 }
+
+/**
+ * 전화번호 가운데 4자리를 마스킹한다. 항상 '010-****-5678' 형태로 정규화.
+ * 값 없음 → '-', 자리수 부족 등 비표준 형식은 원본 그대로 반환.
+ */
+export function maskPhoneNumber(phone: string | null | undefined): string {
+  if (!phone) return '-';
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length < 10) return phone;
+  return `${digits.slice(0, 3)}-****-${digits.slice(-4)}`;
+}

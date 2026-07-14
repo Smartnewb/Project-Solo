@@ -4,6 +4,34 @@ export { userAppearance, deletedFemales, userEngagement } from './users';
 export { matching, forceMatching } from './matching';
 export { pushNotifications, pushNotificationCatalog, aiChat, momentQuestions } from './messaging';
 export { pushNotificationRegistry } from './push-notification-registry';
+export {
+  pushGroups,
+  pushBroadcast,
+  countriesForScope,
+  GROUP_TYPE_LABEL,
+  GROUP_TYPE_COLOR,
+  COUNTRY_SCOPE_LABEL,
+  BROADCAST_STATUS_LABEL,
+  BROADCAST_STATUS_COLOR,
+} from './push-broadcast';
+export type {
+  PushTargetGroup,
+  CreateGroupRequest,
+  GroupPreview,
+  GroupMembers,
+  GroupMemberProfile,
+  FilterUsersRequest,
+  FilteredUser,
+  FilterUsersResponse,
+  CreateBroadcastScheduleRequest,
+  BroadcastSchedule,
+  ScheduleCreatedResult,
+  CountryScope,
+  GroupType,
+  GroupFilterCriteria,
+  Gender,
+  StaticUserIds,
+} from './push-broadcast';
 export type {
 	PushNotificationCatalogResponse,
 	PushNotificationItem,
@@ -315,8 +343,11 @@ import { loveCourt } from './love-court';
 import { pixelCampus } from './pixel-campus';
 import { activities, campaigns, reviewQueue, metrics, personas, communitySettings, targetPosts } from './community-automation';
 import { XMarketingAdminService } from './x-marketing';
+import { pushGroups, pushBroadcast } from './push-broadcast';
 
 const AdminService = {
+	pushGroups,
+	pushBroadcast,
 	stats,
 	userAppearance,
 	universities,
