@@ -88,10 +88,11 @@ export interface FilterUsersResponse {
 }
 
 export interface CreateBroadcastScheduleRequest {
-  krTitle: string;
-  krBody: string;
-  jpTitle: string;
-  jpBody: string;
+  // 국가별 문구는 대상 스코프에 필요한 국가만 전송 (kr 그룹이면 JP 문구 생략)
+  krTitle?: string;
+  krBody?: string;
+  jpTitle?: string;
+  jpBody?: string;
   deepLink?: string;
   scheduledAt: string; // ISO8601, 미래
   targetGroupId?: string;

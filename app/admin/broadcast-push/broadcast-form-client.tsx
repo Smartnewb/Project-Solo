@@ -24,7 +24,7 @@ import {
 } from '@mui/material';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import { useRouter, useSearchParams } from 'next/navigation';
-import AdminService from '@/app/services/admin';
+import AdminService, { countriesForScope } from '@/app/services/admin';
 import type {
   PushTargetGroup,
   CreateBroadcastScheduleRequest,
@@ -157,9 +157,19 @@ export default function BroadcastFormClient() {
     }
   };
 
-  const requiredTextFilled = Boolean(
-    krTitle.trim() && krBody.trim() && jpTitle.trim() && jpBody.trim(),
-  );
+  // 발송 대상 국가: 전체=KR+JP, 그룹=그룹 countryScope. 필요한 국가 문구만 필수.
+  const targetCountries: Array<'kr' | 'jp'> =
+    targetType === 'all'
+      ? ['kr', 'jp']
+      : selectedGroup
+        ? countriesForScope(selectedGroup.countryScope)
+        : [];
+  const needKr = targetCountries.includes('kr');
+  const needJp = targetCountries.includes('jp');
+
+  const krOk = !needKr || Boolean(krTitle.trim() && krBody.trim());
+  const jpOk = !needJp || Boolean(jpTitle.trim() && jpBody.trim());
+  const requiredTextFilled = (needKr || needJp) && krOk && jpOk;
   const targetReady = targetType === 'all' || Boolean(selectedGroup);
   const canSubmit = requiredTextFilled && Boolean(scheduledAt) && testConfirmed && targetReady;
 
@@ -180,10 +190,8 @@ export default function BroadcastFormClient() {
     setSubmitting(true);
     try {
       const body: CreateBroadcastScheduleRequest = {
-        krTitle: krTitle.trim(),
-        krBody: krBody.trim(),
-        jpTitle: jpTitle.trim(),
-        jpBody: jpBody.trim(),
+        ...(needKr ? { krTitle: krTitle.trim(), krBody: krBody.trim() } : {}),
+        ...(needJp ? { jpTitle: jpTitle.trim(), jpBody: jpBody.trim() } : {}),
         deepLink: deepLink.trim() || undefined,
         scheduledAt: new Date(scheduledAt).toISOString(),
         ...(targetType === 'group' && selectedGroup ? { targetGroupId: selectedGroup.id } : {}),
@@ -256,55 +264,67 @@ export default function BroadcastFormClient() {
         <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
           문구
         </Typography>
-        <Stack spacing={2}>
-          <TextField
-            label="KR 제목"
-            required
-            value={krTitle}
-            onChange={(e) => setKrTitle(e.target.value)}
-            inputProps={{ maxLength: MAX_TITLE }}
-            helperText={`${krTitle.length}/${MAX_TITLE}`}
-            fullWidth
-          />
-          <TextField
-            label="KR 본문"
-            required
-            multiline
-            minRows={3}
-            value={krBody}
-            onChange={(e) => setKrBody(e.target.value)}
-            inputProps={{ maxLength: MAX_BODY }}
-            helperText={`${krBody.length}/${MAX_BODY}`}
-            fullWidth
-          />
-          <TextField
-            label="JP 제목"
-            required
-            value={jpTitle}
-            onChange={(e) => setJpTitle(e.target.value)}
-            inputProps={{ maxLength: MAX_TITLE }}
-            helperText={`${jpTitle.length}/${MAX_TITLE}`}
-            fullWidth
-          />
-          <TextField
-            label="JP 본문"
-            required
-            multiline
-            minRows={3}
-            value={jpBody}
-            onChange={(e) => setJpBody(e.target.value)}
-            inputProps={{ maxLength: MAX_BODY }}
-            helperText={`${jpBody.length}/${MAX_BODY}`}
-            fullWidth
-          />
-          <TextField
-            label="딥링크"
-            placeholder="sometimes://home"
-            value={deepLink}
-            onChange={(e) => setDeepLink(e.target.value)}
-            fullWidth
-          />
-        </Stack>
+        {targetType === 'group' && !selectedGroup ? (
+          <Alert severity="info">먼저 발송 대상 그룹을 선택하면 필요한 국가 문구만 표시됩니다.</Alert>
+        ) : (
+          <Stack spacing={2}>
+            {needKr && (
+              <>
+                <TextField
+                  label="KR 제목"
+                  required
+                  value={krTitle}
+                  onChange={(e) => setKrTitle(e.target.value)}
+                  inputProps={{ maxLength: MAX_TITLE }}
+                  helperText={`${krTitle.length}/${MAX_TITLE}`}
+                  fullWidth
+                />
+                <TextField
+                  label="KR 본문"
+                  required
+                  multiline
+                  minRows={3}
+                  value={krBody}
+                  onChange={(e) => setKrBody(e.target.value)}
+                  inputProps={{ maxLength: MAX_BODY }}
+                  helperText={`${krBody.length}/${MAX_BODY}`}
+                  fullWidth
+                />
+              </>
+            )}
+            {needJp && (
+              <>
+                <TextField
+                  label="JP 제목"
+                  required
+                  value={jpTitle}
+                  onChange={(e) => setJpTitle(e.target.value)}
+                  inputProps={{ maxLength: MAX_TITLE }}
+                  helperText={`${jpTitle.length}/${MAX_TITLE}`}
+                  fullWidth
+                />
+                <TextField
+                  label="JP 본문"
+                  required
+                  multiline
+                  minRows={3}
+                  value={jpBody}
+                  onChange={(e) => setJpBody(e.target.value)}
+                  inputProps={{ maxLength: MAX_BODY }}
+                  helperText={`${jpBody.length}/${MAX_BODY}`}
+                  fullWidth
+                />
+              </>
+            )}
+            <TextField
+              label="딥링크"
+              placeholder="sometimes://home"
+              value={deepLink}
+              onChange={(e) => setDeepLink(e.target.value)}
+              fullWidth
+            />
+          </Stack>
+        )}
       </Paper>
 
       <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
@@ -335,20 +355,24 @@ export default function BroadcastFormClient() {
           sx={{ mb: 2, width: 320 }}
         />
         <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
-          <Button
-            variant="outlined"
-            onClick={() => handleTestSend('kr')}
-            disabled={testSendingCountry === 'kr'}
-          >
-            {testSendingCountry === 'kr' ? <CircularProgress size={18} /> : 'KR 문구 테스트 발송'}
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() => handleTestSend('jp')}
-            disabled={testSendingCountry === 'jp'}
-          >
-            {testSendingCountry === 'jp' ? <CircularProgress size={18} /> : 'JP 문구 테스트 발송'}
-          </Button>
+          {needKr && (
+            <Button
+              variant="outlined"
+              onClick={() => handleTestSend('kr')}
+              disabled={testSendingCountry === 'kr'}
+            >
+              {testSendingCountry === 'kr' ? <CircularProgress size={18} /> : 'KR 문구 테스트 발송'}
+            </Button>
+          )}
+          {needJp && (
+            <Button
+              variant="outlined"
+              onClick={() => handleTestSend('jp')}
+              disabled={testSendingCountry === 'jp'}
+            >
+              {testSendingCountry === 'jp' ? <CircularProgress size={18} /> : 'JP 문구 테스트 발송'}
+            </Button>
+          )}
         </Stack>
         <FormControlLabel
           control={
@@ -387,8 +411,8 @@ export default function BroadcastFormClient() {
           <Stack spacing={1.5}>
             <SummaryRow label="발송 대상" value={targetSummary} />
             <SummaryRow label="예정 시각" value={formatDateTimeKR(scheduledAt)} />
-            <SummaryRow label="KR 제목" value={krTitle} />
-            <SummaryRow label="JP 제목" value={jpTitle} />
+            {needKr && <SummaryRow label="KR 제목" value={krTitle} />}
+            {needJp && <SummaryRow label="JP 제목" value={jpTitle} />}
             <SummaryRow label="딥링크" value={deepLink || '-'} />
           </Stack>
         </DialogContent>
