@@ -32,6 +32,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import AdminService from '@/app/services/admin';
 import type { UtmLink } from '@/app/services/admin';
+import type { UtmDestinationType, UtmRegion } from '@/app/services/admin/utm';
 import { useToast } from '@/shared/ui/admin/toast';
 import QRCode from 'qrcode';
 import {
@@ -43,14 +44,14 @@ import {
   UTM_SOURCE_PLATFORM_OPTIONS,
 } from '../utm-options';
 
-type DestinationType = 'web' | 'appstore_ios' | 'appstore_android';
+type DestinationType = Exclude<UtmDestinationType, 'deeplink'>;
 type SectionTone = 'required' | 'recommended' | 'advanced';
 
 const CHANNEL_PRESETS = [
   { label: '에브리타임', source: 'everytime', medium: 'community' },
   { label: '오프라인 포스터', source: 'poster', medium: 'offline' },
   { label: '인스타그램', source: 'instagram', medium: 'social' },
-  { label: '틱톡', source: 'tiktok', medium: 'social' },
+  { label: '틱톡 오가닉', source: 'tiktok', medium: 'social' },
   { label: 'Meta 광고', source: 'meta', medium: 'cpc' },
   { label: 'Google 광고', source: 'google', medium: 'cpc' },
   { label: '친구 추천', source: 'friend', medium: 'referral' },
@@ -315,6 +316,7 @@ export default function UtmLinkCreator({ onCreated }: UtmLinkCreatorProps) {
   const [bindingPlacement, setBindingPlacement] = useState('');
   const [bindingSiteSourceName, setBindingSiteSourceName] = useState('');
   const [destinationType, setDestinationType] = useState<DestinationType>('web');
+  const [region, setRegion] = useState<UtmRegion>('kr');
   const [memo, setMemo] = useState('');
   const [name, setName] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -415,13 +417,13 @@ export default function UtmLinkCreator({ onCreated }: UtmLinkCreatorProps) {
 
     const query = params.toString();
     if (destinationType === 'appstore_ios') {
-      return `https://apps.apple.com/app/id6444733685${campaign ? `?ct=${encodeURIComponent(campaign)}&pt=126413580&mt=8` : ''}`;
+      return `https://apps.apple.com/${region}/app/id6746120889${campaign ? `?ct=${encodeURIComponent(campaign)}&pt=126413580&mt=8` : ''}`;
     }
     if (destinationType === 'appstore_android') {
-      return `https://play.google.com/store/apps/details?id=com.sometime.app${query ? `&referrer=${encodeURIComponent(query)}` : ''}`;
+      return `https://play.google.com/store/apps/details?id=com.smartnewb.sometimes${query ? `&referrer=${encodeURIComponent(query)}` : ''}`;
     }
     return `https://some-in-univ.com${query ? `?${query}` : ''}`;
-  }, [campaign, content, destinationType, medium, source, term, utmId]);
+  }, [campaign, content, destinationType, medium, region, source, term, utmId]);
 
   const trackingScore = useMemo(() => {
     let score = 0;
@@ -496,6 +498,7 @@ export default function UtmLinkCreator({ onCreated }: UtmLinkCreatorProps) {
         utmCreativeFormat: creativeFormat || undefined,
         utmMarketingTactic: marketingTactic || undefined,
         destinationType,
+        region: destinationType === 'appstore_ios' ? region : undefined,
         memo: memo || undefined,
         platformBindings: [
           {
@@ -545,6 +548,7 @@ export default function UtmLinkCreator({ onCreated }: UtmLinkCreatorProps) {
       setBindingCreativeId('');
       setBindingPlacement('');
       setBindingSiteSourceName('');
+      setRegion('kr');
       setMemo('');
       setName('');
     } catch (err: any) {
@@ -766,11 +770,24 @@ export default function UtmLinkCreator({ onCreated }: UtmLinkCreatorProps) {
               />
             </RadioGroup>
             {destinationType === 'appstore_ios' && (
-              <Alert severity="info" variant="outlined" sx={{ mt: 1 }}>
-                iOS App Store URL에는 utm_campaign만 ct 파라미터로
-                반영됩니다. content/term 등은 short URL 리다이렉트 이벤트로
-                추적됩니다.
-              </Alert>
+              <>
+                <TextField
+                  select
+                  label="App Store 지역"
+                  value={region}
+                  onChange={(e) => setRegion(e.target.value as UtmRegion)}
+                  size="small"
+                  sx={{ mt: 1, minWidth: 180 }}
+                >
+                  <MenuItem value="kr">대한민국 (KR)</MenuItem>
+                  <MenuItem value="jp">일본 (JP)</MenuItem>
+                </TextField>
+                <Alert severity="info" variant="outlined" sx={{ mt: 1 }}>
+                  지역을 지정하지 않는 기존 요청은 대한민국(KR)으로 유지됩니다.
+                  iOS App Store URL에는 utm_campaign만 ct 파라미터로 반영되며,
+                  content/term 등은 short URL 리다이렉트 이벤트로 추적됩니다.
+                </Alert>
+              </>
             )}
             {destinationType === 'appstore_android' && (
               <Alert severity="info" variant="outlined" sx={{ mt: 1 }}>

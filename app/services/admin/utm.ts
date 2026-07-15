@@ -1,5 +1,8 @@
 import { adminGet, adminPost, adminPatch, adminDelete } from '@/shared/lib/http/admin-fetch';
 
+export type UtmDestinationType = 'web' | 'appstore_ios' | 'appstore_android' | 'deeplink';
+export type UtmRegion = 'kr' | 'jp';
+
 export interface UtmLink {
 	id: string;
 	name: string;
@@ -12,7 +15,7 @@ export interface UtmLink {
 	utmSourcePlatform?: string | null;
 	utmCreativeFormat?: string | null;
 	utmMarketingTactic?: string | null;
-	destinationType: string;
+	destinationType: UtmDestinationType;
 	destinationUrl: string;
 	shortCode: string;
 	shortUrl?: string;
@@ -281,7 +284,7 @@ type SurfacesQuery = {
 	includeExtraMonitored?: boolean;
 };
 
-type CreateUtmLinkInput = {
+export type CreateUtmLinkInput = {
 	name: string;
 	utmSource: string;
 	utmMedium: string;
@@ -292,7 +295,8 @@ type CreateUtmLinkInput = {
 	utmSourcePlatform?: string;
 	utmCreativeFormat?: string;
 	utmMarketingTactic?: string;
-	destinationType: string;
+	destinationType: UtmDestinationType;
+	region?: UtmRegion;
 	memo?: string;
 	platformBindings?: UtmPlatformBinding[];
 };

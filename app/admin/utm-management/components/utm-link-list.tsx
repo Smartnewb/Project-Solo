@@ -33,6 +33,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AdminService from '@/app/services/admin';
 import type { UtmLink } from '@/app/services/admin';
+import type { UtmRegion } from '@/app/services/admin/utm';
 import { useToast } from '@/shared/ui/admin/toast';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog';
 import {
@@ -46,6 +47,14 @@ import {
 
 interface UtmLinkListProps {
   refreshKey: number;
+}
+function inferIosRegion(link: UtmLink): UtmRegion {
+  const destination = link.destinationUrl.toLowerCase();
+  if (/apps\.apple\.com\/jp(?:\/|$)/.test(destination)) return 'jp';
+  if (/apps\.apple\.com\/kr(?:\/|$)/.test(destination)) return 'kr';
+  return destination.includes('apps.apple.com') && /(?:^|[_-])jp(?:[_-]|$)/i.test(link.utmCampaign)
+    ? 'jp'
+    : 'kr';
 }
 
 export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
@@ -86,6 +95,8 @@ export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
 	  const [editCreativeId, setEditCreativeId] = useState('');
 	  const [editPlacement, setEditPlacement] = useState('');
 	  const [editSiteSourceName, setEditSiteSourceName] = useState('');
+	  const [editRegion, setEditRegion] = useState<UtmRegion>('kr');
+	  const [bindingsEdited, setBindingsEdited] = useState(false);
 	  const [editSaving, setEditSaving] = useState(false);
 
   const fetchLinks = useCallback(async () => {
@@ -163,6 +174,8 @@ export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
 	    setEditCreativeId(binding?.creativeId || '');
 	    setEditPlacement(binding?.placement || '');
 	    setEditSiteSourceName(binding?.siteSourceName || '');
+	    setEditRegion(link.destinationType === 'appstore_ios' ? inferIosRegion(link) : 'kr');
+	    setBindingsEdited(false);
 	    setEditOpen(true);
 	  };
 
@@ -170,7 +183,7 @@ export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
     if (!editLink) return;
     setEditSaving(true);
     try {
-	      const updated = await AdminService.utm.updateLink(editLink.id, {
+	      const data = {
 	        name: editName,
 	        memo: editMemo || undefined,
 	        utmContent: editContent || undefined,
@@ -179,19 +192,25 @@ export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
 	        utmSourcePlatform: editSourcePlatform || undefined,
 	        utmCreativeFormat: editCreativeFormat || undefined,
 	        utmMarketingTactic: editMarketingTactic || undefined,
-	        platformBindings: [
-	          {
-	            platform: editBindingPlatform,
-	            campaignId: editCampaignId || undefined,
-	            adsetId: editBindingPlatform === 'meta' ? editAdsetId || undefined : undefined,
-		            adGroupId: editBindingPlatform === 'google_ads' ? editAdGroupId || undefined : undefined,
-		            adId: editAdId || undefined,
-		            creativeId: editCreativeId || undefined,
-		            placement: editPlacement || undefined,
-		            siteSourceName: editSiteSourceName || undefined,
-		          },
-		        ].filter((binding) => binding.campaignId || binding.adsetId || binding.adGroupId || binding.adId || binding.creativeId || binding.placement || binding.siteSourceName),
-		      });
+	        ...(editLink.destinationType === 'appstore_ios' ? { region: editRegion } : {}),
+	        ...(bindingsEdited
+	          ? {
+	              platformBindings: [
+	                {
+	                  platform: editBindingPlatform,
+	                  campaignId: editCampaignId || undefined,
+	                  adsetId: editBindingPlatform === 'meta' ? editAdsetId || undefined : undefined,
+	                  adGroupId: editBindingPlatform === 'google_ads' ? editAdGroupId || undefined : undefined,
+	                  adId: editAdId || undefined,
+	                  creativeId: editCreativeId || undefined,
+	                  placement: editPlacement || undefined,
+	                  siteSourceName: editSiteSourceName || undefined,
+	                },
+	              ].filter((binding) => binding.campaignId || binding.adsetId || binding.adGroupId || binding.adId || binding.creativeId || binding.placement || binding.siteSourceName),
+	            }
+	          : {}),
+	      };
+	      const updated = await AdminService.utm.updateLink(editLink.id, data);
       setLinks((prev) => prev.map((l) => (l.id === editLink.id ? { ...l, ...updated } : l)));
       setEditOpen(false);
       toast.success('수정되었습니다.');
@@ -409,6 +428,11 @@ export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
                             link.utmId && `id=${link.utmId}`,
                           ].filter(Boolean).join(' · ') || '-'}
                         </Typography>
+                        {link.destinationType === 'appstore_ios' && (
+                          <Typography variant="caption" color="textSecondary" sx={{ display: 'block', mt: 0.5 }}>
+                            iOS 지역: {inferIosRegion(link).toUpperCase()}
+                          </Typography>
+                        )}
                       </TableCell>
                       <TableCell sx={{ minWidth: 260, maxWidth: 360 }}>
                         {link.shortUrl ? (
@@ -538,29 +562,66 @@ export default function UtmLinkList({ refreshKey }: UtmLinkListProps) {
 		              ))}
 		            </TextField>
 	          </Box>
+	          {editLink?.destinationType === 'appstore_ios' && (
+	            <TextField
+	              select
+	              label="App Store 지역"
+	              value={editRegion}
+	              onChange={(e) => setEditRegion(e.target.value as UtmRegion)}
+	              fullWidth
+	              sx={{ mt: 2 }}
+	            >
+	              <MenuItem value="kr">대한민국 (KR)</MenuItem>
+	              <MenuItem value="jp">일본 (JP)</MenuItem>
+	            </TextField>
+	          )}
 	          <Typography variant="subtitle2" fontWeight={700} sx={{ mt: 3, mb: 1 }}>
 	            플랫폼 바인딩
 	          </Typography>
 	          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-	            <TextField select label="플랫폼" value={editBindingPlatform} onChange={(e) => setEditBindingPlatform(e.target.value as 'meta' | 'google_ads')} fullWidth>
+	            <TextField select label="플랫폼" value={editBindingPlatform} onChange={(e) => {
+	              setEditBindingPlatform(e.target.value as 'meta' | 'google_ads');
+	              setBindingsEdited(true);
+	            }} fullWidth>
 	              {PLATFORM_BINDING_OPTIONS.map((option) => (
 	                <MenuItem key={option.value} value={option.value}>{option.label}</MenuItem>
 	              ))}
 	            </TextField>
-	            <TextField label="campaign_id" value={editCampaignId} onChange={(e) => setEditCampaignId(e.target.value)} fullWidth />
+	            <TextField label="campaign_id" value={editCampaignId} onChange={(e) => {
+	              setEditCampaignId(e.target.value);
+	              setBindingsEdited(true);
+	            }} fullWidth />
 	            {editBindingPlatform === 'meta' ? (
-	              <TextField label="adset_id" value={editAdsetId} onChange={(e) => setEditAdsetId(e.target.value)} fullWidth />
+	              <TextField label="adset_id" value={editAdsetId} onChange={(e) => {
+	                setEditAdsetId(e.target.value);
+	                setBindingsEdited(true);
+	              }} fullWidth />
 	            ) : (
-	              <TextField label="ad_group_id" value={editAdGroupId} onChange={(e) => setEditAdGroupId(e.target.value)} fullWidth />
+	              <TextField label="ad_group_id" value={editAdGroupId} onChange={(e) => {
+	                setEditAdGroupId(e.target.value);
+	                setBindingsEdited(true);
+	              }} fullWidth />
 	            )}
-	            <TextField label="ad_id" value={editAdId} onChange={(e) => setEditAdId(e.target.value)} fullWidth />
-	            <TextField label="creative_id" value={editCreativeId} onChange={(e) => setEditCreativeId(e.target.value)} fullWidth />
-	            <TextField select label="placement" value={editPlacement} onChange={(e) => setEditPlacement(e.target.value)} fullWidth>
+	            <TextField label="ad_id" value={editAdId} onChange={(e) => {
+	              setEditAdId(e.target.value);
+	              setBindingsEdited(true);
+	            }} fullWidth />
+	            <TextField label="creative_id" value={editCreativeId} onChange={(e) => {
+	              setEditCreativeId(e.target.value);
+	              setBindingsEdited(true);
+	            }} fullWidth />
+	            <TextField select label="placement" value={editPlacement} onChange={(e) => {
+	              setEditPlacement(e.target.value);
+	              setBindingsEdited(true);
+	            }} fullWidth>
 	              {PLACEMENT_OPTIONS.map((option) => (
 	                <MenuItem key={option.value || 'empty-placement'} value={option.value}>{option.label}</MenuItem>
 	              ))}
 	            </TextField>
-	            <TextField select label="site_source_name" value={editSiteSourceName} onChange={(e) => setEditSiteSourceName(e.target.value)} fullWidth>
+	            <TextField select label="site_source_name" value={editSiteSourceName} onChange={(e) => {
+	              setEditSiteSourceName(e.target.value);
+	              setBindingsEdited(true);
+	            }} fullWidth>
 	              {SITE_SOURCE_NAME_OPTIONS.map((option) => (
 	                <MenuItem key={option.value || 'empty-site-source-name'} value={option.value}>{option.label}</MenuItem>
 	              ))}
