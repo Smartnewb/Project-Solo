@@ -20,7 +20,7 @@ export function PushRegistryTable({ rows }: { rows: RegistryRow[] }) {
 						<TableRow>
 							<TableCell sx={{ width: '24%' }}>알림</TableCell>
 							<TableCell sx={{ width: '30%' }}>발송 상황 / 대상</TableCell>
-							<TableCell sx={{ width: '30%' }}>메시지</TableCell>
+							<TableCell sx={{ width: '30%' }}>메시지 (registry 샘플)</TableCell>
 							<TableCell sx={{ width: '16%' }}>이동 / 운영</TableCell>
 						</TableRow>
 					</TableHead>

@@ -27,7 +27,7 @@ const registryFixture = {
 			trigger: { type: 'cron', schedule: '0 19 * * *', timeZone: 'Asia/Seoul' },
 			audience: { type: 'query', resolver: 'campaignIncompleteFemales' },
 			template: {
-				ko: { title: '아직 확인하지 않은 추천이 있어요', body: '오늘의 추천 명이 기다리고 있어요' },
+				ko: { title: '아직 확인하지 않은 추천이 있어요', body: '오늘의 추천 undefined명이 기다리고 있어요' },
 				ja: { title: 'まだ確認していないおすすめがあります', body: '今日のおすすめ人が待っています' },
 			},
 			persistence: { type: 'general', subType: 'campaign_reminder' },
@@ -100,7 +100,8 @@ describe('PushRegistryTab', () => {
 		expect(screen.getAllByText('캠페인 참여가 끝나지 않은 여성 유저').length).toBeGreaterThan(0);
 		expect(screen.getAllByText('캠페인 참여가 끝나지 않은 유저에게 오늘 확인할 추천이 남아 있을 때 보냅니다.').length).toBeGreaterThan(0);
 		expect(screen.getAllByText('remaining').length).toBeGreaterThan(0);
-		expect(screen.getAllByText('오늘의 추천 명이 기다리고 있어요').length).toBeGreaterThan(0);
+		expect(screen.getAllByText('오늘의 추천 undefined명이 기다리고 있어요').length).toBeGreaterThan(0);
+		expect(screen.queryByText('오늘의 추천 {예시값}명이 기다리고 있어요')).not.toBeInTheDocument();
 		expect(screen.getAllByText('Throttle: campaign-reminder:{userId}:{date} · 86400s').length).toBeGreaterThan(0);
 		expect(screen.getAllByText('채팅방 안 억제: 아니오').length).toBeGreaterThan(0);
 		expect(screen.getByText('Voice call push')).toBeInTheDocument();

@@ -141,8 +141,7 @@ export const describeNotification = (row: RegistryRow): string => {
 	return `${formatCategoryName(row.entry.category)} 상황이 발생하면 ${formatAudienceKo(row.entry)}에게 보냅니다.`;
 };
 
-export const toReadableTemplateText = (text: string): string =>
-	text.replaceAll('undefined', '{예시값}');
+export const toReadableTemplateText = (text: string): string => text;
 
 const includesText = (value: string, search: string): boolean =>
 	value.toLowerCase().includes(search.toLowerCase());
