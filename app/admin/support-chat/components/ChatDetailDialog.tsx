@@ -36,6 +36,7 @@ import {
 } from '@mui/icons-material';
 import supportChatService from '@/app/services/support-chat';
 import { useSupportChatSocket } from '../hooks/useSupportChatSocket';
+import { canMutateSupportMessage } from '../lib/can-mutate-message';
 import type { SupportSessionDetail, SupportMessage, SupportSenderType } from '@/app/types/support-chat';
 import { safeToLocaleString } from '@/app/utils/formatters';
 import {
@@ -323,8 +324,7 @@ export default function ChatDetailDialog({
   const renderMessage = (message: SupportMessage) => {
     const config = SENDER_CONFIG[message.senderType];
     const isUser = message.senderType === 'user';
-    const isAdminMessage = message.senderType === 'admin';
-    const isOwnAdminMessage = isAdminMessage && message.senderId === adminSession?.user.id;
+    const canMutateMessage = canMutateSupportMessage(message, adminSession?.user.id);
     const isEditing = editingMessageId === message.id;
 
     return (
@@ -362,7 +362,7 @@ export default function ChatDetailDialog({
             borderRadius: 2,
           }}
         >
-          {isOwnAdminMessage && !isEditing && (
+          {canMutateMessage && !isEditing && (
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5, mb: 0.5 }}>
               <IconButton size="small" onClick={() => startEditMessage(message)} aria-label="답변 수정">
                 <EditIcon fontSize="inherit" />

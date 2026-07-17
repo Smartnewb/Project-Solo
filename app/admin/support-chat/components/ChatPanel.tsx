@@ -47,6 +47,7 @@ import supportChatService from '@/app/services/support-chat';
 import AdminService from '@/app/services/admin';
 import { useAdminSession } from '@/shared/contexts/admin-session-context';
 import { useSupportChatSocket } from '../hooks/useSupportChatSocket';
+import { canMutateSupportMessage } from '../lib/can-mutate-message';
 import QuickReplyDialog from './QuickReplyDialog';
 import ResolveDialog from './ResolveDialog';
 import type {
@@ -513,8 +514,7 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
   const renderMessage = (message: SupportMessage) => {
     const config = SENDER_CONFIG[message.senderType];
     const isUser = message.senderType === 'user';
-    const isAdminMessage = message.senderType === 'admin';
-    const isOwnAdminMessage = isAdminMessage && message.senderId === adminSession?.user.id;
+    const canMutateMessage = canMutateSupportMessage(message, adminSession?.user.id);
     const isEditing = editingMessageId === message.id;
 
     return (
@@ -550,7 +550,7 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
             borderRadius: 2,
           }}
         >
-          {isOwnAdminMessage && !isEditing && (
+          {canMutateMessage && !isEditing && (
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5, mb: 0.5 }}>
               <IconButton size="small" onClick={() => startEditMessage(message)} aria-label="답변 수정">
                 <EditIcon fontSize="inherit" />
