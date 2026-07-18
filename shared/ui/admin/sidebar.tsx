@@ -122,7 +122,14 @@ export const NAV_CATEGORIES: NavCategory[] = [
     icon: '📢',
     label: '마케팅',
     items: [
-      { href: '/admin/sms', label: 'SMS 관리' },
+      {
+        id: 'sms',
+        label: 'SMS 관리',
+        children: [
+          { href: '/admin/sms', label: 'SMS 발송' },
+          { href: '/admin/sms/jobs', label: '대량 발송 이력' },
+        ],
+      },
       { href: '/admin/push-notifications', label: '푸시 알림 관리' },
       { href: '/admin/push-groups', label: '푸시 타겟 그룹' },
       { href: '/admin/broadcast-push', label: '예약 푸시 발송' },
