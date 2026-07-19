@@ -130,12 +130,22 @@ export interface SmsJobListParams {
     endDate?: string; // YYYY-MM-DD (KST)
 }
 
+/** 목록 응답용 필터 요약 — API가 원본 ID 배열 대신 건수만 내려준다 (PII·응답 크기 절감) */
+export interface RecipientFilterSummary {
+    gender: string | null;
+    userIdCount: number;
+    excludeUserIdCount: number;
+    regionCodeCount: number;
+    universityIdCount: number;
+}
+
 export interface SmsJobListItem {
     id: string;
     status: SmsJobStatus;
     type: SmsJobType;
-    message: string;
-    filter: RecipientFilter;
+    /** 본문 앞 100자 미리보기 — 전문은 목록 API에 내려오지 않는다 */
+    messagePreview: string;
+    filterSummary: RecipientFilterSummary;
     totalCount: number;
     sentCount: number;
     failedCount: number;

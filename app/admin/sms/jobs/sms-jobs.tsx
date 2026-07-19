@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import type {
-	RecipientFilter,
+	RecipientFilterSummary,
 	SmsJobListItem,
 	SmsJobStatus,
 } from '@/app/services/sms';
@@ -44,13 +44,13 @@ function formatKstDateTime(iso: string | null): string {
 	return date.toLocaleString('sv-SE', { timeZone: 'Asia/Seoul' }).slice(0, 16);
 }
 
-function summarizeFilter(filter: RecipientFilter): string {
-	if (filter.userIds?.length) return `지정 유저 ${filter.userIds.length}명`;
+function summarizeFilter(summary: RecipientFilterSummary): string {
+	if (summary.userIdCount) return `지정 유저 ${summary.userIdCount}명`;
 	const parts: string[] = [];
-	if (filter.regionCodes?.length) parts.push(`지역 ${filter.regionCodes.length}개`);
-	if (filter.universityIds?.length) parts.push(`학교 ${filter.universityIds.length}개`);
-	if (filter.gender) parts.push(filter.gender === 'MALE' ? '남성' : '여성');
-	if (filter.excludeUserIds?.length) parts.push(`제외 ${filter.excludeUserIds.length}명`);
+	if (summary.regionCodeCount) parts.push(`지역 ${summary.regionCodeCount}개`);
+	if (summary.universityIdCount) parts.push(`학교 ${summary.universityIdCount}개`);
+	if (summary.gender) parts.push(summary.gender === 'MALE' ? '남성' : '여성');
+	if (summary.excludeUserIdCount) parts.push(`제외 ${summary.excludeUserIdCount}명`);
 	return parts.length ? parts.join(' · ') : '전체 대상';
 }
 
@@ -118,7 +118,7 @@ function JobDetailModal({ job, onClose }: { job: SmsJobListItem; onClose: () => 
 						</div>
 						<div>
 							<div className='text-xs text-[#6B7280]'>대상 조건</div>
-							<div className='text-[#111827]'>{summarizeFilter(job.filter)}</div>
+							<div className='text-[#111827]'>{summarizeFilter(job.filterSummary)}</div>
 						</div>
 						<div>
 							<div className='text-xs text-[#6B7280]'>유형</div>
@@ -140,9 +140,9 @@ function JobDetailModal({ job, onClose }: { job: SmsJobListItem; onClose: () => 
 
 					{/* 메시지 전문 */}
 					<div>
-						<div className='text-xs text-[#6B7280] mb-1'>메시지</div>
+						<div className='text-xs text-[#6B7280] mb-1'>메시지 (미리보기 100자)</div>
 						<pre className='whitespace-pre-wrap break-words text-sm text-[#111827] bg-[#F9FAFB] border border-[#E5E7EB] rounded-md p-3'>
-							{job.message}
+							{job.messagePreview}
 						</pre>
 					</div>
 
@@ -373,8 +373,8 @@ function SmsJobsContent() {
 											{formatKstDateTime(job.createdAt)}
 										</td>
 										<td className='px-4 py-3 max-w-[320px]'>
-											<div className='truncate text-[#111827]'>{job.message}</div>
-											<div className='text-xs text-[#6B7280]'>{summarizeFilter(job.filter)}</div>
+											<div className='truncate text-[#111827]'>{job.messagePreview}</div>
+											<div className='text-xs text-[#6B7280]'>{summarizeFilter(job.filterSummary)}</div>
 										</td>
 										<td className='px-4 py-3 whitespace-nowrap text-[#374151]'>{job.type}</td>
 										<td className='px-4 py-3 text-right text-[#374151]'>{job.totalCount}</td>
