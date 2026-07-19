@@ -23,6 +23,8 @@ const SMS_ENDPOINTS = {
     RECIPIENTS_PREVIEW: '/admin/v2/sms/recipients/preview',
     SEND_BY_FILTER: '/admin/v2/sms/send-by-filter',
     JOB_STATUS: (jobId: string) => `/admin/v2/sms/jobs/${jobId}`,
+    JOBS: '/admin/v2/sms/jobs',
+    JOB_FAILURES: (jobId: string) => `/admin/v2/sms/jobs/${jobId}/failures`,
 } as const;
 
 // MARK: - 필터 기반 발송 타입
@@ -110,6 +112,55 @@ export interface JobStatus {
     progress: number;
     startedAt?: string;
     completedAt?: string;
+}
+
+// MARK: - 대량 발송 이력 (읽기 전용)
+export interface PaginationMeta {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+}
+
+export interface SmsJobListParams {
+    page?: number;
+    limit?: number;
+    status?: SmsJobStatus;
+    startDate?: string; // YYYY-MM-DD (KST)
+    endDate?: string; // YYYY-MM-DD (KST)
+}
+
+/** 목록 응답용 필터 요약 — API가 원본 ID 배열 대신 건수만 내려준다 (PII·응답 크기 절감) */
+export interface RecipientFilterSummary {
+    gender: string | null;
+    userIdCount: number;
+    excludeUserIdCount: number;
+    regionCodeCount: number;
+    universityIdCount: number;
+}
+
+export interface SmsJobListItem {
+    id: string;
+    status: SmsJobStatus;
+    type: SmsJobType;
+    /** 본문 앞 100자 미리보기 — 전문은 목록 API에 내려오지 않는다 */
+    messagePreview: string;
+    filterSummary: RecipientFilterSummary;
+    totalCount: number;
+    sentCount: number;
+    failedCount: number;
+    createdBy: string;
+    createdAt: string;
+    startedAt: string | null;
+    completedAt: string | null;
+}
+
+export interface SmsJobFailureItem {
+    id: string;
+    userId: string | null;
+    phoneNumber: string | null;
+    errorMessage: string | null;
+    createdAt: string;
 }
 
 // MARK: - 로컬스토리지 헬퍼 함수
@@ -296,6 +347,44 @@ export const smsService = {
             return res.data;
         } catch (error) {
             throw new SmsApiError(`작업 상태 조회 실패 (${jobId})`, error);
+        }
+    },
+
+    async getJobs(
+        params: SmsJobListParams = {},
+    ): Promise<{ data: SmsJobListItem[]; meta: PaginationMeta }> {
+        try {
+            const stringParams: Record<string, string> = {};
+            if (params.page != null) stringParams.page = String(params.page);
+            if (params.limit != null) stringParams.limit = String(params.limit);
+            if (params.status) stringParams.status = params.status;
+            if (params.startDate) stringParams.startDate = params.startDate;
+            if (params.endDate) stringParams.endDate = params.endDate;
+
+            return await adminGet<{ data: SmsJobListItem[]; meta: PaginationMeta }>(
+                SMS_ENDPOINTS.JOBS,
+                stringParams,
+            );
+        } catch (error) {
+            throw new SmsApiError('대량 발송 이력 조회 실패', error);
+        }
+    },
+
+    async getJobFailures(
+        jobId: string,
+        params: { page?: number; limit?: number } = {},
+    ): Promise<{ data: SmsJobFailureItem[]; meta: PaginationMeta }> {
+        try {
+            const stringParams: Record<string, string> = {};
+            if (params.page != null) stringParams.page = String(params.page);
+            if (params.limit != null) stringParams.limit = String(params.limit);
+
+            return await adminGet<{ data: SmsJobFailureItem[]; meta: PaginationMeta }>(
+                SMS_ENDPOINTS.JOB_FAILURES(jobId),
+                stringParams,
+            );
+        } catch (error) {
+            throw new SmsApiError(`발송 실패 목록 조회 실패 (${jobId})`, error);
         }
     },
 };
