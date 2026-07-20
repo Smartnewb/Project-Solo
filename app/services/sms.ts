@@ -25,6 +25,7 @@ const SMS_ENDPOINTS = {
     JOB_STATUS: (jobId: string) => `/admin/v2/sms/jobs/${jobId}`,
     JOBS: '/admin/v2/sms/jobs',
     JOB_FAILURES: (jobId: string) => `/admin/v2/sms/jobs/${jobId}/failures`,
+    REGISTRY: '/admin/v2/sms/registry',
 } as const;
 
 // MARK: - 필터 기반 발송 타입
@@ -161,6 +162,53 @@ export interface SmsJobFailureItem {
     phoneNumber: string | null;
     errorMessage: string | null;
     createdAt: string;
+}
+
+
+// MARK: - SMS 문자 명부 (레지스트리, 읽기 전용)
+export type SmsLegalClass = 'informational' | 'advertising';
+export type SmsRegistryCategory = 'auth' | 'transactional' | 'retention' | 'marketing' | 'admin';
+
+export interface SmsRegistryTemplatePreview {
+	raw: string;
+	preview: string;
+	byteLength: number;
+	effectiveMsgType: 'SMS' | 'LMS';
+	exceedsSmsLimit: boolean;
+}
+
+export interface SmsRegistryEntry {
+	smsType: string;
+	recipient: 'user' | 'phone';
+	category: SmsRegistryCategory;
+	legalClass: SmsLegalClass;
+	copyType: string;
+	gender: string;
+	trigger: { type: 'event' } | { type: 'cron'; schedule: string };
+	audience: { type: 'single' } | { type: 'query'; resolver: string };
+	template: Partial<Record<'ko' | 'ja', SmsRegistryTemplatePreview>>;
+	link: { campaign: string } | null;
+	policy: {
+		quietHours: 'allow' | 'block' | 'defer';
+		consentRequired: boolean;
+		allowSuspended: boolean;
+		throttle: { key: string; ttlSeconds: number } | null;
+		weeklyCap: number | null;
+		campaignCap: { touches: number; windowDays: number } | null;
+	};
+	evidence: string[];
+	msgType: 'SMS' | 'LMS';
+}
+
+export interface SmsAdminRegistryResponse {
+	version: string;
+	definitions: Record<string, SmsRegistryEntry>;
+	stats: {
+		total: number;
+		byCategory: Record<string, number>;
+		byLegalClass: Record<string, number>;
+		byMsgType: Record<string, number>;
+	};
 }
 
 // MARK: - 로컬스토리지 헬퍼 함수
@@ -385,6 +433,18 @@ export const smsService = {
             );
         } catch (error) {
             throw new SmsApiError(`발송 실패 목록 조회 실패 (${jobId})`, error);
+        }
+    },
+
+    async getRegistry(): Promise<SmsAdminRegistryResponse> {
+        try {
+            const res = await adminGet<{ data: SmsAdminRegistryResponse } | SmsAdminRegistryResponse>(
+                SMS_ENDPOINTS.REGISTRY,
+            );
+            const body = (res as { data?: SmsAdminRegistryResponse }).data ?? (res as SmsAdminRegistryResponse);
+            return body;
+        } catch (error) {
+            throw new SmsApiError('SMS 문자 명부 조회 실패', error);
         }
     },
 };
