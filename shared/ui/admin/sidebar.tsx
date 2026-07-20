@@ -127,6 +127,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
         label: 'SMS 관리',
         children: [
           { href: '/admin/sms', label: 'SMS 발송' },
+          { href: '/admin/sms/registry', label: '문자 명부' },
           { href: '/admin/sms/jobs', label: '대량 발송 이력' },
         ],
       },
