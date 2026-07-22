@@ -57,7 +57,9 @@ export {
 	appReviews,
 	communityReviewArticles,
 	publicReviews,
+	policyDocuments,
 } from './content';
+export type { PolicyDocumentListParams } from './content';
 export { notices } from './notices';
 export type { NoticeListParams } from './notices';
 export { etaMission } from './eta-mission';
@@ -304,6 +306,7 @@ import {
 	appReviews,
 	communityReviewArticles,
 	publicReviews,
+	policyDocuments,
 } from './content';
 import { notices } from './notices';
 import { etaMission } from './eta-mission';
@@ -381,6 +384,7 @@ const AdminService = {
 	appReviews,
 	communityReviewArticles,
 	publicReviews,
+	policyDocuments,
 	fcmTokens,
 	getProfileReports: reports.getProfileReports,
 	featureFlags,
