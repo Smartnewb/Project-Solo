@@ -264,10 +264,53 @@ export function useUpdateUserBirthday() {
 export function useUpdateAccountStatus() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (params: { userId: string; status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED'; reason?: string }) =>
-      AdminService.userAppearance.updateAccountStatus(params.userId, params.status, params.reason),
+    mutationFn: (params: {
+      userId: string;
+      status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+      reason?: string;
+      durationDays?: 3 | 7 | 14 | 30;
+      permanent?: boolean;
+    }) =>
+      AdminService.userAppearance.updateAccountStatus(params.userId, params.status, params.reason, {
+        durationDays: params.durationDays,
+        permanent: params.permanent,
+      }),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: [...usersKeys.appearance(), 'details', vars.userId] });
+      qc.invalidateQueries({ queryKey: usersKeys.appearance() });
+    },
+  });
+}
+
+export function useSuspendUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: {
+      userId: string;
+      reason?: string;
+      durationDays?: 3 | 7 | 14 | 30;
+      permanent?: boolean;
+    }) =>
+      AdminService.userAppearance.suspendUser(params.userId, {
+        reason: params.reason,
+        durationDays: params.durationDays,
+        permanent: params.permanent,
+      }),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: [...usersKeys.appearance(), 'details', vars.userId] });
+      qc.invalidateQueries({ queryKey: usersKeys.appearance() });
+    },
+  });
+}
+
+export function useUnsuspendUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { userId: string }) =>
+      AdminService.userAppearance.unsuspendUser(params.userId),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: [...usersKeys.appearance(), 'details', vars.userId] });
+      qc.invalidateQueries({ queryKey: usersKeys.appearance() });
     },
   });
 }

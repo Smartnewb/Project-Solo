@@ -179,6 +179,56 @@ describe('userAppearance service', () => {
 
     expect(adminPost).toHaveBeenCalledWith('/admin/v2/users/123/suspend', {
       reason: '운영 정지',
+      permanent: true,
+    });
+  });
+
+  it('suspendUser sends permanent flag when requested', async () => {
+    (adminPost as jest.Mock).mockResolvedValue({ data: { success: true } });
+
+    await userAppearance.suspendUser('123', {
+      reason: '영구 정지',
+      permanent: true,
+    });
+
+    expect(adminPost).toHaveBeenCalledWith('/admin/v2/users/123/suspend', {
+      reason: '영구 정지',
+      permanent: true,
+    });
+  });
+
+  it('suspendUser sends durationDays for temporary suspension', async () => {
+    (adminPost as jest.Mock).mockResolvedValue({ data: { success: true } });
+
+    await userAppearance.suspendUser('123', {
+      reason: '7일 정지',
+      durationDays: 7,
+    });
+
+    expect(adminPost).toHaveBeenCalledWith('/admin/v2/users/123/suspend', {
+      reason: '7일 정지',
+      durationDays: 7,
+    });
+  });
+
+  it('unsuspendUser posts empty body to unsuspend endpoint', async () => {
+    (adminPost as jest.Mock).mockResolvedValue({ data: { success: true } });
+
+    await userAppearance.unsuspendUser('123');
+
+    expect(adminPost).toHaveBeenCalledWith('/admin/v2/users/123/unsuspend', {});
+  });
+
+  it('updateAccountStatus forwards temporary duration options', async () => {
+    (adminPost as jest.Mock).mockResolvedValue({ data: { success: true } });
+
+    await userAppearance.updateAccountStatus('123', 'SUSPENDED', '기간 정지', {
+      durationDays: 14,
+    });
+
+    expect(adminPost).toHaveBeenCalledWith('/admin/v2/users/123/suspend', {
+      reason: '기간 정지',
+      durationDays: 14,
     });
   });
 

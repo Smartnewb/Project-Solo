@@ -388,22 +388,58 @@ export const userAppearance = {
 		return result.data;
 	},
 
+	suspendUser: async (
+		userId: string,
+		options: {
+			reason?: string;
+			durationDays?: 3 | 7 | 14 | 30;
+			permanent?: boolean;
+		} = {},
+	) => {
+		const body: {
+			reason?: string;
+			durationDays?: 3 | 7 | 14 | 30;
+			permanent?: boolean;
+		} = {};
+
+		const reason = options.reason?.trim();
+		if (reason) {
+			body.reason = reason;
+		}
+
+		if (options.permanent) {
+			body.permanent = true;
+		} else if (options.durationDays) {
+			body.durationDays = options.durationDays;
+		}
+
+		const result = await adminPost<{ data: any }>(`/admin/v2/users/${userId}/suspend`, body);
+		return result.data;
+	},
+
+	unsuspendUser: async (userId: string) => {
+		const result = await adminPost<{ data: any }>(`/admin/v2/users/${userId}/unsuspend`, {});
+		return result.data;
+	},
+
 	updateAccountStatus: async (
 		userId: string,
 		status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED',
 		reason?: string,
+		options?: {
+			durationDays?: 3 | 7 | 14 | 30;
+			permanent?: boolean;
+		},
 	) => {
-		try {
-			const endpoint =
-				status === 'ACTIVE'
-					? `/admin/v2/users/${userId}/unsuspend`
-					: `/admin/v2/users/${userId}/suspend`;
-
-			const result = await adminPost<{ data: any }>(endpoint, reason?.trim() ? { reason } : {});
-			return result.data;
-		} catch (error: any) {
-			throw error;
+		if (status === 'ACTIVE') {
+			return userAppearance.unsuspendUser(userId);
 		}
+
+		return userAppearance.suspendUser(userId, {
+			reason,
+			durationDays: options?.durationDays,
+			permanent: options?.permanent ?? !options?.durationDays,
+		});
 	},
 
 	sendWarningMessage: async (userId: string, message: string) => {

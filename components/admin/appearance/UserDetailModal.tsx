@@ -68,6 +68,7 @@ import EmailNotificationModal from './modals/EmailNotificationModal';
 import SmsNotificationModal from './modals/SmsNotificationModal';
 import UniversityTransferModal from './modals/UniversityTransferModal';
 import BirthdayEditModal from './modals/BirthdayEditModal';
+import AccountStatusModal from './modals/AccountStatusModal';
 
 const SHOW_REMATCH_TICKET_ADMIN = false;
 
@@ -134,6 +135,8 @@ export interface UserDetail {
   appearanceGrade?: 'S' | 'A' | 'B' | 'C' | 'UNKNOWN';
   isUniversityVerified?: boolean; // 대학교 인증 여부
   accountStatus?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  suspendedAt?: string | null;
+  suspendedUntil?: string | null;
   approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED'; // 승인 상태
   preferences?: UserPreferences;
   signupRoute?: 'PASS' | 'KAKAO' | 'APPLE'; // 회원가입 루트
@@ -266,6 +269,8 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   // 블랙리스트 관련 상태
   const [blacklistRegisterModalOpen, setBlacklistRegisterModalOpen] = useState(false);
   const [blacklistReleaseDialogOpen, setBlacklistReleaseDialogOpen] = useState(false);
+  // 계정 정지/해제 모달
+  const [accountStatusModalOpen, setAccountStatusModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'blacklist'>('profile');
   const queryClient = useQueryClient();
 
@@ -363,6 +368,15 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   // 메뉴 닫기
   const handleCloseMenu = () => {
     setMenuAnchorEl(null);
+  };
+
+  const isAccountSuspended =
+    userDetail?.accountStatus === 'SUSPENDED' ||
+    !!userDetail?.suspendedAt;
+
+  const handleOpenAccountStatusModal = () => {
+    handleCloseMenu();
+    setAccountStatusModalOpen(true);
   };
 
   // 프로필 직접 수정 모달 열기
@@ -623,6 +637,13 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     }
   };
 
+  const handleAccountStatusSuccess = async (message: string) => {
+    setActionSuccess(message);
+    await refreshUserDetail();
+    queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+    if (onRefresh) onRefresh();
+  };
+
   // 인스타그램 오류 상태 해제
   const handleResetInstagramError = async () => {
     if (!userId) return;
@@ -811,31 +832,49 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           사용자 상세 정보
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* 계정 정지 상태 빠른 액션 */}
+          {!loading && userDetail && userId && (
+            <Button
+              variant="outlined"
+              color={isAccountSuspended ? 'primary' : 'warning'}
+              size="small"
+              startIcon={<BlockIcon fontSize="small" />}
+              onClick={() => setAccountStatusModalOpen(true)}
+              disabled={actionLoading}
+            >
+              {isAccountSuspended ? '정지 해제' : '계정 정지'}
+            </Button>
+          )}
           {/* 블랙리스트 액션 버튼 */}
           {!loading && userDetail && userId && (
-            isBlacklisted ? (
-              <Button
-                variant="outlined"
-                color="primary"
-                size="small"
-                startIcon={<RotateCcw size={16} />}
-                onClick={() => setBlacklistReleaseDialogOpen(true)}
-                disabled={actionLoading}
-              >
-                블랙리스트 해제
-              </Button>
-            ) : (
-              <Button
-                variant="outlined"
-                color="error"
-                size="small"
-                startIcon={<ShieldBan size={16} />}
-                onClick={() => setBlacklistRegisterModalOpen(true)}
-                disabled={actionLoading}
-              >
-                블랙리스트 등록
-              </Button>
-            )
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.25 }}>
+              {isBlacklisted ? (
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  size="small"
+                  startIcon={<RotateCcw size={16} />}
+                  onClick={() => setBlacklistReleaseDialogOpen(true)}
+                  disabled={actionLoading}
+                >
+                  블랙리스트 해제
+                </Button>
+              ) : (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  size="small"
+                  startIcon={<ShieldBan size={16} />}
+                  onClick={() => setBlacklistRegisterModalOpen(true)}
+                  disabled={actionLoading}
+                >
+                  블랙리스트 등록
+                </Button>
+              )}
+              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2, maxWidth: 160, textAlign: 'right' }}>
+                영구 차단(블랙리스트). 약관 고지 없음
+              </Typography>
+            </Box>
           )}
           {/* 관리 메뉴 버튼 */}
           {!loading && userDetail && (
@@ -897,6 +936,16 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           <ListItemText primary="비밀번호 초기화" primaryTypographyProps={{ color: 'warning.main' }} />
         </MenuItem>
         <Divider />
+        <MenuItem onClick={handleOpenAccountStatusModal} disabled={actionLoading}>
+          <ListItemIcon>
+            <BlockIcon fontSize="small" color={isAccountSuspended ? 'primary' : 'warning'} />
+          </ListItemIcon>
+          <ListItemText
+            primary={isAccountSuspended ? '정지 해제' : '계정 정지'}
+            secondary={isAccountSuspended ? '로그인 가능 상태로 복구' : '약관 고지(알림+SMS) 발송'}
+            primaryTypographyProps={{ color: isAccountSuspended ? 'primary.main' : 'warning.main' }}
+          />
+        </MenuItem>
         <MenuItem onClick={handleDeleteUser} disabled={actionLoading}>
           <ListItemIcon>
             <BlockIcon fontSize="small" color="error" />
@@ -1202,11 +1251,24 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                       />
                     )}
 
-                    {userDetail.accountStatus && userDetail.accountStatus !== 'ACTIVE' && (
+                    {userDetail.accountStatus === 'INACTIVE' && (
                       <Chip
-                        label={userDetail.accountStatus === 'INACTIVE' ? '비활성화' : '정지됨'}
+                        label="비활성화"
                         size="small"
                         color="error"
+                      />
+                    )}
+                    {isAccountSuspended && (
+                      <Chip
+                        label={
+                          userDetail.suspendedUntil
+                            ? `정지됨 (~${formatDateWithoutTimezoneConversion(userDetail.suspendedUntil)})`
+                            : '정지됨'
+                        }
+                        size="small"
+                        color="warning"
+                        onClick={() => setAccountStatusModalOpen(true)}
+                        sx={{ cursor: 'pointer' }}
                       />
                     )}
                   </Box>
@@ -2262,6 +2324,18 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* 계정 정지 / 정지 해제 모달 */}
+      {userId && userDetail && (
+        <AccountStatusModal
+          open={accountStatusModalOpen}
+          onClose={() => setAccountStatusModalOpen(false)}
+          userId={userId}
+          isSuspended={isAccountSuspended}
+          userName={userDetail.name}
+          onSuccess={handleAccountStatusSuccess}
+        />
+      )}
 
       {/* 블랙리스트 등록 모달 */}
       {userId && userDetail && (
