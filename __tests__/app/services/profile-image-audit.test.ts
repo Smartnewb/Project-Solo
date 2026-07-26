@@ -87,6 +87,7 @@ describe('profile image audit service boundaries', () => {
         body: JSON.stringify({
           reason: '부적절한 프로필 이미지',
           memo: 'profile-image-1 확인 필요',
+          sendNotice: true,
         }),
       },
     );

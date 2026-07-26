@@ -18,6 +18,7 @@ import {
   Alert,
   Radio,
   RadioGroup,
+  Checkbox,
 } from '@mui/material';
 import AdminService from '@/app/services/admin';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
@@ -48,9 +49,11 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
   const [suspendType, setSuspendType] = useState<'permanent' | 'temporary'>('permanent');
   const [durationDays, setDurationDays] = useState<SuspendDurationDays>(7);
   const [localNote, setLocalNote] = useState('');
+  const [sendNotice, setSendNotice] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     if (!open) return;
@@ -58,8 +61,10 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
     setSuspendType('permanent');
     setDurationDays(7);
     setLocalNote('');
+    setSendNotice(true);
     setError(null);
     setSuccess(false);
+    setSuccessMessage('');
     setLoading(false);
   }, [open, isSuspended, userId]);
 
@@ -80,21 +85,24 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
 
       if (isSuspended) {
         await AdminService.userAppearance.unsuspendUser(userId);
+        const msg = '계정 정지가 해제되었습니다.';
+        setSuccessMessage(msg);
         setSuccess(true);
-        onSuccess?.('계정 정지가 해제되었습니다.');
+        onSuccess?.(msg);
       } else {
         await AdminService.userAppearance.suspendUser(userId, {
           reason: reason.trim(),
+          sendNotice,
           ...(suspendType === 'permanent'
             ? { permanent: true }
             : { durationDays }),
         });
-        const successMessage =
-          suspendType === 'permanent'
-            ? '계정이 영구 정지되었습니다. 이용약관 고지(인앱 알림+SMS)가 발송됩니다.'
-            : `계정이 ${durationDays}일 정지되었습니다. 이용약관 고지(인앱 알림+SMS)가 발송됩니다.`;
+        const msg = sendNotice
+          ? '제재 완료. 유저 고지 발송을 요청했습니다.'
+          : '제재 완료. 운영자 선택으로 고지는 보내지 않았습니다.';
+        setSuccessMessage(msg);
         setSuccess(true);
-        onSuccess?.(successMessage);
+        onSuccess?.(msg);
       }
 
       setTimeout(() => {
@@ -118,8 +126,10 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
     setSuspendType('permanent');
     setDurationDays(7);
     setLocalNote('');
+    setSendNotice(true);
     setError(null);
     setSuccess(false);
+    setSuccessMessage('');
     onClose();
   };
 
@@ -129,9 +139,10 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
       <DialogContent>
         {success ? (
           <Alert severity="success" sx={{ mt: 2 }}>
-            {isSuspended
-              ? '계정 정지가 해제되었습니다.'
-              : '계정 정지가 완료되었습니다. 이용약관 고지(인앱 알림+SMS)가 발송됩니다.'}
+            {successMessage ||
+              (isSuspended
+                ? '계정 정지가 해제되었습니다.'
+                : '계정 정지가 완료되었습니다.')}
           </Alert>
         ) : (
           <Box sx={{ pt: 2 }}>
@@ -167,11 +178,17 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
             ) : (
               <>
                 <Alert severity="warning" sx={{ mb: 2 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                    정지 시 이용약관 고지(인앱 알림+SMS)가 발송됩니다.
+                  <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                    유저 고지 발송 안내
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 0.5 }}>
+                    기본으로 인앱 알림 + SMS 고지가 발송됩니다.
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 0.5 }}>
+                    문구에 정지/이용제한 사유와 7일 이내 소명 안내가 포함됩니다.
                   </Typography>
                   <Typography variant="body2">
-                    블랙리스트와 다릅니다. 블랙리스트는 별도 버튼입니다.
+                    직접 발송 번호/이메일 안내는 백엔드 템플릿 기준입니다.
                   </Typography>
                 </Alert>
 
@@ -223,27 +240,48 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
                   error={!reason.trim()}
                 />
 
+                <FormControlLabel
+                  sx={{ mt: 1.5, display: 'flex', alignItems: 'flex-start' }}
+                  control={
+                    <Checkbox
+                      checked={sendNotice}
+                      onChange={(e) => setSendNotice(e.target.checked)}
+                      disabled={loading}
+                      sx={{ pt: 0.25 }}
+                    />
+                  }
+                  label="유저에게 고지(알림+문자) 보내기"
+                />
+
+                {!sendNotice && (
+                  <Alert severity="error" sx={{ mt: 1, mb: 1 }}>
+                    고지 없이 제재합니다. 약관 고지 누락 위험이 있으니 특별한 경우에만
+                    사용하세요.
+                  </Alert>
+                )}
+
                 <Box
                   sx={{
                     mt: 2,
                     p: 2,
-                    bgcolor: 'rgba(211, 47, 47, 0.06)',
+                    bgcolor: 'rgba(237, 108, 2, 0.06)',
                     borderRadius: 1,
                     border: '1px solid',
-                    borderColor: 'error.light',
+                    borderColor: 'warning.light',
                   }}
                 >
-                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'error.main', mb: 0.5 }}>
-                    처리 안내
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: 'warning.dark', mb: 0.5 }}>
+                    처리 안내 · 계정 정지
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 0.5 }}>
+                    · 이용 제한 + 기본 고지(인앱 알림+SMS). 고지 OFF는 위 체크박스로만 가능합니다.
                   </Typography>
                   <Typography variant="body2" sx={{ mb: 0.5 }}>
                     · 계정 정지 시 사용자가 앱에 로그인할 수 없습니다.
                   </Typography>
-                  <Typography variant="body2" sx={{ mb: 0.5 }}>
-                    · 백엔드가 이용약관 §25 고지(인앱 알림+SMS)를 발송합니다.
-                  </Typography>
                   <Typography variant="body2">
-                    · 영구 차단(블랙리스트)이 필요하면 상단의 블랙리스트 버튼을 사용하세요. 블랙리스트는 약관 고지가 없습니다.
+                    · 영구 차단(블랙리스트)이 필요하면 상단의 블랙리스트 버튼을 사용하세요.
+                    블랙리스트도 기본 고지가 발송됩니다.
                   </Typography>
                 </Box>
               </>

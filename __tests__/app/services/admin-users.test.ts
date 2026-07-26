@@ -180,6 +180,7 @@ describe('userAppearance service', () => {
     expect(adminPost).toHaveBeenCalledWith('/admin/v2/users/123/suspend', {
       reason: '운영 정지',
       permanent: true,
+      sendNotice: true,
     });
   });
 
@@ -194,6 +195,7 @@ describe('userAppearance service', () => {
     expect(adminPost).toHaveBeenCalledWith('/admin/v2/users/123/suspend', {
       reason: '영구 정지',
       permanent: true,
+      sendNotice: true,
     });
   });
 
@@ -208,6 +210,23 @@ describe('userAppearance service', () => {
     expect(adminPost).toHaveBeenCalledWith('/admin/v2/users/123/suspend', {
       reason: '7일 정지',
       durationDays: 7,
+      sendNotice: true,
+    });
+  });
+
+  it('suspendUser sends sendNotice=false when operator opts out', async () => {
+    (adminPost as jest.Mock).mockResolvedValue({ data: { success: true } });
+
+    await userAppearance.suspendUser('123', {
+      reason: '내부 조사',
+      permanent: true,
+      sendNotice: false,
+    });
+
+    expect(adminPost).toHaveBeenCalledWith('/admin/v2/users/123/suspend', {
+      reason: '내부 조사',
+      permanent: true,
+      sendNotice: false,
     });
   });
 
@@ -229,6 +248,7 @@ describe('userAppearance service', () => {
     expect(adminPost).toHaveBeenCalledWith('/admin/v2/users/123/suspend', {
       reason: '기간 정지',
       durationDays: 14,
+      sendNotice: true,
     });
   });
 

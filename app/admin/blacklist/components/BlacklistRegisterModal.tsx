@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -22,6 +22,7 @@ import { blacklist } from '@/app/services/admin';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
 
 const WARNING_ID = 'blacklist-register-warning';
+const NOTICE_WARNING_ID = 'blacklist-notice-warning';
 
 interface Props {
   open: boolean;
@@ -36,7 +37,7 @@ interface Props {
   };
   initialReason?: string;
   initialMemo?: string;
-  onSuccess?: () => void;
+  onSuccess?: (message?: string) => void;
 }
 
 const QUICK_REASONS = [
@@ -62,15 +63,28 @@ export function BlacklistRegisterModal({
   const [reason, setReason] = useState(initialReason);
   const [memo, setMemo] = useState(initialMemo);
   const [confirmed, setConfirmed] = useState(false);
+  const [sendNotice, setSendNotice] = useState(true);
+
+  useEffect(() => {
+    if (!open) return;
+    setReason(initialReason);
+    setMemo(initialMemo);
+    setConfirmed(false);
+    setSendNotice(true);
+  }, [open, initialReason, initialMemo, user.id]);
 
   const mutation = useMutation({
     mutationFn: () =>
       blacklist.register(user.id, {
         reason: reason.trim(),
         memo: memo.trim() ? memo.trim() : undefined,
+        sendNotice,
       }),
     onSuccess: () => {
-      onSuccess?.();
+      const message = sendNotice
+        ? '제재 완료. 유저 고지 발송을 요청했습니다.'
+        : '제재 완료. 운영자 선택으로 고지는 보내지 않았습니다.';
+      onSuccess?.(message);
       resetAndClose();
     },
   });
@@ -83,6 +97,7 @@ export function BlacklistRegisterModal({
     setReason(initialReason);
     setMemo(initialMemo);
     setConfirmed(false);
+    setSendNotice(true);
     mutation.reset();
     onClose();
   };
@@ -143,19 +158,39 @@ export function BlacklistRegisterModal({
         </Box>
 
         <Alert
-          id={WARNING_ID}
+          id={NOTICE_WARNING_ID}
           severity="warning"
           icon={<AlertTriangle size={18} />}
           sx={{ mb: 2 }}
         >
+          <Typography variant="body2" fontWeight={700} mb={0.5}>
+            유저 고지 발송 안내
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 0.5 }}>
+            기본으로 인앱 알림 + SMS 고지가 발송됩니다.
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 0.5 }}>
+            문구에 정지/이용제한 사유와 7일 이내 소명 안내가 포함됩니다.
+          </Typography>
+          <Typography variant="body2">
+            직접 발송 번호/이메일 안내는 백엔드 템플릿 기준입니다.
+          </Typography>
+        </Alert>
+
+        <Alert
+          id={WARNING_ID}
+          severity="error"
+          icon={<AlertTriangle size={18} />}
+          sx={{ mb: 2 }}
+        >
           <Typography variant="body2" fontWeight={600} mb={0.5}>
-            블랙리스트 등록 시 즉시 적용되는 동작
+            블랙리스트 · 영구 차단 성격 + 기본 고지
           </Typography>
           <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
             <li>세션 강제 만료 (현재 로그인 끊김)</li>
-            <li>푸시/SMS 발송 중단</li>
-            <li>매칭 후보 풀에서 제외</li>
-            <li>재로그인 차단</li>
+            <li>재로그인 차단 / 매칭 후보 풀 제외</li>
+            <li>영구 차단 성격 (해제 전까지 유지)</li>
+            <li>기본값으로 약관 고지(인앱 알림+SMS) 발송</li>
           </Box>
         </Alert>
 
@@ -202,6 +237,27 @@ export function BlacklistRegisterModal({
           error={memoOver}
           helperText={`${memo.length}/${MEMO_MAX}`}
         />
+
+        <FormControlLabel
+          sx={{ mt: 1, display: 'flex', alignItems: 'flex-start' }}
+          control={
+            <Checkbox
+              checked={sendNotice}
+              onChange={(e) => setSendNotice(e.target.checked)}
+              disabled={submitting}
+              sx={{ pt: 0.25 }}
+              inputProps={{ 'aria-describedby': NOTICE_WARNING_ID }}
+            />
+          }
+          label="유저에게 고지(알림+문자) 보내기"
+        />
+
+        {!sendNotice && (
+          <Alert severity="error" sx={{ mt: 1 }}>
+            고지 없이 제재합니다. 약관 고지 누락 위험이 있으니 특별한 경우에만
+            사용하세요.
+          </Alert>
+        )}
 
         <FormControlLabel
           sx={{ mt: 1 }}

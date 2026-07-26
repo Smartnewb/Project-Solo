@@ -34,6 +34,9 @@ export interface BlacklistHistoryEntry {
 export interface BlacklistRegisterRequest {
   reason: string;
   memo?: string;
+  /** default true — 약관 고지(인앱+SMS) */
+  sendNotice?: boolean;
+  noticeReason?: string;
 }
 
 export interface BlacklistReleaseRequest {
@@ -48,6 +51,11 @@ export interface BlacklistRegisterResponse {
     reason: string;
     blacklistedAt: string;
     blacklistedBy: string;
+  };
+  notice?: {
+    attempted: boolean;
+    skipped: boolean;
+    skipReason?: 'operator_opt_out';
   };
 }
 
@@ -82,7 +90,11 @@ export const blacklist = {
   register: (userId: string, body: BlacklistRegisterRequest) =>
     adminPost<{ data: BlacklistRegisterResponse }>(
       `${BASE}/${userId}/blacklist`,
-      body,
+      {
+        ...body,
+        // 서버도 기본 true지만 클라이언트는 항상 명시 전송
+        sendNotice: body.sendNotice !== false,
+      },
     ),
 
   release: (userId: string, body?: BlacklistReleaseRequest) =>

@@ -285,10 +285,14 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const activeBlacklistEntry = blacklistHistory.find((h) => h.releasedAt === null);
   const isBlacklisted = !!activeBlacklistEntry;
 
-  const handleBlacklistSuccess = () => {
+  const handleBlacklistSuccess = (message?: string) => {
     queryClient.invalidateQueries({ queryKey: ['blacklist-history', userId] });
     queryClient.invalidateQueries({ queryKey: ['blacklist'] });
+    if (message) {
+      setActionSuccess(message);
+    }
     if (onRefresh) onRefresh();
+    void refreshUserDetail();
   };
 
   // 재매칭 티켓 관련 상태
@@ -872,7 +876,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                 </Button>
               )}
               <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2, maxWidth: 160, textAlign: 'right' }}>
-                영구 차단(블랙리스트). 약관 고지 없음
+                영구 차단(블랙리스트). 기본 고지 발송
               </Typography>
             </Box>
           )}

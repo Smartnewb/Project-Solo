@@ -394,13 +394,19 @@ export const userAppearance = {
 			reason?: string;
 			durationDays?: 3 | 7 | 14 | 30;
 			permanent?: boolean;
+			/** default true — 약관 고지(인앱+SMS) */
+			sendNotice?: boolean;
 		} = {},
 	) => {
 		const body: {
 			reason?: string;
 			durationDays?: 3 | 7 | 14 | 30;
 			permanent?: boolean;
-		} = {};
+			sendNotice: boolean;
+		} = {
+			// 서버도 기본 true지만 클라이언트는 항상 명시 전송
+			sendNotice: options.sendNotice !== false,
+		};
 
 		const reason = options.reason?.trim();
 		if (reason) {
@@ -429,6 +435,7 @@ export const userAppearance = {
 		options?: {
 			durationDays?: 3 | 7 | 14 | 30;
 			permanent?: boolean;
+			sendNotice?: boolean;
 		},
 	) => {
 		if (status === 'ACTIVE') {
@@ -439,6 +446,7 @@ export const userAppearance = {
 			reason,
 			durationDays: options?.durationDays,
 			permanent: options?.permanent ?? !options?.durationDays,
+			sendNotice: options?.sendNotice,
 		});
 	},
 

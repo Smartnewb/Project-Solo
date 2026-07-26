@@ -290,11 +290,13 @@ export function useSuspendUser() {
       reason?: string;
       durationDays?: 3 | 7 | 14 | 30;
       permanent?: boolean;
+      sendNotice?: boolean;
     }) =>
       AdminService.userAppearance.suspendUser(params.userId, {
         reason: params.reason,
         durationDays: params.durationDays,
         permanent: params.permanent,
+        sendNotice: params.sendNotice,
       }),
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: [...usersKeys.appearance(), 'details', vars.userId] });
