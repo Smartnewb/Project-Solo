@@ -24,10 +24,19 @@ export class AdminApiError extends Error {
 
 export function getAdminErrorMessage(error: unknown, fallback = '요청 실패'): string {
   if (error instanceof AdminApiError) {
-    return (error.body as { message?: string } | null)?.message ?? error.message;
+    // 어드민 v2 는 `{ error: { code, message } }`, 그 외는 최상위 message.
+    const body = error.body as
+      | { error?: { message?: string }; message?: string }
+      | null;
+    return body?.error?.message ?? body?.message ?? error.message;
   }
   if (error instanceof Error) return error.message;
   return fallback;
+}
+
+/** 낙관적 락 충돌(409). 에러 메시지 문구가 아니라 상태 코드로 판정한다. */
+export function isAdminConflictError(error: unknown): boolean {
+  return error instanceof AdminApiError && error.status === 409;
 }
 
 async function parseJsonBody<T>(res: Response): Promise<T> {
