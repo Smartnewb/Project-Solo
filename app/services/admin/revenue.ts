@@ -1,4 +1,4 @@
-import { adminGet, adminPost, adminRequest } from '@/shared/lib/http/admin-fetch';
+import { adminDelete, adminGet, adminPatch, adminPost, adminRequest } from '@/shared/lib/http/admin-fetch';
 import type {
 	ActionLogsResponse,
 	AdminLikesParams,
@@ -71,9 +71,158 @@ export const gems = {
 	},
 };
 
+// ─── 구슬 가격·할인·환급 정책 ─────────────────────────────
+// 백엔드 소스: solo-nestjs-api src/admin/v2/gems/gems-v2.controller.ts
+
+export type GemScopeCountry = 'kr' | 'jp';
+export type GemScopeGender = 'MALE' | 'FEMALE';
+
+export interface GemPriceRow {
+	id: number;
+	featureType: string;
+	countryCode: string | null;
+	gender: string | null;
+	price: number;
+	isActive: boolean;
+	memo: string | null;
+	/** 낙관적 락. 수정 시 그대로 되돌려보낸다. */
+	version: number;
+	updatedAt: string;
+}
+
+export interface GemDiscountRow {
+	id: number;
+	featureType: string;
+	countryCode: string | null;
+	gender: string | null;
+	discountAmount: number;
+	startsAt: string;
+	endsAt: string;
+	memo: string;
+	createdBy: string;
+	canceledAt: string | null;
+}
+
+export interface GemRefundPolicyRow {
+	id: number;
+	policyKey: string;
+	value: number;
+	label: string;
+	description: string | null;
+	version: number;
+	updatedAt: string;
+}
+
+export interface GemPriceChangeRow {
+	id: number;
+	targetType: 'PRICE' | 'DISCOUNT' | string;
+	targetId: number;
+	featureType: string;
+	countryCode: string | null;
+	gender: string | null;
+	beforeValue: unknown;
+	afterValue: unknown;
+	changedBy: string;
+	memo: string | null;
+	createdAt: string;
+}
+
 export const gemPricing = {
 	getAll: async () => {
 		const res = await adminGet<{ data: any }>('/admin/v2/gems/pricing');
+		return res.data;
+	},
+
+	listPrices: async () => {
+		const res = await adminGet<{
+			data: { prices: GemPriceRow[]; missingFeatureTypes: string[] };
+		}>('/admin/v2/gems/prices');
+		return res.data;
+	},
+
+	createPrice: async (body: {
+		featureType: string;
+		countryCode?: GemScopeCountry;
+		gender?: GemScopeGender;
+		price: number;
+		memo: string;
+		confirmFree?: boolean;
+	}) => {
+		const res = await adminPost<{ data: GemPriceRow }>('/admin/v2/gems/prices', body);
+		return res.data;
+	},
+
+	updatePrice: async (
+		id: number,
+		body: {
+			price: number;
+			memo: string;
+			version: number;
+			confirmFree?: boolean;
+			confirmLargeChange?: boolean;
+		},
+	) => {
+		const res = await adminPatch<{ data: GemPriceRow }>(`/admin/v2/gems/prices/${id}`, body);
+		return res.data;
+	},
+
+	setPriceActive: async (id: number, body: { isActive: boolean; memo: string }) => {
+		const res = await adminPatch<{ data: GemPriceRow }>(
+			`/admin/v2/gems/prices/${id}/active`,
+			body,
+		);
+		return res.data;
+	},
+
+	listDiscounts: async (params?: { featureType?: string; includeExpired?: boolean }) => {
+		const res = await adminGet<{ data: GemDiscountRow[] }>('/admin/v2/gems/discounts', {
+			featureType: params?.featureType,
+			includeExpired: params?.includeExpired ? 'true' : undefined,
+		});
+		return res.data;
+	},
+
+	createDiscount: async (body: {
+		featureType: string;
+		countryCode?: GemScopeCountry;
+		gender?: GemScopeGender;
+		discountAmount: number;
+		/** ISO8601 (UTC). datetime-local 입력은 new Date(v).toISOString() 으로 변환한다. */
+		startsAt: string;
+		endsAt: string;
+		memo: string;
+		confirmFree?: boolean;
+	}) => {
+		const res = await adminPost<{ data: GemDiscountRow }>('/admin/v2/gems/discounts', body);
+		return res.data;
+	},
+
+	/** 행 삭제가 아니라 canceledAt 세팅. 지난 할인도 CS 근거로 남는다. */
+	cancelDiscount: async (id: number) => {
+		const res = await adminDelete<{ data: GemDiscountRow }>(`/admin/v2/gems/discounts/${id}`);
+		return res.data;
+	},
+
+	listRefundPolicies: async () => {
+		const res = await adminGet<{ data: GemRefundPolicyRow[] }>('/admin/v2/gems/refund-policies');
+		return res.data;
+	},
+
+	updateRefundPolicy: async (
+		policyKey: string,
+		body: { value: number; memo: string; version: number; confirmLargeChange?: boolean },
+	) => {
+		const res = await adminPatch<{ data: GemRefundPolicyRow }>(
+			`/admin/v2/gems/refund-policies/${policyKey}`,
+			body,
+		);
+		return res.data;
+	},
+
+	listChanges: async (featureType?: string) => {
+		const res = await adminGet<{ data: GemPriceChangeRow[] }>('/admin/v2/gems/price-changes', {
+			featureType,
+		});
 		return res.data;
 	},
 };

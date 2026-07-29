@@ -168,6 +168,14 @@ export {
 	likes,
 	dormantLikes,
 } from './revenue';
+export type {
+	GemPriceRow,
+	GemDiscountRow,
+	GemRefundPolicyRow,
+	GemPriceChangeRow,
+	GemScopeCountry,
+	GemScopeGender,
+} from './revenue';
 export { revenueV2 } from './revenue-v2';
 export type { RevenueSummary, RevenueBreakdown, DailyRevenueTrend } from './revenue-v2';
 export { blacklist, usersStats } from './blacklist';
