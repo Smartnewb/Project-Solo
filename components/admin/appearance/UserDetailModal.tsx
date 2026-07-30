@@ -69,6 +69,7 @@ import SmsNotificationModal from './modals/SmsNotificationModal';
 import UniversityTransferModal from './modals/UniversityTransferModal';
 import BirthdayEditModal from './modals/BirthdayEditModal';
 import AccountStatusModal from './modals/AccountStatusModal';
+import { ReferralPostSignupSection } from './referral/ReferralPostSignupSection';
 
 const SHOW_REMATCH_TICKET_ADMIN = false;
 
@@ -1506,6 +1507,14 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                     )}
                   </Box>
                 </Box>
+
+                {userId && (
+                  <ReferralPostSignupSection
+                    userId={userId}
+                    createdAt={userDetail.createdAt}
+                    onCompleted={onRefresh}
+                  />
+                )}
 
                 {/* 추가 정보 섹션 */}
                 <Box sx={{ mt: 4 }}>

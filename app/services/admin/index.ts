@@ -2,6 +2,8 @@
 export { stats, kpiReport } from './dashboard';
 export { userAppearance, deletedFemales, userEngagement } from './users';
 export { matching, forceMatching } from './matching';
+export { referrals } from './referrals';
+export type { ReferralMode, ReferralOwner, ReferralPreview } from './referrals';
 export { pushNotifications, pushNotificationCatalog, aiChat, momentQuestions } from './messaging';
 export { pushNotificationRegistry } from './push-notification-registry';
 export {
