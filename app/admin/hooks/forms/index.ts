@@ -14,3 +14,4 @@ export * from './schemas/community.schema';
 export * from './schemas/ios-refund.schema';
 export * from './schemas/sometime-article.schema';
 export * from './schemas/longform.schema';
+export * from './schemas/policy-document.schema';

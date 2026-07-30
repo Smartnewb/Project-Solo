@@ -9,12 +9,19 @@ import type {
 	Banner,
 	BannerPosition,
 	CardNewsTrack,
+	ConsentProgress,
 	CreateBannerRequest,
 	CreateCardNewsRequest,
 	CreatePresetRequest,
 	CreateSometimeArticleRequest,
+	PolicyDocument,
+	PolicyDocumentStatus,
+	PolicyDocumentType,
 	PublishCardNewsRequest,
 	PublishCardNewsResponse,
+	PublishPolicyDocumentResponse,
+	RegisterPolicyDocumentRequest,
+	RegisterPolicyDocumentResponse,
 	UpdateBannerOrderRequest,
 	UpdateBannerRequest,
 	UpdateCardNewsRequest,
@@ -546,6 +553,73 @@ export const publicReviews = {
 				'/app-reviews/featured',
 				Object.keys(query).length > 0 ? query : undefined,
 			);
+		} catch (error: any) {
+			throw error;
+		}
+	},
+};
+
+// ==================== 정책 개정 등록 ====================
+export interface PolicyDocumentListParams {
+	documentType?: PolicyDocumentType;
+	status?: PolicyDocumentStatus;
+}
+
+export const policyDocuments = {
+	register: async (data: RegisterPolicyDocumentRequest): Promise<RegisterPolicyDocumentResponse> => {
+		try {
+			const res = await adminPost<{ data: RegisterPolicyDocumentResponse }>(
+				'/admin/v2/content/policy-documents',
+				data,
+			);
+			return res.data;
+		} catch (error: any) {
+			throw error;
+		}
+	},
+
+	getList: async (params: PolicyDocumentListParams = {}): Promise<PolicyDocument[]> => {
+		try {
+			const query: Record<string, string> = {};
+			if (params.documentType) query.documentType = params.documentType;
+			if (params.status) query.status = params.status;
+			const res = await adminGet<{ data: PolicyDocument[] }>(
+				'/admin/v2/content/policy-documents',
+				Object.keys(query).length > 0 ? query : undefined,
+			);
+			return res.data;
+		} catch (error: any) {
+			throw error;
+		}
+	},
+
+	get: async (id: string): Promise<PolicyDocument> => {
+		try {
+			const res = await adminGet<{ data: PolicyDocument }>(`/admin/v2/content/policy-documents/${id}`);
+			return res.data;
+		} catch (error: any) {
+			throw error;
+		}
+	},
+
+	publish: async (id: string): Promise<PublishPolicyDocumentResponse> => {
+		try {
+			const res = await adminPost<{ data: PublishPolicyDocumentResponse }>(
+				`/admin/v2/content/policy-documents/${id}/publish`,
+				{},
+			);
+			return res.data;
+		} catch (error: any) {
+			throw error;
+		}
+	},
+
+	consentProgress: async (id: string): Promise<ConsentProgress> => {
+		try {
+			const res = await adminGet<{ data: ConsentProgress }>(
+				`/admin/v2/content/policy-documents/${id}/consent-progress`,
+			);
+			return res.data;
 		} catch (error: any) {
 			throw error;
 		}

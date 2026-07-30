@@ -9,9 +9,12 @@ import type {
   CreateNoticeRequest,
   CreatePresetRequest,
   CreateSometimeArticleRequest,
+  PolicyDocumentStatus,
+  PolicyDocumentType,
   PublishCardNewsRequest,
   PublishNoticeRequest,
   PushResendNoticeRequest,
+  RegisterPolicyDocumentRequest,
   UpdateBannerOrderRequest,
   UpdateBannerRequest,
   UpdateCardNewsRequest,
@@ -22,7 +25,7 @@ import type {
   UpdateVideoRequest,
   VideoStatus,
 } from '@/types/admin';
-import type { AppReviewsParams } from '@/app/services/admin/content';
+import type { AppReviewsParams, PolicyDocumentListParams } from '@/app/services/admin/content';
 
 // Query keys
 export const contentKeys = {
@@ -55,6 +58,12 @@ export const contentKeys = {
   videos: () => [...contentKeys.all, 'videos'] as const,
   videoList: (params?: object) => [...contentKeys.videos(), 'list', params] as const,
   videoDetail: (id: string) => [...contentKeys.videos(), 'detail', id] as const,
+  policyDocuments: () => [...contentKeys.all, 'policy-documents'] as const,
+  policyDocumentList: (params?: PolicyDocumentListParams) =>
+    [...contentKeys.policyDocuments(), 'list', params] as const,
+  policyDocumentDetail: (id: string) => [...contentKeys.policyDocuments(), 'detail', id] as const,
+  policyDocumentConsentProgress: (id: string) =>
+    [...contentKeys.policyDocuments(), 'consent-progress', id] as const,
 };
 
 // ==================== Background Presets ====================
@@ -567,5 +576,53 @@ export function useBulkCreateVideos() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: contentKeys.videos() });
     },
+  });
+}
+
+// ==================== 정책 개정 등록 ====================
+
+export function usePolicyDocumentList(params: PolicyDocumentListParams = {}) {
+  return useQuery({
+    queryKey: contentKeys.policyDocumentList(params),
+    queryFn: () => AdminService.policyDocuments.getList(params),
+  });
+}
+
+export function usePolicyDocument(id: string) {
+  return useQuery({
+    queryKey: contentKeys.policyDocumentDetail(id),
+    queryFn: () => AdminService.policyDocuments.get(id),
+    enabled: !!id,
+  });
+}
+
+export function useRegisterPolicyDocument() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: RegisterPolicyDocumentRequest) => AdminService.policyDocuments.register(data),
+    onSuccess: (result) => {
+      if (result.saved) {
+        queryClient.invalidateQueries({ queryKey: contentKeys.policyDocuments() });
+      }
+    },
+  });
+}
+
+export function usePublishPolicyDocument() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => AdminService.policyDocuments.publish(id),
+    onSuccess: (_result, id) => {
+      queryClient.invalidateQueries({ queryKey: contentKeys.policyDocuments() });
+      queryClient.invalidateQueries({ queryKey: contentKeys.policyDocumentDetail(id) });
+    },
+  });
+}
+
+export function usePolicyConsentProgress(id: string) {
+  return useQuery({
+    queryKey: contentKeys.policyDocumentConsentProgress(id),
+    queryFn: () => AdminService.policyDocuments.consentProgress(id),
+    enabled: !!id,
   });
 }
