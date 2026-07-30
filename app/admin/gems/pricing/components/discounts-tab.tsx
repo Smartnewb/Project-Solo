@@ -32,7 +32,8 @@ import { AdminLoading } from '@/shared/ui/admin/loading';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
 import AdminService from '@/app/services/admin';
 import type { GemDiscountRow, GemPriceRow } from '@/app/services/admin';
-import { COUNTRY_OPTIONS, DiscountStatusChip, GENDER_OPTIONS, ScopeChip, discountStatus, localInputToIso, mergeFeatureTypes, neededConfirm } from './shared';
+import { featureOptionLabel } from './feature-labels';
+import { COUNTRY_OPTIONS, FeatureName, DiscountStatusChip, GENDER_OPTIONS, ScopeChip, discountStatus, localInputToIso, mergeFeatureTypes, neededConfirm } from './shared';
 
 interface Props {
 	onChanged: () => void;
@@ -146,7 +147,7 @@ export default function DiscountsTab({ onChanged }: Props) {
 						<MenuItem value="">전체 액션</MenuItem>
 						{featureTypes.map((t) => (
 							<MenuItem key={t} value={t}>
-								{t}
+								{featureOptionLabel(t)}
 							</MenuItem>
 						))}
 					</Select>
@@ -208,7 +209,7 @@ export default function DiscountsTab({ onChanged }: Props) {
 												<DiscountStatusChip status={status} />
 											</TableCell>
 											<TableCell>
-												<code>{row.featureType}</code>
+												<FeatureName featureType={row.featureType} />
 											</TableCell>
 											<TableCell>
 												<ScopeChip countryCode={row.countryCode} gender={row.gender} />
@@ -350,7 +351,7 @@ function CreateDiscountDialog({
 						<Select label="액션" value={featureType} onChange={(e) => setFeatureType(e.target.value)}>
 							{featureTypes.map((t) => (
 								<MenuItem key={t} value={t}>
-									{t}
+									{featureOptionLabel(t)}
 								</MenuItem>
 							))}
 						</Select>
@@ -487,7 +488,7 @@ function CancelDiscountDialog({
 				)}
 				<DialogContentText component="div">
 					<Typography variant="body2" gutterBottom>
-						<code>{row.featureType}</code> · -{row.discountAmount} 구슬
+						{featureOptionLabel(row.featureType)} · -{row.discountAmount} 구슬
 					</Typography>
 					<Typography variant="body2" gutterBottom>
 						{formatDateTimeKR(row.startsAt)} ~ {formatDateTimeKR(row.endsAt)}

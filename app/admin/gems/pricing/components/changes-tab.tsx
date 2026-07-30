@@ -20,7 +20,7 @@ import { AdminLoading } from '@/shared/ui/admin/loading';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
 import AdminService from '@/app/services/admin';
 import type { GemPriceChangeRow } from '@/app/services/admin';
-import { ScopeChip } from './shared';
+import { FeatureName, ScopeChip } from './shared';
 
 /** 감사 로그의 before/after 는 임의 JSON 이라 관심 필드만 뽑아 한 줄로 보여준다. */
 function summarize(value: unknown): string {
@@ -134,7 +134,7 @@ export default function ChangesTab({ refreshKey }: Props) {
 											/>
 										</TableCell>
 										<TableCell>
-											<code>{row.featureType}</code>
+											<FeatureName featureType={row.featureType} />
 										</TableCell>
 										<TableCell>
 											<ScopeChip countryCode={row.countryCode} gender={row.gender} />

@@ -1,6 +1,27 @@
 'use client';
 
-import { Chip } from '@mui/material';
+import { Box, Chip, Typography } from '@mui/material';
+import { featureLabel } from './feature-labels';
+
+/**
+ * 액션 이름. 한글 라벨을 크게, 원본 enum 키를 작게 함께 보여준다 —
+ * 어드민은 한글로 찾고, 개발자·CS 는 로그의 enum 키로 대조한다.
+ */
+export function FeatureName({ featureType }: { featureType: string }) {
+	const label = featureLabel(featureType);
+	return (
+		<Box>
+			<Typography variant="body2" fontWeight={600}>
+				{label}
+			</Typography>
+			{label !== featureType && (
+				<Typography variant="caption" color="text.secondary" component="code">
+					{featureType}
+				</Typography>
+			)}
+		</Box>
+	);
+}
 
 /** 서버가 요구하는 확인 플래그. 메시지로 판별한다 — 별도 에러코드가 없다. */
 export function neededConfirm(message: string): 'confirmFree' | 'confirmLargeChange' | null {

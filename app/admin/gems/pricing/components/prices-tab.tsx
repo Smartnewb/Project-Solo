@@ -7,6 +7,7 @@ import {
 	Button,
 	Checkbox,
 	Chip,
+	Collapse,
 	Dialog,
 	DialogActions,
 	DialogContent,
@@ -30,13 +31,16 @@ import {
 	Tooltip,
 	Typography,
 } from '@mui/material';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import SearchIcon from '@mui/icons-material/Search';
 import { formatDateTimeKR } from '@/app/utils/formatters';
 import { AdminLoading } from '@/shared/ui/admin/loading';
 import { getAdminErrorMessage, isAdminConflictError } from '@/shared/lib/http/admin-fetch';
 import AdminService from '@/app/services/admin';
 import type { GemPriceRow } from '@/app/services/admin';
-import { COUNTRY_OPTIONS, GENDER_OPTIONS, ScopeChip, mergeFeatureTypes, neededConfirm, scopeRank } from './shared';
+import { featureLabel, featureOptionLabel } from './feature-labels';
+import { COUNTRY_OPTIONS, FeatureName, GENDER_OPTIONS, ScopeChip, mergeFeatureTypes, neededConfirm, scopeRank } from './shared';
 
 interface Props {
 	onChanged: () => void;
@@ -53,6 +57,7 @@ export default function PricesTab({ onChanged }: Props) {
 	const [editTarget, setEditTarget] = useState<GemPriceRow | null>(null);
 	const [createOpen, setCreateOpen] = useState(false);
 	const [toggleTarget, setToggleTarget] = useState<GemPriceRow | null>(null);
+	const [missingOpen, setMissingOpen] = useState(false);
 
 	const load = useCallback(async () => {
 		setLoading(true);
@@ -80,15 +85,21 @@ export default function PricesTab({ onChanged }: Props) {
 	const allFeatureTypes = useMemo(() => mergeFeatureTypes(prices, missing), [prices, missing]);
 
 	const rows = useMemo(() => {
-		const q = search.trim().toUpperCase();
+		const q = search.trim().toLowerCase();
 		return prices
-			.filter((p) => (q ? p.featureType.includes(q) : true))
+			.filter((p) =>
+				q
+					? p.featureType.toLowerCase().includes(q) ||
+						featureLabel(p.featureType).toLowerCase().includes(q)
+					: true,
+			)
 			.filter((p) =>
 				activeFilter === 'all' ? true : activeFilter === 'active' ? p.isActive : !p.isActive,
 			)
 			.sort(
 				(a, b) =>
-					a.featureType.localeCompare(b.featureType) ||
+					// 한글 라벨 기준 정렬. 같은 액션의 스코프 행들은 라벨이 같아 계속 붙어 있는다.
+					featureLabel(a.featureType).localeCompare(featureLabel(b.featureType), 'ko') ||
 					scopeRank(a.countryCode, a.gender) - scopeRank(b.countryCode, b.gender),
 			);
 	}, [prices, search, activeFilter]);
@@ -114,7 +125,7 @@ export default function PricesTab({ onChanged }: Props) {
 			<Paper sx={{ p: 2, mb: 2, display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
 				<TextField
 					size="small"
-					placeholder="액션 검색 (예: CHAT_START)"
+					placeholder="액션 검색 (예: 채팅 시작, CHAT_START)"
 					value={search}
 					onChange={(e) => setSearch(e.target.value)}
 					sx={{ minWidth: 260, flex: 1 }}
@@ -144,15 +155,30 @@ export default function PricesTab({ onChanged }: Props) {
 			</Paper>
 
 			{missing.length > 0 && (
-				<Alert severity="warning" sx={{ mb: 2 }}>
-					<Typography variant="body2" sx={{ mb: 1 }}>
-						가격 행이 없는 액션 {missing.length}개 — 소모 액션이라면 지금 추가해야 합니다.
+				<Alert severity="info" sx={{ mb: 2 }}>
+					<Typography variant="body2">
+						가격 행이 없는 액션 {missing.length}개 — 대부분 <b>보상·환급·결제·관리자 조작</b>이라
+						정가 개념 자체가 없습니다. 이 목록에 있다고 해서 추가해야 하는 건 아닙니다.
 					</Typography>
-					<Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-						{missing.map((t) => (
-							<Chip key={t} size="small" variant="outlined" label={t} />
-						))}
-					</Box>
+					<Typography variant="body2" sx={{ mt: 0.5 }}>
+						소모 액션인데 여기 있다면 그 액션은 <b>가격표 밖에서 과금</b>되고 있다는 뜻입니다
+						(변동 과금이거나 코드·환경변수 상수). 어드민에서 바꾸려면 서버 작업이 필요합니다.
+					</Typography>
+					<Button
+						size="small"
+						sx={{ mt: 1 }}
+						onClick={() => setMissingOpen((v) => !v)}
+						endIcon={missingOpen ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+					>
+						목록 {missingOpen ? '접기' : '보기'}
+					</Button>
+					<Collapse in={missingOpen} unmountOnExit>
+						<Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 1 }}>
+							{missing.map((t) => (
+								<Chip key={t} size="small" variant="outlined" label={featureOptionLabel(t)} />
+							))}
+						</Box>
+					</Collapse>
 				</Alert>
 			)}
 
@@ -184,7 +210,7 @@ export default function PricesTab({ onChanged }: Props) {
 							rows.map((row) => (
 								<TableRow key={row.id} hover sx={{ opacity: row.isActive ? 1 : 0.55 }}>
 									<TableCell sx={{ fontWeight: 500 }}>
-										<code>{row.featureType}</code>
+										<FeatureName featureType={row.featureType} />
 									</TableCell>
 									<TableCell>
 										<ScopeChip countryCode={row.countryCode} gender={row.gender} />
@@ -327,7 +353,7 @@ function CreatePriceDialog({
 						>
 							{featureTypes.map((t) => (
 								<MenuItem key={t} value={t}>
-									{t}
+									{featureOptionLabel(t)}
 									{missingFeatureTypes.includes(t) && (
 										<Chip size="small" label="미설정" color="warning" sx={{ ml: 1 }} />
 									)}
@@ -458,7 +484,7 @@ function EditPriceDialog({
 	return (
 		<Dialog open fullWidth maxWidth="sm" onClose={onClose}>
 			<DialogTitle>
-				정가 수정 — <code>{row.featureType}</code>
+				정가 수정 — {featureLabel(row.featureType)}
 			</DialogTitle>
 			<DialogContent>
 				<Stack spacing={2} sx={{ mt: 1 }}>
@@ -570,7 +596,7 @@ function ToggleActiveDialog({
 				<Stack spacing={2} sx={{ mt: 1 }}>
 					{error && <Alert severity="error">{error}</Alert>}
 					<Typography variant="body2">
-						<code>{row.featureType}</code> · {row.price} 구슬
+						{featureOptionLabel(row.featureType)} · {row.price} 구슬
 					</Typography>
 					{!next && (
 						<Alert severity="warning">

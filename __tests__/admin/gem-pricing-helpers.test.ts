@@ -4,6 +4,11 @@ import {
 	neededConfirm,
 	scopeRank,
 } from '@/app/admin/gems/pricing/components/shared';
+import {
+	GEM_FEATURE_LABELS,
+	featureLabel,
+	featureOptionLabel,
+} from '@/app/admin/gems/pricing/components/feature-labels';
 
 describe('discountStatus', () => {
 	const base = { startsAt: '2026-08-01T00:00:00.000Z', endsAt: '2026-08-10T00:00:00.000Z' };
@@ -49,6 +54,20 @@ describe('mergeFeatureTypes', () => {
 				['LIKE_PROFILE', 'CHAT_START'],
 			),
 		).toEqual(['CHAT_START', 'LIKE_PROFILE', 'PROFILE_OPEN']);
+	});
+});
+
+describe('액션 라벨', () => {
+	it('라벨이 없는 액션은 지어내지 않고 enum 키를 그대로 노출한다', () => {
+		expect(featureLabel('CHAT_START')).toBe('채팅 시작하기');
+		expect(featureLabel('SOME_NEW_ACTION')).toBe('SOME_NEW_ACTION');
+		expect(featureOptionLabel('SOME_NEW_ACTION')).toBe('SOME_NEW_ACTION');
+		expect(featureOptionLabel('CHAT_START')).toBe('채팅 시작하기 (CHAT_START)');
+	});
+
+	it('같은 한글 라벨이 두 액션에 붙어 있지 않다 — 어드민이 구별할 수 없게 된다', () => {
+		const labels = Object.values(GEM_FEATURE_LABELS);
+		expect(new Set(labels).size).toBe(labels.length);
 	});
 });
 
