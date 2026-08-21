@@ -2,10 +2,13 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Box, useMediaQuery, useTheme } from '@mui/material';
+import { Box, ToggleButton, ToggleButtonGroup, useMediaQuery, useTheme } from '@mui/material';
+import { GridView as GridViewIcon, ViewList as ViewListIcon } from '@mui/icons-material';
 import StatusCountBar from './components/StatusCountBar';
 import SessionQueue from './components/SessionQueue';
 import ChatPanel from './components/ChatPanel';
+import SessionGrid from './components/SessionGrid';
+import ChatDetailDialog from './components/ChatDetailDialog';
 import { useSessionPolling } from './hooks/useSessionPolling';
 import type { SupportDomain } from '@/app/types/support-chat';
 
@@ -19,6 +22,8 @@ function SupportChatPageContent() {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(sessionFromUrl);
   const [activeTab, setActiveTab] = useState<'active' | 'resolved'>('active');
   const [domainFilter, setDomainFilter] = useState<SupportDomain | 'all'>('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'split'>('grid');
+  const [gridSessionId, setGridSessionId] = useState<string | null>(null);
   const [unreadMap, setUnreadMap] = useState<Record<string, number>>({});
   const [mobileView, setMobileView] = useState<'list' | 'chat'>(() =>
     isMobile && sessionFromUrl ? 'chat' : 'list'
@@ -183,11 +188,50 @@ function SupportChatPageContent() {
   // Desktop layout
   return (
     <Box sx={{ p: 3, height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <StatusCountBar
-        waitingCount={statusCounts.waiting}
-        handlingCount={statusCounts.handling}
-        resolvedCount={statusCounts.resolved}
-      />
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ flex: 1 }}>
+          <StatusCountBar
+            waitingCount={statusCounts.waiting}
+            handlingCount={statusCounts.handling}
+            resolvedCount={statusCounts.resolved}
+          />
+        </Box>
+        <ToggleButtonGroup
+          size="small"
+          exclusive
+          value={viewMode}
+          onChange={(_, value) => value && setViewMode(value)}
+          sx={{ mb: 2 }}
+        >
+          <ToggleButton value="grid">
+            <GridViewIcon fontSize="small" sx={{ mr: 0.5 }} /> 그리드
+          </ToggleButton>
+          <ToggleButton value="split">
+            <ViewListIcon fontSize="small" sx={{ mr: 0.5 }} /> 목록
+          </ToggleButton>
+        </ToggleButtonGroup>
+      </Box>
+      {viewMode === 'grid' ? (
+        <>
+          <SessionGrid
+            activeSessions={activeSessions}
+            resolvedSessions={resolvedSessions}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            domainFilter={domainFilter}
+            onDomainFilterChange={setDomainFilter}
+            onOpenSession={setGridSessionId}
+          />
+          {gridSessionId && (
+            <ChatDetailDialog
+              open
+              sessionId={gridSessionId}
+              onClose={() => setGridSessionId(null)}
+              onSessionUpdated={handleSessionUpdated}
+            />
+          )}
+        </>
+      ) : (
       <Box
         sx={{
           flex: 1,
@@ -217,6 +261,7 @@ function SupportChatPageContent() {
           onSessionUpdated={handleSessionUpdated}
         />
       </Box>
+      )}
     </Box>
   );
 }
