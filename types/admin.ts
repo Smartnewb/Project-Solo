@@ -1308,3 +1308,126 @@ export interface PublishNoticeResponse {
   success: boolean;
   sentCount?: number;
 }
+
+// ==================== Policy Documents (정책 개정 등록) ====================
+
+export type PolicyDocumentType =
+  | 'TERMS_OF_SERVICE'
+  | 'PRIVACY_POLICY'
+  | 'DATA_COLLECTION_CONSENT'
+  | 'SENSITIVE_INFO_CONSENT'
+  | 'THIRD_PARTY_PROVISION'
+  | 'MARKETING_CONSENT'
+  | 'REFUND_POLICY'
+  | 'LBS_TERMS'
+  | 'LOCATION_INFO_CONSENT'
+  | 'CHILD_SAFETY_POLICY';
+
+export type PolicyDocumentStatus =
+  | 'DRAFT'
+  | 'SCHEDULED'
+  | 'NOTICE_ACTIVE'
+  | 'EFFECTIVE'
+  | 'SUPERSEDED';
+
+export interface PolicyDecision {
+  noticeTrack: string;
+  requiresReconsent: boolean;
+  reconsentAxes: string[];
+  needsLegalReview: boolean;
+}
+
+export interface PolicyDocument {
+  id: string;
+  documentType: PolicyDocumentType;
+  version: string;
+  country?: string;
+  noticeTrack: string;
+  requiresReconsent: boolean;
+  reconsentAxes: string[];
+  isMandatory: boolean;
+  diffSummary: string;
+  changeReason: string;
+  contentUrl?: string | null;
+  noticeStartedAt: string;
+  effectiveAt: string;
+  noticeVisibleUntil?: string | null;
+  status: PolicyDocumentStatus;
+  createdBy?: string | null;
+  createdAt: string;
+}
+
+export interface RegisterPolicyDocumentRequest {
+  documentType: PolicyDocumentType;
+  version: string;
+  diffSummary: string;
+  changeReason: string;
+  contentUrl?: string;
+  noticeStartedAt: string;
+  effectiveAt: string;
+  noticeVisibleUntil?: string;
+  isMandatory: boolean;
+  // 5축 (PRIVACY_POLICY / DATA_COLLECTION_CONSENT / SENSITIVE_INFO_CONSENT / THIRD_PARTY_PROVISION)
+  axisCollectionItems?: boolean;
+  axisPurpose?: boolean;
+  axisRetentionPeriod?: boolean;
+  axisThirdParty?: boolean;
+  axisSensitiveInfo?: boolean;
+  // 불리·중대 변경 (TERMS_OF_SERVICE / REFUND_POLICY)
+  adverseOrMaterial?: boolean;
+  // 마케팅 수신동의 (MARKETING_CONSENT)
+  marketingMediaExpanded?: boolean;
+  marketingAdTypeExpanded?: boolean;
+  marketingNightExpanded?: boolean;
+  // 위치 정보 (LBS_TERMS / LOCATION_INFO_CONSENT)
+  locationScopeExpanded?: boolean;
+  // 재동의 예외 처리
+  reconsentOverride?: boolean;
+  reconsentOverrideReason?: string;
+  // 민감정보 동의 - 개인정보처리방침 §23③ 반영 확인
+  privacyPolicyDisclosureConfirmed?: boolean;
+  // 필수 항목 - 최소수집 원칙 확인
+  minimalCollectionConfirmed?: boolean;
+  // 경고를 확인하고 재제출
+  acknowledgeWarnings?: boolean;
+}
+
+export interface RegisterPolicyDocumentSavedResponse {
+  preview: false;
+  saved: true;
+  document: PolicyDocument;
+  decision: PolicyDecision;
+  warnings: string[];
+  needsLegalReview: boolean;
+}
+
+export interface RegisterPolicyDocumentNotSavedResponse {
+  preview: true;
+  saved: false;
+  blockers: string[];
+  warnings: string[];
+  decision: PolicyDecision;
+  message: string;
+}
+
+export type RegisterPolicyDocumentResponse =
+  | RegisterPolicyDocumentSavedResponse
+  | RegisterPolicyDocumentNotSavedResponse;
+
+export interface PublishPolicyDocumentResponse {
+  id: string;
+  status: 'NOTICE_ACTIVE';
+  dispatch?: unknown;
+}
+
+export interface ConsentProgress {
+  policyDocumentId: string;
+  documentType: PolicyDocumentType;
+  version: string;
+  requiresReconsent: boolean;
+  eligibleUsers: number;
+  consented: number;
+  declined: number;
+  pending: number;
+  completionRate: number;
+}
