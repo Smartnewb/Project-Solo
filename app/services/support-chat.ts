@@ -1,4 +1,4 @@
-import { adminDelete, adminGet, adminPatch, adminPost } from '@/shared/lib/http/admin-fetch';
+import { adminDelete, adminGet, adminPatch, adminPost, adminRequest } from '@/shared/lib/http/admin-fetch';
 import type {
   AdminSessionsParams,
   AdminSessionsResponse,
@@ -8,6 +8,7 @@ import type {
   TakeoverResponse,
   ResolveResponse,
   ResolveSessionRequest,
+  SendMessageResponse,
   UpdateAdminNoteResponse,
   UpdateMessageRequest,
   UpdateMessageResponse,
@@ -61,6 +62,32 @@ class SupportChatService {
       console.error('Support chat session 종료 실패:', error);
       const message = error instanceof Error ? error.message : '세션 종료에 실패했습니다.';
       throw new Error(message);
+    }
+  }
+
+  async sendMessage(sessionId: string, content: string): Promise<SendMessageResponse> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
+    try {
+      const result = await adminRequest<SendMessageResponse>(
+        `${this.basePath}/sessions/${sessionId}/messages`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content }),
+          signal: controller.signal,
+        }
+      );
+      if (!result.success) throw new Error('메시지 전송에 실패했습니다.');
+      return result;
+    } catch (error) {
+      if (controller.signal.aborted) {
+        // Delivery may have succeeded on the server; never retry automatically.
+        throw new Error('전송 결과를 확인하지 못했습니다. 채팅 내역을 확인한 후 다시 시도해주세요.');
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
     }
   }
 

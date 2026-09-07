@@ -117,6 +117,7 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const sendingRef = useRef(false);
   const userTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const adminTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -169,7 +170,7 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
     }
   }, [sessionId, adminSession?.user.id]);
 
-  const { state: socketState, sendMessage: socketSendMessage, setTyping, reconnect } = useSupportChatSocket({
+  const { state: socketState, setTyping, reconnect } = useSupportChatSocket({
     sessionId: sessionId || '',
     onNewMessage: handleNewMessage,
     onMessageUpdated: handleMessageUpdated,
@@ -340,27 +341,16 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
   };
 
   const handleSendMessage = async () => {
-    if (!messageInput.trim() || !session) return;
-    if (!socketState.connected || !socketState.sessionJoined) {
-      setSnackbar({
-        open: true,
-        message: 'WebSocket 연결이 되어있지 않습니다. 잠시 후 다시 시도해주세요.',
-        severity: 'error',
-      });
-      return;
-    }
+    if (sendingRef.current || !messageInput.trim() || !sessionId || session?.status !== 'admin_handling') return;
+    sendingRef.current = true;
     setSending(true);
     try {
-      const success = await socketSendMessage(messageInput.trim());
-      if (success) {
-        setMessageInput('');
-        setTyping(false);
-        if (adminTypingTimeoutRef.current) clearTimeout(adminTypingTimeoutRef.current);
-        await fetchSessionDetail();
-        onSessionUpdated();
-      } else {
-        setSnackbar({ open: true, message: '메시지 전송에 실패했습니다.', severity: 'error' });
-      }
+      await supportChatService.sendMessage(sessionId, messageInput.trim());
+      setMessageInput('');
+      setTyping(false);
+      if (adminTypingTimeoutRef.current) clearTimeout(adminTypingTimeoutRef.current);
+      await fetchSessionDetail();
+      onSessionUpdated();
     } catch (err) {
       setSnackbar({
         open: true,
@@ -368,6 +358,7 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
         severity: 'error',
       });
     } finally {
+      sendingRef.current = false;
       setSending(false);
     }
   };
@@ -426,8 +417,8 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && e.keyCode !== 229) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -943,18 +934,19 @@ export default function ChatPanel({ sessionId, onSessionUpdated, onBack }: ChatP
             <TextField
               fullWidth
               size="small"
-              placeholder={socketState.connected && socketState.sessionJoined ? '메시지를 입력하세요...' : 'WebSocket 연결 중...'}
+              placeholder="메시지를 입력하세요..."
               value={messageInput}
               onChange={(e) => handleMessageInputChange(e.target.value)}
-              onKeyPress={handleKeyPress}
-              disabled={sending || !socketState.connected || !socketState.sessionJoined}
+              onKeyDown={handleKeyDown}
+              disabled={sending}
               multiline
               maxRows={3}
             />
             <Button
               variant="contained"
               onClick={handleSendMessage}
-              disabled={sending || !messageInput.trim() || !socketState.connected || !socketState.sessionJoined}
+              disabled={sending || !messageInput.trim()}
+              aria-label="메시지 전송"
               sx={{ minWidth: 'auto', px: 2 }}
             >
               {sending ? <CircularProgress size={20} /> : <SendIcon />}

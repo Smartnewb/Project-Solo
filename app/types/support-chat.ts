@@ -170,6 +170,13 @@ export interface UpdateMessageRequest {
   content: string;
 }
 
+export interface SendMessageResponse {
+  success: boolean;
+  messageId: string;
+  sessionId: string;
+  createdAt: string;
+}
+
 export interface UpdateMessageResponse {
   success: boolean;
   messageId: string;

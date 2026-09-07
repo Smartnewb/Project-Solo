@@ -88,6 +88,7 @@ export default function ChatDetailDialog({
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const sendingRef = useRef(false);
 
   const handleNewMessage = useCallback((message: SupportMessage) => {
     setSession((prev) => {
@@ -134,7 +135,7 @@ export default function ChatDetailDialog({
     onSessionUpdated();
   }, [onSessionUpdated]);
 
-  const { state: socketState, sendMessage: socketSendMessage } = useSupportChatSocket({
+  const { state: socketState } = useSupportChatSocket({
     sessionId,
     onNewMessage: handleNewMessage,
     onMessageUpdated: handleMessageUpdated,
@@ -215,31 +216,14 @@ export default function ChatDetailDialog({
   };
 
   const handleSendMessage = async () => {
-    if (!messageInput.trim() || !session) return;
-
-    if (!socketState.connected || !socketState.sessionJoined) {
-      setSnackbar({
-        open: true,
-        message: 'WebSocket 연결이 되어있지 않습니다. 잠시 후 다시 시도해주세요.',
-        severity: 'error',
-      });
-      return;
-    }
-
+    if (sendingRef.current || !messageInput.trim() || session?.status !== 'admin_handling') return;
+    sendingRef.current = true;
     setSending(true);
     try {
-      const success = await socketSendMessage(messageInput.trim());
-      if (success) {
-        setMessageInput('');
-        await fetchSessionDetail();
-        onSessionUpdated();
-      } else {
-        setSnackbar({
-          open: true,
-          message: '메시지 전송에 실패했습니다.',
-          severity: 'error',
-        });
-      }
+      await supportChatService.sendMessage(sessionId, messageInput.trim());
+      setMessageInput('');
+      await fetchSessionDetail();
+      onSessionUpdated();
     } catch (err) {
       setSnackbar({
         open: true,
@@ -247,6 +231,7 @@ export default function ChatDetailDialog({
         severity: 'error',
       });
     } finally {
+      sendingRef.current = false;
       setSending(false);
     }
   };
@@ -305,8 +290,8 @@ export default function ChatDetailDialog({
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && e.keyCode !== 229) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -607,18 +592,19 @@ export default function ChatDetailDialog({
                     <TextField
                       fullWidth
                       size="small"
-                      placeholder={socketState.connected && socketState.sessionJoined ? "메시지를 입력하세요..." : "WebSocket 연결 중..."}
+                      placeholder="메시지를 입력하세요..."
                       value={messageInput}
                       onChange={(e) => setMessageInput(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      disabled={sending || !socketState.connected || !socketState.sessionJoined}
+                      onKeyDown={handleKeyDown}
+                      disabled={sending}
                       multiline
                       maxRows={3}
                     />
                     <Button
                       variant="contained"
                       onClick={handleSendMessage}
-                      disabled={sending || !messageInput.trim() || !socketState.connected || !socketState.sessionJoined}
+                      disabled={sending || !messageInput.trim()}
+                      aria-label="메시지 전송"
                       sx={{ minWidth: 'auto', px: 2 }}
                     >
                       {sending ? <CircularProgress size={20} /> : <SendIcon />}
