@@ -1,5 +1,13 @@
 # Project-Solo - Development Guidelines
 
+## Working contract
+- For work dispatched from `sometime-central`, read its root `AGENTS.md` and relevant skill first. A separate Git root may not auto-load central instructions; its production and approval boundaries still apply.
+- Preserve the shared checkout and others' edits. Use a separate worktree and task branch (`codex/` by default); do not rebase or force-push. Commit, push, deployment, and external sending require explicit authorization.
+- Complete authorized local work and meaningful verification before requesting any remaining approval. Use reasonable assumptions for reversible details. User instructions take precedence over skill guidelines within system/developer constraints; cite the exact skill and rule when it blocks remaining work.
+- Read task-relevant docs and skills, not the whole tree. Delegate bounded independent work when it saves time or improves quality; assign exact file ownership and preserve other workers' changes.
+- Inspect `package.json`, then run the checks relevant to the change. Use mocks or isolated dependencies; do not let tests write to production or send real messages. After checks pass, expand/repeat only for new changes, failures, or unresolved concerns.
+- Report user impact, changed behavior, actual checks and material limits in short plain Korean paragraphs. Code and old documentation do not establish current production behavior.
+
 ## Project Overview
 University student matching platform Admin Dashboard (Next.js 14 + AWS Backend)
 
@@ -183,3 +191,6 @@ EDGE_CONFIG=                   # Vercel Edge Config (feature flags)
 - Country → `CountryContext`
 - Server State → React Query (via `AdminQueryProvider`)
 - Local → `useState`
+
+## Instruction maintenance
+`AGENTS.md` is the shared instruction source; `CLAUDE.md` imports it. Workflow references, checked 2026-09-08: [OpenAI Astra prompting guidance](https://developers.openai.com/api/docs/guides/latest-model#prompting-best-practices) and [Codex instruction discovery](https://developers.openai.com/codex/guides/agents-md).
