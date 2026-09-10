@@ -11,9 +11,12 @@ import {
 } from '@mui/material';
 import {
   AUDIT_STATUS_OPTIONS,
+  PROFILE_RANK_OPTIONS,
   VALIDATION_OPTIONS,
 } from '../constants';
 import type { AuditFilters } from '../types';
+
+const RANK_FILTER_OPTIONS = PROFILE_RANK_OPTIONS.filter((option) => option.value !== 'UNKNOWN');
 
 type Props = {
   readonly filters: AuditFilters;
@@ -57,6 +60,25 @@ export function AuditFiltersBar({ filters, onChange }: Props) {
           <MenuItem value="">전체</MenuItem>
           <MenuItem value="FEMALE">여성</MenuItem>
           <MenuItem value="MALE">남성</MenuItem>
+        </Select>
+      </FormControl>
+      <FormControl size="small" sx={{ minWidth: 120 }}>
+        <InputLabel id="audit-rank-label">외모 등급</InputLabel>
+        <Select
+          labelId="audit-rank-label"
+          label="외모 등급"
+          value={filters.profileRank ?? ''}
+          onChange={(event) => {
+            const rank = RANK_FILTER_OPTIONS.find((option) => option.value === event.target.value)?.value;
+            update({ profileRank: rank === 'UNKNOWN' ? undefined : rank });
+          }}
+        >
+          <MenuItem value="">전체</MenuItem>
+          {RANK_FILTER_OPTIONS.map((option) => (
+            <MenuItem key={option.value} value={option.value}>
+              {option.label}
+            </MenuItem>
+          ))}
         </Select>
       </FormControl>
       <FormControl size="small" sx={{ minWidth: 140 }}>

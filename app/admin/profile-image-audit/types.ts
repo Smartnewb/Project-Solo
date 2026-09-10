@@ -9,6 +9,7 @@ export type AuditFilters = Pick<
   ProfileImageAuditListParams,
   | 'auditStatus'
   | 'gender'
+  | 'profileRank'
   | 'isMain'
   | 'hasReport'
   | 'validationDecision'

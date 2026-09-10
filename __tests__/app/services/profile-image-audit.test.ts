@@ -114,6 +114,22 @@ describe('profile image audit service boundaries', () => {
     );
   });
 
+  it.each(['S', 'A', 'B', 'C'] as const)('sends rank %s to the audit endpoint', async (profileRank) => {
+    // Given: a valid rank and existing list filters.
+    fetchMock.mockResolvedValueOnce(jsonResponse(profileImageAuditListFixture));
+    const params = { profileRank, gender: 'FEMALE', page: 1, limit: 18 };
+
+    // When: the list is requested.
+    await profileImageAudit.list(params);
+
+    // Then: the rank survives serialization at the HTTP boundary.
+    const call = fetchMock.mock.calls.at(0);
+    if (!call) throw new Error('profile image audit list did not call fetch');
+    const query = new URL(String(call[0]), 'http://localhost').searchParams;
+    expect(query.get('profileRank')).toBe(profileRank);
+    expect(query.get('gender')).toBe('FEMALE');
+  });
+
   it('keeps backend-shaped card fields for report and sibling image summaries', () => {
     expect(profileImageAuditItemFixture).toMatchObject({
       hasReport: true,

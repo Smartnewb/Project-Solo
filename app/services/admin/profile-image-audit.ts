@@ -126,6 +126,7 @@ export type ProfileImageAuditListParams = {
   readonly limit?: number;
   readonly search?: string;
   readonly gender?: string;
+  readonly profileRank?: Exclude<ProfileImageAuditProfileRank, 'UNKNOWN'>;
   readonly university?: string;
   readonly reviewedType?: ProfileImageAuditReviewedType;
   readonly from?: string;
@@ -205,6 +206,7 @@ function toListQueryParams(params: ProfileImageAuditListParams): AdminQueryParam
     limit: params.limit,
     search: params.search,
     gender: params.gender,
+    profileRank: params.profileRank,
     university: params.university,
     reviewedType: params.reviewedType,
     from: params.from,
