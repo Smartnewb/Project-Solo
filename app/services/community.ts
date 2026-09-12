@@ -238,7 +238,7 @@ const communityService = {
 
 	blindArticle: async (id: string, isBlinded: boolean): Promise<any> => {
 		return adminPatch(`/admin/v2/community/posts/${id}/status`, {
-			isBlinded,
+			action: isBlinded ? 'blind' : 'unblind',
 		});
 	},
 
@@ -412,14 +412,14 @@ const communityService = {
 	bulkBlindArticles: async (ids: string[], isBlinded: boolean): Promise<any> => {
 		if (ids.length === 1) {
 			return adminPatch(`/admin/v2/community/posts/${ids[0]}/status`, {
-				isBlinded,
+				action: isBlinded ? 'blind' : 'unblind',
 			});
 		}
 
 		const results = [];
 		for (const id of ids) {
 			const response = await adminPatch(`/admin/v2/community/posts/${id}/status`, {
-				isBlinded,
+				action: isBlinded ? 'blind' : 'unblind',
 			});
 			results.push(response);
 		}
