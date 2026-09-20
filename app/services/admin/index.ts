@@ -138,6 +138,11 @@ export type {
 } from './community-questions';
 export type { CardNewsTopic, QueueStats, JobStatus } from './card-news-generation';
 export { reports, userReview, profileImages } from './moderation';
+export {
+	profileCuration,
+	type ProfileCurationReviewImage,
+	type ProfileCurationReviewUser,
+} from './profile-curation';
 export { profileImageAudit } from './profile-image-audit';
 export type {
 	ProfileImageAuditActionResult,
@@ -321,6 +326,7 @@ import { videos } from './video';
 import { seo } from './seo';
 import { cardNewsGeneration } from './card-news-generation';
 import { reports, userReview, profileImages } from './moderation';
+import { profileCuration } from './profile-curation';
 import { profileImageAudit } from './profile-image-audit';
 import {
 	gems,
@@ -364,6 +370,7 @@ const AdminService = {
 	matching,
 	reports,
 	profileImages,
+	profileCuration,
 	profileImageAudit,
 	userReview,
 	pushNotifications,
