@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { CountryProvider } from "@/contexts/CountryContext";
@@ -13,50 +13,35 @@ export default function AdminLayout({
 }: {
   readonly children: React.ReactNode;
 }) {
-  const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [countryModalOpen, setCountryModalOpen] = useState(false);
   const router = useRouter();
-  const { user, isAdmin, signOut } = useAuth();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const queryString = searchParams?.toString() ?? "";
+  const { user, isAdmin, signOut, loading: authLoading } = useAuth();
 
   useEffect(() => {
     let mounted = true;
 
-    async function checkAccess() {
+    function checkAccess() {
       try {
         if (!mounted) return;
 
         console.log("관리자 권한 확인 시작");
 
-        // 로딩 중이 아닐 때만 상태 체크
-        if (!loading) {
-          // 인증되지 않은 경우
-          if (!user) {
-            console.warn("인증된 세션이 없음 - 관리자 페이지 접근 거부");
-            router.replace("/");
-            return;
-          }
-
-          console.log("로그인 사용자:", user.email);
-          console.log("관리자 여부:", isAdmin);
-
-          // 관리자가 아닌 경우
-          if (!isAdmin) {
-            console.warn("관리자가 아닌 사용자의 접근 시도:", user.email);
-            router.replace("/");
-            return;
-          }
-
-          console.log("관리자 권한 확인됨");
+        if (authLoading) return;
+        if (!user || !isAdmin) {
+          sessionStorage.setItem(
+            "adminReturnTo",
+            `${pathname}${queryString ? `?${queryString}` : ""}`,
+          );
+          router.replace("/");
         }
       } catch (error) {
         console.error("관리자 확인 중 오류:", error);
         if (mounted) {
           router.replace("/");
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
         }
       }
     }
@@ -66,7 +51,7 @@ export default function AdminLayout({
     return () => {
       mounted = false;
     };
-  }, [router, user, isAdmin, loading]);
+  }, [router, user, isAdmin, authLoading, pathname, queryString]);
 
   const handleLogout = async () => {
     try {
@@ -78,31 +63,12 @@ export default function AdminLayout({
   };
 
   // 로딩 중일 때의 UI
-  if (loading) {
+  if (authLoading || !user || !isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-primary-DEFAULT border-t-transparent border-solid rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">관리자 권한 확인 중...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // 관리자가 아닐 때의 UI
-  if (!isAdmin) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="text-center bg-white p-8 rounded-lg shadow-md">
-          <p className="text-red-600 font-bold text-xl mb-4">
-            관리자 권한이 필요합니다
-          </p>
-          <button
-            onClick={() => router.push("/")}
-            className="px-6 py-2 bg-primary-DEFAULT text-white rounded-md hover:bg-primary-dark transition-colors"
-          >
-            홈으로 돌아가기
-          </button>
         </div>
       </div>
     );

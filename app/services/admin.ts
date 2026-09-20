@@ -2040,6 +2040,52 @@ const userReview = {
   },
 };
 
+type ProfileCurationAsset = {
+  id: string;
+  s3Url: string;
+};
+
+export type ProfileCurationReviewImage = {
+  imageId: string;
+  url: string;
+  slotIndex: number;
+};
+
+export type ProfileCurationReviewUser = {
+  userId: string;
+  profileId: string;
+  name: string;
+  gender: "MALE" | "FEMALE";
+  approvedImages: ProfileCurationReviewImage[];
+};
+
+const profileCuration = {
+  getReviewUser: async (userId: string): Promise<ProfileCurationReviewUser> => {
+    const response = await axiosServer.get(`/admin/v2/profile-review/users/${userId}`);
+    return response.data.data ?? response.data;
+  },
+
+  uploadPreparedAsset: async (file: File): Promise<ProfileCurationAsset> => {
+    const body = new FormData();
+    body.append("file", file);
+    const response = await axiosMultipart.post("/admin/v2/profile-curation/assets", body);
+    return response.data.data ?? response.data;
+  },
+
+  create: async (input: {
+    userId: string;
+    expiresAt: string;
+    items: Array<{
+      sourceProfileImageId: string;
+      targetSlotIndex: number;
+      preparedImageAssetId: string;
+    }>;
+  }) => {
+    const response = await axiosServer.post("/admin/v2/profile-curation/requests", input);
+    return response.data.data ?? response.data;
+  },
+};
+
 // 대학교 및 학과 관련 API
 const universities = {
   meta: {
@@ -4359,6 +4405,7 @@ const AdminService = {
   reports,
   profileImages,
   userReview,
+  profileCuration,
   pushNotifications,
   aiChat,
   backgroundPresets,

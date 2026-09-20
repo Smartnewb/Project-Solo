@@ -160,8 +160,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // 프로필 정보 조회
       await fetchProfile();
 
-      // 리다이렉트
-      router.push(isAdmin ? '/admin/dashboard' : '/home');
+      // Slack 등 외부 링크로 열었던 관리자 화면으로 되돌아간다.
+      const returnTo = sessionStorage.getItem('adminReturnTo');
+      if (isAdmin && returnTo?.startsWith('/admin/')) {
+        sessionStorage.removeItem('adminReturnTo');
+        router.push(returnTo);
+      } else {
+        router.push(isAdmin ? '/admin/dashboard' : '/home');
+      }
     } catch (error) {
       setState(prev => ({ ...prev, loading: false }));
 
