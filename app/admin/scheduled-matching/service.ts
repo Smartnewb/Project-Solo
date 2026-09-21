@@ -92,7 +92,8 @@ export const scheduledMatchingService = {
     const params: Record<string, string> = { country };
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
-    return adminGet<MatchingPoolStatsResponse>('/admin/v2/stats/matching-pool', params);
+    const response = await adminGet<{ data: MatchingPoolStatsResponse }>('/admin/v2/stats/matching-pool', params);
+    return response.data;
   },
 
   createManualMatching: async (data: ManualMatchingRequest): Promise<ManualMatching> => {
