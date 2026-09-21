@@ -1,22 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminAccessToken, getSessionMeta } from '@/shared/auth';
+import { requireAdminRequest } from '@/shared/auth';
 import { isSameOrigin } from '@/shared/lib/csrf';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api';
+const ID_PATTERN = /^[\w-]+$/;
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
 	if (!isSameOrigin(request)) {
 		return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 	}
 
-	const token = await getAdminAccessToken();
-	const sessionMeta = await getSessionMeta();
-
-	if (!token) {
-		return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-	}
+	const auth = await requireAdminRequest();
+	if (!auth.ok) return auth.response;
+	const { token, meta: sessionMeta } = auth;
 
 	const { id } = await params;
+	if (!ID_PATTERN.test(id)) {
+		return NextResponse.json({ error: 'Invalid id' }, { status: 400 });
+	}
 
 	const headers: Record<string, string> = {
 		Authorization: `Bearer ${token}`,

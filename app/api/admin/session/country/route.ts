@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionMeta, setSessionMeta } from '@/shared/auth';
+import { getSessionMeta, normalizeAdminCountry, setSessionMeta } from '@/shared/auth';
+import { isSameOrigin } from '@/shared/lib/csrf';
 
 export async function POST(request: NextRequest) {
+  if (!isSameOrigin(request)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   const meta = await getSessionMeta();
   if (!meta) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
@@ -12,6 +17,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid country' }, { status: 400 });
   }
 
-  await setSessionMeta({ ...meta, selectedCountry: country });
-  return NextResponse.json({ selectedCountry: country });
+  const selectedCountry = normalizeAdminCountry(country);
+  await setSessionMeta({ ...meta, selectedCountry });
+  return NextResponse.json({ selectedCountry });
 }

@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminAccessToken, getSessionMeta } from '@/shared/auth';
+import { requireAdminRequest } from '@/shared/auth';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api';
 
 export async function GET(request: NextRequest) {
-	const token = await getAdminAccessToken();
-	const sessionMeta = await getSessionMeta();
-
-	if (!token) {
-		return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-	}
+	const auth = await requireAdminRequest();
+	if (!auth.ok) return auth.response;
+	const { token, meta: sessionMeta } = auth;
 
 	const { searchParams } = request.nextUrl;
 	const url = new URL(`${BACKEND_URL}/support-chat/admin/kb-candidates`);

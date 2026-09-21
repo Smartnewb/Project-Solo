@@ -86,7 +86,7 @@ describe('POST /api/admin/auth/login', () => {
       const body = await res.json();
 
       expect(res.status).toBe(200);
-      expect(body.accessToken).toBe('access-token-123');
+      expect(body.accessToken).toBeUndefined();
       expect(body.user.id).toBe('user-1');
       expect(body.user.email).toBe('admin@test.com');
       expect(body.user.roles).toEqual(['admin']);

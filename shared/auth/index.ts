@@ -16,3 +16,5 @@ export {
   getSessionMeta,
   setSessionMeta,
 } from './cookies';
+export { requireAdminRequest } from './require-admin';
+export type { RequireAdminResult } from './require-admin';

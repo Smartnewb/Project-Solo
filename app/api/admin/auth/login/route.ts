@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminLog } from '@/shared/lib/admin-logger';
+import { checkRateLimit, getClientIp } from '@/shared/lib/rate-limit';
 import {
   normalizeAdminCountry,
   setAdminAccessToken,
@@ -18,7 +19,28 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/ap
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request.headers);
+    const ipLimit = checkRateLimit(`login:ip:${ip}`, { windowMs: 5 * 60 * 1000, max: 30 });
+    if (!ipLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Too many attempts' },
+        { status: 429, headers: { 'Retry-After': String(ipLimit.retryAfterSeconds) } },
+      );
+    }
+
     const body = await request.json();
+    const emailKey = typeof body?.email === 'string' ? body.email.trim().toLowerCase().slice(0, 200) : '';
+    const emailLimit = checkRateLimit(`login:acct:${ip}:${emailKey}`, {
+      windowMs: 5 * 60 * 1000,
+      max: 10,
+    });
+    if (!emailLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Too many attempts' },
+        { status: 429, headers: { 'Retry-After': String(emailLimit.retryAfterSeconds) } },
+      );
+    }
+
     const selectedCountry = normalizeAdminCountry(body.selectedCountry);
 
     const backendRes = await fetch(`${BACKEND_URL}/auth/login`, {
@@ -80,7 +102,6 @@ export async function POST(request: NextRequest) {
     await setSessionMeta(meta);
 
     return NextResponse.json({
-      accessToken: data.accessToken,
       user: {
         id: sessionUser.id,
         email: sessionUser.email,

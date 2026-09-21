@@ -46,6 +46,7 @@ import {
   formatDateTimeWithoutTimezoneConversion,
 } from '@/app/utils/formatters';
 import { appearanceGradeEventBus } from '@/app/admin/users/appearance/event-bus';
+import { sanitizeUrl } from '@/shared/lib/safe-url';
 import UserDetailModal, { UserDetail } from './UserDetailModal';
 import BulkEmailNotificationModal from './modals/BulkEmailNotificationModal';
 
@@ -635,7 +636,7 @@ const UserAppearanceTable = forwardRef<UserAppearanceTableRef, UserAppearanceTab
                       <TableCell sx={bodyCellSx}>
                         {instagramId ? (
                           <Link
-                            href={user.instagramUrl || `https://instagram.com/${instagramId}`}
+                            href={sanitizeUrl(user.instagramUrl, { allowRelative: false }) ?? `https://instagram.com/${instagramId}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             sx={{

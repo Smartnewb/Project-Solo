@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHmac } from 'node:crypto';
 import { getSessionMeta } from '@/shared/auth';
+import { isAdminRoleSet } from '@/shared/auth/admin-session-user';
+import { isSameOrigin } from '@/shared/lib/csrf';
 
 // openclaw CS Playground — 어드민이 입력한 CS 질문을 openclaw 동기 엔드포인트로 보내
 // RAG 답변(answer/confidence/domain/sources)을 즉시 받아온다. 실 CS 세션과 무관(미리보기).
@@ -18,9 +20,16 @@ interface PlaygroundResult {
 }
 
 export async function POST(request: NextRequest) {
+  if (!isSameOrigin(request)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   const session = await getSessionMeta();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  if (!Array.isArray(session.roles) || !isAdminRoleSet(session.roles)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   // No Silent Fallback: 설정 누락은 조용히 넘기지 않고 명시적 503.

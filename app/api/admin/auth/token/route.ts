@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { adminLog } from '@/shared/lib/admin-logger';
 import { getAdminAccessToken, getSessionMeta } from '@/shared/auth';
+import { isAdminRoleSet } from '@/shared/auth/admin-session-user';
 
 export async function GET() {
   try {
@@ -9,6 +10,9 @@ export async function GET() {
 
     if (!meta || !token) {
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+    if (!Array.isArray(meta.roles) || !isAdminRoleSet(meta.roles)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     return NextResponse.json({ accessToken: token });

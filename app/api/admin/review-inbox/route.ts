@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAdminAccessToken, getSessionMeta } from '@/shared/auth';
+import { getSessionMeta, requireAdminRequest } from '@/shared/auth';
 import type { ReviewInboxEvidence, ReviewInboxItem, ReviewInboxResponse } from '@/app/admin/review-inbox/types';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api';
@@ -671,12 +671,9 @@ function buildReviewInboxResponse(payload: {
 }
 
 export async function GET(_request: Request) {
-  const token = await getAdminAccessToken();
-  const sessionMeta = await getSessionMeta();
-
-  if (!token) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-  }
+  const auth = await requireAdminRequest();
+  if (!auth.ok) return auth.response;
+  const { token, meta: sessionMeta } = auth;
 
   const [
     profilePending,

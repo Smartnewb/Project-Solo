@@ -51,9 +51,16 @@ import {
 import AdminService from "@/app/services/admin";
 import type { ReportHistoryEntry } from '@/app/services/admin';
 import { safeToLocaleDateString } from '@/app/utils/formatters';
+import { sanitizeUrl } from '@/shared/lib/safe-url';
 import UserDetailModal, {
   type UserDetail,
 } from "@/components/admin/appearance/UserDetailModal";
+
+// Evidence/profile image URLs are user-controlled; refuse javascript:/data: schemes.
+function openExternalUrl(url: string) {
+  const safe = sanitizeUrl(url, { allowRelative: false });
+  if (safe) window.open(safe, "_blank", "noopener");
+}
 
 interface Reporter {
   id: string;
@@ -597,7 +604,7 @@ function ReportsManagementContent() {
                 cursor: "pointer",
                 "&:hover": { opacity: 0.8 },
               }}
-              onClick={() => window.open(imageUrl, "_blank")}
+              onClick={() => openExternalUrl(imageUrl)}
             />
           </ImageListItem>
         ))}
@@ -1089,7 +1096,7 @@ function ReportsManagementContent() {
                           border: "1px solid #e0e0e0",
                           cursor: "pointer",
                         }}
-                        onClick={() => window.open(imageUrl, "_blank")}
+                        onClick={() => openExternalUrl(imageUrl)}
                       />
                     </Grid>
                   ))}

@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { adminLog } from '@/shared/lib/admin-logger';
+import { isSameOrigin } from '@/shared/lib/csrf';
 import {
   getAdminRefreshToken,
   setAdminAccessToken,
@@ -11,7 +12,11 @@ import {
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api';
 
-export async function POST() {
+export async function POST(request: NextRequest) {
+  if (!isSameOrigin(request)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   const currentRefreshToken = await getAdminRefreshToken();
   const meta = await getSessionMeta();
 

@@ -33,6 +33,7 @@ import type {
 import { useToast } from "@/shared/ui/admin/toast/toast-context";
 import { getAdminErrorMessage } from "@/shared/lib/http/admin-fetch";
 import { safeToLocaleDateString } from "@/app/utils/formatters";
+import { sanitizeUrl } from "@/shared/lib/safe-url";
 
 const STATUS_TABS: { value: EtaSubmissionStatusFilter; label: string }[] = [
   { value: "pending", label: "대기" },
@@ -197,8 +198,8 @@ export default function EtaMissionReviewPage() {
                     <TableCell>{s.name ?? "-"}</TableCell>
                     <TableCell>{s.schoolName}</TableCell>
                     <TableCell>
-                      {s.postUrl ? (
-                        <MuiLink href={s.postUrl} target="_blank" rel="noopener noreferrer">
+                      {s.postUrl && sanitizeUrl(s.postUrl) ? (
+                        <MuiLink href={sanitizeUrl(s.postUrl) ?? undefined} target="_blank" rel="noopener noreferrer">
                           링크
                         </MuiLink>
                       ) : (
