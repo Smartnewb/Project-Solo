@@ -319,6 +319,16 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     setMenuAnchorEl(null);
   };
 
+  const handleOpenProfileCuration = () => {
+    if (!userId || userDetail?.gender !== 'MALE') return;
+
+    window.open(
+      `/admin/profile-curation?userId=${encodeURIComponent(userId)}`,
+      '_blank',
+      'noopener,noreferrer'
+    );
+  };
+
   // 프로필 직접 수정 모달 열기
   const handleOpenEditProfileModal = () => {
     handleCloseMenu();
@@ -709,6 +719,17 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           사용자 상세 정보
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          {!loading && userDetail?.gender === 'MALE' && userId && (
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<OpenInNewIcon fontSize="small" />}
+              onClick={handleOpenProfileCuration}
+              sx={{ mr: 1 }}
+            >
+              프로필 큐레이팅
+            </Button>
+          )}
           {/* 관리 메뉴 버튼 */}
           {!loading && userDetail && (
             <Tooltip title="관리 메뉴">
