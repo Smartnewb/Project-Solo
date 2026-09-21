@@ -20,7 +20,7 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/ap
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request.headers);
-    const ipLimit = checkRateLimit(`login:ip:${ip}`, { windowMs: 5 * 60 * 1000, max: 30 });
+    const ipLimit = await checkRateLimit(`login:ip:${ip}`, { windowMs: 5 * 60 * 1000, max: 30 });
     if (!ipLimit.allowed) {
       return NextResponse.json(
         { error: 'Too many attempts' },
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const emailKey = typeof body?.email === 'string' ? body.email.trim().toLowerCase().slice(0, 200) : '';
-    const emailLimit = checkRateLimit(`login:acct:${ip}:${emailKey}`, {
+    const emailLimit = await checkRateLimit(`login:acct:${ip}:${emailKey}`, {
       windowMs: 5 * 60 * 1000,
       max: 10,
     });
