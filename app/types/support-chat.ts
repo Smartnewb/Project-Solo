@@ -1,8 +1,20 @@
-export type SupportSessionStatus = 'bot_handling' | 'waiting_admin' | 'admin_handling' | 'resolved';
+export type SupportSessionStatus =
+  | 'bot_handling'
+  | 'waiting_admin'
+  | 'admin_handling'
+  | 'resolved'
+  | 'admin_resolved';
 export type SupportLanguage = 'ko' | 'ja';
 export type SupportSenderType = 'user' | 'bot' | 'admin';
 export type SupportDomain = 'payment' | 'matching' | 'chat' | 'account' | 'other';
 export type SupportPhase = 'asking' | 'answering';
+
+export type SupportMessageSource =
+  | 'webhook'
+  | 'webhook_tier2'
+  | 'cs_agent'
+  | 'admin'
+  | 'faq_match';
 
 export interface SupportMessageMetadata {
   sources?: {
@@ -15,6 +27,10 @@ export interface SupportMessageMetadata {
   domain?: SupportDomain;
   collectedInfo?: Record<string, string>;
   phase?: SupportPhase;
+  source?: SupportMessageSource | string;
+  reason?: string;
+  webhook_handled?: boolean;
+  tool?: string;
 }
 
 export interface SupportMessage {
@@ -45,11 +61,13 @@ export interface SupportSessionSummary {
   userNickname?: string;
   status: SupportSessionStatus;
   language: SupportLanguage;
+  assignedAdminId?: string;
   messageCount: number;
   lastMessage?: string;
   domain?: SupportDomain;
   collectedInfo?: Record<string, string>;
   createdAt: string;
+  waitingSince?: string;
 }
 
 export interface SupportSessionUser {
@@ -57,6 +75,8 @@ export interface SupportSessionUser {
   nickname?: string;
   phoneNumber?: string;
   universityName?: string;
+  age?: number;
+  gender?: 'MALE' | 'FEMALE';
 }
 
 export interface SupportSessionDetail {
@@ -65,6 +85,7 @@ export interface SupportSessionDetail {
   status: SupportSessionStatus;
   language: SupportLanguage;
   assignedAdminId?: string;
+  adminNote?: string;
   domain?: SupportDomain;
   collectedInfo?: Record<string, string>;
   messages: SupportMessage[];
@@ -97,12 +118,76 @@ export interface TakeoverResponse {
 export interface ResolveResponse {
   success: boolean;
   sessionId: string;
-  status: 'resolved';
+  status: 'resolved' | 'admin_resolved';
   resolvedAt: string;
 }
 
+export type SupportResolutionReason =
+  | 'solved'
+  | 'duplicate'
+  | 'spam'
+  | 'transferred'
+  | 'simple_inquiry'
+  | 'other';
+
 export interface ResolveSessionRequest {
   closingMessage?: string;
+  resolutionReason?: SupportResolutionReason;
+}
+
+export interface UpdateAdminNoteRequest {
+  note: string;
+}
+
+export interface UpdateAdminNoteResponse {
+  success: boolean;
+  sessionId: string;
+  note?: string;
+}
+
+export interface AiDraftSource {
+  question: string;
+  answer: string;
+  similarity: number;
+}
+
+export interface AiDraftResponse {
+  draft: string;
+  confidence: number;
+  sources: AiDraftSource[];
+}
+
+export const RESOLUTION_REASON_LABELS: Record<SupportResolutionReason, string> = {
+  solved: '해결됨',
+  duplicate: '중복문의',
+  spam: '스팸',
+  transferred: '타팀이관',
+  simple_inquiry: '단순문의',
+  other: '기타',
+};
+
+export interface UpdateMessageRequest {
+  content: string;
+}
+
+export interface SendMessageResponse {
+  success: boolean;
+  messageId: string;
+  sessionId: string;
+  createdAt: string;
+}
+
+export interface UpdateMessageResponse {
+  success: boolean;
+  messageId: string;
+  sessionId: string;
+  content: string;
+}
+
+export interface DeleteMessageResponse {
+  success: boolean;
+  messageId: string;
+  sessionId: string;
 }
 
 export const SESSION_STATUS_LABELS: Record<SupportSessionStatus, string> = {
@@ -110,6 +195,7 @@ export const SESSION_STATUS_LABELS: Record<SupportSessionStatus, string> = {
   waiting_admin: '어드민 대기',
   admin_handling: '어드민 응대 중',
   resolved: '해결 완료',
+  admin_resolved: '해결 완료',
 };
 
 export const SESSION_STATUS_COLORS: Record<SupportSessionStatus, 'default' | 'warning' | 'primary' | 'success'> = {
@@ -117,6 +203,7 @@ export const SESSION_STATUS_COLORS: Record<SupportSessionStatus, 'default' | 'wa
   waiting_admin: 'warning',
   admin_handling: 'primary',
   resolved: 'success',
+  admin_resolved: 'success',
 };
 
 export const LANGUAGE_LABELS: Record<SupportLanguage, string> = {
@@ -159,4 +246,12 @@ export const INFO_KEY_LABELS: Record<string, string> = {
   chatRoomId: '채팅방 ID',
   accountEmail: '계정 이메일',
   description: '상세 내용',
+};
+
+export const SOURCE_LABELS: Record<string, { label: string; color: 'default' | 'primary' | 'success' | 'warning' | 'info' }> = {
+  webhook: { label: '🤖 FAQ 자동응답', color: 'success' },
+  webhook_tier2: { label: '🧠 AI Tier2 응답', color: 'info' },
+  cs_agent: { label: '🛎️ CS 에이전트', color: 'primary' },
+  faq_match: { label: '📖 FAQ 매칭', color: 'success' },
+  admin: { label: '👤 어드민', color: 'default' },
 };

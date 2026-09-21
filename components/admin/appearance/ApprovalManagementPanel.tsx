@@ -36,7 +36,7 @@ import {
   Tab,
   Link
 } from '@mui/material';
-import axiosServer from '@/utils/axios';
+import { adminGet, adminPatch } from '@/shared/lib/http/admin-fetch';
 import UserDetailModal, { UserDetail } from './UserDetailModal';
 import RegionFilter, { useRegionFilter } from '@/components/admin/common/RegionFilter';
 import { Check as CheckIcon, Close as CloseIcon } from '@mui/icons-material';
@@ -160,7 +160,9 @@ const ApprovalManagementPanel: React.FC = () => {
       'SEL': '서울',
       'KYG': '경기',
       'CAN': '천안',
-      'GWJ': '광주'
+      'GWJ': '광주',
+      'GNG': '강원',
+      'JJA': '제주'
     };
     return region ? regionMap[region] || region : '-';
   };
@@ -244,33 +246,33 @@ const ApprovalManagementPanel: React.FC = () => {
         activeTab !== 2 ? AdminService.userAppearance.getReapplyUsers(1, 10, regionParam, nameSearch || undefined) : null
       ]);
 
-      const users = currentResponse.items || [];
+      const users = currentResponse.data || [];
       const currentMeta = currentResponse.meta || {};
 
       // 현재 탭 데이터 설정
       if (activeTab === 0) {
         setPendingUsers(users);
-        setPendingCount(currentMeta.totalItems || users.length);
+        setPendingCount(currentMeta.total || users.length);
       } else if (activeTab === 1) {
         setRejectedUsers(users);
-        setRejectedCount(currentMeta.totalItems || users.length);
+        setRejectedCount(currentMeta.total || users.length);
       } else {
         setReapplyUsers(users);
-        setReapplyCount(currentMeta.totalItems || users.length);
+        setReapplyCount(currentMeta.total || users.length);
       }
 
       // 다른 탭들의 카운트 설정
       if (pendingResponse && activeTab !== 0) {
-        setPendingCount(pendingResponse.meta?.totalItems || 0);
+        setPendingCount(pendingResponse.meta?.total || 0);
       }
       if (rejectedResponse && activeTab !== 1) {
-        setRejectedCount(rejectedResponse.meta?.totalItems || 0);
+        setRejectedCount(rejectedResponse.meta?.total || 0);
       }
       if (reapplyResponse && activeTab !== 2) {
-        setReapplyCount(reapplyResponse.meta?.totalItems || 0);
+        setReapplyCount(reapplyResponse.meta?.total || 0);
       }
 
-      setTotalPages(currentMeta.totalPages || Math.ceil((currentMeta.totalItems || users.length) / limit));
+      setTotalPages(currentMeta.totalPages || Math.ceil((currentMeta.total || users.length) / limit));
     } catch (err: any) {
       console.error('승인 대기 사용자 조회 오류:', err);
       setError('사용자 목록을 불러오는 중 오류가 발생했습니다.');
@@ -285,8 +287,7 @@ const ApprovalManagementPanel: React.FC = () => {
     setUserDetailError(null);
 
     try {
-      const response = await axiosServer.get(`/admin/users/detail/${userId}`);
-      const userData = response.data;
+      const userData = await adminGet<any>(`/admin/users/detail/${userId}`);
 
       // API 응답 데이터를 UserDetail 형식에 맞게 변환
       const userDetail: UserDetail = {
@@ -326,7 +327,7 @@ const ApprovalManagementPanel: React.FC = () => {
 
     setProcessing(true);
     try {
-      await axiosServer.patch(`/admin/users/approval/${selectedUserId}/status`, {
+      await adminPatch(`/admin/users/approval/${selectedUserId}/status`, {
         status: 'approved'
       });
 
@@ -354,7 +355,7 @@ const ApprovalManagementPanel: React.FC = () => {
         ? customRejectionReason.trim()
         : getRejectionReasonLabel(rejectionReason);
 
-      await axiosServer.patch(`/admin/users/approval/${selectedUserId}/status`, {
+      await adminPatch(`/admin/users/approval/${selectedUserId}/status`, {
         status: 'rejected',
         rejectionReason: finalRejectionReason
       });
@@ -405,11 +406,11 @@ const ApprovalManagementPanel: React.FC = () => {
           ⚠️ 메뉴 이전 안내
         </Typography>
         <Typography variant="body1" sx={{ mb: 1 }}>
-          회원가입 승인 관리 기능이 <strong>"회원 적격 심사"</strong> 메뉴로 이전되었습니다.
+          회원가입 승인 관리 기능이 <strong>&quot;회원 적격 심사&quot;</strong> 메뉴로 이전되었습니다.
         </Typography>
         <Typography variant="body2" color="text.secondary">
           • 새로운 메뉴에서 프로필 이미지 개별 심사와 사용자 정보를 한눈에 확인할 수 있습니다.<br />
-          • 좌측 사이드바에서 <strong>"회원 적격 심사"</strong> 메뉴를 이용해주세요.
+          • 좌측 사이드바에서 <strong>&quot;회원 적격 심사&quot;</strong> 메뉴를 이용해주세요.
         </Typography>
         <Box sx={{ mt: 2 }}>
           <Link

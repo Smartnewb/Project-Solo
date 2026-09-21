@@ -38,7 +38,6 @@ export function SmsHistoryTable({ histories, limit = 50 }: SmsHistoryTableProps)
                 });
                 setData(response || []); 
             } catch (error) {
-                console.error('발송 내역 조회 실패:', error);
                 setData([]);
             } finally {
                 setLoading(false);
@@ -112,7 +111,7 @@ export function SmsHistoryTable({ histories, limit = 50 }: SmsHistoryTableProps)
                 {loading ? (
                     // 로딩 스피너
                     <div className='flex justify-center items-center py-12'>
-                        <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600'></div>
+                        <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff385c]'></div>
                     </div>
                 ) : data.length === 0 ? (
                     // 발송 내역 없는 경우
@@ -153,7 +152,7 @@ export function SmsHistoryTable({ histories, limit = 50 }: SmsHistoryTableProps)
                                             text-xs font-medium
                                             ${getStatusStyle(history.status)}`}>
                                             {/* 🔴 매우 주의: COMPLETE도 완료로 표시 */}
-                                            {(history.status === 'success' || history.status === 'COMPLETED') ? '완료' : '실패'}
+                                            {(history.status === 'COMPLETE') ? '완료' : '실패'}
                                         </span>
                                     </div>
 

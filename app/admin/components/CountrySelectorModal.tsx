@@ -39,10 +39,14 @@ export default function CountrySelectorModal({ open, onClose }: CountrySelectorM
       return;
     }
 
+    ;
+    ;
     setCountry(code);
+    ;
     onClose();
 
     setTimeout(() => {
+      ;
       window.location.reload();
     }, 300);
   };

@@ -7,7 +7,6 @@ export default function AdminIndex() {
   const router = useRouter();
 
   useEffect(() => {
-    // 기본적으로 대시보드 페이지로 리다이렉션
     router.push('/admin/dashboard');
   }, [router]);
 

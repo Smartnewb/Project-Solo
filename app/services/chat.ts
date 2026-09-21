@@ -1,9 +1,35 @@
-import axiosServer from '@/utils/axios';
+import { adminGet, buildAdminProxyUrl } from '@/shared/lib/http/admin-fetch';
+
+export type DatePreset = 'today' | 'yesterday' | '7days' | '14days' | '30days' | 'all';
 
 export interface ChatUser {
   id: string;
   name: string;
   profileImage: string;
+  profileImageUrl?: string | null;
+  profile_image_url?: string | null;
+  primaryPhotoUrl?: string | null;
+  mainPhotoUrl?: string | null;
+  imageUrl?: string | null;
+  profileImages?: Array<{
+    url?: string | null;
+    imageUrl?: string | null;
+    isMain?: boolean | null;
+  }>;
+  images?: Array<{
+    url?: string | null;
+    imageUrl?: string | null;
+    isMain?: boolean | null;
+  }>;
+  age?: number | null;
+  gender?: string | null;
+  university?: string | { name?: string | null } | null;
+  universityName?: string | null;
+  department?: string | { name?: string | null } | null;
+  departmentName?: string | null;
+  mbti?: string | null;
+  isGhost?: boolean;
+  isFaker?: boolean | null;
 }
 
 export interface ChatRoom {
@@ -13,6 +39,8 @@ export interface ChatRoom {
   isActive: boolean;
   lastMessageAt: string | null;
   createdAt: string;
+  sessionType?: 'ai' | 'user';
+  ghostChatSessionId?: string | null;
 }
 
 export interface ChatMessage {
@@ -31,6 +59,8 @@ export interface ChatRoomsResponse {
   page: number;
   limit: number;
   totalPages: number;
+  appliedStartDate: string | null;
+  appliedEndDate: string | null;
 }
 
 export interface ChatMessagesResponse {
@@ -42,8 +72,10 @@ export interface ChatMessagesResponse {
 }
 
 export interface ChatRoomsParams {
-  startDate: string;
-  endDate: string;
+  startDate?: string;
+  endDate?: string;
+  preset?: DatePreset;
+  searchName?: string;
   page?: number;
   limit?: number;
 }
@@ -54,41 +86,149 @@ export interface ChatMessagesParams {
   limit?: number;
 }
 
+export interface ChatStatsSummary {
+  totalRooms: number;
+  activeRooms: number;
+  totalMessages: number;
+  avgMessagesPerRoom: number;
+  responseRate: number;
+  maleFirstMessageRate: number;
+  femaleFirstMessageRate: number;
+  avgFirstResponseTimeMinutes: number;
+  conversationWithin24hRate: number;
+}
+
+export interface HourlyMessageDistribution {
+  hour: number;
+  count: number;
+}
+
+export interface DailyMessageTrend {
+  date: string;
+  messageCount: number;
+  newRoomCount: number;
+}
+
+export interface MessageLengthDistribution {
+  range: string;
+  count: number;
+  percentage: number;
+}
+
+export interface ChatStatsResponse {
+  summary: ChatStatsSummary;
+  hourlyDistribution: HourlyMessageDistribution[];
+  dailyTrend: DailyMessageTrend[];
+  messageLengthDistribution: MessageLengthDistribution[];
+  startDate: string;
+  endDate: string;
+}
+
+export interface ChatStatsParams {
+  startDate?: string;
+  endDate?: string;
+  preset?: DatePreset;
+}
+
+export interface ChatCsvExportParams {
+  startDate?: string;
+  endDate?: string;
+  preset?: DatePreset;
+}
+
 class ChatService {
-  /**
-   * 채팅방 목록 조회
-   */
   async getChatRooms(params: ChatRoomsParams): Promise<ChatRoomsResponse> {
     try {
-      const response = await axiosServer.get<ChatRoomsResponse>('/admin/chat/rooms', {
-        params: {
-          startDate: params.startDate,
-          endDate: params.endDate,
-          page: params.page || 1,
-          limit: params.limit || 20
-        }
-      });
-      return response.data;
+      const stringParams: Record<string, string> = {
+        page: String(params.page || 1),
+        limit: String(params.limit || 20),
+      };
+      if (params.startDate) stringParams.startDate = params.startDate;
+      if (params.endDate) stringParams.endDate = params.endDate;
+      if (params.preset) stringParams.preset = params.preset;
+      if (params.searchName) stringParams.searchName = params.searchName;
+
+      const raw = await adminGet<{
+        data: ChatRoom[];
+        meta: { total: number; page: number; limit: number; totalPages: number };
+        appliedStartDate: string | null;
+        appliedEndDate: string | null;
+      }>('/admin/v2/chat/rooms', stringParams);
+
+      return {
+        chatRooms: raw.data,
+        total: raw.meta.total,
+        page: raw.meta.page,
+        limit: raw.meta.limit,
+        totalPages: raw.meta.totalPages,
+        appliedStartDate: raw.appliedStartDate,
+        appliedEndDate: raw.appliedEndDate,
+      };
     } catch (error: any) {
       console.error('채팅방 목록 조회 실패:', error);
       throw new Error(error.response?.data?.message || '채팅방 목록을 불러오는데 실패했습니다.');
     }
   }
 
-  /**
-   * 채팅 메시지 조회
-   */
   async getChatMessages(params: ChatMessagesParams): Promise<ChatMessagesResponse> {
     try {
-      const response = await axiosServer.get<ChatMessagesResponse>('/admin/chat/messages', {
-        params: {
-          chatRoomId: params.chatRoomId,
-        }
-      });
-      return response.data;
+      const stringParams: Record<string, string> = {
+        limit: String(params.limit || 50),
+      };
+
+      const result = await adminGet<{ data: ChatMessagesResponse }>(
+        `/admin/v2/chat/rooms/${params.chatRoomId}/messages`,
+        stringParams,
+      );
+      return result.data;
     } catch (error: any) {
       console.error('채팅 메시지 조회 실패:', error);
       throw new Error(error.response?.data?.message || '채팅 메시지를 불러오는데 실패했습니다.');
+    }
+  }
+
+  async getChatStats(params: ChatStatsParams = {}): Promise<ChatStatsResponse> {
+    try {
+      const stringParams: Record<string, string> = {};
+      if (params.startDate) stringParams.startDate = params.startDate;
+      if (params.endDate) stringParams.endDate = params.endDate;
+      if (params.preset) stringParams.preset = params.preset;
+
+      const result = await adminGet<{ data: ChatStatsResponse }>(
+        '/admin/v2/chat/stats',
+        stringParams,
+      );
+      return result.data;
+    } catch (error: any) {
+      console.error('채팅 통계 조회 실패:', error);
+      throw new Error(error.response?.data?.message || '채팅 통계를 불러오는데 실패했습니다.');
+    }
+  }
+
+  async exportChatsToCsv(params: ChatCsvExportParams = {}): Promise<void> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params.startDate) queryParams.set('startDate', params.startDate);
+      if (params.endDate) queryParams.set('endDate', params.endDate);
+      if (params.preset) queryParams.set('preset', params.preset);
+      const queryString = queryParams.toString();
+      const url = buildAdminProxyUrl(`/admin/v2/chat/export${queryString ? `?${queryString}` : ''}`);
+
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('CSV 내보내기에 실패했습니다.');
+
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.setAttribute('download', `chat_export_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error: any) {
+      console.error('채팅 CSV 내보내기 실패:', error);
+      throw new Error(error.response?.data?.message || 'CSV 내보내기에 실패했습니다.');
     }
   }
 }

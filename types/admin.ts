@@ -30,15 +30,25 @@ export interface CardSection {
   imageUrl?: string;
 }
 
+export type CardNewsLayoutMode = 'article' | 'image_only' | 'longform';
+export const CARD_NEWS_LAYOUT_MODES: CardNewsLayoutMode[] = ['article', 'image_only', 'longform'];
+export type CardNewsTrack = 'cards' | 'longform';
+
 export interface AdminCardNewsItem {
   id: string;
   title: string;
+  displayTitle?: string | null;
+  subtitle?: string;
   description?: string;
   postType: string;
   category: Category;
   backgroundImage?: BackgroundImage;
+  layoutMode: CardNewsLayoutMode;
   hasReward: boolean;
   sections?: CardSection[];
+  sectionCount?: number;
+  body?: string;
+  readTimeMinutes?: number;
   readCount: number;
   pushNotificationTitle?: string;
   pushNotificationMessage?: string;
@@ -55,8 +65,98 @@ export interface AdminCardNewsListResponse {
   limit: number;
 }
 
+// ───────────────────────── 영상 링크 (운영자 등록) ─────────────────────────
+
+export interface AdminVideoMeta {
+  provider: string;
+  videoId: string;
+  thumbnailUrl: string;
+  aspectRatio: string;
+  channelTitle: string;
+  embedUrl: string;
+}
+
+export type VideoStatus = 'draft' | 'published';
+
+export interface AdminVideoItem {
+  id: string;
+  title: string;
+  displayTitle?: string | null;
+  description?: string | null;
+  status: VideoStatus;
+  video: AdminVideoMeta;
+  readCount: number;
+  likeCount: number;
+  priority?: string | null;
+  targetGender: TargetGender;
+  featuredAt?: string | null;
+  publishedAt?: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+export interface AdminVideoListResponse {
+  items: AdminVideoItem[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface VideoPreviewResponse {
+  provider: string;
+  videoId: string;
+  thumbnailUrl: string;
+  aspectRatio: string;
+  channelTitle: string;
+  embedUrl: string;
+  title: string;
+}
+
+export type TargetGender = 'ALL' | 'MALE' | 'FEMALE';
+
+export interface CreateVideoRequest {
+  url: string;
+  displayTitle?: string;
+  description?: string;
+  status: VideoStatus;
+  featuredAt?: string;
+  priority?: string;
+  targetGender?: TargetGender;
+}
+
+export interface UpdateVideoRequest {
+  url?: string;
+  displayTitle?: string;
+  description?: string;
+  status?: VideoStatus;
+  featuredAt?: string;
+  priority?: string;
+  targetGender?: TargetGender;
+}
+
+export interface BulkCreateVideoRequest {
+  urls: string[];
+  status: VideoStatus;
+  targetGender?: TargetGender;
+}
+
+export interface BulkCreateVideoResultItem {
+  url: string;
+  videoId: string;
+  title?: string;
+  error?: string;
+}
+
+export interface BulkCreateVideoResponse {
+  success: BulkCreateVideoResultItem[];
+  duplicates: BulkCreateVideoResultItem[];
+  failed: BulkCreateVideoResultItem[];
+}
+
 export interface CreateCardNewsRequest {
   title: string;
+  displayTitle?: string | null;
+  subtitle?: string;
   description?: string;
   categoryCode: string;
   backgroundImage?: {
@@ -64,25 +164,31 @@ export interface CreateCardNewsRequest {
     presetId?: string;
     customUrl?: string;
   };
+  layoutMode?: CardNewsLayoutMode;
   hasReward: boolean;
-  sections: Array<{
+  sections?: Array<{
     order: number;
     title: string;
     content: string;
     imageUrl?: string;
   }>;
+  body?: string;
   pushNotificationTitle?: string;
   pushNotificationMessage?: string;
 }
 
 export interface UpdateCardNewsRequest {
   title?: string;
+  displayTitle?: string | null;
+  subtitle?: string;
   description?: string;
+  categoryCode?: string;
   backgroundImage?: {
     type: 'PRESET' | 'CUSTOM';
     presetId?: string;
     customUrl?: string;
   };
+  layoutMode?: CardNewsLayoutMode;
   hasReward?: boolean;
   sections?: Array<{
     order: number;
@@ -90,6 +196,7 @@ export interface UpdateCardNewsRequest {
     content: string;
     imageUrl?: string;
   }>;
+  body?: string;
   pushNotificationTitle?: string;
   pushNotificationMessage?: string;
 }
@@ -108,6 +215,81 @@ export interface PublishCardNewsResponse {
 export interface UploadImageResponse {
   url: string;
   message?: string;
+}
+
+// Pixel Campus CMS
+export type PixelCampusEpisodeStatus =
+  | 'draft'
+  | 'in_review'
+  | 'scheduled'
+  | 'published'
+  | 'archived';
+
+export type PixelCampusAxis =
+  | 'initiative'
+  | 'expression'
+  | 'planning'
+  | 'pace'
+  | 'conflict';
+
+export interface PixelCampusChoice {
+  id?: string;
+  label: string;
+  displayOrder: number;
+  axis: PixelCampusAxis;
+  direction: -1 | 1;
+  weight: 1 | 2 | 3;
+  revealCopy: string;
+}
+
+export type PixelCampusCut = {
+  speaker: 'miho' | 'me';
+  text: string;
+};
+
+export interface PixelCampusEpisode {
+  id: string;
+  chapterNo: number;
+  episodeNo: number;
+  title: string;
+  situationText: string;
+  cuts: PixelCampusCut[];
+  sceneImageUrl: string | null;
+  status: PixelCampusEpisodeStatus;
+  publishAt: string | null;
+  choices: PixelCampusChoice[];
+  answerCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PixelCampusEpisodePayload {
+  chapterNo: number;
+  episodeNo: number;
+  title: string;
+  cuts: PixelCampusCut[];
+  sceneImageUrl?: string | null;
+  publishAt?: string | null;
+  choices: PixelCampusChoice[];
+}
+
+export interface PixelCampusEpisodeListResponse {
+  items: PixelCampusEpisode[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface PixelCampusEpisodeStatsChoice {
+  choiceId: string;
+  label: string;
+  total: number;
+  male: number;
+  female: number;
+}
+
+export interface PixelCampusEpisodeStats {
+  choices: PixelCampusEpisodeStatsChoice[];
 }
 
 export interface CreatePresetRequest {
@@ -181,6 +363,217 @@ export interface DeletedFemalesListResponse {
     hasNext: boolean;
     hasPrev: boolean;
   };
+}
+
+// ==================== Promotions ====================
+export interface ApplePriceInfo {
+  price: number;
+  currency: string;
+  displayPrice: string;
+  storefront: string;
+}
+
+export interface Promotion {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  badge: string | null;
+  imageUrl: string;
+  backgroundColor: string;
+  targetGemProductId: string | null;
+  originGemProductId?: string | null;
+  saleGemProductId?: string | null;
+  targetAppleSku?: string | null;
+  applePrice?: ApplePriceInfo | null;
+  derivedDiscountRate?: number;
+  discountRate: number;
+  startsAt: string;
+  expiresAt: string;
+  sortOrder: number;
+  isActive: boolean;
+  ctaText: string;
+  targetFirstPurchaseOnly: boolean;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
+export interface PromotionImageUploadResponse {
+  imageUrl: string;
+  s3Key: string;
+  mime: string;
+  sizeBytes: number;
+}
+
+export interface CreatePromotionRequest {
+  title: string;
+  subtitle?: string;
+  badge?: string;
+  imageUrl: string;
+  backgroundColor: string;
+  targetGemProductId?: string;
+  originGemProductId?: string;
+  saleGemProductId?: string;
+  discountRate?: number;
+  startsAt: string;
+  expiresAt: string;
+  sortOrder?: number;
+  isActive?: boolean;
+  ctaText?: string;
+  targetFirstPurchaseOnly?: boolean;
+}
+
+export type UpdatePromotionRequest = Partial<CreatePromotionRequest>;
+
+// ==================== Gem Products ====================
+export interface AdminGemProduct {
+  id: string;
+  productName: string;
+  gemAmount: number;
+  bonusGems: number;
+  totalGems: number;
+  price: number;
+  currency: string;
+  discountRate?: number;
+  sortOrder: number;
+  appleSku: string | null;
+  applePrice: ApplePriceInfo | null;
+}
+
+// ==================== Apple IAP Catalog ====================
+export type AppleIapPriceSource = 'connect_api' | 'app_observed' | 'manual';
+
+export interface AppleIapPricePoint {
+  sku: string;
+  storefront: string;
+  price: number;
+  currency: string;
+  displayPrice: string;
+  source: AppleIapPriceSource;
+  syncedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SyncApplePricesResponse {
+  synced: number;
+  productsSynced?: number;
+  pricePointsSynced?: number;
+  storefront?: string;
+  failed: string[];
+}
+
+export interface AdminAppleIapProduct {
+  sku: string;
+  ascIapId: string;
+  name: string;
+  state: string;
+  mappedGemProductId: string | null;
+  mappedGemProductName: string | null;
+  price: number | null;
+  currency: string | null;
+  displayPrice: string | null;
+  syncedAt: string;
+}
+
+// ==================== Commerce Catalog ====================
+export type CommerceProductType =
+  | 'CONSUMABLE'
+  | 'BUNDLE'
+  | 'DURATION_ACCESS'
+  | 'FEATURE_UNLOCK';
+export type CommerceVersionStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+export type CommerceProvider = 'APPLE_IAP' | 'GOOGLE_PLAY' | 'PORTONE';
+export type CommerceChannel = 'IOS' | 'ANDROID' | 'WEB';
+
+export interface CommerceEntitlement {
+  type: 'GEM' | 'TICKET' | 'DURATION_ACCESS' | 'FEATURE_UNLOCK';
+  key: string;
+  quantity?: number | null;
+  durationSeconds?: number | null;
+  metadata?: Record<string, unknown>;
+}
+
+export interface CommerceProviderMapping {
+  provider: CommerceProvider;
+  channel: CommerceChannel;
+  externalProductId: string;
+  purchaseOptionId?: string | null;
+  country: 'KR' | 'JP';
+  active: boolean;
+  storeProductId: string;
+  storeState: string;
+  lastSyncedAt?: string | null;
+  prices?: Array<{
+    storefront: string;
+    amount: number;
+    currency: string;
+    displayPrice?: string | null;
+  }>;
+}
+
+export interface CommerceCatalogProduct {
+  id: string;
+  product_key: string;
+  product_type: CommerceProductType;
+  is_active: boolean;
+  product_version_id: string;
+  version: number;
+  display_name: string;
+  description: string | null;
+  status: CommerceVersionStatus;
+  sort_order: number;
+  ui_metadata: Record<string, unknown>;
+  entitlements: CommerceEntitlement[];
+  provider_mappings?: CommerceProviderMapping[];
+}
+
+export interface CommerceCatalogProductsResponse {
+  KR: CommerceCatalogProduct[];
+  JP: CommerceCatalogProduct[];
+}
+
+export interface CreateCommerceProductRequest {
+  productKey: string;
+  productType: CommerceProductType;
+  localizations: Array<{
+    country: 'KR' | 'JP';
+    displayName: string;
+    description?: string;
+  }>;
+  entitlements: Array<{
+    type: CommerceEntitlement['type'];
+    key: string;
+    quantity?: number;
+    durationSeconds?: number;
+    metadata?: Record<string, unknown>;
+  }>;
+  sortOrder: number;
+  uiMetadata?: Record<string, unknown>;
+}
+
+export interface CommerceCatalogOperationResult {
+  operationId: string;
+  productId?: string;
+  purchaseOptionId?: string;
+  ascIapId?: string;
+  state?: string;
+  created?: boolean;
+}
+
+export interface GooglePlayOneTimeProduct {
+  productId: string;
+  listings: Array<{ languageCode: string; title: string; description: string }>;
+  purchaseOptions: Array<{
+    purchaseOptionId: string;
+    state: string;
+    regionalPricingAndAvailabilityConfigs: Array<{
+      regionCode: string;
+      price?: { currencyCode: string; units?: string; nanos?: number };
+      availability: string;
+    }>;
+  }>;
 }
 
 export interface RestoreFemaleResponse {
@@ -531,6 +924,28 @@ export type JapanRegionCode =
 
 export type UniversityType = 'UNIVERSITY' | 'COLLEGE';
 
+export interface ClusterRegionItem {
+  code: string;
+  name: string;
+}
+
+export interface ClusterUniversityItem {
+  id: string;
+  name: string;
+  region: string;
+  code?: string;
+  en?: string;
+  userCount: number;
+}
+
+export interface AdminClusterItem {
+  id: string;
+  name: string;
+  regions: ClusterRegionItem[];
+  userCount: number;
+  universities: ClusterUniversityItem[];
+}
+
 export interface RegionMetaItem {
   code: string;
   nameLocal: string;
@@ -683,4 +1098,213 @@ export interface UploadDepartmentsCsvResponse {
   created: number;
   message: string;
   warnings?: string[];
+}
+
+// Likes 관련 타입
+export type LikeStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
+
+export interface AdminLikesParams {
+  page?: number;
+  limit?: number;
+  status?: LikeStatus;
+  hasLetter?: boolean;
+  isMutualLike?: boolean;
+  senderUserId?: string;
+  forwardUserId?: string;
+  searchName?: string;
+  startDate?: string;
+  endDate?: string;
+  sortBy?: 'createdAt' | 'viewedAt' | 'mutualLikeAt';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface LikeUserInfo {
+  userId: string;
+  name: string;
+  age: number;
+  mainImageUrl: string | null;
+  university: string;
+}
+
+export interface LikeDetail {
+  id: string;
+  connectionId: string;
+  sender: LikeUserInfo;
+  forwardUser: LikeUserInfo;
+  status: LikeStatus;
+  createdAt: string;
+  viewedAt: string | null;
+  hasLetter: boolean;
+  letterContent: string | null;
+  isMutualLike: boolean;
+  mutualLikeAt: string | null;
+  reverseLikeId: string | null;
+  matchId: string;
+  matchExpiredAt: string;
+  isMatchExpired: boolean;
+}
+
+export interface AdminLikesResponse {
+  items: LikeDetail[];
+  meta: {
+    currentPage: number;
+    itemsPerPage: number;
+    totalItems: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+}
+
+// Sometime Article Types
+export type SometimeArticleStatus = 'draft' | 'scheduled' | 'published' | 'archived';
+
+export type SometimeArticleCategory = 'story' | 'interview' | 'tips' | 'team' | 'update' | 'safety';
+
+export interface SometimeMediaAsset {
+  type: 'image' | 'video';
+  url: string;
+  alt?: string;
+  width?: number;
+  height?: number;
+  mimeType?: string;
+}
+
+export interface SometimeArticleAuthor {
+  id: string;
+  name: string;
+  avatar?: string;
+  role?: string;
+}
+
+export interface SometimeArticleSEO {
+  metaTitle?: string;
+  metaDescription?: string;
+  ogImage?: string;
+  keywords?: string[];
+}
+
+export interface AdminSometimeArticleItem {
+  id: string;
+  slug: string;
+  status: SometimeArticleStatus;
+  category: SometimeArticleCategory;
+  title: string;
+  subtitle?: string;
+  excerpt?: string;
+  thumbnail?: SometimeMediaAsset;
+  author?: SometimeArticleAuthor;
+  viewCount: number;
+  publishedAt: string | null;
+}
+
+export interface AdminSometimeArticleDetail extends AdminSometimeArticleItem {
+  content: string;
+  coverImage?: SometimeMediaAsset;
+  shareCount: number;
+  seo?: SometimeArticleSEO;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminSometimeArticleListResponse {
+  items: AdminSometimeArticleItem[];
+  meta: {
+    currentPage: number;
+    itemsPerPage: number;
+    totalItems: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+  };
+}
+
+export interface CreateSometimeArticleRequest {
+  slug: string;
+  status?: SometimeArticleStatus;
+  category: SometimeArticleCategory;
+  title: string;
+  subtitle?: string;
+  content: string;
+  excerpt?: string;
+  thumbnail?: SometimeMediaAsset;
+  coverImage?: SometimeMediaAsset;
+  author: SometimeArticleAuthor;
+  seo?: SometimeArticleSEO;
+  publishedAt?: string;
+}
+
+export interface UpdateSometimeArticleRequest {
+  slug?: string;
+  status?: SometimeArticleStatus;
+  category?: SometimeArticleCategory;
+  title?: string;
+  subtitle?: string;
+  content?: string;
+  excerpt?: string;
+  thumbnail?: SometimeMediaAsset;
+  coverImage?: SometimeMediaAsset;
+  author?: SometimeArticleAuthor;
+  seo?: SometimeArticleSEO;
+  publishedAt?: string;
+}
+
+// ==================== Unified Content (Notices) ====================
+
+export type ContentStatus = 'draft' | 'published' | 'archived';
+export type NoticePriority = 'high' | 'normal';
+export type NoticeCategoryCode = 'notice';
+export type ContentCategoryCode =
+  | 'relationship'
+  | 'dating'
+  | 'psychology'
+  | 'essay'
+  | 'qna'
+  | 'event';
+
+export interface AdminNoticeItem {
+  id: string;
+  title: string;
+  subtitle?: string;
+  categoryCode: NoticeCategoryCode;
+  content: string;
+  priority: NoticePriority;
+  expiresAt?: string | null;
+  url?: string | null;
+  linkUrl?: string | null;
+  hasReward: boolean;
+  pushEnabled: boolean;
+  pushTitle?: string | null;
+  pushMessage?: string | null;
+  status: ContentStatus;
+  publishedAt?: string | null;
+  pushSentAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminNoticeListResponse {
+  items: AdminNoticeItem[];
+  meta: { page: number; limit: number; totalItems: number; totalPages: number };
+}
+
+export interface CreateNoticeRequest
+  extends Omit<
+    AdminNoticeItem,
+    'id' | 'status' | 'publishedAt' | 'pushSentAt' | 'createdAt' | 'updatedAt'
+  > {}
+export interface UpdateNoticeRequest extends Partial<AdminNoticeItem> {}
+
+export interface PublishNoticeRequest {
+  pushEnabled?: boolean;
+  pushTitle?: string;
+  pushMessage?: string;
+}
+
+export interface PushResendNoticeRequest {
+  pushTitle: string;
+  pushMessage: string;
+}
+
+export interface PublishNoticeResponse {
+  success: boolean;
+  sentCount?: number;
 }

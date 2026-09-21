@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import {
   Box,
@@ -9,135 +9,58 @@ import {
   Typography,
   Skeleton,
   Button,
-  Chip,
   Divider,
   Grid,
 } from "@mui/material";
 import {
   ArrowForward as ArrowForwardIcon,
-  TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
 } from "@mui/icons-material";
-import { KPI, ExtendedRevenueResponse } from "../types";
-import { dashboardService } from "@/app/services/dashboard";
+import { KPI } from "../types";
+import { useRevenueSummary } from "@/app/admin/hooks/use-revenue-v2";
 
 interface RevenueOverviewProps {
   kpi: KPI | null;
   loading?: boolean;
 }
 
-const formatCurrency = (value: number) => {
-  if (value >= 100000000) {
-    return `${(value / 100000000).toFixed(1)}억`;
+const formatCurrency = (value: number | undefined | null) => {
+  const v = value ?? 0;
+  if (v >= 100000000) {
+    return `${(v / 100000000).toFixed(1)}억`;
   }
-  if (value >= 10000000) {
-    return `${(value / 10000).toFixed(0)}만`;
+  if (v >= 10000000) {
+    return `${(v / 10000).toFixed(0)}만`;
   }
-  if (value >= 10000) {
-    return `${(value / 10000).toFixed(1)}만`;
+  if (v >= 10000) {
+    return `${(v / 10000).toFixed(1)}만`;
   }
-  return `${value.toLocaleString()}`;
+  return `${v.toLocaleString()}`;
 };
-
-const getDayName = () => {
-  const days = ["일", "월", "화", "수", "목", "금", "토"];
-  return days[new Date().getDay()] + "요일";
-};
-
-interface MetricItemProps {
-  label: string;
-  value: number;
-  comparison?: number;
-  comparisonLabel?: string;
-  isMain?: boolean;
-}
-
-function MetricItem({
-  label,
-  value,
-  comparison,
-  comparisonLabel,
-  isMain,
-}: MetricItemProps) {
-  const isPositive = comparison !== undefined && comparison >= 0;
-
-  return (
-    <Box>
-      <Typography
-        variant="body2"
-        color="text.secondary"
-        sx={{ fontSize: isMain ? "0.875rem" : "0.75rem" }}
-      >
-        {label}
-      </Typography>
-      <Box sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
-        <Typography
-          fontWeight={isMain ? 700 : 600}
-          sx={{
-            color: isMain ? "#059669" : "text.primary",
-            fontSize: isMain ? "1.75rem" : "1rem",
-          }}
-        >
-          ₩{formatCurrency(value)}
-        </Typography>
-        {comparison !== undefined && (
-          <Chip
-            size="small"
-            icon={
-              isPositive ? (
-                <TrendingUpIcon sx={{ fontSize: 14 }} />
-              ) : (
-                <TrendingDownIcon sx={{ fontSize: 14 }} />
-              )
-            }
-            label={`${isPositive ? "+" : ""}${comparison}%`}
-            sx={{
-              height: 20,
-              fontSize: "0.7rem",
-              backgroundColor: isPositive ? "#dcfce7" : "#fee2e2",
-              color: isPositive ? "#166534" : "#991b1b",
-              "& .MuiChip-icon": {
-                color: isPositive ? "#166534" : "#991b1b",
-              },
-            }}
-          />
-        )}
-      </Box>
-      {comparisonLabel && (
-        <Typography variant="caption" color="text.secondary">
-          {comparisonLabel}
-        </Typography>
-      )}
-    </Box>
-  );
-}
 
 export default function RevenueOverview({
   kpi,
   loading,
 }: RevenueOverviewProps) {
-  const [extendedRevenue, setExtendedRevenue] =
-    useState<ExtendedRevenueResponse | null>(null);
-  const [extendedLoading, setExtendedLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchExtendedRevenue = async () => {
-      try {
-        setExtendedLoading(true);
-        const data = await dashboardService.getExtendedRevenue();
-        setExtendedRevenue(data);
-      } catch (error) {
-        console.error("확장 매출 현황 조회 실패:", error);
-      } finally {
-        setExtendedLoading(false);
-      }
+  const { startDate, endDate } = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
+    return {
+      startDate: `${y}-${m}-01`,
+      endDate: `${y}-${m}-${d}`,
     };
-
-    fetchExtendedRevenue();
   }, []);
 
-  const revenue = extendedRevenue?.revenue;
-  const isLoading = loading || extendedLoading;
+  const {
+    data: v2Summary,
+    isLoading: v2Loading,
+  } = useRevenueSummary(startDate, endDate);
+
+  const isLoading = loading || v2Loading;
+  const totalRevenue = v2Summary?.totalRevenue ?? kpi?.monthlyRevenue ?? 0;
+  const pgRevenue = v2Summary?.pgRevenue ?? 0;
+  const iapRevenue = v2Summary?.iapRevenue ?? 0;
 
   return (
     <Card>
@@ -169,22 +92,23 @@ export default function RevenueOverview({
               height={60}
               sx={{ borderRadius: 2 }}
             />
-            <Skeleton
-              variant="rectangular"
-              height={60}
-              sx={{ borderRadius: 2 }}
-            />
           </Box>
         ) : (
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <Box sx={{ p: 2, borderRadius: 2, backgroundColor: "#ecfdf5" }}>
-              <MetricItem
-                label="이번 달 매출"
-                value={revenue?.thisMonth ?? kpi?.monthlyRevenue ?? 0}
-                comparison={revenue?.monthOverMonthChange}
-                comparisonLabel={`저번달: ₩${formatCurrency(revenue?.lastMonth ?? 0)}`}
-                isMain
-              />
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ fontSize: "0.875rem" }}
+              >
+                이번 달 매출
+              </Typography>
+              <Typography
+                fontWeight={700}
+                sx={{ color: "#059669", fontSize: "1.75rem" }}
+              >
+                ₩{formatCurrency(totalRevenue)}
+              </Typography>
             </Box>
 
             <Divider />
@@ -194,63 +118,27 @@ export default function RevenueOverview({
                 <Box
                   sx={{ p: 1.5, borderRadius: 1, backgroundColor: "#f0f9ff" }}
                 >
-                  <MetricItem
-                    label="이번 주"
-                    value={revenue?.thisWeek ?? 0}
-                    comparison={revenue?.weekOverWeekChange}
-                    comparisonLabel={`저번주: ₩${formatCurrency(revenue?.lastWeek ?? 0)}`}
-                  />
+                  <Typography variant="caption" color="text.secondary">
+                    PG 매출
+                  </Typography>
+                  <Typography variant="body1" fontWeight={600}>
+                    ₩{formatCurrency(pgRevenue)}
+                  </Typography>
                 </Box>
               </Grid>
               <Grid item xs={6}>
                 <Box
                   sx={{ p: 1.5, borderRadius: 1, backgroundColor: "#fefce8" }}
                 >
-                  <MetricItem
-                    label="오늘"
-                    value={revenue?.today ?? 0}
-                    comparison={revenue?.sameDayChange}
-                    comparisonLabel={`지난주 ${getDayName()}: ₩${formatCurrency(revenue?.lastWeekSameDay ?? 0)}`}
-                  />
+                  <Typography variant="caption" color="text.secondary">
+                    IAP 매출
+                  </Typography>
+                  <Typography variant="body1" fontWeight={600}>
+                    ₩{formatCurrency(iapRevenue)}
+                  </Typography>
                 </Box>
               </Grid>
             </Grid>
-
-            <Box sx={{ p: 1.5, borderRadius: 1, backgroundColor: "#f5f5f5" }}>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                fontWeight={600}
-              >
-                평균 매출
-              </Typography>
-              <Grid container spacing={1} sx={{ mt: 0.5 }}>
-                <Grid item xs={4}>
-                  <Typography variant="caption" color="text.secondary">
-                    월간
-                  </Typography>
-                  <Typography variant="body2" fontWeight={600}>
-                    ₩{formatCurrency(revenue?.monthlyAverage ?? 0)}
-                  </Typography>
-                </Grid>
-                <Grid item xs={4}>
-                  <Typography variant="caption" color="text.secondary">
-                    주간
-                  </Typography>
-                  <Typography variant="body2" fontWeight={600}>
-                    ₩{formatCurrency(revenue?.weeklyAverage ?? 0)}
-                  </Typography>
-                </Grid>
-                <Grid item xs={4}>
-                  <Typography variant="caption" color="text.secondary">
-                    일간
-                  </Typography>
-                  <Typography variant="body2" fontWeight={600}>
-                    ₩{formatCurrency(revenue?.dailyAverage ?? 0)}
-                  </Typography>
-                </Grid>
-              </Grid>
-            </Box>
           </Box>
         )}
       </CardContent>

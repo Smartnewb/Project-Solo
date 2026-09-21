@@ -123,7 +123,7 @@ function LoadingSkeleton() {
           <Skeleton variant="text" width={120} height={32} />
         </Box>
         <Box className="flex flex-col gap-4">
-          <Box className="p-4 rounded-xl bg-blue-50/50">
+          <Box className="p-4 rounded-xl bg-[#f7f7f7]">
             <Box className="flex justify-between mb-2">
               <Skeleton variant="text" width={80} />
               <Skeleton variant="text" width={60} />
@@ -285,7 +285,7 @@ export default function GenderStatsCard({
               sx={{ backgroundColor: MALE_COLOR }}
             />
             <Typography className="font-semibold text-slate-700">
-              {stats.genderRatio.split(":")[0]}
+              {(stats.genderRatio || '0:0').split(":")[0]}
             </Typography>
           </Box>
           <Typography className="text-slate-300 font-light text-lg">
@@ -293,7 +293,7 @@ export default function GenderStatsCard({
           </Typography>
           <Box className="flex items-center gap-1.5">
             <Typography className="font-semibold text-slate-700">
-              {stats.genderRatio.split(":")[1]}
+              {(stats.genderRatio || '0:0').split(":")[1]}
             </Typography>
             <Box
               className="w-3 h-3 rounded-full"

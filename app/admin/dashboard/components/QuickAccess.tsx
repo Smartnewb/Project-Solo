@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Box, Card, CardContent, Typography, Grid } from "@mui/material";
 import {
+  AutoAwesome as ReviewInboxIcon,
   People as UsersIcon,
   AutoAwesome as MatchingIcon,
   Diamond as GemsIcon,
@@ -70,6 +71,13 @@ function QuickAccessItem({
 }
 
 const quickAccessItems: QuickAccessItemProps[] = [
+  {
+    title: "검토 인박스",
+    icon: <ReviewInboxIcon fontSize="small" />,
+    link: "/admin/review-inbox",
+    color: "#7c3aed",
+    bgColor: "#f5f3ff",
+  },
   {
     title: "사용자 관리",
     icon: <UsersIcon fontSize="small" />,

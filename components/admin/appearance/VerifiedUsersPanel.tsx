@@ -51,14 +51,12 @@ interface VerifiedUser {
 
 // API 응답 타입
 interface VerifiedUsersResponse {
-  items: VerifiedUser[];
+  data: VerifiedUser[];
   meta: {
-    currentPage: number;
-    itemsPerPage: number;
-    totalItems: number;
+    total: number;
+    page: number;
+    limit: number;
     totalPages: number;
-    hasNextPage: boolean;
-    hasPreviousPage: boolean;
   };
 }
 
@@ -92,8 +90,8 @@ const VerifiedUsersPanel: React.FC = () => {
         university: universityFilter || undefined
       });
 
-      setUsers(response.items);
-      setTotalItems(response.meta.totalItems);
+      setUsers(response.data);
+      setTotalItems(response.meta?.total ?? 0);
     } catch (err: any) {
       console.error('대학교 인증 사용자 조회 중 오류:', err);
       setError(err.message || '대학교 인증 사용자 목록을 불러오는 중 오류가 발생했습니다.');

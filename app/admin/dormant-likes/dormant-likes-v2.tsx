@@ -1,0 +1,328 @@
+'use client';
+
+import { useState } from 'react';
+import {
+  Box,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Button,
+  CircularProgress,
+  Chip,
+  Card,
+  CardContent,
+  Grid,
+  Pagination,
+  Checkbox,
+  Tooltip,
+} from '@mui/material';
+import type { DormantUserResponse } from '@/types/admin';
+import { safeToLocaleString } from '@/app/utils/formatters';
+import PendingLikesModal from './components/PendingLikesModal';
+import BulkProcessModal from './components/BulkProcessModal';
+import { useDormantLikesDashboard } from '@/app/admin/hooks';
+
+function DormantLikesPageContent() {
+  const [page, setPage] = useState(1);
+  const [selectedUser, setSelectedUser] = useState<DormantUserResponse | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [bulkProcessModalOpen, setBulkProcessModalOpen] = useState(false);
+
+  const { data: dashboardData, isLoading, error, refetch } = useDormantLikesDashboard(page, 20);
+
+  const handleUserClick = (user: DormantUserResponse) => {
+    setSelectedUser(user);
+    setModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setModalOpen(false);
+    setSelectedUser(null);
+    refetch();
+  };
+
+  const processableUsers = dashboardData?.users.filter((u) => u.canProcess) || [];
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedUserIds(processableUsers.map((u) => u.id));
+    } else {
+      setSelectedUserIds([]);
+    }
+  };
+
+  const handleSelectUser = (userId: string, canProcess: boolean) => {
+    if (!canProcess) return;
+    setSelectedUserIds((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const handleBulkProcessComplete = () => {
+    setSelectedUserIds([]);
+    refetch();
+  };
+
+  const selectedUsers = dashboardData?.users.filter((u) =>
+    selectedUserIds.includes(u.id)
+  ) || [];
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return '로그인 기록 없음';
+    return safeToLocaleString(dateString, 'ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    }, '로그인 기록 없음');
+  };
+
+  return (
+    <Box>
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h5" fontWeight="bold">
+          파묘 계정 좋아요 관리
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          1일 이상 미접속한 구슬 보유 여성 유저의 미확인 좋아요에 대해 프로필 노출 또는 거절 처리합니다.
+        </Typography>
+      </Box>
+
+      {error && (
+        <Typography color="error" sx={{ mb: 2 }}>
+          {(error as any).response?.data?.message || '대시보드를 불러오는데 실패했습니다.'}
+        </Typography>
+      )}
+
+      {/* 통계 카드 */}
+      <Grid container spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color="text.secondary" variant="body2">
+                전체 미확인 좋아요
+              </Typography>
+              <Typography variant="h4" fontWeight="bold">
+                {dashboardData?.totalPendingLikes || 0}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent>
+              <Typography color="text.secondary" variant="body2">
+                오늘 처리
+              </Typography>
+              <Typography variant="h4" fontWeight="bold">
+                {dashboardData?.todayProcessedCount || 0}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ bgcolor: '#ecfdf5' }}>
+            <CardContent>
+              <Typography color="text.secondary" variant="body2">
+                오늘 프로필 노출
+              </Typography>
+              <Typography variant="h4" fontWeight="bold" sx={{ color: '#10b981' }}>
+                {dashboardData?.todayViewedCount || 0}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ bgcolor: '#fef2f2' }}>
+            <CardContent>
+              <Typography color="text.secondary" variant="body2">
+                오늘 거절
+              </Typography>
+              <Typography variant="h4" fontWeight="bold" sx={{ color: '#ef4444' }}>
+                {dashboardData?.todayRejectedCount || 0}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="body2" color="text.secondary">
+          총 {dashboardData?.totalUsers || 0}명의 대상 계정
+        </Typography>
+        {selectedUserIds.length > 0 && (
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            <Chip
+              label={`${selectedUserIds.length}명 선택됨`}
+              color="primary"
+              size="small"
+            />
+            <Button
+              variant="contained"
+              size="small"
+              onClick={() => setBulkProcessModalOpen(true)}
+            >
+              일괄 처리
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => setSelectedUserIds([])}
+            >
+              선택 해제
+            </Button>
+          </Box>
+        )}
+      </Box>
+
+      {isLoading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <CircularProgress />
+        </Box>
+      ) : !dashboardData || dashboardData.users.length === 0 ? (
+        <Box sx={{ textAlign: 'center', py: 8 }}>
+          <Typography color="text.secondary">
+            현재 처리 대기 중인 파묘 계정이 없습니다.
+          </Typography>
+        </Box>
+      ) : (
+        <>
+          <TableContainer component={Paper} sx={{ mb: 3 }}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      indeterminate={
+                        selectedUserIds.length > 0 &&
+                        selectedUserIds.length < processableUsers.length
+                      }
+                      checked={
+                        processableUsers.length > 0 &&
+                        selectedUserIds.length === processableUsers.length
+                      }
+                      onChange={(e) => handleSelectAll(e.target.checked)}
+                      disabled={processableUsers.length === 0}
+                    />
+                  </TableCell>
+                  <TableCell>이름</TableCell>
+                  <TableCell>전화번호</TableCell>
+                  <TableCell align="center">구슬</TableCell>
+                  <TableCell>마지막 로그인</TableCell>
+                  <TableCell align="center">미접속 일수</TableCell>
+                  <TableCell align="center">미확인 좋아요</TableCell>
+                  <TableCell align="center">처리 상태</TableCell>
+                  <TableCell align="center">액션</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {dashboardData.users.map((user) => (
+                  <TableRow
+                    key={user.id}
+                    hover
+                    selected={selectedUserIds.includes(user.id)}
+                  >
+                    <TableCell padding="checkbox">
+                      <Tooltip
+                        title={
+                          user.canProcess
+                            ? ''
+                            : `${user.cooldownRemainingMinutes}분 후 처리 가능`
+                        }
+                      >
+                        <span>
+                          <Checkbox
+                            checked={selectedUserIds.includes(user.id)}
+                            onChange={() => handleSelectUser(user.id, user.canProcess)}
+                            disabled={!user.canProcess}
+                          />
+                        </span>
+                      </Tooltip>
+                    </TableCell>
+                    <TableCell>{user.name}</TableCell>
+                    <TableCell>{user.phoneNumber}</TableCell>
+                    <TableCell align="center">
+                      <Chip label={`${user.gemBalance}개`} size="small" color="primary" />
+                    </TableCell>
+                    <TableCell>{formatDate(user.lastLoginAt)}</TableCell>
+                    <TableCell align="center">
+                      <Chip
+                        label={`${user.daysSinceLastLogin}일`}
+                        size="small"
+                        color="warning"
+                      />
+                    </TableCell>
+                    <TableCell align="center">
+                      <Chip
+                        label={`${user.pendingLikeCount}개`}
+                        size="small"
+                        color="secondary"
+                      />
+                    </TableCell>
+                    <TableCell align="center">
+                      {user.canProcess ? (
+                        <Chip label="처리 가능" size="small" sx={{ bgcolor: '#10b981', color: 'white' }} />
+                      ) : (
+                        <Chip
+                          label={`${user.cooldownRemainingMinutes}분 후`}
+                          size="small"
+                          color="default"
+                        />
+                      )}
+                    </TableCell>
+                    <TableCell align="center">
+                      <Button
+                        variant="contained"
+                        size="small"
+                        onClick={() => handleUserClick(user)}
+                      >
+                        상세
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <Pagination
+              count={dashboardData.totalPages}
+              page={page}
+              onChange={(_, value) => setPage(value)}
+              color="primary"
+            />
+          </Box>
+        </>
+      )}
+
+      {selectedUser && (
+        <PendingLikesModal
+          open={modalOpen}
+          onClose={handleModalClose}
+          user={selectedUser}
+        />
+      )}
+
+      <BulkProcessModal
+        open={bulkProcessModalOpen}
+        onClose={() => setBulkProcessModalOpen(false)}
+        selectedUsers={selectedUsers}
+        onComplete={handleBulkProcessComplete}
+      />
+    </Box>
+  );
+}
+
+export default function DormantLikesPageV2() {
+  return <DormantLikesPageContent />;
+}

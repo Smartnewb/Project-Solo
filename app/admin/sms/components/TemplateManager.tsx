@@ -29,9 +29,7 @@ export function TemplateManager({ onTemplateSelect }: TemplateManagerProps) {
         try {
             const data = await smsService.getTemplates();
             setTemplates(data);
-        } catch (error) {
-            console.error('템플릿 불러오기 실패:', error);
-        } finally {
+        } catch { } finally {
             setIsLoading(false);
         }
     };
@@ -90,7 +88,6 @@ export function TemplateManager({ onTemplateSelect }: TemplateManagerProps) {
             setEditingTemplate(null);
             setModalMode('create');
         } catch (error) {
-            console.error('템플릿 저장 실패:', error);
             alert(modalMode === 'edit' ? '템플릿 수정에 실패했습니다.' : '템플릿 저장에 실패했습니다.');
         } finally {
             setIsLoading(false);
@@ -130,7 +127,6 @@ export function TemplateManager({ onTemplateSelect }: TemplateManagerProps) {
             setActiveMenuId(null);
             alert('템플릿이 삭제되었습니다.');
         } catch (error) {
-            console.error('템플릿 삭제 실패:', error)
             alert('템플릿 삭제에 실패했습니다.');
         } finally {
             setIsLoading(false);
@@ -164,7 +160,7 @@ export function TemplateManager({ onTemplateSelect }: TemplateManagerProps) {
                 <div className='flex items-center justify-between mb-4'>
                     <h3 className='text-base sm:text-lg font-[400] text-[#111827]'>메세지 템플릿</h3>
                     <button
-                        className='flex w-full items-center justify-center gap-2 sm:w-auto px-4 py-2 text-sm font-medium text-white bg-[#885AEB] hover:bg-purple-700 transition-colors rounded-md'
+                        className='flex w-full items-center justify-center gap-2 sm:w-auto px-4 py-2 text-sm font-medium text-white bg-[#885AEB] hover:bg-[#e00b41] transition-colors rounded-md'
                         onClick={handleNewTemplateClick}  
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -191,7 +187,7 @@ export function TemplateManager({ onTemplateSelect }: TemplateManagerProps) {
                                 <div
                                     className={`relative p-3 border rounded-md cursor-pointer transition-colors
                                         ${!selectedTemplateId
-                                            ? 'border-[#885AEB] bg-purple-50'
+                                            ? 'border-[#885AEB] bg-[#f7f7f7]'
                                             : 'border-gray-200 hover:border-gray-300'}`}
                                     onClick={() => handleSelectTemplate('')}
                                 >
@@ -206,7 +202,7 @@ export function TemplateManager({ onTemplateSelect }: TemplateManagerProps) {
                                         key={t.id}
                                         className={`relative p-3 border rounded-md cursor-pointer transition-colors
                                             ${selectedTemplateId === t.id
-                                                ? 'border-[#885AEB] bg-purple-50'
+                                                ? 'border-[#885AEB] bg-[#f7f7f7]'
                                                 : 'border-gray-200 hover:border-gray-300'}`}
                                         onClick={() => handleSelectTemplate(t.id)}
                                     >

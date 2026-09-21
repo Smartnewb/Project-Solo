@@ -2,21 +2,15 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Box, Card, CardContent, Typography, Skeleton } from "@mui/material";
+import { Box, Card, CardContent, Typography, Skeleton, Tooltip } from "@mui/material";
 import {
+  AutoAwesome as ReviewInboxIcon,
   AssignmentInd as ProfileReviewIcon,
-  ReportProblem as ReportIcon,
-  SupportAgent as SupportIcon,
   School as SchoolIcon,
 } from "@mui/icons-material";
-import { ActionItem } from "../types";
-import supportChatService from "@/app/services/support-chat";
-import AdminService from "@/app/services/admin";
-
-interface ActionRequiredProps {
-  actionItems: ActionItem[] | null;
-  loading?: boolean;
-}
+import { ShieldBan } from "lucide-react";
+import AdminService, { usersStats } from "@/app/services/admin";
+import { getReviewInbox } from "@/app/services/review-inbox";
 
 interface ActionItemCardProps {
   title: string;
@@ -26,6 +20,8 @@ interface ActionItemCardProps {
   color: string;
   bgColor: string;
   loading?: boolean;
+  subtitle?: string;
+  tooltip?: string;
 }
 
 function ActionItemCard({
@@ -36,10 +32,12 @@ function ActionItemCard({
   color,
   bgColor,
   loading,
+  subtitle,
+  tooltip,
 }: ActionItemCardProps) {
   const hasItems = count > 0;
 
-  return (
+  const cardContent = (
     <Link href={link} className="block flex-1 min-w-[140px]">
       <Card
         sx={{
@@ -102,37 +100,56 @@ function ActionItemCard({
                   </Typography>
                 </Typography>
               )}
+              {subtitle && (
+                <Typography variant="caption" color="text.secondary" display="block">
+                  {subtitle}
+                </Typography>
+              )}
             </Box>
           </Box>
         </CardContent>
       </Card>
     </Link>
   );
+
+  if (tooltip) {
+    return <Tooltip title={tooltip} arrow>{cardContent}</Tooltip>;
+  }
+  return cardContent;
 }
 
-export default function ActionRequired({
-  actionItems,
-  loading,
-}: ActionRequiredProps) {
-  const [pendingQA, setPendingQA] = useState(0);
-  const [qaLoading, setQaLoading] = useState(true);
+export default function ActionRequired() {
+  const [pendingReview, setPendingReview] = useState(0);
+  const [reviewLoading, setReviewLoading] = useState(true);
+  const [reviewInboxPending, setReviewInboxPending] = useState(0);
+  const [reviewInboxLoading, setReviewInboxLoading] = useState(true);
   const [pendingCertification, setPendingCertification] = useState(0);
   const [certificationLoading, setCertificationLoading] = useState(true);
+  const [blacklistedCount, setBlacklistedCount] = useState(0);
+  const [blacklistedLoading, setBlacklistedLoading] = useState(true);
 
   useEffect(() => {
-    const fetchQACount = async () => {
+    const fetchReviewCount = async () => {
       try {
-        setQaLoading(true);
-        const response = await supportChatService.getSessions({
-          status: "waiting_admin",
-          limit: 1,
-        });
-        setPendingQA(response.pagination?.total ?? 0);
-      } catch (error) {
-        console.error("Q&A 대기 건수 조회 실패:", error);
-        setPendingQA(0);
+        setReviewLoading(true);
+        const response = await AdminService.userReview.getPendingUsers(1, 1);
+        setPendingReview(response.meta?.total ?? 0);
+      } catch (_error) {
+        setPendingReview(0);
       } finally {
-        setQaLoading(false);
+        setReviewLoading(false);
+      }
+    };
+
+    const fetchReviewInboxCount = async () => {
+      try {
+        setReviewInboxLoading(true);
+        const response = await getReviewInbox();
+        setReviewInboxPending(response.summary.approval + response.summary.judgment);
+      } catch (_error) {
+        setReviewInboxPending(0);
+      } finally {
+        setReviewInboxLoading(false);
       }
     };
 
@@ -140,34 +157,39 @@ export default function ActionRequired({
       try {
         setCertificationLoading(true);
         const response =
-          await AdminService.userAppearance.getUniversityVerificationPendingUsers(
-            {
-              page: 1,
-              limit: 1,
-            },
-          );
+          await AdminService.userAppearance.getUniversityVerificationPending({
+            page: 1,
+            limit: 1,
+          });
         setPendingCertification(
           response.pagination?.total ?? response.total ?? 0,
         );
-      } catch (error) {
-        console.error("학생증 인증 대기 건수 조회 실패:", error);
+      } catch (_error) {
         setPendingCertification(0);
       } finally {
         setCertificationLoading(false);
       }
     };
 
-    fetchQACount();
+    const fetchBlacklistedCount = async () => {
+      try {
+        setBlacklistedLoading(true);
+        const response = await usersStats.get();
+        setBlacklistedCount(response.data?.blacklisted ?? 0);
+      } catch (_error) {
+        setBlacklistedCount(0);
+      } finally {
+        setBlacklistedLoading(false);
+      }
+    };
+
+    fetchReviewCount();
+    fetchReviewInboxCount();
     fetchCertificationCount();
+    fetchBlacklistedCount();
   }, []);
 
-  const pendingApprovals =
-    actionItems?.find((item) => item.type === "pending_approvals")?.count ?? 0;
-  const pendingProfileReports =
-    actionItems?.find((item) => item.type === "pending_reports")?.count ?? 0;
-
-  const totalPending =
-    pendingApprovals + pendingProfileReports + pendingQA + pendingCertification;
+  const totalPending = pendingReview + reviewInboxPending + pendingCertification;
 
   return (
     <Card sx={{ mb: 3 }}>
@@ -209,40 +231,42 @@ export default function ActionRequired({
 
         <Box className="flex gap-3 flex-wrap">
           <ActionItemCard
+            title="검토 인박스"
+            count={reviewInboxPending}
+            icon={<ReviewInboxIcon fontSize="small" />}
+            link="/admin/review-inbox"
+            color="#7c3aed"
+            bgColor="#f5f3ff"
+            loading={reviewInboxLoading}
+          />
+          <ActionItemCard
             title="회원 심사"
-            count={pendingApprovals}
+            count={pendingReview}
             icon={<ProfileReviewIcon fontSize="small" />}
             link="/admin/profile-review"
             color="#3b82f6"
             bgColor="#eff6ff"
-            loading={loading}
-          />
-          <ActionItemCard
-            title="신고 관리"
-            count={pendingProfileReports}
-            icon={<ReportIcon fontSize="small" />}
-            link="/admin/reports"
-            color="#ef4444"
-            bgColor="#fef2f2"
-            loading={loading}
-          />
-          <ActionItemCard
-            title="Q&A 대기"
-            count={pendingQA}
-            icon={<SupportIcon fontSize="small" />}
-            link="/admin/support-chat"
-            color="#8b5cf6"
-            bgColor="#f5f3ff"
-            loading={qaLoading}
+            loading={reviewLoading}
           />
           <ActionItemCard
             title="학생증 인증"
             count={pendingCertification}
             icon={<SchoolIcon fontSize="small" />}
-            link="/admin/users/appearance?tab=6"
+            link="/admin/users/appearance?tab=5"
             color="#f59e0b"
             bgColor="#fffbeb"
             loading={certificationLoading}
+          />
+          <ActionItemCard
+            title="블랙리스트"
+            count={blacklistedCount}
+            icon={<ShieldBan size={18} />}
+            link="/admin/blacklist"
+            color="#dc2626"
+            bgColor="#fef2f2"
+            loading={blacklistedLoading}
+            subtitle="활성 기준"
+            tooltip="suspended와 다른 수치. user_blacklist 활성 row 기준."
           />
         </Box>
       </CardContent>

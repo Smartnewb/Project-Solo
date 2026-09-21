@@ -3,6 +3,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogContentText,
   DialogActions,
   IconButton,
   Typography,
@@ -33,7 +34,9 @@ import {
   TextField,
   FormControl,
   InputLabel,
-  Select
+  Select,
+  Tabs,
+  Tab
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import InstagramIcon from '@mui/icons-material/Instagram';
@@ -49,13 +52,27 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
 import DiamondIcon from '@mui/icons-material/Diamond';
-import AdminService from '@/app/services/admin';
+import LockResetIcon from '@mui/icons-material/LockReset';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import AdminService, { blacklist as blacklistApi } from '@/app/services/admin';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ShieldBan, RotateCcw } from 'lucide-react';
+import { BlacklistRegisterModal } from '@/app/admin/blacklist/components/BlacklistRegisterModal';
+import { BlacklistReleaseDialog } from '@/app/admin/blacklist/components/BlacklistReleaseDialog';
+import { BlacklistHistoryTimeline } from '@/app/admin/blacklist/components/BlacklistHistoryTimeline';
 import { formatDateWithoutTimezoneConversion, formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
 
 // 관리 기능 모달 컴포넌트들
 import EditProfileModal from './modals/EditProfileModal';
 import EmailNotificationModal from './modals/EmailNotificationModal';
 import SmsNotificationModal from './modals/SmsNotificationModal';
+import UniversityTransferModal from './modals/UniversityTransferModal';
+import BirthdayEditModal from './modals/BirthdayEditModal';
+import AccountStatusModal from './modals/AccountStatusModal';
+import { ReferralPostSignupSection } from './referral/ReferralPostSignupSection';
+import { sanitizeUrl } from '@/shared/lib/safe-url';
+
+const SHOW_REMATCH_TICKET_ADMIN = false;
 
 // 성별 레이블
 const GENDER_LABELS = {
@@ -120,6 +137,8 @@ export interface UserDetail {
   appearanceGrade?: 'S' | 'A' | 'B' | 'C' | 'UNKNOWN';
   isUniversityVerified?: boolean; // 대학교 인증 여부
   accountStatus?: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
+  suspendedAt?: string | null;
+  suspendedUntil?: string | null;
   approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED'; // 승인 상태
   preferences?: UserPreferences;
   signupRoute?: 'PASS' | 'KAKAO' | 'APPLE'; // 회원가입 루트
@@ -217,7 +236,9 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   // 모달이 열릴 때 티켓 정보 로드
   useEffect(() => {
     if (userId && open) {
-      fetchTicketInfo();
+      if (SHOW_REMATCH_TICKET_ADMIN) {
+        fetchTicketInfo();
+      }
       fetchGemsInfo();
     }
   }, [userId, open]);
@@ -232,6 +253,8 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
   // 모달 상태
   const [editProfileModalOpen, setEditProfileModalOpen] = useState(false);
+  const [universityTransferModalOpen, setUniversityTransferModalOpen] = useState(false);
+  const [birthdayModalOpen, setBirthdayModalOpen] = useState(false);
   const [emailNotificationModalOpen, setEmailNotificationModalOpen] = useState(false);
   const [smsNotificationModalOpen, setSmsNotificationModalOpen] = useState(false);
   const [deleteConfirmModalOpen, setDeleteConfirmModalOpen] = useState(false);
@@ -244,7 +267,35 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
   // 회원 탈퇴 관련 상태
   const [sendEmailOnDelete, setSendEmailOnDelete] = useState(false);
-  const [addToBlacklist, setAddToBlacklist] = useState(false);
+
+  // 블랙리스트 관련 상태
+  const [blacklistRegisterModalOpen, setBlacklistRegisterModalOpen] = useState(false);
+  const [blacklistReleaseDialogOpen, setBlacklistReleaseDialogOpen] = useState(false);
+  // 계정 정지/해제 모달
+  const [accountStatusModalOpen, setAccountStatusModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'profile' | 'blacklist'>('profile');
+  const queryClient = useQueryClient();
+
+  const blacklistHistoryQuery = useQuery({
+    queryKey: ['blacklist-history', userId],
+    queryFn: () => blacklistApi.getHistory(userId as string),
+    enabled: !!userId && open,
+    staleTime: 60_000,
+  });
+
+  const blacklistHistory = blacklistHistoryQuery.data?.data?.history ?? [];
+  const activeBlacklistEntry = blacklistHistory.find((h) => h.releasedAt === null);
+  const isBlacklisted = !!activeBlacklistEntry;
+
+  const handleBlacklistSuccess = (message?: string) => {
+    queryClient.invalidateQueries({ queryKey: ['blacklist-history', userId] });
+    queryClient.invalidateQueries({ queryKey: ['blacklist'] });
+    if (message) {
+      setActionSuccess(message);
+    }
+    if (onRefresh) onRefresh();
+    void refreshUserDetail();
+  };
 
   // 재매칭 티켓 관련 상태
   const [ticketInfo, setTicketInfo] = useState<any>(null);
@@ -268,6 +319,12 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
   const [revokeReason, setRevokeReason] = useState<string>('');
   const [customRevokeReason, setCustomRevokeReason] = useState<string>('');
   const [revokeActionLoading, setRevokeActionLoading] = useState(false);
+
+  // 비밀번호 초기화 관련 상태
+  const [resetPasswordConfirmOpen, setResetPasswordConfirmOpen] = useState(false);
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+  const [resetPasswordResultOpen, setResetPasswordResultOpen] = useState(false);
+  const [temporaryPassword, setTemporaryPassword] = useState('');
 
   const rejectionReasons = [
     { value: 'LONG_TERM_INACTIVE_REAPPLY', label: '[장기 미접속]-재심사를 요청해주세요' },
@@ -329,10 +386,23 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     );
   };
 
+  const isAccountSuspended =
+    userDetail?.accountStatus === 'SUSPENDED' ||
+    !!userDetail?.suspendedAt;
+
+  const handleOpenAccountStatusModal = () => {
+    handleCloseMenu();
+    setAccountStatusModalOpen(true);
+  };
+
   // 프로필 직접 수정 모달 열기
   const handleOpenEditProfileModal = () => {
     handleCloseMenu();
     setEditProfileModalOpen(true);
+  };
+
+  const handleOpenUniversityTransferModal = () => {
+    setUniversityTransferModalOpen(true);
   };
 
   // 이메일 발송 모달 열기
@@ -383,6 +453,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
       await AdminService.userAppearance.setInstagramError(userId);
 
+      setUserDetail(prev => prev ? { ...prev, statusAt: 'instagramerror' } : prev);
       setActionSuccess('인스타그램 오류 상태가 설정되었습니다.');
       if (onRefresh) onRefresh();
     } catch (error: any) {
@@ -582,6 +653,13 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     }
   };
 
+  const handleAccountStatusSuccess = async (message: string) => {
+    setActionSuccess(message);
+    await refreshUserDetail();
+    queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+    if (onRefresh) onRefresh();
+  };
+
   // 인스타그램 오류 상태 해제
   const handleResetInstagramError = async () => {
     if (!userId) return;
@@ -592,6 +670,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
       await AdminService.userAppearance.resetInstagramError(userId);
 
+      setUserDetail(prev => prev ? { ...prev, statusAt: null } : prev);
       setActionSuccess('인스타그램 오류 상태가 해제되었습니다.');
       if (onRefresh) onRefresh();
     } catch (error: any) {
@@ -606,7 +685,6 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     handleCloseMenu();
     setDeleteConfirmModalOpen(true);
     setSendEmailOnDelete(true);
-    setAddToBlacklist(false); // 기본값 false로 설정
   };
 
   // 실제 회원 탈퇴 처리
@@ -618,12 +696,11 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       setActionError(null);
       setDeleteConfirmModalOpen(false);
 
-      await AdminService.userAppearance.deleteUser(userId, sendEmailOnDelete, addToBlacklist);
+      await AdminService.userAppearance.deleteUser(userId, sendEmailOnDelete, false);
 
       const successMessages = [];
       successMessages.push('회원이 성공적으로 탈퇴되었습니다.');
       if (sendEmailOnDelete) successMessages.push('이메일 발송됨');
-      if (addToBlacklist) successMessages.push('블랙리스트 추가됨');
 
       setActionSuccess(successMessages.join(' / '));
       if (onRefresh) onRefresh();
@@ -701,6 +778,58 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
     setCustomRevokeReason('');
   };
 
+  // 비밀번호 초기화 메뉴 클릭
+  const handleResetPasswordClick = () => {
+    handleCloseMenu();
+    setResetPasswordConfirmOpen(true);
+  };
+
+  // 비밀번호 초기화 실행
+  const handleConfirmResetPassword = async () => {
+    if (!userId) return;
+
+    try {
+      setResetPasswordLoading(true);
+      const result = await AdminService.userAppearance.resetPassword(userId);
+      setTemporaryPassword(result.temporaryPassword || result.data?.temporaryPassword || '');
+      setResetPasswordConfirmOpen(false);
+      setResetPasswordResultOpen(true);
+    } catch (error: any) {
+      console.error('비밀번호 초기화 중 오류:', error);
+      setActionError(error.response?.data?.message || error.message || '비밀번호 초기화에 실패했습니다.');
+      setResetPasswordConfirmOpen(false);
+    } finally {
+      setResetPasswordLoading(false);
+    }
+  };
+
+  // 임시 비밀번호 복사
+  const handleCopyTemporaryPassword = () => {
+    if (temporaryPassword) {
+      navigator.clipboard.writeText(temporaryPassword);
+      setActionSuccess('임시 비밀번호가 복사되었습니다.');
+    }
+  };
+
+  // 비밀번호 결과 다이얼로그 닫기
+  const handleResetPasswordResultClose = () => {
+    setResetPasswordResultOpen(false);
+    setTemporaryPassword('');
+  };
+
+  const rawUniversity = userDetail?.university as any;
+  const currentUniversityName =
+    userDetail?.universityDetails?.name ??
+    userDetail?.universityName ??
+    (typeof rawUniversity === 'string' ? rawUniversity : rawUniversity?.name) ??
+    null;
+  const currentDepartmentName =
+    userDetail?.universityDetails?.department ?? userDetail?.departmentName ?? null;
+  const currentUniversityGrade = userDetail?.universityDetails?.grade ?? userDetail?.grade ?? null;
+  const isUniversityVerified =
+    userDetail?.isUniversityVerified ??
+    Boolean(userDetail?.universityDetails?.authentication ?? userDetail?.verifiedAt);
+
   return (
     <Dialog
       open={open}
@@ -718,17 +847,61 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
         <Typography variant="h6" component="div">
           사용자 상세 정보
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {!loading && userDetail?.gender === 'MALE' && userId && (
             <Button
               size="small"
               variant="outlined"
               startIcon={<OpenInNewIcon fontSize="small" />}
               onClick={handleOpenProfileCuration}
-              sx={{ mr: 1 }}
+              disabled={actionLoading}
             >
               프로필 큐레이팅
             </Button>
+          )}
+          {/* 계정 정지 상태 빠른 액션 */}
+          {!loading && userDetail && userId && (
+            <Button
+              variant="outlined"
+              color={isAccountSuspended ? 'primary' : 'warning'}
+              size="small"
+              startIcon={<BlockIcon fontSize="small" />}
+              onClick={() => setAccountStatusModalOpen(true)}
+              disabled={actionLoading}
+            >
+              {isAccountSuspended ? '정지 해제' : '계정 정지'}
+            </Button>
+          )}
+          {/* 블랙리스트 액션 버튼 */}
+          {!loading && userDetail && userId && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.25 }}>
+              {isBlacklisted ? (
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  size="small"
+                  startIcon={<RotateCcw size={16} />}
+                  onClick={() => setBlacklistReleaseDialogOpen(true)}
+                  disabled={actionLoading}
+                >
+                  블랙리스트 해제
+                </Button>
+              ) : (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  size="small"
+                  startIcon={<ShieldBan size={16} />}
+                  onClick={() => setBlacklistRegisterModalOpen(true)}
+                  disabled={actionLoading}
+                >
+                  블랙리스트 등록
+                </Button>
+              )}
+              <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.2, maxWidth: 160, textAlign: 'right' }}>
+                영구 차단(블랙리스트). 기본 고지 발송
+              </Typography>
+            </Box>
           )}
           {/* 관리 메뉴 버튼 */}
           {!loading && userDetail && (
@@ -783,7 +956,23 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           </ListItemIcon>
           <ListItemText>SMS 발송</ListItemText>
         </MenuItem>
+        <MenuItem onClick={handleResetPasswordClick} disabled={actionLoading}>
+          <ListItemIcon>
+            <LockResetIcon fontSize="small" color="warning" />
+          </ListItemIcon>
+          <ListItemText primary="비밀번호 초기화" primaryTypographyProps={{ color: 'warning.main' }} />
+        </MenuItem>
         <Divider />
+        <MenuItem onClick={handleOpenAccountStatusModal} disabled={actionLoading}>
+          <ListItemIcon>
+            <BlockIcon fontSize="small" color={isAccountSuspended ? 'primary' : 'warning'} />
+          </ListItemIcon>
+          <ListItemText
+            primary={isAccountSuspended ? '정지 해제' : '계정 정지'}
+            secondary={isAccountSuspended ? '로그인 가능 상태로 복구' : '약관 고지(알림+SMS) 발송'}
+            primaryTypographyProps={{ color: isAccountSuspended ? 'primary.main' : 'warning.main' }}
+          />
+        </MenuItem>
         <MenuItem onClick={handleDeleteUser} disabled={actionLoading}>
           <ListItemIcon>
             <BlockIcon fontSize="small" color="error" />
@@ -816,6 +1005,16 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           <ListItemText primary="승인 취소" primaryTypographyProps={{ color: 'warning.main' }} />
         </MenuItem>
       </Menu>
+      {!loading && !error && userDetail && (
+        <Tabs
+          value={activeTab}
+          onChange={(_, v) => setActiveTab(v)}
+          sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}
+        >
+          <Tab value="profile" label="기본 정보" />
+          <Tab value="blacklist" label="블랙리스트 이력" />
+        </Tabs>
+      )}
       <DialogContent sx={{ p: 3 }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 400 }}>
@@ -829,6 +1028,13 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 200 }}>
             <Typography>사용자 정보를 찾을 수 없습니다.</Typography>
           </Box>
+        ) : activeTab === 'blacklist' ? (
+          userId ? (
+            <BlacklistHistoryTimeline
+              userId={userId}
+              onRelease={() => setBlacklistReleaseDialogOpen(true)}
+            />
+          ) : null
         ) : (
           <Grid container spacing={3}>
             {/* 프로필 이미지 섹션 */}
@@ -1054,6 +1260,15 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                       />
                     )}
 
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => setBirthdayModalOpen(true)}
+                      disabled={actionLoading}
+                    >
+                      나이 변경
+                    </Button>
+
                     {userDetail.signupRoute && (
                       <Chip
                         label={`가입: ${SIGNUP_ROUTE_LABELS[userDetail.signupRoute] || userDetail.signupRoute}`}
@@ -1063,18 +1278,31 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                       />
                     )}
 
-                    {userDetail.accountStatus && userDetail.accountStatus !== 'ACTIVE' && (
+                    {userDetail.accountStatus === 'INACTIVE' && (
                       <Chip
-                        label={userDetail.accountStatus === 'INACTIVE' ? '비활성화' : '정지됨'}
+                        label="비활성화"
                         size="small"
                         color="error"
+                      />
+                    )}
+                    {isAccountSuspended && (
+                      <Chip
+                        label={
+                          userDetail.suspendedUntil
+                            ? `정지됨 (~${formatDateWithoutTimezoneConversion(userDetail.suspendedUntil)})`
+                            : '정지됨'
+                        }
+                        size="small"
+                        color="warning"
+                        onClick={() => setAccountStatusModalOpen(true)}
+                        sx={{ cursor: 'pointer' }}
                       />
                     )}
                   </Box>
                 </Box>
 
                 {/* 대학 정보 */}
-                {(userDetail.universityDetails || userDetail.university) && (
+                {(currentUniversityName || currentDepartmentName) && (
                   <Box sx={{ mb: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                       <SchoolIcon sx={{ mr: 1, color: 'primary.main' }} />
@@ -1093,11 +1321,25 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                             </Typography>
                           </>
                         ) : (
-                          <Typography variant="body1">
-                            {userDetail.university}
-                          </Typography>
+                          <>
+                            <Typography variant="body1">{currentUniversityName}</Typography>
+                            {currentDepartmentName && (
+                              <Typography variant="body2" color="text.secondary">
+                                {currentDepartmentName}
+                                {currentUniversityGrade && ` ${currentUniversityGrade}학년`}
+                              </Typography>
+                            )}
+                          </>
                         )}
                       </Box>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={handleOpenUniversityTransferModal}
+                        disabled={actionLoading}
+                      >
+                        변경
+                      </Button>
                     </Box>
 
                     {/* 대학교 인증 상태 */}
@@ -1105,7 +1347,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                       <Typography variant="body2" color="text.secondary">
                         인증 상태:
                       </Typography>
-                      {userDetail.isUniversityVerified ? (
+                      {isUniversityVerified ? (
                         <Chip
                           label="✓ 인증됨"
                           size="small"
@@ -1172,7 +1414,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <Link
-                          href={userDetail.instagramUrl || `https://instagram.com/${userDetail.instagramId}`}
+                          href={sanitizeUrl(userDetail.instagramUrl, { allowRelative: false }) ?? `https://instagram.com/${userDetail.instagramId}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           sx={{
@@ -1288,6 +1530,14 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                   </Box>
                 </Box>
 
+                {userId && (
+                  <ReferralPostSignupSection
+                    userId={userId}
+                    createdAt={userDetail.createdAt}
+                    onCompleted={onRefresh}
+                  />
+                )}
+
                 {/* 추가 정보 섹션 */}
                 <Box sx={{ mt: 4 }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 'bold', mb: 1 }}>
@@ -1306,6 +1556,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                     </Grid>
 
                     {/* 재매칭 티켓 정보 */}
+                    {SHOW_REMATCH_TICKET_ADMIN && (
                     <Grid item xs={12}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                         <ConfirmationNumberIcon fontSize="small" color="action" />
@@ -1389,6 +1640,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                         </Box>
                       )}
                     </Grid>
+                    )}
 
                     {/* 구슬 정보 */}
                     <Grid item xs={12}>
@@ -1657,6 +1909,50 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
         }}
       />
 
+      <BirthdayEditModal
+        open={birthdayModalOpen}
+        onClose={() => setBirthdayModalOpen(false)}
+        userId={userId || ''}
+        userName={userDetail?.name}
+        currentBirthday={userDetail?.birthday}
+        currentAge={userDetail?.age}
+        onSuccess={({ birthday, age }) => {
+          setActionSuccess(`생년월일이 ${birthday}(만 ${age}세)(으)로 변경되었습니다.`);
+          setUserDetail(prev => prev ? { ...prev, birthday, age } : prev);
+          if (onRefresh) onRefresh();
+        }}
+      />
+
+      <UniversityTransferModal
+        open={universityTransferModalOpen}
+        onClose={() => setUniversityTransferModalOpen(false)}
+        userId={userId || ''}
+        userName={userDetail?.name}
+        currentUniversityName={currentUniversityName}
+        currentDepartmentName={currentDepartmentName}
+        currentGrade={currentUniversityGrade}
+        isVerified={isUniversityVerified}
+        onSuccess={({ universityName, departmentName }) => {
+          setActionSuccess(`학교/학과가 ${universityName} ${departmentName}(으)로 변경되었습니다.`);
+          setUserDetail(prev => prev ? {
+            ...prev,
+            universityName,
+            departmentName,
+            universityDetails: prev.universityDetails
+              ? { ...prev.universityDetails, name: universityName, department: departmentName }
+              : {
+                  name: universityName,
+                  authentication: isUniversityVerified,
+                  department: departmentName,
+                  grade: currentUniversityGrade || '',
+                  studentNumber: '',
+                },
+          } : prev);
+          refreshUserDetail();
+          if (onRefresh) onRefresh();
+        }}
+      />
+
       {/* 회원 탈퇴 확인 다이얼로그 */}
       <Dialog
         open={deleteConfirmModalOpen}
@@ -1675,7 +1971,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           </Typography>
 
           {/* 재매칭 티켓 경고 메시지 */}
-          {ticketInfo?.stats?.available > 0 && (
+          {SHOW_REMATCH_TICKET_ADMIN && ticketInfo?.stats?.available > 0 && (
             <Alert severity="warning" sx={{ mb: 2 }}>
               <Typography variant="body2">
                 <strong>주의:</strong> 이 사용자는 재매칭 티켓을 <strong>{ticketInfo.stats.available}장</strong> 보유하고 있습니다.
@@ -1697,16 +1993,6 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
             }
             label="탈퇴 처리 시 사용자에게 이메일 발송"
           />
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={addToBlacklist}
-                onChange={(e) => setAddToBlacklist(e.target.checked)}
-                color="primary"
-              />
-            }
-            label="블랙리스트에 추가"
-          />
         </DialogContent>
         <DialogActions>
           <Button
@@ -1727,6 +2013,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
       </Dialog>
 
       {/* 재매칭 티켓 추가 모달 */}
+      {SHOW_REMATCH_TICKET_ADMIN && (
       <Dialog
         open={ticketAddModalOpen}
         onClose={() => setTicketAddModalOpen(false)}
@@ -1771,8 +2058,10 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
+      )}
 
       {/* 재매칭 티켓 제거 모달 */}
+      {SHOW_REMATCH_TICKET_ADMIN && (
       <Dialog
         open={ticketRemoveModalOpen}
         onClose={() => setTicketRemoveModalOpen(false)}
@@ -1827,6 +2116,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
+      )}
 
       {/* 구슬 추가 모달 */}
       <Dialog
@@ -1943,7 +2233,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
 
           <Alert severity="warning" sx={{ mb: 2 }}>
             <Typography variant="body2">
-              <strong>경고:</strong> 승인을 취소하면 사용자 상태가 '미승인'으로 변경되며,
+              <strong>경고:</strong> 승인을 취소하면 사용자 상태가 &apos;미승인&apos;으로 변경되며,
               다시 가입 승인을 받아야 합니다. 또한 자동으로 SMS가 발송됩니다.
             </Typography>
           </Alert>
@@ -2013,6 +2303,104 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* 비밀번호 초기화 확인 다이얼로그 */}
+      <Dialog open={resetPasswordConfirmOpen} onClose={() => setResetPasswordConfirmOpen(false)}>
+        <DialogTitle>비밀번호 초기화</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            <strong>{userDetail?.name}</strong>님의 비밀번호를 초기화하시겠습니까?
+            <br />
+            <br />
+            초기화 시 임시 비밀번호가 발급되며, 기존 비밀번호는 사용할 수 없게 됩니다.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setResetPasswordConfirmOpen(false)} disabled={resetPasswordLoading}>
+            취소
+          </Button>
+          <Button
+            onClick={handleConfirmResetPassword}
+            color="warning"
+            variant="contained"
+            disabled={resetPasswordLoading}
+          >
+            {resetPasswordLoading ? <CircularProgress size={20} /> : '초기화'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 임시 비밀번호 결과 다이얼로그 */}
+      <Dialog open={resetPasswordResultOpen} onClose={handleResetPasswordResultClose}>
+        <DialogTitle>비밀번호 초기화 완료</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            비밀번호가 성공적으로 초기화되었습니다.
+            <br />
+            아래 임시 비밀번호를 회원에게 전달해주세요.
+          </DialogContentText>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <TextField
+              fullWidth
+              label="임시 비밀번호"
+              value={temporaryPassword}
+              InputProps={{
+                readOnly: true,
+              }}
+            />
+            <IconButton onClick={handleCopyTemporaryPassword} color="primary">
+              <ContentCopyIcon />
+            </IconButton>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleResetPasswordResultClose} variant="contained">
+            확인
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 계정 정지 / 정지 해제 모달 */}
+      {userId && userDetail && (
+        <AccountStatusModal
+          open={accountStatusModalOpen}
+          onClose={() => setAccountStatusModalOpen(false)}
+          userId={userId}
+          isSuspended={isAccountSuspended}
+          userName={userDetail.name}
+          onSuccess={handleAccountStatusSuccess}
+        />
+      )}
+
+      {/* 블랙리스트 등록 모달 */}
+      {userId && userDetail && (
+        <BlacklistRegisterModal
+          open={blacklistRegisterModalOpen}
+          onClose={() => setBlacklistRegisterModalOpen(false)}
+          user={{
+            id: userId,
+            name: userDetail.name,
+            phoneNumber: userDetail.phoneNumber,
+            age: userDetail.age,
+            gender: userDetail.gender,
+            universityName: userDetail.universityDetails?.name ?? userDetail.university,
+          }}
+          onSuccess={handleBlacklistSuccess}
+        />
+      )}
+
+      {/* 블랙리스트 해제 다이얼로그 */}
+      {userId && userDetail && (
+        <BlacklistReleaseDialog
+          open={blacklistReleaseDialogOpen}
+          onClose={() => setBlacklistReleaseDialogOpen(false)}
+          userId={userId}
+          userName={userDetail.name}
+          currentReason={activeBlacklistEntry?.reason ?? null}
+          blacklistedAt={activeBlacklistEntry?.blacklistedAt ?? null}
+          onSuccess={handleBlacklistSuccess}
+        />
+      )}
 
     </Dialog>
   );

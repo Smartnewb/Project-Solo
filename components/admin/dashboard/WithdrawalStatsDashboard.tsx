@@ -115,25 +115,40 @@ const generateEmptyMonthlyData = () => {
 // 데이터 포맷팅 함수들
 const formatData = (data: any[], type: 'daily' | 'weekly' | 'monthly') => {
   return data.map(item => {
-    let formattedDate: string;
+    const label = item.label || item.date || '';
+    let formattedDate: string = label;
 
-    switch (type) {
-      case 'daily':
-        const date = new Date(item.label);
-        formattedDate = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;
-        break;
-      case 'weekly':
-        // 주별 데이터는 "2025-05-18 ~ 2025-05-24" 형태로 오므로 시작일만 추출하여 포맷팅
-        const weekRange = item.label.split(' ~ ');
-        const startDate = new Date(weekRange[0]);
-        const month = startDate.getMonth() + 1;
-        const day = startDate.getDate();
-        formattedDate = `${month}/${day}주`;
-        break;
-      case 'monthly':
-        const monthDate = new Date(item.label);
-        formattedDate = `${monthDate.getFullYear()}년 ${monthDate.getMonth() + 1}월`;
-        break;
+    try {
+      switch (type) {
+        case 'daily': {
+          const date = new Date(label);
+          if (!isNaN(date.getTime())) {
+            formattedDate = `${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;
+          }
+          break;
+        }
+        case 'weekly': {
+          if (label.includes(' ~ ')) {
+            const weekRange = label.split(' ~ ');
+            const startDate = new Date(weekRange[0]);
+            if (!isNaN(startDate.getTime())) {
+              const month = startDate.getMonth() + 1;
+              const day = startDate.getDate();
+              formattedDate = `${month}/${day}주`;
+            }
+          }
+          break;
+        }
+        case 'monthly': {
+          const monthDate = new Date(label);
+          if (!isNaN(monthDate.getTime())) {
+            formattedDate = `${monthDate.getFullYear()}년 ${monthDate.getMonth() + 1}월`;
+          }
+          break;
+        }
+      }
+    } catch {
+      // 포맷팅 실패 시 원본 label 유지
     }
 
     return {
@@ -199,7 +214,12 @@ const WithdrawalChart = ({ data, color, interval = 1 }: { data: any[], color: st
   </Box>
 );
 
-export default function WithdrawalStatsDashboard() {
+interface WithdrawalStatsDashboardProps {
+  region?: string;
+  useCluster?: boolean;
+}
+
+export default function WithdrawalStatsDashboard({ region, useCluster }: WithdrawalStatsDashboardProps) {
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -234,7 +254,7 @@ export default function WithdrawalStatsDashboard() {
 
         // 일별 데이터 조회
         try {
-          const dailyResponse = await AdminService.stats.getDailyWithdrawalTrend();
+          const dailyResponse = await AdminService.stats.getDailyWithdrawalTrend(region, useCluster);
           console.log('일별 데이터 응답:', dailyResponse);
           if (dailyResponse?.data && Array.isArray(dailyResponse.data) && dailyResponse.data.length > 0) {
             setDailyData(dailyResponse.data);
@@ -245,7 +265,7 @@ export default function WithdrawalStatsDashboard() {
 
         // 주별 데이터 조회
         try {
-          const weeklyResponse = await AdminService.stats.getWeeklyWithdrawalTrend();
+          const weeklyResponse = await AdminService.stats.getWeeklyWithdrawalTrend(region, useCluster);
           console.log('주별 데이터 응답:', weeklyResponse);
           if (weeklyResponse?.data && Array.isArray(weeklyResponse.data) && weeklyResponse.data.length > 0) {
             setWeeklyData(weeklyResponse.data);
@@ -256,7 +276,7 @@ export default function WithdrawalStatsDashboard() {
 
         // 월별 데이터 조회
         try {
-          const monthlyResponse = await AdminService.stats.getMonthlyWithdrawalTrend();
+          const monthlyResponse = await AdminService.stats.getMonthlyWithdrawalTrend(region, useCluster);
           console.log('월별 데이터 응답:', monthlyResponse);
           if (monthlyResponse?.data && Array.isArray(monthlyResponse.data) && monthlyResponse.data.length > 0) {
             setMonthlyData(monthlyResponse.data);
@@ -278,7 +298,7 @@ export default function WithdrawalStatsDashboard() {
     };
 
     fetchData();
-  }, []);
+  }, [region, useCluster]);
 
   // 사용자 지정 기간 데이터 조회
   const fetchCustomPeriodData = async () => {
@@ -301,7 +321,9 @@ export default function WithdrawalStatsDashboard() {
 
       const response = await AdminService.stats.getCustomPeriodWithdrawalTrend(
         formattedStartDate,
-        formattedEndDate
+        formattedEndDate,
+        region,
+        useCluster,
       );
 
       console.log('사용자 지정 기간 데이터 응답:', response);

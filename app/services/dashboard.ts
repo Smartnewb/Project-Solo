@@ -1,57 +1,35 @@
-import axiosServer from "@/utils/axios";
+import { adminDelete, adminGet, adminPost, adminPut, AdminApiError } from "@/shared/lib/http/admin-fetch";
 import {
   DashboardSummaryResponse,
   MatchingFunnelResponse,
   HourlySignupsResponse,
-  GoalsResponse,
-  Goal,
-  GoalCreateRequest,
-  GoalUpdateRequest,
-  ExtendedRevenueResponse,
+  GemSystemFunnelResponse,
+  ActionableInsightsResponse,
 } from "@/app/admin/dashboard/types";
 
-const DASHBOARD_ENDPOINT = {
-  SUMMARY: "/admin/dashboard/summary",
-  MATCHING_FUNNEL: "/admin/dashboard/matching/funnel",
-  HOURLY_SIGNUPS: "/admin/dashboard/stats/signups/hourly",
-  GOALS: "/admin/goals",
-  EXTENDED_REVENUE: "/admin/dashboard/revenue/extended",
-} as const;
-
-// 에러 클래스
-export class DashboardApiError extends Error {
-  public statusCode?: number;
-  public details?: unknown;
-  public originalError: unknown;
-
-  constructor(message: string, originalError?: unknown) {
-    super(message);
-    this.name = "DashboardApiError";
-    this.originalError = originalError;
-
-    if (
-      originalError &&
-      typeof originalError === "object" &&
-      "response" in originalError
-    ) {
-      const axiosError = originalError as {
-        response?: { status?: number; data?: unknown };
-      };
-      this.statusCode = axiosError.response?.status;
-      this.details = axiosError.response?.data;
-    }
-  }
+interface V2Response<T> {
+  data: T;
 }
+
+const DASHBOARD_ENDPOINT = {
+  SUMMARY: "/admin/v2/dashboard/summary",
+  MATCHING_FUNNEL: "/admin/v2/dashboard/matching/funnel",
+  HOURLY_SIGNUPS: "/admin/v2/dashboard/signups",
+  GEM_SYSTEM_FUNNEL: "/admin/v2/dashboard/gem-system-funnel",
+  ACTIONABLE_INSIGHTS: "/admin/v2/dashboard/actionable-insights",
+} as const;
 
 export const dashboardService = {
   // 통합 요약 조회
   async getSummary(): Promise<DashboardSummaryResponse> {
     try {
-      const response = await axiosServer.get(DASHBOARD_ENDPOINT.SUMMARY);
-      return response.data;
+      const res = await adminGet<V2Response<DashboardSummaryResponse>>(DASHBOARD_ENDPOINT.SUMMARY);
+      return res.data;
     } catch (error) {
       console.error("대시보드 요약 조회 실패:", error);
-      throw new DashboardApiError("대시보드 요약 조회에 실패했습니다.", error);
+      throw error instanceof AdminApiError
+        ? error
+        : new AdminApiError("대시보드 요약 조회에 실패했습니다.", 500);
     }
   },
 
@@ -61,95 +39,63 @@ export const dashboardService = {
     endDate: string,
   ): Promise<MatchingFunnelResponse> {
     try {
-      const response = await axiosServer.get(
-        DASHBOARD_ENDPOINT.MATCHING_FUNNEL,
-        {
-          params: { startDate, endDate },
-        },
-      );
+      const response = await adminGet<V2Response<MatchingFunnelResponse>>(DASHBOARD_ENDPOINT.MATCHING_FUNNEL, {
+        startDate,
+        endDate,
+      });
       return response.data;
     } catch (error) {
       console.error("매칭 퍼널 조회 실패:", error);
-      throw new DashboardApiError("매칭 퍼널 조회에 실패했습니다.", error);
+      throw error instanceof AdminApiError
+        ? error
+        : new AdminApiError("매칭 퍼널 조회에 실패했습니다.", 500);
     }
   },
 
   // 시간별 가입자 추이 조회
   async getHourlySignups(date: string): Promise<HourlySignupsResponse> {
     try {
-      const response = await axiosServer.get(
-        DASHBOARD_ENDPOINT.HOURLY_SIGNUPS,
-        {
-          params: { date },
-        },
-      );
-      return response.data;
+      const res = await adminGet<V2Response<HourlySignupsResponse>>(DASHBOARD_ENDPOINT.HOURLY_SIGNUPS, {
+        date,
+      });
+      return res.data;
     } catch (error) {
       console.error("시간별 가입자 추이 조회 실패:", error);
-      throw new DashboardApiError(
-        "시간별 가입자 추이 조회에 실패했습니다.",
-        error,
-      );
+      throw error instanceof AdminApiError
+        ? error
+        : new AdminApiError("시간별 가입자 추이 조회에 실패했습니다.", 500);
     }
   },
 
-  // 목표 목록 조회
-  async getGoals(targetMonth?: string): Promise<GoalsResponse> {
+  async getGemSystemFunnel(
+    startDate?: string,
+    endDate?: string,
+    debug?: boolean,
+  ): Promise<GemSystemFunnelResponse> {
     try {
-      const response = await axiosServer.get(DASHBOARD_ENDPOINT.GOALS, {
-        params: targetMonth ? { targetMonth } : undefined,
-      });
-      return response.data;
+      const params: Record<string, string> = {};
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
+      if (debug) params.debug = "true";
+      const res = await adminGet<{ data: GemSystemFunnelResponse }>(DASHBOARD_ENDPOINT.GEM_SYSTEM_FUNNEL, params);
+      return res.data;
     } catch (error) {
-      console.error("목표 목록 조회 실패:", error);
-      throw new DashboardApiError("목표 목록 조회에 실패했습니다.", error);
+      console.error("구슬 시스템 퍼널 조회 실패:", error);
+      throw error instanceof AdminApiError
+        ? error
+        : new AdminApiError("구슬 시스템 퍼널 조회에 실패했습니다.", 500);
     }
   },
 
-  // 목표 생성
-  async createGoal(data: GoalCreateRequest): Promise<Goal> {
+  async getActionableInsights(): Promise<ActionableInsightsResponse> {
     try {
-      const response = await axiosServer.post(DASHBOARD_ENDPOINT.GOALS, data);
-      return response.data;
+      const res = await adminGet<{ data: ActionableInsightsResponse }>(DASHBOARD_ENDPOINT.ACTIONABLE_INSIGHTS);
+      return res.data;
     } catch (error) {
-      console.error("목표 생성 실패:", error);
-      throw new DashboardApiError("목표 생성에 실패했습니다.", error);
-    }
-  },
-
-  // 목표 수정
-  async updateGoal(id: string, data: GoalUpdateRequest): Promise<Goal> {
-    try {
-      const response = await axiosServer.put(
-        `${DASHBOARD_ENDPOINT.GOALS}/${id}`,
-        data,
-      );
-      return response.data;
-    } catch (error) {
-      console.error("목표 수정 실패:", error);
-      throw new DashboardApiError("목표 수정에 실패했습니다.", error);
-    }
-  },
-
-  // 목표 삭제
-  async deleteGoal(id: string): Promise<void> {
-    try {
-      await axiosServer.delete(`${DASHBOARD_ENDPOINT.GOALS}/${id}`);
-    } catch (error) {
-      console.error("목표 삭제 실패:", error);
-      throw new DashboardApiError("목표 삭제에 실패했습니다.", error);
-    }
-  },
-
-  async getExtendedRevenue(): Promise<ExtendedRevenueResponse> {
-    try {
-      const response = await axiosServer.get(
-        DASHBOARD_ENDPOINT.EXTENDED_REVENUE,
-      );
-      return response.data;
-    } catch (error) {
-      console.error("확장 매출 현황 조회 실패:", error);
-      throw new DashboardApiError("확장 매출 현황 조회에 실패했습니다.", error);
+      console.error("실행 가능한 인사이트 조회 실패:", error);
+      throw error instanceof AdminApiError
+        ? error
+        : new AdminApiError("실행 가능한 인사이트 조회에 실패했습니다.", 500);
     }
   },
 };

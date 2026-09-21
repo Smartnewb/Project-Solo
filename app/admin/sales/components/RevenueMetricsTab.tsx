@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { salesService } from "@/app/services/sales";
 import {
   RevenueMetricsResponse,
@@ -31,6 +31,12 @@ interface RevenueMetricsTabProps {
 }
 
 type Granularity = "daily" | "weekly" | "monthly";
+type CardPeriodType = "week" | "weekly" | "monthly" | "custom";
+
+interface CardDateRange {
+  startDate: string;
+  endDate: string;
+}
 
 const METRIC_TOOLTIPS = {
   ARPU: {
@@ -74,6 +80,12 @@ const formatDateToString = (date: Date): string => {
 };
 
 const SERVICE_START_DATE = "2025-05-01";
+const CARD_PERIOD_LABELS: Record<CardPeriodType, string> = {
+  week: "일주일",
+  weekly: "주별",
+  monthly: "월별",
+  custom: "기간 선택",
+};
 
 const getDateRangeForGranularity = (
   granularity: Granularity,
@@ -100,6 +112,40 @@ const getOneMonthAgo = (): string => {
 
 const getToday = (): string => {
   return formatDateToString(new Date());
+};
+
+const getCardDateRange = (
+  periodType: Exclude<CardPeriodType, "custom">,
+): CardDateRange => {
+  const today = new Date();
+
+  if (periodType === "week") {
+    const start = new Date(today);
+    const day = start.getDay();
+    const diffFromMonday = day === 0 ? 6 : day - 1;
+    start.setDate(start.getDate() - diffFromMonday);
+    return {
+      startDate: formatDateToString(start),
+      endDate: formatDateToString(today),
+    };
+  }
+
+  if (periodType === "weekly") {
+    const start = new Date(today);
+    start.setDate(start.getDate() - 55);
+    return {
+      startDate: formatDateToString(start),
+      endDate: formatDateToString(today),
+    };
+  }
+
+  const start = new Date(today);
+  start.setMonth(start.getMonth() - 11);
+  start.setDate(1);
+  return {
+    startDate: formatDateToString(start),
+    endDate: formatDateToString(today),
+  };
 };
 
 function MetricTooltipIcon({
@@ -151,6 +197,9 @@ export function RevenueMetricsTab({
   startDate,
   endDate,
 }: RevenueMetricsTabProps) {
+  const initialCardRange = getCardDateRange("monthly");
+  const initialTrendRange = getDateRangeForGranularity("monthly");
+
   const [revenueMetrics, setRevenueMetrics] =
     useState<RevenueMetricsResponse | null>(null);
   const [aovData, setAovData] = useState<AverageOrderValueResponse | null>(
@@ -166,12 +215,19 @@ export function RevenueMetricsTab({
   const [successRateData, setSuccessRateData] =
     useState<PaymentSuccessRateResponse | null>(null);
 
+  const [includeDeleted, setIncludeDeleted] = useState(false);
+  const [cardPeriodType, setCardPeriodType] = useState<CardPeriodType>("monthly");
+  const [cardStartDate, setCardStartDate] = useState(initialCardRange.startDate);
+  const [cardEndDate, setCardEndDate] = useState(initialCardRange.endDate);
+  const [customStartDate, setCustomStartDate] = useState(getOneMonthAgo());
+  const [customEndDate, setCustomEndDate] = useState(getToday());
+  const [cardPeriodError, setCardPeriodError] = useState<string>("");
+
   const [granularity, setGranularity] = useState<Granularity>("monthly");
-  const initialRange = getDateRangeForGranularity("monthly");
   const [trendStartDate, setTrendStartDate] = useState<string>(
-    initialRange.start,
+    initialTrendRange.start,
   );
-  const [trendEndDate, setTrendEndDate] = useState<string>(initialRange.end);
+  const [trendEndDate, setTrendEndDate] = useState<string>(initialTrendRange.end);
 
   const [loadingMetrics, setLoadingMetrics] = useState(false);
   const [loadingAov, setLoadingAov] = useState(false);
@@ -182,6 +238,7 @@ export function RevenueMetricsTab({
   const [loadingSuccessRate, setLoadingSuccessRate] = useState(false);
 
   const [error, setError] = useState<string>("");
+  const hasInitialized = useRef(false);
 
   const getDateParams = () => {
     if (startDate && endDate) {
@@ -193,58 +250,60 @@ export function RevenueMetricsTab({
     return undefined;
   };
 
-  const fetchAllData = async () => {
-    setError("");
-    const params = getDateParams();
+  const fetchRevenueCards = async (range?: CardDateRange) => {
+    const activeRange = range ?? { startDate: cardStartDate, endDate: cardEndDate };
+    const params = {
+      startDate: activeRange.startDate,
+      endDate: activeRange.endDate,
+      includeDeleted,
+    };
 
     setLoadingMetrics(true);
     setLoadingAov(true);
-    setLoadingRepurchase(true);
-    setLoadingConversion(true);
-    setLoadingLtv(true);
 
     try {
       const metricsRes = await salesService.getRevenueMetrics(params);
       setRevenueMetrics(metricsRes);
-    } catch (e) {
-      console.error("수익 지표 조회 실패:", e);
-    } finally {
+    } catch { } finally {
       setLoadingMetrics(false);
     }
 
     try {
       const aovRes = await salesService.getAverageOrderValue(params);
       setAovData(aovRes);
-    } catch (e) {
-      console.error("평균 주문 금액 조회 실패:", e);
-    } finally {
+    } catch { } finally {
       setLoadingAov(false);
     }
+  };
+
+  const fetchAllData = async () => {
+    setError("");
+    const params = getDateParams();
+
+    setLoadingRepurchase(true);
+    setLoadingConversion(true);
+    setLoadingLtv(true);
+
+    await fetchRevenueCards();
 
     try {
       const repurchaseRes = await salesService.getRepurchaseAnalysis();
       setRepurchaseData(repurchaseRes);
-    } catch (e) {
-      console.error("재구매 분석 조회 실패:", e);
-    } finally {
+    } catch { } finally {
       setLoadingRepurchase(false);
     }
 
     try {
       const conversionRes = await salesService.getConversionRate(params);
       setConversionData(conversionRes);
-    } catch (e) {
-      console.error("결제 전환율 조회 실패:", e);
-    } finally {
+    } catch { } finally {
       setLoadingConversion(false);
     }
 
     try {
       const ltvRes = await salesService.getLtvAnalysis();
       setLtvData(ltvRes);
-    } catch (e) {
-      console.error("LTV 분석 조회 실패:", e);
-    } finally {
+    } catch { } finally {
       setLoadingLtv(false);
     }
 
@@ -252,9 +311,7 @@ export function RevenueMetricsTab({
     try {
       const successRateRes = await salesService.getSuccessRate();
       setSuccessRateData(successRateRes);
-    } catch (e) {
-      console.error("결제 성공률 조회 실패:", e);
-    } finally {
+    } catch { } finally {
       setLoadingSuccessRate(false);
     }
 
@@ -268,24 +325,31 @@ export function RevenueMetricsTab({
         startDate: trendStartDate,
         endDate: trendEndDate,
         granularity,
+        includeDeleted,
       });
       setTrendData(trendRes);
-    } catch (e) {
-      console.error("수익 지표 추이 조회 실패:", e);
-    } finally {
+    } catch { } finally {
       setLoadingTrend(false);
     }
   };
 
   useEffect(() => {
-    fetchAllData();
+    fetchAllData().finally(() => {
+      hasInitialized.current = true;
+    });
   }, []);
 
   useEffect(() => {
-    if (startDate && endDate) {
+    if (hasInitialized.current && startDate && endDate) {
       fetchAllData();
     }
   }, [startDate, endDate]);
+
+  useEffect(() => {
+    if (!hasInitialized.current) return;
+    fetchRevenueCards();
+    fetchTrendData();
+  }, [includeDeleted]);
 
   const handleGranularityChange = (newGranularity: Granularity) => {
     setGranularity(newGranularity);
@@ -296,6 +360,37 @@ export function RevenueMetricsTab({
 
   const handleRefresh = () => {
     fetchAllData();
+  };
+
+  const handleCardPeriodChange = (periodType: CardPeriodType) => {
+    setCardPeriodType(periodType);
+    setCardPeriodError("");
+
+    if (periodType === "custom") {
+      return;
+    }
+
+    const nextRange = getCardDateRange(periodType);
+    setCardStartDate(nextRange.startDate);
+    setCardEndDate(nextRange.endDate);
+    fetchRevenueCards(nextRange);
+  };
+
+  const handleApplyCustomPeriod = () => {
+    if (!customStartDate || !customEndDate) {
+      setCardPeriodError("시작일과 종료일을 모두 선택해주세요.");
+      return;
+    }
+    if (customStartDate > customEndDate) {
+      setCardPeriodError("시작일은 종료일보다 이전이어야 합니다.");
+      return;
+    }
+
+    const nextRange = { startDate: customStartDate, endDate: customEndDate };
+    setCardPeriodError("");
+    setCardStartDate(nextRange.startDate);
+    setCardEndDate(nextRange.endDate);
+    fetchRevenueCards(nextRange);
   };
 
   const MetricsTrendTooltip = ({ active, payload, label }: any) => {
@@ -323,7 +418,7 @@ export function RevenueMetricsTab({
       return (
         <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
           <p className="font-medium text-gray-900">{label}회 구매</p>
-          <p className="text-purple-600">
+          <p className="text-[#ff385c]">
             사용자 수: {formatNumber(data.userCount)}명
           </p>
           <p className="text-gray-600">비율: {data.percentage.toFixed(1)}%</p>
@@ -343,15 +438,15 @@ export function RevenueMetricsTab({
     loadingSuccessRate;
 
   const getSuccessRateColor = (rate: number): string => {
-    if (rate >= 95) return "text-green-600";
-    if (rate >= 90) return "text-blue-600";
+    if (rate >= 95) return "text-[#ff385c]";
+    if (rate >= 90) return "text-[#ff385c]";
     if (rate >= 80) return "text-yellow-600";
     return "text-red-600";
   };
 
   const getSuccessRateBgColor = (rate: number): string => {
     if (rate >= 95) return "bg-green-50";
-    if (rate >= 90) return "bg-blue-50";
+    if (rate >= 90) return "bg-[#f7f7f7]";
     if (rate >= 80) return "bg-yellow-50";
     return "bg-red-50";
   };
@@ -363,7 +458,7 @@ export function RevenueMetricsTab({
         <button
           onClick={handleRefresh}
           disabled={isAnyLoading}
-          className="px-4 py-2 bg-[#7D4EE4] text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+          className="px-4 py-2 bg-[#ff385c] text-white rounded-lg hover:bg-[#e00b41] transition-colors disabled:opacity-50"
         >
           새로고침
         </button>
@@ -374,6 +469,77 @@ export function RevenueMetricsTab({
           {error}
         </div>
       )}
+
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50">
+              {(Object.keys(CARD_PERIOD_LABELS) as CardPeriodType[]).map((period) => (
+                <button
+                  key={period}
+                  type="button"
+                  onClick={() => handleCardPeriodChange(period)}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    cardPeriodType === period
+                      ? "bg-[#ff385c] text-white shadow-sm"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                  }`}
+                >
+                  {CARD_PERIOD_LABELS[period]}
+                </button>
+              ))}
+            </div>
+
+            <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={includeDeleted}
+                onChange={(e) => setIncludeDeleted(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-[#ff385c] focus:ring-[#ff385c]"
+              />
+              탈퇴자 포함
+            </label>
+          </div>
+
+          {cardPeriodType === "custom" && (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+              <input
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff385c] focus:border-transparent"
+              />
+              <span className="text-gray-400 text-sm">~</span>
+              <input
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff385c] focus:border-transparent"
+              />
+              <button
+                type="button"
+                onClick={handleApplyCustomPeriod}
+                className="px-3 py-1.5 text-sm font-medium bg-[#ff385c] text-white rounded-lg hover:bg-[#e00b41] transition-colors"
+              >
+                적용
+              </button>
+            </div>
+          )}
+
+          <p className="text-xs text-gray-500">
+            이 기간은 ARPU/ARPPU/PUR/AOV 카드에만 적용됩니다. 현재 카드 기준:{" "}
+            <span className="font-medium text-gray-700">
+              {cardStartDate} ~ {cardEndDate}
+            </span>
+          </p>
+
+          {cardPeriodError && (
+            <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded px-2 py-1">
+              {cardPeriodError}
+            </p>
+          )}
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -388,7 +554,7 @@ export function RevenueMetricsTab({
             <div className="h-8 bg-gray-100 rounded animate-pulse" />
           ) : (
             <>
-              <div className="text-2xl font-bold text-purple-600">
+              <div className="text-2xl font-bold text-[#ff385c]">
                 {revenueMetrics ? formatCurrency(revenueMetrics.arpu) : "-"}
               </div>
               <div className="text-xs text-gray-400 mt-2">
@@ -412,7 +578,7 @@ export function RevenueMetricsTab({
             <div className="h-8 bg-gray-100 rounded animate-pulse" />
           ) : (
             <>
-              <div className="text-2xl font-bold text-purple-600">
+              <div className="text-2xl font-bold text-[#ff385c]">
                 {revenueMetrics ? formatCurrency(revenueMetrics.arppu) : "-"}
               </div>
               <div className="text-xs text-gray-400 mt-2">
@@ -435,7 +601,7 @@ export function RevenueMetricsTab({
           {loadingMetrics ? (
             <div className="h-8 bg-gray-100 rounded animate-pulse" />
           ) : (
-            <div className="text-2xl font-bold text-purple-600">
+            <div className="text-2xl font-bold text-[#ff385c]">
               {revenueMetrics
                 ? formatPercent(revenueMetrics.payingUserRate)
                 : "-"}
@@ -453,7 +619,7 @@ export function RevenueMetricsTab({
             <div className="h-8 bg-gray-100 rounded animate-pulse" />
           ) : (
             <>
-              <div className="text-2xl font-bold text-purple-600">
+              <div className="text-2xl font-bold text-[#ff385c]">
                 {aovData ? formatCurrency(aovData.aov) : "-"}
               </div>
               <div className="text-xs text-gray-400 mt-2">
@@ -478,7 +644,7 @@ export function RevenueMetricsTab({
                   onClick={() => handleGranularityChange(g)}
                   className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
                     granularity === g
-                      ? "bg-[#7D4EE4] text-white shadow-sm"
+                      ? "bg-[#ff385c] text-white shadow-sm"
                       : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                   }`}
                 >
@@ -491,20 +657,20 @@ export function RevenueMetricsTab({
                 type="date"
                 value={trendStartDate}
                 onChange={(e) => setTrendStartDate(e.target.value)}
-                className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7D4EE4] focus:border-transparent"
+                className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff385c] focus:border-transparent"
               />
               <span className="text-gray-400 text-sm">~</span>
               <input
                 type="date"
                 value={trendEndDate}
                 onChange={(e) => setTrendEndDate(e.target.value)}
-                className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7D4EE4] focus:border-transparent"
+                className="px-2.5 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff385c] focus:border-transparent"
               />
               <button
                 type="button"
                 onClick={fetchTrendData}
                 disabled={loadingTrend}
-                className="px-3 py-1.5 text-sm font-medium bg-[#7D4EE4] text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
+                className="px-3 py-1.5 text-sm font-medium bg-[#ff385c] text-white rounded-lg hover:bg-[#e00b41] transition-colors disabled:opacity-50"
               >
                 적용
               </button>
@@ -513,7 +679,7 @@ export function RevenueMetricsTab({
         </div>
         {loadingTrend ? (
           <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff385c]" />
             <span className="ml-2 text-gray-600">데이터를 불러오는 중...</span>
           </div>
         ) : trendData && trendData.data.length > 0 ? (
@@ -546,10 +712,10 @@ export function RevenueMetricsTab({
                   yAxisId="amount"
                   type="monotone"
                   dataKey="arpu"
-                  stroke="#7D4EE4"
+                  stroke="#ff385c"
                   strokeWidth={2}
                   name="ARPU"
-                  dot={{ fill: "#7D4EE4", r: 4 }}
+                  dot={{ fill: "#ff385c", r: 4 }}
                 />
                 <Line
                   yAxisId="amount"
@@ -595,7 +761,7 @@ export function RevenueMetricsTab({
         </h3>
         {loadingSuccessRate ? (
           <div className="flex justify-center items-center py-8">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500" />
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#ff385c]" />
           </div>
         ) : successRateData ? (
           <div className="space-y-4">
@@ -619,7 +785,7 @@ export function RevenueMetricsTab({
                 <div className="text-xs text-gray-500">총 시도</div>
               </div>
               <div className="text-center p-3 bg-green-50 rounded-lg">
-                <div className="text-lg font-semibold text-green-600">
+                <div className="text-lg font-semibold text-[#ff385c]">
                   {formatNumber(successRateData.successfulPayments)}건
                 </div>
                 <div className="text-xs text-gray-500">성공</div>
@@ -637,7 +803,7 @@ export function RevenueMetricsTab({
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-green-500 to-green-400 transition-all duration-500"
+                className="h-full bg-gradient-to-r from-[#ff385c] to-green-400 transition-all duration-500"
                 style={{ width: `${successRateData.successRate}%` }}
               />
             </div>
@@ -654,12 +820,12 @@ export function RevenueMetricsTab({
           </h3>
           {loadingConversion ? (
             <div className="flex justify-center items-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500" />
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#ff385c]" />
             </div>
           ) : conversionData ? (
             <div className="space-y-4">
-              <div className="text-center p-6 bg-purple-50 rounded-lg">
-                <div className="text-4xl font-bold text-purple-600">
+              <div className="text-center p-6 bg-[#f7f7f7] rounded-lg">
+                <div className="text-4xl font-bold text-[#ff385c]">
                   {formatPercent(conversionData.conversionRate)}
                 </div>
                 <div className="text-sm text-gray-500 mt-1">전환율</div>
@@ -672,16 +838,16 @@ export function RevenueMetricsTab({
                   <div className="text-xs text-gray-500">전체 사용자</div>
                 </div>
                 <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="text-lg font-semibold text-purple-600">
+                  <div className="text-lg font-semibold text-[#ff385c]">
                     {formatNumber(conversionData.convertedUsers)}명
                   </div>
                   <div className="text-xs text-gray-500">결제 사용자</div>
                 </div>
               </div>
-              <div className="text-center p-3 bg-blue-50 rounded-lg">
+              <div className="text-center p-3 bg-[#f7f7f7] rounded-lg">
                 <div className="text-sm text-gray-600">
                   첫 결제까지 평균{" "}
-                  <span className="font-semibold text-blue-600">
+                  <span className="font-semibold text-[#ff385c]">
                     {conversionData.avgDaysToFirstPurchase.toFixed(1)}일
                   </span>
                 </div>
@@ -698,12 +864,12 @@ export function RevenueMetricsTab({
           </h3>
           {loadingRepurchase ? (
             <div className="flex justify-center items-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500" />
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#ff385c]" />
             </div>
           ) : repurchaseData ? (
             <div className="space-y-4">
               <div className="text-center p-6 bg-green-50 rounded-lg">
-                <div className="text-4xl font-bold text-green-600">
+                <div className="text-4xl font-bold text-[#ff385c]">
                   {formatPercent(repurchaseData.repeatPurchaseRate)}
                 </div>
                 <div className="text-sm text-gray-500 mt-1">재구매율</div>
@@ -716,7 +882,7 @@ export function RevenueMetricsTab({
                   <div className="text-xs text-gray-500">전체 구매자</div>
                 </div>
                 <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <div className="text-lg font-semibold text-green-600">
+                  <div className="text-lg font-semibold text-[#ff385c]">
                     {formatNumber(repurchaseData.repeatPurchasers)}명
                   </div>
                   <div className="text-xs text-gray-500">재구매자</div>
@@ -731,10 +897,10 @@ export function RevenueMetricsTab({
                     </span>
                   </div>
                 </div>
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
+                <div className="text-center p-3 bg-[#f7f7f7] rounded-lg">
                   <div className="text-sm text-gray-600">
                     구매 간격{" "}
-                    <span className="font-semibold text-blue-600">
+                    <span className="font-semibold text-[#ff385c]">
                       {repurchaseData.avgDaysBetweenPurchases.toFixed(1)}일
                     </span>
                   </div>
@@ -753,7 +919,7 @@ export function RevenueMetricsTab({
         </h3>
         {loadingRepurchase ? (
           <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff385c]" />
             <span className="ml-2 text-gray-600">데이터를 불러오는 중...</span>
           </div>
         ) : repurchaseData &&
@@ -777,7 +943,7 @@ export function RevenueMetricsTab({
                 <Tooltip content={<DistributionTooltip />} />
                 <Bar
                   dataKey="userCount"
-                  fill="#7D4EE4"
+                  fill="#ff385c"
                   radius={[4, 4, 0, 0]}
                   name="사용자 수"
                 />
@@ -795,27 +961,27 @@ export function RevenueMetricsTab({
         <h3 className="text-lg font-semibold text-gray-900 mb-4">LTV 분석</h3>
         {loadingLtv ? (
           <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff385c]" />
             <span className="ml-2 text-gray-600">데이터를 불러오는 중...</span>
           </div>
         ) : ltvData ? (
           <div className="space-y-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 bg-purple-50 rounded-lg">
+              <div className="text-center p-4 bg-[#f7f7f7] rounded-lg">
                 <div className="text-sm text-gray-500 mb-1">평균 LTV</div>
-                <div className="text-xl font-bold text-purple-600">
+                <div className="text-xl font-bold text-[#ff385c]">
                   {formatCurrency(ltvData.avgLtv)}
                 </div>
               </div>
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="text-center p-4 bg-[#f7f7f7] rounded-lg">
                 <div className="text-sm text-gray-500 mb-1">7일 LTV</div>
-                <div className="text-xl font-bold text-blue-600">
+                <div className="text-xl font-bold text-[#ff385c]">
                   {formatCurrency(ltvData.avgLtv7Days)}
                 </div>
               </div>
               <div className="text-center p-4 bg-green-50 rounded-lg">
                 <div className="text-sm text-gray-500 mb-1">30일 LTV</div>
-                <div className="text-xl font-bold text-green-600">
+                <div className="text-xl font-bold text-[#ff385c]">
                   {formatCurrency(ltvData.avgLtv30Days)}
                 </div>
               </div>
@@ -858,10 +1024,10 @@ export function RevenueMetricsTab({
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-600">
                           {formatNumber(cohort.userCount)}명
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-blue-600 font-medium">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-[#ff385c] font-medium">
                           {formatCurrency(cohort.ltv7Days)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-green-600 font-medium">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-[#ff385c] font-medium">
                           {formatCurrency(cohort.ltv30Days)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-orange-600 font-medium">

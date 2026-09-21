@@ -1,0 +1,1127 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ghost Chat Admin Mockup</title>
+  <style>
+    :root {
+      --bg: #f5f6f8;
+      --surface: #ffffff;
+      --surface-soft: #f8fafc;
+      --line: #e5e7eb;
+      --line-strong: #cbd5e1;
+      --text: #111827;
+      --muted: #64748b;
+      --faint: #94a3b8;
+      --nav: #151827;
+      --primary: #2563eb;
+      --primary-soft: #eff6ff;
+      --green: #059669;
+      --green-soft: #ecfdf5;
+      --amber: #d97706;
+      --amber-soft: #fffbeb;
+      --pink: #db2777;
+      --pink-soft: #fdf2f8;
+      --red: #dc2626;
+      --red-soft: #fef2f2;
+      --violet: #7c3aed;
+      --violet-soft: #f5f3ff;
+      --cyan: #0891b2;
+      --cyan-soft: #ecfeff;
+      --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+      --radius: 8px;
+      --sidebar: 224px;
+      --queue: 344px;
+      --context: 332px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Pretendard", sans-serif;
+      letter-spacing: 0;
+    }
+
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
+
+    .app {
+      display: grid;
+      grid-template-columns: var(--sidebar) 1fr;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      background: var(--nav);
+      color: #dbe4f0;
+      padding: 18px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .brand {
+      height: 42px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 10px;
+      font-weight: 700;
+    }
+
+    .brand-mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      background: linear-gradient(135deg, #2563eb, #db2777);
+      display: grid;
+      place-items: center;
+      color: white;
+      font-size: 13px;
+    }
+
+    .nav-section-title {
+      margin: 12px 10px 6px;
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .nav-item {
+      height: 34px;
+      border-radius: 6px;
+      padding: 0 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #cbd5e1;
+      font-size: 13px;
+    }
+
+    .nav-item.active {
+      background: #ffffff;
+      color: #111827;
+      font-weight: 700;
+    }
+
+    .main {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: 64px 1fr;
+    }
+
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 0 22px;
+    }
+
+    .title-block { min-width: 260px; }
+    .eyebrow {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.1;
+    }
+    .page-title {
+      margin-top: 3px;
+      font-size: 18px;
+      font-weight: 750;
+    }
+
+    .topbar-controls {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      height: 30px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+      flex: 0 0 auto;
+    }
+
+    .dot.warn { background: var(--amber); box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15); }
+    .dot.red { background: var(--red); box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15); }
+
+    .country-toggle {
+      display: inline-grid;
+      grid-template-columns: 1fr 1fr;
+      height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      overflow: hidden;
+    }
+
+    .country-toggle span {
+      display: grid;
+      place-items: center;
+      padding: 0 11px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .country-toggle .on {
+      background: var(--text);
+      color: white;
+      font-weight: 700;
+    }
+
+    .workspace {
+      min-height: 0;
+      padding: 18px;
+      display: grid;
+      grid-template-columns: var(--queue) minmax(420px, 1fr) var(--context);
+      gap: 14px;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      min-height: 0;
+      overflow: hidden;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+    }
+
+    .queue-panel,
+    .chat-panel,
+    .context-panel {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      min-height: 54px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .panel-heading {
+      font-size: 14px;
+      font-weight: 750;
+    }
+
+    .panel-sub {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      padding: 10px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface-soft);
+    }
+
+    .tab {
+      border: 1px solid transparent;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--muted);
+      height: 32px;
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .tab.active {
+      background: var(--surface);
+      color: var(--text);
+      border-color: var(--line);
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+    }
+
+    .filter-row {
+      display: flex;
+      gap: 6px;
+      padding: 10px;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .chip {
+      min-height: 24px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .chip.blue { background: var(--primary-soft); border-color: #bfdbfe; color: #1d4ed8; }
+    .chip.green { background: var(--green-soft); border-color: #bbf7d0; color: var(--green); }
+    .chip.amber { background: var(--amber-soft); border-color: #fed7aa; color: #b45309; }
+    .chip.pink { background: var(--pink-soft); border-color: #fbcfe8; color: var(--pink); }
+    .chip.violet { background: var(--violet-soft); border-color: #ddd6fe; color: var(--violet); }
+    .chip.red { background: var(--red-soft); border-color: #fecaca; color: var(--red); }
+    .chip.dark { background: var(--text); border-color: var(--text); color: white; }
+
+    .queue-list {
+      min-height: 0;
+      overflow: auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .session-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+      transition: 150ms ease;
+    }
+
+    .session-card.selected {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.10);
+    }
+
+    .session-card.urgent {
+      background: linear-gradient(90deg, #ffffff, #fffbeb);
+      border-color: #fed7aa;
+    }
+
+    .session-top {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .session-title {
+      min-width: 0;
+      flex: 1;
+      font-size: 13px;
+      font-weight: 750;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .session-meta {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .id-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .short-id {
+      padding: 2px 5px;
+      border-radius: 5px;
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+      color: #334155;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 10px;
+    }
+
+    .card-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn {
+      border: 1px solid var(--line-strong);
+      border-radius: 7px;
+      background: var(--surface);
+      color: var(--text);
+      min-height: 32px;
+      padding: 0 10px;
+      font-size: 12px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .btn.primary {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn.dark {
+      border-color: var(--text);
+      background: var(--text);
+      color: white;
+    }
+
+    .btn.ghost {
+      border-color: transparent;
+      background: transparent;
+      color: var(--muted);
+    }
+
+    .btn.danger {
+      border-color: #fecaca;
+      color: var(--red);
+      background: var(--red-soft);
+    }
+
+    .icon {
+      width: 15px;
+      height: 15px;
+      display: inline-block;
+      position: relative;
+      flex: 0 0 auto;
+    }
+
+    .icon.send::before {
+      content: "";
+      position: absolute;
+      inset: 2px 1px 2px 3px;
+      background: currentColor;
+      clip-path: polygon(0 0, 100% 50%, 0 100%, 18% 55%, 58% 50%, 18% 45%);
+    }
+
+    .icon.close::before,
+    .icon.close::after {
+      content: "";
+      position: absolute;
+      top: 7px;
+      left: 2px;
+      width: 11px;
+      height: 1.8px;
+      background: currentColor;
+    }
+    .icon.close::before { transform: rotate(45deg); }
+    .icon.close::after { transform: rotate(-45deg); }
+
+    .icon.spark::before {
+      content: "";
+      position: absolute;
+      inset: 2px;
+      background: currentColor;
+      clip-path: polygon(50% 0, 62% 36%, 100% 50%, 62% 64%, 50% 100%, 38% 64%, 0 50%, 38% 36%);
+    }
+
+    .chat-header {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .session-h1 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .session-h1 strong {
+      font-size: 15px;
+    }
+
+    .warning-strip {
+      margin: 0;
+      padding: 10px 14px;
+      background: #fff7ed;
+      border-bottom: 1px solid #fed7aa;
+      color: #9a3412;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .message-stream {
+      min-height: 0;
+      overflow: auto;
+      padding: 18px;
+      background:
+        linear-gradient(rgba(248, 250, 252, 0.85), rgba(248, 250, 252, 0.85)),
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.10), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(219, 39, 119, 0.08), transparent 28%);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .event-line {
+      align-self: center;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 11px;
+    }
+
+    .msg {
+      max-width: min(72%, 560px);
+      display: grid;
+      gap: 4px;
+    }
+
+    .msg.user { align-self: flex-start; }
+    .msg.ghost { align-self: flex-end; }
+
+    .msg-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      padding: 0 4px;
+    }
+
+    .msg.ghost .msg-label { justify-content: flex-end; }
+
+    .bubble {
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      font-size: 14px;
+      line-height: 1.55;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+
+    .user .bubble {
+      background: white;
+      color: var(--text);
+      border-top-left-radius: 3px;
+    }
+
+    .ghost .bubble {
+      background: #111827;
+      color: white;
+      border-color: #111827;
+      border-top-right-radius: 3px;
+    }
+
+    .composer {
+      border-top: 1px solid var(--line);
+      background: var(--surface);
+      padding: 12px 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .composer-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .sender-banner {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: #581c87;
+      font-weight: 750;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 74px;
+      resize: vertical;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      padding: 10px 12px;
+      outline: none;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    .composer-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .composer-actions .btn.primary {
+      margin-left: auto;
+      min-width: 112px;
+    }
+
+    .context-body {
+      min-height: 0;
+      overflow: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: var(--surface-soft);
+    }
+
+    .context-section {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      overflow: hidden;
+    }
+
+    .section-title {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .section-content {
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+      font-size: 13px;
+    }
+
+    .profile-row {
+      display: grid;
+      grid-template-columns: 46px 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .avatar {
+      width: 46px;
+      height: 46px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      color: white;
+      font-weight: 800;
+      background:
+        linear-gradient(135deg, rgba(37, 99, 235, 0.92), rgba(219, 39, 119, 0.92)),
+        #2563eb;
+    }
+
+    .avatar.target {
+      background:
+        linear-gradient(135deg, rgba(5, 150, 105, 0.92), rgba(8, 145, 178, 0.92)),
+        #059669;
+    }
+
+    .kv {
+      display: grid;
+      grid-template-columns: 82px 1fr;
+      gap: 7px;
+      line-height: 1.45;
+    }
+
+    .kv span:first-child {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .tone-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .assist-card {
+      padding: 10px;
+      border: 1px solid #ddd6fe;
+      border-radius: 8px;
+      background: linear-gradient(180deg, #ffffff, #f5f3ff);
+      display: grid;
+      gap: 8px;
+    }
+
+    .assist-text {
+      color: #3b0764;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .metric {
+      min-height: 58px;
+      padding: 9px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+    }
+
+    .metric .num {
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .metric .label {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .modal-shadow {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      display: grid;
+      place-items: end center;
+      padding-bottom: 22px;
+    }
+
+    .toast {
+      width: min(520px, calc(100vw - 36px));
+      background: #111827;
+      color: white;
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 12px 14px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .toast small {
+      display: block;
+      color: #cbd5e1;
+      margin-top: 2px;
+      font-size: 11px;
+    }
+
+    .mobile-hint {
+      display: none;
+      padding: 10px 14px;
+      background: var(--amber-soft);
+      border-bottom: 1px solid #fed7aa;
+      color: #92400e;
+      font-size: 12px;
+    }
+
+    @media (max-width: 1180px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .workspace {
+        grid-template-columns: 320px minmax(390px, 1fr);
+      }
+      .context-panel {
+        grid-column: 1 / -1;
+        min-height: 280px;
+      }
+      .context-body {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        align-items: start;
+      }
+    }
+
+    @media (max-width: 840px) {
+      .topbar { align-items: flex-start; height: auto; padding: 14px; flex-direction: column; }
+      .topbar-controls { margin-left: 0; flex-wrap: wrap; }
+      .workspace { grid-template-columns: 1fr; padding: 12px; }
+      .queue-panel { min-height: 420px; }
+      .chat-panel { min-height: 620px; }
+      .context-body { display: flex; }
+      .mobile-hint { display: block; }
+      .msg { max-width: 88%; }
+      .composer-actions .btn.primary { margin-left: 0; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="Admin navigation">
+      <div class="brand">
+        <div class="brand-mark">S</div>
+        <span>Sometimes Admin</span>
+      </div>
+
+      <div>
+        <div class="nav-section-title">매칭/채팅</div>
+        <div class="nav-item">매칭 관리</div>
+        <div class="nav-item">매칭 모니터</div>
+        <div class="nav-item">채팅 관리</div>
+        <div class="nav-item active">Ghost Chat</div>
+      </div>
+
+      <div>
+        <div class="nav-section-title">가상 매칭</div>
+        <div class="nav-item">AI 인연 프로필</div>
+        <div class="nav-item">가상 프로필</div>
+        <div class="nav-item">Ghost 노출 관리</div>
+        <div class="nav-item">노출 정책</div>
+      </div>
+
+      <div style="margin-top:auto">
+        <div class="nav-item">Feature Flags</div>
+        <div class="nav-item">운영 로그</div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="title-block">
+          <div class="eyebrow">Ghost Engagement</div>
+          <div class="page-title">Ghost Chat Control Room</div>
+        </div>
+
+        <div class="topbar-controls">
+          <div class="country-toggle" aria-label="country">
+            <span class="on">KR</span>
+            <span>JP</span>
+          </div>
+          <span class="pill"><span class="dot"></span>실시간 연결됨</span>
+          <span class="pill">마지막 수신 12초 전</span>
+          <span class="pill"><strong style="color:#b45309">3</strong> Pending</span>
+          <span class="pill"><strong style="color:#1d4ed8">5</strong> Active</span>
+        </div>
+      </header>
+
+      <div class="mobile-hint">
+        모바일에서는 세션 큐, 채팅, 컨텍스트를 순차 화면으로 전환하는 구조가 적합합니다.
+      </div>
+
+      <section class="workspace" aria-label="Ghost chat workspace">
+        <aside class="panel queue-panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-heading">세션 큐</div>
+              <div class="panel-sub">created_at ASC, 응답 필요 세션 우선</div>
+            </div>
+            <span class="chip amber" style="margin-left:auto">SLA 5분 초과 1</span>
+          </div>
+
+          <div class="tabs" role="tablist">
+            <button class="tab active">대기 중 3</button>
+            <button class="tab">내 세션 2</button>
+            <button class="tab">전체 8</button>
+          </div>
+
+          <div class="filter-row" aria-label="filters">
+            <span class="chip dark">전체</span>
+            <span class="chip">PENDING</span>
+            <span class="chip">ACTIVE</span>
+            <span class="chip">미응답</span>
+            <span class="chip">첫 메시지</span>
+          </div>
+
+          <div class="queue-list">
+            <article class="session-card urgent selected">
+              <div class="session-top">
+                <span class="dot warn"></span>
+                <div class="session-title">첫 유저 메시지 대기 · 8분 경과</div>
+                <span class="chip amber">PENDING</span>
+              </div>
+              <div class="session-meta">
+                <div>생성 09:12 · 마지막 유저 메시지 없음</div>
+                <div>0 / 0</div>
+              </div>
+              <div class="id-row">
+                <span class="short-id">ghost_xyz</span>
+                <span class="short-id">target_002</span>
+                <span class="short-id">room_ghi789</span>
+              </div>
+              <div class="card-actions">
+                <button class="btn primary">배정받기</button>
+                <button class="btn">열기</button>
+              </div>
+            </article>
+
+            <article class="session-card">
+              <div class="session-top">
+                <span class="dot"></span>
+                <div class="session-title">상대가 인사 후 응답 대기</div>
+                <span class="chip blue">ACTIVE</span>
+              </div>
+              <div class="session-meta">
+                <div>admin_123 배정 · 유저 메시지 2분 전</div>
+                <div>2 / 1</div>
+              </div>
+              <div class="id-row">
+                <span class="short-id">ghost_p15</span>
+                <span class="short-id">target_a91</span>
+                <span class="chip pink">unread 1</span>
+              </div>
+              <div class="card-actions">
+                <button class="btn dark">계속 응답</button>
+                <button class="btn">내 세션</button>
+              </div>
+            </article>
+
+            <article class="session-card">
+              <div class="session-top">
+                <span class="dot"></span>
+                <div class="session-title">관심사 질문으로 대화 진행 중</div>
+                <span class="chip blue">ACTIVE</span>
+              </div>
+              <div class="session-meta">
+                <div>admin_456 배정 · Ghost 메시지 4분 전</div>
+                <div>4 / 3</div>
+              </div>
+              <div class="id-row">
+                <span class="short-id">ghost_d38</span>
+                <span class="short-id">target_k77</span>
+              </div>
+              <div class="card-actions">
+                <button class="btn">보기</button>
+                <button class="btn ghost">담당자 admin_456</button>
+              </div>
+            </article>
+
+            <article class="session-card">
+              <div class="session-top">
+                <span class="dot warn"></span>
+                <div class="session-title">새 매칭 세션 생성됨</div>
+                <span class="chip amber">PENDING</span>
+              </div>
+              <div class="session-meta">
+                <div>생성 09:18 · 배정 전</div>
+                <div>0 / 0</div>
+              </div>
+              <div class="id-row">
+                <span class="short-id">ghost_v02</span>
+                <span class="short-id">target_313</span>
+              </div>
+              <div class="card-actions">
+                <button class="btn primary">배정받기</button>
+                <button class="btn">열기</button>
+              </div>
+            </article>
+          </div>
+        </aside>
+
+        <section class="panel chat-panel">
+          <div class="chat-header">
+            <div>
+              <div class="session-h1">
+                <strong>Ghost session_abc123</strong>
+                <span class="chip amber">PENDING</span>
+                <span class="chip">room_ghi789</span>
+              </div>
+              <div class="panel-sub">생성 09:12 · match_def456 · 배정 전</div>
+            </div>
+            <div class="card-actions">
+              <button class="btn primary">내가 배정받기</button>
+              <button class="btn danger"><span class="icon close"></span>종료</button>
+            </div>
+          </div>
+
+          <div class="warning-strip">
+            <span>이 화면의 전송자는 관리자 계정이 아니라 Ghost Persona입니다. 배정 전에는 메시지를 보낼 수 없습니다.</span>
+            <button class="btn" style="min-height:28px">세션 동기화</button>
+          </div>
+
+          <div class="message-stream">
+            <div class="event-line">세션 생성됨 · Ghost 매칭 연결 · 09:12</div>
+            <div class="event-line">아직 타겟 유저의 첫 메시지가 없습니다. 새 메시지 수신 시 현재 화면에 append됩니다.</div>
+
+            <div class="msg user">
+              <div class="msg-label">
+                <span>Target User</span>
+                <span>09:20</span>
+              </div>
+              <div class="bubble">안녕하세요! 오늘 매칭된 분 맞죠?</div>
+            </div>
+
+            <div class="event-line">admin_123 배정됨 · 09:21</div>
+
+            <div class="msg ghost">
+              <div class="msg-label">
+                <span>09:22</span>
+                <span>Ghost Persona로 전송됨 · 작성자 admin_123</span>
+              </div>
+              <div class="bubble">안녕하세요. 맞아요, 반가워요. 오늘 하루는 좀 어떠셨어요?</div>
+            </div>
+
+            <div class="msg user">
+              <div class="msg-label">
+                <span>Target User</span>
+                <span>09:24</span>
+              </div>
+              <div class="bubble">수업이 많아서 조금 정신없었어요. 그래도 날씨가 좋아서 괜찮았어요.</div>
+            </div>
+          </div>
+
+          <form class="composer">
+            <div class="composer-label">
+              <span class="sender-banner"><span class="chip violet">Ghost Persona</span> 서연으로 전송</span>
+              <span>0 / 500 · 첫 전송 시 확인 모달 표시</span>
+            </div>
+            <textarea placeholder="먼저 세션을 배정하면 Ghost persona 명의로 메시지를 작성할 수 있습니다.">수업 많으면 진짜 금방 지치죠. 그래도 날씨 좋았다는 말 들으니까 다행이에요. 혹시 오늘 제일 기억에 남는 순간 있었어요?</textarea>
+            <div class="composer-actions">
+              <button type="button" class="btn">템플릿</button>
+              <button type="button" class="btn"><span class="icon spark"></span>AI 초안</button>
+              <button type="button" class="btn">말투 점검</button>
+              <span class="chip green">내용 보존됨</span>
+              <button type="button" class="btn primary"><span class="icon send"></span>Ghost로 전송</button>
+            </div>
+          </form>
+        </section>
+
+        <aside class="panel context-panel">
+          <div class="panel-header">
+            <div>
+              <div class="panel-heading">컨텍스트</div>
+              <div class="panel-sub">Persona, Target, Audit</div>
+            </div>
+          </div>
+
+          <div class="context-body">
+            <section class="context-section">
+              <div class="section-title">
+                <span>Ghost 프로필</span>
+                <span class="chip violet">persona locked</span>
+              </div>
+              <div class="section-content">
+                <div class="profile-row">
+                  <div class="avatar">SY</div>
+                  <div>
+                    <strong>서연 · 22세</strong>
+                    <div class="panel-sub">서울 · 디자인 전공 · 밝고 짧은 답변</div>
+                  </div>
+                </div>
+                <div class="kv"><span>말투</span><strong>짧게 공감 후 질문 1개</strong></div>
+                <div class="kv"><span>주의</span><strong>과한 친밀 표현, 만남 약속 유도 금지</strong></div>
+                <div class="tone-list">
+                  <span class="chip violet">친근함</span>
+                  <span class="chip green">질문형</span>
+                  <span class="chip amber">속도 조절</span>
+                </div>
+              </div>
+            </section>
+
+            <section class="context-section">
+              <div class="section-title">
+                <span>Target 유저</span>
+                <span class="chip green">정상</span>
+              </div>
+              <div class="section-content">
+                <div class="profile-row">
+                  <div class="avatar target">TU</div>
+                  <div>
+                    <strong>target_002</strong>
+                    <div class="panel-sub">첫 Ghost 대화 · 신고 이력 없음</div>
+                  </div>
+                </div>
+                <div class="kv"><span>매칭</span><strong>match_def456 · 오늘 09:12</strong></div>
+                <div class="kv"><span>응답 간격</span><strong>평균 3분 이내</strong></div>
+                <div class="kv"><span>관심사</span><strong>카페, 디자인, 산책</strong></div>
+              </div>
+            </section>
+
+            <section class="context-section">
+              <div class="section-title">
+                <span>AI 초안</span>
+                <span class="chip pink">수동 검토</span>
+              </div>
+              <div class="section-content">
+                <div class="assist-card">
+                  <div class="assist-text">
+                    수업 많으면 피곤하셨겠어요. 그래도 날씨가 좋았다니 다행이에요.
+                    오늘 기분 좋아진 순간이 있었나요?
+                  </div>
+                  <div class="card-actions">
+                    <button class="btn primary">입력창에 넣기</button>
+                    <button class="btn">다시 생성</button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="context-section">
+              <div class="section-title">운영 안전장치</div>
+              <div class="section-content">
+                <div class="metric-grid">
+                  <div class="metric">
+                    <div class="num">4m</div>
+                    <div class="label">첫 응답 SLA 남음</div>
+                  </div>
+                  <div class="metric">
+                    <div class="num">0</div>
+                    <div class="label">중복 전송 위험</div>
+                  </div>
+                  <div class="metric">
+                    <div class="num">1</div>
+                    <div class="label">배정 이력</div>
+                  </div>
+                  <div class="metric">
+                    <div class="num">12s</div>
+                    <div class="label">SSE 마지막 수신</div>
+                  </div>
+                </div>
+                <button class="btn danger" style="width:100%"><span class="icon close"></span>대화 종료 확인</button>
+              </div>
+            </section>
+          </div>
+        </aside>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-shadow" aria-hidden="true">
+    <div class="toast">
+      <div>
+        새 Ghost 세션이 도착했습니다.
+        <small>작성 중인 메시지는 유지하고 좌측 큐만 업데이트합니다.</small>
+      </div>
+      <button class="btn" style="background:white;border-color:white">보기</button>
+    </div>
+  </div>
+</body>
+</html>

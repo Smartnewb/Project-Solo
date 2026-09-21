@@ -1,0 +1,233 @@
+'use client';
+
+import { useState, useMemo } from 'react';
+import {
+	Box,
+	Card,
+	CardContent,
+	Typography,
+	Table,
+	TableBody,
+	TableCell,
+	TableContainer,
+	TableHead,
+	TableRow,
+	Chip,
+	Tooltip as MuiTooltip,
+	ToggleButton,
+	ToggleButtonGroup,
+} from '@mui/material';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
+import { safeFormat } from '@/app/utils/formatters';
+import type { AtRiskUsers as AtRiskUsersType } from '../types';
+
+const FAILURE_REASON_LABELS: Record<string, string> = {
+	NO_SQL_CANDIDATES: 'SQL 후보 없음',
+	NO_PHOTO_POOL_CANDIDATES: '사진 심사 완료 후보 없음',
+	NO_ELIGIBLE_CANDIDATES: '적격 후보 없음',
+	NO_COMPATIBLE_CANDIDATES: '호환 후보 없음',
+	NO_REGION_CANDIDATES: '지역 조건 후보 없음',
+	NO_PREFERENCE_MATCH: '선호 조건 불일치',
+};
+
+function formatFailureReason(reason: string) {
+	return FAILURE_REASON_LABELS[reason] ?? reason.replace(/_/g, ' ').toLowerCase();
+}
+
+function getFailureReasonLabel(payload: unknown, fallback: string) {
+	if (
+		payload &&
+		typeof payload === 'object' &&
+		'fullName' in payload &&
+		typeof (payload as { fullName?: unknown }).fullName === 'string'
+	) {
+		return (payload as { fullName: string }).fullName;
+	}
+
+	return fallback;
+}
+
+export default function AtRiskUsersSection({
+	data,
+	onUserClick,
+}: {
+	data: AtRiskUsersType;
+	onUserClick: (userId: string) => void;
+}) {
+	const [riskPeriod, setRiskPeriod] = useState<'3d' | '7d'>('3d');
+	const users = riskPeriod === '3d' ? data.riskUsers3d : data.riskUsers7d;
+
+	const reasonData = useMemo(
+		() =>
+			data.topFailureReasons.map((r) => ({
+				name: formatFailureReason(r.reason),
+				fullName: formatFailureReason(r.reason),
+				count: r.count,
+			})),
+		[data.topFailureReasons],
+	);
+
+	const handleUserRowKeyDown = (event: React.KeyboardEvent<HTMLTableRowElement>, userId: string) => {
+		if (event.key === 'Enter' || event.key === ' ') {
+			event.preventDefault();
+			onUserClick(userId);
+		}
+	};
+
+	return (
+		<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+			<Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+				<Card sx={{ flex: 1, minWidth: 160, textAlign: 'center' }}>
+					<CardContent>
+						<Typography variant="caption" color="text.secondary">
+							3일+ 연속 실패
+						</Typography>
+						<Typography variant="h4" fontWeight={700} color="warning.main">
+							{data.riskUsers3d.length}
+						</Typography>
+					</CardContent>
+				</Card>
+				<Card sx={{ flex: 1, minWidth: 160, textAlign: 'center' }}>
+					<CardContent>
+						<Typography variant="caption" color="text.secondary">
+							7일+ 연속 실패
+						</Typography>
+						<Typography variant="h4" fontWeight={700} color="error.main">
+							{data.riskUsers7d.length}
+						</Typography>
+					</CardContent>
+				</Card>
+				<Card sx={{ flex: 1, minWidth: 160, textAlign: 'center' }}>
+					<CardContent>
+						<Typography variant="caption" color="text.secondary">
+							24h 후보 0명
+						</Typography>
+						<Typography variant="h4" fontWeight={700} color="error.main">
+							{data.zeroCandidateUsers}
+						</Typography>
+					</CardContent>
+				</Card>
+			</Box>
+
+			<Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+				<Card sx={{ flex: 2, minWidth: 400 }}>
+					<CardContent>
+						<Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+							<Typography variant="subtitle1" fontWeight={700}>
+								위험 유저 목록
+							</Typography>
+							<ToggleButtonGroup
+								size="small"
+								exclusive
+								value={riskPeriod}
+								onChange={(_, v) => v && setRiskPeriod(v)}
+							>
+								<ToggleButton value="3d">3일+</ToggleButton>
+								<ToggleButton value="7d">7일+</ToggleButton>
+							</ToggleButtonGroup>
+						</Box>
+						<TableContainer sx={{ maxHeight: 400 }}>
+							<Table size="small" stickyHeader>
+								<TableHead>
+									<TableRow>
+										<TableCell>이름</TableCell>
+										<TableCell>성별</TableCell>
+										<TableCell align="right">연속 실패일</TableCell>
+										<TableCell>마지막 실패 사유</TableCell>
+										<TableCell>시각</TableCell>
+									</TableRow>
+								</TableHead>
+								<TableBody>
+									{users.length === 0 ? (
+										<TableRow>
+											<TableCell colSpan={5} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+												위험 유저 없음
+											</TableCell>
+										</TableRow>
+									) : (
+										users.map((user) => (
+											<TableRow
+												key={user.userId}
+												hover
+												tabIndex={0}
+												role="button"
+												aria-label={`${user.name} 매칭 실패 진단 열기`}
+												sx={{ cursor: 'pointer' }}
+												onClick={() => onUserClick(user.userId)}
+												onKeyDown={(event) => handleUserRowKeyDown(event, user.userId)}
+											>
+												<TableCell>
+													<MuiTooltip title={user.userId} arrow placement="top">
+														<Typography variant="body2" fontWeight={600}>
+															{user.name}
+														</Typography>
+													</MuiTooltip>
+												</TableCell>
+												<TableCell>
+													<Chip
+														label={user.gender === 'MALE' ? '남' : '여'}
+														size="small"
+														sx={{
+															bgcolor: user.gender === 'MALE' ? '#eff6ff' : '#fdf2f8',
+															color: user.gender === 'MALE' ? '#3b82f6' : '#ec4899',
+															fontWeight: 600,
+														}}
+													/>
+												</TableCell>
+												<TableCell align="right">
+													<Chip
+														label={`${user.consecutiveFailureDays}일`}
+														size="small"
+														color={user.consecutiveFailureDays >= 7 ? 'error' : 'warning'}
+													/>
+												</TableCell>
+												<TableCell>
+													<Typography variant="body2" sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+														{formatFailureReason(user.lastFailureReason)}
+													</Typography>
+												</TableCell>
+												<TableCell>
+													<Typography variant="caption">
+														{safeFormat(user.lastFailedAt, 'MM/dd HH:mm')}
+													</Typography>
+												</TableCell>
+											</TableRow>
+										))
+									)}
+								</TableBody>
+							</Table>
+						</TableContainer>
+					</CardContent>
+				</Card>
+
+				<Card sx={{ flex: 1, minWidth: 300 }}>
+					<CardContent>
+						<Typography variant="subtitle1" fontWeight={700} gutterBottom>
+							상위 실패 사유
+						</Typography>
+						{reasonData.length > 0 ? (
+							<ResponsiveContainer width="100%" height={350}>
+								<BarChart data={reasonData} layout="vertical" margin={{ left: 10, right: 10 }}>
+									<CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+									<XAxis type="number" tick={{ fontSize: 12 }} />
+									<YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={140} />
+									<RechartsTooltip
+										formatter={(value: number) => [value.toLocaleString(), '건수']}
+										labelFormatter={(label: string, payload: Array<{ payload?: unknown }>) =>
+											getFailureReasonLabel(payload?.[0]?.payload, label)
+										}
+									/>
+									<Bar dataKey="count" fill="#ef4444" radius={[0, 4, 4, 0]} />
+								</BarChart>
+							</ResponsiveContainer>
+						) : (
+							<Typography variant="body2" color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
+								데이터 없음
+							</Typography>
+						)}
+					</CardContent>
+				</Card>
+			</Box>
+		</Box>
+	);
+}

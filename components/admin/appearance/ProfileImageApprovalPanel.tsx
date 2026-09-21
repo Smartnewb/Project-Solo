@@ -100,7 +100,7 @@ const ProfileImageApprovalPanel: React.FC = () => {
       setError(null);
       
       const response = await AdminService.profileImages.getPendingProfileImages();
-      setPendingUsers(response || []);
+      setPendingUsers(response.data || []);
     } catch (error: any) {
       console.error('심사 대기 중인 프로필 이미지 목록 조회 오류:', error);
       setError(error.message || '데이터를 불러오는 중 오류가 발생했습니다.');
@@ -213,11 +213,11 @@ const ProfileImageApprovalPanel: React.FC = () => {
           ⚠️ 메뉴 이전 안내
         </Typography>
         <Typography variant="body1" sx={{ mb: 1 }}>
-          프로필 이미지 승인 관리 기능이 <strong>"회원 적격 심사"</strong> 메뉴로 이전되었습니다.
+          프로필 이미지 승인 관리 기능이 <strong>&quot;회원 적격 심사&quot;</strong> 메뉴로 이전되었습니다.
         </Typography>
         <Typography variant="body2" color="text.secondary">
           • 새로운 메뉴에서 개별 이미지 심사와 사용자 전체 정보를 함께 확인할 수 있습니다.<br />
-          • 좌측 사이드바에서 <strong>"회원 적격 심사"</strong> 메뉴를 이용해주세요.
+          • 좌측 사이드바에서 <strong>&quot;회원 적격 심사&quot;</strong> 메뉴를 이용해주세요.
         </Typography>
         <Box sx={{ mt: 2 }}>
           <Button

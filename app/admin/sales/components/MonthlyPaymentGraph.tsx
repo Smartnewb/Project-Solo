@@ -47,18 +47,18 @@ export function MonthlyPaymentGraph() {
                 byRegion: false,
             });
             
-            console.log('전체 응답 데이터:', response.data);
+            ;
             
             // 전체 배열을 차트 데이터로 변환
             const transformedData: MonthlyPaymentData[] = response.data.map(item => ({
                 month: item.label,
                 totalAmount: item.amount,
-                pgAmount: item.excludeIapAmount,
-                iapAmount: item.iapOnlyAmount,
+                pgAmount: item.excludeIapAmount ?? 0,
+                iapAmount: item.iapOnlyAmount ?? 0,
                 totalCount: item.count,
-                pgCount: item.excludeIapCount,
-                iapCount: item.iapOnlyCount,
-                totalPaidUsers: item.paidUserCount,
+                pgCount: item.excludeIapCount ?? 0,
+                iapCount: item.iapOnlyCount ?? 0,
+                totalPaidUsers: item.paidUserCount ?? 0,
                 pgPaidUsers: item.excludeIapPaidUserCount || 0,
                 iapPaidUsers: item.iapOnlyPaidUserCount || 0,
             }));
@@ -66,7 +66,6 @@ export function MonthlyPaymentGraph() {
             setChartData(transformedData);
             
         } catch(error) {
-            console.error('API 호출 실패:', error);
             setChartData([]);
         } finally {
             setIsLoading(false);
@@ -92,7 +91,7 @@ export function MonthlyPaymentGraph() {
                     <p className="text-orange-600 font-semibold">
                         총 유료 사용자: {data.totalPaidUsers}명
                     </p>
-                    <p className="text-blue-600 text-sm">
+                    <p className="text-[#ff385c] text-sm">
                         사용자당 평균: {data.totalPaidUsers > 0 ? formatCurrency(data.totalAmount / data.totalPaidUsers) : formatCurrency(0)}
                     </p>
                 </div>
@@ -147,7 +146,7 @@ export function MonthlyPaymentGraph() {
                     <h2 className="text-xl font-semibold">월별 매출 추이</h2>
                     <button className={`px-3 py-1.5 text-sm rounded-md transition-colors' 
                     ${selectedYear === '2025'
-                        ? 'text-white bg-[#7D4EE4]'
+                        ? 'text-white bg-[#ff385c]'
                         : 'border border-border text-gray-700 bg-gary-100 text-gray-700'
                     }`}>{selectedYear}</button>
                 </div>
@@ -158,7 +157,7 @@ export function MonthlyPaymentGraph() {
                     {/* MARK: - 로딩 상태 */}
                     {isLoading && (
                         <div className="flex justify-center items-center py-12">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff385c]"></div>
                             <span className="ml-2">데이터를 불러오는 중...</span>
                         </div>
                     )}

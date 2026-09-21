@@ -25,6 +25,7 @@ import {
   AIChatMessage,
   AIChatSessionStatus
 } from '../types';
+import { safeToLocaleString } from '@/app/utils/formatters';
 
 interface AIChatMessageDetailProps {
   open: boolean;
@@ -43,7 +44,7 @@ export default function AIChatMessageDetail({
 }: AIChatMessageDetailProps) {
   // 날짜 포맷
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('ko-KR', {
+    return safeToLocaleString(dateString, 'ko-KR', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

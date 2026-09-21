@@ -17,7 +17,6 @@ import {
 } from '@mui/material';
 import { Line } from 'react-chartjs-2';
 import '@/app/utils/chartConfig';
-import { AnalyticsService } from '@/app/services';
 import { format, subDays } from 'date-fns';
 
 interface VisitorAnalyticsProps {

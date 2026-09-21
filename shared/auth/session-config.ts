@@ -1,0 +1,40 @@
+import type { SessionOptions } from 'iron-session';
+
+export const ADMIN_COOKIE_NAME = 'admin_access_token';
+export const ADMIN_REFRESH_COOKIE_NAME = 'admin_refresh_token';
+export const ADMIN_META_COOKIE = 'admin_session_meta';
+export const ADMIN_AUTH_COOKIE_MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
+
+export interface AdminSessionMeta {
+  id: string;
+  email: string;
+  roles: string[];
+  issuedAt: number;
+  selectedCountry: string;
+}
+
+export interface AdminSessionData {
+  accessToken: string;
+  meta: AdminSessionMeta;
+}
+
+function getSessionPassword(): string {
+  const secret = process.env.ADMIN_SESSION_SECRET;
+  if (!secret) {
+    throw new Error('ADMIN_SESSION_SECRET must be set');
+  }
+  return secret;
+}
+
+export const sessionOptions: SessionOptions = {
+  get password() {
+    return getSessionPassword();
+  },
+  cookieName: ADMIN_META_COOKIE,
+  cookieOptions: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    sameSite: 'lax' as const,
+    maxAge: ADMIN_AUTH_COOKIE_MAX_AGE_SECONDS,
+  },
+};

@@ -1,0 +1,44 @@
+{
+  "extends": ["next/core-web-vitals", "next/typescript"],
+  "rules": {
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/no-unused-vars": "warn"
+  },
+  "overrides": [
+    {
+      "files": [
+        "app/admin/**",
+        "components/admin/**",
+        "shared/**",
+        "app/api/admin/**"
+      ],
+      "rules": {
+        "no-console": "warn",
+        "no-alert": "warn",
+        "no-restricted-globals": [
+          "warn",
+          {
+            "name": "localStorage",
+            "message": "Use session hooks from shared/auth instead of localStorage directly."
+          },
+          {
+            "name": "confirm",
+            "message": "Use MUI Dialog instead of window.confirm()."
+          },
+          {
+            "name": "alert",
+            "message": "Use toast/snackbar instead of window.alert()."
+          }
+        ],
+        "no-restricted-properties": [
+          "warn",
+          {
+            "object": "window",
+            "property": "location",
+            "message": "Use Next.js router instead of window.location."
+          }
+        ]
+      }
+    }
+  ]
+}

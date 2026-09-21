@@ -33,7 +33,7 @@ import {
   Info as InfoIcon,
   Timer as TimerIcon,
 } from '@mui/icons-material';
-import { axiosMultipart } from '@/utils/axios';
+import { adminRequest } from '@/shared/lib/http/admin-fetch';
 
 interface PhotoValidationResult {
   totalScore: number;
@@ -375,10 +375,12 @@ export default function VisionPhotoTestTab() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await axiosMultipart.post('/admin/photo-validation/test', formData);
-      setResult(response.data);
+      const data = await adminRequest<PhotoValidationResult>('/admin/v2/photo-validation/test', {
+        method: 'POST',
+        body: formData,
+      });
+      setResult(data);
     } catch (err: any) {
-      console.error('Photo validation error:', err);
       setError(
         err.response?.data?.message ||
           err.message ||

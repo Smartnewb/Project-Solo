@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useToast } from "@/shared/ui/admin/toast";
+import { useConfirm } from "@/shared/ui/admin/confirm-dialog";
 import {
   Paper,
   Typography,
@@ -7,19 +9,15 @@ import {
   IconButton,
   Dialog,
   Chip,
+  Collapse,
   Divider,
   TextField,
   Link,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
   Tooltip,
 } from "@mui/material";
-import { PendingUser } from "../page";
+import { PendingImage, PendingUser } from "../page";
 import CloseIcon from "@mui/icons-material/Close";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import CancelIcon from "@mui/icons-material/Cancel";
 import InstagramIcon from "@mui/icons-material/Instagram";
 import WarningIcon from "@mui/icons-material/Warning";
 import FavoriteIcon from "@mui/icons-material/Favorite";
@@ -29,12 +27,13 @@ import PaymentIcon from "@mui/icons-material/Payment";
 import SchoolIcon from "@mui/icons-material/School";
 import NewReleasesIcon from "@mui/icons-material/NewReleases";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AdminService from "@/app/services/admin";
+import { safeToLocaleDateString, safeToLocaleString } from '@/app/utils/formatters';
 import {
   mapImagesBySlot,
   getSlotLabel,
-  formatApprovedDate,
 } from "../utils/imageMapper";
 
 interface ImageReviewPanelProps {
@@ -84,6 +83,38 @@ const getRankConfig = (rank?: string) => {
   return configs[rank as keyof typeof configs] || configs.UNKNOWN;
 };
 
+type ApiErrorLike = {
+  response?: {
+    status?: number;
+    data?: {
+      message?: string;
+    };
+  };
+};
+
+const getApiError = (error: unknown): ApiErrorLike =>
+  typeof error === "object" && error !== null ? (error as ApiErrorLike) : {};
+
+const getApiErrorMessage = (error: unknown, fallback: string) =>
+  getApiError(error).response?.data?.message || (error instanceof Error ? error.message : fallback);
+
+const isStaleImageReviewError = (error: unknown) => {
+  const response = getApiError(error).response;
+  return response?.status === 400 && response.data?.message === "심사 대기 중인 이미지가 아닙니다.";
+};
+
+const getImageSlotIndex = (image: { imageOrder?: number; slotIndex?: number }, fallback: number) =>
+  image.slotIndex ?? fallback;
+
+const formatPreferenceOption = (option: unknown) => {
+  if (typeof option === "object" && option !== null) {
+    const name = (option as { name?: unknown }).name;
+    return typeof name === "string" ? name : JSON.stringify(option);
+  }
+
+  return String(option);
+};
+
 export default function ImageReviewPanel({
   user,
   onApprove,
@@ -93,15 +124,17 @@ export default function ImageReviewPanel({
   processing,
   setProcessing,
 }: ImageReviewPanelProps) {
+  const toast = useToast();
+  const confirmAction = useConfirm();
+
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
   const [rejectImageModalOpen, setRejectImageModalOpen] = useState(false);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [imageRejectionReason, setImageRejectionReason] = useState("");
-  const [currentRank, setCurrentRank] = useState<string>(
-    user?.rank || "UNKNOWN",
-  );
+  const [currentRank, setCurrentRank] = useState<string>("UNKNOWN");
   const [isUpdatingRank, setIsUpdatingRank] = useState(false);
+  const [showReviewContext, setShowReviewContext] = useState(false);
 
   useEffect(() => {
     setCurrentRank(user?.rank || "UNKNOWN");
@@ -110,29 +143,18 @@ export default function ImageReviewPanel({
   const handleRankChange = async (newRank: string) => {
     if (!user || newRank === currentRank) return;
 
-    const confirmed = window.confirm(
-      `정말로 이 유저의 Rank를 ${newRank}(으)로 변경하시겠습니까?`,
-    );
-
-    if (!confirmed) return;
-
     const previousRank = currentRank;
     setCurrentRank(newRank);
     setIsUpdatingRank(true);
 
     try {
-      const result = await AdminService.userReview.updateUserRank(
+      await AdminService.userReview.updateUserRank(
         user.userId,
-        newRank as any,
+        newRank as NonNullable<PendingUser["rank"]>,
       );
-
-      alert(
-        `Rank가 ${result.previousRank}에서 ${result.updatedRank}(으)로 변경되었습니다.`,
-      );
-    } catch (error: any) {
-      console.error("Rank 업데이트 실패:", error);
+    } catch (error: unknown) {
       setCurrentRank(previousRank);
-      alert(error.response?.data?.message || "Rank 업데이트에 실패했습니다.");
+      toast.error(getApiErrorMessage(error, "Rank 업데이트에 실패했습니다."));
     } finally {
       setIsUpdatingRank(false);
     }
@@ -140,20 +162,42 @@ export default function ImageReviewPanel({
 
   if (!user) {
     return (
-      <Paper sx={{ p: 4, textAlign: "center", height: "100%" }}>
-        <Typography variant="body1" color="text.secondary">
+      <Paper sx={{ p: 4, textAlign: "center", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+        <Typography variant="body1" sx={{ fontWeight: 700, color: "text.primary" }}>
           심사할 사용자를 선택해주세요.
         </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1, maxWidth: 360 }}>
+          왼쪽 목록에서 사용자를 선택하면 사진별 승인/반려와 등급 조정을 진행할 수 있습니다.
+        </Typography>
+        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", justifyContent: "center", mt: 2 }}>
+          <Button size="small" variant="outlined" href="/admin/unapproved-users">
+            미승인 유저 보기
+          </Button>
+          <Button size="small" variant="outlined" href="/admin/review-inbox">
+            검토 인박스 보기
+          </Button>
+        </Box>
       </Paper>
     );
   }
 
+  const pendingImagesForReview: PendingImage[] =
+    user.pendingImages && user.pendingImages.length > 0
+      ? user.pendingImages
+      : (user.profileImages || []).map((img, index) => ({
+          id: img.id,
+          imageUrl: img.imageUrl,
+          imageOrder: img.imageOrder,
+          slotIndex: getImageSlotIndex(img, img.imageOrder ?? index),
+          isMain: img.isMain,
+        }));
+
   const handleApprove = () => {
-    onApprove(user.id);
+    onApprove(user.id || user.userId);
   };
 
   const handleReject = () => {
-    onReject(user.id);
+    onReject(user.id || user.userId);
   };
 
   const handleImageClick = (imageUrl: string) => {
@@ -168,19 +212,28 @@ export default function ImageReviewPanel({
 
   const handleApproveImage = async (imageId: string) => {
     try {
-      // 승인하려는 이미지가 대표 프로필인지 확인
-      const targetImage = (user.pendingImages || user.profileImages || []).find(
+      const targetImage = pendingImagesForReview.find(
         (img) => img.id === imageId,
       );
       const isMainProfile = targetImage?.slotIndex === 0;
+      const targetPair = slotPairs.find(([slotIndex]) => slotIndex === targetImage?.slotIndex)?.[1];
+      const isRepresentativeReplacement =
+        isMainProfile &&
+        Boolean(targetPair?.current) &&
+        (Boolean(user.isApproved || user.approved) || Boolean(targetImage?.isRepresentativeReplacement));
 
-      // 대표 프로필 승인 시 확인 메시지
-      if (isMainProfile) {
-        const confirmed = window.confirm(
-          "대표 프로필을 승인하시겠습니까?\n\n" +
-            '대표 프로필 승인 시 회원 상태가 "승인됨"으로 자동 변경되며,\n' +
-            "회원이 서비스를 정상적으로 이용할 수 있게 됩니다.",
-        );
+      if (isMainProfile && !isRepresentativeReplacement) {
+        toast.info("대표사진 신규 심사는 상단 회원 승인 흐름에서 처리합니다.");
+        return;
+      }
+
+      if (isRepresentativeReplacement) {
+        const confirmed = await confirmAction({
+          message:
+            "대표사진 교체를 승인하시겠습니까?\n회원 승인 상태는 유지되고 대표사진만 새 이미지로 교체됩니다.",
+          confirmText: "교체 승인",
+          severity: "info",
+        });
         if (!confirmed) return;
       }
 
@@ -188,17 +241,16 @@ export default function ImageReviewPanel({
       await AdminService.profileImages.approveIndividualImage(imageId);
       onImageApproved(imageId);
 
-      // 대표 프로필 승인 성공 시 안내 메시지
-      if (isMainProfile) {
-        alert(
-          '대표 프로필이 승인되었습니다.\n회원 상태가 "승인됨"으로 변경되었습니다.',
-        );
+      if (isRepresentativeReplacement) {
+        toast.success("대표사진 교체가 승인되었습니다.");
       }
-    } catch (error: any) {
-      console.error("개별 이미지 승인 중 오류:", error);
-      alert(
-        error.response?.data?.message || "이미지 승인 중 오류가 발생했습니다.",
-      );
+    } catch (error: unknown) {
+      if (isStaleImageReviewError(error)) {
+        await onImageApproved(imageId);
+        toast.info("이미 심사 완료된 이미지라 목록을 새로고침했습니다.");
+        return;
+      }
+      toast.error(getApiErrorMessage(error, "이미지 승인 중 오류가 발생했습니다."));
     } finally {
       setProcessing(false);
     }
@@ -213,24 +265,32 @@ export default function ImageReviewPanel({
     if (!selectedImageId) return;
 
     if (!imageRejectionReason.trim()) {
-      alert("거절 사유를 입력해주세요.");
+      toast.error("거절 사유를 입력해주세요.");
       return;
     }
 
-    // 거절하려는 이미지가 대표 프로필인지 확인
-    const targetImage = (user.pendingImages || user.profileImages || []).find(
+    const targetImage = pendingImagesForReview.find(
       (img) => img.id === selectedImageId,
     );
     const isMainProfile = targetImage?.slotIndex === 0;
+    const targetPair = slotPairs.find(([slotIndex]) => slotIndex === targetImage?.slotIndex)?.[1];
+    const isRepresentativeReplacement =
+      isMainProfile &&
+      Boolean(targetPair?.current) &&
+      (Boolean(user.isApproved || user.approved) || Boolean(targetImage?.isRepresentativeReplacement));
 
-    // 대표 프로필 거절 시 추가 확인
-    if (isMainProfile) {
-      const confirmed = window.confirm(
-        "⚠️ 대표 프로필을 거절하시겠습니까?\n\n" +
-          '대표 프로필 거절 시 회원 상태가 "거절됨"으로 변경되며,\n' +
-          "회원이 서비스를 이용할 수 없게 됩니다.\n\n" +
-          `거절 사유: ${imageRejectionReason}`,
-      );
+    if (isMainProfile && !isRepresentativeReplacement) {
+      toast.info("대표사진 신규 심사는 상단 회원 반려 흐름에서 처리합니다.");
+      return;
+    }
+
+    if (isRepresentativeReplacement) {
+      const confirmed = await confirmAction({
+        message:
+          `대표사진 교체를 거절하시겠습니까?\n회원 승인 상태는 유지되고 기존 대표사진이 유지됩니다.\n거절 사유: ${imageRejectionReason}`,
+        confirmText: "교체 거절",
+        severity: "error",
+      });
       if (!confirmed) return;
     }
 
@@ -246,17 +306,20 @@ export default function ImageReviewPanel({
       setImageRejectionReason("");
       onImageRejected(rejectedImageId);
 
-      // 대표 프로필 거절 성공 시 안내 메시지
-      if (isMainProfile) {
-        alert(
-          '대표 프로필이 거절되었습니다.\n회원 상태가 "거절됨"으로 변경되었습니다.',
-        );
+      if (isRepresentativeReplacement) {
+        toast.success("대표사진 교체가 거절되었습니다.");
       }
-    } catch (error: any) {
-      console.error("개별 이미지 거절 중 오류:", error);
-      alert(
-        error.response?.data?.message || "이미지 거절 중 오류가 발생했습니다.",
-      );
+    } catch (error: unknown) {
+      if (isStaleImageReviewError(error)) {
+        setRejectImageModalOpen(false);
+        const staleImageId = selectedImageId;
+        setSelectedImageId(null);
+        setImageRejectionReason("");
+        await onImageRejected(staleImageId);
+        toast.info("이미 심사 완료된 이미지라 목록을 새로고침했습니다.");
+        return;
+      }
+      toast.error(getApiErrorMessage(error, "이미지 거절 중 오류가 발생했습니다."));
     } finally {
       setProcessing(false);
     }
@@ -268,30 +331,31 @@ export default function ImageReviewPanel({
     setImageRejectionReason("");
   };
 
+  const rankSelected = currentRank !== "UNKNOWN";
+  const slotPairs = Array.from(
+    mapImagesBySlot(
+      user.profileUsing,
+      pendingImagesForReview,
+    ),
+  ).sort(([a], [b]) => a - b);
+
   return (
     <Paper sx={{ p: 3, display: "flex", flexDirection: "column" }}>
-      {/* 유저 정보 */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
+      {/* 유저 정보 (컴팩트 1줄) */}
+      <Box sx={{ mb: 1.5, display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
           {user.name}
         </Typography>
-        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 2 }}>
-          <Chip label={`${user.age}세`} size="small" />
-          <Chip label={user.gender === "MALE" ? "남성" : "여성"} size="small" />
-          <Chip
-            label={user.mbti || "MBTI 미입력"}
-            size="small"
-            color={user.mbti ? "primary" : "default"}
-          />
-        </Box>
-        {(user.universityName || user.department) && (
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-            {user.universityName || "대학 미입력"} ·{" "}
-            {user.department || "학과 미입력"}
+        <Chip label={`${user.age}세`} size="small" sx={{ height: 22, fontSize: "0.75rem" }} />
+        <Chip label={user.gender === "MALE" ? "남성" : "여성"} size="small" sx={{ height: 22, fontSize: "0.75rem" }} />
+        {user.mbti && (
+          <Chip label={user.mbti} size="small" color="primary" sx={{ height: 22, fontSize: "0.75rem" }} />
+        )}
+        {user.universityName && (
+          <Typography variant="caption" color="text.secondary">
+            {user.universityName}
           </Typography>
         )}
-
-        {/* 인스타그램 ID */}
         {(user.instagramId || user.instagram) && (
           <Link
             href={`https://instagram.com/${user.instagramId || user.instagram}`}
@@ -300,31 +364,406 @@ export default function ImageReviewPanel({
             sx={{
               display: "inline-flex",
               alignItems: "center",
-              gap: 0.5,
+              gap: 0.3,
               color: "#E1306C",
               textDecoration: "none",
-              "&:hover": {
-                textDecoration: "underline",
-              },
+              "&:hover": { textDecoration: "underline" },
             }}
           >
-            <InstagramIcon fontSize="small" sx={{ color: "#E1306C" }} />
-            <Typography
-              variant="body2"
-              sx={{ fontWeight: 500, color: "#E1306C" }}
-            >
+            <InstagramIcon sx={{ fontSize: 16, color: "#E1306C" }} />
+            <Typography variant="caption" sx={{ fontWeight: 500, color: "#E1306C" }}>
               @{user.instagramId || user.instagram}
             </Typography>
           </Link>
         )}
-        {user.bio && (
-          <Typography variant="body2" sx={{ mt: 1, fontStyle: "italic" }}>
-            "{user.bio}"
-          </Typography>
-        )}
       </Box>
 
-      <Divider sx={{ mb: 2 }} />
+      {/* Rank 선택 (이미지 위) */}
+      <Box sx={{ mb: 2, p: 1.5, backgroundColor: "#fafafa", borderRadius: 2, border: "1px solid #e0e0e0" }}>
+        {!rankSelected && (
+          <Typography
+            variant="caption"
+            sx={{ color: "#ed6c02", display: "block", mb: 1 }}
+          >
+            승인하려면 Rank를 먼저 선택해주세요
+          </Typography>
+        )}
+        <Typography variant="caption" sx={{ fontWeight: 700, mb: 0.5, display: "block", color: "#344054" }}>
+          Rank 선택
+        </Typography>
+        <Box sx={{ display: "flex", gap: 0.5 }}>
+          {(["S", "A", "B", "C"] as const).map((rank) => {
+            const config = getRankConfig(rank);
+            const isSelected = currentRank === rank;
+            return (
+              <Chip
+                key={rank}
+                label={`${rank}등급`}
+                onClick={() => handleRankChange(rank)}
+                disabled={isUpdatingRank}
+                sx={{
+                  flex: 1,
+                  height: 36,
+                  fontSize: "0.85rem",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                  backgroundColor: isSelected ? config.color : config.bgColor,
+                  color: isSelected ? "#fff" : config.color,
+                  border: isSelected
+                    ? `2px solid ${config.color}`
+                    : "2px solid transparent",
+                  "&:hover": {
+                    backgroundColor: isSelected ? config.color : config.bgColor,
+                    opacity: 0.85,
+                  },
+                }}
+              />
+            );
+          })}
+        </Box>
+      </Box>
+
+      <Box
+        sx={{
+          mb: 2,
+          p: 1.5,
+          borderRadius: 2,
+          border: "1px solid #e0e0e0",
+          backgroundColor: "#fffdf5",
+        }}
+      >
+        <Typography variant="caption" sx={{ color: "#7a4d00", fontWeight: 600 }}>
+          대표사진은 회원 승인 흐름에서 처리하고, 추가 사진은 개별 이미지 심사로 승인/거절합니다.
+        </Typography>
+      </Box>
+
+      {/* 승인/거절 버튼 */}
+      <Box sx={{ display: "flex", gap: 1.5, mb: 2 }}>
+        <Button
+          variant="outlined"
+          color="error"
+          fullWidth
+          onClick={handleReject}
+          sx={{ height: 44 }}
+        >
+          반려하기
+        </Button>
+        <Button
+          variant="contained"
+          fullWidth
+          disabled={!rankSelected || processing}
+          onClick={handleApprove}
+          sx={{
+            height: 44,
+            backgroundColor: rankSelected
+              ? getRankConfig(currentRank).color
+              : undefined,
+            "&:hover": {
+              backgroundColor: rankSelected
+                ? getRankConfig(currentRank).color
+                : undefined,
+              opacity: 0.9,
+            },
+          }}
+        >
+          회원 승인하기
+        </Button>
+      </Box>
+
+      {/* 프로필 이미지 - Before/After 비교 */}
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 600 }}>
+          프로필 이미지 심사 (
+          {user.pendingImages?.length || user.profileImages?.length || 0}장 대기
+          중)
+        </Typography>
+
+        <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1.5 }}>
+          {slotPairs
+            .map(([slotIndex, pair]) => {
+              const isRepresentativeReplacement =
+                slotIndex === 0 &&
+                Boolean(pair.current) &&
+                (Boolean(user.isApproved || user.approved) || Boolean(pair.pending?.isRepresentativeReplacement));
+              const showImageActions = Boolean(pair.pending) && (slotIndex > 0 || isRepresentativeReplacement);
+              const canApprove = pair.pending?.canApprove !== false;
+              const canReject = pair.pending?.canReject !== false;
+
+              return (
+              <Box
+                key={slotIndex}
+                sx={{
+                  p: 1.5,
+                  backgroundColor: "#fafafa",
+                  borderRadius: 2,
+                  border: "1px solid #e0e0e0",
+                }}
+              >
+                <Box
+                  sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 1 }}
+                >
+                  <Typography variant="caption" fontWeight="bold" sx={{ fontSize: "0.75rem" }}>
+                    {getSlotLabel(slotIndex)}
+                  </Typography>
+                  {slotIndex === 0 && (
+                    <Chip
+                      label="대표"
+                      size="small"
+                      sx={{
+                        backgroundColor: "#ff9800",
+                        color: "white",
+                        fontWeight: 700,
+                        fontSize: "0.65rem",
+                        height: 20,
+                      }}
+                    />
+                  )}
+                </Box>
+
+                {/* 이전 사진 (위) */}
+                <Typography
+                  variant="caption"
+                  sx={{ display: "block", mb: 0.5, color: "#4caf50", fontWeight: 600, fontSize: "0.7rem" }}
+                >
+                  ● 이전
+                </Typography>
+                {pair.current ? (
+                  <Box
+                    sx={{
+                      position: "relative",
+                      borderRadius: 1.5,
+                      overflow: "hidden",
+                      cursor: "pointer",
+                      border: "2px solid #4caf50",
+                      "&:hover": { opacity: 0.9 },
+                    }}
+                    onClick={() => handleImageClick(pair.current!.imageUrl)}
+                  >
+                    <Box sx={{ position: "relative", paddingTop: "100%" }}>
+                      <Box
+                        component="img"
+                        src={pair.current.imageUrl}
+                        alt="현재 프로필"
+                        sx={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    </Box>
+                  </Box>
+                ) : (
+                  <Box
+                    sx={{
+                      position: "relative",
+                      paddingTop: "100%",
+                      backgroundColor: "#f5f5f5",
+                      borderRadius: 1.5,
+                      border: "2px dashed #d0d5dd",
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        fontSize: "0.7rem",
+                      }}
+                    >
+                      없음
+                    </Typography>
+                  </Box>
+                )}
+
+                {/* 화살표 */}
+                <Box sx={{ textAlign: "center", py: 0.25 }}>
+                  <ArrowDownwardIcon sx={{ fontSize: 18, color: "#d0d5dd" }} />
+                </Box>
+
+                {/* 변경 예정 (아래) */}
+                <Typography
+                  variant="caption"
+                  sx={{ display: "block", mb: 0.5, color: "#ff9800", fontWeight: 600, fontSize: "0.7rem" }}
+                >
+                  ● 변경
+                </Typography>
+                {pair.pending ? (
+                  <Box sx={{ position: "relative" }}>
+                    <Box
+                      sx={{
+                        position: "relative",
+                        borderRadius: 1.5,
+                        overflow: "hidden",
+                        cursor: "pointer",
+                        border: "2px solid #ff9800",
+                        "&:hover": { opacity: 0.9 },
+                      }}
+                      onClick={() =>
+                        handleImageClick(pair.pending!.imageUrl)
+                      }
+                    >
+                      <Box sx={{ position: "relative", paddingTop: "100%" }}>
+                        <Box
+                          component="img"
+                          src={pair.pending.imageUrl}
+                          alt="대기 중인 프로필"
+                          sx={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                      </Box>
+                    </Box>
+                    {showImageActions ? (
+                      isRepresentativeReplacement ? (
+                        <Box sx={{ display: "grid", gap: 0.5, mt: 0.75 }}>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="error"
+                            disabled={!canReject || processing}
+                            onClick={() => handleRejectImageClick(pair.pending!.id)}
+                            sx={{ fontSize: "0.7rem", minHeight: 28, py: 0.25 }}
+                          >
+                            교체 거절
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="contained"
+                            color="success"
+                            disabled={!canApprove || processing}
+                            onClick={() => handleApproveImage(pair.pending!.id)}
+                            sx={{ fontSize: "0.7rem", minHeight: 28, py: 0.25 }}
+                          >
+                            대표사진 교체 승인
+                          </Button>
+                        </Box>
+                      ) : (
+                        <Box sx={{ display: "flex", gap: 0.5, mt: 0.75, justifyContent: "center" }}>
+                          <Tooltip title="사진 거절">
+                            <span>
+                              <IconButton
+                                size="small"
+                                aria-label="사진 거절"
+                                disabled={!canReject || processing}
+                                onClick={() =>
+                                  handleRejectImageClick(pair.pending!.id)
+                                }
+                                sx={{
+                                  backgroundColor: "#f44336",
+                                  color: "#fff",
+                                  width: 28,
+                                  height: 28,
+                                  "&:hover": { backgroundColor: "#d32f2f" },
+                                  "&.Mui-disabled": { backgroundColor: "#e0e0e0" },
+                                }}
+                              >
+                                <CloseIcon sx={{ fontSize: 16 }} />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                          <Tooltip title="사진 승인">
+                            <span>
+                              <IconButton
+                                size="small"
+                                aria-label="사진 승인"
+                                disabled={!canApprove || processing}
+                                onClick={() => handleApproveImage(pair.pending!.id)}
+                                sx={{
+                                  backgroundColor: "#4caf50",
+                                  color: "#fff",
+                                  width: 28,
+                                  height: 28,
+                                  "&:hover": { backgroundColor: "#388e3c" },
+                                  "&.Mui-disabled": { backgroundColor: "#e0e0e0" },
+                                }}
+                              >
+                                <CheckCircleIcon sx={{ fontSize: 16 }} />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </Box>
+                      )
+                    ) : slotIndex === 0 ? (
+                      <Typography
+                        variant="caption"
+                        sx={{ display: "block", mt: 0.75, color: "#7a4d00", textAlign: "center", fontSize: "0.68rem" }}
+                      >
+                        회원 승인에서 처리
+                      </Typography>
+                    ) : null}
+                  </Box>
+                ) : (
+                  <Box
+                    sx={{
+                      position: "relative",
+                      paddingTop: "100%",
+                      backgroundColor: "#f5f5f5",
+                      borderRadius: 1.5,
+                      border: "2px dashed #d0d5dd",
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        fontSize: "0.7rem",
+                      }}
+                    >
+                      없음
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+              );
+            })}
+        </Box>
+      </Box>
+
+      {/* 심사 상세 정보 (접힘 섹션) - 이미지 그리드 아래 */}
+      <Box
+        onClick={() => setShowReviewContext(!showReviewContext)}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          cursor: "pointer",
+          py: 1,
+          px: 0.5,
+          borderTop: "1px solid #e0e0e0",
+          borderBottom: "1px solid #e0e0e0",
+          mb: 1,
+          "&:hover": { backgroundColor: "#f5f5f5" },
+        }}
+      >
+        <Typography variant="caption" sx={{ fontWeight: 600, color: "#667085" }}>
+          📋 심사 상세 정보 (선호도, 거절 이력, 참고 정보)
+        </Typography>
+        <ExpandMoreIcon
+          sx={{
+            fontSize: 20,
+            color: "#667085",
+            transform: showReviewContext ? "rotate(180deg)" : "rotate(0deg)",
+            transition: "transform 0.2s",
+          }}
+        />
+      </Box>
+
+      <Collapse in={showReviewContext}>
 
       {/* 심사 참고 정보 */}
       {user.reviewContext && (
@@ -453,10 +892,7 @@ export default function ImageReviewPanel({
                 variant="body2"
                 sx={{ fontWeight: 600, fontSize: "0.75rem" }}
               >
-                {new Date(user.reviewContext.userCreatedAt).toLocaleDateString(
-                  "ko-KR",
-                  { month: "short", day: "numeric" },
-                )}
+                {safeToLocaleDateString(user.reviewContext.userCreatedAt, "ko-KR", { month: "short", day: "numeric" })}
               </Typography>
             </Box>
             <Box sx={{ textAlign: "center" }}>
@@ -510,55 +946,6 @@ export default function ImageReviewPanel({
 
       <Divider sx={{ mb: 2 }} />
 
-      {/* Rank 관리 */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
-          유저 Rank 관리
-        </Typography>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Box>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ display: "block", mb: 0.5 }}
-            >
-              현재 Rank
-            </Typography>
-            <Tooltip title={getRankConfig(currentRank).tooltip}>
-              <Chip
-                label={getRankConfig(currentRank).label}
-                sx={{
-                  backgroundColor: getRankConfig(currentRank).bgColor,
-                  color: getRankConfig(currentRank).color,
-                  fontWeight: "bold",
-                  minWidth: 80,
-                  fontSize: "0.9rem",
-                }}
-              />
-            </Tooltip>
-          </Box>
-          <Box sx={{ flex: 1 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel>Rank 변경</InputLabel>
-              <Select
-                value={currentRank}
-                label="Rank 변경"
-                onChange={(e) => handleRankChange(e.target.value)}
-                disabled={isUpdatingRank}
-              >
-                <MenuItem value="S">S등급 (최상위)</MenuItem>
-                <MenuItem value="A">A등급 (상위)</MenuItem>
-                <MenuItem value="B">B등급 (중위)</MenuItem>
-                <MenuItem value="C">C등급 (하위)</MenuItem>
-                <MenuItem value="UNKNOWN">미분류</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-        </Box>
-      </Box>
-
-      <Divider sx={{ mb: 2 }} />
-
       {/* 선호도 */}
       {user.preferences && user.preferences.length > 0 && (
         <Box sx={{ mb: 3 }}>
@@ -576,7 +963,7 @@ export default function ImageReviewPanel({
                 {pref.options.map((option, idx) => (
                   <Chip
                     key={idx}
-                    label={option}
+                    label={formatPreferenceOption(option)}
                     size="small"
                     variant="outlined"
                   />
@@ -608,7 +995,7 @@ export default function ImageReviewPanel({
                 {history.reason}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                {new Date(history.createdAt).toLocaleString()}
+                {safeToLocaleString(history.createdAt)}
               </Typography>
             </Box>
           ))}
@@ -700,7 +1087,7 @@ export default function ImageReviewPanel({
                     variant="caption"
                     sx={{ fontSize: "0.65rem", color: "text.secondary" }}
                   >
-                    {new Date(image.rejectedAt).toLocaleDateString("ko-KR", {
+                    {safeToLocaleDateString(image.rejectedAt, "ko-KR", {
                       month: "short",
                       day: "numeric",
                     })}
@@ -712,290 +1099,13 @@ export default function ImageReviewPanel({
         </Box>
       )}
 
-      {/* 프로필 이미지 - Before/After 비교 */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
-          프로필 이미지 심사 (
-          {user.pendingImages?.length || user.profileImages?.length || 0}장 대기
-          중)
+      {user.bio && (
+        <Typography variant="body2" sx={{ mt: 1, mb: 2, fontStyle: "italic" }}>
+          &quot;{user.bio}&quot;
         </Typography>
+      )}
 
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          {Array.from(
-            mapImagesBySlot(
-              user.profileUsing,
-              user.pendingImages || user.profileImages || [],
-            ),
-          )
-            .sort(([a], [b]) => a - b)
-            .map(([slotIndex, pair]) => (
-              <Box
-                key={slotIndex}
-                sx={{
-                  p: 2,
-                  backgroundColor: "#fafafa",
-                  borderRadius: 2,
-                  border: "1px solid #e0e0e0",
-                }}
-              >
-                <Box
-                  sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
-                >
-                  <Typography variant="body2" fontWeight="bold">
-                    {getSlotLabel(slotIndex)}
-                  </Typography>
-                  {slotIndex === 0 && (
-                    <Chip
-                      label="대표"
-                      size="small"
-                      sx={{
-                        backgroundColor: "#ff9800",
-                        color: "white",
-                        fontWeight: 700,
-                        fontSize: "0.7rem",
-                      }}
-                    />
-                  )}
-                </Box>
-
-                <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-                  {/* 현재 사용 중인 이미지 */}
-                  <Box sx={{ flex: 1 }}>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: "block", mb: 1 }}
-                    >
-                      현재 사용 중
-                    </Typography>
-                    {pair.current ? (
-                      <Box
-                        sx={{
-                          position: "relative",
-                          borderRadius: 2,
-                          overflow: "hidden",
-                          cursor: "pointer",
-                          border: "2px solid #4caf50",
-                          "&:hover": {
-                            transform: "scale(1.02)",
-                            transition: "transform 0.2s",
-                          },
-                        }}
-                        onClick={() => handleImageClick(pair.current!.imageUrl)}
-                      >
-                        <Box sx={{ position: "relative", paddingTop: "100%" }}>
-                          <Box
-                            component="img"
-                            src={pair.current.imageUrl}
-                            alt="현재 프로필"
-                            sx={{
-                              position: "absolute",
-                              top: 0,
-                              left: 0,
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "cover",
-                            }}
-                          />
-                        </Box>
-                        <Box
-                          sx={{
-                            p: 1,
-                            backgroundColor: "#e8f5e9",
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                          }}
-                        >
-                          <Typography
-                            variant="caption"
-                            sx={{ fontSize: "0.65rem", color: "#2e7d32" }}
-                          >
-                            승인일:{" "}
-                            {formatApprovedDate(pair.current.approvedAt)}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    ) : (
-                      <Box
-                        sx={{
-                          position: "relative",
-                          paddingTop: "100%",
-                          backgroundColor: "#f5f5f5",
-                          borderRadius: 2,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{
-                            position: "absolute",
-                            top: "50%",
-                            left: "50%",
-                            transform: "translate(-50%, -50%)",
-                          }}
-                        >
-                          없음
-                        </Typography>
-                      </Box>
-                    )}
-                  </Box>
-
-                  {/* 화살표 */}
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      px: 1,
-                    }}
-                  >
-                    <ArrowForwardIcon sx={{ fontSize: 32, color: "#9e9e9e" }} />
-                  </Box>
-
-                  {/* 심사 대기 이미지 */}
-                  <Box sx={{ flex: 1 }}>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ display: "block", mb: 1 }}
-                    >
-                      변경 예정
-                    </Typography>
-                    {pair.pending ? (
-                      <Box sx={{ position: "relative" }}>
-                        <Box
-                          sx={{
-                            position: "relative",
-                            borderRadius: 2,
-                            overflow: "hidden",
-                            cursor: "pointer",
-                            border: "2px solid #ff9800",
-                            "&:hover": {
-                              transform: "scale(1.02)",
-                              transition: "transform 0.2s",
-                            },
-                          }}
-                          onClick={() =>
-                            handleImageClick(pair.pending!.imageUrl)
-                          }
-                        >
-                          <Box
-                            sx={{ position: "relative", paddingTop: "100%" }}
-                          >
-                            <Box
-                              component="img"
-                              src={pair.pending.imageUrl}
-                              alt="대기 중인 프로필"
-                              sx={{
-                                position: "absolute",
-                                top: 0,
-                                left: 0,
-                                width: "100%",
-                                height: "100%",
-                                objectFit: "cover",
-                              }}
-                            />
-                          </Box>
-                        </Box>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 1,
-                            mt: 1,
-                            alignItems: "center",
-                          }}
-                        >
-                          <Box sx={{ display: "flex", gap: 1 }}>
-                            <IconButton
-                              size="small"
-                              onClick={() =>
-                                handleRejectImageClick(pair.pending!.id)
-                              }
-                              sx={{
-                                backgroundColor: "#f44336",
-                                color: "#fff",
-                                width: 36,
-                                height: 36,
-                                "&:hover": { backgroundColor: "#d32f2f" },
-                              }}
-                            >
-                              <CloseIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleApproveImage(pair.pending!.id)}
-                              sx={{
-                                backgroundColor: "#4caf50",
-                                color: "#fff",
-                                width: 36,
-                                height: 36,
-                                "&:hover": { backgroundColor: "#388e3c" },
-                              }}
-                            >
-                              <CheckCircleIcon fontSize="small" />
-                            </IconButton>
-                          </Box>
-                        </Box>
-                      </Box>
-                    ) : (
-                      <Box
-                        sx={{
-                          position: "relative",
-                          paddingTop: "100%",
-                          backgroundColor: "#f5f5f5",
-                          borderRadius: 2,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          sx={{
-                            position: "absolute",
-                            top: "50%",
-                            left: "50%",
-                            transform: "translate(-50%, -50%)",
-                          }}
-                        >
-                          없음
-                        </Typography>
-                      </Box>
-                    )}
-                  </Box>
-                </Box>
-              </Box>
-            ))}
-        </Box>
-      </Box>
-
-      {/* 승인/거절 버튼 */}
-      <Box sx={{ display: "flex", gap: 1.5 }}>
-        <Button
-          variant="outlined"
-          color="error"
-          fullWidth
-          onClick={handleReject}
-          sx={{ height: 48 }}
-        >
-          반려하기
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          fullWidth
-          onClick={handleApprove}
-          sx={{ height: 48 }}
-        >
-          승인하기
-        </Button>
-      </Box>
+      </Collapse>
 
       {/* 이미지 확대 모달 */}
       <Dialog

@@ -19,7 +19,6 @@ import {
 } from '@mui/material';
 import { Line, Bar } from 'react-chartjs-2';
 import '@/app/utils/chartConfig';
-import { AnalyticsService } from '@/app/services';
 import { format } from 'date-fns';
 
 interface PageAnalyticsProps {
@@ -236,7 +235,7 @@ export default function PageAnalytics({ startDate, endDate, topPages, overview, 
                           <TableCell align="right">{pageViewsPercent}%</TableCell>
                           {topPagesDetailed && 'averageSessionDuration' in page && (
                             <TableCell align="right">
-                              {Math.floor(page.averageSessionDuration / 60)}분 {Math.floor(page.averageSessionDuration % 60)}초
+                              {Math.floor((page.averageSessionDuration as number) / 60)}분 {Math.floor((page.averageSessionDuration as number) % 60)}초
                             </TableCell>
                           )}
                         </TableRow>

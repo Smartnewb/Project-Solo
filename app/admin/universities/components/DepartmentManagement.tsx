@@ -74,9 +74,7 @@ export default function DepartmentManagement({ university, onChanged }: Departme
         sortOrder: 'asc',
       });
       setDepartments(data.items);
-    } catch (err) {
-      console.error('학과 목록 로드 실패:', err);
-    } finally {
+    } catch { } finally {
       setLoading(false);
     }
   };

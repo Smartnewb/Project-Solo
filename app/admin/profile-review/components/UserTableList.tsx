@@ -12,6 +12,9 @@ import {
   TablePagination,
   Tooltip,
   IconButton,
+  Checkbox,
+  Button,
+  Stack,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { PendingUser } from "../page";
@@ -30,6 +33,9 @@ interface UserTableListProps {
   };
   onPageChange: (page: number) => void;
   searchTerm: string;
+  selectedUserIds?: string[];
+  onUserCheck?: (userId: string, checked: boolean) => void;
+  onSelectAllCheck?: (checked: boolean) => void;
 }
 
 const getRankConfig = (rank?: string) => {
@@ -59,7 +65,7 @@ const getRankConfig = (rank?: string) => {
       tooltip: "하위 등급",
     },
     UNKNOWN: {
-      label: "미분류",
+      label: "-",
       color: "#9e9e9e",
       bgColor: "#f5f5f5",
       tooltip: "등급 미정",
@@ -81,7 +87,10 @@ const RankBadge = ({ rank }: { rank?: string }) => {
           backgroundColor: config.bgColor,
           color: config.color,
           fontWeight: "bold",
-          minWidth: 60,
+          minWidth: 40,
+          height: 22,
+          fontSize: "0.7rem",
+          "& .MuiChip-label": { px: 0.75 },
         }}
       />
     </Tooltip>
@@ -96,13 +105,30 @@ export default function UserTableList({
   pagination,
   onPageChange,
   searchTerm,
+  selectedUserIds = [],
+  onUserCheck,
+  onSelectAllCheck,
 }: UserTableListProps) {
+  const isAllSelected = users.length > 0 && users.every(user => selectedUserIds.includes(user.userId));
+  const isSomeSelected = selectedUserIds.length > 0 && !isAllSelected;
+
   if (users.length === 0 && !searchTerm) {
     return (
       <Paper sx={{ p: 4, textAlign: "center" }}>
-        <Typography variant="body1" color="text.secondary">
+        <Typography variant="body1" sx={{ fontWeight: 700, color: "text.primary" }}>
           심사 대기 중인 사용자가 없습니다.
         </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          새 심사 대상이 들어오기 전까지 미승인 유저 또는 최근 심사 이력을 확인할 수 있습니다.
+        </Typography>
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={1} justifyContent="center" sx={{ mt: 2 }}>
+          <Button size="small" variant="outlined" href="/admin/unapproved-users">
+            미승인 유저 보기
+          </Button>
+          <Button size="small" variant="outlined" href="/admin/review-inbox">
+            검토 인박스 보기
+          </Button>
+        </Stack>
       </Paper>
     );
   }
@@ -112,134 +138,145 @@ export default function UserTableList({
       {users.length === 0 && searchTerm ? (
         <Box sx={{ p: 4, textAlign: "center" }}>
           <Typography variant="body1" color="text.secondary">
-            '{searchTerm}'에 대한 검색 결과가 없습니다.
+            &apos;{searchTerm}&apos;에 대한 검색 결과가 없습니다.
           </Typography>
         </Box>
       ) : (
-        <Table>
+        <Table size="small">
           <TableHead>
             <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
+              {onUserCheck && (
+                <TableCell padding="checkbox">
+                  <Checkbox
+                    indeterminate={isSomeSelected}
+                    checked={isAllSelected}
+                    onChange={(e) => onSelectAllCheck?.(e.target.checked)}
+                  />
+                </TableCell>
+              )}
               <TableCell>이름</TableCell>
               <TableCell>나이/성별</TableCell>
               <TableCell align="center">Rank</TableCell>
               <TableCell>대학교</TableCell>
-              <TableCell>학과</TableCell>
-              <TableCell align="center">사진 수</TableCell>
-              <TableCell>MBTI</TableCell>
+              <TableCell align="center">사진</TableCell>
               <TableCell align="center">최초심사</TableCell>
               <TableCell>등록일시</TableCell>
-              {onSkipUser && <TableCell align="center" sx={{ width: 50 }}></TableCell>}
+              {onSkipUser && <TableCell align="center" sx={{ width: 40 }}></TableCell>}
             </TableRow>
           </TableHead>
           <TableBody>
-            {users.map((user) => (
-              <TableRow
-                key={user.id}
-                hover
-                onClick={() => onUserSelect(user)}
-                sx={{
-                  cursor: "pointer",
-                  backgroundColor:
-                    selectedUser?.id === user.id ? "#e3f2fd" : "inherit",
-                  "&:hover": {
+            {users.map((user) => {
+              const isChecked = selectedUserIds.includes(user.userId);
+              return (
+                <TableRow
+                  key={user.id}
+                  hover
+                  onClick={() => onUserSelect(user)}
+                  sx={{
+                    cursor: "pointer",
                     backgroundColor:
-                      selectedUser?.id === user.id ? "#bbdefb" : "#f5f5f5",
-                  },
-                }}
-              >
-                <TableCell>
-                  <Typography variant="body2" fontWeight="medium">
-                    {user.name}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography
-                    variant="body2"
-                    sx={{ fontSize: "0.85rem", color: "text.secondary" }}
-                  >
-                    {user.age}세 ·{" "}
-                    {user.gender === "MALE"
-                      ? "남"
-                      : user.gender === "FEMALE"
-                        ? "여"
-                        : "-"}
-                  </Typography>
-                </TableCell>
-                <TableCell align="center">
-                  <RankBadge rank={user.rank} />
-                </TableCell>
-                <TableCell>
-                  <Typography
-                    variant="body2"
-                    sx={{ fontSize: "0.85rem", color: "text.secondary" }}
-                  >
-                    {user.universityName || "-"}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography
-                    variant="body2"
-                    sx={{ fontSize: "0.85rem", color: "text.secondary" }}
-                  >
-                    {user.department || "-"}
-                  </Typography>
-                </TableCell>
-                <TableCell align="center">
-                  <Chip
-                    label={`${user.pendingImages?.length || 0}장`}
-                    size="small"
-                    sx={{
-                      backgroundColor: "#fff3e0",
-                      color: "#e65100",
-                      fontWeight: "bold",
-                    }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" sx={{ fontSize: "0.8rem" }}>
-                    {user.mbti || "-"}
-                  </Typography>
-                </TableCell>
-                <TableCell align="center">
-                  <Chip
-                    label={user.approved ? "아니오" : "예"}
-                    size="small"
-                    color={user.approved ? "default" : "warning"}
-                    sx={{
-                      fontWeight: 600,
-                      minWidth: 50,
-                    }}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" sx={{ fontSize: "0.8rem" }}>
-                    {format(new Date(user.createdAt), "yyyy-MM-dd HH:mm")}
-                  </Typography>
-                </TableCell>
-                {onSkipUser && (
-                  <TableCell align="center" sx={{ p: 0.5 }}>
-                    <Tooltip title="건너뛰기">
-                      <IconButton
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSkipUser(user.userId);
-                        }}
-                        sx={{
-                          color: "#9e9e9e",
-                          "&:hover": {
-                            color: "#f44336",
-                            backgroundColor: "#ffebee",
-                          },
-                        }}
-                      >
-                        <CloseIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
+                      selectedUser?.id === user.id ? "#e3f2fd" : "inherit",
+                    "&:hover": {
+                      backgroundColor:
+                        selectedUser?.id === user.id ? "#bbdefb" : "#f5f5f5",
+                    },
+                  }}
+                >
+                  {onUserCheck && (
+                    <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={isChecked}
+                        onChange={(e) => onUserCheck(user.userId, e.target.checked)}
+                      />
+                    </TableCell>
+                  )}
+                  <TableCell>
+                    <Typography variant="body2" fontWeight="medium" sx={{ fontSize: "0.85rem" }}>
+                      {user.name}
+                    </Typography>
                   </TableCell>
-                )}
-              </TableRow>
-            ))}
+                  <TableCell>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontSize: "0.8rem", color: "text.secondary" }}
+                    >
+                      {user.age}세 ·{" "}
+                      {user.gender === "MALE"
+                        ? "남"
+                        : user.gender === "FEMALE"
+                          ? "여"
+                          : "-"}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="center">
+                    <RankBadge rank={user.rank} />
+                  </TableCell>
+                  <TableCell>
+                    <Typography
+                      variant="body2"
+                      sx={{ fontSize: "0.8rem", color: "text.secondary" }}
+                    >
+                      {user.universityName || "-"}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="center">
+                    <Chip
+                      label={`${user.pendingImages?.length || 0}장`}
+                      size="small"
+                      sx={{
+                        backgroundColor: "#fff3e0",
+                        color: "#e65100",
+                        fontWeight: "bold",
+                        height: 22,
+                        fontSize: "0.75rem",
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell align="center">
+                    <Chip
+                      label={user.approved ? "아니오" : "예"}
+                      size="small"
+                      color={user.approved ? "default" : "warning"}
+                      sx={{
+                        fontWeight: 600,
+                        minWidth: 44,
+                        height: 22,
+                        fontSize: "0.75rem",
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ fontSize: "0.75rem" }}>
+                      {user.createdAt && !isNaN(new Date(user.createdAt).getTime())
+                        ? format(new Date(user.createdAt), "MM-dd HH:mm")
+                        : "-"}
+                    </Typography>
+                  </TableCell>
+                  {onSkipUser && (
+                    <TableCell align="center" sx={{ p: 0.5 }}>
+                      <Tooltip title="건너뛰기">
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSkipUser(user.userId);
+                          }}
+                          sx={{
+                            color: "#9e9e9e",
+                            "&:hover": {
+                              color: "#f44336",
+                              backgroundColor: "#ffebee",
+                            },
+                          }}
+                        >
+                          <CloseIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  )}
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       )}
@@ -247,7 +284,7 @@ export default function UserTableList({
         component="div"
         count={pagination.total}
         page={pagination.page - 1}
-        onPageChange={(event, newPage) => onPageChange(newPage + 1)}
+        onPageChange={(_event, newPage) => onPageChange(newPage + 1)}
         rowsPerPage={pagination.limit}
         rowsPerPageOptions={[20]}
         labelDisplayedRows={({ from, to, count }) =>

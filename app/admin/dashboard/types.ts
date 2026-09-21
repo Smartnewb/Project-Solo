@@ -77,48 +77,6 @@ export interface HourlySignupsResponse {
   total: number;
 }
 
-// === 목표 관리 API 타입 ===
-
-// 백엔드 API에서 사용하는 타입 (소문자)
-export type GoalTypeApi = "signups" | "revenue";
-
-// 프론트엔드 UI에서 사용하는 타입 (대문자, 레거시 호환)
-export type GoalType = "SIGNUP" | "REVENUE";
-
-// API 타입 <-> UI 타입 변환
-export const GOAL_TYPE_TO_API: Record<GoalType, GoalTypeApi> = {
-  SIGNUP: "signups",
-  REVENUE: "revenue",
-};
-
-export const GOAL_TYPE_FROM_API: Record<GoalTypeApi, GoalType> = {
-  signups: "SIGNUP",
-  revenue: "REVENUE",
-};
-
-export interface Goal {
-  id: string;
-  type: GoalType;
-  targetValue: number;
-  currentValue: number;
-  achievementRate: number;
-  targetMonth: string;
-}
-
-export interface GoalCreateRequest {
-  type: GoalTypeApi; // API 요청 시 소문자 사용
-  targetValue: number;
-  targetMonth: string;
-}
-
-export interface GoalUpdateRequest {
-  targetValue: number;
-}
-
-export interface GoalsResponse {
-  goals: Goal[];
-}
-
 // === 퍼널 스테이지 라벨 매핑 ===
 export const FUNNEL_STAGE_LABELS: Record<string, string> = {
   matches_created: "매칭 생성",
@@ -136,12 +94,6 @@ export const ALERT_TYPE_LABELS: Record<AlertType, string> = {
   WITHDRAWAL_SURGE: "탈퇴 급증",
   REVENUE_DROP: "매출 감소",
   MATCHING_FAILURE_SURGE: "매칭 실패 급증",
-};
-
-// === 목표 타입 라벨 매핑 ===
-export const GOAL_TYPE_LABELS: Record<GoalType, string> = {
-  SIGNUP: "가입자 수",
-  REVENUE: "매출",
 };
 
 // === 확장 매출 현황 타입 ===
@@ -163,3 +115,124 @@ export interface RevenueComparison {
 export interface ExtendedRevenueResponse {
   revenue: RevenueComparison;
 }
+
+// === 구슬 시스템 매칭 퍼널 타입 ===
+export interface MatchingTypeFunnelStep {
+  name: string;
+  count: number;
+  conversionRate: number;
+  overallConversionRate: number;
+}
+
+export interface MatchingTypeFunnel {
+  type: 'scheduled' | 'rematching' | 'total';
+  typeName: string;
+  steps: MatchingTypeFunnelStep[];
+}
+
+export interface GemSystemFunnelDebugInfo {
+  matchesQuery: string;
+  likesQuery: string;
+  mutualLikesQuery: string;
+  chatRoomsQuery: string;
+  rawResults: Record<string, unknown>;
+}
+
+export interface GemSystemFunnelResponse {
+  period: {
+    startDate: string;
+    endDate: string;
+  };
+  gemSystemStartDate: string;
+  funnelByType: MatchingTypeFunnel[];
+  totalFunnel: MatchingTypeFunnel;
+  debug?: GemSystemFunnelDebugInfo;
+}
+
+// === 실행 가능한 인사이트 타입 ===
+
+export type InsightSeverity = 'critical' | 'warning' | 'info';
+export type InsightCategory = 'retention' | 'revenue' | 'engagement' | 'matching' | 'user_experience';
+export type UrgencyLevel = 'critical' | 'warning';
+
+export interface HealthScore {
+  overall: number;
+  userGrowth: number;
+  retention: number;
+  revenue: number;
+  matchingQuality: number;
+  userSatisfaction: number;
+}
+
+export interface UrgentAction {
+  urgency: UrgencyLevel;
+  title: string;
+  description: string;
+  count: number;
+  action: string;
+  actionUrl: string;
+  deadlineHours?: number;
+}
+
+export interface ActionableInsight {
+  id: string;
+  title: string;
+  description: string;
+  severity: InsightSeverity;
+  category: InsightCategory;
+  currentValue: number;
+  previousValue?: number;
+  changeRate?: number;
+  recommendations: string[];
+  relatedDashboard?: string;
+  affectedUsers: number;
+  potentialRevenueImpact?: number;
+}
+
+export interface FunnelBottleneck {
+  stage: string;
+  conversionRate: number;
+  benchmarkRate: number;
+  droppedUsers: number;
+  possibleCauses: string[];
+}
+
+export interface UserPainPoint {
+  id: string;
+  description: string;
+  affectedUsers: number;
+  percentage: number;
+  avgWaitDays?: number;
+  churnRisk: number;
+  solutions: string[];
+}
+
+export interface ActionableInsightsResponse {
+  generatedAt: string;
+  period: {
+    startDate: string;
+    endDate: string;
+  };
+  healthScore: HealthScore;
+  urgentActions: UrgentAction[];
+  insights: ActionableInsight[];
+  funnelBottlenecks: FunnelBottleneck[];
+  userPainPoints: UserPainPoint[];
+  summary: string;
+}
+
+// === 인사이트 카테고리 라벨 매핑 ===
+export const INSIGHT_CATEGORY_LABELS: Record<InsightCategory, string> = {
+  retention: '리텐션',
+  revenue: '매출',
+  engagement: '참여도',
+  matching: '매칭',
+  user_experience: '사용자 경험',
+};
+
+// === 인사이트 심각도 라벨 매핑 ===
+export const INSIGHT_SEVERITY_LABELS: Record<InsightSeverity, string> = {
+  critical: '심각',
+  warning: '주의',
+  info: '정보',
+};

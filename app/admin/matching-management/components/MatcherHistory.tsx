@@ -26,8 +26,8 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { safeFormat } from '@/app/utils/formatters';
 import AdminService from '@/app/services/admin';
 import { MatcherHistoryResponse, UserSearchResult } from '../types';
 import UserDetailModal from '@/components/admin/appearance/UserDetailModal';
@@ -66,6 +66,29 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
   // 사용자 프로필 상세 모달 상태
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [userDetail, setUserDetail] = useState<any>(null);
+  const [userDetailLoading, setUserDetailLoading] = useState(false);
+  const [userDetailError, setUserDetailError] = useState<string | null>(null);
+
+  // 프로필 클릭 시 모달 오픈 + 상세 정보 조회
+  const handleViewUserDetail = async (userId?: string) => {
+    if (!userId) return;
+
+    try {
+      setSelectedUserId(userId);
+      setUserModalOpen(true);
+      setUserDetailLoading(true);
+      setUserDetailError(null);
+      setUserDetail(null);
+
+      const data = await AdminService.userAppearance.getUserDetails(userId);
+      setUserDetail(data);
+    } catch (err: any) {
+      setUserDetailError(err.message || '유저 상세 정보를 불러오는 중 오류가 발생했습니다.');
+    } finally {
+      setUserDetailLoading(false);
+    }
+  };
 
   // 매칭 상대 이력 조회 함수
   const fetchMatcherHistory = async () => {
@@ -76,8 +99,8 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
 
     try {
       // 날짜 형식 변환 (YYYY-MM-DD)
-      const formattedStartDate = format(startDate, 'yyyy-MM-dd');
-      const formattedEndDate = format(endDate, 'yyyy-MM-dd');
+      const formattedStartDate = safeFormat(startDate, 'yyyy-MM-dd');
+      const formattedEndDate = safeFormat(endDate, 'yyyy-MM-dd');
 
       // AdminService를 사용하여 API 호출
       const data = await AdminService.matching.getMatcherHistory(
@@ -89,10 +112,9 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
         requesterNameFilter.trim() || undefined
       );
 
-      console.log('매칭 상대 이력 조회 응답:', data);
+      ;
       setMatcherHistory(data);
     } catch (err: any) {
-      console.error('매칭 상대 이력 조회 중 오류:', err);
       setHistoryError(err.response?.data?.message || err.message || '매칭 상대 이력을 불러오는 중 오류가 발생했습니다.');
     } finally {
       setHistoryLoading(false);
@@ -104,17 +126,29 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
     setHistoryPage(value);
   };
 
-  // 페이지 변경 시 자동으로 데이터 가져오기
+  // 페이지 변경 시 자동으로 데이터 가져오기.
+  // 마운트 시(첫 렌더)에는 조회하지 않고, 이후 historyPage 변경 시에만 조회.
+  // (1페이지로 되돌아오는 경우 포함 — 기존 `> 1` 가드가 1페이지 복귀를 누락시켰음)
+  const isFirstRender = React.useRef(true);
   React.useEffect(() => {
-    if (selectedUser && startDate && endDate && historyPage > 1) {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (selectedUser && startDate && endDate) {
       fetchMatcherHistory();
     }
   }, [historyPage]);
 
   // 검색 실행
   const handleSearch = () => {
-    setHistoryPage(1);
-    fetchMatcherHistory();
+    // 페이지가 1이 아니면 1로 리셋 → useEffect 가 1페이지로 재조회.
+    // 이미 1페이지면 상태 변화가 없어 effect 가 안 도므로 직접 조회.
+    if (historyPage !== 1) {
+      setHistoryPage(1);
+    } else {
+      fetchMatcherHistory();
+    }
   };
 
   // 엔터 키 핸들러
@@ -235,10 +269,7 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
                     cursor: 'pointer',
                     '&:hover': { opacity: 0.8 }
                   }}
-                  onClick={() => {
-                    setSelectedUserId(selectedUser.id);
-                    setUserModalOpen(true);
-                  }}
+                  onClick={() => handleViewUserDetail(selectedUser.id)}
                 >
                   {selectedUser.name.charAt(0)}
                 </Avatar>
@@ -250,10 +281,7 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
                       color: 'primary.main',
                       '&:hover': { textDecoration: 'underline' }
                     }}
-                    onClick={() => {
-                      setSelectedUserId(selectedUser.id);
-                      setUserModalOpen(true);
-                    }}
+                    onClick={() => handleViewUserDetail(selectedUser.id)}
                   >
                     {selectedUser.name}{selectedUser.deletedAt ? ' (탈퇴)' : ''}
                   </Typography>
@@ -387,7 +415,7 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
                                 />
                               </TableCell>
                               <TableCell>
-                                {format(new Date(item.publishedAt), 'yyyy-MM-dd HH:mm', { locale: ko })}
+                                {safeFormat(item.publishedAt, 'yyyy-MM-dd HH:mm')}
                               </TableCell>
                               <TableCell>
                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -399,10 +427,7 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
                                       cursor: 'pointer',
                                       '&:hover': { opacity: 0.8 }
                                     }}
-                                    onClick={() => {
-                                      setSelectedUserId(item.requester.id);
-                                      setUserModalOpen(true);
-                                    }}
+                                    onClick={() => handleViewUserDetail(item.requester.id)}
                                   >
                                     {item.requester.name.charAt(0)}
                                   </Avatar>
@@ -415,10 +440,7 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
                                         color: 'primary.main',
                                         '&:hover': { textDecoration: 'underline' }
                                       }}
-                                      onClick={() => {
-                                        setSelectedUserId(item.requester.id);
-                                        setUserModalOpen(true);
-                                      }}
+                                      onClick={() => handleViewUserDetail(item.requester.id)}
                                     >
                                       {item.requester.name}{item.requester.deletedAt ? ' (탈퇴)' : ''}
                                     </Typography>
@@ -461,9 +483,9 @@ const MatcherHistory: React.FC<MatcherHistoryProps> = ({
         open={userModalOpen}
         onClose={() => setUserModalOpen(false)}
         userId={selectedUserId}
-        userDetail={{ id: '', name: '', age: 0, gender: 'MALE', profileImages: [] }}
-        loading={false}
-        error={null}
+        userDetail={userDetail || { id: '', name: '', age: 0, gender: 'MALE', profileImages: [] }}
+        loading={userDetailLoading}
+        error={userDetailError}
       />
     </LocalizationProvider>
   );

@@ -84,12 +84,6 @@ export function GenderAnalysisTable({
     fetchGenderData();
   }, [startDate, endDate]);
 
-  // MARK: - 자동 새로고침
-  // TODO: - 추후 구현
-
-  // === utils ===
-  // TODO: - utils로 분리
-
   const getGender = (gender: string): string => {
     const typeMap: Record<string, string> = {
       MALE: "남성",
@@ -182,7 +176,7 @@ export function GenderAnalysisTable({
             {getAnalysisData().map((item, index) => (
               <div
                 key={index}
-                className={`rounded-md ${item.gender === "MALE" ? "bg-blue-50" : "bg-pink-50"} flex-1 text-center`}
+                className={`rounded-md ${item.gender === "MALE" ? "bg-[#f7f7f7]" : "bg-pink-50"} flex-1 text-center`}
               >
                 <p
                   className={`text-xl font-semibold ${item.gender === "MALE" ? "text-[#1D4ED8]" : "text-pink-700"}`}

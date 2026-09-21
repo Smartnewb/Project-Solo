@@ -19,13 +19,13 @@ const UNIVERSITY_CLUSTER_MAP: Record<string, string> = {
   대전보건대학교: "DJN",
   한국폴리텍대학: "DJN",
   혜천대학교: "DJN",
-  "고려대학교(세종)": "SJG",
-  "홍익대학교(세종)": "SJG",
-  충북대학교: "CJU",
-  청주대학교: "CJU",
-  서원대학교: "CJU",
-  충북보건과학대학교: "CJU",
-  충청대학교: "CJU",
+  "고려대학교(세종)": "DJN",
+  "홍익대학교(세종)": "DJN",
+  충북대학교: "DJN",
+  청주대학교: "DJN",
+  서원대학교: "DJN",
+  충북보건과학대학교: "DJN",
+  충청대학교: "DJN",
   부산대학교: "BSN",
   동아대학교: "BSN",
   부경대학교: "BSN",
@@ -36,73 +36,63 @@ const UNIVERSITY_CLUSTER_MAP: Record<string, string> = {
   계명대학교: "DGU",
   대구대학교: "DGU",
   영남대학교: "DGU",
-  공주대학교: "GJJ",
-  인제대학교: "GHE",
+  공주대학교: "DJN",
+  인제대학교: "BSN",
   인하대학교: "ICN",
   인천대학교: "ICN",
-  서울대학교: "SEL",
-  연세대학교: "SEL",
-  고려대학교: "SEL",
-  성균관대학교: "SEL",
-  한양대학교: "SEL",
-  이화여자대학교: "SEL",
-  중앙대학교: "SEL",
-  경희대학교: "SEL",
-  홍익대학교: "SEL",
-  건국대학교: "SEL",
-  동국대학교: "SEL",
-  숙명여자대학교: "SEL",
-  국민대학교: "SEL",
-  숭실대학교: "SEL",
-  세종대학교: "SEL",
-  단국대학교: "SEL",
-  광운대학교: "SEL",
-  명지대학교: "SEL",
-  아주대학교: "KYG",
-  수원대학교: "KYG",
-  경기대학교: "KYG",
-  한신대학교: "KYG",
-  "단국대학교(천안)": "CAN",
-  "상명대학교(천안)": "CAN",
-  순천향대학교: "CAN",
-  한국기술교육대학교: "CAN",
-  호서대학교: "CAN",
-  나사렛대학교: "CAN",
-  백석대학교: "CAN",
+  서울대학교: "ICN",
+  연세대학교: "ICN",
+  고려대학교: "ICN",
+  성균관대학교: "ICN",
+  한양대학교: "ICN",
+  이화여자대학교: "ICN",
+  중앙대학교: "ICN",
+  경희대학교: "ICN",
+  홍익대학교: "ICN",
+  건국대학교: "ICN",
+  동국대학교: "ICN",
+  숙명여자대학교: "ICN",
+  국민대학교: "ICN",
+  숭실대학교: "ICN",
+  세종대학교: "ICN",
+  단국대학교: "ICN",
+  광운대학교: "ICN",
+  명지대학교: "ICN",
+  아주대학교: "ICN",
+  수원대학교: "ICN",
+  경기대학교: "ICN",
+  한신대학교: "ICN",
+  "단국대학교(천안)": "ICN",
+  "상명대학교(천안)": "ICN",
+  순천향대학교: "ICN",
+  한국기술교육대학교: "ICN",
+  호서대학교: "ICN",
+  나사렛대학교: "ICN",
+  백석대학교: "ICN",
   전남대학교: "GWJ",
   조선대학교: "GWJ",
   광주대학교: "GWJ",
 };
 
 const CLUSTER_NAMES: Record<string, string> = {
-  DJN: "대전",
-  SJG: "세종",
-  CJU: "청주",
-  BSN: "부산",
+  ICN: "수도권",
+  DJN: "충청권",
+  BSN: "부산/김해",
   DGU: "대구",
-  GJJ: "공주",
-  GHE: "김해",
-  ICN: "인천",
-  SEL: "서울",
-  KYG: "경기",
-  CAN: "천안",
   GWJ: "광주",
+  GNG: "강원",
+  JJA: "제주",
   OTHER: "기타",
 };
 
 const CLUSTER_ORDER = [
-  "SEL",
-  "KYG",
   "ICN",
   "DJN",
-  "CAN",
-  "SJG",
-  "CJU",
-  "GJJ",
   "BSN",
   "DGU",
   "GWJ",
-  "GHE",
+  "GNG",
+  "JJA",
   "OTHER",
 ];
 
@@ -161,8 +151,8 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
 
     const startDateString = formateDateToString(start);
     const endDateString = formateDateToString(end);
-    console.log("대학 순위 startDate:", startDateString);
-    console.log("대학 순위 endDate:", endDateString);
+    ;
+    ;
 
     try {
       const response = await salesService.getUniversityRank({
@@ -175,7 +165,7 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
       if (response) {
         setTotalData(response);
       } else {
-        console.log("대학 랭킹 데이터 없음");
+        ;
         setTotalData(null);
       }
     } catch (error) {
@@ -329,7 +319,7 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
                 onClick={() => setViewMode("top20")}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
                   viewMode === "top20"
-                    ? "bg-white text-purple-700 shadow-sm"
+                    ? "bg-white text-[#e00b41] shadow-sm"
                     : "text-gray-600 hover:text-gray-900"
                 }`}
               >
@@ -339,7 +329,7 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
                 onClick={() => setViewMode("byCluster")}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
                   viewMode === "byCluster"
-                    ? "bg-white text-purple-700 shadow-sm"
+                    ? "bg-white text-[#e00b41] shadow-sm"
                     : "text-gray-600 hover:text-gray-900"
                 }`}
               >
@@ -353,14 +343,14 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
           <div className="flex items-center gap-3 mt-3">
             <button
               onClick={expandAllClusters}
-              className="text-xs text-purple-600 hover:text-purple-800 font-medium"
+              className="text-xs text-[#ff385c] hover:text-[#e00b41] font-medium"
             >
               모두 펼치기
             </button>
             <span className="text-gray-300">|</span>
             <button
               onClick={collapseAllClusters}
-              className="text-xs text-purple-600 hover:text-purple-800 font-medium"
+              className="text-xs text-[#ff385c] hover:text-[#e00b41] font-medium"
             >
               모두 접기
             </button>
@@ -371,7 +361,7 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
       {isLoading && (
         <div className="flex items-center justify-center py-12">
           <div className="flex items-center gap-3">
-            <div className="w-5 h-5 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-5 h-5 border-2 border-[#ff385c] border-t-transparent rounded-full animate-spin"></div>
             <span className="text-gray-500">데이터 로딩중...</span>
           </div>
         </div>
@@ -402,27 +392,27 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
         <div className="p-6">
           <div className="overflow-hidden rounded-lg border border-gray-200">
             <table className="w-full">
-              <thead className="bg-gradient-to-r from-purple-50 to-indigo-50">
+              <thead className="bg-gradient-to-r from-[#f7f7f7] to-indigo-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-purple-800 uppercase tracking-wider w-16">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#e00b41] uppercase tracking-wider w-16">
                     순위
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-purple-800 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#e00b41] uppercase tracking-wider">
                     대학명
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-purple-800 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#e00b41] uppercase tracking-wider">
                     클러스터
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-purple-800 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-[#e00b41] uppercase tracking-wider">
                     매출
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-purple-800 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-[#e00b41] uppercase tracking-wider">
                     결제건수
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-purple-800 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-[#e00b41] uppercase tracking-wider">
                     비율
                   </th>
-                  <th className="px-4 py-3 text-right text-xs font-semibold text-purple-800 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-[#e00b41] uppercase tracking-wider">
                     평균매출
                   </th>
                 </tr>
@@ -462,13 +452,13 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
                         </span>
                       </td>
                       <td className="px-4 py-3.5">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#ffd1da] text-[#e00b41]">
                           {CLUSTER_NAMES[cluster]}
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-right">
                         <span
-                          className={`text-sm font-semibold ${isTopThree ? "text-purple-700" : "text-blue-600"}`}
+                          className={`text-sm font-semibold ${isTopThree ? "text-[#e00b41]" : "text-[#ff385c]"}`}
                         >
                           {formatCurrency(item.amount)}
                         </span>
@@ -479,7 +469,7 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
                         </span>
                       </td>
                       <td className="px-4 py-3.5 text-right">
-                        <span className="text-sm text-purple-600 font-medium">
+                        <span className="text-sm text-[#ff385c] font-medium">
                           {item.percentage !== undefined
                             ? `${item.percentage.toFixed(1)}%`
                             : "-"}
@@ -524,13 +514,13 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
                   onClick={() => toggleCluster(clusterCode)}
                   className={`w-full px-5 py-4 flex items-center justify-between transition-colors ${
                     isExpanded
-                      ? "bg-purple-50 border-b border-purple-100"
+                      ? "bg-[#f7f7f7] border-b border-[#ffd1da]"
                       : "bg-white hover:bg-gray-50"
                   }`}
                 >
                   <div className="flex items-center gap-4">
                     <svg
-                      className={`w-5 h-5 text-purple-500 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
+                      className={`w-5 h-5 text-[#ff385c] transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -550,7 +540,7 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
                       <span className="text-xs text-gray-400 font-mono">
                         {clusterCode}
                       </span>
-                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-purple-100 text-purple-700 text-xs font-semibold">
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-[#ffd1da] text-[#e00b41] text-xs font-semibold">
                         {clusterItems.length}
                       </span>
                     </div>
@@ -559,7 +549,7 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
                   <div className="flex items-center gap-6">
                     <div className="text-right">
                       <p className="text-xs text-gray-400">총 매출</p>
-                      <p className="text-sm font-bold text-purple-700">
+                      <p className="text-sm font-bold text-[#e00b41]">
                         {formatCurrency(clusterTotal)}
                       </p>
                     </div>
@@ -609,13 +599,13 @@ export function RankingByUniv({ startDate, endDate }: RankingByUnivProps) {
                             <td className="px-5 py-3 text-sm font-medium text-gray-900">
                               {item.universityName}
                             </td>
-                            <td className="px-5 py-3 text-right text-sm font-semibold text-blue-600">
+                            <td className="px-5 py-3 text-right text-sm font-semibold text-[#ff385c]">
                               {formatCurrency(item.amount)}
                             </td>
                             <td className="px-5 py-3 text-right text-sm text-gray-600">
                               {item.count}건
                             </td>
-                            <td className="px-5 py-3 text-right text-sm text-purple-600 font-medium">
+                            <td className="px-5 py-3 text-right text-sm text-[#ff385c] font-medium">
                               {item.percentage !== undefined
                                 ? `${item.percentage.toFixed(1)}%`
                                 : "-"}

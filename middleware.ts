@@ -1,61 +1,34 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { ADMIN_EMAIL } from '@/utils/config';
+import { getIronSession } from 'iron-session';
+import { sessionOptions, type AdminSessionMeta } from './shared/auth/session-config';
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  const publicPaths = ['/', '/signup', '/api/admin/signup-control', '/signup/test'];
-  const isPublicPath = publicPaths.some((path) => pathname === path || pathname.startsWith('/api/'));
-  const isAdminPath = pathname.startsWith('/admin');
-
-  // 공개 경로는 통과
-  if (isPublicPath) {
+  if (pathname === '/') {
     return NextResponse.next();
   }
 
-  // 임시: 모든 protected 라우트 허용 (개발 중에만 사용)
-  return NextResponse.next();
-
-  /* 백엔드 API 준비되면 아래 코드 주석 해제
-  // Authorization 헤더 확인
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = '/';
-    return NextResponse.redirect(redirectUrl);
-  }
-
-  const accessToken = authHeader.split(' ')[1];
-
-  // 토큰이 있을 경우, 백엔드에서 유저 정보 요청
-  try {
-    const userInfo = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/auth/me`, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    }).then(res => res.ok ? res.json() : null);
-
-    if (!userInfo) {
-      // accessToken이 만료됐거나 잘못된 경우
-      const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = '/';
-      return NextResponse.redirect(redirectUrl);
-    }
-
-    if (isAdminPath && userInfo.email !== ADMIN_EMAIL) {
-      const redirectUrl = request.nextUrl.clone();
-      redirectUrl.pathname = '/home';
-      return NextResponse.redirect(redirectUrl);
-    }
-
+  if (pathname.startsWith('/api/')) {
     return NextResponse.next();
-  } catch (error) {
-    console.error('Auth check error:', error);
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = '/';
-    return NextResponse.redirect(redirectUrl);
   }
-  */
+
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+    // 쿠키 존재 여부가 아니라 iron-session 암호(AES-GCM + 서명)를 실제로
+    // 복호화/검증한다. 임의 값(admin_session_meta=x)은 복호화 실패 → redirect.
+    const response = NextResponse.next();
+    const session = await getIronSession<AdminSessionMeta>(request, response, sessionOptions);
+
+    if (!session.id) {
+      const loginUrl = new URL('/', request.url);
+      loginUrl.searchParams.set('next', `${pathname}${request.nextUrl.search}`);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    return response;
+  }
+
+  return NextResponse.redirect(new URL('/', request.url));
 }
 
 export const config = {

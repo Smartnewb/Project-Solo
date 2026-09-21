@@ -93,7 +93,6 @@ export default function BulkProcessModal({
         results.totalRejected += response.rejectedCount;
         results.totalProcessed += response.processedCount;
       } catch (err: any) {
-        console.error(`Failed to process user ${user.id}:`, err);
         results.failed++;
       }
     }

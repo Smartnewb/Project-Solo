@@ -1,0 +1,117 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { adminLog } from '@/shared/lib/admin-logger';
+import { checkRateLimit, getClientIp } from '@/shared/lib/rate-limit';
+import {
+  normalizeAdminCountry,
+  setAdminAccessToken,
+  setAdminRefreshToken,
+  setSessionMeta,
+} from '@/shared/auth';
+import type { AdminSessionMeta } from '@/shared/auth';
+import {
+  buildAdminSessionUser,
+  extractRoles,
+  isAdminRoleSet,
+  type AdminIdentitySource,
+} from '@/shared/auth/admin-session-user';
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api';
+
+export async function POST(request: NextRequest) {
+  try {
+    const ip = getClientIp(request.headers);
+    const ipLimit = checkRateLimit(`login:ip:${ip}`, { windowMs: 5 * 60 * 1000, max: 30 });
+    if (!ipLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Too many attempts' },
+        { status: 429, headers: { 'Retry-After': String(ipLimit.retryAfterSeconds) } },
+      );
+    }
+
+    const body = await request.json();
+    const emailKey = typeof body?.email === 'string' ? body.email.trim().toLowerCase().slice(0, 200) : '';
+    const emailLimit = checkRateLimit(`login:acct:${ip}:${emailKey}`, {
+      windowMs: 5 * 60 * 1000,
+      max: 10,
+    });
+    if (!emailLimit.allowed) {
+      return NextResponse.json(
+        { error: 'Too many attempts' },
+        { status: 429, headers: { 'Retry-After': String(emailLimit.retryAfterSeconds) } },
+      );
+    }
+
+    const selectedCountry = normalizeAdminCountry(body.selectedCountry);
+
+    const backendRes = await fetch(`${BACKEND_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-country': selectedCountry,
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!backendRes.ok) {
+      const status = backendRes.status === 401 ? 401 : 400;
+      return NextResponse.json({ error: 'Invalid credentials' }, { status });
+    }
+
+    const data = await backendRes.json();
+
+    const roles = extractRoles(data);
+    if (!isAdminRoleSet(roles)) {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    }
+
+    const [userRes, detailsRes] = await Promise.all([
+      fetch(`${BACKEND_URL}/user`, {
+        headers: {
+          Authorization: `Bearer ${data.accessToken}`,
+          'x-country': selectedCountry,
+        },
+      }),
+      fetch(`${BACKEND_URL}/user/details`, {
+        headers: {
+          Authorization: `Bearer ${data.accessToken}`,
+          'x-country': selectedCountry,
+        },
+      }),
+    ]);
+
+    if (!userRes.ok) {
+      return NextResponse.json({ error: 'Failed to fetch admin identity' }, { status: 502 });
+    }
+
+    const identity = (await userRes.json()) as AdminIdentitySource;
+    const details = detailsRes.ok ? ((await detailsRes.json()) as AdminIdentitySource) : null;
+    const sessionUser = buildAdminSessionUser(identity, details, body.email);
+
+    await setAdminAccessToken(data.accessToken);
+    if (typeof data.refreshToken === 'string' && data.refreshToken.length > 0) {
+      await setAdminRefreshToken(data.refreshToken);
+    }
+
+    const meta: AdminSessionMeta = {
+      id: sessionUser.id,
+      email: sessionUser.email,
+      roles: sessionUser.roles,
+      issuedAt: Date.now(),
+      selectedCountry,
+    };
+    await setSessionMeta(meta);
+
+    return NextResponse.json({
+      user: {
+        id: sessionUser.id,
+        email: sessionUser.email,
+        name: sessionUser.name,
+        roles: sessionUser.roles,
+        role: sessionUser.roles[0] || 'admin',
+      },
+    });
+  } catch (error) {
+    adminLog.error('/api/admin/auth/login', 'login_failed', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

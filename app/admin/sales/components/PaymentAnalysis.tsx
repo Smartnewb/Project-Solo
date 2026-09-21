@@ -7,6 +7,7 @@ import { salesService } from '@/app/services/sales';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 import { getPaymentTypeLabel } from '../constants/paymentTypes';
 import Image from 'next/image';
+import { safeToLocaleDateString } from '@/app/utils/formatters';
 
 interface PaymentAnalysisProps {
     startDate?: Date;
@@ -77,7 +78,7 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
             const startDateString = formatDateToString(effectiveStart);
             const endDateString = formatDateToString(effectiveEnd);
             
-            console.log('API 요청 날짜:', { startDateString, endDateString });
+            ;
 
             const response = await salesService.getPaymentAnalysis({
                 startDate: startDateString,
@@ -85,7 +86,6 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
             });
             setPaymentData(response);
         } catch (error) {
-            console.error('결제수단별 분석 조회 실패:', error);
             setError('결제수단별 분석 데이터를 불러오는데 실패했습니다.');
             setPaymentData(null);
         } finally {
@@ -124,7 +124,7 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
 
     const getCurrentDateRangeText = () => {
         const { start, end } = getEffectiveDates();
-        return `${start.toLocaleDateString('ko-KR')} ~ ${end.toLocaleDateString('ko-KR')}`;
+        return `${safeToLocaleDateString(start)} ~ ${safeToLocaleDateString(end)}`;
     };
 
     const getAnalysisData = () => {
@@ -305,7 +305,7 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
                 </div>
                 <button
                     onClick={handleRefresh}
-                    className="px-4 py-2 bg-[#7D4EE4] text-white rounded-lg hover:bg-purple-700"
+                    className="px-4 py-2 bg-[#ff385c] text-white rounded-lg hover:bg-[#e00b41]"
                 >
                     새로고침
                 </button>
@@ -322,7 +322,7 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
             {/* 로딩 상태 */}
             {isLoading && (
                 <div className="flex justify-center items-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff385c]"></div>
                     <span className="ml-2">데이터를 불러오는 중...</span>
                 </div>
             )}
@@ -415,13 +415,13 @@ export function PaymentAnalysis({ startDate, endDate }: PaymentAnalysisProps) {
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
                                         총계
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-900">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-[#222222]">
                                         {formatCurrency(paymentData?.totalAmount || 0)}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
                                         {formatNumber(paymentData?.totalCount || 0)}건
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-purple-600">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-[#ff385c]">
                                         100.0%
                                     </td>
                                 </tr>

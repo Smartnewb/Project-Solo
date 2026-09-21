@@ -34,15 +34,14 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { ko } from 'date-fns/locale';
-import { format } from 'date-fns';
+import { safeFormat, formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
 import PersonIcon from '@mui/icons-material/Person';
 import HistoryIcon from '@mui/icons-material/History';
 import WarningIcon from '@mui/icons-material/Warning';
 import AddIcon from '@mui/icons-material/Add';
 import { UserSearchResult, MatchingResult } from '../types';
 import AdminService from '@/app/services/admin';
-import { formatDateTimeWithoutTimezoneConversion } from '@/app/utils/formatters';
-import axiosServer from '@/utils/axios';
+import { adminGet } from '@/shared/lib/http/admin-fetch';
 
 // 매칭 이력 아이템 인터페이스
 interface MatchHistoryItem {
@@ -144,8 +143,8 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
 
     try {
       // 날짜 형식 변환 (YYYY-MM-DD)
-      const formattedStartDate = format(startDate, 'yyyy-MM-dd');
-      const formattedEndDate = format(endDate, 'yyyy-MM-dd');
+      const formattedStartDate = safeFormat(startDate, 'yyyy-MM-dd');
+      const formattedEndDate = safeFormat(endDate, 'yyyy-MM-dd');
 
       // AdminService를 사용하여 API 호출
       const data = await AdminService.matching.getMatchHistory(
@@ -156,10 +155,9 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
         selectedUser.name
       );
 
-      console.log('매칭 이력 조회 응답:', data);
+      ;
       setMatchHistory(data);
     } catch (err: any) {
-      console.error('매칭 이력 조회 중 오류:', err);
       setHistoryError(err.response?.data?.message || err.message || '매칭 이력을 불러오는 중 오류가 발생했습니다.');
     } finally {
       setHistoryLoading(false);
@@ -233,7 +231,7 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
         matchingResult.partner.id
       );
 
-      console.log('중복 매칭 확인 응답:', data);
+      ;
 
       // 매칭 이력을 날짜 기준으로 오름차순 정렬 (가장 오래된 매칭이 첫 번째)
       if (data && data.matches && data.matches.length > 0) {
@@ -244,7 +242,6 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
 
       setMatchCount(data);
     } catch (err: any) {
-      console.error('중복 매칭 확인 중 오류:', err);
       setMatchCountError(err.response?.data?.message || err.message || '중복 매칭 확인 중 오류가 발생했습니다.');
     } finally {
       setMatchCountLoading(false);
@@ -278,27 +275,24 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
     }
 
     try {
-      // 기존 매칭 관리 페이지와 동일한 API 사용
-      const response = await axiosServer.get('/admin/users/appearance', {
-        params: {
-          page: 1,
-          limit: 20,
-          searchTerm: searchTerm
-        }
+      const isPhone = /^[\d\-]+$/.test(searchTerm);
+      const response = await adminGet<any>('/admin/v2/users/search', {
+        page: '1',
+        limit: '20',
+        ...(isPhone ? { phoneNumber: searchTerm } : { name: searchTerm }),
       });
 
-      console.log('타겟 사용자 검색 응답:', response.data);
+      ;
 
       let results = [];
-      if (response.data && response.data.items && Array.isArray(response.data.items)) {
-        results = response.data.items;
-      } else if (response.data && Array.isArray(response.data)) {
+      if (response && response.data && Array.isArray(response.data)) {
         results = response.data;
+      } else if (response && Array.isArray(response)) {
+        results = response;
       }
 
       setTargetUserSearchResults(results);
     } catch (error: any) {
-      console.error('타겟 사용자 검색 중 오류:', error);
       setTargetUserSearchResults([]);
     }
   };
@@ -320,7 +314,7 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
         matchType
       );
 
-      console.log('직접 매칭 생성 응답:', response);
+      ;
       setDirectMatchResult(response);
 
       // 성공 시 다이얼로그 닫기
@@ -329,7 +323,6 @@ const SingleMatching: React.FC<SingleMatchingProps> = ({
         resetDirectMatchForm();
       }, 2000);
     } catch (err: any) {
-      console.error('직접 매칭 생성 중 오류:', err);
       const errorMessage = err.response?.data?.message ||
                           err.response?.data?.error ||
                           err.message ||

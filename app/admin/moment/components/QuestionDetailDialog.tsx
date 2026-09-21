@@ -15,6 +15,7 @@ import {
   ListItemText,
 } from '@mui/material';
 import type { QuestionDetail, Big5Dimension } from '@/types/moment';
+import { safeToLocaleString } from '@/app/utils/formatters';
 
 const DIMENSION_LABELS: Record<Big5Dimension, string> = {
   openness: '개방성 (Openness)',
@@ -38,7 +39,7 @@ export default function QuestionDetailDialog({
   if (!question) return null;
 
   const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('ko-KR', {
+    return safeToLocaleString(dateString, 'ko-KR', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -68,7 +69,7 @@ export default function QuestionDetailDialog({
           선택지 (한국어)
         </Typography>
         <List dense>
-          {question.options
+          {(Array.isArray(question.options) ? question.options : [])
             .sort((a, b) => a.order - b.order)
             .map((option) => (
               <ListItem key={option.id}>
@@ -89,7 +90,7 @@ export default function QuestionDetailDialog({
               {question.translations.jp.text}
             </Typography>
             <List dense>
-              {question.translations.jp.options
+              {(Array.isArray(question.translations.jp.options) ? question.translations.jp.options : [])
                 .sort((a, b) => a.order - b.order)
                 .map((option, index) => (
                   <ListItem key={index}>
@@ -134,7 +135,7 @@ export default function QuestionDetailDialog({
             {question.metadata.theme && (
               <Typography variant="body2">테마: {question.metadata.theme}</Typography>
             )}
-            {question.metadata.keywords && (
+            {Array.isArray(question.metadata.keywords) && (
               <Box sx={{ mt: 1 }}>
                 {question.metadata.keywords.map((kw) => (
                   <Chip key={kw} label={kw} size="small" sx={{ mr: 0.5, mb: 0.5 }} />

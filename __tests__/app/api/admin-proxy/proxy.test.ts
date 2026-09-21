@@ -1,0 +1,541 @@
+/**
+ * @jest-environment node
+ */
+import { NextRequest } from 'next/server';
+
+// Must mock next/headers before importing the route
+jest.mock('next/headers', () => ({ cookies: jest.fn() }));
+
+jest.mock('@/shared/auth', () => ({
+  getAdminAccessToken: jest.fn(),
+  getSessionMeta: jest.fn(),
+  getAdminRefreshToken: jest.fn(),
+  setAdminAccessToken: jest.fn(),
+  setAdminRefreshToken: jest.fn(),
+  clearAdminCookies: jest.fn(),
+  setSessionMeta: jest.fn(),
+  normalizeAdminCountry: jest.fn((c: string) => c || 'kr'),
+}));
+
+import { GET, POST, PUT, PATCH, DELETE } from '@/app/api/admin-proxy/[...path]/route';
+import { getAdminAccessToken, getAdminRefreshToken, getSessionMeta } from '@/shared/auth';
+
+const mockFetch = jest.fn();
+global.fetch = mockFetch;
+
+const validMeta = {
+  id: 'user-1',
+  email: 'admin@test.com',
+  roles: ['admin'],
+  issuedAt: Date.now(),
+  selectedCountry: 'kr',
+};
+const futureAccessToken = 'header.eyJleHAiOjQxMDI0NDQ4MDB9.signature';
+
+function createRequest(
+  path: string,
+  options: { method?: string; body?: string; headers?: Record<string, string>; searchParams?: Record<string, string> } = {},
+): NextRequest {
+  const url = new URL(`http://localhost:3000/api/admin-proxy/${path}`);
+  if (options.searchParams) {
+    Object.entries(options.searchParams).forEach(([k, v]) => url.searchParams.set(k, v));
+  }
+  return new NextRequest(url, {
+    method: options.method ?? 'GET',
+    body: options.body,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+  });
+}
+
+function makeParams(pathSegments: string[]) {
+  return { params: Promise.resolve({ path: pathSegments }) };
+}
+
+function makePromisedParams(pathSegments: string[]) {
+  return { params: Promise.resolve({ path: pathSegments }) };
+}
+
+function makeBackendResponse(body: unknown, status = 200, headers: Record<string, string> = {}) {
+  const headersMap = new Map(Object.entries({ 'content-type': 'application/json', ...headers }));
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    body: headersMap.get('content-type')?.includes('text/event-stream')
+      ? new ReadableStream({
+          start(controller) {
+            controller.enqueue(new TextEncoder().encode('event: complete\ndata: {}\n\n'));
+            controller.close();
+          },
+        })
+      : null,
+    json: () => Promise.resolve(body),
+    arrayBuffer: () => Promise.resolve(Buffer.from(JSON.stringify(body))),
+    headers: {
+      forEach: (cb: (value: string, key: string) => void) => headersMap.forEach(cb),
+      get: (key: string) => headersMap.get(key.toLowerCase()) ?? null,
+    },
+  };
+}
+
+describe('admin-proxy route handlers', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (getAdminRefreshToken as jest.Mock).mockResolvedValue(null);
+  });
+
+  describe('authentication guard', () => {
+    it('returns 401 when no access or refresh token is stored', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue(null);
+      (getAdminRefreshToken as jest.Mock).mockResolvedValue(null);
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      const req = createRequest('users');
+      const res = await GET(req, makeParams(['users']));
+      const body = await res.json();
+
+      expect(res.status).toBe(401);
+      expect(body.error).toBe('Not authenticated');
+    });
+
+    it('refreshes and proxies when the access token cookie is missing but refresh state is valid', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue(null);
+      (getAdminRefreshToken as jest.Mock).mockResolvedValue('valid-refresh-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      mockFetch
+        .mockResolvedValueOnce(makeBackendResponse({
+          accessToken: futureAccessToken,
+          refreshToken: 'new-refresh-token',
+        }))
+        .mockResolvedValueOnce(makeBackendResponse({ items: [] }));
+
+      const req = createRequest('users');
+      const res = await GET(req, makeParams(['users']));
+
+      expect(res.status).toBe(200);
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        1,
+        expect.stringContaining('/auth/refresh'),
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ refreshToken: 'valid-refresh-token' }),
+        }),
+      );
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        2,
+        expect.stringContaining('/users'),
+        expect.objectContaining({
+          headers: expect.objectContaining({ Authorization: `Bearer ${futureAccessToken}` }),
+        }),
+      );
+    });
+
+    it('does not call backend when token is missing', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue(null);
+      (getSessionMeta as jest.Mock).mockResolvedValue(null);
+
+      const req = createRequest('users');
+      await GET(req, makeParams(['users']));
+
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('GET proxy', () => {
+    it('resolves promised route params before joining path segments', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      mockFetch.mockResolvedValueOnce(makeBackendResponse({ items: [] }));
+
+      const req = createRequest('admin/notifications/registry');
+      const res = await GET(req, makePromisedParams(['admin', 'notifications', 'registry']));
+
+      expect(res.status).toBe(200);
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('admin/notifications/registry'),
+        expect.anything(),
+      );
+    });
+
+    it('forwards GET request to backend with Authorization header', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      mockFetch.mockResolvedValueOnce(makeBackendResponse({ items: [] }));
+
+      const req = createRequest('users');
+      await GET(req, makeParams(['users']));
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/users'),
+        expect.objectContaining({
+          method: 'GET',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer access-token',
+          }),
+        }),
+      );
+    });
+
+    it('returns backend response status and body', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      mockFetch.mockResolvedValueOnce(makeBackendResponse({ id: 1, name: 'Test' }, 200));
+
+      const req = createRequest('users/1');
+      const res = await GET(req, makeParams(['users', '1']));
+
+      expect(res.status).toBe(200);
+    });
+
+    it('constructs correct backend URL from path segments', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      mockFetch.mockResolvedValueOnce(makeBackendResponse({}));
+
+      const req = createRequest('admin/users/123/profile');
+      await GET(req, makeParams(['admin', 'users', '123', 'profile']));
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('admin/users/123/profile'),
+        expect.anything(),
+      );
+    });
+
+    it('forwards query string parameters to backend', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      mockFetch.mockResolvedValueOnce(makeBackendResponse({ items: [] }));
+
+      const req = createRequest('users', { searchParams: { page: '2', limit: '20' } });
+      await GET(req, makeParams(['users']));
+
+      const calledUrl: string = mockFetch.mock.calls[0][0];
+      expect(calledUrl).toContain('page=2');
+      expect(calledUrl).toContain('limit=20');
+    });
+
+    it('does not include a body for GET requests', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      mockFetch.mockResolvedValueOnce(makeBackendResponse({}));
+
+      const req = createRequest('users');
+      await GET(req, makeParams(['users']));
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ body: null }),
+      );
+    });
+  });
+
+  describe('POST proxy with body', () => {
+    it('forwards POST request with body and Content-Type header', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      mockFetch.mockResolvedValueOnce(makeBackendResponse({ id: 2 }, 201));
+
+      const payload = JSON.stringify({ name: 'New User', email: 'new@test.com' });
+      const req = createRequest('users', { method: 'POST', body: payload, headers: { Origin: 'http://localhost:3000' } });
+      const res = await POST(req, makeParams(['users']));
+
+      expect(res.status).toBe(201);
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            'Content-Type': 'application/json',
+            Authorization: 'Bearer access-token',
+          }),
+        }),
+      );
+    });
+  });
+
+  describe('x-country header from session meta', () => {
+    it('passes x-country header from session meta', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue({ ...validMeta, selectedCountry: 'jp' });
+
+      mockFetch.mockResolvedValueOnce(makeBackendResponse({}));
+
+      const req = createRequest('users');
+      await GET(req, makeParams(['users']));
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          headers: expect.objectContaining({ 'x-country': 'jp' }),
+        }),
+      );
+    });
+
+    it('does not include x-country header when session meta has no selectedCountry', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue({ ...validMeta, selectedCountry: '' });
+
+      mockFetch.mockResolvedValueOnce(makeBackendResponse({}));
+
+      const req = createRequest('users');
+      await GET(req, makeParams(['users']));
+
+      const calledHeaders = mockFetch.mock.calls[0][1].headers;
+      expect(calledHeaders['x-country']).toBeUndefined();
+    });
+  });
+
+  describe('HTTP method forwarding', () => {
+    it('exports PUT handler that proxies PUT requests', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      mockFetch.mockResolvedValueOnce(makeBackendResponse({ updated: true }));
+
+      const req = createRequest('users/1', { method: 'PUT', body: JSON.stringify({ name: 'Updated' }), headers: { Origin: 'http://localhost:3000' } });
+      const res = await PUT(req, makeParams(['users', '1']));
+
+      expect(mockFetch).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ method: 'PUT' }));
+      expect(res.status).toBe(200);
+    });
+
+    it('exports PATCH handler that proxies PATCH requests', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      mockFetch.mockResolvedValueOnce(makeBackendResponse({ patched: true }));
+
+      const req = createRequest('users/1', { method: 'PATCH', body: JSON.stringify({ name: 'Patched' }), headers: { Origin: 'http://localhost:3000' } });
+      const res = await PATCH(req, makeParams(['users', '1']));
+
+      expect(mockFetch).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ method: 'PATCH' }));
+      expect(res.status).toBe(200);
+    });
+
+    it('exports DELETE handler that proxies DELETE requests', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      mockFetch.mockResolvedValueOnce(makeBackendResponse({ deleted: true }, 200));
+
+      const req = createRequest('users/1', { method: 'DELETE', headers: { Origin: 'http://localhost:3000' } });
+      const res = await DELETE(req, makeParams(['users', '1']));
+
+      expect(mockFetch).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ method: 'DELETE' }));
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe('response header forwarding', () => {
+    it('forwards Content-Disposition header from backend response', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      mockFetch.mockResolvedValueOnce(
+        makeBackendResponse({}, 200, { 'content-disposition': 'attachment; filename="report.csv"' }),
+      );
+
+      const req = createRequest('admin/reports/export');
+      const res = await GET(req, makeParams(['admin', 'reports', 'export']));
+
+      expect(res.headers.get('content-disposition')).toBe('attachment; filename="report.csv"');
+    });
+
+    it('passes SSE responses through without buffering', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      mockFetch.mockResolvedValueOnce(
+        makeBackendResponse(null, 200, { 'content-type': 'text/event-stream' }),
+      );
+
+      const req = createRequest(
+        'admin/ghost-injection/batch-preview/preview-1/stream',
+      );
+      const res = await GET(
+        req,
+        makeParams([
+          'admin',
+          'ghost-injection',
+          'batch-preview',
+          'preview-1',
+          'stream',
+        ]),
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.body).toBeTruthy();
+      expect(res.headers.get('cache-control')).toBe('no-cache, no-transform');
+      expect(res.headers.get('x-accel-buffering')).toBe('no');
+    });
+
+    it('passes Ghost Chat SSE responses through admin proxy', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      mockFetch.mockResolvedValueOnce(
+        makeBackendResponse(null, 200, { 'content-type': 'text/event-stream' }),
+      );
+
+      const req = createRequest('admin/ghost-chat/events');
+      const res = await GET(req, makeParams(['admin', 'ghost-chat', 'events']));
+
+      expect(res.status).toBe(200);
+      expect(res.body).toBeTruthy();
+      expect(res.headers.get('cache-control')).toBe('no-cache, no-transform');
+      expect(res.headers.get('x-accel-buffering')).toBe('no');
+    });
+  });
+
+  describe('path traversal guard (1-4)', () => {
+    it('rejects a path containing literal ".." segments', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      const req = createRequest('admin/../../secret');
+      const res = await GET(req, makeParams(['admin', '..', '..', 'secret']));
+
+      expect(res.status).toBe(403);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('rejects a leading ".." segment', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      const req = createRequest('../secret');
+      const res = await GET(req, makeParams(['..', 'secret']));
+
+      expect(res.status).toBe(403);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('still allows normal nested paths without ".."', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      mockFetch.mockResolvedValueOnce(makeBackendResponse({ items: [] }));
+
+      const req = createRequest('users/123/profile');
+      const res = await GET(req, makeParams(['users', '123', 'profile']));
+
+      expect(res.status).toBe(200);
+    });
+
+    it('rejects encoded "%2e%2e" traversal that escapes after URL normalization', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      // %2e%2e survives the allowlist regex but collapses to ".." inside
+      // new URL(), resolving admin/%2e%2e/%2e%2e/secret to /<base>/secret.
+      const req = createRequest('admin/%2e%2e/%2e%2e/secret');
+      const res = await GET(req, makeParams(['admin', '%2e%2e', '%2e%2e', 'secret']));
+
+      expect(res.status).toBe(403);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('CSRF guard on mutations (1-4)', () => {
+    it('rejects cross-origin POST requests', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      const req = createRequest('users', {
+        method: 'POST',
+        body: JSON.stringify({ name: 'x' }),
+        headers: { Origin: 'https://evil.example' },
+      });
+      const res = await POST(req, makeParams(['users']));
+
+      expect(res.status).toBe(403);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('rejects POST with no Origin/Referer (fail-closed)', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      const req = createRequest('users', { method: 'POST', body: JSON.stringify({ name: 'x' }) });
+      const res = await POST(req, makeParams(['users']));
+
+      expect(res.status).toBe(403);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('allows same-origin POST via Referer when Origin is absent', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      mockFetch.mockResolvedValueOnce(makeBackendResponse({ id: 9 }, 201));
+
+      const req = createRequest('users', {
+        method: 'POST',
+        body: JSON.stringify({ name: 'x' }),
+        headers: { Referer: 'http://localhost:3000/admin/users' },
+      });
+      const res = await POST(req, makeParams(['users']));
+
+      expect(res.status).toBe(201);
+    });
+
+    it('does not apply CSRF check to GET requests', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      mockFetch.mockResolvedValueOnce(makeBackendResponse({ items: [] }));
+
+      // No Origin/Referer — GET is exempt from CSRF per safe-method convention
+      const req = createRequest('users');
+      const res = await GET(req, makeParams(['users']));
+
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe('admin role guard (1-3)', () => {
+    it('rejects requests when session meta is null', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(null);
+
+      const req = createRequest('users');
+      const res = await GET(req, makeParams(['users']));
+
+      expect(res.status).toBe(403);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('rejects requests when session meta lacks admin role', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue({ ...validMeta, roles: ['user'] });
+
+      const req = createRequest('users');
+      const res = await GET(req, makeParams(['users']));
+
+      expect(res.status).toBe(403);
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('allows requests when session meta carries admin role', async () => {
+      (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+      (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
+
+      mockFetch.mockResolvedValueOnce(makeBackendResponse({ items: [] }));
+
+      const req = createRequest('users');
+      const res = await GET(req, makeParams(['users']));
+
+      expect(res.status).toBe(200);
+    });
+  });
+});

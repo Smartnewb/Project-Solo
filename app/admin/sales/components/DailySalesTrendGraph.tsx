@@ -15,8 +15,9 @@ import {
     Legend
 } from 'recharts';
 import { formatCurrency, formateDateToString } from "../utils";
-import { format, differenceInDays } from 'date-fns';
+import { differenceInDays } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { safeFormat } from '@/app/utils/formatters';
 import { Calendar } from '@/shared/ui/calendar';
 import {
     Popover,
@@ -138,7 +139,7 @@ export function DailySalesTrendGraph({ className, hideHeader = false }: DailySal
                     displayDate: formatDateLabel(item.label),
                     amount: item.amount,
                     count: item.count,
-                    paidUserCount: item.paidUserCount,
+                    paidUserCount: item.paidUserCount ?? 0,
                     pgAmount: item.excludeIapAmount || 0,
                     pgCount: item.excludeIapCount || 0,
                     iapAmount: item.iapOnlyAmount || 0,
@@ -151,7 +152,6 @@ export function DailySalesTrendGraph({ className, hideHeader = false }: DailySal
                 setChartData([]);
             }
         } catch (err) {
-            console.error('일별 매출 추이 조회 실패:', err);
             setError('매출 데이터를 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.');
             setChartData([]);
         } finally {
@@ -185,10 +185,10 @@ export function DailySalesTrendGraph({ className, hideHeader = false }: DailySal
 
                     {selectedPaymentType === 'all' ? (
                         <>
-                            <p className="text-blue-600">
+                            <p className="text-[#ff385c]">
                                 PG 결제: {formatCurrency(data.pgAmount)} ({data.pgCount}건)
                             </p>
-                            <p className="text-green-600">
+                            <p className="text-[#ff385c]">
                                 인앱 결제: {formatCurrency(data.iapAmount)} ({data.iapCount}건)
                             </p>
                             <div className="border-t mt-2 pt-2">
@@ -198,7 +198,7 @@ export function DailySalesTrendGraph({ className, hideHeader = false }: DailySal
                             </div>
                         </>
                     ) : (
-                        <p className="text-purple-600">
+                        <p className="text-[#ff385c]">
                             매출: {formatCurrency(data.amount)}
                         </p>
                     )}
@@ -210,7 +210,7 @@ export function DailySalesTrendGraph({ className, hideHeader = false }: DailySal
                         유료 사용자: {data.paidUserCount}명
                     </p>
                     {data.paidUserCount > 0 && (
-                        <p className="text-blue-500 text-sm">
+                        <p className="text-[#ff385c] text-sm">
                             사용자당 평균: {formatCurrency(Math.round(data.amount / data.paidUserCount))}
                         </p>
                     )}
@@ -288,10 +288,10 @@ export function DailySalesTrendGraph({ className, hideHeader = false }: DailySal
                         <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
                             <PopoverTrigger asChild>
                                 <button className={`w-full flex px-3 py-2 text-left border rounded-md text-sm items-center justify-between
-                                    ${startDateOpen ? 'border-purple-500' : 'border-gray-300'}`}
+                                    ${startDateOpen ? 'border-[#ff385c]' : 'border-gray-300'}`}
                                 >
                                     <span className={startDate ? 'text-gray-900' : 'text-gray-400'}>
-                                        {startDate ? format(startDate, 'yyyy-MM-dd') : '시작일 선택'}
+                                        {startDate ? safeFormat(startDate, 'yyyy-MM-dd') : '시작일 선택'}
                                     </span>
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="16" viewBox="0 0 14 16" fill="none">
                                         <path d="M3 1V2H1.5C0.671875 2 0 2.67188 0 3.5V5H14V3.5C14 2.67188 13.3281 2 12.5 2H11V1C11 0.446875 10.5531 0 10 0C9.44687 0 9 0.446875 9 1V2H5V1C5 0.446875 4.55312 0 4 0C3.44688 0 3 0.446875 3 1ZM14 6H0V14.5C0 15.3281 0.671875 16 1.5 16H12.5C13.3281 16 14 15.3281 14 14.5V6Z" fill="#9CA3AF"/>
@@ -321,10 +321,10 @@ export function DailySalesTrendGraph({ className, hideHeader = false }: DailySal
                         <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
                             <PopoverTrigger asChild>
                                 <button className={`w-full flex px-3 py-2 text-left border rounded-md text-sm items-center justify-between
-                                    ${endDateOpen ? 'border-purple-500' : 'border-gray-300'}`}
+                                    ${endDateOpen ? 'border-[#ff385c]' : 'border-gray-300'}`}
                                 >
                                     <span className={endDate ? 'text-gray-900' : 'text-gray-400'}>
-                                        {endDate ? format(endDate, 'yyyy-MM-dd') : '종료일 선택'}
+                                        {endDate ? safeFormat(endDate, 'yyyy-MM-dd') : '종료일 선택'}
                                     </span>
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="16" viewBox="0 0 14 16" fill="none">
                                         <path d="M3 1V2H1.5C0.671875 2 0 2.67188 0 3.5V5H14V3.5C14 2.67188 13.3281 2 12.5 2H11V1C11 0.446875 10.5531 0 10 0C9.44687 0 9 0.446875 9 1V2H5V1C5 0.446875 4.55312 0 4 0C3.44688 0 3 0.446875 3 1ZM14 6H0V14.5C0 15.3281 0.671875 16 1.5 16H12.5C13.3281 16 14 15.3281 14 14.5V6Z" fill="#9CA3AF"/>
@@ -351,7 +351,7 @@ export function DailySalesTrendGraph({ className, hideHeader = false }: DailySal
                     <button
                         onClick={handleSearch}
                         disabled={!startDate || !endDate || isLoading}
-                        className="px-6 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                        className="px-6 py-2 bg-[#ff385c] text-white text-sm font-medium rounded-md hover:bg-[#e00b41] disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                     >
                         {isLoading ? '조회 중...' : '조회'}
                     </button>
@@ -368,7 +368,7 @@ export function DailySalesTrendGraph({ className, hideHeader = false }: DailySal
                                 value="exclude_iap"
                                 checked={selectedPaymentType === 'exclude_iap'}
                                 onChange={(e) => setSelectedPaymentType(e.target.value as paymentType)}
-                                className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
+                                className="w-4 h-4 text-[#ff385c] border-gray-300 focus:ring-[#ff385c]"
                             />
                             <span className="text-sm text-gray-700">PG 결제만</span>
                         </label>
@@ -379,7 +379,7 @@ export function DailySalesTrendGraph({ className, hideHeader = false }: DailySal
                                 value="iap_only"
                                 checked={selectedPaymentType === 'iap_only'}
                                 onChange={(e) => setSelectedPaymentType(e.target.value as paymentType)}
-                                className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
+                                className="w-4 h-4 text-[#ff385c] border-gray-300 focus:ring-[#ff385c]"
                             />
                             <span className="text-sm text-gray-700">인앱 결제만</span>
                         </label>
@@ -390,7 +390,7 @@ export function DailySalesTrendGraph({ className, hideHeader = false }: DailySal
                                 value="all"
                                 checked={selectedPaymentType === 'all'}
                                 onChange={(e) => setSelectedPaymentType(e.target.value as paymentType)}
-                                className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
+                                className="w-4 h-4 text-[#ff385c] border-gray-300 focus:ring-[#ff385c]"
                             />
                             <span className="text-sm text-gray-700">전체 (분리 표시)</span>
                         </label>
@@ -410,7 +410,7 @@ export function DailySalesTrendGraph({ className, hideHeader = false }: DailySal
                 {/* 로딩 상태 */}
                 {isLoading && (
                     <div className="flex justify-center items-center py-16">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ff385c]"></div>
                         <span className="ml-3 text-gray-600">데이터를 불러오는 중...</span>
                     </div>
                 )}
@@ -426,7 +426,7 @@ export function DailySalesTrendGraph({ className, hideHeader = false }: DailySal
                         <p className="text-gray-600">{error}</p>
                         <button
                             onClick={handleSearch}
-                            className="mt-4 px-4 py-2 text-sm text-purple-600 hover:text-purple-700 font-medium"
+                            className="mt-4 px-4 py-2 text-sm text-[#ff385c] hover:text-[#e00b41] font-medium"
                         >
                             다시 시도
                         </button>
@@ -594,7 +594,7 @@ export function DailySalesTrendGraph({ className, hideHeader = false }: DailySal
                         <div className="flex flex-wrap gap-6">
                             <div>
                                 <span className="text-sm text-gray-500">총 매출</span>
-                                <p className="text-xl font-bold text-purple-600">
+                                <p className="text-xl font-bold text-[#ff385c]">
                                     {formatCurrency(totalSummary.totalAmount)}
                                 </p>
                             </div>
@@ -602,13 +602,13 @@ export function DailySalesTrendGraph({ className, hideHeader = false }: DailySal
                                 <>
                                     <div>
                                         <span className="text-sm text-gray-500">PG 매출</span>
-                                        <p className="text-lg font-semibold text-blue-600">
+                                        <p className="text-lg font-semibold text-[#ff385c]">
                                             {formatCurrency(totalSummary.pgTotalAmount)}
                                         </p>
                                     </div>
                                     <div>
                                         <span className="text-sm text-gray-500">인앱 매출</span>
-                                        <p className="text-lg font-semibold text-green-600">
+                                        <p className="text-lg font-semibold text-[#ff385c]">
                                             {formatCurrency(totalSummary.iapTotalAmount)}
                                         </p>
                                     </div>
@@ -631,7 +631,7 @@ export function DailySalesTrendGraph({ className, hideHeader = false }: DailySal
                         {/* 조회 기간 표시 */}
                         {startDate && endDate && (
                             <div className="text-sm text-gray-500">
-                                조회 기간: {format(startDate, 'yyyy-MM-dd')} ~ {format(endDate, 'yyyy-MM-dd')}
+                                조회 기간: {safeFormat(startDate, 'yyyy-MM-dd')} ~ {safeFormat(endDate, 'yyyy-MM-dd')}
                             </div>
                         )}
                     </div>

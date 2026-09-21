@@ -21,8 +21,9 @@ import {
 import { useRouter } from 'next/navigation';
 import AdminService from '@/app/services/admin';
 import type { ActionLogsResponse, ActionLogResponse } from '@/types/admin';
+import { safeToLocaleString } from '@/app/utils/formatters';
 
-export default function DormantLikesLogsPage() {
+function DormantLikesLogsPageContent() {
   const router = useRouter();
   const [logs, setLogs] = useState<ActionLogResponse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,8 +73,7 @@ export default function DormantLikesLogsPage() {
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('ko-KR', {
+    return safeToLocaleString(dateString, 'ko-KR', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -201,4 +201,8 @@ export default function DormantLikesLogsPage() {
       )}
     </Box>
   );
+}
+
+export default function DormantLikesLogsPage() {
+  return <DormantLikesLogsPageContent />;
 }

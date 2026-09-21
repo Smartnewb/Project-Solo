@@ -30,10 +30,15 @@ import {
   SupportAgent as SupportAgentIcon,
   Wifi as WifiIcon,
   WifiOff as WifiOffIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Check as CheckIcon,
 } from '@mui/icons-material';
 import supportChatService from '@/app/services/support-chat';
 import { useSupportChatSocket } from '../hooks/useSupportChatSocket';
+import { canMutateSupportMessage } from '../lib/can-mutate-message';
 import type { SupportSessionDetail, SupportMessage, SupportSenderType } from '@/app/types/support-chat';
+import { safeToLocaleString } from '@/app/utils/formatters';
 import {
   SESSION_STATUS_LABELS,
   SESSION_STATUS_COLORS,
@@ -42,7 +47,9 @@ import {
   DOMAIN_LABELS,
   INFO_KEY_LABELS,
   PHASE_LABELS,
+  SOURCE_LABELS,
 } from '@/app/types/support-chat';
+import { useAdminSession } from '@/shared/contexts/admin-session-context';
 
 interface ChatDetailDialogProps {
   open: boolean;
@@ -63,12 +70,17 @@ export default function ChatDetailDialog({
   onClose,
   onSessionUpdated,
 }: ChatDetailDialogProps) {
+  const { session: adminSession } = useAdminSession();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
   const [session, setSession] = useState<SupportSessionDetail | null>(null);
   const [messageInput, setMessageInput] = useState('');
   const [sending, setSending] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
+  const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -76,6 +88,7 @@ export default function ChatDetailDialog({
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const sendingRef = useRef(false);
 
   const handleNewMessage = useCallback((message: SupportMessage) => {
     setSession((prev) => {
@@ -85,6 +98,28 @@ export default function ChatDetailDialog({
       return {
         ...prev,
         messages: [...prev.messages, message],
+      };
+    });
+  }, []);
+
+  const handleMessageUpdated = useCallback((event: { id: string; content: string }) => {
+    setSession((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        messages: prev.messages.map((message) =>
+          message.id === event.id ? { ...message, content: event.content } : message
+        ),
+      };
+    });
+  }, []);
+
+  const handleMessageDeleted = useCallback((event: { messageId: string }) => {
+    setSession((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        messages: prev.messages.filter((message) => message.id !== event.messageId),
       };
     });
   }, []);
@@ -100,9 +135,11 @@ export default function ChatDetailDialog({
     onSessionUpdated();
   }, [onSessionUpdated]);
 
-  const { state: socketState, sendMessage: socketSendMessage } = useSupportChatSocket({
+  const { state: socketState } = useSupportChatSocket({
     sessionId,
     onNewMessage: handleNewMessage,
+    onMessageUpdated: handleMessageUpdated,
+    onMessageDeleted: handleMessageDeleted,
     onStatusChanged: handleStatusChanged,
   });
 
@@ -118,7 +155,6 @@ export default function ChatDetailDialog({
       const detail = await supportChatService.getSessionDetail(sessionId);
       setSession(detail);
     } catch (err) {
-      console.error('세션 상세 조회 실패:', err);
       setError(err instanceof Error ? err.message : '세션 정보를 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
@@ -147,7 +183,6 @@ export default function ChatDetailDialog({
       await fetchSessionDetail();
       onSessionUpdated();
     } catch (err) {
-      console.error('세션 인수 실패:', err);
       setSnackbar({
         open: true,
         message: err instanceof Error ? err.message : '세션 인수에 실패했습니다.',
@@ -170,7 +205,6 @@ export default function ChatDetailDialog({
       await fetchSessionDetail();
       onSessionUpdated();
     } catch (err) {
-      console.error('세션 해결 실패:', err);
       setSnackbar({
         open: true,
         message: err instanceof Error ? err.message : '세션 해결 처리에 실패했습니다.',
@@ -182,51 +216,89 @@ export default function ChatDetailDialog({
   };
 
   const handleSendMessage = async () => {
-    if (!messageInput.trim() || !session) return;
-
-    if (!socketState.connected || !socketState.sessionJoined) {
-      setSnackbar({
-        open: true,
-        message: 'WebSocket 연결이 되어있지 않습니다. 잠시 후 다시 시도해주세요.',
-        severity: 'error',
-      });
-      return;
-    }
-
+    if (sendingRef.current || !messageInput.trim() || session?.status !== 'admin_handling') return;
+    sendingRef.current = true;
     setSending(true);
     try {
-      const success = await socketSendMessage(messageInput.trim());
-      if (success) {
-        setMessageInput('');
-      } else {
-        setSnackbar({
-          open: true,
-          message: '메시지 전송에 실패했습니다.',
-          severity: 'error',
-        });
-      }
+      await supportChatService.sendMessage(sessionId, messageInput.trim());
+      setMessageInput('');
+      await fetchSessionDetail();
+      onSessionUpdated();
     } catch (err) {
-      console.error('메시지 전송 실패:', err);
       setSnackbar({
         open: true,
         message: err instanceof Error ? err.message : '메시지 전송에 실패했습니다.',
         severity: 'error',
       });
     } finally {
+      sendingRef.current = false;
       setSending(false);
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  const startEditMessage = (message: SupportMessage) => {
+    setEditingMessageId(message.id);
+    setEditingContent(message.content);
+  };
+
+  const cancelEditMessage = () => {
+    setEditingMessageId(null);
+    setEditingContent('');
+  };
+
+  const handleSaveEditedMessage = async (messageId: string) => {
+    if (!editingContent.trim()) return;
+
+    setEditSaving(true);
+    try {
+      const result = await supportChatService.updateMessage(sessionId, messageId, {
+        content: editingContent.trim(),
+      });
+      handleMessageUpdated({ id: messageId, content: result.content });
+      cancelEditMessage();
+      setSnackbar({ open: true, message: '답변을 수정했습니다.', severity: 'success' });
+      onSessionUpdated();
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: err instanceof Error ? err.message : '답변 수정에 실패했습니다.',
+        severity: 'error',
+      });
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!window.confirm('이 답변을 삭제할까요?')) return;
+
+    setDeletingMessageId(messageId);
+    try {
+      await supportChatService.deleteMessage(sessionId, messageId);
+      handleMessageDeleted({ messageId });
+      if (editingMessageId === messageId) cancelEditMessage();
+      setSnackbar({ open: true, message: '답변을 삭제했습니다.', severity: 'success' });
+      onSessionUpdated();
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: err instanceof Error ? err.message : '답변 삭제에 실패했습니다.',
+        severity: 'error',
+      });
+    } finally {
+      setDeletingMessageId(null);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && e.keyCode !== 229) {
       e.preventDefault();
       handleSendMessage();
     }
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('ko-KR', {
+    return safeToLocaleString(dateString, 'ko-KR', {
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
@@ -237,6 +309,8 @@ export default function ChatDetailDialog({
   const renderMessage = (message: SupportMessage) => {
     const config = SENDER_CONFIG[message.senderType];
     const isUser = message.senderType === 'user';
+    const canMutateMessage = canMutateSupportMessage(message, adminSession?.user.id);
+    const isEditing = editingMessageId === message.id;
 
     return (
       <ListItem
@@ -268,24 +342,115 @@ export default function ChatDetailDialog({
           sx={{
             p: 1.5,
             maxWidth: '80%',
+            minWidth: isEditing ? 'min(80%, 360px)' : undefined,
             bgcolor: config.bgColor,
             borderRadius: 2,
           }}
         >
-          {message.senderType === 'bot' && message.metadata?.phase && (
-            <Chip
-              label={PHASE_LABELS[message.metadata.phase]}
-              size="small"
-              sx={{ fontSize: '0.65rem', height: 20, mb: 0.5 }}
-              color={message.metadata.phase === 'answering' ? 'success' : 'default'}
-            />
+          {canMutateMessage && !isEditing && (
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 0.5, mb: 0.5 }}>
+              <IconButton size="small" onClick={() => startEditMessage(message)} aria-label="답변 수정">
+                <EditIcon fontSize="inherit" />
+              </IconButton>
+              <IconButton
+                size="small"
+                onClick={() => handleDeleteMessage(message.id)}
+                disabled={deletingMessageId === message.id}
+                aria-label="답변 삭제"
+              >
+                {deletingMessageId === message.id ? (
+                  <CircularProgress size={14} />
+                ) : (
+                  <DeleteIcon fontSize="inherit" />
+                )}
+              </IconButton>
+            </Box>
           )}
-          <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-            {message.content}
-          </Typography>
+          {(message.senderType === 'bot' || message.senderType === 'admin') && (message.metadata?.phase || message.metadata?.source || message.metadata?.webhook_handled) && (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 0.5 }}>
+              {message.metadata?.phase && (
+                <Chip
+                  label={PHASE_LABELS[message.metadata.phase]}
+                  size="small"
+                  sx={{ fontSize: '0.65rem', height: 20 }}
+                  color={message.metadata.phase === 'answering' ? 'success' : 'default'}
+                />
+              )}
+              {message.metadata?.source && (
+                <Chip
+                  label={SOURCE_LABELS[message.metadata.source]?.label || `출처: ${message.metadata.source}`}
+                  size="small"
+                  sx={{ fontSize: '0.65rem', height: 20 }}
+                  color={SOURCE_LABELS[message.metadata.source]?.color || 'default'}
+                />
+              )}
+              {message.metadata?.webhook_handled && !message.metadata?.source && (
+                <Chip
+                  label="🤖 webhook 처리"
+                  size="small"
+                  sx={{ fontSize: '0.65rem', height: 20 }}
+                  color="info"
+                />
+              )}
+              {message.metadata?.tool && (
+                <Chip
+                  label={`🔧 ${message.metadata.tool}`}
+                  size="small"
+                  sx={{ fontSize: '0.65rem', height: 20 }}
+                  variant="outlined"
+                />
+              )}
+            </Box>
+          )}
+          {isEditing ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <TextField
+                value={editingContent}
+                onChange={(event) => setEditingContent(event.target.value)}
+                multiline
+                minRows={3}
+                size="small"
+                autoFocus
+                disabled={editSaving}
+                inputProps={{ maxLength: 2000 }}
+              />
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                <Button
+                  size="small"
+                  onClick={cancelEditMessage}
+                  disabled={editSaving}
+                  startIcon={<CloseIcon />}
+                >
+                  취소
+                </Button>
+                <Button
+                  size="small"
+                  variant="contained"
+                  onClick={() => handleSaveEditedMessage(message.id)}
+                  disabled={editSaving || !editingContent.trim()}
+                  startIcon={editSaving ? <CircularProgress size={14} /> : <CheckIcon />}
+                >
+                  저장
+                </Button>
+              </Box>
+            </Box>
+          ) : (
+            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+              {message.content}
+            </Typography>
+          )}
           {message.metadata?.confidence !== undefined && (
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
               신뢰도: {(message.metadata.confidence * 100).toFixed(0)}%
+            </Typography>
+          )}
+          {message.metadata?.reason && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: 'block', mt: 0.5, fontStyle: 'italic' }}
+            >
+              사유: {message.metadata.reason}
             </Typography>
           )}
         </Card>
@@ -427,18 +592,19 @@ export default function ChatDetailDialog({
                     <TextField
                       fullWidth
                       size="small"
-                      placeholder={socketState.connected && socketState.sessionJoined ? "메시지를 입력하세요..." : "WebSocket 연결 중..."}
+                      placeholder="메시지를 입력하세요..."
                       value={messageInput}
                       onChange={(e) => setMessageInput(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      disabled={sending || !socketState.connected || !socketState.sessionJoined}
+                      onKeyDown={handleKeyDown}
+                      disabled={sending}
                       multiline
                       maxRows={3}
                     />
                     <Button
                       variant="contained"
                       onClick={handleSendMessage}
-                      disabled={sending || !messageInput.trim() || !socketState.connected || !socketState.sessionJoined}
+                      disabled={sending || !messageInput.trim()}
+                      aria-label="메시지 전송"
                       sx={{ minWidth: 'auto', px: 2 }}
                     >
                       {sending ? <CircularProgress size={20} /> : <SendIcon />}

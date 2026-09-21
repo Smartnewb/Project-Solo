@@ -86,7 +86,7 @@ const ProfileUpdateRequestModal: React.FC<ProfileUpdateRequestModalProps> = ({
       <DialogContent>
         {success ? (
           <Alert severity="success" sx={{ mt: 2 }}>
-            프로필 수정 요청이 성공적으로 발송되었습니다.
+            프로필 수정 요청이 성공적으로 기록되었습니다.
           </Alert>
         ) : (
           <Box sx={{ pt: 2 }}>
@@ -97,7 +97,7 @@ const ProfileUpdateRequestModal: React.FC<ProfileUpdateRequestModalProps> = ({
             )}
             
             <Typography variant="body2" sx={{ mb: 2 }}>
-              사용자에게 프로필 수정을 요청합니다. 이 메시지는 사용자의 앱 내 알림으로 전송됩니다.
+              프로필 수정 요청 이력에 메모를 기록합니다. 현재 이 기능은 앱 내 알림을 보내지 않습니다.
             </Typography>
             
             <FormControlLabel

@@ -38,7 +38,7 @@ export default function QuestionEditDialog({
     if (question) {
       setText(question.text);
       setOptions(
-        question.options
+        (Array.isArray(question.options) ? question.options : [])
           .sort((a, b) => a.order - b.order)
           .map((o) => ({ text: o.text, order: o.order }))
       );

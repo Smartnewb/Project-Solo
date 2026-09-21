@@ -15,14 +15,20 @@ import {
   ToggleButtonGroup,
   ToggleButton,
   TextField,
+  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
 import MapIcon from '@mui/icons-material/Map';
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import { Button } from '@/shared/ui';
 import { scheduledMatchingService } from '../service';
-import type { Country, ScheduledMatchingConfig, JobStatus, BatchHistory } from '../types';
+import type { Country, ScheduledMatchingConfig, JobStatus, BatchHistory, ScheduleMatchingResponse } from '../types';
 import type { MatchingPoolStatsResponse, MatchingPoolCountry, MatchTypeStats } from '@/types/admin';
 
 type MatchingType = 'scheduled' | 'rematching';
@@ -43,6 +49,7 @@ const getDefaultDateRange = () => {
     endDate: formatDate(endDate),
   };
 };
+import { safeToLocaleString, safeToLocaleDateString } from '@/app/utils/formatters';
 import { parseCronToHumanReadable, formatNextExecution, getTimeDiff } from '../utils';
 import RegionMapView from './RegionMapView';
 
@@ -125,7 +132,7 @@ function CountryCard({
           {lastBatch && (
             <Box sx={{ mb: 2 }}>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                최근 실행 ({new Date(lastBatch.startedAt).toLocaleDateString('ko-KR')})
+                최근 실행 ({safeToLocaleDateString(lastBatch.startedAt)})
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                 <LinearProgress
@@ -233,6 +240,13 @@ export default function CountryOverview() {
   const [matchingType, setMatchingType] = useState<MatchingType>('scheduled');
   const [dateRange, setDateRange] = useState(getDefaultDateRange);
 
+  // Schedule matching state
+  const [scheduleCountry, setScheduleCountry] = useState<Country>('KR');
+  const [scheduleExecuting, setScheduleExecuting] = useState(false);
+  const [scheduleResult, setScheduleResult] = useState<ScheduleMatchingResponse | null>(null);
+  const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [scheduleConfirmOpen, setScheduleConfirmOpen] = useState(false);
+
   const fetchData = useCallback(async () => {
     try {
       setError(null);
@@ -261,8 +275,7 @@ export default function CountryOverview() {
         newLastBatches[country] = batch;
       });
       setLastBatches(newLastBatches);
-    } catch (err) {
-      console.error('Failed to fetch data:', err);
+    } catch {
       setError('데이터를 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
@@ -285,8 +298,7 @@ export default function CountryOverview() {
       setMapError(null);
       const stats = await scheduledMatchingService.getMatchingPoolStats(country, startDate, endDate);
       setMapStats(stats);
-    } catch (err) {
-      console.error('Failed to fetch map stats:', err);
+    } catch {
       setMapError('지도 데이터를 불러오는데 실패했습니다.');
       setMapStats(null);
     } finally {
@@ -321,8 +333,7 @@ export default function CountryOverview() {
       setTriggering(country);
       await scheduledMatchingService.triggerManualExecution(country);
       fetchData();
-    } catch (err) {
-      console.error('Manual trigger failed:', err);
+    } catch {
       setError('수동 실행에 실패했습니다.');
     } finally {
       setTriggering(null);
@@ -334,11 +345,32 @@ export default function CountryOverview() {
       setCancelling(batchId);
       await scheduledMatchingService.cancelBatch(batchId);
       fetchData();
-    } catch (err) {
-      console.error('Cancel batch failed:', err);
+    } catch {
       setError('배치 취소에 실패했습니다.');
     } finally {
       setCancelling(null);
+    }
+  };
+
+  const handleScheduleMatching = async () => {
+    try {
+      setScheduleConfirmOpen(false);
+      setScheduleExecuting(true);
+      setScheduleError(null);
+      setScheduleResult(null);
+
+      const today = formatDate(new Date());
+      const result = await scheduledMatchingService.executeScheduleMatching({
+        targetDate: today,
+      });
+
+      setScheduleResult(result);
+      fetchData();
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : '스케줄 매칭 실행에 실패했습니다.';
+      setScheduleError(errorMessage);
+    } finally {
+      setScheduleExecuting(false);
     }
   };
 
@@ -350,8 +382,11 @@ export default function CountryOverview() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1.5, py: 4 }}>
         <CircularProgress />
+        <Typography variant="body2" color="text.secondary">
+          정기 매칭 현황을 불러오는 중입니다.
+        </Typography>
       </Box>
     );
   }
@@ -361,7 +396,7 @@ export default function CountryOverview() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h6">국가별 현황</Typography>
         <Tooltip title="새로고침">
-          <IconButton onClick={fetchData} size="small">
+          <IconButton onClick={fetchData} size="small" aria-label="국가별 정기 매칭 현황 새로고침">
             <RefreshIcon />
           </IconButton>
         </Tooltip>
@@ -397,6 +432,161 @@ export default function CountryOverview() {
         ))}
       </Grid>
 
+      {/* 수동 스케줄 매칭 실행 */}
+      <Paper sx={{ mt: 4, p: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <RocketLaunchIcon color="primary" />
+          <Typography variant="h6">수동 스케줄 매칭 실행</Typography>
+        </Box>
+
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          오늘 날짜 기준으로 적격 유저들의 스케줄 매칭을 수동으로 실행합니다.
+          매칭은 Queue를 통해 순차 처리됩니다.
+        </Typography>
+
+        {scheduleError && (
+          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setScheduleError(null)}>
+            {scheduleError}
+          </Alert>
+        )}
+
+        {scheduleResult && (
+          <Alert severity="success" sx={{ mb: 2 }} onClose={() => setScheduleResult(null)}>
+            {scheduleResult.message}
+            <br />
+            <Typography variant="caption">
+              대상 유저: {scheduleResult.eligibleUsersCount}명 | 배치 ID: {scheduleResult.batchId}
+            </Typography>
+          </Alert>
+        )}
+
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 3 }}>
+          <ToggleButtonGroup
+            value={scheduleCountry}
+            exclusive
+            onChange={(_, value) => value && setScheduleCountry(value)}
+            size="small"
+            aria-label="수동 스케줄 매칭 국가 선택"
+          >
+            <ToggleButton value="KR" aria-label="한국 기준으로 수동 스케줄 매칭 실행">🇰🇷 한국</ToggleButton>
+            <ToggleButton value="JP" aria-label="일본 기준으로 수동 스케줄 매칭 실행">🇯🇵 일본</ToggleButton>
+          </ToggleButtonGroup>
+
+          <Typography variant="body2" color="text.secondary">
+            대상일: {formatDate(new Date())}
+          </Typography>
+
+          <Button
+            onClick={() => setScheduleConfirmOpen(true)}
+            disabled={scheduleExecuting}
+          >
+            {scheduleExecuting ? (
+              <CircularProgress size={16} sx={{ mr: 1 }} />
+            ) : (
+              <PlayArrowIcon sx={{ fontSize: 18, mr: 0.5 }} />
+            )}
+            스케줄 매칭 실행
+          </Button>
+        </Box>
+
+        <Divider sx={{ my: 2 }} />
+
+        {/* 현재 매칭 필터 설정 표시 */}
+        {(() => {
+          const currentConfig = getConfigForCountry(scheduleCountry);
+          if (!currentConfig) {
+            return (
+              <Alert severity="warning" sx={{ mt: 2 }}>
+                {scheduleCountry === 'KR' ? '한국' : '일본'} 설정이 없습니다. 스케줄 설정 탭에서 먼저 설정을 생성해주세요.
+              </Alert>
+            );
+          }
+          return (
+            <Box>
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                현재 매칭 필터 설정 ({scheduleCountry === 'KR' ? '한국' : '일본'})
+              </Typography>
+              <Grid container spacing={2} sx={{ mt: 1 }}>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      로그인 기준일
+                    </Typography>
+                    <Typography variant="h6">
+                      {currentConfig.loginWindowDays ?? 60}일
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      최근 {currentConfig.loginWindowDays ?? 60}일 이내 로그인한 유저만 대상
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      등급 미분류 포함
+                    </Typography>
+                    <Typography variant="h6">
+                      <Chip
+                        label={currentConfig.includeUnknownRank ? 'ON' : 'OFF'}
+                        color={currentConfig.includeUnknownRank ? 'success' : 'default'}
+                        size="small"
+                      />
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {currentConfig.includeUnknownRank
+                        ? '등급이 아직 정리되지 않은 유저 포함'
+                        : '등급이 아직 정리되지 않은 유저 제외'}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      스케줄 상태
+                    </Typography>
+                    <Typography variant="h6">
+                      <Chip
+                        label={currentConfig.isEnabled ? '활성화' : '비활성화'}
+                        color={currentConfig.isEnabled ? 'success' : 'default'}
+                        size="small"
+                      />
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {currentConfig.cronExpression}
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
+              <Alert severity="info" sx={{ mt: 2 }}>
+                매칭 필터 설정을 변경하려면 <strong>스케줄 설정</strong> 탭에서 수정해주세요.
+              </Alert>
+            </Box>
+          );
+        })()}
+      </Paper>
+
+      <Dialog
+        open={scheduleConfirmOpen}
+        onClose={() => setScheduleConfirmOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>스케줄 매칭 실행</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            {scheduleCountry === 'KR' ? '한국' : '일본'} 오늘자 스케줄 매칭을 실행합니다. 매칭은 Queue를 통해 순차 처리됩니다.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button variant="outline" onClick={() => setScheduleConfirmOpen(false)}>
+            닫기
+          </Button>
+          <Button onClick={handleScheduleMatching} disabled={scheduleExecuting}>
+            실행
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Paper sx={{ mt: 4, p: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -408,6 +598,7 @@ export default function CountryOverview() {
               onClick={() => fetchMapStats(mapCountry, dateRange.startDate, dateRange.endDate)}
               size="small"
               disabled={mapLoading}
+              aria-label="매칭풀 지역별 현황 새로고침"
             >
               <RefreshIcon />
             </IconButton>
@@ -438,18 +629,20 @@ export default function CountryOverview() {
             exclusive
             onChange={handleMapCountryChange}
             size="small"
+            aria-label="매칭풀 지역별 현황 국가 필터"
           >
-            <ToggleButton value="KR">🇰🇷 한국</ToggleButton>
-            <ToggleButton value="JP">🇯🇵 일본</ToggleButton>
+            <ToggleButton value="KR" aria-label="한국 매칭풀 지역별 현황 보기">🇰🇷 한국</ToggleButton>
+            <ToggleButton value="JP" aria-label="일본 매칭풀 지역별 현황 보기">🇯🇵 일본</ToggleButton>
           </ToggleButtonGroup>
           <ToggleButtonGroup
             value={matchingType}
             exclusive
             onChange={handleMatchingTypeChange}
             size="small"
+            aria-label="매칭풀 지역별 현황 매칭 유형 필터"
           >
-            <ToggleButton value="scheduled">스케줄 매칭</ToggleButton>
-            <ToggleButton value="rematching">재매칭</ToggleButton>
+            <ToggleButton value="scheduled" aria-label="스케줄 매칭 기준 지역별 현황 보기">스케줄 매칭</ToggleButton>
+            <ToggleButton value="rematching" aria-label="재매칭 기준 지역별 현황 보기">재매칭</ToggleButton>
           </ToggleButtonGroup>
         </Box>
 
@@ -550,13 +743,20 @@ export default function CountryOverview() {
                 </Box>
               </Box>
               <Typography variant="caption" color="text.secondary">
-                업데이트: {mapStats && new Date(mapStats.cachedAt).toLocaleString('ko-KR')}
+                업데이트: {mapStats && safeToLocaleString(mapStats.cachedAt)}
               </Typography>
             </Box>
           </>
         ) : (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 1000 }}>
-            <Typography color="text.secondary">데이터가 없습니다.</Typography>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="subtitle1" fontWeight={700}>
+                지역별 매칭풀 데이터가 없습니다.
+              </Typography>
+              <Typography color="text.secondary" sx={{ mt: 0.5 }}>
+                날짜 범위와 국가, 매칭 유형을 변경한 뒤 다시 확인하세요.
+              </Typography>
+            </Box>
           </Box>
         )}
       </Paper>

@@ -30,7 +30,7 @@ interface MetricItemProps {
   suffix?: string;
 }
 
-const formatNumber = (value: number) => value.toLocaleString();
+const formatNumber = (value: number | undefined | null) => (value ?? 0).toLocaleString();
 
 function MetricItem({
   label,

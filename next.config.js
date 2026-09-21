@@ -1,19 +1,80 @@
 /** @type {import('next').NextConfig} */
+
+function toOrigin(value) {
+  if (!value) return null;
+  try {
+    return new URL(value).origin;
+  } catch {
+    return null;
+  }
+}
+
+// Origins the browser may legitimately talk to: the API and the support-chat
+// socket (socket.io needs both https and wss forms of its origin).
+const apiOrigin = toOrigin(process.env.NEXT_PUBLIC_API_URL);
+const socketOrigin = toOrigin(process.env.NEXT_PUBLIC_SOCKET_URL);
+const socketWsOrigin = socketOrigin ? socketOrigin.replace(/^https:/, 'wss:').replace(/^http:/, 'ws:') : null;
+const allowedConnectOrigins = ["'self'", apiOrigin, socketOrigin, socketWsOrigin].filter(Boolean).join(' ');
+
+const isDev = process.env.NODE_ENV !== 'production';
+
+const csp = [
+  "default-src 'self'",
+  // unsafe-inline is still required for Next.js bootstrap scripts; unsafe-eval
+  // is only needed by React Refresh in dev.
+  isDev
+    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+    : "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  isDev ? `connect-src ${allowedConnectOrigins} https: http: wss: ws:` : `connect-src ${allowedConnectOrigins}`,
+  "font-src 'self' data: https:",
+  "frame-src 'self' https:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join('; ');
+
 const nextConfig = {
-  async rewrites() {
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8044/api';
-    
-    return [
-      { source: '/api/admin/rematch-request', destination: `${backendUrl}/admin/matching/rematch-request` },
-      { source: '/api/notifications/:path*', destination: `${backendUrl}/notifications/:path*` },
-      { source: '/api/notifications', destination: `${backendUrl}/notifications` },
-      { source: '/api/matchings/:path*', destination: `${backendUrl}/matchings/:path*` },
-      { source: '/api/offline-meetings/:path*', destination: `${backendUrl}/offline-meetings/:path*` },
-      { source: '/api/offline-meetings', destination: `${backendUrl}/offline-meetings` },
-      { source: '/api/user-preferences', destination: `${backendUrl}/user-preferences` },
-      { source: '/api/profile', destination: `${backendUrl}/profile` },
-      { source: '/api/admin/:path*', destination: `${backendUrl}/admin/:path*` },
+  async headers() {
+    const headers = [
+      {
+        key: 'Content-Security-Policy',
+        value: csp,
+      },
+      {
+        key: 'X-Frame-Options',
+        value: 'DENY',
+      },
+      {
+        key: 'X-Content-Type-Options',
+        value: 'nosniff',
+      },
+      {
+        key: 'Referrer-Policy',
+        value: 'strict-origin-when-cross-origin',
+      },
+      {
+        key: 'Permissions-Policy',
+        value: 'camera=(), microphone=(), geolocation=(self)',
+      },
     ];
+    if (!isDev) {
+      headers.push({
+        key: 'Strict-Transport-Security',
+        value: 'max-age=63072000; includeSubDomains; preload',
+      });
+    }
+    return [
+      {
+        source: '/(.*)',
+        headers,
+      },
+    ];
+  },
+  async rewrites() {
+    return [];
   },
   images: {
     remotePatterns: [
@@ -25,56 +86,20 @@ const nextConfig = {
       },
     ],
   },
-  webpack: (config, { dev, isServer }) => {
-    // SVG 파일 처리
+  webpack: (config) => {
     config.module.rules.push({
       test: /\.svg$/,
       use: ['@svgr/webpack'],
     });
-
-    // 개발 환경에서 React DevTools 관련 설정
-    if (dev && !isServer) {
-      // React DevTools 관련 설정 추가
-      const originalEntry = config.entry;
-      config.entry = async () => {
-        const entries = await originalEntry();
-        if (entries['main.js'] && !entries['main.js'].includes('react-refresh')) {
-          entries['main.js'].unshift('react-refresh/runtime');
-        }
-        return entries;
-      };
-    }
-
     return config;
   },
-  // Vercel 배포에서 정적 생성 오류를 해결하기 위한 설정
   output: 'standalone',
-  // 타입 체크 오류로 인한 빌드 실패 방지
   typescript: {
-    // !! WARN !!
-    // 타입 오류가 있더라도 빌드가 성공하도록 설정
-    // 이는 임시 해결책이며, 타입 오류는 여전히 존재합니다
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
-  // 빌드 캐시 무효화 (개발 환경에서는 제외)
-  env: {
-    // 타임스탬프를 환경 변수로 추가하여 매 빌드마다 변경되도록 합니다
-    CACHE_INVALIDATION: Date.now().toString(),
-  },
-  // 빌드 캐시를 완전히 비활성화
-  generateBuildId: async () => {
-    // 빌드 ID를 매번 새로 생성하여 캐시 사용을 방지합니다
-    return `build-${Date.now()}`
-  },
-
-  // React DevTools 관련 설정
-  reactStrictMode: false, // 업데이트 후 true로 변경 가능
-
-  // 서버 사이드 렌더링 설정
+  reactStrictMode: true,
+  serverExternalPackages: ['react-dom'],
   experimental: {
-    // 서버 컴포넌트와 클라이언트 컴포넌트 구분 강화
-    serverComponentsExternalPackages: ['react-dom'],
-    // 서버 컴포넌트 오류 처리 개선
     serverActions: {
       bodySizeLimit: '2mb',
     },

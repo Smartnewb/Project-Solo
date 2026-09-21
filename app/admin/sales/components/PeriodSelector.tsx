@@ -4,8 +4,8 @@
 
 import { useEffect, useState } from 'react';
 import { ko } from 'date-fns/locale';
-import { format } from 'date-fns';
 import { salesService } from '@/app/services/sales';
+import { safeFormat } from '@/app/utils/formatters';
 import { Calendar as CalendarIcon,} from 'lucide-react';
 import { Calendar } from '@/shared/ui/calendar';
 import {
@@ -56,15 +56,12 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
         })
         setSelectedPeriod('all'); // 초기값을 'all'로 설정
     }, []);
-    console.log('초기 selectedPeriod:', selectedPeriod);
+    ;
 
     // MARK: - 날짜 변경 감지 및 부모 컴포넌트에게 알림
     useEffect(()=>{
         if (dateRange.from && dateRange.to && handleValidationDate()) {
-            console.log('PeriodSelector 날짜 전달:', {
-                from: formatDateToString(dateRange.from),
-                to: formatDateToString(dateRange.to)
-            });
+            ;
             
             onDateRangeChange?.({
                 startDate: dateRange.from,
@@ -72,7 +69,7 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
             });
         }
     }, [dateRange.from, dateRange.to]);
-    console.log('현재 selectedPeriod:',selectedPeriod);
+    ;
 
     /// === handlers === 
     
@@ -100,7 +97,7 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
     // MARK: - 날짜 범위 초기화
     const handleClearDates = () => {
         setSelectedPeriod('all');
-        console.log('handleClearDates - selectedPeriod:', 'all');
+        ;
         setDateRange({
             from: undefined,
             to: undefined,
@@ -175,7 +172,7 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
                         onClick={handleClearDates}
                         className={`px-3 py-1.5 text-sm rounded-md transition-colors' 
                             ${selectedPeriod === 'all'
-                                ? 'text-white bg-[#7D4EE4]'
+                                ? 'text-white bg-[#ff385c]'
                                 : 'border border-border text-gray-700 bg-gary-100 text-gray-700'
                             }`}
                     >
@@ -185,7 +182,7 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
                         onClick={() => handleQuickPeriod(7)}
                         className={`px-3 py-1.5 text-sm rounded-md transition-colors' 
                             ${selectedPeriod === '7days'
-                                ? 'text-white bg-[#7D4EE4]'
+                                ? 'text-white bg-[#ff385c]'
                                 : 'border border-border text-gray-700 bg-gary-100 text-gray-700'
                             }`}
                     >
@@ -195,7 +192,7 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
                         onClick={() => handleQuickPeriod(30)}
                         className={`px-3 py-1.5 text-sm rounded-md transition-colors' 
                             ${selectedPeriod === '30days'
-                                ? 'text-white bg-[#7D4EE4]'
+                                ? 'text-white bg-[#ff385c]'
                                 : 'border border-border text-gray-700 bg-gary-100 text-gray-700'
                             }`}
                     >
@@ -205,7 +202,7 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
                         onClick={() => handleQuickPeriod(90)}
                         className={`px-3 py-1.5 text-sm rounded-md transition-colors' 
                             ${selectedPeriod === '90days'
-                                ? 'text-white bg-[#7D4EE4]'
+                                ? 'text-white bg-[#ff385c]'
                                 : 'border border-border text-gray-700 bg-gary-100 text-gray-700'
                             }`}
                         
@@ -226,11 +223,11 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
                                 <PopoverTrigger asChild>
                                     <button className={`w-full flex-1 flex px-3 py-2 text-left border rounded-md text-sm items-center justify-between
                                                 ${startDateOpen
-                                                ? 'border-[#7D4EE4]'
+                                                ? 'border-[#ff385c]'
                                                 : 'border-[#D1D5DB]'
                                                 }`}>
                                         <span className={ dateRange.from ? '' : 'text-gray-400'}>
-                                            {dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : '시작일 지정'}
+                                            {dateRange.from ? safeFormat(dateRange.from, 'yyyy-MM-dd') : '시작일 지정'}
                                         </span>
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="16" viewBox="0 0 14 16" fill="none">
                                             <path d="M3 1V2H1.5C0.671875 2 0 2.67188 0 3.5V5H14V3.5C14 2.67188 13.3281 2 12.5 2H11V1C11 0.446875 10.5531 0 10 0C9.44687 0 9 0.446875 9 1V2H5V1C5 0.446875 4.55312 0 4 0C3.44688 0 3 0.446875 3 1ZM14 6H0V14.5C0 15.3281 0.671875 16 1.5 16H12.5C13.3281 16 14 15.3281 14 14.5V6Z" fill="#9CA3AF"/>
@@ -260,7 +257,7 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
                                                 setDateRange(prev => ({ ...prev, from: undefined,}))
                                             }}>취소</button>
                                         <button
-                                            className='px-3 py-1.5 text-sm text-white font-medium hover:bg-purple-700 rounded-md bg-[#7D4EE4]'
+                                            className='px-3 py-1.5 text-sm text-white font-medium hover:bg-[#e00b41] rounded-md bg-[#ff385c]'
                                             onClick={() => {
                                                 setStartDateOpen(false);
                                             }}
@@ -284,11 +281,11 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
                                 <PopoverTrigger asChild>
                                     <button className={`w-full flex-1 flex px-3 py-2 text-left border rounded-md text-sm items-center justify-between
                                                 ${endDateOpen
-                                                ? 'border-[#7D4EE4]'
+                                                ? 'border-[#ff385c]'
                                                 : 'border-[#D1D5DB]'
                                                 }`}>
                                         <span className={ dateRange.to ? '' : 'text-gray-400'}>
-                                            {dateRange.to ? format(dateRange.to,'yyyy-MM-dd'):'종료일 지정'}
+                                            {dateRange.to ? safeFormat(dateRange.to,'yyyy-MM-dd'):'종료일 지정'}
                                         </span>
                                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="16" viewBox="0 0 14 16" fill="none">
                                             <path d="M3 1V2H1.5C0.671875 2 0 2.67188 0 3.5V5H14V3.5C14 2.67188 13.3281 2 12.5 2H11V1C11 0.446875 10.5531 0 10 0C9.44687 0 9 0.446875 9 1V2H5V1C5 0.446875 4.55312 0 4 0C3.44688 0 3 0.446875 3 1ZM14 6H0V14.5C0 15.3281 0.671875 16 1.5 16H12.5C13.3281 16 14 15.3281 14 14.5V6Z" fill="#9CA3AF"/>
@@ -327,7 +324,7 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
                                                 setDateRange(prev => ({ ...prev, from: undefined,}))
                                             }}>취소</button>
                                         <button
-                                            className='px-3 py-1.5 text-sm text-white font-medium hover:bg-purple-700 rounded-md bg-[#7D4EE4]'
+                                            className='px-3 py-1.5 text-sm text-white font-medium hover:bg-[#e00b41] rounded-md bg-[#ff385c]'
                                             onClick={() => {
                                                 setEndDateOpen(false);
                                             }}
@@ -342,22 +339,22 @@ export function PeriodSelector ({ onDateRangeChange } : DateSelectorProps) {
 
                 {/* 선택된 기간 표시 */}
                 {(dateRange.from || dateRange.to) && (
-                    <div className='mt-4 p-3 bg-purple-50 border border-purple-200 rounded-md'>
+                    <div className='mt-4 p-3 bg-[#f7f7f7] border border-[#ffd1da] rounded-md'>
                         <div className='flex items-center justify-between'>
-                            <div className='text-sm text-[#7D4EE4]'>
+                            <div className='text-sm text-[#ff385c]'>
                                 <span className='font-medium'>선택된 기간: </span>
                                 {dateRange.from && dateRange.to ? (
-                                    `${format(dateRange.from, 'yyyy-MM-dd')} ~ ${format(dateRange.to, 'yyyy-MM-dd')}`
+                                    `${safeFormat(dateRange.from, 'yyyy-MM-dd')} ~ ${safeFormat(dateRange.to, 'yyyy-MM-dd')}`
                                 ) : dateRange.from ? (
-                                    `${format(dateRange.from, 'yyyy-MM-dd')} ~ (종료일 미선택)`
+                                    `${safeFormat(dateRange.from, 'yyyy-MM-dd')} ~ (종료일 미선택)`
                                 ) : (
-                                    `(시작일 미선택) ~ ${dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : ''}`
+                                    `(시작일 미선택) ~ ${dateRange.to ? safeFormat(dateRange.to, 'yyyy-MM-dd') : ''}`
                                 )}
                                 
                             </div>
                             <button
                                 onClick={handleClearDates}
-                                className='text-[#7D4EE4] hover:text-purple-700 text-sm font-medium'
+                                className='text-[#ff385c] hover:text-[#e00b41] text-sm font-medium'
                             >
                                 초기화
                             </button>
