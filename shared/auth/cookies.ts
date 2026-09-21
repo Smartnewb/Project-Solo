@@ -9,12 +9,12 @@ import {
 } from './session-config';
 
 export async function getAdminAccessToken(): Promise<string | null> {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   return cookieStore.get(ADMIN_COOKIE_NAME)?.value ?? null;
 }
 
 export async function setAdminAccessToken(token: string): Promise<void> {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   cookieStore.set(ADMIN_COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -25,12 +25,12 @@ export async function setAdminAccessToken(token: string): Promise<void> {
 }
 
 export async function getAdminRefreshToken(): Promise<string | null> {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   return cookieStore.get(ADMIN_REFRESH_COOKIE_NAME)?.value ?? null;
 }
 
 export async function setAdminRefreshToken(token: string): Promise<void> {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   cookieStore.set(ADMIN_REFRESH_COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -41,7 +41,7 @@ export async function setAdminRefreshToken(token: string): Promise<void> {
 }
 
 export async function clearAdminCookies(): Promise<void> {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   cookieStore.delete(ADMIN_COOKIE_NAME);
   cookieStore.delete(ADMIN_REFRESH_COOKIE_NAME);
   cookieStore.delete(sessionOptions.cookieName);
@@ -49,7 +49,7 @@ export async function clearAdminCookies(): Promise<void> {
 
 export async function getSessionMeta(): Promise<AdminSessionMeta | null> {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const session = await getIronSession<AdminSessionMeta>(cookieStore, sessionOptions);
     if (!session.id) return null;
     return {
@@ -65,7 +65,7 @@ export async function getSessionMeta(): Promise<AdminSessionMeta | null> {
 }
 
 export async function setSessionMeta(meta: AdminSessionMeta): Promise<void> {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const session = await getIronSession<AdminSessionMeta>(cookieStore, sessionOptions);
   session.id = meta.id;
   session.email = meta.email;

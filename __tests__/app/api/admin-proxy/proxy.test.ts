@@ -51,7 +51,7 @@ function createRequest(
 }
 
 function makeParams(pathSegments: string[]) {
-  return { params: { path: pathSegments } };
+  return { params: Promise.resolve({ path: pathSegments }) };
 }
 
 function makePromisedParams(pathSegments: string[]) {

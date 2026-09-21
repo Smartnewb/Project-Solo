@@ -99,7 +99,7 @@ type AdminProxyRouteParams = {
 };
 
 type AdminProxyRouteContext = {
-	params?: AdminProxyRouteParams | Promise<AdminProxyRouteParams>;
+	params: Promise<AdminProxyRouteParams>;
 };
 
 async function resolveTargetPath(context: AdminProxyRouteContext): Promise<string | null> {

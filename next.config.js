@@ -98,8 +98,8 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   reactStrictMode: true,
+  serverExternalPackages: ['react-dom'],
   experimental: {
-    serverComponentsExternalPackages: ['react-dom'],
     serverActions: {
       bodySizeLimit: '2mb',
     },

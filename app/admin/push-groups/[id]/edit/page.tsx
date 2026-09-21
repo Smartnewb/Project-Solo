@@ -1,5 +1,6 @@
 import GroupFormClient from '../../group-form-client';
 
-export default function EditPushGroupPage({ params }: { params: { id: string } }) {
-  return <GroupFormClient groupId={params.id} />;
+export default async function EditPushGroupPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <GroupFormClient groupId={id} />;
 }
