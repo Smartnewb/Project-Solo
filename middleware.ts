@@ -10,12 +10,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const nonceBytes = crypto.getRandomValues(new Uint8Array(16));
-  const nonce = btoa(String.fromCharCode(...nonceBytes));
-  const csp = buildContentSecurityPolicy(nonce);
+  const csp = buildContentSecurityPolicy();
   const requestHeaders = new Headers(request.headers);
-  // Next.js reads the CSP on the incoming request and applies its nonce to
-  // the bootstrap/inline scripts it emits.
   requestHeaders.set('content-security-policy', csp);
 
   const nextWithCsp = () => {

@@ -18,18 +18,16 @@ export function allowedConnectOrigins(): string {
 	return ["'self'", apiOrigin, socketOrigin, socketWsOrigin].filter(Boolean).join(' ');
 }
 
-// Per-request nonce CSP. Next.js reads the nonce off the request's CSP header
-// and applies it to its own bootstrap scripts; 'strict-dynamic' lets those
-// nonce'd scripts load webpack chunks. unsafe-inline/unsafe-eval stay in dev
-// for React Refresh.
-export function buildContentSecurityPolicy(nonce: string): string {
+// Next.js does not attach middleware-provided nonces to its streamed scripts
+// in this app, so production must allow its same-origin bootstrap data too.
+export function buildContentSecurityPolicy(): string {
 	const isDev = process.env.NODE_ENV !== 'production';
 	const connect = allowedConnectOrigins();
 	return [
 		"default-src 'self'",
 		isDev
 			? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-			: `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+			: "script-src 'self' 'unsafe-inline'",
 		"style-src 'self' 'unsafe-inline'",
 		"img-src 'self' data: blob: https:",
 		isDev ? `connect-src ${connect} https: http: wss: ws:` : `connect-src ${connect}`,
