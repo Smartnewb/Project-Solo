@@ -46,7 +46,7 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
   onSuccess,
 }) => {
   const [reason, setReason] = useState('');
-  const [suspendType, setSuspendType] = useState<'permanent' | 'temporary'>('permanent');
+  const [suspendType, setSuspendType] = useState<'permanent' | 'temporary'>('temporary');
   const [durationDays, setDurationDays] = useState<SuspendDurationDays>(7);
   const [localNote, setLocalNote] = useState('');
   const [sendNotice, setSendNotice] = useState(true);
@@ -58,7 +58,7 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
   useEffect(() => {
     if (!open) return;
     setReason('');
-    setSuspendType('permanent');
+    setSuspendType('temporary');
     setDurationDays(7);
     setLocalNote('');
     setSendNotice(true);
@@ -123,7 +123,7 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
   const handleClose = () => {
     if (loading) return;
     setReason('');
-    setSuspendType('permanent');
+    setSuspendType('temporary');
     setDurationDays(7);
     setLocalNote('');
     setSendNotice(true);
@@ -201,8 +201,8 @@ const AccountStatusModal: React.FC<AccountStatusModalProps> = ({
                       setSuspendType(e.target.value as 'permanent' | 'temporary')
                     }
                   >
-                    <FormControlLabel value="permanent" control={<Radio />} label="영구 정지" />
                     <FormControlLabel value="temporary" control={<Radio />} label="기간 정지" />
+                    <FormControlLabel value="permanent" control={<Radio />} label="영구 정지" />
                   </RadioGroup>
                 </FormControl>
 

@@ -40,6 +40,9 @@ import {
   ImageList,
   ImageListItem,
   Skeleton,
+  Checkbox,
+  FormControlLabel,
+  Tooltip,
 } from "@mui/material";
 import {
   Visibility as VisibilityIcon,
@@ -47,6 +50,7 @@ import {
   Chat as ChatIcon,
   Photo as PhotoIcon,
   Description as DescriptionIcon,
+  WarningAmber as WarningIcon,
 } from "@mui/icons-material";
 import AdminService from "@/app/services/admin";
 import type { ReportHistoryEntry } from '@/app/services/admin';
@@ -90,6 +94,12 @@ interface Report {
   description: string | null;
   evidenceImages: string[];
   status: "pending" | "reviewing" | "resolved" | "rejected";
+  severity?: "urgent" | "normal" | null;
+  category?: string | null;
+  /** false면 슬랙 미전달 — 재발송 필요 표시 */
+  slackDelivered?: boolean;
+  /** 동일 피신고자의 누적 신고 수 */
+  reportCount?: number;
   createdAt: string;
   updatedAt: string | null;
   chatRoomId?: string;
@@ -97,6 +107,7 @@ interface Report {
 
 interface ReportDetail extends Report {
   chatRoomId?: string;
+  matchId?: string;
 }
 
 interface ChatMessage {
@@ -144,7 +155,6 @@ function getDefaultActionForStatus(status: ReportStatus | 'dismissed'): ReportAc
   return 'escalated';
 }
 
-const REASONS_REQUIRING_CHAT = ["부적절한 언어 사용", "스팸/광고"];
 const REASONS_REQUIRING_PROFILE_IMAGES = ["허위 프로필", "부적절한 사진"];
 
 function ReportsManagementContent() {
@@ -160,6 +170,8 @@ function ReportsManagementContent() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
   const [statusFilter, setStatusFilter] = useState<string>("");
+  const [urgentOnly, setUrgentOnly] = useState(false);
+  const [slackUndeliveredOnly, setSlackUndeliveredOnly] = useState(false);
   const [reporterNameFilter, setReporterNameFilter] = useState<string>("");
   const [reportedNameFilter, setReportedNameFilter] = useState<string>("");
   const [selectedReport, setSelectedReport] = useState<ReportDetail | null>(
@@ -180,10 +192,17 @@ function ReportsManagementContent() {
 
   const statusForm = useAdminForm<ReportStatusFormValues>({
     schema: reportStatusSchema,
-    defaultValues: { status: "pending", action: 'escalated' },
+    defaultValues: {
+      status: "pending",
+      action: 'escalated',
+      suspendDays: 7,
+      suspendPermanent: false,
+      approverId: '',
+    },
   });
 
   const watchedStatus = statusForm.watch('status');
+  const watchedAction = statusForm.watch('action');
 
   const [userDetailModalOpen, setUserDetailModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -221,6 +240,7 @@ function ReportsManagementContent() {
           ? {
               ...fallbackReport,
               ...detailResponse,
+              reportCount: detailResponse.reportCount ?? fallbackReport.reportCount,
             }
           : (detailResponse as ReportDetail);
 
@@ -255,6 +275,12 @@ function ReportsManagementContent() {
       if (statusFilter) {
         params.append("status", statusFilter);
       }
+      if (urgentOnly) {
+        params.append("urgent", "true");
+      }
+      if (slackUndeliveredOnly) {
+        params.append("slackUndelivered", "true");
+      }
       if (reporterNameFilter.trim()) {
         params.append("reporterName", reporterNameFilter.trim());
       }
@@ -280,7 +306,7 @@ function ReportsManagementContent() {
 
   useEffect(() => {
     fetchReports();
-  }, [page, rowsPerPage, statusFilter, reporterNameFilter, reportedNameFilter]);
+  }, [page, rowsPerPage, statusFilter, urgentOnly, slackUndeliveredOnly, reporterNameFilter, reportedNameFilter]);
 
   useEffect(() => {
     if (!deepLinkedReportId) {
@@ -385,7 +411,13 @@ function ReportsManagementContent() {
       await AdminService.reports.updateReportStatus(
         selectedReport.id,
         data.status,
-        { type: 'profile', action: data.action },
+        {
+          type: 'profile',
+          action: data.action,
+          suspendDays: data.suspendDays as 3 | 7 | 14 | 30 | undefined,
+          suspendPermanent: data.suspendPermanent,
+          approverId: data.approverId,
+        },
       );
       toast.success("상태가 변경되었습니다.");
       await openReportDetail(selectedReport.id, {
@@ -469,8 +501,6 @@ function ReportsManagementContent() {
     return report.reason;
   };
 
-  const requiresChatHistory = (reason: string) =>
-    REASONS_REQUIRING_CHAT.includes(reason);
   const requiresProfileImages = (reason: string) =>
     REASONS_REQUIRING_PROFILE_IMAGES.includes(reason);
 
@@ -615,8 +645,9 @@ function ReportsManagementContent() {
   const renderDetailTabs = () => {
     if (!selectedReport) return null;
 
-    const showChatTab =
-      requiresChatHistory(selectedReport.reason) && selectedReport.chatRoomId;
+    // 채팅방이 연결된 신고는 사유와 무관하게 대화 내역을 열람할 수 있다 —
+    // 스토킹·협박 등 안전 신고에서 채팅이 핵심 증거다.
+    const showChatTab = Boolean(selectedReport.chatRoomId);
     const showProfileImagesTab = requiresProfileImages(selectedReport.reason);
 
     const tabs = [{ label: "기본 정보", icon: <DescriptionIcon /> }];
@@ -751,6 +782,62 @@ function ReportsManagementContent() {
                     </FormControl>
                   )}
                 />
+                {watchedAction === 'suspended' && (
+                  <>
+                    <Controller
+                      name="suspendDays"
+                      control={statusForm.control}
+                      render={({ field }) => (
+                        <FormControl size="small" sx={{ minWidth: 110 }}>
+                          <InputLabel>정지 기간</InputLabel>
+                          <Select {...field} label="정지 기간" disabled={statusForm.watch('suspendPermanent') === true}>
+                            {[3, 7, 14, 30].map((d) => (
+                              <MenuItem key={d} value={d}>
+                                {d}일
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      )}
+                    />
+                    <Controller
+                      name="suspendPermanent"
+                      control={statusForm.control}
+                      render={({ field }) => (
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              size="small"
+                              checked={field.value === true}
+                              onChange={(e) => field.onChange(e.target.checked)}
+                            />
+                          }
+                          label="영구 정지"
+                        />
+                      )}
+                    />
+                  </>
+                )}
+                {watchedAction === 'banned' && (
+                  <Controller
+                    name="approverId"
+                    control={statusForm.control}
+                    render={({ field, fieldState }) => (
+                      <TextField
+                        {...field}
+                        size="small"
+                        label="승인자 관리자 ID (2인 승인)"
+                        placeholder="다른 관리자의 user id"
+                        error={Boolean(fieldState.error)}
+                        helperText={
+                          fieldState.error?.message ??
+                          '영구 차단은 본인 외 다른 관리자 승인이 필요합니다'
+                        }
+                        sx={{ minWidth: 220 }}
+                      />
+                    )}
+                  />
+                )}
                 <Button
                   variant="contained"
                   size="small"
@@ -1164,6 +1251,34 @@ function ReportsManagementContent() {
               placeholder="피신고자 이름 검색"
             />
           </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={urgentOnly}
+                  onChange={(e) => {
+                    setUrgentOnly(e.target.checked);
+                    setPage(0);
+                  }}
+                  size="small"
+                />
+              }
+              label="긴급 신고만"
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={slackUndeliveredOnly}
+                  onChange={(e) => {
+                    setSlackUndeliveredOnly(e.target.checked);
+                    setPage(0);
+                  }}
+                  size="small"
+                />
+              }
+              label="슬랙 미전달만"
+            />
+          </Grid>
         </Grid>
       </Paper>
 
@@ -1196,14 +1311,31 @@ function ReportsManagementContent() {
                 </TableRow>
               ) : (
                 reports.map((report) => (
-                  <TableRow key={report.id}>
+                  <TableRow
+                    key={report.id}
+                    sx={
+                      report.severity === 'urgent'
+                        ? { bgcolor: '#fff5f5' }
+                        : undefined
+                    }
+                  >
                     <TableCell>
-                      <Typography
-                        variant="body2"
-                        sx={{ fontFamily: "monospace" }}
-                      >
-                        {report.id.slice(0, 8)}...
-                      </Typography>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                        <Typography
+                          variant="body2"
+                          sx={{ fontFamily: "monospace" }}
+                        >
+                          {report.id.slice(0, 8)}...
+                        </Typography>
+                        {report.severity === 'urgent' && (
+                          <Chip label="긴급" color="error" size="small" />
+                        )}
+                        {report.slackDelivered === false && (
+                          <Tooltip title="슬랙 미전달 — 신고는 접수됐지만 CS 알림 전송에 실패했습니다">
+                            <WarningIcon color="warning" fontSize="small" />
+                          </Tooltip>
+                        )}
+                      </Box>
                     </TableCell>
                     <TableCell>
                       <Box
@@ -1235,6 +1367,15 @@ function ReportsManagementContent() {
                         <Box>
                           <Typography variant="body2" fontWeight="medium">
                             {report.reported.name}
+                            {(report.reportCount ?? 0) > 1 && (
+                              <Chip
+                                label={`누적 ${report.reportCount}건`}
+                                color="error"
+                                variant="outlined"
+                                size="small"
+                                sx={{ ml: 0.5 }}
+                              />
+                            )}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
                             {getGenderText(report.reported.gender)},{" "}

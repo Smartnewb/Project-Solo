@@ -37,6 +37,8 @@ export interface BlacklistRegisterRequest {
   /** default true — 약관 고지(인앱+SMS) */
   sendNotice?: boolean;
   noticeReason?: string;
+  /** 2인 승인 — 집행자와 다른 관리자의 user id (필수) */
+  approverId: string;
 }
 
 export interface BlacklistReleaseRequest {
