@@ -68,7 +68,7 @@ export const userAppearance = {
 		hasPreferences?: boolean;
 		includeDeleted?: boolean;
 		userStatus?: 'pending' | 'approved' | 'rejected';
-		sort?: 'newest' | 'oldest' | 'name';
+		sort?: 'newest' | 'oldest' | 'name' | 'lastActive';
 	}) => {
 		try {
 			;

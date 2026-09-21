@@ -71,6 +71,8 @@ const GENDER_LABELS: Record<Gender, string> = {
   FEMALE: '여',
 };
 
+type AppearanceUserSort = 'newest' | 'lastActive';
+
 const getRegionLabel = (region?: string) => {
   const regionMap: Record<string, string> = {
     DJN: '대전',
@@ -139,6 +141,7 @@ const UserAppearanceTable = forwardRef<UserAppearanceTableRef, UserAppearanceTab
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [totalItems, setTotalItems] = useState(0);
     const [filters, setFilters] = useState(initialFilters || {});
+    const [sort, setSort] = useState<AppearanceUserSort>('newest');
 
     const [selectedUser, setSelectedUser] = useState<UserProfileWithAppearance | null>(null);
     const [selectedGrade, setSelectedGrade] = useState<AppearanceGrade>('UNKNOWN');
@@ -169,7 +172,7 @@ const UserAppearanceTable = forwardRef<UserAppearanceTableRef, UserAppearanceTab
         const response = await AdminService.userAppearance.getUsersWithAppearanceGrade({
           page: page + 1,
           limit: rowsPerPage,
-          sort: 'newest',
+          sort,
           ...filters,
           ...(userStatus && { userStatus }),
         });
@@ -184,7 +187,7 @@ const UserAppearanceTable = forwardRef<UserAppearanceTableRef, UserAppearanceTab
 
     useEffect(() => {
       fetchUsers();
-    }, [page, rowsPerPage, filters, userStatus]);
+    }, [page, rowsPerPage, filters, sort, userStatus]);
 
     const handleChangePage = (_: unknown, newPage: number) => setPage(newPage);
     const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -388,9 +391,21 @@ const UserAppearanceTable = forwardRef<UserAppearanceTableRef, UserAppearanceTab
           </Stack>
         </Box>
 
-        <Typography variant="caption" sx={{ display: 'block', mb: 1.5, px: 1, color: '#64748B' }}>
-          정렬 기준: 가입일 최신순
-        </Typography>
+        <FormControl size="small" sx={{ minWidth: 180, mb: 1.5, px: 1 }}>
+          <InputLabel id="appearance-user-sort-label">정렬 기준</InputLabel>
+          <Select
+            labelId="appearance-user-sort-label"
+            label="정렬 기준"
+            value={sort}
+            onChange={(event) => {
+              setSort(event.target.value as AppearanceUserSort);
+              setPage(0);
+            }}
+          >
+            <MenuItem value="newest">가입일 최신순</MenuItem>
+            <MenuItem value="lastActive">최근 접속순</MenuItem>
+          </Select>
+        </FormControl>
 
         <TableContainer
           component={Paper}

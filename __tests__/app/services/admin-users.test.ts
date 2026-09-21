@@ -44,6 +44,21 @@ describe('userAppearance service', () => {
     expect(query.get('filter')).toBe('all');
   });
 
+  it('requests appearance users in recent activity order when selected', async () => {
+    (adminGet as jest.Mock).mockResolvedValue({ data: [], meta: { total: 0 } });
+
+    await userAppearance.getUsersWithAppearanceGrade({
+      page: 1,
+      limit: 10,
+      sort: 'lastActive',
+    });
+
+    const requestedUrl = (adminGet as jest.Mock).mock.calls[0][0] as string;
+    const query = new URLSearchParams(requestedUrl.split('?')[1]);
+
+    expect(query.get('sort')).toBe('lastActive');
+  });
+
   it('normalizes approval mode fields from appearance user list responses', async () => {
     (adminGet as jest.Mock).mockResolvedValue({
       data: [
