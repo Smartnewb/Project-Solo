@@ -114,22 +114,20 @@ function AppearanceGradePageContent() {
 
       {/* 탭 컨텐츠 */}
       <Box>
-        {activeTab === 0 && (
-          <Box>
-            <AppearanceFilterPanel
-              onFilter={(filters) => {
-                if (tableRef.current) {
-                  tableRef.current.handleApplyFilter(filters);
-                }
-              }}
-            />
-            <UserAppearanceTable
-              initialFilters={{}}
-              userStatus="approved"
-              ref={tableRef}
-            />
-          </Box>
-        )}
+        <Box hidden={activeTab !== 0}>
+          <AppearanceFilterPanel
+            onFilter={(filters) => {
+              if (tableRef.current) {
+                tableRef.current.handleApplyFilter(filters);
+              }
+            }}
+          />
+          <UserAppearanceTable
+            initialFilters={{}}
+            userStatus="approved"
+            ref={tableRef}
+          />
+        </Box>
         {activeTab === 1 && (
           <Alert severity="info">
             블랙리스트는 새로운 메뉴 <a href="/admin/blacklist">/admin/blacklist</a>에서 관리합니다.
