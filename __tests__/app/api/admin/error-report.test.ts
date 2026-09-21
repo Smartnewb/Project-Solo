@@ -63,7 +63,7 @@ describe('POST /api/admin/error-report', () => {
 
   it('logs the error but does not forward it to Slack even if a webhook is configured', async () => {
     process.env.SLACK_WEBHOOK_URL = 'https://hooks.slack.example/services/test';
-    getSessionMetaMock.mockResolvedValue({ id: 'admin-1' });
+    getSessionMetaMock.mockResolvedValue({ id: 'admin-1', roles: ['admin'] });
     mockFetch.mockResolvedValue({ ok: true });
 
     const POST = await loadPost();

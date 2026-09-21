@@ -33,6 +33,7 @@ import {
 	Lightbulb as LightbulbIcon,
 } from '@mui/icons-material';
 import { dashboardService } from '@/app/services/dashboard';
+import { sanitizeUrl } from '@/shared/lib/safe-url';
 import {
 	ActionableInsightsResponse,
 	InsightSeverity,
@@ -162,7 +163,7 @@ function UrgentActions({ actions }: UrgentActionsProps) {
 
 			<Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
 				{actions.map((action, index) => (
-					<Link href={normalizeActionUrl(action.actionUrl)} key={index}>
+					<Link href={sanitizeUrl(normalizeActionUrl(action.actionUrl)) ?? '/admin/dashboard'} key={index}>
 						<Card
 							sx={{
 								cursor: 'pointer',

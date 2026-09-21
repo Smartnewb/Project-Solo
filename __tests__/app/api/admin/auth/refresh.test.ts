@@ -1,6 +1,8 @@
 /**
  * @jest-environment node
  */
+import { NextRequest } from 'next/server';
+
 // Must mock next/headers before importing the route
 jest.mock('next/headers', () => ({ cookies: jest.fn() }));
 
@@ -29,6 +31,13 @@ import {
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
+function request(): NextRequest {
+  return new NextRequest('http://localhost:3000/api/admin/auth/refresh', {
+    method: 'POST',
+    headers: { Origin: 'http://localhost:3000' },
+  });
+}
+
 const validMeta = {
   id: 'user-1',
   email: 'admin@test.com',
@@ -54,7 +63,7 @@ describe('POST /api/admin/auth/refresh', () => {
         json: () => Promise.resolve({ accessToken: 'new-access-token', refreshToken: 'new-refresh-token' }),
       });
 
-      const res = await POST();
+      const res = await POST(request());
       const body = await res.json();
 
       expect(res.status).toBe(200);
@@ -72,7 +81,7 @@ describe('POST /api/admin/auth/refresh', () => {
         json: () => Promise.resolve({ accessToken: 'new-access-token', refreshToken: 'new-refresh-token' }),
       });
 
-      await POST();
+      await POST(request());
 
       expect(setAdminAccessToken).toHaveBeenCalledWith('new-access-token');
     });
@@ -88,7 +97,7 @@ describe('POST /api/admin/auth/refresh', () => {
         json: () => Promise.resolve({ accessToken: 'new-access-token', refreshToken: 'new-refresh-token' }),
       });
 
-      await POST();
+      await POST(request());
 
       expect(setAdminRefreshToken).toHaveBeenCalledWith('new-refresh-token');
     });
@@ -104,7 +113,7 @@ describe('POST /api/admin/auth/refresh', () => {
         json: () => Promise.resolve({ accessToken: 'new-access-token' }),
       });
 
-      await POST();
+      await POST(request());
 
       expect(setSessionMeta).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -126,7 +135,7 @@ describe('POST /api/admin/auth/refresh', () => {
         json: () => Promise.resolve({ accessToken: 'new-access-token' }),
       });
 
-      await POST();
+      await POST(request());
 
       expect(setAdminRefreshToken).not.toHaveBeenCalled();
     });
@@ -144,7 +153,7 @@ describe('POST /api/admin/auth/refresh', () => {
         json: () => Promise.resolve({ accessToken: 'new-access-token', refreshToken: 'new-refresh-token' }),
       });
 
-      const res = await POST();
+      const res = await POST(request());
       const body = await res.json();
 
       expect(res.status).toBe(200);
@@ -157,7 +166,7 @@ describe('POST /api/admin/auth/refresh', () => {
       (getAdminRefreshToken as jest.Mock).mockResolvedValue(null);
       (getSessionMeta as jest.Mock).mockResolvedValue(validMeta);
 
-      const res = await POST();
+      const res = await POST(request());
       const body = await res.json();
 
       expect(res.status).toBe(401);
@@ -169,7 +178,7 @@ describe('POST /api/admin/auth/refresh', () => {
       (getAdminRefreshToken as jest.Mock).mockResolvedValue('refresh-token');
       (getSessionMeta as jest.Mock).mockResolvedValue(null);
 
-      const res = await POST();
+      const res = await POST(request());
       const body = await res.json();
 
       expect(res.status).toBe(401);
@@ -181,7 +190,7 @@ describe('POST /api/admin/auth/refresh', () => {
       (getAdminRefreshToken as jest.Mock).mockResolvedValue(null);
       (getSessionMeta as jest.Mock).mockResolvedValue(null);
 
-      await POST();
+      await POST(request());
 
       expect(mockFetch).not.toHaveBeenCalled();
     });
@@ -199,7 +208,7 @@ describe('POST /api/admin/auth/refresh', () => {
         json: () => Promise.resolve({ message: 'Token expired' }),
       });
 
-      const res = await POST();
+      const res = await POST(request());
       const body = await res.json();
 
       expect(res.status).toBe(401);
@@ -218,7 +227,7 @@ describe('POST /api/admin/auth/refresh', () => {
         json: () => Promise.resolve({ refreshToken: 'some-token' }),
       });
 
-      const res = await POST();
+      const res = await POST(request());
       const body = await res.json();
 
       expect(res.status).toBe(401);
@@ -233,7 +242,7 @@ describe('POST /api/admin/auth/refresh', () => {
 
       mockFetch.mockRejectedValueOnce(new Error('network error'));
 
-      const res = await POST();
+      const res = await POST(request());
 
       expect(res.status).toBe(500);
       expect(clearAdminCookies).toHaveBeenCalled();

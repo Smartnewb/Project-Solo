@@ -70,6 +70,7 @@ import UniversityTransferModal from './modals/UniversityTransferModal';
 import BirthdayEditModal from './modals/BirthdayEditModal';
 import AccountStatusModal from './modals/AccountStatusModal';
 import { ReferralPostSignupSection } from './referral/ReferralPostSignupSection';
+import { sanitizeUrl } from '@/shared/lib/safe-url';
 
 const SHOW_REMATCH_TICKET_ADMIN = false;
 
@@ -1392,7 +1393,7 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                     <Box sx={{ display: 'flex', flexDirection: 'column' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <Link
-                          href={userDetail.instagramUrl || `https://instagram.com/${userDetail.instagramId}`}
+                          href={sanitizeUrl(userDetail.instagramUrl, { allowRelative: false }) ?? `https://instagram.com/${userDetail.instagramId}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           sx={{

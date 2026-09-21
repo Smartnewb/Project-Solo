@@ -8,11 +8,12 @@ jest.mock('next/headers', () => ({ cookies: jest.fn() }));
 jest.mock('@/shared/auth', () => ({
 	getAdminAccessToken: jest.fn(),
 	getSessionMeta: jest.fn(),
+	requireAdminRequest: jest.fn(),
 }));
 
 import { POST as approve } from '@/app/api/admin/kb-candidates/[id]/approve/route';
 import { POST as reject } from '@/app/api/admin/kb-candidates/[id]/reject/route';
-import { getAdminAccessToken } from '@/shared/auth';
+import { getAdminAccessToken, requireAdminRequest } from '@/shared/auth';
 
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
@@ -30,6 +31,11 @@ describe('KB candidate mutation routes', () => {
 	beforeEach(() => {
 		jest.clearAllMocks();
 		(getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
+		(requireAdminRequest as jest.Mock).mockResolvedValue({
+			ok: true,
+			token: 'access-token',
+			meta: { roles: ['admin'], selectedCountry: 'kr' },
+		});
 		mockFetch.mockResolvedValue({
 			ok: true,
 			status: 200,

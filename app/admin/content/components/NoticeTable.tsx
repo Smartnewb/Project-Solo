@@ -43,6 +43,7 @@ import { ContentFilters } from './ContentFilters';
 import { UrgentNoticeBox } from './UrgentNoticeBox';
 import { PublishDialog } from './PublishDialog';
 import { PushResendDialog } from './PushResendDialog';
+import { sanitizeUrl } from '@/shared/lib/safe-url';
 
 function formatExpires(expiresAt?: string | null) {
   if (!expiresAt) return '제한없음';
@@ -192,7 +193,7 @@ export function NoticeTable() {
                   <TableCell align="center">
                     {(item.url ?? item.linkUrl) ? (
                       <MuiLink
-                        href={item.url ?? item.linkUrl ?? undefined}
+                        href={sanitizeUrl(item.url ?? item.linkUrl) ?? undefined}
                         target="_blank"
                         rel="noopener"
                         sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}

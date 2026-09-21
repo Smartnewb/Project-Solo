@@ -1,17 +1,18 @@
 /**
  * @jest-environment node
  */
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 jest.mock('next/headers', () => ({ cookies: jest.fn() }));
 
 jest.mock('@/shared/auth', () => ({
   getAdminAccessToken: jest.fn(),
   getSessionMeta: jest.fn(),
+  requireAdminRequest: jest.fn(),
 }));
 
 import { GET } from '@/app/api/admin/review-inbox/route';
-import { getAdminAccessToken, getSessionMeta } from '@/shared/auth';
+import { getAdminAccessToken, getSessionMeta, requireAdminRequest } from '@/shared/auth';
 
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
@@ -36,6 +37,10 @@ describe('admin review inbox route', () => {
   it('returns 401 when no admin access token exists', async () => {
     (getAdminAccessToken as jest.Mock).mockResolvedValue(null);
     (getSessionMeta as jest.Mock).mockResolvedValue(null);
+    (requireAdminRequest as jest.Mock).mockResolvedValue({
+      ok: false,
+      response: NextResponse.json({ error: 'Not authenticated' }, { status: 401 }),
+    });
 
     const response = await GET(createRequest());
     const body = await response.json();
@@ -48,6 +53,11 @@ describe('admin review inbox route', () => {
   it('aggregates profile reports, community reports, and support-chat into the review inbox contract', async () => {
     (getAdminAccessToken as jest.Mock).mockResolvedValue('access-token');
     (getSessionMeta as jest.Mock).mockResolvedValue({ selectedCountry: 'kr' });
+    (requireAdminRequest as jest.Mock).mockResolvedValue({
+      ok: true,
+      token: 'access-token',
+      meta: { selectedCountry: 'kr', roles: ['admin'] },
+    });
 
     mockFetch
       .mockResolvedValueOnce(

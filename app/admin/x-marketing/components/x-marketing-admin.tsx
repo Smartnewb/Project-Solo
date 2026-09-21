@@ -30,6 +30,7 @@ import {
 	XMarketingReplyCandidate,
 } from '@/app/services/admin/x-marketing';
 import { getAdminErrorMessage } from '@/shared/lib/http/admin-fetch';
+import { sanitizeUrl } from '@/shared/lib/safe-url';
 
 type View =
 	| 'dashboard'
@@ -458,8 +459,8 @@ function CollectedPostsCard({
 									>
 										후보 생성
 									</Button>
-									{post.url && (
-										<Button size="small" href={post.url} target="_blank">
+									{post.url && sanitizeUrl(post.url, { allowRelative: false }) && (
+										<Button size="small" href={sanitizeUrl(post.url, { allowRelative: false }) ?? ''} target="_blank">
 											X 열기
 										</Button>
 									)}
@@ -532,10 +533,10 @@ function ReplyCandidatesCard({
 								>
 									거절
 								</Button>
-								{candidate.target_url && (
+								{candidate.target_url && sanitizeUrl(candidate.target_url, { allowRelative: false }) && (
 									<Button
 										size="small"
-										href={candidate.target_url}
+										href={sanitizeUrl(candidate.target_url, { allowRelative: false }) ?? ''}
 										target="_blank"
 									>
 										X 열기

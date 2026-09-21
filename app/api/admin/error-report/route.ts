@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminLog } from '@/shared/lib/admin-logger';
 import { getSessionMeta } from '@/shared/auth';
+import { isAdminRoleSet } from '@/shared/auth/admin-session-user';
 
 export async function POST(request: NextRequest) {
   const session = await getSessionMeta();
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  if (!Array.isArray(session.roles) || !isAdminRoleSet(session.roles)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   try {
