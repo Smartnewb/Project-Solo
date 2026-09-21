@@ -1,9 +1,10 @@
 import { DraftEditorClient } from './draft-editor-client';
 
-export default function DraftEditorPage({
+export default async function DraftEditorPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
-  return <DraftEditorClient draftId={params.id} />;
+  const { id } = await params;
+  return <DraftEditorClient draftId={id} />;
 }

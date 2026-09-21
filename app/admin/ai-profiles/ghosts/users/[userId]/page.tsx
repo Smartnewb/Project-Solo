@@ -1,16 +1,18 @@
 import { UserExposureClient } from './user-exposure-client';
 
-export default function UserExposurePage({
+export default async function UserExposurePage({
 	params,
 	searchParams,
 }: {
-	params: { userId: string };
-	searchParams: { userName?: string };
+	params: Promise<{ userId: string }>;
+	searchParams: Promise<{ userName?: string }>;
 }) {
+	const { userId } = await params;
+	const { userName } = await searchParams;
 	return (
 		<UserExposureClient
-			userId={params.userId}
-			userName={searchParams.userName}
+			userId={userId}
+			userName={userName}
 		/>
 	);
 }

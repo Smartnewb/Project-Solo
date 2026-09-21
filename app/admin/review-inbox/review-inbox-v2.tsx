@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type JSX } from 'react';
 import {
   CheckCircle as CheckCircleIcon,
   DescriptionOutlined as DescriptionOutlinedIcon,

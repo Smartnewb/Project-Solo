@@ -23,12 +23,12 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import dynamic from 'next/dynamic';
-import 'react-quill/dist/quill.snow.css';
+import 'react-quill-new/dist/quill.snow.css';
 import AdminService from '@/app/services/admin';
 import type { CardNewsFormData, CardNewsLayoutMode } from '@/app/admin/hooks/forms/schemas/card-news.schema';
 import { isQuillEmpty } from '@/app/admin/hooks/forms/schemas/card-news.schema';
 
-const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
+const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
 
 interface CardEditorProps {
   index: number;
