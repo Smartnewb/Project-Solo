@@ -51,6 +51,10 @@ export default function ProfileImageAuditV2() {
     [items, selectedIds],
   );
 
+  const removesLastApprovedImage = selectedGroup.selectedItems.some((item) =>
+    selectedGroup.selectedItems.filter((selected) => selected.profileId === item.profileId).length >= item.approvedImageCount,
+  );
+
   const load = async () => {
     try {
       setLoading(true);
@@ -133,6 +137,7 @@ export default function ProfileImageAuditV2() {
     try {
       setBusy(true);
       setError(null);
+      setNotice(null);
       let response: ProfileImageAuditBulkActionResponse;
       if (pendingAction === 'mark-ok') {
         response = await profileImageAudit.bulkMarkOk({ profileImageIds: selectedGroup.selectedIds });
@@ -147,6 +152,7 @@ export default function ProfileImageAuditV2() {
         response = await profileImageAudit.bulkDelete({
           profileImageIds: selectedGroup.selectedIds,
           reason: DELETE_REASON,
+          confirmationPhrase: removesLastApprovedImage ? '재업로드 필요' : '삭제',
         });
       }
       const failureMessage = summarizeBulkActionFailure(response);
@@ -163,6 +169,7 @@ export default function ProfileImageAuditV2() {
       }
       setPendingAction(null);
       await load();
+      if (failureMessage) setError(failureMessage);
     } catch (actionError) {
       const message =
         actionError instanceof Error
@@ -239,6 +246,7 @@ export default function ProfileImageAuditV2() {
       <ConfirmAuditActionDialog
         action={pendingAction}
         selectedCount={selectedGroup.selectedIds.length}
+        removesLastApprovedImage={removesLastApprovedImage}
         busy={busy}
         onClose={() => setPendingAction(null)}
         onConfirm={runAction}

@@ -91,7 +91,7 @@ describe('ProfileImageAuditPage', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: '프로필 이미지 전수검사' })).toBeInTheDocument();
     expect(await screen.findAllByTestId('profile-image-audit-card')).toHaveLength(18);
-    expect(screen.getByText('서울대학교')).toBeInTheDocument();
+    expect(await screen.findByText('서울대학교')).toBeInTheDocument();
     expect(screen.getByText('24세 · 여성')).toBeInTheDocument();
     expect(screen.getByText('대표 사진')).toBeInTheDocument();
     expect(screen.getAllByText('관리자 승인').length).toBeGreaterThan(0);
@@ -133,7 +133,7 @@ describe('ProfileImageAuditPage', () => {
     expect(mockedAudit.list).toHaveBeenCalledWith(
       expect.objectContaining({ page: 1, limit: 18, auditStatus: 'unreviewed' }),
     );
-    expect(screen.getByText('서울대학교')).toBeInTheDocument();
+    expect(await screen.findByText('서울대학교')).toBeInTheDocument();
     expect(screen.getByText('24세 · 여성')).toBeInTheDocument();
     expect(screen.getByText('등급 A')).toBeInTheDocument();
     expect(screen.getByText('연세대학교')).toBeInTheDocument();
@@ -181,6 +181,31 @@ describe('ProfileImageAuditPage', () => {
         reason: '화질 문제로 사진 변경이 필요합니다.',
       });
     });
+  });
+
+  it('sends the server confirmation when deleting a photo and refreshes the list', async () => {
+    const user = userEvent.setup();
+    render(<ProfileImageAuditPage />);
+    await user.click(await screen.findByRole('checkbox', { name: 'profile-image-1 선택' }));
+    await user.click(screen.getByRole('button', { name: '즉시 삭제' }));
+    await user.click(await screen.findByRole('button', { name: '처리' }));
+    await waitFor(() => expect(mockedAudit.bulkDelete).toHaveBeenCalledWith(
+      expect.objectContaining({ profileImageIds: ['profile-image-1'], confirmationPhrase: '삭제' }),
+    ));
+    await waitFor(() => expect(mockedAudit.list).toHaveBeenCalledTimes(2));
+  });
+
+  it('warns and confirms reupload when a bulk selection removes all approved photos', async () => {
+    const user = userEvent.setup();
+    render(<ProfileImageAuditPage />);
+    await screen.findByRole('checkbox', { name: 'profile-image-1 선택' });
+    await user.click(screen.getByRole('button', { name: '전체선택' }));
+    await user.click(screen.getByRole('button', { name: '즉시 삭제' }));
+    expect(await screen.findByText(/승인된 사진이 모두 없어지는 회원/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '처리' }));
+    await waitFor(() => expect(mockedAudit.bulkDelete).toHaveBeenCalledWith(
+      expect.objectContaining({ profileImageIds: ['profile-image-1', 'profile-image-2'], confirmationPhrase: '재업로드 필요' }),
+    ));
   });
 
   it('surfaces per-image reject failures instead of reporting success', async () => {

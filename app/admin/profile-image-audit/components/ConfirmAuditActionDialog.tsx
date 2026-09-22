@@ -26,6 +26,7 @@ type Props = {
   readonly action: AuditAction | null;
   readonly selectedCount: number;
   readonly busy: boolean;
+  readonly removesLastApprovedImage?: boolean;
   readonly onClose: () => void;
   readonly onConfirm: (rejectReason?: string) => void;
 };
@@ -33,6 +34,7 @@ type Props = {
 export function ConfirmAuditActionDialog({
   action,
   selectedCount,
+  removesLastApprovedImage = false,
   busy,
   onClose,
   onConfirm,
@@ -96,9 +98,14 @@ export function ConfirmAuditActionDialog({
               error={normalizedRejectReason.length === 0}
             />
             <Alert severity="info">
-              입력한 사유가 사진 변경 요청 사유로 기록됩니다.
+              선택한 사진의 승인을 취소하고 앱 푸시로 변경을 요청합니다. 문자(SMS)는 발송하지 않습니다.
             </Alert>
           </Stack>
+        )}
+        {(action === 'delete' || action === 'reject') && removesLastApprovedImage && (
+          <Alert severity="warning" sx={{ mt: 2 }}>
+            승인된 사진이 모두 없어지는 회원이 있습니다. 처리하면 사진 재업로드가 필요합니다.
+          </Alert>
         )}
         {action === 'delete' && (
           <Alert severity="error" sx={{ mt: 2 }}>
