@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Box,
@@ -32,6 +32,7 @@ import { filterVisibleAuditItems, formatProfileRank, getBulkActionCounts, getSel
 import type { AuditAction, AuditFilters } from './types';
 
 export default function ProfileImageAuditV2() {
+  const latestLoad = useRef(0);
   const [items, setItems] = useState<readonly ProfileImageAuditItem[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -56,10 +57,12 @@ export default function ProfileImageAuditV2() {
   );
 
   const load = async () => {
+    const requestId = ++latestLoad.current;
     try {
       setLoading(true);
       setError(null);
       const response = await profileImageAudit.list({ page, limit: PAGE_SIZE, ...filters });
+      if (requestId !== latestLoad.current) return;
       const visibleItems = filterVisibleAuditItems(response.data, filters);
       const hiddenItemCount = response.data.length - visibleItems.length;
       setItems(visibleItems);
@@ -67,13 +70,14 @@ export default function ProfileImageAuditV2() {
       setTotalPages(response.meta.totalPages);
       setSelectedIds(new Set());
     } catch (loadError) {
+      if (requestId !== latestLoad.current) return;
       const message =
         loadError instanceof Error
           ? getAdminErrorMessage(loadError, '프로필 이미지 전수검사 목록 조회 실패')
           : '프로필 이미지 전수검사 목록 조회 실패';
       setError(message);
     } finally {
-      setLoading(false);
+      if (requestId === latestLoad.current) setLoading(false);
     }
   };
 

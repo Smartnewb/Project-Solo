@@ -10,6 +10,7 @@ export const profileImageAuditItemFixture: ProfileImageAuditItem = {
   imageUrl: 'https://cdn.example.com/profile-image-1.jpg',
   thumbnailUrl: 'https://cdn.example.com/profile-image-1-thumb.jpg',
   userId: 'user-1',
+  userName: '김테스트',
   profileId: 'profile-1',
   profileRank: 'A',
   age: 24,

@@ -127,6 +127,12 @@ export function ProfileImageAuditCard({ item, selected, onToggle, onRankChange, 
       </Box>
       <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
         <Stack spacing={0.75}>
+          <Typography variant="subtitle1" fontWeight={700} noWrap title={item.userName || '이름 미등록'}>
+            {item.userName || '이름 미등록'}
+          </Typography>
+          <Typography variant="caption" color="text.secondary" noWrap title={item.userId}>
+            회원 ID: {item.userId}
+          </Typography>
           <Typography variant="subtitle2" noWrap title={item.universityName ?? '학교 미상'}>
             {item.universityName ?? '학교 미상'}
           </Typography>

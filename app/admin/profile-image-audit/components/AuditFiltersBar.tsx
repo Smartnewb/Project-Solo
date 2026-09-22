@@ -1,6 +1,9 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import {
+  Button,
+  TextField,
   Checkbox,
   FormControl,
   FormControlLabel,
@@ -24,6 +27,12 @@ type Props = {
 };
 
 export function AuditFiltersBar({ filters, onChange }: Props) {
+  const [searchInput, setSearchInput] = useState(filters.search ?? '');
+  useEffect(() => setSearchInput(filters.search ?? ''), [filters.search]);
+  const submitSearch = () => {
+    const search = searchInput.trim();
+    onChange({ ...filters, search: search || undefined, auditStatus: undefined, includeAlreadyAudited: true });
+  };
   const update = (patch: Partial<AuditFilters>) => onChange({ ...filters, ...patch });
   const findAuditStatus = (value: string) =>
     AUDIT_STATUS_OPTIONS.find((option) => option.value === value)?.value;
@@ -31,6 +40,20 @@ export function AuditFiltersBar({ filters, onChange }: Props) {
     VALIDATION_OPTIONS.find((option) => option.value === value)?.value;
 
   return (
+    <Stack spacing={1.5}>
+      <Stack component="form" direction="row" spacing={1} onSubmit={(event) => { event.preventDefault(); submitSearch(); }}>
+        <TextField
+          size="small"
+          label="이름 · 회원 ID 검색"
+          placeholder="찾을 회원 이름을 입력하세요"
+          value={searchInput}
+          onChange={(event) => setSearchInput(event.target.value)}
+          inputProps={{ maxLength: 100 }}
+          sx={{ minWidth: 220, flex: 1, maxWidth: 420 }}
+        />
+        <Button type="submit" variant="contained">검색</Button>
+        {filters.search && <Button onClick={() => { setSearchInput(''); update({ search: undefined }); }}>검색 지우기</Button>}
+      </Stack>
     <Stack direction="row" spacing={1.5} useFlexGap flexWrap="wrap" alignItems="center">
       <FormControl size="small" sx={{ minWidth: 140 }}>
         <InputLabel id="audit-status-label">검수 상태</InputLabel>
@@ -39,9 +62,10 @@ export function AuditFiltersBar({ filters, onChange }: Props) {
           label="검수 상태"
           value={filters.auditStatus ?? ''}
           onChange={(event) =>
-            update({ auditStatus: findAuditStatus(event.target.value) })
+            update({ auditStatus: findAuditStatus(event.target.value), includeAlreadyAudited: event.target.value === '' })
           }
         >
+          <MenuItem value="">전체</MenuItem>
           {AUDIT_STATUS_OPTIONS.map((option) => (
             <MenuItem key={option.value} value={option.value}>
               {option.label}
@@ -117,6 +141,7 @@ export function AuditFiltersBar({ filters, onChange }: Props) {
         }
         label="신고 있음"
       />
+    </Stack>
     </Stack>
   );
 }

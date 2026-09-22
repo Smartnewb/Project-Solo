@@ -208,6 +208,21 @@ describe('ProfileImageAuditPage', () => {
     ));
   });
 
+  it('shows member names and searches reviewed photos by name on Enter', async () => {
+    const user = userEvent.setup();
+    render(<ProfileImageAuditPage />);
+    expect((await screen.findAllByText('김테스트')).length).toBeGreaterThan(0);
+    expect(screen.getAllByText('회원 ID: user-1').length).toBeGreaterThan(0);
+    await user.type(screen.getByRole('textbox', { name: '이름 · 회원 ID 검색' }), '  김테스트  {Enter}');
+    await waitFor(() => expect(mockedAudit.list).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 1, search: '김테스트', auditStatus: undefined, includeAlreadyAudited: true }),
+    ));
+    await user.click(screen.getByRole('button', { name: '검색 지우기' }));
+    await waitFor(() => expect(mockedAudit.list).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 1, search: undefined }),
+    ));
+  });
+
   it('surfaces per-image reject failures instead of reporting success', async () => {
     const user = userEvent.setup();
     mockedAudit.bulkReject.mockResolvedValueOnce({
