@@ -44,8 +44,8 @@ export function AuditFiltersBar({ filters, onChange }: Props) {
       <Stack component="form" direction="row" spacing={1} onSubmit={(event) => { event.preventDefault(); submitSearch(); }}>
         <TextField
           size="small"
-          label="이름 · 회원 ID 검색"
-          placeholder="찾을 회원 이름을 입력하세요"
+          label="이름 · 학교 · 회원 ID 검색"
+          placeholder="이름 또는 학교 이름을 입력하세요"
           value={searchInput}
           onChange={(event) => setSearchInput(event.target.value)}
           inputProps={{ maxLength: 100 }}

@@ -208,14 +208,14 @@ describe('ProfileImageAuditPage', () => {
     ));
   });
 
-  it('shows member names and searches reviewed photos by name on Enter', async () => {
+  it.each(['김테스트', '서울대'])('searches reviewed photos by name or school: %s', async (search) => {
     const user = userEvent.setup();
     render(<ProfileImageAuditPage />);
     expect((await screen.findAllByText('김테스트')).length).toBeGreaterThan(0);
     expect(screen.getAllByText('회원 ID: user-1').length).toBeGreaterThan(0);
-    await user.type(screen.getByRole('textbox', { name: '이름 · 회원 ID 검색' }), '  김테스트  {Enter}');
+    await user.type(screen.getByRole('textbox', { name: '이름 · 학교 · 회원 ID 검색' }), `  ${search}  {Enter}`);
     await waitFor(() => expect(mockedAudit.list).toHaveBeenLastCalledWith(
-      expect.objectContaining({ page: 1, search: '김테스트', auditStatus: undefined, includeAlreadyAudited: true }),
+      expect.objectContaining({ page: 1, search, auditStatus: undefined, includeAlreadyAudited: true }),
     ));
     await user.click(screen.getByRole('button', { name: '검색 지우기' }));
     await waitFor(() => expect(mockedAudit.list).toHaveBeenLastCalledWith(
