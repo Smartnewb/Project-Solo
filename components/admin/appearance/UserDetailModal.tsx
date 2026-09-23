@@ -1408,30 +1408,29 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({
                               fontWeight: 'medium'
                             }}
                           />
-                          {uniVerificationStatus === 'unverified' ? (
+                          {uniVerificationStatus === 'unverified' && (
                             <Typography variant="caption" color="text.secondary">
                               학생증 미제출
                             </Typography>
-                          ) : (
-                            uniVerificationStatus !== 'loading' && (
-                              <Button
-                                size="small"
-                                variant="contained"
-                                sx={{
-                                  minWidth: 'auto',
-                                  px: 2,
-                                  py: 0.5,
-                                  fontSize: '0.75rem'
-                                }}
-                                onClick={() => {
-                                  if (window.confirm(`${userDetail.name}님의 대학교 인증을 승인하시겠습니까?`)) {
-                                    handleUniversityApproval();
-                                  }
-                                }}
-                              >
-                                인증 승인
-                              </Button>
-                            )
+                          )}
+                          {uniVerificationStatus !== 'loading' && (
+                            <Button
+                              size="small"
+                              variant="contained"
+                              sx={{
+                                minWidth: 'auto',
+                                px: 2,
+                                py: 0.5,
+                                fontSize: '0.75rem'
+                              }}
+                              onClick={() => {
+                                if (window.confirm(`${userDetail.name}님의 대학교 인증을 승인하시겠습니까?`)) {
+                                  handleUniversityApproval();
+                                }
+                              }}
+                            >
+                              인증 승인
+                            </Button>
                           )}
                         </>
                       )}
