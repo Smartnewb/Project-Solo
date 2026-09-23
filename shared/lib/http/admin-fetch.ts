@@ -49,6 +49,12 @@ async function parseJsonBody<T>(res: Response): Promise<T> {
   return JSON.parse(text) as T;
 }
 
+// 어드민 v2 에러 응답은 `{ error: { code, message } }`, 그 외는 최상위 `message`.
+function extractErrorMessage(body: unknown, status: number): string {
+  const b = body as { error?: { message?: string }; message?: string } | null;
+  return b?.error?.message ?? b?.message ?? `Request failed: ${status}`;
+}
+
 export type AdminQueryValue =
   | string
   | number
@@ -96,11 +102,7 @@ async function request<T>(
 
   if (!res.ok) {
     const body = await parseJsonBody<unknown>(res).catch(() => null);
-    throw new AdminApiError(
-      (body as { message?: string } | null)?.message ?? `Request failed: ${res.status}`,
-      res.status,
-      body,
-    );
+    throw new AdminApiError(extractErrorMessage(body, res.status), res.status, body);
   }
 
   if (res.status === 204) return undefined as T;
@@ -120,11 +122,7 @@ export async function adminRequest<T>(
 
   if (!res.ok) {
     const body = await parseJsonBody<unknown>(res).catch(() => null);
-    throw new AdminApiError(
-      (body as { message?: string } | null)?.message ?? `Request failed: ${res.status}`,
-      res.status,
-      body,
-    );
+    throw new AdminApiError(extractErrorMessage(body, res.status), res.status, body);
   }
 
   if (res.status === 204) return undefined as T;
@@ -170,12 +168,7 @@ export async function adminUpload<T>(
 
   if (!res.ok) {
     const body = await parseJsonBody<unknown>(res).catch(() => null);
-    throw new AdminApiError(
-      (body as { message?: string } | null)?.message ??
-        `Request failed: ${res.status}`,
-      res.status,
-      body,
-    );
+    throw new AdminApiError(extractErrorMessage(body, res.status), res.status, body);
   }
 
   if (res.status === 204) return undefined as T;
