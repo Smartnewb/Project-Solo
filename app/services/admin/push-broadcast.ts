@@ -1,4 +1,5 @@
 import { adminGet, adminPost } from '@/shared/lib/http/admin-fetch';
+import type { PushLegalClass } from './messaging';
 
 // X-Country 헤더는 BFF가 admin_session_meta 기반으로 고정 주입한다.
 // 백엔드는 이 헤더를 "어드민 인증 스키마 판별"에만 사용하고,
@@ -96,6 +97,7 @@ export interface CreateBroadcastScheduleRequest {
   deepLink?: string;
   scheduledAt: string; // ISO8601, 미래
   targetGroupId?: string;
+  legalClass: PushLegalClass;
 }
 
 export interface BroadcastSchedule {
@@ -212,6 +214,7 @@ export const pushBroadcast = {
     title: string;
     body: string;
     deepLink?: string;
+    legalClass: PushLegalClass;
   }): Promise<{ success: boolean }> => {
     const res = await adminPost<{ data: { success: boolean } }>(
       `${BASE}/push/broadcast/test`,

@@ -5,6 +5,13 @@ export { matching, forceMatching } from './matching';
 export { referrals } from './referrals';
 export type { ReferralMode, ReferralOwner, ReferralPreview } from './referrals';
 export { pushNotifications, pushNotificationCatalog, aiChat, momentQuestions } from './messaging';
+export { accessLogs } from './access-logs';
+export type {
+  AdminAccessLogItem,
+  AdminAccessLogListParams,
+  AdminAccessLogListResponse,
+  AdminAccessLogMethod,
+} from './access-logs';
 export { pushNotificationRegistry } from './push-notification-registry';
 export {
   pushGroups,
@@ -40,6 +47,7 @@ export type {
 	PushNotificationTemplate,
 	PushNotificationVariant,
 	FreshmenMilestone,
+	PushLegalClass,
 } from './messaging';
 export type {
 	DirectPushNotificationEntry,
@@ -310,6 +318,7 @@ import { stats, kpiReport } from './dashboard';
 import { userAppearance, deletedFemales, userEngagement } from './users';
 import { matching, forceMatching } from './matching';
 import { pushNotifications, pushNotificationCatalog, aiChat, momentQuestions } from './messaging';
+import { accessLogs } from './access-logs';
 import { pushNotificationRegistry } from './push-notification-registry';
 import {
 	backgroundPresets,
@@ -375,6 +384,7 @@ const AdminService = {
 	userReview,
 	pushNotifications,
 	pushNotificationCatalog,
+	accessLogs,
 	pushNotificationRegistry,
 	aiChat,
 	backgroundPresets,

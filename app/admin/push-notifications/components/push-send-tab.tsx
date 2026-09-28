@@ -8,6 +8,7 @@ import { useToast } from '@/shared/ui/admin/toast/toast-context';
 import { useConfirm } from '@/shared/ui/admin/confirm-dialog/confirm-dialog-context';
 import { useAdminForm } from '@/app/admin/hooks/forms';
 import { pushNotificationFormSchema, type PushNotificationFormData } from '@/app/admin/hooks/forms/schemas/push-notification.schema';
+import type { PushLegalClass } from '@/app/services/admin';
 
 interface FilterState {
   isDormant: boolean;
@@ -91,6 +92,7 @@ export function PushSendTab() {
   const [loadingProfile, setLoadingProfile] = useState(false);
 
   const [allUniversities, setAllUniversities] = useState<string[]>([]);
+  const [legalClass, setLegalClass] = useState<PushLegalClass>('advertising');
 
   const filteredUniversities = universitySearch
     ? allUniversities.filter(uni => uni.includes(universitySearch))
@@ -205,6 +207,7 @@ export function PushSendTab() {
         userIds: targetUsers.map(u => u.id),
         title: data.title,
         message: data.message,
+        legalClass,
       };
 
       const result = await AdminService.pushNotifications.sendBulkNotification(payload);
@@ -700,6 +703,37 @@ export function PushSendTab() {
         <h2 className="text-xl font-semibold mb-4">푸시 알림 발송</h2>
 
         <div className="space-y-4">
+          <fieldset>
+            <legend className="block mb-2 font-medium">발송 분류</legend>
+            <div className="flex flex-wrap gap-4">
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="legalClass"
+                  value="advertising"
+                  checked={legalClass === 'advertising'}
+                  onChange={() => setLegalClass('advertising')}
+                  required
+                />
+                광고성 (이벤트·혜택·재방문 유도)
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
+                  name="legalClass"
+                  value="informational"
+                  checked={legalClass === 'informational'}
+                  onChange={() => setLegalClass('informational')}
+                  required
+                />
+                정보성 (공지·거래·서비스 안내)
+              </label>
+            </div>
+            <p className="mt-2 text-sm text-gray-600">
+              광고성은 수신 동의한 회원에게만 발송되고 제목 앞에 (광고)가 붙습니다. 21시~08시에는 야간 동의 회원에게만 갑니다.
+            </p>
+          </fieldset>
+
           <div>
             <label className="block mb-2 font-medium">제목</label>
             <Controller
