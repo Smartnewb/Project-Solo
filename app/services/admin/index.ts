@@ -210,6 +210,22 @@ export type {
 export { fcmTokens, universities } from './system';
 export { featureFlags } from './feature-flags';
 export type { FeatureFlag } from './feature-flags';
+export { meeting } from './meeting';
+export type {
+	MeetingRoomRow,
+	MeetingRoomDetail,
+	MeetingRoomMember,
+	MeetingRoomDeposit,
+	MeetingRoomCheckin,
+	MeetingCancelLog,
+	MeetingRefundFailure,
+	MeetingRoomStatus,
+	MeetingDepositStatus,
+	MeetingCheckinMethod,
+	MeetingGender,
+	MeetingTeamSide,
+	MeetingRoomCanceledReason,
+} from './meeting';
 export { matchingMonitor } from './matching-monitor';
 export { styleReference } from './style-reference';
 export { care } from './care';
@@ -352,6 +368,7 @@ import {
 import { revenueV2 } from './revenue-v2';
 import { fcmTokens, universities } from './system';
 import { featureFlags } from './feature-flags';
+import { meeting } from './meeting';
 import { matchingMonitor } from './matching-monitor';
 import { styleReference } from './style-reference';
 import { care } from './care';
@@ -415,6 +432,7 @@ const AdminService = {
 	fcmTokens,
 	getProfileReports: reports.getProfileReports,
 	featureFlags,
+	meeting,
 	matchingMonitor,
 	styleReference,
 	care,
