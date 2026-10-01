@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AdminService from '@/app/services/admin';
+import type { PushLegalClass } from '@/app/services/admin';
 import type {
   GenerateQuestionsRequest,
   GetQuestionsParams,
@@ -42,7 +43,7 @@ export function useFilterUsers(
 
 export function useSendBulkNotification() {
   return useMutation({
-    mutationFn: (data: { userIds: string[]; title: string; message: string }) =>
+    mutationFn: (data: { userIds: string[]; title: string; message: string; legalClass: PushLegalClass }) =>
       AdminService.pushNotifications.sendBulkNotification(data),
   });
 }

@@ -29,6 +29,8 @@ export interface PushNotificationTemplate {
 	body: string;
 }
 
+export type PushLegalClass = 'informational' | 'advertising';
+
 export interface PushNotificationVariant {
 	condition: string;
 	templates: Record<string, PushNotificationTemplate>;
@@ -90,6 +92,7 @@ export const pushNotifications = {
 		userIds: string[];
 		title: string;
 		message: string;
+		legalClass: PushLegalClass;
 	}): Promise<{
 		successCount: number;
 		failureCount: number;

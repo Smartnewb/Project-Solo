@@ -138,6 +138,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
       { href: '/admin/content', label: '운영 콘텐츠 관리' },
       { href: '/admin/seo', label: 'SEO 상태' },
       { href: '/admin/banners', label: '배너 관리' },
+      { href: '/admin/policy-documents', label: '정책 개정 등록' },
       {
         id: 'utm-management',
         label: 'UTM 추적 관리',
@@ -196,6 +197,7 @@ export const NAV_CATEGORIES: NavCategory[] = [
     label: '설정',
     items: [
       { href: '/admin/version-management', label: '버전 관리' },
+      { href: '/admin/access-logs', label: '개인정보 접속기록' },
       { href: '/admin/feature-flags', label: 'Feature Flags' },
       { href: '/admin/lab', label: '실험실' },
       { href: '/admin/app-preview', label: '앱 UI 시연' },

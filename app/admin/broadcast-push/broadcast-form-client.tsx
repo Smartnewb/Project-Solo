@@ -29,6 +29,7 @@ import type {
   PushTargetGroup,
   CreateBroadcastScheduleRequest,
   ScheduleCreatedResult,
+  PushLegalClass,
 } from '@/app/services/admin';
 import { useToast } from '@/shared/ui/admin/toast';
 import { useAdminSession } from '@/shared/contexts/admin-session-context';
@@ -65,6 +66,7 @@ export default function BroadcastFormClient() {
   const [jpBody, setJpBody] = useState('');
   const [deepLink, setDeepLink] = useState('');
   const [scheduledAt, setScheduledAt] = useState('');
+  const [legalClass, setLegalClass] = useState<PushLegalClass>('advertising');
 
   const [testUserId, setTestUserId] = useState('');
   const [testSendingCountry, setTestSendingCountry] = useState<'kr' | 'jp' | null>(null);
@@ -144,6 +146,7 @@ export default function BroadcastFormClient() {
         title: title.trim(),
         body: body.trim(),
         deepLink: deepLink.trim() || undefined,
+        legalClass,
       });
       if (res.success) {
         toast.success(`${country.toUpperCase()} 테스트 푸시를 발송했습니다.`);
@@ -194,6 +197,7 @@ export default function BroadcastFormClient() {
         ...(needJp ? { jpTitle: jpTitle.trim(), jpBody: jpBody.trim() } : {}),
         deepLink: deepLink.trim() || undefined,
         scheduledAt: new Date(scheduledAt).toISOString(),
+        legalClass,
         ...(targetType === 'group' && selectedGroup ? { targetGroupId: selectedGroup.id } : {}),
       };
       const created = await AdminService.pushBroadcast.schedule(body);
@@ -258,6 +262,31 @@ export default function BroadcastFormClient() {
             )}
           </Box>
         )}
+      </Paper>
+
+      <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
+        <FormControl component="fieldset" required>
+          <FormLabel component="legend">발송 분류</FormLabel>
+          <RadioGroup
+            row
+            value={legalClass}
+            onChange={(event) => setLegalClass(event.target.value as PushLegalClass)}
+          >
+            <FormControlLabel
+              value="advertising"
+              control={<Radio />}
+              label="광고성 (이벤트·혜택·재방문 유도)"
+            />
+            <FormControlLabel
+              value="informational"
+              control={<Radio />}
+              label="정보성 (공지·거래·서비스 안내)"
+            />
+          </RadioGroup>
+        </FormControl>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          광고성은 수신 동의한 회원에게만 발송되고 제목 앞에 (광고)가 붙습니다. 21시~08시에는 야간 동의 회원에게만 갑니다.
+        </Typography>
       </Paper>
 
       <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
@@ -410,6 +439,7 @@ export default function BroadcastFormClient() {
           </Alert>
           <Stack spacing={1.5}>
             <SummaryRow label="발송 대상" value={targetSummary} />
+            <SummaryRow label="발송 분류" value={legalClass === 'advertising' ? '광고성' : '정보성'} />
             <SummaryRow label="예정 시각" value={formatDateTimeKR(scheduledAt)} />
             {needKr && <SummaryRow label="KR 제목" value={krTitle} />}
             {needJp && <SummaryRow label="JP 제목" value={jpTitle} />}
